@@ -1,0 +1,5 @@
+outs:
+- md5: b7133444bbca65a33b71d654229b8925
+  size: 10836877
+  hash: md5
+  path: site_registry.parquet

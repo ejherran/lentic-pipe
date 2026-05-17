@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-05-17T01:06:31.350231+00:00",
+  "started_at_utc": "2026-05-17T01:05:15.839217+00:00",
+  "model_version": "pipe_grud_v0",
+  "status": "completed",
+  "config": {
+    "history_length": 6,
+    "hidden_dim": 64,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "residual_mode": "add_last",
+    "mse_weight": 0.5,
+    "checkpoint_selection_metric": "balanced",
+    "checkpoint_selection_uses_output_blend": true,
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "blend_selection_metric": "balanced",
+    "epochs": 20,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "random_seed": 1729,
+    "max_train_windows": 0,
+    "max_eval_windows": 0,
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "available_windows": {
+      "train": 602390,
+      "validation": 54637,
+      "test": 40606
+    },
+    "sampled_windows": {
+      "train": 602390,
+      "validation": 54637,
+      "test": 40606
+    },
+    "metric_rows": 30,
+    "blend_weight_rows": 9,
+    "blend_search_rows": 81,
+    "persistence_metric_rows": 30,
+    "comparison_rows": 30,
+    "training_curve_rows": 20
+  },
+  "selection": {
+    "checkpoint_selection_metric": "balanced",
+    "best_epoch": 18,
+    "best_validation_loss": -3.262009046342473,
+    "best_validation_rmse_all": 0.11420912983813869,
+    "best_validation_mae_all": 0.06151799726611976,
+    "best_validation_objective": 0.7796018653599355
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "bytes": 73436574,
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_sequence_manifest.json",
+      "bytes": 6427,
+      "sha256": "7285be6054ea9c027f5e6efd52a85cff717051ed056bab8709878c0065bc3cb2"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "models/pipe_grud/pipe_grud_model_v0.pt",
+      "bytes": 69939,
+      "sha256": "f6f85966363c167283913ec313614e55a235dc049b71353d28a25eb85089440f"
+    },
+    {
+      "path": "models/pipe_grud/pipe_grud_checkpoint_v0.pt",
+      "bytes": 208997,
+      "sha256": "dea7943dea3f1af6ed3cd118007fe7c21a577dd929c6708fefb3ca07996b4aef"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_metrics.csv",
+      "bytes": 3622,
+      "sha256": "92f6068c677364318f49e0e1dad0c4e00f8a632416680349e4cfbc8292c29054"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_persistence_metrics.csv",
+      "bytes": 1832,
+      "sha256": "db1db5d815d32e4e986770f8c023cb29826feda756118faf536fa2853f27b2d8"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_persistence_comparison.csv",
+      "bytes": 5973,
+      "sha256": "5e50a67cf1be19180a46ffe7a5590d89c5ac7742780e84309b141582daa53870"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_output_blend_weights.csv",
+      "bytes": 868,
+      "sha256": "ca2e475bc925ec181e6a79addf5603117eca9c623944053a79b9b7131ffeec4f"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_output_blend_search.csv",
+      "bytes": 6974,
+      "sha256": "e5aa477e83902d0a7cf4174c68a1e3470da64ce49745fd3f24ac39bb928cbc62"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_training_curve.csv",
+      "bytes": 3524,
+      "sha256": "89492533d88cc4491225a6bfa817aa9b4a9d8edb3647faf17a03d40131c80a58"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_prediction_examples.csv",
+      "bytes": 265734,
+      "sha256": "49250f1c7d991c020004a24bd149ef8f93f3ff3e1bc3477623292b87de066464"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_report.md",
+      "bytes": 5507,
+      "sha256": "8926d98f39ecc784361a941c7073c603bfc2c962a6a64cb938ce1aed07c996a7"
+    }
+  ],
+  "script": {
+    "path": "/home/wolf/lentic-pipe/src/experiments/train_pipe_grud.py",
+    "bytes": 51163,
+    "sha256": "fc11114f219c7bd9218b32022518c7c390692a0c759e43a7755be19a32342cf9"
+  }
+}

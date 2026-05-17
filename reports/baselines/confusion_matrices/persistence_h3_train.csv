@@ -1,0 +1,2 @@
+model,task,horizon_months,split,threshold,tn,fp,fn,tp
+persistence,classification_and_risk,3,train,0.5,765092,234171,42768,147222

@@ -1,0 +1,326 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-05-17T05:59:33.633178+00:00",
+  "git_commit": "35bfba219f9bef95c0ae7f45d6357f0b23a4bf2e",
+  "git_dirty_state": "A  .dvc/.gitignore\nA  .dvc/config\nA  .dvcignore\n M .gitignore\n M README.md\n?? configs/\n?? data/\n?? docs/\n?? models.dvc\n?? poetry.lock\n?? poetry.toml\n?? pyproject.toml\n?? reports/\n?? scripts/\n?? src/\n?? tests/",
+  "python_constraint": ">=3.14,<3.15",
+  "raw_manifest": "data/catalog/raw_file_manifest.csv",
+  "source_catalog": "data/catalog/source_catalog.json",
+  "derived_manifest": "data/freeze/derived_file_manifest_v0.csv",
+  "data_freeze_md": "data/freeze/DATA_FREEZE.md",
+  "raw_manifest_stats": {
+    "file_count": 76,
+    "total_size_bytes": 62633651202
+  },
+  "derived_summary": [
+    {
+      "category": "canonical_observations",
+      "files": 747,
+      "size_bytes": 6229817627
+    },
+    {
+      "category": "catalog",
+      "files": 2,
+      "size_bytes": 57636
+    },
+    {
+      "category": "config",
+      "files": 3,
+      "size_bytes": 22324
+    },
+    {
+      "category": "diagnostics",
+      "files": 10,
+      "size_bytes": 283588864
+    },
+    {
+      "category": "documentation",
+      "files": 7,
+      "size_bytes": 17482
+    },
+    {
+      "category": "environment",
+      "files": 4,
+      "size_bytes": 448038
+    },
+    {
+      "category": "interim",
+      "files": 2,
+      "size_bytes": 50819361
+    },
+    {
+      "category": "panel",
+      "files": 3,
+      "size_bytes": 193289929
+    },
+    {
+      "category": "repo_audit",
+      "files": 1,
+      "size_bytes": 3946
+    },
+    {
+      "category": "repo_script",
+      "files": 5,
+      "size_bytes": 18629
+    },
+    {
+      "category": "reports",
+      "files": 11,
+      "size_bytes": 37103
+    },
+    {
+      "category": "script",
+      "files": 18,
+      "size_bytes": 188824
+    },
+    {
+      "category": "source_download_script",
+      "files": 6,
+      "size_bytes": 16554
+    },
+    {
+      "category": "targets",
+      "files": 4,
+      "size_bytes": 249516225
+    }
+  ],
+  "panel_manifest": {
+    "status": "completed",
+    "started_at_utc": "2026-05-16T19:56:16.123289+00:00",
+    "completed_at_utc": "2026-05-16T19:59:10.725971+00:00",
+    "observation_parts": 740,
+    "input_rows": 459949849,
+    "panelable_rows": 459949849,
+    "excluded_rows": 0,
+    "coverage_by_source": {
+      "aquamatch_chla": {
+        "input_rows": 3393022,
+        "panelable_rows": 3393022,
+        "excluded_rows": 0,
+        "excluded_missing_year_month": 0,
+        "excluded_missing_variable": 0
+      },
+      "lakebed_us_cse": {
+        "input_rows": 432748526,
+        "panelable_rows": 432748526,
+        "excluded_rows": 0,
+        "excluded_missing_year_month": 0,
+        "excluded_missing_variable": 0
+      },
+      "wqp": {
+        "input_rows": 23808301,
+        "panelable_rows": 23808301,
+        "excluded_rows": 0,
+        "excluded_missing_year_month": 0,
+        "excluded_missing_variable": 0
+      }
+    },
+    "long_panel": "data/panel/monthly_long_v0.parquet",
+    "wide_panel": "data/panel/panel_monthly_v0.parquet",
+    "long_rows": 7420800,
+    "wide_rows": 3386676
+  },
+  "target_manifest": {
+    "status": "completed",
+    "started_at_utc": "2026-05-16T20:11:39.713762+00:00",
+    "completed_at_utc": "2026-05-16T20:12:35.978969+00:00",
+    "panel": "data/panel/panel_monthly_v0.parquet",
+    "horizons_months": [
+      1,
+      2,
+      3
+    ],
+    "long_targets": "data/targets/monthly_targets_long_v0.parquet",
+    "model_long_targets": "data/targets/monthly_targets_model_v0.parquet",
+    "panel_with_targets": "data/targets/panel_monthly_with_targets_v0.parquet",
+    "report": "reports/data/TARGET_REPORT_v0.md",
+    "panel_rows": 3386676,
+    "target_candidate_rows": 10160028,
+    "model_target_rows": 4649182,
+    "bloom_threshold_chla_ugL": 30.0,
+    "risk_policy": {
+      "epsilon": 0.1,
+      "low_chla_ugL": 5.0,
+      "bloom_chla_ugL": 30.0
+    },
+    "trophic_state_proxy": {
+      "oligotrophic_max": 2.6,
+      "mesotrophic_max": 7.3,
+      "eutrophic_max": 56.0
+    },
+    "by_horizon": [
+      {
+        "horizon_months": 1,
+        "candidate_rows": 3386676,
+        "target_month_rows": 2075709,
+        "target_rows": 1627391,
+        "bloom_positive": 249413,
+        "bloom_negative": 1377978,
+        "missing_target_month": 1310967,
+        "missing_chla_in_target_month": 448318,
+        "bloom_rate": 0.1532594195248714
+      },
+      {
+        "horizon_months": 2,
+        "candidate_rows": 3386676,
+        "target_month_rows": 1947257,
+        "target_rows": 1577326,
+        "bloom_positive": 243594,
+        "bloom_negative": 1333732,
+        "missing_target_month": 1439419,
+        "missing_chla_in_target_month": 369931,
+        "bloom_rate": 0.15443478393179344
+      },
+      {
+        "horizon_months": 3,
+        "candidate_rows": 3386676,
+        "target_month_rows": 1729279,
+        "target_rows": 1444465,
+        "bloom_positive": 223502,
+        "bloom_negative": 1220963,
+        "missing_target_month": 1657397,
+        "missing_chla_in_target_month": 284814,
+        "bloom_rate": 0.15472995191991498
+      }
+    ],
+    "by_source_horizon": [
+      {
+        "source_id": "aquamatch_chla",
+        "horizon_months": 1,
+        "candidate_rows": 1755072,
+        "target_month_rows": 1082865,
+        "target_rows": 1082865,
+        "bloom_positive": 144059,
+        "bloom_negative": 938806,
+        "missing_target_month": 672207,
+        "missing_chla_in_target_month": 0,
+        "bloom_rate": 0.13303505053723225
+      },
+      {
+        "source_id": "aquamatch_chla",
+        "horizon_months": 2,
+        "candidate_rows": 1755072,
+        "target_month_rows": 1073870,
+        "target_rows": 1073870,
+        "bloom_positive": 141668,
+        "bloom_negative": 932202,
+        "missing_target_month": 681202,
+        "missing_chla_in_target_month": 0,
+        "bloom_rate": 0.13192285844655313
+      },
+      {
+        "source_id": "aquamatch_chla",
+        "horizon_months": 3,
+        "candidate_rows": 1755072,
+        "target_month_rows": 986698,
+        "target_rows": 986698,
+        "bloom_positive": 129231,
+        "bloom_negative": 857467,
+        "missing_target_month": 768374,
+        "missing_chla_in_target_month": 0,
+        "bloom_rate": 0.13097320558063358
+      },
+      {
+        "source_id": "lakebed_us_cse",
+        "horizon_months": 1,
+        "candidate_rows": 4932,
+        "target_month_rows": 4131,
+        "target_rows": 3377,
+        "bloom_positive": 390,
+        "bloom_negative": 2987,
+        "missing_target_month": 801,
+        "missing_chla_in_target_month": 754,
+        "bloom_rate": 0.11548711874444774
+      },
+      {
+        "source_id": "lakebed_us_cse",
+        "horizon_months": 2,
+        "candidate_rows": 4932,
+        "target_month_rows": 4091,
+        "target_rows": 3382,
+        "bloom_positive": 383,
+        "bloom_negative": 2999,
+        "missing_target_month": 841,
+        "missing_chla_in_target_month": 709,
+        "bloom_rate": 0.11324659964518037
+      },
+      {
+        "source_id": "lakebed_us_cse",
+        "horizon_months": 3,
+        "candidate_rows": 4932,
+        "target_month_rows": 4062,
+        "target_rows": 3373,
+        "bloom_positive": 361,
+        "bloom_negative": 3012,
+        "missing_target_month": 870,
+        "missing_chla_in_target_month": 689,
+        "bloom_rate": 0.10702638600652238
+      },
+      {
+        "source_id": "wqp",
+        "horizon_months": 1,
+        "candidate_rows": 1626672,
+        "target_month_rows": 988713,
+        "target_rows": 541149,
+        "bloom_positive": 104964,
+        "bloom_negative": 436185,
+        "missing_target_month": 637959,
+        "missing_chla_in_target_month": 447564,
+        "bloom_rate": 0.193965063226579
+      },
+      {
+        "source_id": "wqp",
+        "horizon_months": 2,
+        "candidate_rows": 1626672,
+        "target_month_rows": 869296,
+        "target_rows": 500074,
+        "bloom_positive": 101543,
+        "bloom_negative": 398531,
+        "missing_target_month": 757376,
+        "missing_chla_in_target_month": 369222,
+        "bloom_rate": 0.20305594771973748
+      },
+      {
+        "source_id": "wqp",
+        "horizon_months": 3,
+        "candidate_rows": 1626672,
+        "target_month_rows": 738519,
+        "target_rows": 454394,
+        "bloom_positive": 93910,
+        "bloom_negative": 360484,
+        "missing_target_month": 888153,
+        "missing_chla_in_target_month": 284125,
+        "bloom_rate": 0.20667086273146212
+      }
+    ]
+  },
+  "diagnostic_manifest": {
+    "status": "completed",
+    "started_at_utc": "2026-05-16T20:19:59.833905+00:00",
+    "completed_at_utc": "2026-05-16T20:20:26.624629+00:00",
+    "panel_with_targets": "data/targets/panel_monthly_with_targets_v0.parquet",
+    "target_long": "data/targets/monthly_targets_long_v0.parquet",
+    "report": "reports/data/DATA_DIAGNOSTIC_REPORT_v0.md",
+    "panel_rows": 3386676,
+    "target_candidate_rows": 10160028,
+    "target_rows": 4649182,
+    "bloom_positive_rows": 716509,
+    "outputs": {
+      "coverage_by_source": "data/diagnostics/coverage_by_source.csv",
+      "coverage_by_site": "data/diagnostics/coverage_by_site.csv",
+      "coverage_by_variable": "data/diagnostics/coverage_by_variable.csv",
+      "coverage_by_site_variable": "data/diagnostics/coverage_by_site_variable.csv",
+      "coverage_by_source_variable": "data/diagnostics/coverage_by_source_variable.csv",
+      "bloom_counts_by_site_horizon": "data/diagnostics/bloom_counts_by_site_horizon.csv",
+      "target_coverage_by_source_horizon": "data/diagnostics/target_coverage_by_source_horizon.csv",
+      "feature_missingness": "data/diagnostics/feature_missingness.csv",
+      "chla_distribution_by_source_horizon": "data/diagnostics/chla_distribution_by_source_horizon.csv"
+    },
+    "figures": {
+      "variable_coverage": "reports/data/figures/variable_coverage.svg",
+      "source_variable_coverage": "reports/data/figures/source_variable_coverage.svg",
+      "target_coverage": "reports/data/figures/target_coverage_by_source_horizon.svg",
+      "future_chla_p95": "reports/data/figures/future_chla_p95_by_source_horizon.svg"
+    }
+  }
+}

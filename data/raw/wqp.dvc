@@ -1,0 +1,6 @@
+outs:
+- md5: 4bcaf59e4c17715f3f6f25b17580c43d.dir
+  size: 60675375324
+  nfiles: 6
+  hash: md5
+  path: wqp

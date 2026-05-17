@@ -1,0 +1,6 @@
+outs:
+- md5: e46954c90773bfbc54c539594ee91c69.dir
+  size: 3953887828
+  nfiles: 489
+  hash: md5
+  path: lakebed_us_cse

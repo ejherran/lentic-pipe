@@ -1,0 +1,11 @@
+model,task,horizon_months,split,bin,bin_left,bin_right,rows,mean_pred_probability,observed_bloom_rate
+logistic_sgd,classification,2,test,0,0.0,0.1,64778,0.0010800026294923845,0.02042360060514372
+logistic_sgd,classification,2,test,1,0.1,0.2,523,0.14337741188236533,0.06118546845124283
+logistic_sgd,classification,2,test,2,0.2,0.3,352,0.24822352977602433,0.06818181818181818
+logistic_sgd,classification,2,test,3,0.3,0.4,279,0.3520598886190132,0.06810035842293907
+logistic_sgd,classification,2,test,4,0.4,0.5,277,0.4508454961167643,0.06498194945848375
+logistic_sgd,classification,2,test,5,0.5,0.6,228,0.5492830178671432,0.06140350877192982
+logistic_sgd,classification,2,test,6,0.6,0.7,272,0.6549441869146428,0.05514705882352941
+logistic_sgd,classification,2,test,7,0.7,0.8,342,0.7540421710912014,0.05263157894736842
+logistic_sgd,classification,2,test,8,0.8,0.9,503,0.8555101537992076,0.05964214711729622
+logistic_sgd,classification,2,test,9,0.9,1.0,48137,0.9986633448288111,0.3172611504663772

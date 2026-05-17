@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-05-17T01:25:34.675431+00:00",
+  "started_at_utc": "2026-05-17T01:23:24.540265+00:00",
+  "model_version": "pipe_grud_v0",
+  "status": "completed",
+  "config": {
+    "history_length": 3,
+    "hidden_dim": 64,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "residual_mode": "add_last",
+    "mse_weight": 1.0,
+    "checkpoint_selection_metric": "balanced",
+    "checkpoint_selection_uses_output_blend": true,
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "blend_selection_metric": "balanced",
+    "epochs": 20,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "random_seed": 1729,
+    "max_train_windows": 0,
+    "max_eval_windows": 0,
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "available_windows": {
+      "train": 1065877,
+      "validation": 116097,
+      "test": 86069
+    },
+    "sampled_windows": {
+      "train": 1065877,
+      "validation": 116097,
+      "test": 86069
+    },
+    "metric_rows": 30,
+    "blend_weight_rows": 9,
+    "blend_search_rows": 81,
+    "persistence_metric_rows": 30,
+    "comparison_rows": 30,
+    "training_curve_rows": 20
+  },
+  "selection": {
+    "checkpoint_selection_metric": "balanced",
+    "best_epoch": 19,
+    "best_validation_loss": -3.0889996465698606,
+    "best_validation_rmse_all": 0.11985666352797016,
+    "best_validation_mae_all": 0.06391629535533727,
+    "best_validation_objective": 0.7777815768181322
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "bytes": 73436574,
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_sequence_manifest.json",
+      "bytes": 6427,
+      "sha256": "7285be6054ea9c027f5e6efd52a85cff717051ed056bab8709878c0065bc3cb2"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "models/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_model.pt",
+      "bytes": 69970,
+      "sha256": "7e284864e4c41c9bf5a6854e54120dfd0894ab5c764f316c3daac1c2f8bc2825"
+    },
+    {
+      "path": "models/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_checkpoint.pt",
+      "bytes": 208956,
+      "sha256": "c9f134711d0536b394530b3babd03961601bd232d60cfc8472a391a38bcc92f7"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_metrics.csv",
+      "bytes": 3643,
+      "sha256": "f91b410de779ede2c9e268077bbf1541175a551a09d0a067acebf69f9455b1bd"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_persistence_metrics.csv",
+      "bytes": 1846,
+      "sha256": "c8fa0093916719094e7a8081809235c745232091c8014e51c4f258f5409f2fb1"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_persistence_comparison.csv",
+      "bytes": 5997,
+      "sha256": "cc003589adaa6912be16976dba77774b5edf78e8f5537e8a8e49ebeab078a3d6"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_output_blend_weights.csv",
+      "bytes": 865,
+      "sha256": "d2599d7308a24110b78fad9cd35d8f96601cc99930b8f0b5523dad092c1dc071"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_output_blend_search.csv",
+      "bytes": 7038,
+      "sha256": "cb76a6abb6302fa8ed2d03493dfa2dbd5b76bbc9208b0ec45038bdc110c3832b"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_training_curve.csv",
+      "bytes": 3511,
+      "sha256": "c98098a05166e21841e84ebda573736a76528ce29e17270e56730f3ad988bc98"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_prediction_examples.csv",
+      "bytes": 53930,
+      "sha256": "3ed25c9af4fa56ffb0fe43959333eb271bbf39051da94e81700a54447571caab"
+    },
+    {
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_report.md",
+      "bytes": 6177,
+      "sha256": "5f9d46c08cca5d5ee2bce4665740efab79d26904775b28e072ad7f308c8e9c0c"
+    }
+  ],
+  "script": {
+    "path": "/home/wolf/lentic-pipe/src/experiments/train_pipe_grud.py",
+    "bytes": 51163,
+    "sha256": "fc11114f219c7bd9218b32022518c7c390692a0c759e43a7755be19a32342cf9"
+  }
+}

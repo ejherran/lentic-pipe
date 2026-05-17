@@ -1,0 +1,405 @@
+schema_version: 1
+description: >
+  Canonical variable names, units, source mappings, and conservative validation
+  rules for the lentic-pipe raw-to-panel data pipeline.
+
+canonical_variables:
+  chlorophyll_a_ugL:
+    display_name: Chlorophyll-a
+    canonical_unit: ug/L
+    role:
+      - target
+      - memory
+      - trophic_proxy
+    preferred_aggregation: median
+    allowed_units:
+      - ug/L
+      - ug/l
+      - mg/L
+      - mg/l
+      - mg/m3
+    conversions:
+      ug/L: identity
+      ug/l: identity
+      mg/L: multiply_1000
+      mg/l: multiply_1000
+      mg/m3: identity
+    plausible_range:
+      min: 0
+      max: 10000
+    impossible_if:
+      - negative
+    notes:
+      - Chl-a may be current-month input only when it belongs to the origin month.
+      - Future Chl-a must never enter predictors for the same horizon.
+
+  TP_ugL:
+    display_name: Total phosphorus
+    canonical_unit: ug/L
+    role:
+      - nutrient_pressure
+    preferred_aggregation: median
+    allowed_units:
+      - ug/L
+      - ug/l
+      - mg/L
+      - mg/l
+      - ppb
+      - ppm
+    conversions:
+      ug/L: identity
+      ug/l: identity
+      ppb: identity
+      mg/L: multiply_1000
+      mg/l: multiply_1000
+      ppm: multiply_1000
+    plausible_range:
+      min: 0
+      max: 100000
+    impossible_if:
+      - negative
+
+  TN_ugL:
+    display_name: Total nitrogen
+    canonical_unit: ug/L
+    role:
+      - nutrient_pressure
+    preferred_aggregation: median
+    allowed_units:
+      - ug/L
+      - ug/l
+      - mg/L
+      - mg/l
+      - ppb
+      - ppm
+    conversions:
+      ug/L: identity
+      ug/l: identity
+      ppb: identity
+      mg/L: multiply_1000
+      mg/l: multiply_1000
+      ppm: multiply_1000
+    plausible_range:
+      min: 0
+      max: 200000
+    impossible_if:
+      - negative
+
+  DO_mgL:
+    display_name: Dissolved oxygen
+    canonical_unit: mg/L
+    role:
+      - physicochemical_condition
+    preferred_aggregation: median
+    allowed_units:
+      - mg/L
+      - mg/l
+      - ppm
+    conversions:
+      mg/L: identity
+      mg/l: identity
+      ppm: identity
+    plausible_range:
+      min: 0
+      max: 30
+    impossible_if:
+      - negative
+
+  pH:
+    display_name: pH
+    canonical_unit: dimensionless
+    role:
+      - physicochemical_condition
+    preferred_aggregation: median
+    allowed_units:
+      - dimensionless
+      - nu
+      - standard units
+    conversions:
+      dimensionless: identity
+      nu: identity
+      standard units: identity
+    plausible_range:
+      min: 0
+      max: 14
+
+  turbidity_NTU:
+    display_name: Turbidity
+    canonical_unit: NTU
+    role:
+      - light_availability
+      - physicochemical_condition
+    preferred_aggregation: median
+    allowed_units:
+      - NTU
+      - FNU
+      - FNRU
+      - FTU
+      - JCU
+      - JTU
+    conversions:
+      NTU: identity
+      FNU: identity_approximate
+      FNRU: identity_approximate
+      FTU: identity_approximate
+      JCU: identity_approximate
+      JTU: identity_approximate
+    plausible_range:
+      min: 0
+      max: 10000
+    impossible_if:
+      - negative
+
+  temperature_C:
+    display_name: Water temperature
+    canonical_unit: deg C
+    role:
+      - thermal_biological_favorability
+    preferred_aggregation: median
+    allowed_units:
+      - deg C
+      - C
+      - deg F
+    conversions:
+      deg C: identity
+      C: identity
+      deg F: fahrenheit_to_celsius
+    plausible_range:
+      min: -5
+      max: 45
+
+  secchi_depth_m:
+    display_name: Secchi depth
+    canonical_unit: m
+    role:
+      - light_availability
+    preferred_aggregation: median
+    allowed_units:
+      - m
+      - ft
+      - in
+    conversions:
+      m: identity
+      ft: multiply_0_3048
+      in: multiply_0_0254
+    plausible_range:
+      min: 0
+      max: 100
+    impossible_if:
+      - negative
+
+derived_variables:
+  TN_TP_ratio:
+    formula: TN_ugL / TP_ugL
+    requires:
+      - TN_ugL
+      - TP_ugL
+  log_TP:
+    formula: log(TP_ugL + 0.1)
+    requires:
+      - TP_ugL
+  log_TN:
+    formula: log(TN_ugL + 0.1)
+    requires:
+      - TN_ugL
+  log_chlorophyll_a:
+    formula: log(chlorophyll_a_ugL + 0.1)
+    requires:
+      - chlorophyll_a_ugL
+  risk_chla:
+    formula: clip((log(chlorophyll_a_ugL + 0.1) - log(5 + 0.1)) / (log(30 + 0.1) - log(5 + 0.1)), 0, 1)
+    requires:
+      - chlorophyll_a_ugL
+
+source_mappings:
+  lakebed_us_cse:
+    column_style: wide
+    datetime_column: datetime
+    depth_column: depth
+    qc_column: flag
+    site_id_from_path: true
+    variables:
+      chla_ugl:
+        canonical: chlorophyll_a_ugL
+        unit: ug/L
+      tn:
+        canonical: TN_ugL
+        unit: ug/L
+      tp:
+        canonical: TP_ugL
+        unit: ug/L
+      do:
+        canonical: DO_mgL
+        unit: mg/L
+      temp:
+        canonical: temperature_C
+        unit: deg C
+      secchi:
+        canonical: secchi_depth_m
+        unit: m
+    excluded_variables:
+      chla_rfu:
+        reason: fluorescence units are not directly comparable to ug/L without source-specific calibration
+      par:
+        reason: not part of the initial canonical panel; may support MIFAL light indices later
+      phyco:
+        reason: cyanobacteria proxy reserved for future extension
+      fdom:
+        reason: reserved for future extension
+      dic:
+        reason: reserved for future extension
+      doc:
+        reason: reserved for future extension
+      drp:
+        reason: dissolved reactive phosphorus is not total phosphorus
+      nh4:
+        reason: nitrogen species, not total nitrogen
+      no2:
+        reason: nitrogen species, not total nitrogen
+      no3:
+        reason: nitrogen species, not total nitrogen
+      no3no2:
+        reason: nitrogen species, not total nitrogen
+      poc:
+        reason: reserved for future extension
+      inflow:
+        reason: hydrologic covariate reserved for future extension
+
+  aquamatch_chla:
+    column_style: long
+    datetime_column: harmonized_utc
+    fallback_datetime_column: ActivityStartDateTime
+    site_id_column: MonitoringLocationIdentifier
+    site_name_column: null
+    latitude_column: lat
+    longitude_column: lon
+    value_column: harmonized_value
+    unit_column: harmonized_units
+    qc_columns:
+      - depth_flag
+      - mdl_flag
+      - approx_flag
+      - greater_flag
+      - tier
+      - field_flag
+    parameter_column: parameter
+    variables:
+      chlorophyll:
+        canonical: chlorophyll_a_ugL
+        accepted_units:
+          - ug/L
+    constraints:
+      - Verify lentic status before using sites in the main cohort.
+
+  wqp:
+    column_style: long
+    datetime_column: Activity_StartDate
+    time_column: Activity_StartTime
+    site_id_column: Location_Identifier
+    site_name_column: Location_Name
+    latitude_column: Location_LatitudeStandardized
+    longitude_column: Location_LongitudeStandardized
+    parameter_column: Result_Characteristic
+    comparable_parameter_column: Result_CharacteristicComparable
+    value_column: Result_Measure
+    unit_column: Result_MeasureUnit
+    depth_columns:
+      result_depth_value: ResultDepthHeight_Measure
+      result_depth_unit: ResultDepthHeight_MeasureUnit
+      activity_depth_value: Activity_DepthHeightMeasure
+      activity_depth_unit: Activity_DepthHeightMeasureUnit
+    qc_columns:
+      - Result_ResultDetectionCondition
+      - Result_MeasureQualifierCode
+      - Result_MeasureStatusIdentifier
+      - Activity_TypeCode
+      - ProviderName
+    variables:
+      chlorophyll_a_ugL:
+        characteristics:
+          - Chlorophyll
+          - Chlorophyll a
+          - Chlorophyll a, corrected for pheophytin
+          - Chlorophyll a, uncorrected for pheophytin
+        accepted_units:
+          - ug/L
+          - ug/l
+          - mg/L
+          - mg/l
+          - mg/m3
+      TP_ugL:
+        characteristics:
+          - Phosphorus
+          - Total Phosphorus, mixed forms
+          - TOTAL PHOSPHORUS, MIXED FORMS
+        accepted_units:
+          - ug/L
+          - ug/l
+          - mg/L
+          - mg/l
+          - ppb
+          - ppm
+      TN_ugL:
+        characteristics:
+          - Nitrogen
+          - Total Nitrogen, mixed forms
+          - TOTAL NITROGEN, MIXED FORMS
+          - Nitrogen, mixed forms (NH3), (NH4), organic, (NO2) and (NO3)
+        accepted_units:
+          - ug/L
+          - ug/l
+          - mg/L
+          - mg/l
+          - ppb
+          - ppm
+      DO_mgL:
+        characteristics:
+          - Dissolved oxygen (DO)
+          - Oxygen
+          - OXYGEN
+        accepted_units:
+          - mg/L
+          - mg/l
+          - ppm
+      pH:
+        characteristics:
+          - pH
+        accepted_units:
+          - nu
+          - standard units
+      turbidity_NTU:
+        characteristics:
+          - Turbidity
+        accepted_units:
+          - NTU
+          - FNU
+          - FNRU
+          - FTU
+          - JCU
+          - JTU
+      temperature_C:
+        characteristics:
+          - Temperature
+          - Temperature, water
+          - TEMPERATURE, WATER
+        accepted_units:
+          - deg C
+          - deg F
+      secchi_depth_m:
+        characteristics:
+          - Depth, Secchi disk depth
+          - Transparency, Secchi disk
+        accepted_units:
+          - m
+          - ft
+          - in
+
+quality_policy:
+  keep_extreme_plausible_values: true
+  mark_impossible_values_as_bad: true
+  bad_value_action: set_value_canonical_null_and_keep_raw
+  preserve_source_flags: true
+  require_unit_conversion_trace: true
+  test_data_use:
+    - Do not learn unit mappings, thresholds, or scaling from test partitions.
+    - Unit conversion and impossible-value rules are global metadata rules, not fitted model parameters.

@@ -1,0 +1,2 @@
+model,task,horizon_months,split,threshold,tn,fp,fn,tp
+ridge_sgd,risk,3,validation,0.5,162,118499,14,17363

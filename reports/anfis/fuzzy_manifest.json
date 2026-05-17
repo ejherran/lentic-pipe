@@ -1,0 +1,121 @@
+{
+  "generated_at_utc": "2026-05-16T21:36:54.867924+00:00",
+  "model_family": "expert_fuzzy_v0",
+  "claim": "deterministic expert fuzzy fallback, not adaptive ANFIS",
+  "panel": "data/panel/panel_monthly_v0.parquet",
+  "splits": "data/splits/monthly_model_splits_v0.parquet",
+  "weights_mode": "train-grid",
+  "irc_weights": {
+    "alpha": 0.5,
+    "beta": 0.5,
+    "gamma": 2.0
+  },
+  "threshold": 0.5,
+  "row_counts": {
+    "panel_rows": 3386676,
+    "state_rows": 3386676,
+    "metrics_rows": 80,
+    "calibrated_metrics_rows": 48
+  },
+  "score_columns": [
+    "irc1",
+    "irc1_no_chla"
+  ],
+  "calibration": {
+    "method": "isotonic",
+    "fit_split": "validation",
+    "threshold_policy": "validation max macro-F1",
+    "artifacts": [
+      {
+        "score_name": "irc1",
+        "horizon_months": 1,
+        "calibration": "isotonic",
+        "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
+        "bytes": 2726,
+        "sha256": "3b260cdb7dcb10fb4ffc72a96a13e387123631be512f777412361f7f3430dacc"
+      },
+      {
+        "score_name": "irc1",
+        "horizon_months": 2,
+        "calibration": "isotonic",
+        "path": "models/anfis/calibrators/irc1_h2_isotonic.joblib",
+        "bytes": 2950,
+        "sha256": "04346fac63cf670b59bdff37fa0544c7bcfa3e590f7ff48627bea8a5fec7adff"
+      },
+      {
+        "score_name": "irc1",
+        "horizon_months": 3,
+        "calibration": "isotonic",
+        "path": "models/anfis/calibrators/irc1_h3_isotonic.joblib",
+        "bytes": 2822,
+        "sha256": "389ca9ac472a25ae24fa7a7ed6c796d3b1a1da71da7d0693df131ffab4a39cee"
+      },
+      {
+        "score_name": "irc1_no_chla",
+        "horizon_months": 1,
+        "calibration": "isotonic",
+        "path": "models/anfis/calibrators/irc1_no_chla_h1_isotonic.joblib",
+        "bytes": 2278,
+        "sha256": "e8974c80ca8f2f6399b9d70ffc8f8d00dc81a09705ccafebfaaed054e20830cd"
+      },
+      {
+        "score_name": "irc1_no_chla",
+        "horizon_months": 2,
+        "calibration": "isotonic",
+        "path": "models/anfis/calibrators/irc1_no_chla_h2_isotonic.joblib",
+        "bytes": 2046,
+        "sha256": "84862f94b6b696f68f3015f5873499697e0fbeca85fc9da6b670d5c7b46ed13b"
+      },
+      {
+        "score_name": "irc1_no_chla",
+        "horizon_months": 3,
+        "calibration": "isotonic",
+        "path": "models/anfis/calibrators/irc1_no_chla_h3_isotonic.joblib",
+        "bytes": 2270,
+        "sha256": "3a5f64a026289dc39c6cea30a0658ff32431d82b556468159e5af5b238aa3e0c"
+      }
+    ]
+  },
+  "outputs": [
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "path": "reports/anfis/irc1_metrics.csv",
+      "bytes": 13686,
+      "sha256": "6f6c78e721f25c425ce8d974195cf95c60372709d760979714b1080cd79927ab"
+    },
+    {
+      "path": "reports/anfis/irc1_calibrated_metrics.csv",
+      "bytes": 7329,
+      "sha256": "93f9ba38bca20f5dfcbb734661e864c9a7b6323322c468c38d3ef0895d3bd28d"
+    },
+    {
+      "path": "reports/anfis/rules.csv",
+      "bytes": 878,
+      "sha256": "890c29c7a106267b725ce1678d943350b4fa7bbe5b92bf75843d117a10108cf5"
+    },
+    {
+      "path": "reports/anfis/memberships.csv",
+      "bytes": 1051,
+      "sha256": "8cc4e4ba4cbbf5f2dd72b845ae39fa3485ff7a5de8287d30fa641d70d6fd8bd1"
+    },
+    {
+      "path": "reports/anfis/trace_examples.csv",
+      "bytes": 267387,
+      "sha256": "ffde7f508d4cc54de927dda8810bb32db98a243a575218cc104ea97b6230aaee"
+    },
+    {
+      "path": "reports/anfis/anfis_report.md",
+      "bytes": 11315,
+      "sha256": "89f31ae78cc9630b0d8d0164d888e4859ef40ff92baddb93a7445188015544e1"
+    },
+    {
+      "path": "reports/anfis/irc1_weight_search.csv",
+      "bytes": 1614,
+      "sha256": "b7bf8624ad6c931e32966da3c8ff8ec05e52041402269899cae0a9883008110c"
+    }
+  ]
+}

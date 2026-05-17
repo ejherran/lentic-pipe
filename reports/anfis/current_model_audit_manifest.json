@@ -1,0 +1,67 @@
+{
+  "generated_at_utc": "2026-05-16T22:31:30.187893+00:00",
+  "model_version": "current_refined_fuzzy_v0",
+  "audit": "current_model_audit_v0",
+  "row_counts": {
+    "prediction_rows": 790265,
+    "metrics_rows": 24,
+    "calibration_bin_rows": 240,
+    "lift_rows": 240,
+    "confusion_rows": 72,
+    "error_example_rows": 240
+  },
+  "inputs": [
+    {
+      "path": "data/fuzzy/current_model_predictions_v0.parquet",
+      "bytes": 7946274,
+      "sha256": "c57de9b59645b41951b045dca1c062a66f8685211c24d3633939a0db2cd4f8bf"
+    },
+    {
+      "path": "reports/anfis/current_model_metrics.csv",
+      "bytes": 4661,
+      "sha256": "b45a13885a459a6e66182ba2174c4bc3b66ab7594be60d12474742f27a3753f5"
+    },
+    {
+      "path": "models/anfis/current_model_registry_v0.json",
+      "bytes": 7380,
+      "sha256": "c639532cfd36ae2221b70b8c5e393d4b31380902e9ed56014b0eb10387773e91"
+    },
+    {
+      "path": "reports/anfis/current_model_manifest.json",
+      "bytes": 1949,
+      "sha256": "14801aebea27c94ef0fbbae93aaaf86bffafdb2bf9abea5643b17109490f0da3"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/anfis/current_model_audit.md",
+      "bytes": 4105,
+      "sha256": "debc3c500aeff660276cff976084293afa24669cc7df87648d733e3bc3529d27"
+    },
+    {
+      "path": "reports/anfis/current_model_calibration_bins.csv",
+      "bytes": 26135,
+      "sha256": "0b9860f56ce31d820e44952b0e7734ba64a7f2877f3befcf3d0eb4b26d07fe99"
+    },
+    {
+      "path": "reports/anfis/current_model_lift_table.csv",
+      "bytes": 49829,
+      "sha256": "60e61a483a45cb875f934f1ed11b4ce514f04d2d4d40a37633912aeab328db50"
+    },
+    {
+      "path": "reports/anfis/current_model_confusion_by_group.csv",
+      "bytes": 21834,
+      "sha256": "d08b390224ff34ef4f410921b1905b0de30bdf79ac0329cd5fc7852c31a1707b"
+    },
+    {
+      "path": "reports/anfis/current_model_error_examples.csv",
+      "bytes": 58805,
+      "sha256": "6dc50f754a7e0ef0c3733dd4163ad3db9051aa29c455720ebcbfd1453506a51a"
+    }
+  ],
+  "script": {
+    "path": "/home/wolf/lentic-pipe/src/experiments/audit_current_model.py",
+    "bytes": 23951,
+    "sha256": "262de357142453a9a11805f606afcf907e001a21672af9e230b5604ea3fac5a0"
+  }
+}

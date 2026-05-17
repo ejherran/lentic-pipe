@@ -1,0 +1,5 @@
+outs:
+- md5: d64acd0eb102a045663121ff6e587e4b
+  size: 103298009
+  hash: md5
+  path: panel_monthly_v0.parquet

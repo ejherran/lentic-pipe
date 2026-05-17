@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1134" height="260" viewBox="0 0 1134 260">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="24.0" y="30.0" font-family="Arial, sans-serif" font-size="18" text-anchor="start" fill="#1f2937">Coverage Rate By Source And Variable</text>
+<text x="209.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">DO_mgL</text>
+<text x="327.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">TN_ugL</text>
+<text x="445.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">TP_ugL</text>
+<text x="563.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">chlorophyll_a_ugL</text>
+<text x="681.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">pH</text>
+<text x="799.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">secchi_depth_m</text>
+<text x="917.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">temperature_C</text>
+<text x="1035.0" y="62.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">turbidity_NTU</text>
+<text x="20.0" y="110.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">aquamatch_chla</text>
+<rect x="150" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="209.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="268" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="327.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="386" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="445.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="504" y="86" width="116" height="36" fill="#22a187" stroke="#ffffff"/>
+<text x="563.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">1.00</text>
+<rect x="622" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="681.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="740" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="799.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="858" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="917.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="976" y="86" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="1035.0" y="109.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<text x="20.0" y="148.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">lakebed_us_cse</text>
+<rect x="150" y="124" width="116" height="36" fill="#27a38a" stroke="#ffffff"/>
+<text x="209.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.97</text>
+<rect x="268" y="124" width="116" height="36" fill="#54b6a4" stroke="#ffffff"/>
+<text x="327.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.75</text>
+<rect x="386" y="124" width="116" height="36" fill="#45af9b" stroke="#ffffff"/>
+<text x="445.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.83</text>
+<rect x="504" y="124" width="116" height="36" fill="#46b09c" stroke="#ffffff"/>
+<text x="563.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.82</text>
+<rect x="622" y="124" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="681.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<rect x="740" y="124" width="116" height="36" fill="#36a992" stroke="#ffffff"/>
+<text x="799.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.90</text>
+<rect x="858" y="124" width="116" height="36" fill="#24a288" stroke="#ffffff"/>
+<text x="917.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.99</text>
+<rect x="976" y="124" width="116" height="36" fill="#eff6ff" stroke="#ffffff"/>
+<text x="1035.0" y="147.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.00</text>
+<text x="20.0" y="186.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">wqp</text>
+<rect x="150" y="162" width="116" height="36" fill="#96d1cb" stroke="#ffffff"/>
+<text x="209.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.43</text>
+<rect x="268" y="162" width="116" height="36" fill="#d1e9ed" stroke="#ffffff"/>
+<text x="327.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.14</text>
+<rect x="386" y="162" width="116" height="36" fill="#a5d7d4" stroke="#ffffff"/>
+<text x="445.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.36</text>
+<rect x="504" y="162" width="116" height="36" fill="#85cac0" stroke="#ffffff"/>
+<text x="563.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.52</text>
+<rect x="622" y="162" width="116" height="36" fill="#98d2cc" stroke="#ffffff"/>
+<text x="681.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.42</text>
+<rect x="740" y="162" width="116" height="36" fill="#56b6a5" stroke="#ffffff"/>
+<text x="799.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.74</text>
+<rect x="858" y="162" width="116" height="36" fill="#84c9c0" stroke="#ffffff"/>
+<text x="917.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.52</text>
+<rect x="976" y="162" width="116" height="36" fill="#c0e2e3" stroke="#ffffff"/>
+<text x="1035.0" y="185.0" font-family="Arial, sans-serif" font-size="11" text-anchor="middle" fill="#1f2937">0.23</text>
+</svg>

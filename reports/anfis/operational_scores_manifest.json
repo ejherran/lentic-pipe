@@ -1,0 +1,193 @@
+{
+  "generated_at_utc": "2026-05-16T23:28:35.146021+00:00",
+  "started_at_utc": "2026-05-16T23:26:17.056788+00:00",
+  "model_version": "current_refined_fuzzy_v0",
+  "operational_score_version": "operational_scores_v0",
+  "row_counts": {
+    "score_rows": 10160028,
+    "summary_rows": 12,
+    "top_risk_rows": 3000,
+    "recent_top_risk_rows": 3000,
+    "latest_site_top_risk_rows": 3000,
+    "recent_latest_site_top_risk_rows": 3000,
+    "selected_baseline_rows": 3,
+    "selection_rows": 3,
+    "source_selection_rows": 9
+  },
+  "config": {
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "blend_weights": [
+      0.25,
+      0.5,
+      0.75
+    ],
+    "top_n": 1000,
+    "recent_months": 24
+  },
+  "inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103298009,
+      "sha256": "03cc633578cc1b842a6646ab77209aa5ced7c0fc48e2c24fc5a9debc25c8e883"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945895,
+      "sha256": "9d4a1c377aa39fa1552c9f36bd71e5a75283c988327ffa910b66c810d3e6d60e"
+    },
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "path": "reports/baselines/baseline_selection.csv",
+      "bytes": 1545,
+      "sha256": "f2850318acca9961edf2fbf204f443035f1d15ccad8f3700ddfe7a0fe88d6f77"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_selection.csv",
+      "bytes": 1939,
+      "sha256": "aaeae5b35a9bec4d8a7796c6ae644dbf9c9cc64506603b5c02971afa15764af9"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_source_selection.csv",
+      "bytes": 1191,
+      "sha256": "0bbbfbef5e8b7330343bbff439b4048e77e9073af60ccc82651b4b2e3e19b820"
+    },
+    {
+      "path": "models/anfis/current_model_registry_v0.json",
+      "bytes": 7380,
+      "sha256": "c639532cfd36ae2221b70b8c5e393d4b31380902e9ed56014b0eb10387773e91"
+    },
+    {
+      "path": "reports/anfis/current_model_manifest.json",
+      "bytes": 1949,
+      "sha256": "14801aebea27c94ef0fbbae93aaaf86bffafdb2bf9abea5643b17109490f0da3"
+    }
+  ],
+  "model_artifacts": [
+    {
+      "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
+      "bytes": 2726,
+      "sha256": "3b260cdb7dcb10fb4ffc72a96a13e387123631be512f777412361f7f3430dacc"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h2_isotonic.joblib",
+      "bytes": 2950,
+      "sha256": "04346fac63cf670b59bdff37fa0544c7bcfa3e590f7ff48627bea8a5fec7adff"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h3_isotonic.joblib",
+      "bytes": 2822,
+      "sha256": "389ca9ac472a25ae24fa7a7ed6c796d3b1a1da71da7d0693df131ffab4a39cee"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_no_chla_h1_isotonic.joblib",
+      "bytes": 2278,
+      "sha256": "e8974c80ca8f2f6399b9d70ffc8f8d00dc81a09705ccafebfaaed054e20830cd"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_no_chla_h2_isotonic.joblib",
+      "bytes": 2046,
+      "sha256": "84862f94b6b696f68f3015f5873499697e0fbeca85fc9da6b670d5c7b46ed13b"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_no_chla_h3_isotonic.joblib",
+      "bytes": 2270,
+      "sha256": "3a5f64a026289dc39c6cea30a0658ff32431d82b556468159e5af5b238aa3e0c"
+    },
+    {
+      "path": "models/baselines/calibrators/logistic_sgd_h1_isotonic.joblib",
+      "bytes": 2586,
+      "sha256": "3583210df75f9ee85ee05e74c80e16ff41ddde38785bc4be84d17e455e88e88a"
+    },
+    {
+      "path": "models/baselines/calibrators/logistic_sgd_h3_isotonic.joblib",
+      "bytes": 2170,
+      "sha256": "48eeff7f24125e381722d949bb458d2a46c4b6dd25c67b94bdcf255751529804"
+    },
+    {
+      "path": "models/baselines/calibrators/persistence_h2_isotonic.joblib",
+      "bytes": 2010,
+      "sha256": "f6354b5ca68e342bd87307647ae15771dc4d4bcf5b94d1c4252426ffc5c25481"
+    },
+    {
+      "path": "models/baselines/logistic_sgd_h1.joblib",
+      "bytes": 10722,
+      "sha256": "55c9fcd4b6c03ae36bc1f3e754d68a9bd255e7f8aae442525067571b6409a091"
+    },
+    {
+      "path": "models/baselines/logistic_sgd_h3.joblib",
+      "bytes": 10722,
+      "sha256": "c3fb57358db1b7eb3e2ded9f316595e164233cf0de5b8f1bd4f25dc1b467ead7"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/fuzzy/operational_scores_v0.parquet",
+      "type": "directory",
+      "bytes": 103203301,
+      "sha256": "f083f87148899ba59e9555f5969d417b9c5af0639dd2808738c4513f181042c0",
+      "files": [
+        {
+          "path": "data/fuzzy/operational_scores_v0.parquet/part-h01.parquet",
+          "relative_path": "part-h01.parquet",
+          "bytes": 40111864,
+          "sha256": "3a9edd6112c469d9638b8759876809110f9639f8526af16bc788362c78235be1"
+        },
+        {
+          "path": "data/fuzzy/operational_scores_v0.parquet/part-h02.parquet",
+          "relative_path": "part-h02.parquet",
+          "bytes": 23256832,
+          "sha256": "e08ffb4310f1dd53392dd694830af2e16580b34aae58e109763311c669acaa51"
+        },
+        {
+          "path": "data/fuzzy/operational_scores_v0.parquet/part-h03.parquet",
+          "relative_path": "part-h03.parquet",
+          "bytes": 39834605,
+          "sha256": "a9ec20507bcb4b44d365ed72b489ee7d8a18efcd6595144625a3bc18552e517a"
+        }
+      ]
+    },
+    {
+      "path": "reports/anfis/operational_scores_summary.csv",
+      "bytes": 2627,
+      "sha256": "a56c7373bda5c736d64e8b50830e935973807be4ad4055c13b1e33aa269bc3e2"
+    },
+    {
+      "path": "reports/anfis/operational_top_risks.csv",
+      "bytes": 603102,
+      "sha256": "5d6a18a7ebf5d0fe6b28de8bf51d5fad64d488aa5481c7dad08431d79e552713"
+    },
+    {
+      "path": "reports/anfis/operational_recent_top_risks.csv",
+      "bytes": 624038,
+      "sha256": "656ee2ed51e1a799fe47ebc509e9aad99e2a874c8ba5f8c96937bf5de4ea0301"
+    },
+    {
+      "path": "reports/anfis/operational_latest_site_top_risks.csv",
+      "bytes": 579156,
+      "sha256": "c2f0b4611c124bea10ea8cede690800345c4e42bb7a36acb45fd1892857f61da"
+    },
+    {
+      "path": "reports/anfis/operational_recent_latest_site_top_risks.csv",
+      "bytes": 626675,
+      "sha256": "912c2e1badfaa586c7bb6c78d929336a1405b5b4264854bc94ec002e551c0207"
+    },
+    {
+      "path": "reports/anfis/operational_scores_report.md",
+      "bytes": 2199,
+      "sha256": "b62e38ff14e777aee73c8174390efc3a21e60dec250b4885049bdb9aae30c727"
+    }
+  ],
+  "script": {
+    "path": "/home/wolf/lentic-pipe/src/experiments/score_current_model.py",
+    "bytes": 40817,
+    "sha256": "0eef063751bbd0828ece6f0e13ef2ea5d046abed86bd78e78d3d62b7f2ebedd7"
+  }
+}

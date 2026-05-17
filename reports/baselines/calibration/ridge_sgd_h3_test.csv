@@ -1,0 +1,11 @@
+model,task,horizon_months,split,bin,bin_left,bin_right,rows,mean_pred_probability,observed_bloom_rate
+ridge_sgd,risk,3,test,0,0.0,0.1,58,0.0,0.08620689655172414
+ridge_sgd,risk,3,test,1,0.1,0.2,0,,
+ridge_sgd,risk,3,test,2,0.2,0.3,0,,
+ridge_sgd,risk,3,test,3,0.3,0.4,0,,
+ridge_sgd,risk,3,test,4,0.4,0.5,0,,
+ridge_sgd,risk,3,test,5,0.5,0.6,0,,
+ridge_sgd,risk,3,test,6,0.6,0.7,0,,
+ridge_sgd,risk,3,test,7,0.7,0.8,0,,
+ridge_sgd,risk,3,test,8,0.8,0.9,0,,
+ridge_sgd,risk,3,test,9,0.9,1.0,99612,1.0,0.14691001084206723

@@ -1,0 +1,86 @@
+{
+  "config": {
+    "batch_size": 2048,
+    "checkpoint_selection_metric": "balanced",
+    "common_history_length": 12,
+    "device": "auto",
+    "max_rank": 0
+  },
+  "generated_at_utc": "2026-05-17T02:12:30.566307+00:00",
+  "inputs": [
+    {
+      "bytes": 73436574,
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "bytes": 24042,
+      "path": "reports/pipe_grud/pipe_grud_sweep_summary.csv",
+      "sha256": "57c703ba39abc1f047488d8a84ef2d9e9fabe2175fdcae964a69f41069a4bb11"
+    }
+  ],
+  "outputs": [
+    {
+      "bytes": 19631,
+      "path": "reports/pipe_grud/pipe_grud_sweep_common_eval.csv",
+      "sha256": "d6cdac06fa0e06bc7c8da0a2505e6c16a5373b474178a06a812740887a5ef821"
+    },
+    {
+      "bytes": 4405,
+      "path": "reports/pipe_grud/pipe_grud_sweep_common_eval_report.md",
+      "sha256": "f404776463ddda9c7bb530479b9b9cff94d45d14659f45a6a4fb03f003b8a069"
+    }
+  ],
+  "row_counts": {
+    "common_windows": {
+      "test": 17420,
+      "train": 378557,
+      "validation": 22087
+    },
+    "evaluated_trials": 27
+  },
+  "script": {
+    "bytes": 16470,
+    "path": "/home/wolf/lentic-pipe/src/experiments/evaluate_pipe_grud_sweep_common.py",
+    "sha256": "8e14722dbde60cbb96c9ac816fb76c944b20606abef6d7cb50a6f6544e0e1e6e"
+  },
+  "selection": {
+    "common_history_length": 12,
+    "common_selection_rank": 1,
+    "common_test_interval_90_coverage": 0.9479397882382956,
+    "common_test_mae": 0.05801528488773064,
+    "common_test_mae_relative_improvement": 0.21283784284882715,
+    "common_test_nll": -2.3577175131925654,
+    "common_test_rmse": 0.10912852335841533,
+    "common_test_rmse_relative_improvement": 0.2735053472988706,
+    "common_test_rows": 17420,
+    "common_train_interval_90_coverage": 0.9458604942217713,
+    "common_train_mae": 0.050381724903860385,
+    "common_train_mae_relative_improvement": 0.2191153272281255,
+    "common_train_nll": -2.857280108904043,
+    "common_train_rmse": 0.09573933583295152,
+    "common_train_rmse_relative_improvement": 0.2936793406324329,
+    "common_train_rows": 378557,
+    "common_validation_interval_90_coverage": 0.9402463993399837,
+    "common_validation_loss": -3.095627568509357,
+    "common_validation_mae": 0.06012554383734022,
+    "common_validation_mae_relative_improvement": 0.2266122173109653,
+    "common_validation_nll": -2.5674441961513543,
+    "common_validation_objective": 0.7449632417292603,
+    "common_validation_rmse": 0.11283984144851493,
+    "common_validation_rmse_relative_improvement": 0.28346129923051394,
+    "common_validation_rows": 22087,
+    "hidden_dim": 96,
+    "history_length": 12,
+    "learning_rate": 0.001,
+    "model_path": "models/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse1_lr0p001_seed1729/pipe_grud_model.pt",
+    "mse_weight": 1.0,
+    "original_best_validation_objective": 0.7449632417292603,
+    "original_selection_rank": 1,
+    "random_seed": 1729,
+    "trial_id": "h12_hd096_mse1_lr0p001_seed1729",
+    "trial_report_path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse1_lr0p001_seed1729/pipe_grud_report.md"
+  },
+  "started_at_utc": "2026-05-17T02:11:40.162943+00:00",
+  "status": "completed"
+}

@@ -1,0 +1,10 @@
+source_id,split_reason,rows,sites
+aquamatch_chla,crosses_split_boundary,26142,17569
+aquamatch_chla,gap_too_large,509148,60610
+aquamatch_chla,no_next_state,141544,141544
+lakebed_us_cse,crosses_split_boundary,42,21
+lakebed_us_cse,gap_too_large,757,21
+lakebed_us_cse,no_next_state,21,21
+wqp,crosses_split_boundary,24745,16536
+wqp,gap_too_large,508534,63466
+wqp,no_next_state,106719,106719

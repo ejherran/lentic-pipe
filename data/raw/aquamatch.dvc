@@ -1,0 +1,6 @@
+outs:
+- md5: 0254c580b3604f4fdfb07fffcb32023d.dir
+  size: 815451728
+  nfiles: 4
+  hash: md5
+  path: aquamatch

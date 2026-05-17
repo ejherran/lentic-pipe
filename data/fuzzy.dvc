@@ -1,0 +1,6 @@
+outs:
+- md5: bed9cc11d198ee333c121644570514d2.dir
+  size: 268431885
+  nfiles: 6
+  hash: md5
+  path: fuzzy

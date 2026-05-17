@@ -1,0 +1,145 @@
+schema_version: 1
+description: >
+  Declarative list of heavy artifacts that must be tracked with DVC and stored
+  outside Git. The real GCS bucket is intentionally not recorded here.
+
+dvc_policy:
+  remote_url_example: gs://YOUR_PRIVATE_BUCKET/dvc
+  real_bucket_policy: never_commit_real_bucket_names_or_credentials
+  add_order:
+    - raw_sources
+    - canonical_observations
+    - panels_targets_and_splits
+    - diagnostics_and_operational_outputs
+    - models
+  integrity_rule: >
+    DVC pointers must be committed together with updated SHA-256 manifests in
+    data/freeze/ or data/catalog/ whenever source files or derived artifacts
+    change.
+
+artifacts:
+  - artifact_id: raw_lakebed_us_cse
+    path: data/raw/LakeBeD-US-CSE
+    type: raw_source
+    source_id: lakebed_us_cse
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: raw_wqp
+    path: data/raw/wqp
+    type: raw_source
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: raw_aquamatch_chla
+    path: data/raw/aquamatch
+    type: raw_source
+    source_id: aquamatch_chla
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: observations_lakebed_us_cse
+    path: data/interim/observations/lakebed_us_cse
+    type: canonical_observations
+    source_id: lakebed_us_cse
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: observations_wqp
+    path: data/interim/observations/wqp
+    type: canonical_observations
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: observations_aquamatch_chla
+    path: data/interim/observations/aquamatch_chla
+    type: canonical_observations
+    source_id: aquamatch_chla
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: site_registry
+    path: data/interim/site_registry.parquet
+    type: source_scoped_site_registry
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: site_registry_csv
+    path: data/interim/site_registry.csv
+    type: source_scoped_site_registry_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: monthly_long_panel_v0
+    path: data/panel/monthly_long_v0.parquet
+    type: monthly_panel
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: monthly_wide_panel_v0
+    path: data/panel/panel_monthly_v0.parquet
+    type: monthly_panel
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: monthly_targets_v0
+    path: data/targets
+    type: target_tables
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_for_parquet_keep_small_manifests_in_git
+
+  - artifact_id: monthly_model_splits_v0
+    path: data/splits/monthly_model_splits_v0.parquet
+    type: temporal_model_splits
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: diagnostics_v0
+    path: data/diagnostics
+    type: diagnostics
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_for_large_tables_keep_small_summaries_in_git
+
+  - artifact_id: fuzzy_state_and_scores_v0
+    path: data/fuzzy
+    type: fuzzy_state_scores
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: pipe_sequence_dataset_v0
+    path: data/pipe_grud/pipe_sequence_dataset_v0.parquet
+    type: pipe_sequence_dataset
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: trained_models
+    path: models
+    type: model_artifacts
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_for_binary_artifacts_keep_registries_in_git
+
+  - artifact_id: operational_site_review_summary
+    path: reports/anfis/operational_site_review_summary.csv
+    type: large_report_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only
+
+  - artifact_id: operational_site_review_summary_parquet
+    path: reports/anfis/operational_site_review_summary.parquet
+    type: large_report_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only

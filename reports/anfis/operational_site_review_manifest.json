@@ -1,0 +1,118 @@
+{
+  "generated_at_utc": "2026-05-16T23:54:27.498142+00:00",
+  "started_at_utc": "2026-05-16T23:48:16.412873+00:00",
+  "review_version": "operational_site_review_v0",
+  "config": {
+    "recent_months": 24,
+    "top_sites_per_horizon": 100,
+    "top_n_per_horizon": 1000,
+    "min_recent_rows": 3,
+    "min_sustained_months": 3,
+    "low_evidence_threshold": 0.33
+  },
+  "row_counts": {
+    "score_parts": 3,
+    "site_summary_rows": 744852,
+    "recent_site_risk_rows": 3000,
+    "trajectory_rows": 12401,
+    "sustained_risk_rows": 1818,
+    "low_evidence_high_risk_rows": 851
+  },
+  "inputs": [
+    {
+      "path": "data/fuzzy/operational_scores_v0.parquet",
+      "type": "directory",
+      "bytes": 103203301,
+      "sha256": "f083f87148899ba59e9555f5969d417b9c5af0639dd2808738c4513f181042c0",
+      "files": [
+        {
+          "path": "data/fuzzy/operational_scores_v0.parquet/part-h01.parquet",
+          "relative_path": "part-h01.parquet",
+          "bytes": 40111864,
+          "sha256": "3a9edd6112c469d9638b8759876809110f9639f8526af16bc788362c78235be1"
+        },
+        {
+          "path": "data/fuzzy/operational_scores_v0.parquet/part-h02.parquet",
+          "relative_path": "part-h02.parquet",
+          "bytes": 23256832,
+          "sha256": "e08ffb4310f1dd53392dd694830af2e16580b34aae58e109763311c669acaa51"
+        },
+        {
+          "path": "data/fuzzy/operational_scores_v0.parquet/part-h03.parquet",
+          "relative_path": "part-h03.parquet",
+          "bytes": 39834605,
+          "sha256": "a9ec20507bcb4b44d365ed72b489ee7d8a18efcd6595144625a3bc18552e517a"
+        }
+      ]
+    },
+    {
+      "path": "reports/anfis/operational_recent_latest_site_top_risks.csv",
+      "bytes": 626675,
+      "sha256": "912c2e1badfaa586c7bb6c78d929336a1405b5b4264854bc94ec002e551c0207"
+    },
+    {
+      "path": "reports/anfis/operational_scores_manifest.json",
+      "bytes": 6562,
+      "sha256": "4435161b41106148da125e9fa5c18dcaa30c1b45a9bea3ae7a84e0d38c9d7d1b"
+    }
+  ],
+  "score_parts": [
+    {
+      "path": "data/fuzzy/operational_scores_v0.parquet/part-h01.parquet",
+      "bytes": 40111864,
+      "sha256": "3a9edd6112c469d9638b8759876809110f9639f8526af16bc788362c78235be1"
+    },
+    {
+      "path": "data/fuzzy/operational_scores_v0.parquet/part-h02.parquet",
+      "bytes": 23256832,
+      "sha256": "e08ffb4310f1dd53392dd694830af2e16580b34aae58e109763311c669acaa51"
+    },
+    {
+      "path": "data/fuzzy/operational_scores_v0.parquet/part-h03.parquet",
+      "bytes": 39834605,
+      "sha256": "a9ec20507bcb4b44d365ed72b489ee7d8a18efcd6595144625a3bc18552e517a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/anfis/operational_site_review_summary.csv",
+      "bytes": 346591696,
+      "sha256": "6f92b5b19b06ad71ea65a8ae3c9fbeea23c2250bff0efb09e53ef587da2cbc3e"
+    },
+    {
+      "path": "reports/anfis/operational_site_review_summary.parquet",
+      "bytes": 34372330,
+      "sha256": "e0d31da75481bbac2fae7511a2b3d9eaa12e8c6c119c9a6dc2f90263734869b9"
+    },
+    {
+      "path": "reports/anfis/operational_site_review_recent_site_risk.csv",
+      "bytes": 708519,
+      "sha256": "43803d928a2ccbc143dc481bebdcc1d6470755f8dca46c4193d13c0a83dcc6e7"
+    },
+    {
+      "path": "reports/anfis/operational_site_review_top_site_trajectories.csv",
+      "bytes": 2446256,
+      "sha256": "b8c6fa7ecdc4b14cf2c73ecac1c3de050230e0fd90d1409c10237817543449d7"
+    },
+    {
+      "path": "reports/anfis/operational_site_review_sustained_risk.csv",
+      "bytes": 1103426,
+      "sha256": "1e6ca9cfb68805dbcc547a80fe64a6e86a1d175f564e4a0f0dff88335c18509e"
+    },
+    {
+      "path": "reports/anfis/operational_site_review_low_evidence_high_risk.csv",
+      "bytes": 523024,
+      "sha256": "543655f01521105abbb1b7dbf58b85442eb1bd5c34d2be40040929674eb8fe2b"
+    },
+    {
+      "path": "reports/anfis/operational_site_review_report.md",
+      "bytes": 1554,
+      "sha256": "20e72ece7e88b02a44d2cc8dec7a2c8ba1419001fc6e19288845717f4255c4d9"
+    }
+  ],
+  "script": {
+    "path": "/home/wolf/lentic-pipe/src/experiments/build_operational_site_review.py",
+    "bytes": 28039,
+    "sha256": "dc11067ee10edee92f907e23a911d1c37ad9aa95790e274fb65654a06066ab7c"
+  }
+}

@@ -1,0 +1,6 @@
+module,rule_id,inputs,rule,output,high_means,weight_alpha_beta_gamma
+ANFIS-N expert fallback,N1,"TP, TN, TN:TP",Higher TP and TN increase nutrient pressure; extreme TN:TP imbalance adds pressure.,yN,high nutrient pressure,0.5
+ANFIS-F expert fallback,F1,"DO, pH, turbidity, Secchi","Good DO, near-neutral pH, low turbidity, and high Secchi increase yF.",yF,good physicochemical condition,0.5
+ANFIS-T expert fallback,T1,"temperature, current Chl-a",Warm water and elevated current Chl-a increase thermal-biological favorability.,yT,high thermal-biological favorability,2.0
+ANFIS-T expert fallback,T2,temperature,Temperature-only variant excludes current Chl-a for exogenous ablation.,yT_no_chla,high thermal favorability without current Chl-a,2.0
+IRC1,IRC1,"yN, yF, yT",IRC1 = (alpha*yN + beta*(1-yF) + gamma*yT)/(alpha+beta+gamma).,irc1,higher composite bloom risk,"0.5,0.5,2.0"

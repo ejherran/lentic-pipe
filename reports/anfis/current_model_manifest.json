@@ -1,0 +1,60 @@
+{
+  "generated_at_utc": "2026-05-16T22:21:38.770610+00:00",
+  "model_version": "current_refined_fuzzy_v0",
+  "model_family": "refined_expert_fuzzy_ensemble_v0",
+  "row_counts": {
+    "prediction_rows": 790265,
+    "metrics_rows": 24,
+    "selection_rows": 3,
+    "source_selection_rows": 9
+  },
+  "inputs": [
+    {
+      "path": "data/fuzzy/refined_scores_v0.parquet",
+      "bytes": 50726516,
+      "sha256": "60333fe83131802e78a727c1d249393d892ca4f9afbe3ff7933ae346704dffd3"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_selection.csv",
+      "bytes": 1939,
+      "sha256": "aaeae5b35a9bec4d8a7796c6ae644dbf9c9cc64506603b5c02971afa15764af9"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_source_selection.csv",
+      "bytes": 1191,
+      "sha256": "0bbbfbef5e8b7330343bbff439b4048e77e9073af60ccc82651b4b2e3e19b820"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_manifest.json",
+      "bytes": 2810,
+      "sha256": "d61c2bbb99d1320c64feaac356941d9a63c79ffa72d5c951a1d142af0dfedafd"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/fuzzy/current_model_predictions_v0.parquet",
+      "bytes": 7946274,
+      "sha256": "c57de9b59645b41951b045dca1c062a66f8685211c24d3633939a0db2cd4f8bf"
+    },
+    {
+      "path": "reports/anfis/current_model_metrics.csv",
+      "bytes": 4661,
+      "sha256": "b45a13885a459a6e66182ba2174c4bc3b66ab7594be60d12474742f27a3753f5"
+    },
+    {
+      "path": "reports/anfis/current_model_report.md",
+      "bytes": 1078,
+      "sha256": "3352f47dd9cde205fe0ae5b913297e1c1fcda49fd747b91138bd1b72f97084cb"
+    },
+    {
+      "path": "models/anfis/current_model_registry_v0.json",
+      "bytes": 7380,
+      "sha256": "c639532cfd36ae2221b70b8c5e393d4b31380902e9ed56014b0eb10387773e91"
+    }
+  ],
+  "script": {
+    "path": "/home/wolf/lentic-pipe/src/experiments/apply_refined_model.py",
+    "bytes": 16186,
+    "sha256": "2aa75c2e16c90cfa5af55071b960ac2d9b163472407704c1f08f997e677ac730"
+  }
+}

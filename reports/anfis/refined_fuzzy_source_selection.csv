@@ -1,0 +1,10 @@
+source_id,selected_score,validation_rows,selection_reason,validation_pr_auc,validation_brier,horizon_months
+aquamatch_chla,gate_trophic_irc1_w0p75,110443,validation max PR-AUC with Brier <= baseline + 0.002; tie min Brier,0.6245685507409551,0.06118230595759617,1
+lakebed_us_cse,blend_irc1_w0p25,445,fallback_low_rows_or_single_class,,,1
+wqp,blend_irc1_w0p25,52222,validation max PR-AUC with Brier <= baseline + 0.002; tie min Brier,0.7244443129736747,0.07103066551335693,1
+aquamatch_chla,blend_irc1_w0p75,106736,validation max PR-AUC with Brier <= baseline + 0.002; tie min Brier,0.4523361786443697,0.07264247114060754,2
+lakebed_us_cse,blend_irc1_w0p25,430,fallback_low_rows_or_single_class,,,2
+wqp,gate_full_irc1_w0p25,47050,validation max PR-AUC with Brier <= baseline + 0.002; tie min Brier,0.6061923498040743,0.09186360770933244,2
+aquamatch_chla,blend_irc1_w0p5,94463,validation max PR-AUC with Brier <= baseline + 0.002; tie min Brier,0.4815048240754494,0.07385562252356773,3
+lakebed_us_cse,blend_irc1_w0p25,421,fallback_low_rows_or_single_class,,,3
+wqp,blend_irc1_w0p25,41154,validation max PR-AUC with Brier <= baseline + 0.002; tie min Brier,0.6114328409907922,0.09532806477997226,3

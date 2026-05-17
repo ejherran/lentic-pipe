@@ -1,0 +1,628 @@
+{
+  "generated_at_utc": "2026-05-17T05:44:48.568488+00:00",
+  "config_path": "configs/sources.yaml",
+  "source_count": 3,
+  "file_count": 76,
+  "total_size_bytes": 62633651202,
+  "sources": {
+    "aquamatch_chla": {
+      "source_name": "AquaMatch Chlorophyll a Data from Water Quality Portal: ~1970-2024",
+      "source_type": "authenticated_public_repository_package",
+      "access_policy": "public_domain_original_authenticated_private_mirror",
+      "raw_path": "data/raw/aquamatch/chla_harmonized_final.csv",
+      "local_raw_path": "data/raw/aquamatch",
+      "raw_manifest_paths": [
+        "data/raw/aquamatch/chla_harmonized_final.csv",
+        "data/raw/aquamatch/metadata.xml",
+        "data/raw/aquamatch/README.pdf",
+        "data/raw/aquamatch/Data_Package_Quality_Report.mhtml"
+      ],
+      "dvc_track": true,
+      "adapter": "aquamatch_chla",
+      "role": "chlorophyll_auxiliary_source",
+      "format": {
+        "kind": "csv",
+        "main_file": "chla_harmonized_final.csv",
+        "metadata_files": [
+          "metadata.xml",
+          "README.pdf",
+          "Data_Package_Quality_Report.mhtml"
+        ]
+      },
+      "acquisition": {
+        "route": "edi_data_portal_authenticated_browser_download",
+        "repository": "EDI Data Portal",
+        "package_id": "edi.1756.2",
+        "landing_page": "https://portal.edirepository.org/nis/mapbrowse?scope=edi&identifier=1756&revision=2",
+        "doi": "https://doi.org/10.6073/pasta/2f750544112e5408928dd9a61e6ace30",
+        "publication_date": "2024-11-20",
+        "data_entity": "chla_harmonized_final",
+        "data_entity_file": "chla_harmonized_final.csv",
+        "download_method": "user_login_and_browser_download",
+        "download_date": "2026-05-11",
+        "script_hint": null,
+        "citation": "Brousil, M.R., M.F. Meyer, K. Willi, B.G. Steele, J. De La Torre, and M.R. Ross. 2024. AquaMatch Chlorophyll a Data from Water Quality Portal: ~1970-2024 ver 2. Environmental Data Initiative."
+      },
+      "license": "cc0-1.0",
+      "provenance_status": "documented",
+      "file_count": 4,
+      "total_size_bytes": 815451728,
+      "files": [
+        {
+          "path": "data/raw/aquamatch/chla_harmonized_final.csv",
+          "relative_to_source": "chla_harmonized_final.csv",
+          "size_bytes": 814963220,
+          "sha256": "de2f6c39aa26c4975084b30e085519b222f9651c320ac91d692c826b47590f7c"
+        },
+        {
+          "path": "data/raw/aquamatch/metadata.xml",
+          "relative_to_source": "metadata.xml",
+          "size_bytes": 93635,
+          "sha256": "a990f82f9b85d5af5572c8a6e1d62e77c95a50f4628a81ffeaba08a4810a7326"
+        },
+        {
+          "path": "data/raw/aquamatch/README.pdf",
+          "relative_to_source": "README.pdf",
+          "size_bytes": 70142,
+          "sha256": "6c32428febeda70cd062b44fe87de0c81be6c1d5d75b3345babad17802ede8b5"
+        },
+        {
+          "path": "data/raw/aquamatch/Data_Package_Quality_Report.mhtml",
+          "relative_to_source": "Data_Package_Quality_Report.mhtml",
+          "size_bytes": 324731,
+          "sha256": "89398e2d80201a2f1dae1244cb39ef8cb4b9541806409d5a290bff8e9c3ea0c9"
+        }
+      ]
+    },
+    "lakebed_us_cse": {
+      "source_name": "LakeBeD-US: Computer Science Edition",
+      "source_type": "public_dataset_snapshot",
+      "access_policy": "public_original_private_mirror",
+      "raw_path": "data/raw/LakeBeD-US-CSE",
+      "local_raw_path": "data/raw/LakeBeD-US-CSE",
+      "raw_manifest_paths": null,
+      "dvc_track": true,
+      "adapter": "lakebed_us_cse",
+      "role": "primary_multivariable_lake_benchmark",
+      "format": {
+        "kind": "parquet_collection",
+        "main_globs": [
+          "Data/LowFrequency/*/*.parquet",
+          "Data/HighFrequency/*/*.parquet"
+        ],
+        "metadata_files": [
+          "README.md",
+          "Data/Lake_Info.csv"
+        ]
+      },
+      "acquisition": {
+        "route": "huggingface_snapshot",
+        "repository": "eco-kgml/LakeBeD-US-CSE",
+        "repo_type": "dataset",
+        "script_hint": "data/scripts/download_lakebed_us_cse.py",
+        "download_method": "project_script",
+        "download_date": "2026-05-11"
+      },
+      "license": "cc-by-4.0",
+      "provenance_status": "documented",
+      "file_count": 66,
+      "total_size_bytes": 1142824150,
+      "files": [
+        {
+          "path": "data/raw/LakeBeD-US-CSE/.gitattributes",
+          "relative_to_source": ".gitattributes",
+          "size_bytes": 2461,
+          "sha256": "e7a120ab07b1bc5b486be249e9fc6c83d59448d0093e1dfebe95d1566d9cafc0"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/BARC/BARC_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/BARC/BARC_NEON_2D.parquet",
+          "size_bytes": 87757841,
+          "sha256": "959af648b63d74ee1388fe8999729533b894ef62bd6b4a7c5b0dc673f902fdcf"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/BVR/BVR_WVWA_HF_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/BVR/BVR_WVWA_HF_2D.parquet",
+          "size_bytes": 27056966,
+          "sha256": "924b2bb85bd5314dbcbec5042f1d79067569d7e7a39425a5043098e145670fd5"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/CB/CB_Crystal_Bog_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/CB/CB_Crystal_Bog_2D.parquet",
+          "size_bytes": 99181124,
+          "sha256": "533fa36fa3e936bbdca9684b5bf48d5baf18e6af2440f46f54ea7c3bfd8ba099"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/CB/CB_NTL_HF_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/CB/CB_NTL_HF_2D.parquet",
+          "size_bytes": 615143,
+          "sha256": "88807bfa976e61cf802183abf31b8392edd9059cfe3e80a9ac8fb1137e22af4b"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/CRAM/CRAM_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/CRAM/CRAM_NEON_2D.parquet",
+          "size_bytes": 54468503,
+          "sha256": "4e29702105c6a8a3f430f6d16c49fd82646cdd4f74eb9bd95d64780b4b457076"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/FCR/FCR_WVWA_HF_1D.parquet",
+          "relative_to_source": "Data/HighFrequency/FCR/FCR_WVWA_HF_1D.parquet",
+          "size_bytes": 2505469,
+          "sha256": "e562476f48d03076eaec77f071cd909553d988af62325b12d9f440610c71744c"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/FCR/FCR_WVWA_HF_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/FCR/FCR_WVWA_HF_2D.parquet",
+          "size_bytes": 38012042,
+          "sha256": "1a4131366e3a9967093bd1c0ee66126d04ecd286e140f3961ef00f1868f40b3c"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/GL4/GL4_NWT_HF_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/GL4/GL4_NWT_HF_2D.parquet",
+          "size_bytes": 8321411,
+          "sha256": "94e954253e958091fa2eee92cf2b8ce895296628f57dc3f3a878ae1f83133be9"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/LIRO/LIRO_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/LIRO/LIRO_NEON_2D.parquet",
+          "size_bytes": 57911498,
+          "sha256": "7878101b1c7597feb01c61bef2e0cd6b305d5f11bd91bee0f521e5ddab0a7e85"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/ME/ME_Mendota_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/ME/ME_Mendota_2D.parquet",
+          "size_bytes": 203366078,
+          "sha256": "043db00bd59972d69acfa8ff350063e243b16671346f4381bf080835dde29786"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/ME/ME_NTL_HF_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/ME/ME_NTL_HF_2D.parquet",
+          "size_bytes": 869940,
+          "sha256": "ec88416c4a0a74c1f44a1c350835839001474947f652abafed9cae9b965b07eb"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/PRLA/PRLA_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/PRLA/PRLA_NEON_2D.parquet",
+          "size_bytes": 44081324,
+          "sha256": "9402fa93fe622dc78cce288bf188e7f10a9e824e5466eadb7aa38b3232af8692"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/PRPO/PRPO_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/PRPO/PRPO_NEON_2D.parquet",
+          "size_bytes": 48274151,
+          "sha256": "ccdeec9f7752fa093863bdb861e142131a4ef5f9baebd4982d7efdcdef1c4661"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/SP/SP_Sparkling_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/SP/SP_Sparkling_2D.parquet",
+          "size_bytes": 138701588,
+          "sha256": "9fb5fbe627f1b327c5aecbd45a669f6ffc7d51344740a2947f2e3c9eaa1131a0"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/SUGG/SUGG_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/SUGG/SUGG_NEON_2D.parquet",
+          "size_bytes": 85281416,
+          "sha256": "ff710e89225a0784ef1df9c67881692ad945ff367fb7757720bae2ade944e499"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/TB/TB_NTL_HF_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/TB/TB_NTL_HF_2D.parquet",
+          "size_bytes": 919935,
+          "sha256": "8cdac963c1351065412cbcd93fd9b2ff7769ffd3494a155ef24a16a94bb03fb0"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/TB/TB_Trout_Bog_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/TB/TB_Trout_Bog_2D.parquet",
+          "size_bytes": 116198625,
+          "sha256": "66fa593f6891c46df5dcd8fd45e5976074688b9864813e87710699e4dd43a5db"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/TOOK/TOOK_NEON_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/TOOK/TOOK_NEON_2D.parquet",
+          "size_bytes": 25780519,
+          "sha256": "95cdd4e777b733d4e518707b423c630c35202092c32d806812b6c2f7af6f9349"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/HighFrequency/TR/TR_Trout_2D.parquet",
+          "relative_to_source": "Data/HighFrequency/TR/TR_Trout_2D.parquet",
+          "size_bytes": 101725671,
+          "sha256": "b5a8041b88c9157984b16963d197e058c86994b4c6a6a00e8f931eaf952652af"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/Lake_Info.csv",
+          "relative_to_source": "Data/Lake_Info.csv",
+          "size_bytes": 2414,
+          "sha256": "a5ae3f502642ea262426d07be34ab536ce81e7ddaf0d8777cd1dd34918f1be0c"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/AL/AL_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/AL/AL_NTL_1D.parquet",
+          "size_bytes": 9974,
+          "sha256": "1dd7ad7e90f2dbe80bfb90d1783c07a4376771e2052d99e9f366d25adcce5572"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/AL/AL_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/AL/AL_NTL_2D.parquet",
+          "size_bytes": 113087,
+          "sha256": "98a9911b224a2d5f20b4296cb09269c29236d69febdc5cacf4fe578234ec656e"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/BARC/BARC_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/BARC/BARC_NEON_LF_1D.parquet",
+          "size_bytes": 4470,
+          "sha256": "d225cf5589fb875535eb5e4552853feb56b44a36d51ed21b6b2b1300b836d002"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/BARC/BARC_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/BARC/BARC_NEON_LF_2D.parquet",
+          "size_bytes": 17433,
+          "sha256": "1fbc4c90e1f77f8ae1de24cce6a22f0e02c5cae979039aef1af8bfee50c8622c"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/BM/BM_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/BM/BM_NTL_1D.parquet",
+          "size_bytes": 10220,
+          "sha256": "36d7fdc71033422905f39cae5d131531b0d72f96043afc0dee04dcac543fb610"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/BM/BM_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/BM/BM_NTL_2D.parquet",
+          "size_bytes": 149478,
+          "sha256": "b94664ca830c05096192554db57c855e42b431b225d34e1df51fb3ecfc21b119"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/BVR/BVR_WVWA_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/BVR/BVR_WVWA_LF_1D.parquet",
+          "size_bytes": 5862,
+          "sha256": "f8756a684a0e6aa6c75bd4699cb84331137c2a0eff44da1ddf9476077ebd0d26"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/BVR/BVR_WVWA_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/BVR/BVR_WVWA_LF_2D.parquet",
+          "size_bytes": 57292,
+          "sha256": "0fe97768fb1fcd4ebbdee35fbfc5c0b408126f5952324db130054b8299362d81"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/CB/CB_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/CB/CB_NTL_1D.parquet",
+          "size_bytes": 9854,
+          "sha256": "6992ec49981fe88f6396e998d521c77e833f74ebdd3fd2994b10fbd9d3b298e0"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/CB/CB_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/CB/CB_NTL_2D.parquet",
+          "size_bytes": 78082,
+          "sha256": "06f4400229f7bd4c202932d4ea7ddb6e955cad8a8ec74f4eb93603c6d345d46b"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/CR/CR_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/CR/CR_NTL_1D.parquet",
+          "size_bytes": 10641,
+          "sha256": "6142034ec7f9559a0f0096b5c5141c211bc63a00818cdd6bc2924af35922b9a7"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/CR/CR_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/CR/CR_NTL_2D.parquet",
+          "size_bytes": 155337,
+          "sha256": "85b3af7c32a18f9892d8e15445616b239f59f6605471155e34838785e5419e98"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/CRAM/CRAM_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/CRAM/CRAM_NEON_LF_1D.parquet",
+          "size_bytes": 4129,
+          "sha256": "83280cd270871237cb7246ad6cc39e39068019993efff9fb65a91c443313bdb0"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/CRAM/CRAM_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/CRAM/CRAM_NEON_LF_2D.parquet",
+          "size_bytes": 25005,
+          "sha256": "ee705fac3bdfa151774ffecda4f56ec69ea206c67a37ec2b01934253d249a7ee"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/FCR/FCR_WVWA_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/FCR/FCR_WVWA_LF_1D.parquet",
+          "size_bytes": 7199,
+          "sha256": "233ef1d710a68e495483ceadf6eec2bf649bc3546dc5b6ce84a8a88c64ed3e91"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/FCR/FCR_WVWA_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/FCR/FCR_WVWA_LF_2D.parquet",
+          "size_bytes": 97000,
+          "sha256": "128f749425753d015ae230ddf989e863adf178dd6da6e415acbe873b507f62e5"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/FI/FI_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/FI/FI_NTL_1D.parquet",
+          "size_bytes": 6886,
+          "sha256": "f98ea850b7fda4ebff7ff7ecb5946150a5aa972afbd34fb5ef78620ae70f1f7f"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/FI/FI_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/FI/FI_NTL_2D.parquet",
+          "size_bytes": 81078,
+          "sha256": "79ab8b1000f3bd9bedf5b3f93b30cdc8b0dd8c700c9f9db604f240867e619e50"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/GL4/GL4_NWT_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/GL4/GL4_NWT_LF_1D.parquet",
+          "size_bytes": 3920,
+          "sha256": "89ac92dd253c421662b892d537fa6adee680a87f3aa5b69956b8686ae5fced8c"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/GL4/GL4_NWT_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/GL4/GL4_NWT_LF_2D.parquet",
+          "size_bytes": 41176,
+          "sha256": "43cef5c7cf02be50a5d0c8e4c98dfdc26de8c53475d06f8a3bf7e51f6f32a9e8"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/LIRO/LIRO_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/LIRO/LIRO_NEON_LF_1D.parquet",
+          "size_bytes": 3885,
+          "sha256": "96b2d3903533379fc3e30f6cb7d2a0565a8161e5a231ad2b7abd78a5c6501e84"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/LIRO/LIRO_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/LIRO/LIRO_NEON_LF_2D.parquet",
+          "size_bytes": 19086,
+          "sha256": "1f1a1e242e73d3991d833aa7687de8b5c21a4bf6caff98a3ea70ef42ad2767d8"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/ME/ME_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/ME/ME_NTL_1D.parquet",
+          "size_bytes": 7885,
+          "sha256": "dd4371b113d843ad32ace2ef274e8f01141cf76efe0bca91ac0493b8d6f7af72"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/ME/ME_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/ME/ME_NTL_2D.parquet",
+          "size_bytes": 100417,
+          "sha256": "7c41385094f7240e8ea4d35446fbc713899f044426db1d8b2d40df1f5510087c"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/MO/MO_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/MO/MO_NTL_1D.parquet",
+          "size_bytes": 7389,
+          "sha256": "e19d0bf61fc90f6fbe8490d84cdba4e685ee212138ec90d0f3f824460a903355"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/MO/MO_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/MO/MO_NTL_2D.parquet",
+          "size_bytes": 86097,
+          "sha256": "9f505c81eeb6b4e59bdc67e798561b1ae7ece34e5dbbba43ce52d075bb9b8e0d"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/PRLA/PRLA_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/PRLA/PRLA_NEON_LF_1D.parquet",
+          "size_bytes": 4194,
+          "sha256": "69c544a4d3126db7f028f3b12555ce83d15fb6391374fb4110113dbc0bd973c4"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/PRLA/PRLA_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/PRLA/PRLA_NEON_LF_2D.parquet",
+          "size_bytes": 18473,
+          "sha256": "e024f5a97f7b8cec4f900ca4cc735c46aff5db387ee14ada3c8cbb2eae81eb42"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/PRPO/PRPO_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/PRPO/PRPO_NEON_LF_1D.parquet",
+          "size_bytes": 4212,
+          "sha256": "6387f790fe489d7630df9feccc4c4bed74e7a8113ebcd89505e2fd8ff5cee5b3"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/PRPO/PRPO_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/PRPO/PRPO_NEON_LF_2D.parquet",
+          "size_bytes": 17362,
+          "sha256": "7f7ac0b704dc7767dfaa52dc16788f23f8c98c7dacd84da2ee50acfe2429b8cd"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/SP/SP_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/SP/SP_NTL_1D.parquet",
+          "size_bytes": 10275,
+          "sha256": "670b85e71afb18a328af953193d1ce5854fad22cb9c8f51a3f86cf933e0e95b1"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/SP/SP_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/SP/SP_NTL_2D.parquet",
+          "size_bytes": 146903,
+          "sha256": "2c570623dc361c5aa638242365d5bbca267dd98faa1974ef4aed45b91ee616e6"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/SUGG/SUGG_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/SUGG/SUGG_NEON_LF_1D.parquet",
+          "size_bytes": 4313,
+          "sha256": "b8fbca34edbd9c637ac6c72e2218110b4bc2f6dbbea545a803acca4baf4ab3df"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/SUGG/SUGG_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/SUGG/SUGG_NEON_LF_2D.parquet",
+          "size_bytes": 15537,
+          "sha256": "20bd4b2566b33d18eea231cffb2f95e61ca2226e52fdf5e4fa75080aa3dc08d3"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/TB/TB_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/TB/TB_NTL_1D.parquet",
+          "size_bytes": 9867,
+          "sha256": "a418b4a2afef80bdeeae63f4a13d74dcc461810c2c0c694e73158fea3bbf6fd1"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/TB/TB_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/TB/TB_NTL_2D.parquet",
+          "size_bytes": 106755,
+          "sha256": "0f9f789eb40f6c70793285a70948fc9fe6e37166f76396e5c4dbb428cdf8219f"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/TOOK/TOOK_NEON_LF_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/TOOK/TOOK_NEON_LF_1D.parquet",
+          "size_bytes": 5804,
+          "sha256": "b0c05e778cae66b06344c393a2b06a39fa68c7676615e703302cf94594498328"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/TOOK/TOOK_NEON_LF_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/TOOK/TOOK_NEON_LF_2D.parquet",
+          "size_bytes": 20855,
+          "sha256": "85b246e9f6457d651b793f1141021355f998c2cf80224f8ca5ad76d1f258d02d"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/TR/TR_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/TR/TR_NTL_1D.parquet",
+          "size_bytes": 10039,
+          "sha256": "a3ce369fa24bd9f6abf96232b8052c9001033d07bffe6d4d7f2b3738f5435a7f"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/TR/TR_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/TR/TR_NTL_2D.parquet",
+          "size_bytes": 165633,
+          "sha256": "31a857966a4faf209b297102c1ebdd378c2b9450a5a22e6d20b9eaedb1964ddc"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/WI/WI_NTL_1D.parquet",
+          "relative_to_source": "Data/LowFrequency/WI/WI_NTL_1D.parquet",
+          "size_bytes": 6942,
+          "sha256": "67bc9cb57ce4f181b1ac7bf6274f7893183a3cd5e13f762a0cb462d6765018a6"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/Data/LowFrequency/WI/WI_NTL_2D.parquet",
+          "relative_to_source": "Data/LowFrequency/WI/WI_NTL_2D.parquet",
+          "size_bytes": 37348,
+          "sha256": "7e7eac9f10439bedc955dd067d3b79e2554f10f5b22074e8e8f427aaa33e8dcc"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/README.md",
+          "relative_to_source": "README.md",
+          "size_bytes": 39499,
+          "sha256": "c8f13a2273b208a363e6b04aba13f42bf3ef27fd812c58486e59368009498b6b"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/src/lakedata.py",
+          "relative_to_source": "src/lakedata.py",
+          "size_bytes": 23230,
+          "sha256": "be9c24f694b9e8a064a0a90fa24b3f7a9d76ac65881aff5cd0c48e02c897e50b"
+        },
+        {
+          "path": "data/raw/LakeBeD-US-CSE/src/preprocess.py",
+          "relative_to_source": "src/preprocess.py",
+          "size_bytes": 29908,
+          "sha256": "db288cd0bd1f547b62e17c65aa7c1f7fcbb8f3d41e949c12cd0cfae75d190320"
+        }
+      ]
+    },
+    "wqp": {
+      "source_name": "Water Quality Portal WQX3 lake/reservoir/impoundment export",
+      "source_type": "public_api_export",
+      "access_policy": "public_original_private_mirror",
+      "raw_path": "data/raw/wqp",
+      "local_raw_path": "data/raw/wqp",
+      "raw_manifest_paths": null,
+      "dvc_track": true,
+      "adapter": "wqp_streaming",
+      "role": "large_public_lentic_physchem_source",
+      "format": {
+        "kind": "csv_large",
+        "main_files": {
+          "results": "wqp_results.csv",
+          "stations": "wqp_stations.csv",
+          "activity": "wqp_activity.csv"
+        },
+        "state_files": [
+          "wqp_results_state.json",
+          "wqp_stations_state.json",
+          "wqp_activity_state.json"
+        ]
+      },
+      "acquisition": {
+        "route": "waterqualitydata_wqx3_resumable_scripts",
+        "user_query_url": "https://www.waterqualitydata.us/beta/#countrycode=US&siteType=Lake%2C%20Reservoir%2C%20Impoundment&sampleMedia=Water&startDateLo=01-01-1970&startDateHi=05-11-2026&mimeType=csv&dataProfile=fullPhysChem&providers=NWIS&providers=STORET",
+        "landing_page": "https://www.waterqualitydata.us/",
+        "script_hints": [
+          "data/scripts/download_wqp_results.py",
+          "data/scripts/download_wqp_stations.py",
+          "data/scripts/download_wqp_activity.py"
+        ],
+        "cache_dir": "data/cache/downloads/wqp",
+        "endpoint_queries": {
+          "results": {
+            "endpoint": "https://www.waterqualitydata.us/wqx3/Result/search",
+            "output_file": "wqp_results.csv",
+            "dataProfile": "fullPhysChem"
+          },
+          "stations": {
+            "endpoint": "https://www.waterqualitydata.us/wqx3/Station/search",
+            "output_file": "wqp_stations.csv"
+          },
+          "activity": {
+            "endpoint": "https://www.waterqualitydata.us/wqx3/Activity/search",
+            "output_file": "wqp_activity.csv"
+          }
+        },
+        "query_summary": {
+          "countrycode": "US",
+          "siteType": "Lake, Reservoir, Impoundment",
+          "sampleMedia": "Water",
+          "startDateLo": "01-01-1970",
+          "startDateHi": "05-11-2026",
+          "mimeType": "csv",
+          "dataProfile": "fullPhysChem",
+          "providers": [
+            "NWIS",
+            "STORET"
+          ]
+        },
+        "download_method": "project_scripts_with_chunk_resume",
+        "download_date": "2026-05-11",
+        "terms_review": {
+          "reviewed_at": "2026-05-17",
+          "summary": "EPA documents WQP as a public download/retrieval warehouse combining WQX submissions with USGS data from many federal, state, tribal, local, academic, NGO, and other organizations. The project therefore treats WQP as publicly downloadable but not as a single-license raw redistribution package.\n",
+          "official_references": [
+            "https://www.epa.gov/waterdata/water-quality-data",
+            "https://www.epa.gov/waterdata/waters-terms-use-and-disclaimer",
+            "https://www.epa.gov/waterdata/water-quality-portal-quick-reference-guide",
+            "https://www.waterqualitydata.us/portal_userguide/"
+          ],
+          "redistribution_policy": "Keep the full raw mirror in authorized DVC/GCS storage for reproducibility, not as public Git blobs. Public Git may include acquisition scripts, query filters, source metadata, manifests, SHA-256 hashes, DVC pointers, and derived summaries, but not the full WQP raw export as Git blobs.\n"
+        }
+      },
+      "license": "public_download_multi_provider_with_terms_and_disclaimer",
+      "provenance_status": "documented_terms_reviewed_conservative_private_mirror",
+      "file_count": 6,
+      "total_size_bytes": 60675375324,
+      "files": [
+        {
+          "path": "data/raw/wqp/wqp_activity.csv",
+          "relative_to_source": "wqp_activity.csv",
+          "size_bytes": 5742974190,
+          "sha256": "c34e206954c50be2577510d03f60f838e73ecdb47c07be46c1e70fba418546ff"
+        },
+        {
+          "path": "data/raw/wqp/wqp_activity_state.json",
+          "relative_to_source": "wqp_activity_state.json",
+          "size_bytes": 2878,
+          "sha256": "f08b01be9643835e18193649cd3082f471b310fb0a49032d134e69803022bff3"
+        },
+        {
+          "path": "data/raw/wqp/wqp_results.csv",
+          "relative_to_source": "wqp_results.csv",
+          "size_bytes": 54762768723,
+          "sha256": "58829372d440f6a3f15bc55b88346af2429747f96e2c9572194d2f9eb7dde904"
+        },
+        {
+          "path": "data/raw/wqp/wqp_results_state.json",
+          "relative_to_source": "wqp_results_state.json",
+          "size_bytes": 32634,
+          "sha256": "c400de80383083f58e3f132574218633e9df137291da6842aefdc33e3c841cd0"
+        },
+        {
+          "path": "data/raw/wqp/wqp_stations.csv",
+          "relative_to_source": "wqp_stations.csv",
+          "size_bytes": 169595123,
+          "sha256": "c6af182de050628a12a029ece427771c06f69e4b0b56298e7ae76cb5357b60a9"
+        },
+        {
+          "path": "data/raw/wqp/wqp_stations_state.json",
+          "relative_to_source": "wqp_stations_state.json",
+          "size_bytes": 1776,
+          "sha256": "c3bbc059f5948aa68478445dab625be7ac1cb0886cab58441f37e9f813cfdc1b"
+        }
+      ]
+    }
+  }
+}

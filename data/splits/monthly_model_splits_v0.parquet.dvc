@@ -1,0 +1,5 @@
+outs:
+- md5: 143b70bf1ed53af9dfc195bdbebd56e2
+  size: 35945895
+  hash: md5
+  path: monthly_model_splits_v0.parquet

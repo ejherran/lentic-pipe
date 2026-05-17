@@ -1,0 +1,5 @@
+outs:
+- md5: d9fe0278fc6fa3e8f7cc5ffe46ea06c8
+  size: 89990900
+  hash: md5
+  path: monthly_long_v0.parquet

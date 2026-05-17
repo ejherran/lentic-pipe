@@ -1,0 +1,84 @@
+{
+  "generated_at_utc": "2026-05-16T22:12:00.945837+00:00",
+  "model_family": "refined_expert_fuzzy_ensemble_v0",
+  "selection_policy": "validation max PR-AUC among candidates with validation Brier <= baseline + 0.002; tie min Brier; tie max macro-F1; test report only",
+  "selection_brier_tolerance": 0.002,
+  "row_counts": {
+    "prediction_rows": 790265,
+    "metrics_rows": 408,
+    "selection_rows": 3,
+    "source_selection_rows": 9
+  },
+  "inputs": [
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945895,
+      "sha256": "9d4a1c377aa39fa1552c9f36bd71e5a75283c988327ffa910b66c810d3e6d60e"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103298009,
+      "sha256": "03cc633578cc1b842a6646ab77209aa5ced7c0fc48e2c24fc5a9debc25c8e883"
+    },
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "path": "reports/baselines/baseline_selection.csv",
+      "bytes": 1545,
+      "sha256": "f2850318acca9961edf2fbf204f443035f1d15ccad8f3700ddfe7a0fe88d6f77"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/fuzzy/refined_scores_v0.parquet",
+      "bytes": 50726516,
+      "sha256": "60333fe83131802e78a727c1d249393d892ca4f9afbe3ff7933ae346704dffd3"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_metrics.csv",
+      "bytes": 72599,
+      "sha256": "dc0457c482d28582296de6069b980b553654d22379c0822ab216279307effb2e"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_selection.csv",
+      "bytes": 1939,
+      "sha256": "aaeae5b35a9bec4d8a7796c6ae644dbf9c9cc64506603b5c02971afa15764af9"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_source_selection.csv",
+      "bytes": 1191,
+      "sha256": "0bbbfbef5e8b7330343bbff439b4048e77e9073af60ccc82651b4b2e3e19b820"
+    },
+    {
+      "path": "reports/anfis/refined_fuzzy_report.md",
+      "bytes": 2511,
+      "sha256": "985d349095426f471b95fa09485c4acc78df096ca22dcb3882cf0e049dd6033c"
+    }
+  ],
+  "model_artifacts": [
+    {
+      "model": "meta_logistic",
+      "horizon_months": 1,
+      "path": "models/anfis/refined/meta_logistic_h1.joblib",
+      "bytes": 5563,
+      "sha256": "8111df8c932502e548185bef466d8631c3ead463cfc660dec8e7324e6d261d5d"
+    },
+    {
+      "model": "meta_logistic",
+      "horizon_months": 2,
+      "path": "models/anfis/refined/meta_logistic_h2.joblib",
+      "bytes": 5563,
+      "sha256": "7219aa2b90923515d08fdb2f98cf5a372b04b47b0a472a1a78e0cb3f728e8cab"
+    },
+    {
+      "model": "meta_logistic",
+      "horizon_months": 3,
+      "path": "models/anfis/refined/meta_logistic_h3.joblib",
+      "bytes": 5563,
+      "sha256": "a563cc87ed06c89053f03759b871e668a5967957d58f30b985e7cdffc544ce87"
+    }
+  ]
+}

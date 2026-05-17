@@ -1,0 +1,11 @@
+phase,model,horizon_months,split,bin,bin_left,bin_right,rows,mean_pred_probability,observed_bloom_rate
+isotonic_calibrated,logistic_sgd,3,test,0,0.0,0.1,80778,0.058994976936471814,0.05787466884547773
+isotonic_calibrated,logistic_sgd,3,test,1,0.1,0.2,625,0.1395623259440541,0.264
+isotonic_calibrated,logistic_sgd,3,test,2,0.2,0.3,1881,0.278806386276292,0.26953748006379585
+isotonic_calibrated,logistic_sgd,3,test,3,0.3,0.4,5591,0.36203481400782833,0.3899123591486317
+isotonic_calibrated,logistic_sgd,3,test,4,0.4,0.5,2402,0.4535025836360607,0.515820149875104
+isotonic_calibrated,logistic_sgd,3,test,5,0.5,0.6,2524,0.5350340326775155,0.5760697305863708
+isotonic_calibrated,logistic_sgd,3,test,6,0.6,0.7,2510,0.6417631478103717,0.6788844621513944
+isotonic_calibrated,logistic_sgd,3,test,7,0.7,0.8,2179,0.7412941763839843,0.7627351996328591
+isotonic_calibrated,logistic_sgd,3,test,8,0.8,0.9,1180,0.8342121345820326,0.8923728813559322
+isotonic_calibrated,logistic_sgd,3,test,9,0.9,1.0,0,,

@@ -1,0 +1,2 @@
+model,task,horizon_months,split,threshold,tn,fp,fn,tp
+logistic_sgd,classification,1,test,0.5,99532,5271,5598,11139

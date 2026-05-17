@@ -1,0 +1,2 @@
+model,task,horizon_months,split,threshold,tn,fp,fn,tp
+persistence,classification_and_risk,2,validation,0.5,108077,26442,4384,15313

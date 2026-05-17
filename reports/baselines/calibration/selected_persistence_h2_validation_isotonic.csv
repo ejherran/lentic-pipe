@@ -1,0 +1,11 @@
+phase,model,horizon_months,split,bin,bin_left,bin_right,rows,mean_pred_probability,observed_bloom_rate
+isotonic_calibrated,persistence,2,validation,0,0.0,0.1,110333,0.03751370850062991,0.03751370850062991
+isotonic_calibrated,persistence,2,validation,1,0.1,0.2,15117,0.14348084937487599,0.14348084937487596
+isotonic_calibrated,persistence,2,validation,2,0.2,0.3,7987,0.24164266933767373,0.24164266933767373
+isotonic_calibrated,persistence,2,validation,3,0.3,0.4,3614,0.338682899833979,0.338682899833979
+isotonic_calibrated,persistence,2,validation,4,0.4,0.5,0,,
+isotonic_calibrated,persistence,2,validation,5,0.5,0.6,17165,0.5962714826682202,0.5962714826682202
+isotonic_calibrated,persistence,2,validation,6,0.6,0.7,0,,
+isotonic_calibrated,persistence,2,validation,7,0.7,0.8,0,,
+isotonic_calibrated,persistence,2,validation,8,0.8,0.9,0,,
+isotonic_calibrated,persistence,2,validation,9,0.9,1.0,0,,

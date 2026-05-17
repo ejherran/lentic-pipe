@@ -1,0 +1,5 @@
+outs:
+- md5: a896c1a62855df5b4a10da148b4a6929
+  size: 73436574
+  hash: md5
+  path: pipe_sequence_dataset_v0.parquet

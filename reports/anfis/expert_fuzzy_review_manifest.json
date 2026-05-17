@@ -1,0 +1,42 @@
+{
+  "generated_at_utc": "2026-05-16T21:43:20.303009+00:00",
+  "inputs": [
+    {
+      "bytes": 3843,
+      "path": "reports/baselines/baseline_calibrated_metrics.csv",
+      "sha256": "630b1481a8171655386e0b4717d537adb55f6817586f04b23f3e2b0eef725fb1"
+    },
+    {
+      "bytes": 13686,
+      "path": "reports/anfis/irc1_metrics.csv",
+      "sha256": "6f6c78e721f25c425ce8d974195cf95c60372709d760979714b1080cd79927ab"
+    },
+    {
+      "bytes": 7329,
+      "path": "reports/anfis/irc1_calibrated_metrics.csv",
+      "sha256": "93f9ba38bca20f5dfcbb734661e864c9a7b6323322c468c38d3ef0895d3bd28d"
+    }
+  ],
+  "outputs": [
+    {
+      "bytes": 3050,
+      "path": "reports/anfis/expert_fuzzy_review.md",
+      "sha256": "9af915aa6017828dcca793c1c446e6bb4bf1e8154f730a0a8948b9aa4b61672d"
+    },
+    {
+      "bytes": 2104,
+      "path": "reports/anfis/expert_fuzzy_test_comparison.csv",
+      "sha256": "d3fb33ca75f84cf4e9803215f7e5919e7094aaadf17f0cc49765dbf7a7323f29"
+    },
+    {
+      "bytes": 3698,
+      "path": "reports/anfis/expert_fuzzy_source_summary.csv",
+      "sha256": "a959c4ffe5225dffbafef9cad38afce2bf9e4f2313a92f25dd3471330bc15e33"
+    }
+  ],
+  "review": "expert_fuzzy_vs_calibrated_baselines",
+  "row_counts": {
+    "comparison_rows": 6,
+    "source_summary_rows": 18
+  }
+}

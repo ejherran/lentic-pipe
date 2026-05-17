@@ -1,0 +1,250 @@
+{
+  "config": {
+    "batch_size": 2048,
+    "blend_grid": "0,0.1,0.2,0.35,0.5,0.65,0.8,0.9,1",
+    "blend_selection_metric": "balanced",
+    "checkpoint_selection_metric": "balanced",
+    "epochs": 20,
+    "hidden_dims": [
+      64,
+      96,
+      128
+    ],
+    "history_lengths": [
+      3,
+      6,
+      12
+    ],
+    "learning_rates": [
+      0.001
+    ],
+    "max_eval_windows": 0,
+    "max_train_windows": 0,
+    "mse_weights": [
+      0.25,
+      0.5,
+      1.0
+    ],
+    "random_seed": 1729,
+    "same_seed_for_all_trials": true
+  },
+  "generated_at_utc": "2026-05-17T02:00:24.299956+00:00",
+  "inputs": [
+    {
+      "bytes": 73436574,
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "bytes": 6427,
+      "path": "reports/pipe_grud/pipe_sequence_manifest.json",
+      "sha256": "7285be6054ea9c027f5e6efd52a85cff717051ed056bab8709878c0065bc3cb2"
+    }
+  ],
+  "outputs": [
+    {
+      "bytes": 24042,
+      "path": "reports/pipe_grud/pipe_grud_sweep_summary.csv",
+      "sha256": "57c703ba39abc1f047488d8a84ef2d9e9fabe2175fdcae964a69f41069a4bb11"
+    },
+    {
+      "bytes": 5280,
+      "path": "reports/pipe_grud/pipe_grud_sweep_report.md",
+      "sha256": "0e5f7ebe4b87394c945fd7344dade874cc85d1c7c928094a50b7c14b907ecf7d"
+    }
+  ],
+  "row_counts": {
+    "completed_trials": 27,
+    "planned_trials": 27,
+    "summary_rows": 27
+  },
+  "script": {
+    "bytes": 25958,
+    "path": "/home/wolf/lentic-pipe/src/experiments/sweep_pipe_grud.py",
+    "sha256": "2e2866898d0ced777ad69e935a8aa76e8f5f934b31b9e0b225103fa3c5b0e7c5"
+  },
+  "selection": {
+    "best_epoch": 20,
+    "best_validation_loss": -3.095627568509357,
+    "best_validation_mae_all": 0.06012554383734022,
+    "best_validation_objective": 0.7449632417292603,
+    "best_validation_rmse_all": 0.11283984144851493,
+    "elapsed_seconds": 55.54149423600029,
+    "hidden_dim": 96,
+    "history_length": 12,
+    "learning_rate": 0.001,
+    "manifest_path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+    "model_path": "models/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse1_lr0p001_seed1729/pipe_grud_model.pt",
+    "mse_weight": 1.0,
+    "random_seed": 1729,
+    "report_path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse1_lr0p001_seed1729/pipe_grud_report.md",
+    "return_code": 0,
+    "sampled_test_windows": 17420,
+    "sampled_train_windows": 378557,
+    "sampled_validation_windows": 22087,
+    "selection_rank": 1,
+    "status": "completed",
+    "test_interval_90_coverage": 0.9479397882382956,
+    "test_mae": 0.0580152848877306,
+    "test_mae_relative_improvement": 0.2128378428488271,
+    "test_nll": -2.3577175131925654,
+    "test_rmse": 0.1091285233584153,
+    "test_rmse_relative_improvement": 0.2735053472988706,
+    "test_rows": 17420,
+    "train_interval_90_coverage": 0.9458604942217712,
+    "train_mae": 0.0503817249038603,
+    "train_mae_relative_improvement": 0.2191153272281255,
+    "train_nll": -2.857280108904043,
+    "train_rmse": 0.0957393358329515,
+    "train_rmse_relative_improvement": 0.2936793406324329,
+    "train_rows": 378557,
+    "trial_id": "h12_hd096_mse1_lr0p001_seed1729",
+    "validation_interval_90_coverage": 0.9402463993399836,
+    "validation_mae": 0.0601255438373402,
+    "validation_mae_relative_improvement": 0.2266122173109653,
+    "validation_nll": -2.5674441961513543,
+    "validation_rmse": 0.1128398414485149,
+    "validation_rmse_relative_improvement": 0.2834612992305139,
+    "validation_rows": 22087
+  },
+  "started_at_utc": "2026-05-17T01:19:04.468028+00:00",
+  "status": "completed",
+  "sweep_id": "pipe_grud_sweep_v0",
+  "trial_manifests": [
+    {
+      "bytes": 5282,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "8d3dced4aacbaeb25a60807c6c53ce2292df939157301d5a0d7e5d9f312d781b"
+    },
+    {
+      "bytes": 5301,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "8186a7bc0bb8c64938cc32a682ec87fefe7431dc16e08e4b5dda8a3ad71b4f46"
+    },
+    {
+      "bytes": 5312,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd128_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "da3cdd49e68c439b57543f73962a069ad740644c11b1448bc6d8de24b517fac5"
+    },
+    {
+      "bytes": 5313,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd096_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "c359bce1025624cf7f23f13f55574c57c2533628e624e7bc6179071e82b6157f"
+    },
+    {
+      "bytes": 5284,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd128_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "36d87a66287ba53709a66d67e31f28244365bd46245cb73330605a76f5815475"
+    },
+    {
+      "bytes": 5303,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd128_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "6ec057caa3e2611de1708aee77ac9038b48f8ed54f338b62efbab0d860713699"
+    },
+    {
+      "bytes": 5313,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd128_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "50fffa5a069806bf40423973df0e538a2e038e5f5ec7b962a90be9090912c5b6"
+    },
+    {
+      "bytes": 5303,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd128_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "fa3cf53cb2e189fd1251f77494655ba93694c359f0eb75a20d24cf84984fac68"
+    },
+    {
+      "bytes": 5282,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd128_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "b6e1c72c8e1f33acc0e0f8935ad2bdf532a220f76300592ba888b8cb1aee9d1d"
+    },
+    {
+      "bytes": 5317,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd128_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "86e75aa8d73184edddc505b20f332e3c8f314e2d9effbddd6f6a6a4cbff00c18"
+    },
+    {
+      "bytes": 5286,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd128_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "38605e67528eda6acdde67e061af06039c99fa23e88289746a2afd60e08ae159"
+    },
+    {
+      "bytes": 5305,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd128_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "2f59e9f0ae49928b0e0e2ae898d7848fb3815a3a80657e7d1d989a0a35be8203"
+    },
+    {
+      "bytes": 5302,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd064_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "3ac844a98918f9989cc1d06fdace3a244d2032f7e4b13fa2fc3c66a2f72d3011"
+    },
+    {
+      "bytes": 5312,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd096_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "e519b788abd3ec9d09af937368f1fc36fa5f862f245cd5b938235f07183c3d71"
+    },
+    {
+      "bytes": 5285,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd096_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "afe3379cd4e226634b63e1eb395bd6a24f96d93fb0a823d5e1d332adf73ffd49"
+    },
+    {
+      "bytes": 5283,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd096_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "7edf802d2b28c7fc6166ae66f40dea936dd290e39f00922c239ceefc74ca553b"
+    },
+    {
+      "bytes": 5305,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd096_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "8405e99700cf839ea58b1e517a21e524853b381d1bb4081b70aa4ef61c59fb07"
+    },
+    {
+      "bytes": 5317,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd096_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "d5f35d9039abb4d1cfbbfeac7e9f9b4f4e20fd1ef30aae63ed120e2d5e11b2be"
+    },
+    {
+      "bytes": 5281,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd064_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "a9530a12c18f62a3b731032de7036c132fb587528b936cb5198217709f1c6a19"
+    },
+    {
+      "bytes": 5302,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd096_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "74562ec2419dea0b5b8ec74aab0ac0e4f7ea59c5cd2d312ac5f94e01852273c5"
+    },
+    {
+      "bytes": 5285,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "6a9eba901f6f17c7ec793f05c73955e90f0c541743a24d7113b29313f7e6cb25"
+    },
+    {
+      "bytes": 5313,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd064_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "45a99f5c03ffeefa84819e53399bfe022266badb10830e23ca71ba658fa8f418"
+    },
+    {
+      "bytes": 5311,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd064_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "33fd78864e894169837fa00383b464ec166c9ed738882daceb5e0a9ade67e5dd"
+    },
+    {
+      "bytes": 5315,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse0p25_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "00256e87ad1f0179d4c95ded9d12518e4b58f3388c08a7eda9f6df818417f6e9"
+    },
+    {
+      "bytes": 5305,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h03_hd064_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "9c4aecdb88905f232ecd5e215208552513737b9a5d1d0f2fbc6f0ed08db5e2a9"
+    },
+    {
+      "bytes": 5300,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h06_hd064_mse0p5_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "cfce26954c0e891a786a97e856698b23f1852e07ce0c495fe9f277354c66dd51"
+    },
+    {
+      "bytes": 5282,
+      "path": "reports/pipe_grud/sweep_trials/pipe_grud_sweep_v0/h12_hd064_mse1_lr0p001_seed1729/pipe_grud_manifest.json",
+      "sha256": "74288a30da5ed8d75511a888220c7791326b21bd6c466ad0a447fab9995bf8ab"
+    }
+  ]
+}

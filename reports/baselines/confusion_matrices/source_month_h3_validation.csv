@@ -1,0 +1,2 @@
+model,task,horizon_months,split,threshold,tn,fp,fn,tp
+source_month,classification_and_risk,3,validation,0.5,118661,0,17377,0

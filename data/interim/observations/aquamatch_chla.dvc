@@ -1,0 +1,6 @@
+outs:
+- md5: 71ce1ed8d907fe822810e60819a4f6db.dir
+  size: 65034925
+  nfiles: 15
+  hash: md5
+  path: aquamatch_chla

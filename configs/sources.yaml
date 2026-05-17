@@ -1,0 +1,206 @@
+schema_version: 1
+description: >
+  Source registry for raw datasets used by lentic-pipe. Each source must be
+  processed through an adapter that emits canonical long-format observations.
+
+raw_root: data/raw
+
+source_contract:
+  required_fields:
+    - source_id
+    - raw_path
+    - local_raw_path
+    - adapter
+    - role
+    - source_type
+    - access_policy
+    - dvc_track
+    - license
+    - provenance_status
+  canonical_adapter_output: data/interim/observations/{source_id}.parquet
+  future_sources_policy:
+    - Add a new source entry here before writing ingestion code.
+    - Preserve raw files unchanged under data/raw/{source_id}/.
+    - Record license, URL or acquisition route, download date, and filters.
+    - Create one adapter per source; do not special-case source logic downstream.
+    - Generate hashes in the raw manifest before harmonization or modeling.
+
+sources:
+  lakebed_us_cse:
+    source_id: lakebed_us_cse
+    source_name: "LakeBeD-US: Computer Science Edition"
+    source_type: public_dataset_snapshot
+    access_policy: public_original_private_mirror
+    local_raw_path: data/raw/LakeBeD-US-CSE
+    raw_path: data/raw/LakeBeD-US-CSE
+    dvc_track: true
+    adapter: lakebed_us_cse
+    role: primary_multivariable_lake_benchmark
+    format:
+      kind: parquet_collection
+      main_globs:
+        - Data/LowFrequency/*/*.parquet
+        - Data/HighFrequency/*/*.parquet
+      metadata_files:
+        - README.md
+        - Data/Lake_Info.csv
+    license: cc-by-4.0
+    provenance_status: documented
+    acquisition:
+      route: huggingface_snapshot
+      repository: eco-kgml/LakeBeD-US-CSE
+      repo_type: dataset
+      script_hint: data/scripts/download_lakebed_us_cse.py
+      download_method: project_script
+      download_date: "2026-05-11"
+    expected_variables:
+      - chlorophyll_a_ugL
+      - TP_ugL
+      - TN_ugL
+      - DO_mgL
+      - pH
+      - turbidity_NTU
+      - temperature_C
+      - secchi_depth_m
+    notes:
+      - Prefer LowFrequency files for chemistry and manually sampled variables.
+      - HighFrequency files can support temperature, DO, turbidity, and Chl-a memory after depth policy is explicit.
+
+  wqp:
+    source_id: wqp
+    source_name: "Water Quality Portal WQX3 lake/reservoir/impoundment export"
+    source_type: public_api_export
+    access_policy: public_original_private_mirror
+    local_raw_path: data/raw/wqp
+    raw_path: data/raw/wqp
+    dvc_track: true
+    adapter: wqp_streaming
+    role: large_public_lentic_physchem_source
+    format:
+      kind: csv_large
+      main_files:
+        results: wqp_results.csv
+        stations: wqp_stations.csv
+        activity: wqp_activity.csv
+      state_files:
+        - wqp_results_state.json
+        - wqp_stations_state.json
+        - wqp_activity_state.json
+    license: public_download_multi_provider_with_terms_and_disclaimer
+    provenance_status: documented_terms_reviewed_conservative_private_mirror
+    acquisition:
+      route: waterqualitydata_wqx3_resumable_scripts
+      user_query_url: "https://www.waterqualitydata.us/beta/#countrycode=US&siteType=Lake%2C%20Reservoir%2C%20Impoundment&sampleMedia=Water&startDateLo=01-01-1970&startDateHi=05-11-2026&mimeType=csv&dataProfile=fullPhysChem&providers=NWIS&providers=STORET"
+      landing_page: https://www.waterqualitydata.us/
+      script_hints:
+        - data/scripts/download_wqp_results.py
+        - data/scripts/download_wqp_stations.py
+        - data/scripts/download_wqp_activity.py
+      cache_dir: data/cache/downloads/wqp
+      endpoint_queries:
+        results:
+          endpoint: https://www.waterqualitydata.us/wqx3/Result/search
+          output_file: wqp_results.csv
+          dataProfile: fullPhysChem
+        stations:
+          endpoint: https://www.waterqualitydata.us/wqx3/Station/search
+          output_file: wqp_stations.csv
+        activity:
+          endpoint: https://www.waterqualitydata.us/wqx3/Activity/search
+          output_file: wqp_activity.csv
+      query_summary:
+        countrycode: US
+        siteType: "Lake, Reservoir, Impoundment"
+        sampleMedia: Water
+        startDateLo: "01-01-1970"
+        startDateHi: "05-11-2026"
+        mimeType: csv
+        dataProfile: fullPhysChem
+        providers:
+          - NWIS
+          - STORET
+      download_method: project_scripts_with_chunk_resume
+      download_date: "2026-05-11"
+      terms_review:
+        reviewed_at: "2026-05-17"
+        summary: >
+          EPA documents WQP as a public download/retrieval warehouse combining
+          WQX submissions with USGS data from many federal, state, tribal,
+          local, academic, NGO, and other organizations. The project therefore
+          treats WQP as publicly downloadable but not as a single-license raw
+          redistribution package.
+        official_references:
+          - https://www.epa.gov/waterdata/water-quality-data
+          - https://www.epa.gov/waterdata/waters-terms-use-and-disclaimer
+          - https://www.epa.gov/waterdata/water-quality-portal-quick-reference-guide
+          - https://www.waterqualitydata.us/portal_userguide/
+        redistribution_policy: >
+          Keep the full raw mirror in authorized DVC/GCS storage for
+          reproducibility, not as public Git blobs. Public Git may include
+          acquisition scripts, query filters, source metadata, manifests,
+          SHA-256 hashes, DVC pointers, and derived summaries, but not the full
+          WQP raw export as Git blobs.
+    expected_variables:
+      - chlorophyll_a_ugL
+      - TP_ugL
+      - TN_ugL
+      - DO_mgL
+      - pH
+      - turbidity_NTU
+      - temperature_C
+      - secchi_depth_m
+    processing_constraints:
+      - Stream in chunks; wqp_results.csv is too large for full in-memory reads.
+      - Filter to relevant characteristics before canonicalization.
+      - Preserve original Location_Identifier and Activity_ActivityIdentifier as provenance keys.
+    notes:
+      - User-provided browser query is recorded exactly above; project scripts use equivalent WQX3 endpoints for resumable downloads.
+      - Terms were reviewed on 2026-05-17. The conservative policy is to keep the full raw mirror in authorized DVC/GCS storage, not public Git blobs, and publish only scripts, filters, hashes, manifests, metadata, DVC pointers, and derived summaries.
+
+  aquamatch_chla:
+    source_id: aquamatch_chla
+    source_name: "AquaMatch Chlorophyll a Data from Water Quality Portal: ~1970-2024"
+    source_type: authenticated_public_repository_package
+    access_policy: public_domain_original_authenticated_private_mirror
+    local_raw_path: data/raw/aquamatch
+    raw_path: data/raw/aquamatch/chla_harmonized_final.csv
+    raw_manifest_paths:
+      - data/raw/aquamatch/chla_harmonized_final.csv
+      - data/raw/aquamatch/metadata.xml
+      - data/raw/aquamatch/README.pdf
+      - data/raw/aquamatch/Data_Package_Quality_Report.mhtml
+    dvc_track: true
+    adapter: aquamatch_chla
+    role: chlorophyll_auxiliary_source
+    format:
+      kind: csv
+      main_file: chla_harmonized_final.csv
+      metadata_files:
+        - metadata.xml
+        - README.pdf
+        - Data_Package_Quality_Report.mhtml
+    license: cc0-1.0
+    provenance_status: documented
+    acquisition:
+      route: edi_data_portal_authenticated_browser_download
+      repository: EDI Data Portal
+      package_id: edi.1756.2
+      landing_page: "https://portal.edirepository.org/nis/mapbrowse?scope=edi&identifier=1756&revision=2"
+      doi: "https://doi.org/10.6073/pasta/2f750544112e5408928dd9a61e6ace30"
+      publication_date: "2024-11-20"
+      data_entity: chla_harmonized_final
+      data_entity_file: chla_harmonized_final.csv
+      download_method: user_login_and_browser_download
+      download_date: "2026-05-11"
+      script_hint: null
+      citation: "Brousil, M.R., M.F. Meyer, K. Willi, B.G. Steele, J. De La Torre, and M.R. Ross. 2024. AquaMatch Chlorophyll a Data from Water Quality Portal: ~1970-2024 ver 2. Environmental Data Initiative."
+    expected_variables:
+      - chlorophyll_a_ugL
+    processing_constraints:
+      - Confirm whether river/stream observations must be excluded before cohort selection.
+      - Treat this as auxiliary Chl-a until site matching and license are documented.
+    notes:
+      - Data package was downloaded directly from EDI by the project owner after login; no third-party mirror was used.
+      - metadata.xml declares packageId edi.1756.2 and the DOI above.
+      - Intellectual rights in metadata.xml declare Creative Commons CC0 1.0 "No Rights Reserved".
+      - Do not use as primary multivariable panel source unless matching to lentic sites is validated.

@@ -1,0 +1,36 @@
+{
+  "status": "completed",
+  "started_at_utc": "2026-05-16T19:56:16.123289+00:00",
+  "completed_at_utc": "2026-05-16T19:59:10.725971+00:00",
+  "observation_parts": 740,
+  "input_rows": 459949849,
+  "panelable_rows": 459949849,
+  "excluded_rows": 0,
+  "coverage_by_source": {
+    "aquamatch_chla": {
+      "input_rows": 3393022,
+      "panelable_rows": 3393022,
+      "excluded_rows": 0,
+      "excluded_missing_year_month": 0,
+      "excluded_missing_variable": 0
+    },
+    "lakebed_us_cse": {
+      "input_rows": 432748526,
+      "panelable_rows": 432748526,
+      "excluded_rows": 0,
+      "excluded_missing_year_month": 0,
+      "excluded_missing_variable": 0
+    },
+    "wqp": {
+      "input_rows": 23808301,
+      "panelable_rows": 23808301,
+      "excluded_rows": 0,
+      "excluded_missing_year_month": 0,
+      "excluded_missing_variable": 0
+    }
+  },
+  "long_panel": "data/panel/monthly_long_v0.parquet",
+  "wide_panel": "data/panel/panel_monthly_v0.parquet",
+  "long_rows": 7420800,
+  "wide_rows": 3386676
+}

@@ -1,0 +1,11 @@
+model,task,horizon_months,split,bin,bin_left,bin_right,rows,mean_pred_probability,observed_bloom_rate
+source_month,classification_and_risk,1,test,0,0.0,0.1,15574,0.09411117847438684,0.0730062925388468
+source_month,classification_and_risk,1,test,1,0.1,0.2,75209,0.15734039340238382,0.1334148838569852
+source_month,classification_and_risk,1,test,2,0.2,0.3,30757,0.22230854864070698,0.18096693435640668
+source_month,classification_and_risk,1,test,3,0.3,0.4,0,,
+source_month,classification_and_risk,1,test,4,0.4,0.5,0,,
+source_month,classification_and_risk,1,test,5,0.5,0.6,0,,
+source_month,classification_and_risk,1,test,6,0.6,0.7,0,,
+source_month,classification_and_risk,1,test,7,0.7,0.8,0,,
+source_month,classification_and_risk,1,test,8,0.8,0.9,0,,
+source_month,classification_and_risk,1,test,9,0.9,1.0,0,,

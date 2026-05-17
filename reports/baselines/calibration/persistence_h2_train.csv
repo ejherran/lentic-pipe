@@ -1,0 +1,11 @@
+model,task,horizon_months,split,bin,bin_left,bin_right,rows,mean_pred_probability,observed_bloom_rate
+persistence,classification_and_risk,2,train,0,0.0,0.1,584448,0.003917145437082139,0.0264300673455979
+persistence,classification_and_risk,2,train,1,0.1,0.2,112042,0.14892893075757707,0.06801913568126239
+persistence,classification_and_risk,2,train,2,0.2,0.3,59138,0.2523300046386548,0.07113869254962968
+persistence,classification_and_risk,2,train,3,0.3,0.4,66650,0.3508354866600584,0.08109527381845462
+persistence,classification_and_risk,2,train,4,0.4,0.5,59077,0.45295911932834976,0.10543866479340522
+persistence,classification_and_risk,2,train,5,0.5,0.6,51112,0.5492877953256651,0.13560416340585382
+persistence,classification_and_risk,2,train,6,0.6,0.7,51171,0.647327578813329,0.1740243497293389
+persistence,classification_and_risk,2,train,7,0.7,0.8,48299,0.7517902563628406,0.21557382140416986
+persistence,classification_and_risk,2,train,8,0.8,0.9,40778,0.8541464824577129,0.2775516209720928
+persistence,classification_and_risk,2,train,9,0.9,1.0,222139,0.992046676592884,0.583391480109301

@@ -1,0 +1,2 @@
+model,task,horizon_months,split,threshold,tn,fp,fn,tp
+logistic_sgd,classification,3,train,0.5,982183,17080,140707,49283
