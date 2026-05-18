@@ -1,0 +1,123 @@
+{
+  "generated_at_utc": "2026-05-18T16:42:01.076069+00:00",
+  "started_at_utc": "2026-05-18T16:41:45.694327+00:00",
+  "status": "completed",
+  "rollout_version": "pipe_grud_rollout_alerts_v0",
+  "pipe_model_version": "pipe_grud_v0",
+  "config": {
+    "scope": "latest-sites",
+    "split": "all",
+    "history_length": 12,
+    "rollout_horizon": 3,
+    "samples": 64,
+    "deterministic": false,
+    "batch_size": 256,
+    "max_origins": null,
+    "irc_alpha": 0.5,
+    "irc_beta": 0.5,
+    "irc_gamma": 2.0,
+    "irc_alert_threshold": 0.5,
+    "alert_prob_threshold": 0.5,
+    "recent_months": 24,
+    "random_seed": 1729,
+    "model_config": {
+      "history_length": 12,
+      "input_dim": 13,
+      "target_dim": 9,
+      "hidden_dim": 96,
+      "num_layers": 1,
+      "dropout": 0.0,
+      "residual_mode": "add_last",
+      "mse_weight": 1.0,
+      "checkpoint_selection_metric": "balanced",
+      "blend_selection_metric": "balanced",
+      "blend_grid": [
+        0.0,
+        0.1,
+        0.2,
+        0.35,
+        0.5,
+        0.65,
+        0.8,
+        0.9,
+        1.0
+      ]
+    },
+    "calibrated_bloom_horizons": [
+      1,
+      2,
+      3
+    ]
+  },
+  "row_counts": {
+    "selected_origins": 11954,
+    "rollout_rows": 35862,
+    "summary_rows": 12,
+    "top_alert_rows": 9000,
+    "recent_top_alert_rows": 1434
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "bytes": 73436574,
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "path": "models/pipe_grud/pipe_grud_model_v0.pt",
+      "bytes": 139474,
+      "sha256": "3c8d848aa4ad770ff885ca0af7c8948d198fdb44c77e5c09e0f892dcf3feabc2"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_manifest.json",
+      "bytes": 23772,
+      "sha256": "bf6bcdc3fe9e2c2602f52caa03368049b99fb51841e15b202128146166c9fc8d"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
+      "bytes": 2726,
+      "sha256": "3b260cdb7dcb10fb4ffc72a96a13e387123631be512f777412361f7f3430dacc"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h2_isotonic.joblib",
+      "bytes": 2950,
+      "sha256": "04346fac63cf670b59bdff37fa0544c7bcfa3e590f7ff48627bea8a5fec7adff"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h3_isotonic.joblib",
+      "bytes": 2822,
+      "sha256": "389ca9ac472a25ae24fa7a7ed6c796d3b1a1da71da7d0693df131ffab4a39cee"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/pipe_grud/pipe_rollout_alerts_v0.parquet",
+      "bytes": 6889615,
+      "sha256": "765b66f1787a0b0913e3c350adc3bb91f1c59aa8f3900e922693f161d2e98f94"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_alert_summary.csv",
+      "bytes": 2255,
+      "sha256": "71478bbfcf907f17a9b827c4d88b071384ff8bf7b5546fd6b361b7f8cb5aa386"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_top_alerts.csv",
+      "bytes": 1497879,
+      "sha256": "f177e4b52bb0fe9b48cbd1e58f75504834de2d5ec6e5f7976dfc884c03e3f2c7"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_recent_top_alerts.csv",
+      "bytes": 248732,
+      "sha256": "afac8a9ff953c17485378125605c7e604f4e7e897a15895e20527b9c85c26a67"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_alert_report.md",
+      "bytes": 3808,
+      "sha256": "ffdd66d5550d615a66bdfc028f7db3b30bf5c9b75f8aef2b292d485e703b0f0d"
+    }
+  ],
+  "script": {
+    "path": "/home/zero/repos/lentic-pipe/src/experiments/rollout_pipe_grud.py",
+    "bytes": 32780,
+    "sha256": "8abdb506d46357d32a9c36b6ea8a67edd607385c5a6726580aeb42fda375a520"
+  }
+}

@@ -1,0 +1,5 @@
+outs:
+- md5: a512d467954785613b677789f567b4be
+  size: 6889615
+  hash: md5
+  path: pipe_rollout_alerts_v0.parquet

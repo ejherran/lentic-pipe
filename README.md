@@ -146,8 +146,9 @@ scripts/check_repo_publication_ready.sh
 
 The pre-commit artifact assistant detects DVC-tracked data changes, asks before
 adding unmanaged ignored data paths to DVC, runs `dvc add`, runs `dvc push`,
-stages Git changes, and writes a timestamped upload preparation report under
-ignored `tmp/`.
+stages Git changes, validates DVC pointers, checks experiment manifest hashes,
+flags stale data-freeze risk, and writes a timestamped upload preparation report
+under ignored `tmp/`.
 
 Commit only code, configs, docs, manifests, small reports, and `.dvc` pointer
 files. Do not commit `.dvc/config.local`, raw data, model binaries, heavy
@@ -162,6 +163,7 @@ exports, or credential JSON files.
 - `docs/DVC_GCS_SETUP.md`
 - `docs/PUBLICATION_CHECKLIST.md`
 - `docs/DATA_FREEZE.md`
+- `docs/PIPE_ROLLOUT_ITERATION_1.md`
 
 ## Current State
 
@@ -177,6 +179,14 @@ exports, or credential JSON files.
   regenerating local reproducibility artifacts after `dvc pull`.
 - `scripts/prepare_commit_artifacts.sh` is the recommended workflow for
   preparing Git staging and DVC upload before a manual commit.
+- `src/experiments/rollout_pipe_grud.py` generates recursive PIPE/GRU-D state
+  rollouts and alert summaries from the frozen promoted model.
+- `src/experiments/evaluate_pipe_grud_rollouts.py` backtests recursive
+  PIPE/GRU-D rollouts against observed future fuzzy states before treating
+  alert behavior as thesis evidence.
+- `docs/PIPE_ROLLOUT_ITERATION_1.md` records the first reproducible rollout
+  iteration, including operational artifacts, historical backtest metrics, and
+  the Iteration 2 direction.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

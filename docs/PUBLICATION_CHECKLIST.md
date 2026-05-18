@@ -6,7 +6,8 @@ Run this checklist before pushing to GitHub.
 2. `scripts/prepare_commit_artifacts.sh` has been run after the last data or
    model artifact change.
 3. The timestamped `tmp/pre_commit_artifacts_*.md` report from the latest run
-   has been reviewed.
+   has been reviewed, including DVC pointer, experiment-manifest hash, and
+   data-freeze freshness findings.
 4. `scripts/check_repo_publication_ready.sh` passes.
 5. `scripts/list_publication_candidates.sh` has been reviewed line by line.
 6. `poetry run ty check` passes.

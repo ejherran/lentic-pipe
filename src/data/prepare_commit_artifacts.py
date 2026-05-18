@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import shlex
@@ -21,6 +22,8 @@ DEFAULT_DVC_MANIFEST = Path("configs/dvc_artifacts.yaml")
 DEFAULT_REPORT_DIR = Path("tmp")
 DEFAULT_DVC_BIN = Path(".venv/bin/dvc")
 DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
+HASH_CHUNK_SIZE = 16 * 1024 * 1024
+DEFAULT_MAX_MANIFEST_HASH_BYTES = 512 * 1024 * 1024
 
 HEAVY_PREFIXES = (
     "data/raw/",
@@ -54,6 +57,38 @@ IGNORED_PATH_PARTS_TO_SKIP = {
 REGENERABLE_IGNORED_PATHS = {
     "data/interim/observations/observations_summary.csv",
 }
+REPORT_ARTIFACT_SUFFIXES = {".csv", ".json", ".md", ".parquet", ".txt"}
+FREEZE_ARTIFACT_PATHS = {
+    Path("data/freeze/derived_file_manifest_v0.csv"),
+    Path("data/freeze/data_freeze_manifest_v0.json"),
+    Path("data/freeze/DATA_FREEZE.md"),
+}
+FREEZE_REQUIRED_OUTPUTS = {
+    Path("data/freeze/derived_file_manifest_v0.csv"),
+    Path("data/freeze/data_freeze_manifest_v0.json"),
+    Path("data/freeze/DATA_FREEZE.md"),
+}
+FREEZE_SENSITIVE_EXACT_PATHS = {
+    "configs/sources.yaml",
+    "src/data/build_observations.py",
+    "src/data/build_panel.py",
+    "src/data/build_targets.py",
+    "src/data/diagnose_panel_targets.py",
+    "src/data/freeze.py",
+    "src/data/raw_manifest.py",
+    "src/data/report_observations.py",
+    "src/data/site_registry.py",
+    "src/data/validate_sources.py",
+}
+FREEZE_SENSITIVE_PREFIXES = (
+    "data/catalog/",
+    "data/interim/",
+    "data/panel/",
+    "data/targets/",
+    "data/diagnostics/",
+    "data/scripts/",
+)
+DEFAULT_DVC_ARTIFACT_INVENTORY = Path("configs/dvc_artifacts.yaml")
 
 
 @dataclass(frozen=True)
@@ -73,8 +108,24 @@ class CommandResult:
     stderr: str
 
 
+@dataclass(frozen=True)
+class ReproducibilityFinding:
+    level: str
+    check: str
+    path: str
+    message: str
+
+
 def command_text(command: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in command)
+
+
+def sha256_file(path: Path, chunk_size: int = HASH_CHUNK_SIZE) -> str:
+    digest = hashlib.sha256()
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
 
 
 def run_command(command: list[str], *, check: bool = True, env: dict[str, str] | None = None) -> CommandResult:
@@ -214,12 +265,37 @@ def dvc_status_candidates(status_payload: dict[str, Any], artifacts: list[DvcArt
     return sorted(set(candidates), key=lambda artifact: artifact.path.as_posix())
 
 
+def declared_artifacts_missing_pointers(artifacts: list[DvcArtifact]) -> list[DvcArtifact]:
+    candidates = []
+    for artifact in artifacts:
+        if not artifact.dvc:
+            continue
+        if not artifact.path.exists():
+            continue
+        if dvc_pointer_path(artifact.path).exists():
+            continue
+        candidates.append(artifact)
+    return sorted(candidates, key=lambda artifact: artifact.path.as_posix())
+
+
 def parse_git_status_lines(output: str) -> list[tuple[str, str]]:
     rows = []
     for line in output.splitlines():
         if len(line) < 4:
             continue
         rows.append((line[:2], line[3:]))
+    return rows
+
+
+def parse_git_name_status(output: str) -> list[tuple[str, Path]]:
+    rows = []
+    for line in output.splitlines():
+        if not line.strip():
+            continue
+        parts = line.split("\t")
+        if len(parts) < 2:
+            continue
+        rows.append((parts[0], Path(parts[-1])))
     return rows
 
 
@@ -258,6 +334,497 @@ def unmanaged_ignored_heavy_paths(artifacts: list[DvcArtifact]) -> list[Path]:
 
 def versionable_changes() -> str:
     return run_command(["git", "status", "--short", "--untracked-files=normal"]).stdout
+
+
+def normalize_repo_path(raw_path: str) -> Path:
+    path = Path(raw_path)
+    if not path.is_absolute():
+        return path
+    repo_root = Path.cwd().resolve()
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(repo_root)
+    except ValueError:
+        return path
+
+
+def is_experiment_manifest_path(path: Path) -> bool:
+    text = path.as_posix()
+    return text.startswith("reports/") and path.suffix == ".json" and "manifest" in path.name
+
+
+def is_report_artifact_path(path: Path) -> bool:
+    text = path.as_posix()
+    if not text.startswith("reports/"):
+        return False
+    if is_experiment_manifest_path(path):
+        return False
+    return path.suffix in REPORT_ARTIFACT_SUFFIXES
+
+
+def manifest_record_path(record: Any) -> Path | None:
+    if not isinstance(record, dict):
+        return None
+    raw_path = record.get("path")
+    if not isinstance(raw_path, str) or not raw_path.strip():
+        return None
+    return normalize_repo_path(raw_path)
+
+
+def record_display_path(path: Path) -> str:
+    return path.as_posix() if not path.is_absolute() else str(path)
+
+
+def verify_manifest_file_record(
+    *,
+    record: Any,
+    manifest_path: Path,
+    section: str,
+    findings: list[ReproducibilityFinding],
+    max_hash_bytes: int,
+    require_hash: bool,
+    force_hash: bool = False,
+) -> Path | None:
+    record_path = manifest_record_path(record)
+    if record_path is None:
+        findings.append(
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"{section} record is missing a valid path.",
+            )
+        )
+        return None
+
+    actual_path = record_path
+    display_path = record_display_path(record_path)
+    if not actual_path.exists():
+        findings.append(
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                display_path,
+                f"{manifest_path} lists this {section} path, but it does not exist.",
+            )
+        )
+        return record_path
+
+    if isinstance(record, dict):
+        expected_bytes = record.get("bytes")
+        if isinstance(expected_bytes, int):
+            actual_bytes = actual_path.stat().st_size
+            if actual_bytes != expected_bytes:
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        display_path,
+                        f"{section} byte count changed: manifest={expected_bytes}, current={actual_bytes}.",
+                    )
+                )
+
+        expected_sha = record.get("sha256")
+        if not isinstance(expected_sha, str) or len(expected_sha) != 64:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    display_path,
+                    f"{section} record is missing a 64-character SHA-256 hash.",
+                )
+            )
+            return record_path
+
+        actual_bytes = actual_path.stat().st_size
+        should_hash = force_hash or (require_hash and actual_bytes <= max_hash_bytes)
+        if should_hash:
+            actual_sha = sha256_file(actual_path)
+            if actual_sha != expected_sha:
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        display_path,
+                        f"{section} SHA-256 changed: manifest={expected_sha}, current={actual_sha}.",
+                    )
+                )
+        elif require_hash:
+            findings.append(
+                ReproducibilityFinding(
+                    "warn",
+                    "manifest",
+                    display_path,
+                    (
+                        f"{section} is {actual_bytes} bytes, above --max-manifest-hash-bytes="
+                        f"{max_hash_bytes}; byte count was checked, SHA-256 was not recomputed."
+                    ),
+                )
+            )
+
+    return record_path
+
+
+def discover_relevant_manifest_paths(staged_paths: set[Path]) -> list[Path]:
+    manifest_paths = {path for path in staged_paths if is_experiment_manifest_path(path)}
+    for path in staged_paths:
+        if not is_report_artifact_path(path):
+            continue
+        if not path.parent.exists():
+            continue
+        for candidate in path.parent.glob("*manifest*.json"):
+            if not is_experiment_manifest_path(candidate):
+                continue
+            try:
+                payload = json.loads(candidate.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                continue
+            outputs = payload.get("outputs") if isinstance(payload, dict) else None
+            if not isinstance(outputs, list):
+                continue
+            output_paths = {record_path for record in outputs if (record_path := manifest_record_path(record)) is not None}
+            if path in output_paths:
+                manifest_paths.add(candidate)
+    return sorted(manifest_paths, key=lambda path: path.as_posix())
+
+
+def validate_experiment_manifests(
+    *,
+    staged_paths: set[Path],
+    artifacts: list[DvcArtifact],
+    max_hash_bytes: int,
+    verify_manifest_inputs: bool,
+) -> list[ReproducibilityFinding]:
+    findings: list[ReproducibilityFinding] = []
+    report_artifacts = sorted(
+        {path for path in staged_paths if is_report_artifact_path(path)},
+        key=lambda path: path.as_posix(),
+    )
+    manifest_paths = discover_relevant_manifest_paths(staged_paths)
+    covered_outputs: dict[Path, list[Path]] = {}
+    checked_outputs = 0
+
+    if not report_artifacts and not manifest_paths:
+        return [
+            ReproducibilityFinding(
+                "ok",
+                "manifest",
+                "-",
+                "No staged report artifacts require experiment-manifest validation.",
+            )
+        ]
+
+    for manifest_path in manifest_paths:
+        if not manifest_path.exists():
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    "Experiment manifest is referenced by staged reports but does not exist.",
+                )
+            )
+            continue
+
+        try:
+            payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError as exc:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    f"Experiment manifest is not valid JSON: {exc}.",
+                )
+            )
+            continue
+
+        if isinstance(payload, dict) and payload.get("status") not in {None, "completed"}:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    f"Experiment manifest status is `{payload.get('status')}`, expected `completed`.",
+                )
+            )
+
+        outputs = payload.get("outputs") if isinstance(payload, dict) else None
+        if not isinstance(outputs, list) or not outputs:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    "Experiment manifest must contain a non-empty `outputs` list.",
+                )
+            )
+            continue
+
+        for record in outputs:
+            record_path = verify_manifest_file_record(
+                record=record,
+                manifest_path=manifest_path,
+                section="output",
+                findings=findings,
+                max_hash_bytes=max_hash_bytes,
+                require_hash=True,
+            )
+            if record_path is not None:
+                covered_outputs.setdefault(record_path, []).append(manifest_path)
+                checked_outputs += 1
+
+        script = payload.get("script") if isinstance(payload, dict) else None
+        if isinstance(script, dict):
+            verify_manifest_file_record(
+                record=script,
+                manifest_path=manifest_path,
+                section="script",
+                findings=findings,
+                max_hash_bytes=max_hash_bytes,
+                require_hash=True,
+                force_hash=True,
+            )
+        else:
+            findings.append(
+                ReproducibilityFinding(
+                    "warn",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    "Experiment manifest does not record the generating script.",
+                )
+            )
+
+        inputs = payload.get("inputs") if isinstance(payload, dict) else None
+        if isinstance(inputs, list):
+            for record in inputs:
+                verify_manifest_file_record(
+                    record=record,
+                    manifest_path=manifest_path,
+                    section="input",
+                    findings=findings,
+                    max_hash_bytes=max_hash_bytes,
+                    require_hash=verify_manifest_inputs,
+                )
+        elif inputs is None:
+            findings.append(
+                ReproducibilityFinding(
+                    "warn",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    "Experiment manifest does not record inputs.",
+                )
+            )
+        else:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    manifest_path.as_posix(),
+                    "Experiment manifest `inputs` field must be a list when present.",
+                )
+            )
+
+    for path in report_artifacts:
+        if path not in covered_outputs:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "manifest",
+                    path.as_posix(),
+                    "Staged report artifact is not listed in any experiment manifest output.",
+                )
+            )
+
+    staged_dvc_outputs = [
+        path
+        for path in covered_outputs
+        if is_artifact_covered(path.as_posix(), artifacts) and dvc_pointer_path(path).exists()
+    ]
+    findings.append(
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            "-",
+            (
+                f"Checked {len(manifest_paths)} experiment manifest(s), {checked_outputs} output record(s), "
+                f"and {len(report_artifacts)} staged report artifact(s). "
+                f"{len(staged_dvc_outputs)} covered output(s) are also protected by DVC pointers."
+            ),
+        )
+    )
+    return findings
+
+
+def validate_dvc_pointers(staged_paths: set[Path], selected_dvc_paths: list[Path]) -> list[ReproducibilityFinding]:
+    findings: list[ReproducibilityFinding] = []
+    pointer_paths = {path for path in staged_paths if path.suffix == ".dvc"}
+    pointer_paths.update(dvc_pointer_path(path) for path in selected_dvc_paths)
+
+    if not pointer_paths:
+        return [ReproducibilityFinding("ok", "dvc", "-", "No DVC pointer files need pointer-structure validation.")]
+
+    for pointer_path in sorted(pointer_paths, key=lambda path: path.as_posix()):
+        if not pointer_path.exists():
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "dvc",
+                    pointer_path.as_posix(),
+                    "Expected DVC pointer file does not exist.",
+                )
+            )
+            continue
+        try:
+            payload = yaml.safe_load(pointer_path.read_text(encoding="utf-8"))
+        except yaml.YAMLError as exc:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "dvc",
+                    pointer_path.as_posix(),
+                    f"DVC pointer is not valid YAML: {exc}.",
+                )
+            )
+            continue
+        outs = payload.get("outs") if isinstance(payload, dict) else None
+        if not isinstance(outs, list) or not outs:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "dvc",
+                    pointer_path.as_posix(),
+                    "DVC pointer must contain a non-empty `outs` list.",
+                )
+            )
+            continue
+        for out in outs:
+            if not isinstance(out, dict) or not out.get("path") or not out.get("md5"):
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "dvc",
+                        pointer_path.as_posix(),
+                        "Each DVC pointer output must include `path` and `md5`.",
+                    )
+                )
+                break
+
+    if not any(finding.level == "fail" and finding.check == "dvc" for finding in findings):
+        findings.append(
+            ReproducibilityFinding(
+                "ok",
+                "dvc",
+                "-",
+                f"Validated {len(pointer_paths)} DVC pointer file(s).",
+            )
+        )
+    return findings
+
+
+def is_freeze_sensitive_path(path: Path) -> bool:
+    text = path.as_posix()
+    if path in FREEZE_ARTIFACT_PATHS:
+        return False
+    if text in FREEZE_SENSITIVE_EXACT_PATHS:
+        return True
+    return any(text.startswith(prefix) for prefix in FREEZE_SENSITIVE_PREFIXES)
+
+
+def validate_freeze_freshness(staged_rows: list[tuple[str, Path]]) -> list[ReproducibilityFinding]:
+    changed_paths = {path for _, path in staged_rows}
+    sensitive_paths = sorted(
+        {path for path in changed_paths if is_freeze_sensitive_path(path)},
+        key=lambda path: path.as_posix(),
+    )
+    changed_freeze_outputs = changed_paths.intersection(FREEZE_REQUIRED_OUTPUTS)
+    findings: list[ReproducibilityFinding] = []
+
+    if sensitive_paths:
+        missing_freeze_outputs = sorted(FREEZE_REQUIRED_OUTPUTS - changed_paths, key=lambda path: path.as_posix())
+        if missing_freeze_outputs:
+            findings.append(
+                ReproducibilityFinding(
+                    "fail",
+                    "freeze",
+                    ", ".join(path.as_posix() for path in sensitive_paths[:5]),
+                    (
+                        "Freeze-sensitive data pipeline changes are staged, but not all required "
+                        f"freeze outputs are staged: {', '.join(path.as_posix() for path in missing_freeze_outputs)}."
+                    ),
+                )
+            )
+        else:
+            findings.append(
+                ReproducibilityFinding(
+                    "ok",
+                    "freeze",
+                    "-",
+                    f"Freeze-sensitive changes are paired with {len(FREEZE_REQUIRED_OUTPUTS)} required freeze outputs.",
+                )
+            )
+    else:
+        findings.append(
+            ReproducibilityFinding(
+                "ok",
+                "freeze",
+                "-",
+                "No freeze-sensitive data pipeline changes are staged.",
+            )
+        )
+
+    if changed_freeze_outputs and changed_freeze_outputs != FREEZE_REQUIRED_OUTPUTS:
+        findings.append(
+            ReproducibilityFinding(
+                "fail",
+                "freeze",
+                ", ".join(path.as_posix() for path in sorted(changed_freeze_outputs, key=lambda path: path.as_posix())),
+                "A data-freeze update must stage derived CSV, JSON manifest, and DATA_FREEZE.md together.",
+            )
+        )
+
+    if DEFAULT_DVC_ARTIFACT_INVENTORY in changed_paths and not sensitive_paths:
+        findings.append(
+            ReproducibilityFinding(
+                "ok",
+                "freeze",
+                DEFAULT_DVC_ARTIFACT_INVENTORY.as_posix(),
+                (
+                    "DVC artifact inventory changed, but no freeze-sensitive data pipeline paths "
+                    "are staged; data-freeze regeneration is not required by this check."
+                ),
+            )
+        )
+
+    return findings
+
+
+def reproducibility_checks(
+    *,
+    staged_status: str,
+    selected_dvc_paths: list[Path],
+    artifacts: list[DvcArtifact],
+    max_manifest_hash_bytes: int,
+    verify_manifest_inputs: bool,
+) -> list[ReproducibilityFinding]:
+    staged_rows = parse_git_name_status(staged_status)
+    staged_paths = {path for status, path in staged_rows if not status.startswith("D")}
+    findings: list[ReproducibilityFinding] = []
+    findings.extend(validate_dvc_pointers(staged_paths, selected_dvc_paths))
+    findings.extend(
+        validate_experiment_manifests(
+            staged_paths=staged_paths,
+            artifacts=artifacts,
+            max_hash_bytes=max_manifest_hash_bytes,
+            verify_manifest_inputs=verify_manifest_inputs,
+        )
+    )
+    findings.extend(validate_freeze_freshness(staged_rows))
+    return findings
+
+
+def has_failing_findings(findings: list[ReproducibilityFinding]) -> bool:
+    return any(finding.level == "fail" for finding in findings)
 
 
 def prompt_yes_no(question: str, *, default: bool = False) -> bool:
@@ -315,6 +882,7 @@ def write_report(
     dvc_push_result: CommandResult | None,
     git_add_result: CommandResult | None,
     publication_check_result: CommandResult | None,
+    reproducibility_findings: list[ReproducibilityFinding],
     staged_status: str,
 ) -> None:
     report_path.parent.mkdir(parents=True, exist_ok=True)
@@ -420,6 +988,15 @@ def write_report(
             ]
         )
 
+    lines.extend(["", "## Reproducibility Checks", ""])
+    if reproducibility_findings:
+        for finding in reproducibility_findings:
+            lines.append(
+                f"- `{finding.level.upper()}` `{finding.check}` `{finding.path}`: {finding.message}"
+            )
+    else:
+        lines.append("- none")
+
     lines.extend(["", "## Staged Status After Preparation", "", "```text", staged_status.rstrip() or "none", "```", ""])
     report_path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -441,6 +1018,17 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--no-push", action="store_true", help="Run dvc add and git add, but skip dvc push.")
     parser.add_argument("--allow-unmanaged", action="store_true", help="Do not fail if unmanaged heavy paths are rejected.")
     parser.add_argument("--skip-publication-check", action="store_true")
+    parser.add_argument(
+        "--max-manifest-hash-bytes",
+        type=int,
+        default=DEFAULT_MAX_MANIFEST_HASH_BYTES,
+        help="Maximum file size for recomputing experiment-manifest SHA-256 outputs.",
+    )
+    parser.add_argument(
+        "--verify-manifest-inputs",
+        action="store_true",
+        help="Also recompute SHA-256 hashes for experiment-manifest inputs within the size limit.",
+    )
     return parser.parse_args()
 
 
@@ -454,20 +1042,23 @@ def main() -> int:
     git_status_before = versionable_changes()
     dvc_status_before = dvc_status_json(dvc_bin)
     changed_artifacts = dvc_status_candidates(dvc_status_before, artifacts)
+    missing_pointer_artifacts = declared_artifacts_missing_pointers(artifacts)
     manual_targets = unique_paths([Path(path) for path in args.target])
     unmanaged_paths = unmanaged_ignored_heavy_paths(artifacts)
 
-    if dvc_status_before and not changed_artifacts and not manual_targets:
+    if dvc_status_before and not changed_artifacts and not missing_pointer_artifacts and not manual_targets:
         print("DVC status reports changes, but no declared artifact could be matched.", file=sys.stderr)
         print("Review `dvc status` and rerun with one or more `--target PATH` options.", file=sys.stderr)
         return 1
 
     print("Pre-commit artifact assistant")
     print_artifact_table("DVC-tracked artifacts changed according to dvc status:", changed_artifacts)
+    print_artifact_table("Declared DVC artifacts missing pointer files:", missing_pointer_artifacts)
     print_path_table("Additional manual DVC targets:", manual_targets)
     print_path_table("Unmanaged ignored heavy paths:", unmanaged_paths)
 
     selected_dvc_paths = [artifact.path for artifact in changed_artifacts]
+    selected_dvc_paths.extend(artifact.path for artifact in missing_pointer_artifacts)
     selected_dvc_paths.extend(manual_targets)
 
     rejected_unmanaged: list[Path] = []
@@ -499,6 +1090,7 @@ def main() -> int:
     dvc_push_result: CommandResult | None = None
     git_add_result: CommandResult | None = None
     publication_check_result: CommandResult | None = None
+    reproducibility_findings: list[ReproducibilityFinding] = []
 
     if args.dry_run:
         print()
@@ -534,6 +1126,13 @@ def main() -> int:
 
         git_add_result = run_command(["git", "add", "-A"])
         staged_status = run_command(["git", "diff", "--cached", "--name-status"]).stdout
+        reproducibility_findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=selected_dvc_paths,
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
         write_report(
             report_path,
             dry_run=args.dry_run,
@@ -546,10 +1145,24 @@ def main() -> int:
             dvc_push_result=dvc_push_result,
             git_add_result=git_add_result,
             publication_check_result=publication_check_result,
+            reproducibility_findings=reproducibility_findings,
             staged_status=staged_status,
         )
+        if has_failing_findings(reproducibility_findings):
+            print()
+            print("Reproducibility checks failed; fix the findings and rerun the assistant.", file=sys.stderr)
+            print(f"Report written: {report_path}", file=sys.stderr)
+            return 1
     else:
         staged_status = "dry run"
+        reproducibility_findings = [
+            ReproducibilityFinding(
+                "warn",
+                "reproducibility",
+                "-",
+                "Dry run: final staged reproducibility checks were not executed.",
+            )
+        ]
         write_report(
             report_path,
             dry_run=args.dry_run,
@@ -562,6 +1175,7 @@ def main() -> int:
             dvc_push_result=None,
             git_add_result=None,
             publication_check_result=None,
+            reproducibility_findings=reproducibility_findings,
             staged_status=staged_status,
         )
 

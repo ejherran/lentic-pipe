@@ -88,6 +88,9 @@ def test_prepare_commit_artifact_assistant_stages_git_and_pushes_dvc() -> None:
     assert "configs/dvc_artifacts.yaml" in script
     assert "dvc_status_candidates" in script
     assert "unmanaged_ignored_heavy_paths" in script
+    assert "validate_experiment_manifests" in script
+    assert "validate_freeze_freshness" in script
+    assert "Reproducibility Checks" in script
     assert "prompt_yes_no" in script
     assert '"add", path.as_posix()' in script
     assert "\"push\"" in script
@@ -98,6 +101,27 @@ def test_prepare_commit_artifact_assistant_stages_git_and_pushes_dvc() -> None:
     assert "scripts/prepare_commit_artifacts.sh" in readme
     assert "scripts/prepare_commit_artifacts.sh" in checklist
     assert "tmp/pre_commit_artifacts_*.md" in checklist
+
+
+def test_pipe_rollout_alerts_are_documented_as_dvc_artifacts() -> None:
+    dvc_artifacts = (REPO_ROOT / "configs/dvc_artifacts.yaml").read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    data_versioning = (REPO_ROOT / "docs/DATA_VERSIONING.md").read_text(encoding="utf-8")
+    rollout_iteration = (REPO_ROOT / "docs/PIPE_ROLLOUT_ITERATION_1.md").read_text(encoding="utf-8")
+
+    assert "pipe_rollout_alerts_v0" in dvc_artifacts
+    assert "data/pipe_grud/pipe_rollout_alerts_v0.parquet" in dvc_artifacts
+    assert "src/experiments/rollout_pipe_grud.py" in readme
+    assert "src/experiments/evaluate_pipe_grud_rollouts.py" in readme
+    assert "docs/PIPE_ROLLOUT_ITERATION_1.md" in readme
+    assert "pipe_rollout_alerts_v0" in data_versioning
+    assert "pipe_grud_rollout_backtest_v0" in data_versioning
+    assert "rollout backtest" in data_versioning
+    assert (
+        "poetry run python src/experiments/evaluate_pipe_grud_rollouts.py --split test --samples 128 --batch-size 256"
+        in rollout_iteration
+    )
+    assert "Iteration 2 Direction" in rollout_iteration
 
 
 def test_publication_check_scans_for_service_account_key_content() -> None:

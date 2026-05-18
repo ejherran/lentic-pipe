@@ -161,8 +161,9 @@ scripts/check_repo_publication_ready.sh
 
 The pre-commit artifact assistant classifies Git and DVC candidates, asks
 before adding unmanaged ignored data paths to DVC, runs `dvc add`, runs
-`dvc push`, stages Git changes, and writes a timestamped local report under
-ignored `tmp/`. The Git commit remains a manual step.
+`dvc push`, stages Git changes, validates DVC pointers, checks experiment
+manifest hashes, flags stale data-freeze risk, and writes a timestamped local
+report under ignored `tmp/`. The Git commit remains a manual step.
 
 Commit only code, configs, docs, reports/manifests, and `.dvc` pointer files.
 Do not commit `.dvc/config.local`, raw data, model binaries, or credential JSON

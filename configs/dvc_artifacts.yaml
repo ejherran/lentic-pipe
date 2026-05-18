@@ -123,6 +123,13 @@ artifacts:
     dvc: true
     github_policy: pointer_only
 
+  - artifact_id: pipe_rollout_alerts_v0
+    path: data/pipe_grud/pipe_rollout_alerts_v0.parquet
+    type: pipe_rollout_alerts
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_summaries_in_git
+
   - artifact_id: trained_models
     path: models
     type: model_artifacts
