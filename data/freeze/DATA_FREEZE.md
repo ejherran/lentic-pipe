@@ -1,23 +1,13 @@
 # DATA_FREEZE v0
 
-Generated at UTC: `2026-05-17T05:59:33.633178+00:00`
-Repository commit: `35bfba219f9bef95c0ae7f45d6357f0b23a4bf2e`
-Worktree status: `A  .dvc/.gitignore
-A  .dvc/config
-A  .dvcignore
- M .gitignore
- M README.md
-?? configs/
-?? data/
-?? docs/
-?? models.dvc
-?? poetry.lock
-?? poetry.toml
-?? pyproject.toml
-?? reports/
-?? scripts/
-?? src/
-?? tests/`
+Generated at UTC: `2026-05-18T14:41:22.026802+00:00`
+Repository commit: `e38be702e2cf10fe1f8341895a96863a108dfb9f`
+Worktree status: `M data/catalog/raw_file_manifest.csv
+ M data/catalog/source_catalog.json
+ M data/freeze/DATA_FREEZE.md
+ M data/freeze/data_freeze_manifest_v0.json
+ M data/freeze/derived_file_manifest_v0.csv
+ M reports/data/source_inventory.md`
 Python constraint: `>=3.14,<3.15`
 
 ## Scope

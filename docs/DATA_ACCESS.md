@@ -61,10 +61,10 @@ After DVC is initialized and objects have been pushed:
 ```bash
 scripts/dvc_data_assistant.sh setup --bucket YOUR_PRIVATE_BUCKET --credentialpath private/YOUR_SERVICE_ACCOUNT.json
 scripts/dvc_data_assistant.sh pull
-.venv/bin/python src/data/validate_sources.py
-.venv/bin/python src/data/raw_manifest.py --reuse-existing
-.venv/bin/python src/data/freeze.py --overwrite
+scripts/reproduce_data_workspace.sh
 ```
 
-The regenerated SHA-256 manifests must match the committed freeze before model
-results are trusted.
+The recovery assistant regenerates source manifests, canonical observation
+summaries, and the data freeze. It fails if a path present in the committed
+derived manifest disappears during regeneration, unless the change is
+explicitly acknowledged with `--allow-path-set-change`.

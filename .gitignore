@@ -308,3 +308,6 @@ private/
 /reports/anfis/operational_site_review_summary.csv
 !/reports/**/*.dvc
 /models
+
+# Temp
+tmp/

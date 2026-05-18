@@ -136,30 +136,33 @@ run:
 ```bash
 scripts/dvc_data_assistant.sh setup --bucket YOUR_PRIVATE_BUCKET --credentialpath private/YOUR_SERVICE_ACCOUNT.json
 scripts/dvc_data_assistant.sh pull
+```
+
+After `pull`, regenerate local reproducibility artifacts:
+
+```bash
+scripts/reproduce_data_workspace.sh
 scripts/dvc_data_assistant.sh doctor
 ```
 
-After `pull`, regenerate local verification reports:
-
-```bash
-.venv/bin/python src/data/validate_sources.py
-.venv/bin/python src/data/raw_manifest.py --reuse-existing
-.venv/bin/python src/data/freeze.py --overwrite
-```
-
-The regenerated hashes must match the committed freeze before downstream
-results are trusted.
+The recovery assistant rebuilds source manifests, canonical observation
+summaries, and the data freeze. It also compares the regenerated derived
+manifest path set against the committed one so missing regenerated files fail
+the recovery flow instead of silently disappearing.
 
 ## Upload Flow
 
 On the machine that produced or updated heavy artifacts:
 
 ```bash
-.venv/bin/python src/data/dvc_add_from_manifest.py --dry-run
-.venv/bin/python src/data/dvc_add_from_manifest.py
-scripts/dvc_data_assistant.sh push
+scripts/prepare_commit_artifacts.sh
 scripts/check_repo_publication_ready.sh
 ```
+
+The pre-commit artifact assistant classifies Git and DVC candidates, asks
+before adding unmanaged ignored data paths to DVC, runs `dvc add`, runs
+`dvc push`, stages Git changes, and writes a timestamped local report under
+ignored `tmp/`. The Git commit remains a manual step.
 
 Commit only code, configs, docs, reports/manifests, and `.dvc` pointer files.
 Do not commit `.dvc/config.local`, raw data, model binaries, or credential JSON

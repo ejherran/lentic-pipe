@@ -7,15 +7,21 @@ data/freeze/DATA_FREEZE.md
 ```
 
 That freeze must be regenerated after changes to source metadata, raw source
-files, or download scripts. Before DVC initialization or publication, regenerate:
+files, or download scripts. After DVC recovery on a new machine, regenerate the
+local reproducibility artifacts with:
 
 ```bash
-.venv/bin/python src/data/validate_sources.py
-.venv/bin/python src/data/raw_manifest.py --reuse-existing
-.venv/bin/python src/data/freeze.py --overwrite
+scripts/reproduce_data_workspace.sh
 ```
 
-The regenerated freeze should include SHA-256 signatures for:
+For a complete heavy rebuild from raw data, use:
+
+```bash
+scripts/reproduce_data_workspace.sh --full-rebuild
+```
+
+That mode can take hours and rewrites DVC-managed derived artifacts. The
+regenerated freeze should include SHA-256 signatures for:
 
 - `data/raw/aquamatch/chla_harmonized_final.csv`
 - `data/raw/aquamatch/metadata.xml`

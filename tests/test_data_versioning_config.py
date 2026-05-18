@@ -59,6 +59,47 @@ def test_dvc_data_assistant_documents_setup_pull_push_workflow() -> None:
     assert "scripts/dvc_data_assistant.sh push" in docs
 
 
+def test_reproduce_data_workspace_assistant_regenerates_post_pull_artifacts() -> None:
+    script = (REPO_ROOT / "scripts/reproduce_data_workspace.sh").read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    data_access = (REPO_ROOT / "docs/DATA_ACCESS.md").read_text(encoding="utf-8")
+    dvc_setup = (REPO_ROOT / "docs/DVC_GCS_SETUP.md").read_text(encoding="utf-8")
+
+    assert "src/data/validate_sources.py" in script
+    assert "src/data/raw_manifest.py" in script
+    assert "--reuse-existing" in script
+    assert "src/data/report_observations.py" in script
+    assert "src/data/freeze.py" in script
+    assert "--overwrite" in script
+    assert "data/interim/observations/observations_summary.csv" in script
+    assert "Verify derived manifest path set" in script
+    assert "--allow-path-set-change" in script
+    assert "scripts/reproduce_data_workspace.sh" in readme
+    assert "scripts/reproduce_data_workspace.sh" in data_access
+    assert "scripts/reproduce_data_workspace.sh" in dvc_setup
+
+
+def test_prepare_commit_artifact_assistant_stages_git_and_pushes_dvc() -> None:
+    script = (REPO_ROOT / "src/data/prepare_commit_artifacts.py").read_text(encoding="utf-8")
+    wrapper = (REPO_ROOT / "scripts/prepare_commit_artifacts.sh").read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    checklist = (REPO_ROOT / "docs/PUBLICATION_CHECKLIST.md").read_text(encoding="utf-8")
+
+    assert "configs/dvc_artifacts.yaml" in script
+    assert "dvc_status_candidates" in script
+    assert "unmanaged_ignored_heavy_paths" in script
+    assert "prompt_yes_no" in script
+    assert '"add", path.as_posix()' in script
+    assert "\"push\"" in script
+    assert "\"git\", \"add\", \"-A\"" in script
+    assert "DEFAULT_REPORT_DIR = Path(\"tmp\")" in script
+    assert "pre_commit_artifacts_{timestamp}.md" in script
+    assert "src/data/prepare_commit_artifacts.py" in wrapper
+    assert "scripts/prepare_commit_artifacts.sh" in readme
+    assert "scripts/prepare_commit_artifacts.sh" in checklist
+    assert "tmp/pre_commit_artifacts_*.md" in checklist
+
+
 def test_publication_check_scans_for_service_account_key_content() -> None:
     script = (REPO_ROOT / "scripts/check_repo_publication_ready.sh").read_text(encoding="utf-8")
 

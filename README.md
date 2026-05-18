@@ -120,31 +120,34 @@ scripts/dvc_data_assistant.sh setup \
   --credentialpath private/YOUR_SERVICE_ACCOUNT.json
 
 scripts/dvc_data_assistant.sh pull
+```
+
+After pulling data, regenerate all lightweight reproducibility artifacts:
+
+```bash
+scripts/reproduce_data_workspace.sh
 scripts/dvc_data_assistant.sh doctor
 ```
 
-After pulling data, verify local integrity:
-
-```bash
-.venv/bin/python src/data/validate_sources.py
-.venv/bin/python src/data/raw_manifest.py --reuse-existing
-.venv/bin/python src/data/freeze.py --overwrite
-```
-
-Regenerated hashes must match the versioned freeze before downstream results
-are trusted.
+The recovery assistant rebuilds source manifests, canonical observation
+summaries, and the data freeze. It also fails if the derived-manifest path set
+changes unexpectedly, so a missing regenerated file cannot silently disappear
+from the freeze.
 
 ## Publish Or Update Data
 
 When a machine creates or updates heavy artifacts:
 
 ```bash
-.venv/bin/python src/data/dvc_add_from_manifest.py --dry-run
-.venv/bin/python src/data/dvc_add_from_manifest.py
-scripts/dvc_data_assistant.sh push
+scripts/prepare_commit_artifacts.sh
 scripts/list_publication_candidates.sh
 scripts/check_repo_publication_ready.sh
 ```
+
+The pre-commit artifact assistant detects DVC-tracked data changes, asks before
+adding unmanaged ignored data paths to DVC, runs `dvc add`, runs `dvc push`,
+stages Git changes, and writes a timestamped upload preparation report under
+ignored `tmp/`.
 
 Commit only code, configs, docs, manifests, small reports, and `.dvc` pointer
 files. Do not commit `.dvc/config.local`, raw data, model binaries, heavy
@@ -170,6 +173,10 @@ exports, or credential JSON files.
   `.dvc/config.local`.
 - `scripts/dvc_data_assistant.sh` is the recommended workflow for configuring,
   uploading, downloading, and diagnosing DVC data.
+- `scripts/reproduce_data_workspace.sh` is the recommended workflow for
+  regenerating local reproducibility artifacts after `dvc pull`.
+- `scripts/prepare_commit_artifacts.sh` is the recommended workflow for
+  preparing Git staging and DVC upload before a manual commit.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

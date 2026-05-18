@@ -1,8 +1,8 @@
 {
   "status": "completed",
-  "generated_at_utc": "2026-05-17T05:59:33.633178+00:00",
-  "git_commit": "35bfba219f9bef95c0ae7f45d6357f0b23a4bf2e",
-  "git_dirty_state": "A  .dvc/.gitignore\nA  .dvc/config\nA  .dvcignore\n M .gitignore\n M README.md\n?? configs/\n?? data/\n?? docs/\n?? models.dvc\n?? poetry.lock\n?? poetry.toml\n?? pyproject.toml\n?? reports/\n?? scripts/\n?? src/\n?? tests/",
+  "generated_at_utc": "2026-05-18T14:41:22.026802+00:00",
+  "git_commit": "e38be702e2cf10fe1f8341895a96863a108dfb9f",
+  "git_dirty_state": "M data/catalog/raw_file_manifest.csv\n M data/catalog/source_catalog.json\n M data/freeze/DATA_FREEZE.md\n M data/freeze/data_freeze_manifest_v0.json\n M data/freeze/derived_file_manifest_v0.csv\n M reports/data/source_inventory.md",
   "python_constraint": ">=3.14,<3.15",
   "raw_manifest": "data/catalog/raw_file_manifest.csv",
   "source_catalog": "data/catalog/source_catalog.json",
