@@ -1,3 +1,5 @@
 /targets
 /diagnostics
 /fuzzy
+/interim/waterbody_crosswalk_candidates_v0.parquet
+/interim/waterbody_crosswalk_candidates_v0.csv

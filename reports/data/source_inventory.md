@@ -1,9 +1,9 @@
 # Source Inventory
 
-Generated at UTC: `2026-05-18T14:15:09.701401+00:00`
+Generated at UTC: `2026-05-18T19:08:26.631960+00:00`
 
-Total raw files: `76`
-Total raw size: `58.3 GB`
+Total raw files: `140`
+Total raw size: `58.4 GB`
 
 ## Sources
 
@@ -11,6 +11,7 @@ Total raw size: `58.3 GB`
 |---|---:|---:|---|---|
 | `aquamatch_chla` | 4 | 777.7 MB | cc0-1.0 | documented |
 | `lakebed_us_cse` | 66 | 1.1 GB | cc-by-4.0 | documented |
+| `nla` | 64 | 42.0 MB | epa_public_data_with_recommended_citation | documented_manual_download_initial_adapter |
 | `wqp` | 6 | 56.5 GB | public_download_multi_provider_with_terms_and_disclaimer | documented_terms_reviewed_conservative_private_mirror |
 
 ## Largest Files
@@ -35,8 +36,8 @@ Total raw size: `58.3 GB`
 | `lakebed_us_cse` | `data/raw/LakeBeD-US-CSE/Data/HighFrequency/FCR/FCR_WVWA_HF_2D.parquet` | 36.3 MB | `1a4131366e3a9967093bd1c0ee66126d04ecd286e140f3961ef00f1868f40b3c` |
 | `lakebed_us_cse` | `data/raw/LakeBeD-US-CSE/Data/HighFrequency/BVR/BVR_WVWA_HF_2D.parquet` | 25.8 MB | `924b2bb85bd5314dbcbec5042f1d79067569d7e7a39425a5043098e145670fd5` |
 | `lakebed_us_cse` | `data/raw/LakeBeD-US-CSE/Data/HighFrequency/TOOK/TOOK_NEON_2D.parquet` | 24.6 MB | `95cdd4e777b733d4e518707b423c630c35202092c32d806812b6c2f7af6f9349` |
+| `nla` | `data/raw/nla/2007/NLA2007_Phytoplankton_SoftAlgaeCount_20091023.csv` | 11.2 MB | `83e944b11e9b3dd589f7b1a912457dd7d0368eee2f2c241ae43ce49cfdedf603` |
 | `lakebed_us_cse` | `data/raw/LakeBeD-US-CSE/Data/HighFrequency/GL4/GL4_NWT_HF_2D.parquet` | 7.9 MB | `94e954253e958091fa2eee92cf2b8ce895296628f57dc3f3a878ae1f83133be9` |
-| `lakebed_us_cse` | `data/raw/LakeBeD-US-CSE/Data/HighFrequency/FCR/FCR_WVWA_HF_1D.parquet` | 2.4 MB | `e562476f48d03076eaec77f071cd909553d988af62325b12d9f440610c71744c` |
 
 ## Integrity Rule
 

@@ -1,57 +1,57 @@
 {
   "status": "completed",
-  "generated_at_utc": "2026-05-18T14:41:22.026802+00:00",
-  "git_commit": "e38be702e2cf10fe1f8341895a96863a108dfb9f",
-  "git_dirty_state": "M data/catalog/raw_file_manifest.csv\n M data/catalog/source_catalog.json\n M data/freeze/DATA_FREEZE.md\n M data/freeze/data_freeze_manifest_v0.json\n M data/freeze/derived_file_manifest_v0.csv\n M reports/data/source_inventory.md",
+  "generated_at_utc": "2026-05-19T01:08:49.234972+00:00",
+  "git_commit": "9f538e35ec07e8326daeec258a9814d82e6a6eeb",
+  "git_dirty_state": "M  README.md\nM  configs/dvc_artifacts.yaml\nA  configs/site_resolution.yaml\nM  configs/sources.yaml\nM  configs/variables.yaml\nM  data/.gitignore\nM  data/catalog/raw_file_manifest.csv\nM  data/catalog/source_catalog.json\nM  data/diagnostics.dvc\nM  data/freeze/DATA_FREEZE.md\nM  data/freeze/data_freeze_manifest_v0.json\nMM data/freeze/derived_file_manifest_v0.csv\nA  data/interim/observations/nla.dvc\nM  data/interim/site_registry.csv.dvc\nM  data/interim/site_registry.parquet.dvc\nA  data/interim/waterbody_crosswalk_candidates_v0.csv.dvc\nA  data/interim/waterbody_crosswalk_candidates_v0.parquet.dvc\nM  data/panel/monthly_long_v0.parquet.dvc\nM  data/panel/monthly_panel_manifest_v0.json\nM  data/panel/panel_monthly_v0.parquet.dvc\nA  data/raw/nla.dvc\nM  data/splits/SPLIT_REPORT.md\nM  data/splits/monthly_model_splits_v0.parquet.dvc\nM  data/splits/split_manifest.json\nM  data/targets.dvc\nM  docs/DATA_ACCESS.md\nM  docs/DATA_LICENSES.md\nM  docs/DATA_SOURCES.md\nM  docs/DATA_VERSIONING.md\nM  docs/DVC_GCS_SETUP.md\nA  docs/SITE_RESOLUTION.md\nM  reports/data/DATA_DIAGNOSTIC_REPORT_v0.md\nM  reports/data/PANEL_REPORT_v0.md\nM  reports/data/TARGET_REPORT_v0.md\nM  reports/data/figures/source_variable_coverage.svg\nM  reports/data/figures/target_coverage_by_source_horizon.svg\nM  reports/data/figures/variable_coverage.svg\nA  reports/data/nla_wqp_crosswalk_review.md\nM  reports/data/observations_report.md\nM  reports/data/site_registry_report.md\nM  reports/data/source_inventory.md\nAM reports/data/waterbody_crosswalk_candidates_manifest.json\nA  reports/data/waterbody_crosswalk_candidates_report.md\nM  scripts/reproduce_data_workspace.sh\nA  src/data/adapters/nla_survey.py\nM  src/data/build_observations.py\nM  src/data/build_splits.py\nM  src/data/build_targets.py\nAM src/data/build_waterbody_crosswalk.py\nM  src/data/diagnose_panel_targets.py\nM  src/data/freeze.py\nMM src/data/prepare_commit_artifacts.py\nM  src/data/site_registry.py\nAM tests/test_build_waterbody_crosswalk.py\nM  tests/test_data_versioning_config.py\nA  tests/test_nla_survey_adapter.py\n M tests/test_prepare_commit_artifacts.py",
   "python_constraint": ">=3.14,<3.15",
   "raw_manifest": "data/catalog/raw_file_manifest.csv",
   "source_catalog": "data/catalog/source_catalog.json",
   "derived_manifest": "data/freeze/derived_file_manifest_v0.csv",
   "data_freeze_md": "data/freeze/DATA_FREEZE.md",
   "raw_manifest_stats": {
-    "file_count": 76,
-    "total_size_bytes": 62633651202
+    "file_count": 140,
+    "total_size_bytes": 62677681133
   },
   "derived_summary": [
     {
       "category": "canonical_observations",
-      "files": 747,
-      "size_bytes": 6229817627
+      "files": 750,
+      "size_bytes": 6231658288
     },
     {
       "category": "catalog",
       "files": 2,
-      "size_bytes": 57636
+      "size_bytes": 109745
     },
     {
       "category": "config",
-      "files": 3,
-      "size_bytes": 22324
+      "files": 4,
+      "size_bytes": 30871
     },
     {
       "category": "diagnostics",
       "files": 10,
-      "size_bytes": 283588864
+      "size_bytes": 286015228
     },
     {
       "category": "documentation",
-      "files": 7,
-      "size_bytes": 17482
+      "files": 9,
+      "size_bytes": 36717
     },
     {
       "category": "environment",
       "files": 4,
-      "size_bytes": 448038
+      "size_bytes": 449665
     },
     {
       "category": "interim",
       "files": 2,
-      "size_bytes": 50819361
+      "size_bytes": 51444328
     },
     {
       "category": "panel",
       "files": 3,
-      "size_bytes": 193289929
+      "size_bytes": 193733798
     },
     {
       "category": "repo_audit",
@@ -60,18 +60,18 @@
     },
     {
       "category": "repo_script",
-      "files": 5,
-      "size_bytes": 18629
+      "files": 7,
+      "size_bytes": 26644
     },
     {
       "category": "reports",
-      "files": 11,
-      "size_bytes": 37103
+      "files": 14,
+      "size_bytes": 55420
     },
     {
       "category": "script",
-      "files": 18,
-      "size_bytes": 188824
+      "files": 21,
+      "size_bytes": 279466
     },
     {
       "category": "source_download_script",
@@ -81,16 +81,16 @@
     {
       "category": "targets",
       "files": 4,
-      "size_bytes": 249516225
+      "size_bytes": 249998818
     }
   ],
   "panel_manifest": {
     "status": "completed",
-    "started_at_utc": "2026-05-16T19:56:16.123289+00:00",
-    "completed_at_utc": "2026-05-16T19:59:10.725971+00:00",
-    "observation_parts": 740,
-    "input_rows": 459949849,
-    "panelable_rows": 459949849,
+    "started_at_utc": "2026-05-19T00:09:03.390189+00:00",
+    "completed_at_utc": "2026-05-19T00:12:12.800618+00:00",
+    "observation_parts": 741,
+    "input_rows": 459966057,
+    "panelable_rows": 459966057,
     "excluded_rows": 0,
     "coverage_by_source": {
       "aquamatch_chla": {
@@ -107,6 +107,13 @@
         "excluded_missing_year_month": 0,
         "excluded_missing_variable": 0
       },
+      "nla": {
+        "input_rows": 16208,
+        "panelable_rows": 16208,
+        "excluded_rows": 0,
+        "excluded_missing_year_month": 0,
+        "excluded_missing_variable": 0
+      },
       "wqp": {
         "input_rows": 23808301,
         "panelable_rows": 23808301,
@@ -117,13 +124,13 @@
     },
     "long_panel": "data/panel/monthly_long_v0.parquet",
     "wide_panel": "data/panel/panel_monthly_v0.parquet",
-    "long_rows": 7420800,
-    "wide_rows": 3386676
+    "long_rows": 7437008,
+    "wide_rows": 3390728
   },
   "target_manifest": {
     "status": "completed",
-    "started_at_utc": "2026-05-16T20:11:39.713762+00:00",
-    "completed_at_utc": "2026-05-16T20:12:35.978969+00:00",
+    "started_at_utc": "2026-05-19T00:17:55.498841+00:00",
+    "completed_at_utc": "2026-05-19T00:18:47.244934+00:00",
     "panel": "data/panel/panel_monthly_v0.parquet",
     "horizons_months": [
       1,
@@ -134,8 +141,8 @@
     "model_long_targets": "data/targets/monthly_targets_model_v0.parquet",
     "panel_with_targets": "data/targets/panel_monthly_with_targets_v0.parquet",
     "report": "reports/data/TARGET_REPORT_v0.md",
-    "panel_rows": 3386676,
-    "target_candidate_rows": 10160028,
+    "panel_rows": 3390728,
+    "target_candidate_rows": 10172184,
     "model_target_rows": 4649182,
     "bloom_threshold_chla_ugL": 30.0,
     "risk_policy": {
@@ -151,34 +158,34 @@
     "by_horizon": [
       {
         "horizon_months": 1,
-        "candidate_rows": 3386676,
+        "candidate_rows": 3390728,
         "target_month_rows": 2075709,
         "target_rows": 1627391,
         "bloom_positive": 249413,
         "bloom_negative": 1377978,
-        "missing_target_month": 1310967,
+        "missing_target_month": 1315019,
         "missing_chla_in_target_month": 448318,
         "bloom_rate": 0.1532594195248714
       },
       {
         "horizon_months": 2,
-        "candidate_rows": 3386676,
+        "candidate_rows": 3390728,
         "target_month_rows": 1947257,
         "target_rows": 1577326,
         "bloom_positive": 243594,
         "bloom_negative": 1333732,
-        "missing_target_month": 1439419,
+        "missing_target_month": 1443471,
         "missing_chla_in_target_month": 369931,
         "bloom_rate": 0.15443478393179344
       },
       {
         "horizon_months": 3,
-        "candidate_rows": 3386676,
+        "candidate_rows": 3390728,
         "target_month_rows": 1729279,
         "target_rows": 1444465,
         "bloom_positive": 223502,
         "bloom_negative": 1220963,
-        "missing_target_month": 1657397,
+        "missing_target_month": 1661449,
         "missing_chla_in_target_month": 284814,
         "bloom_rate": 0.15472995191991498
       }
@@ -257,6 +264,42 @@
         "bloom_rate": 0.10702638600652238
       },
       {
+        "source_id": "nla",
+        "horizon_months": 1,
+        "candidate_rows": 4052,
+        "target_month_rows": 0,
+        "target_rows": 0,
+        "bloom_positive": 0,
+        "bloom_negative": 0,
+        "missing_target_month": 4052,
+        "missing_chla_in_target_month": 0,
+        "bloom_rate": NaN
+      },
+      {
+        "source_id": "nla",
+        "horizon_months": 2,
+        "candidate_rows": 4052,
+        "target_month_rows": 0,
+        "target_rows": 0,
+        "bloom_positive": 0,
+        "bloom_negative": 0,
+        "missing_target_month": 4052,
+        "missing_chla_in_target_month": 0,
+        "bloom_rate": NaN
+      },
+      {
+        "source_id": "nla",
+        "horizon_months": 3,
+        "candidate_rows": 4052,
+        "target_month_rows": 0,
+        "target_rows": 0,
+        "bloom_positive": 0,
+        "bloom_negative": 0,
+        "missing_target_month": 4052,
+        "missing_chla_in_target_month": 0,
+        "bloom_rate": NaN
+      },
+      {
         "source_id": "wqp",
         "horizon_months": 1,
         "candidate_rows": 1626672,
@@ -296,13 +339,13 @@
   },
   "diagnostic_manifest": {
     "status": "completed",
-    "started_at_utc": "2026-05-16T20:19:59.833905+00:00",
-    "completed_at_utc": "2026-05-16T20:20:26.624629+00:00",
+    "started_at_utc": "2026-05-19T00:22:30.009731+00:00",
+    "completed_at_utc": "2026-05-19T00:22:55.158173+00:00",
     "panel_with_targets": "data/targets/panel_monthly_with_targets_v0.parquet",
     "target_long": "data/targets/monthly_targets_long_v0.parquet",
     "report": "reports/data/DATA_DIAGNOSTIC_REPORT_v0.md",
-    "panel_rows": 3386676,
-    "target_candidate_rows": 10160028,
+    "panel_rows": 3390728,
+    "target_candidate_rows": 10172184,
     "target_rows": 4649182,
     "bloom_positive_rows": 716509,
     "outputs": {

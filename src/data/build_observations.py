@@ -29,6 +29,7 @@ DEFAULT_OUTPUT_DIR = Path("data/interim/observations")
 ADAPTER_MODULES = {
     "lakebed_us_cse": "src.data.adapters.lakebed_us_cse",
     "aquamatch_chla": "src.data.adapters.aquamatch_chla",
+    "nla_survey": "src.data.adapters.nla_survey",
     "wqp_streaming": "src.data.adapters.wqp_streaming",
 }
 
@@ -79,7 +80,7 @@ def build_source(
         kwargs["include_high_frequency"] = not args.no_high_frequency
         kwargs["max_files"] = args.max_files
         kwargs["max_rows_per_file"] = args.max_rows_per_file
-    elif source_config["adapter"] in {"aquamatch_chla", "wqp_streaming"}:
+    elif source_config["adapter"] in {"aquamatch_chla", "nla_survey", "wqp_streaming"}:
         kwargs["chunksize"] = args.chunksize
         kwargs["max_rows"] = args.max_rows
     return adapter.build_observations(source_config, variables_config, **kwargs)
@@ -97,7 +98,7 @@ def iter_source_chunks(
         kwargs["max_files"] = args.max_files
         kwargs["max_rows_per_file"] = args.max_rows_per_file
         kwargs["skip_units"] = args._skip_units
-    elif source_config["adapter"] in {"aquamatch_chla", "wqp_streaming"}:
+    elif source_config["adapter"] in {"aquamatch_chla", "nla_survey", "wqp_streaming"}:
         kwargs["chunksize"] = args.chunksize
         kwargs["max_rows"] = args.max_rows
         kwargs["skip_rows"] = args._skip_rows

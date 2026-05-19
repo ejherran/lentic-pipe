@@ -1,0 +1,60 @@
+{
+  "candidate_count": 410563,
+  "config": {
+    "candidate_grid_deg": 0.05,
+    "exact_id_max_distance_m": 5000.0,
+    "max_distance_m": 1000.0,
+    "max_sites_per_source": null,
+    "name_similarity_threshold": 0.75,
+    "same_coordinate_tolerance_m": 0.001,
+    "site_id_prefix_rules": {
+      "wqp": [
+        "NARS_WQX-"
+      ]
+    },
+    "source_pairs": null,
+    "strong_distance_m": 250.0,
+    "very_close_distance_m": 50.0
+  },
+  "generated_at_utc": "2026-05-19T01:08:04+00:00",
+  "inputs": [
+    {
+      "bytes": 10927469,
+      "path": "data/interim/site_registry.parquet",
+      "sha256": "454c4f74b05dd46e17e6487f4c08bacd067e61e3eda4f19073364640c739aab0"
+    },
+    {
+      "bytes": 1613,
+      "path": "configs/site_resolution.yaml",
+      "sha256": "0eacd5dd65da115adc7aad1ae29c2ac4970e855dfe183da733f238bd5aff4a23"
+    }
+  ],
+  "output_csv": "data/interim/waterbody_crosswalk_candidates_v0.csv",
+  "output_parquet": "data/interim/waterbody_crosswalk_candidates_v0.parquet",
+  "outputs": [
+    {
+      "bytes": 39700782,
+      "path": "data/interim/waterbody_crosswalk_candidates_v0.parquet",
+      "sha256": "1d067afb7b3d6211847bf18b05baf6ced4f63f1092a178f2f7b225f61488f9df"
+    },
+    {
+      "bytes": 175379177,
+      "path": "data/interim/waterbody_crosswalk_candidates_v0.csv",
+      "sha256": "d70a274e6b7173abe7b99bcbbb50b332151d5b22f20edcaa4818af2892839d93"
+    },
+    {
+      "bytes": 5937,
+      "path": "reports/data/waterbody_crosswalk_candidates_report.md",
+      "sha256": "f59ef7cd8ebb45c3cc323a543335398839baaf19c7e1fc28121ab93ccd6adc7b"
+    }
+  ],
+  "report": "reports/data/waterbody_crosswalk_candidates_report.md",
+  "script": {
+    "bytes": 30699,
+    "path": "src/data/build_waterbody_crosswalk.py",
+    "sha256": "02b1c8698c4f580221105d6eb2cace3db2d77c6ca966ea4e6b53c043925331df"
+  },
+  "site_registry": "data/interim/site_registry.parquet",
+  "site_resolution_config": "configs/site_resolution.yaml",
+  "status": "completed"
+}

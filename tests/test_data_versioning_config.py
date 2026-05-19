@@ -69,6 +69,7 @@ def test_reproduce_data_workspace_assistant_regenerates_post_pull_artifacts() ->
     assert "src/data/raw_manifest.py" in script
     assert "--reuse-existing" in script
     assert "src/data/report_observations.py" in script
+    assert "src/data/build_waterbody_crosswalk.py" in script
     assert "src/data/freeze.py" in script
     assert "--overwrite" in script
     assert "data/interim/observations/observations_summary.csv" in script
@@ -122,6 +123,22 @@ def test_pipe_rollout_alerts_are_documented_as_dvc_artifacts() -> None:
         in rollout_iteration
     )
     assert "Iteration 2 Direction" in rollout_iteration
+
+
+def test_site_resolution_candidates_are_documented_as_dvc_artifacts() -> None:
+    dvc_artifacts = (REPO_ROOT / "configs/dvc_artifacts.yaml").read_text(encoding="utf-8")
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8")
+    data_versioning = (REPO_ROOT / "docs/DATA_VERSIONING.md").read_text(encoding="utf-8")
+    site_resolution = (REPO_ROOT / "docs/SITE_RESOLUTION.md").read_text(encoding="utf-8")
+    resolution_config = (REPO_ROOT / "configs/site_resolution.yaml").read_text(encoding="utf-8")
+
+    assert "waterbody_crosswalk_candidates_v0" in dvc_artifacts
+    assert "data/interim/waterbody_crosswalk_candidates_v0.parquet" in dvc_artifacts
+    assert "docs/SITE_RESOLUTION.md" in readme
+    assert "src/data/build_waterbody_crosswalk.py" in readme
+    assert "waterbody_crosswalk_candidates_v0" in data_versioning
+    assert "configs/site_resolution.yaml" in site_resolution
+    assert "accepted_crosswalks" in resolution_config
 
 
 def test_publication_check_scans_for_service_account_key_content() -> None:

@@ -1,0 +1,45 @@
+schema_version: 1
+description: >
+  Policy and thresholds for cross-source site resolution. Source-scoped site
+  IDs remain authoritative; accepted crosswalks must be promoted explicitly
+  from the candidate table with documented evidence.
+
+candidate_generation:
+  version: waterbody_crosswalk_candidates_v0
+  default_thresholds:
+    max_distance_m: 1000.0
+    strong_distance_m: 250.0
+    very_close_distance_m: 50.0
+    same_coordinate_tolerance_m: 0.001
+    exact_id_max_distance_m: 5000.0
+    name_similarity_threshold: 0.75
+    candidate_grid_deg: 0.05
+  site_id_normalization:
+    remove_source_prefixes:
+      wqp:
+        - NARS_WQX-
+  confidence_rules:
+    exact:
+      - source-native site identifiers match
+      - or source identifiers match after configured provider-prefix normalization
+      - coordinates are within exact_id_max_distance_m
+    strong:
+      - coordinates are identical within same_coordinate_tolerance_m and identifiers differ
+      - coordinates are within very_close_distance_m
+      - or coordinates are within strong_distance_m and normalized names match
+    candidate:
+      - coordinates are within max_distance_m
+      - manual review is required before promotion
+  review_tiers:
+    1: exact_identifier
+    2: same_coordinates_different_identifier
+    3: strong_spatial_candidate
+    4: nearby_coordinate_candidate
+
+accepted_crosswalks:
+  status: not_started
+  path: null
+  rule: >
+    Accepted waterbody IDs are intentionally not generated from raw candidate
+    pairs. They must be reviewed, documented, and versioned before any panel or
+    modeling workflow uses them.

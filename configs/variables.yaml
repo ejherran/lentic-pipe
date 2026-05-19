@@ -291,6 +291,52 @@ source_mappings:
     constraints:
       - Verify lentic status before using sites in the main cohort.
 
+  nla:
+    column_style: wide_survey_level
+    datetime_column: null
+    nominal_datetime_policy: survey_year_july_1
+    site_id_column: UNIQUE_ID
+    visit_id_column: UID
+    survey_cycle_column: DSGN_CYCLE
+    latitude_column: LAT_DD83
+    longitude_column: LON_DD83
+    qc_columns:
+      - CHLA_NARS_FLAG
+      - NTL_NARS_FLAG
+      - PTL_NARS_FLAG
+      - CHLA_COND
+      - NTL_COND
+      - PTL_COND
+      - DIS_O2_CLS
+    variables:
+      CHLA_RESULT:
+        canonical: chlorophyll_a_ugL
+        unit: ug/L
+        flag_column: CHLA_NARS_FLAG
+        mdl_column: CHLA_MDL
+        condition_column: CHLA_COND
+      NTL_RESULT:
+        canonical: TN_ugL
+        unit: mg/L
+        flag_column: NTL_NARS_FLAG
+        mdl_column: NTL_MDL
+        condition_column: NTL_COND
+      PTL_RESULT:
+        canonical: TP_ugL
+        unit: ug/L
+        flag_column: PTL_NARS_FLAG
+        mdl_column: PTL_MDL
+        condition_column: PTL_COND
+      DO_SURF:
+        canonical: DO_mgL
+        unit: mg/L
+        condition_column: DIS_O2_CLS
+    constraints:
+      - The initial adapter uses the combined NLA 2007-2022 population-estimate table only.
+      - The combined table records survey cycle rather than row-level sample date; exact DATE_COL values are joined from available survey-year files.
+      - Survey cycles without an exact DATE_COL join use a documented nominal July month.
+      - Do not interpret NLA nominal months as monthly monitoring frequency.
+
   wqp:
     column_style: long
     datetime_column: Activity_StartDate

@@ -1,0 +1,6 @@
+outs:
+- md5: 4c33a92c5037b9191e53912b4082caa9.dir
+  size: 44029931
+  nfiles: 64
+  hash: md5
+  path: nla

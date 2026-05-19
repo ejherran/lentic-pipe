@@ -4,34 +4,34 @@
 <line x1="230" y1="34" x2="830" y2="34" stroke="#d1d5db"/>
 <text x="20.0" y="69.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">DO_mgL</text>
 <rect x="230" y="52" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="52" width="125.1" height="20" fill="#2563eb"/>
-<text x="840.0" y="67.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.208</text>
+<rect x="230" y="52" width="125.6" height="20" fill="#2563eb"/>
+<text x="840.0" y="67.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.209</text>
 <text x="20.0" y="103.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">TN_ugL</text>
 <rect x="230" y="86" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="86" width="42.1" height="20" fill="#2563eb"/>
-<text x="840.0" y="101.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.070</text>
+<rect x="230" y="86" width="42.8" height="20" fill="#2563eb"/>
+<text x="840.0" y="101.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.071</text>
 <text x="20.0" y="137.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">TP_ugL</text>
 <rect x="230" y="120" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="120" width="103.6" height="20" fill="#2563eb"/>
-<text x="840.0" y="135.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.173</text>
+<rect x="230" y="120" width="104.2" height="20" fill="#2563eb"/>
+<text x="840.0" y="135.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.174</text>
 <text x="20.0" y="171.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">chlorophyll_a_ugL</text>
 <rect x="230" y="154" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="154" width="460.6" height="20" fill="#2563eb"/>
+<rect x="230" y="154" width="460.7" height="20" fill="#2563eb"/>
 <text x="840.0" y="169.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.768</text>
 <text x="20.0" y="205.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">pH</text>
 <rect x="230" y="188" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="188" width="122.0" height="20" fill="#2563eb"/>
+<rect x="230" y="188" width="121.9" height="20" fill="#2563eb"/>
 <text x="840.0" y="203.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.203</text>
 <text x="20.0" y="239.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">secchi_depth_m</text>
 <rect x="230" y="222" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="222" width="215.0" height="20" fill="#2563eb"/>
+<rect x="230" y="222" width="214.7" height="20" fill="#2563eb"/>
 <text x="840.0" y="237.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.358</text>
 <text x="20.0" y="273.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">temperature_C</text>
 <rect x="230" y="256" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="256" width="151.2" height="20" fill="#2563eb"/>
+<rect x="230" y="256" width="151.0" height="20" fill="#2563eb"/>
 <text x="840.0" y="271.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.252</text>
 <text x="20.0" y="307.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">turbidity_NTU</text>
 <rect x="230" y="290" width="600" height="20" fill="#eef2f7"/>
-<rect x="230" y="290" width="65.9" height="20" fill="#2563eb"/>
+<rect x="230" y="290" width="65.8" height="20" fill="#2563eb"/>
 <text x="840.0" y="305.0" font-family="Arial, sans-serif" font-size="12" text-anchor="start" fill="#1f2937">0.110</text>
 </svg>

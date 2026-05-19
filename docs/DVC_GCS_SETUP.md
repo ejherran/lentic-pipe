@@ -150,6 +150,24 @@ summaries, and the data freeze. It also compares the regenerated derived
 manifest path set against the committed one so missing regenerated files fail
 the recovery flow instead of silently disappearing.
 
+## Regenerating DVC-Tracked Files
+
+Files restored by DVC can be read-only when they are linked to the local cache.
+If a regeneration command fails with `PermissionError: [Errno 13] Permission
+denied` while writing a DVC-tracked artifact, unprotect the artifact first and
+then rerun the generation command.
+
+For example, before rebuilding the site registry after a DVC pull:
+
+```bash
+.venv/bin/dvc unprotect data/interim/site_registry.parquet data/interim/site_registry.csv
+poetry run python src/data/site_registry.py --progress-every-parts 25
+```
+
+Use `dvc unprotect` only for artifacts that are about to be regenerated in the
+workspace. It does not push data, change Git commits, or update DVC pointers by
+itself; it only makes the local files writable.
+
 ## Upload Flow
 
 On the machine that produced or updated heavy artifacts:
@@ -200,6 +218,16 @@ When ready:
 .venv/bin/dvc status
 .venv/bin/dvc push
 ```
+
+If `dvc push` reports uploaded files and then fails while starting the DVC
+analytics daemon, repeat the command with analytics disabled:
+
+```bash
+DVC_NO_ANALYTICS=1 .venv/bin/dvc push
+```
+
+This only disables local analytics reporting for that command. It does not
+change what data is pushed.
 
 Then run the publication check:
 

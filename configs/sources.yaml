@@ -204,3 +204,86 @@ sources:
       - metadata.xml declares packageId edi.1756.2 and the DOI above.
       - Intellectual rights in metadata.xml declare Creative Commons CC0 1.0 "No Rights Reserved".
       - Do not use as primary multivariable panel source unless matching to lentic sites is validated.
+
+  nla:
+    source_id: nla
+    source_name: "EPA National Lakes Assessment survey data"
+    source_type: public_epa_survey_data_manual_download
+    access_policy: public_original_private_mirror
+    local_raw_path: data/raw/nla
+    raw_path: data/raw/nla
+    dvc_track: true
+    adapter: nla_survey
+    role: national_lake_survey_auxiliary_multivariable_source
+    format:
+      kind: csv_collection
+      survey_year_directories:
+        - "2007"
+        - "2012"
+        - "2017"
+        - "2022"
+      main_files:
+        combined_population_estimates: 2022/nla2007-2022_data_forpopestimates_indexvisits_probsites_0.csv
+        sample_grid_2022: 2022/nla2022_sample_grid.csv
+      date_files:
+        sample_grid_2022: 2022/nla2022_sample_grid.csv
+        sampled_lake_information_2007: 2007/NLA2007_SampledLakeInformation_20091113.csv
+      metadata_files:
+        - 2022/nla2007-2022_metadata_forpopestimates_allvisits_allsitetypes_0.txt
+        - 2022/nla2022_sample_grid.txt
+        - 2017/nla2017_metadata_for_population_estimates_220705.txt
+        - 2012/nla12_keyvariables_data_meta.txt
+        - 2007/NLA2007_WaterQuality_Info_20091123.txt
+        - 2007/NLA2007_FinalDataNotes_20091201.pdf
+    license: epa_public_data_with_recommended_citation
+    provenance_status: documented_manual_download_initial_adapter
+    acquisition:
+      route: epa_nars_manual_browser_download
+      landing_page: https://www.epa.gov/national-aquatic-resource-surveys/data-national-aquatic-resource-surveys
+      data_download_tool: "NARS Data Download Tool linked from the EPA landing page"
+      download_method: user_browser_download
+      download_date: "2026-05-18"
+      source_page_reviewed_at: "2026-05-18"
+      official_references:
+        - https://www.epa.gov/national-aquatic-resource-surveys/data-national-aquatic-resource-surveys
+        - https://www.epa.gov/national-aquatic-resource-surveys/frequent-questions-about-data-national-aquatic-resource-surveys
+        - https://www.epa.gov/national-aquatic-resource-surveys/what-data-are-available-download-national-aquatic-resource
+      recommended_citation_template: >
+        U.S. Environmental Protection Agency. [survey report year]. National
+        Aquatic Resource Surveys. National Lakes Assessment [survey year] (data
+        and metadata files). Available from U.S. EPA web page:
+        https://www.epa.gov/national-aquatic-resource-surveys/data-national-aquatic-resource-surveys.
+        Date accessed: 2026-05-18.
+      survey_report_years:
+        "2007": "2010"
+        "2012": "2016"
+        "2017": "2022"
+        "2022": "2024"
+      terms_review:
+        reviewed_at: "2026-05-18"
+        summary: >
+          EPA's NARS data page provides survey data and companion metadata as
+          downloadable CSV/TXT files and recommends citing the data by survey
+          name, survey year, report year, page URL, and access date. This
+          project keeps the local raw mirror under DVC/GCS and publishes
+          provenance, citations, hashes, pointer files, and derived summaries.
+        redistribution_policy: >
+          Treat the EPA-hosted files as publicly downloadable source data, but
+          do not commit the local raw mirror as Git blobs. Keep raw files in
+          authorized DVC/GCS storage and direct public readers to the EPA source
+          page and citation guidance.
+    expected_variables:
+      - chlorophyll_a_ugL
+      - TP_ugL
+      - TN_ugL
+      - DO_mgL
+    processing_constraints:
+      - The initial adapter uses the combined NLA 2007-2022 population-estimate table for CHLA, TN, TP, and surface DO.
+      - The combined table has survey cycle but no row-level sample date, so the adapter joins exact DATE_COL values from available survey-year files when possible.
+      - Current exact-date joins use the 2022 sample grid and 2007 sampled-lake information file.
+      - Survey cycles without an exact DATE_COL join use a documented nominal July month and must not be treated as monthly monitoring frequency.
+      - Preserve raw survey, metadata, notes, and condition-estimate files unchanged under data/raw/nla.
+    notes:
+      - Local snapshot currently contains survey-year folders for 2007, 2012, 2017, and 2022.
+      - The 2022 combined population-estimate file includes survey cycles 2007, 2012, 2017, and 2022.
+      - Site equivalence remains source-scoped; no cross-source geospatial reconciliation is implied.

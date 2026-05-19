@@ -7,6 +7,7 @@ from src.data.prepare_commit_artifacts import (
     declared_artifacts_missing_pointers,
     dvc_pointer_path,
     has_failing_findings,
+    is_report_artifact_path,
     reproducibility_checks,
     sha256_file,
     validate_experiment_manifests,
@@ -101,6 +102,12 @@ def test_experiment_manifest_validation_requires_staged_reports_to_be_listed(
 
     assert has_failing_findings(findings)
     assert any("not listed in any experiment manifest" in finding.message for finding in findings)
+
+
+def test_data_governance_reports_are_not_experiment_artifacts() -> None:
+    assert not is_report_artifact_path(Path("reports/data/PANEL_REPORT_v0.md"))
+    assert not is_report_artifact_path(Path("reports/data/waterbody_crosswalk_candidates_report.md"))
+    assert is_report_artifact_path(Path("reports/pipe_grud/pipe_sequence_report.md"))
 
 
 def test_freeze_freshness_requires_freeze_outputs_for_data_pipeline_changes() -> None:

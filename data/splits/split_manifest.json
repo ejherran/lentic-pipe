@@ -1,11 +1,11 @@
 {
   "status": "completed",
-  "started_at_utc": "2026-05-16T20:28:44.068784+00:00",
-  "completed_at_utc": "2026-05-16T20:29:18.384001+00:00",
+  "started_at_utc": "2026-05-19T00:30:32.493566+00:00",
+  "completed_at_utc": "2026-05-19T00:31:02.332941+00:00",
   "freeze_manifest": "data/freeze/data_freeze_manifest_v0.json",
   "target_model": "data/targets/monthly_targets_model_v0.parquet",
-  "target_model_sha256": "49815a11fc3fe70c292e4aa011ac1617ba4865aca718371055f44b3d9569437e",
-  "panel_with_targets_sha256": "651e7c6fb3d1d800dbd910b0170f4730b8e926fc068f545e115ee60b4992caab",
+  "target_model_sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799",
+  "panel_with_targets_sha256": "ccbfe6545f72bcfcbdc800fca6b02ce5d3e99c140adbb310f12313a4357395f2",
   "boundaries": {
     "train_end": "2018-12",
     "validation_start": "2019-01",

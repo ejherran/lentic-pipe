@@ -1,6 +1,6 @@
 # Split Report v0
 
-Generated at UTC: `2026-05-16T20:29:18.373971+00:00`
+Generated at UTC: `2026-05-19T00:31:02.324495+00:00`
 Target model rows input: `4,649,182`
 Rows kept: `4,610,977`
 Rows discarded: `38,205`
@@ -10,8 +10,8 @@ Leakage rows after filtering: `0`
 
 - Freeze manifest: `data/freeze/data_freeze_manifest_v0.json`
 - Target model table: `data/targets/monthly_targets_model_v0.parquet`
-- Target model SHA-256: `49815a11fc3fe70c292e4aa011ac1617ba4865aca718371055f44b3d9569437e`
-- Panel with targets SHA-256: `651e7c6fb3d1d800dbd910b0170f4730b8e926fc068f545e115ee60b4992caab`
+- Target model SHA-256: `c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799`
+- Panel with targets SHA-256: `ccbfe6545f72bcfcbdc800fca6b02ce5d3e99c140adbb310f12313a4357395f2`
 
 ## Temporal Boundaries
 

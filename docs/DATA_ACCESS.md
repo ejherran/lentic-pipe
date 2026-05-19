@@ -21,6 +21,7 @@ The following must not be Git blobs:
 
 - `data/raw/**`
 - `data/interim/**`
+- `data/interim/waterbody_crosswalk_candidates_v0.*`
 - large `data/panel/*.parquet`
 - large `data/targets/*.parquet`
 - large `data/diagnostics/*.csv`
@@ -41,6 +42,13 @@ blobs. Public Git may include the acquisition scripts, exact query filters,
 metadata, hashes, DVC pointers, and derived summaries. An authorized user can
 recover the same raw files with `dvc pull`; an unauthenticated public reader can
 recreate the acquisition route from the documented WQP query and scripts.
+
+NLA follows the same repository policy. The EPA National Aquatic Resource
+Surveys page makes National Lakes Assessment CSV and metadata files available
+for download, but this repository still keeps the local raw mirror under
+`data/raw/nla/` in DVC/GCS instead of committing it as Git blobs. Public readers
+can use `configs/sources.yaml`, `docs/DATA_SOURCES.md`, and
+`docs/DATA_LICENSES.md` to identify the EPA source page and citation guidance.
 
 ## GCS Remote Policy
 

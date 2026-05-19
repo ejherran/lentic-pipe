@@ -11,6 +11,7 @@ Examples:
 ```text
 raw_wqp
 observations_wqp
+waterbody_crosswalk_candidates_v0
 monthly_wide_panel_v0
 monthly_targets_v0
 pipe_sequence_dataset_v0
@@ -38,16 +39,36 @@ machine-specific credential paths.
    unless a full rehash is required.
 3. Regenerate `data/freeze/DATA_FREEZE.md` if raw files or derived artifacts
    changed.
-4. Add or refresh declared artifacts from `configs/dvc_artifacts.yaml`.
-5. Run `scripts/prepare_commit_artifacts.sh`.
-6. Commit only code, configs, docs, manifests, reports, and `.dvc` pointers.
+4. Rebuild the site registry and cross-source candidate layer before rebuilding
+   panels when source coverage changes.
+5. Add or refresh declared artifacts from `configs/dvc_artifacts.yaml`.
+6. Run `scripts/prepare_commit_artifacts.sh`.
+7. Commit only code, configs, docs, manifests, reports, and `.dvc` pointers.
+
+## Local DVC Write Protection
+
+DVC may restore cache-linked artifacts as read-only files. Before regenerating a
+DVC-tracked artifact in place, unprotect the specific local output files that
+the command will overwrite.
+
+Example:
+
+```bash
+.venv/bin/dvc unprotect data/interim/site_registry.parquet data/interim/site_registry.csv
+poetry run python src/data/site_registry.py --progress-every-parts 25
+```
+
+`dvc unprotect` is a local workspace operation. It does not upload data, change
+the remote, update Git history, or refresh `.dvc` pointer hashes. After the
+artifact is regenerated and reviewed, use the normal DVC add/push preparation
+flow.
 
 ## Integrity Rules
 
 - Any raw file change invalidates the current freeze.
-- Any adapter, panel, target, split, fuzzy state, PIPE sequence, PIPE rollout,
-  rollout backtest, alert, or model change requires updated derived hashes
-  before results are used.
+- Any adapter, site-resolution, panel, target, split, fuzzy state, PIPE
+  sequence, PIPE rollout, rollout backtest, alert, or model change requires
+  updated derived hashes before results are used.
 - PIPE rollout backtest outputs under `reports/pipe_grud/pipe_rollout_backtest_*`
   are small report artifacts and are kept in Git. The heavy operational rollout
   table remains DVC-tracked through `data/pipe_grud/pipe_rollout_alerts_v0.parquet.dvc`.
@@ -57,7 +78,8 @@ machine-specific credential paths.
   freeze-sensitive pipeline changes are staged without the required
   `data/freeze/*` outputs.
 - Source-scoped site identities must be preserved. Cross-source matching must be
-  explicit and auditable.
+  explicit and auditable. `waterbody_crosswalk_candidates_v0` is a review layer,
+  not an accepted merge table.
 - Download cache files under `data/cache/**` are local resumable working files,
   not canonical raw data. Final raw files must live under `data/raw/<source_id>/`.
 - Local tool caches inside raw directories, such as `.cache/huggingface`, are

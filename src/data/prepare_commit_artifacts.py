@@ -70,7 +70,9 @@ FREEZE_REQUIRED_OUTPUTS = {
 }
 FREEZE_SENSITIVE_EXACT_PATHS = {
     "configs/sources.yaml",
+    "configs/site_resolution.yaml",
     "src/data/build_observations.py",
+    "src/data/build_waterbody_crosswalk.py",
     "src/data/build_panel.py",
     "src/data/build_targets.py",
     "src/data/diagnose_panel_targets.py",
@@ -356,6 +358,8 @@ def is_experiment_manifest_path(path: Path) -> bool:
 def is_report_artifact_path(path: Path) -> bool:
     text = path.as_posix()
     if not text.startswith("reports/"):
+        return False
+    if text.startswith("reports/data/"):
         return False
     if is_experiment_manifest_path(path):
         return False

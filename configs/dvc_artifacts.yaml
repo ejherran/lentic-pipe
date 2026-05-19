@@ -39,6 +39,13 @@ artifacts:
     dvc: true
     github_policy: pointer_only
 
+  - artifact_id: raw_nla
+    path: data/raw/nla
+    type: raw_source
+    source_id: nla
+    dvc: true
+    github_policy: pointer_only
+
   - artifact_id: observations_lakebed_us_cse
     path: data/interim/observations/lakebed_us_cse
     type: canonical_observations
@@ -60,6 +67,13 @@ artifacts:
     dvc: true
     github_policy: pointer_only
 
+  - artifact_id: observations_nla
+    path: data/interim/observations/nla
+    type: canonical_observations
+    source_id: nla
+    dvc: true
+    github_policy: pointer_only
+
   - artifact_id: site_registry
     path: data/interim/site_registry.parquet
     type: source_scoped_site_registry
@@ -73,6 +87,20 @@ artifacts:
     source_id: multi_source
     dvc: true
     github_policy: pointer_only
+
+  - artifact_id: waterbody_crosswalk_candidates_v0
+    path: data/interim/waterbody_crosswalk_candidates_v0.parquet
+    type: source_resolution_candidates
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_report_in_git
+
+  - artifact_id: waterbody_crosswalk_candidates_v0_csv
+    path: data/interim/waterbody_crosswalk_candidates_v0.csv
+    type: source_resolution_candidates_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_report_in_git
 
   - artifact_id: monthly_long_panel_v0
     path: data/panel/monthly_long_v0.parquet

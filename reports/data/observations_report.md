@@ -1,7 +1,7 @@
 # Canonical Observations Report
 
-Sources: `3`
-Total canonical observations: `459,949,849`
+Sources: `4`
+Total canonical observations: `459,966,057`
 
 ## Source Summary
 
@@ -9,6 +9,7 @@ Total canonical observations: `459,949,849`
 |---|---|---:|---:|---|
 | `aquamatch_chla` | completed | 15 | 3,393,022 | `data/interim/observations/aquamatch_chla` |
 | `lakebed_us_cse` | completed | 489 | 432,748,526 | `data/interim/observations/lakebed_us_cse` |
+| `nla` | completed | 1 | 16,208 | `data/interim/observations/nla` |
 | `wqp` | completed | 238 | 23,808,301 | `data/interim/observations/wqp` |
 
 ## Variable Counts
@@ -29,6 +30,15 @@ Total canonical observations: `459,949,849`
 | `chlorophyll_a_ugL` | 1,880,447 |
 | `secchi_depth_m` | 7,743 |
 | `temperature_C` | 406,710,939 |
+
+### nla
+
+| variable_canonical | rows |
+|---|---:|
+| `DO_mgL` | 4,052 |
+| `TN_ugL` | 4,052 |
+| `TP_ugL` | 4,052 |
+| `chlorophyll_a_ugL` | 4,052 |
 
 ### wqp
 

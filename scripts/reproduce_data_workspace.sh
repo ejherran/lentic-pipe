@@ -223,8 +223,10 @@ if (( RUN_FULL_REBUILD == 1 )); then
   echo "Full rebuild requested. This can take hours and rewrites heavy DVC-managed artifacts."
   run_step "Rebuild LakeBeD-US-CSE canonical observations" "$PYTHON_BIN" src/data/build_observations.py --source lakebed_us_cse --chunksize 250000 --overwrite
   run_step "Rebuild AquaMatch canonical observations" "$PYTHON_BIN" src/data/build_observations.py --source aquamatch_chla --chunksize 250000 --overwrite
+  run_step "Rebuild NLA canonical observations" "$PYTHON_BIN" src/data/build_observations.py --source nla --chunksize 250000 --overwrite
   run_step "Rebuild WQP canonical observations" "$PYTHON_BIN" src/data/build_observations.py --source wqp --chunksize 250000 --overwrite
   run_step "Rebuild site registry" "$PYTHON_BIN" src/data/site_registry.py
+  run_step "Build waterbody crosswalk candidates" "$PYTHON_BIN" src/data/build_waterbody_crosswalk.py
   run_step "Rebuild monthly panel" "$PYTHON_BIN" src/data/build_panel.py --overwrite --progress-every-parts 25
   run_step "Rebuild targets" "$PYTHON_BIN" src/data/build_targets.py --overwrite
   run_step "Rebuild panel diagnostics" "$PYTHON_BIN" src/data/diagnose_panel_targets.py --overwrite

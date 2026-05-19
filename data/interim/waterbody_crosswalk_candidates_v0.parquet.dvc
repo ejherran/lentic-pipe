@@ -1,0 +1,5 @@
+outs:
+- md5: a458665c419f1181a84c10d152ad7dab
+  size: 39700782
+  hash: md5
+  path: waterbody_crosswalk_candidates_v0.parquet

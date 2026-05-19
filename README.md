@@ -160,6 +160,7 @@ exports, or credential JSON files.
 - `docs/DATA_LICENSES.md`
 - `docs/DATA_ACCESS.md`
 - `docs/DATA_VERSIONING.md`
+- `docs/SITE_RESOLUTION.md`
 - `docs/DVC_GCS_SETUP.md`
 - `docs/PUBLICATION_CHECKLIST.md`
 - `docs/DATA_FREEZE.md`
@@ -167,10 +168,18 @@ exports, or credential JSON files.
 
 ## Current State
 
-- The three main raw sources are documented in `configs/sources.yaml`.
+- The four raw sources are documented in `configs/sources.yaml`: LakeBeD-US-CSE,
+  WQP, AquaMatch Chl-a, and EPA NLA.
 - SHA-256 hashes and the data freeze are versioned under `data/catalog/` and
   `data/freeze/`.
 - Heavy artifacts are declared in `configs/dvc_artifacts.yaml`.
+- Cross-source waterbody matching is handled as an auditable candidate layer via
+  `configs/site_resolution.yaml` and `src/data/build_waterbody_crosswalk.py`;
+  source-scoped site IDs remain authoritative until a reviewed crosswalk is
+  promoted.
+- The focused NLA-WQP review is documented in
+  `reports/data/nla_wqp_crosswalk_review.md`; WQP is the panel backbone and NLA
+  is treated as a validation, provenance, and enrichment layer.
 - DVC is initialized; the real remote and credentials live only in
   `.dvc/config.local`.
 - `scripts/dvc_data_assistant.sh` is the recommended workflow for configuring,

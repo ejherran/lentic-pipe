@@ -228,7 +228,7 @@ def write_report(registry: pd.DataFrame, output_path: Path) -> None:
             "## Notes",
             "",
             "- `site_id` is source-scoped and does not imply cross-source equivalence.",
-            "- Cross-source merges must be declared later in `configs/site_resolution.yaml`.",
+            "- Cross-source matching is configured in `configs/site_resolution.yaml`; candidate pairs are not accepted merges.",
             "- LakeBeD date ranges are left empty here because the registry is built from manifests to avoid scanning 432M rows.",
             "",
         ]

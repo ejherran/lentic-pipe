@@ -42,9 +42,11 @@ EXACT_GENERATION_COMMANDS = [
     ".venv/bin/python src/data/raw_manifest.py --reuse-existing",
     ".venv/bin/python src/data/build_observations.py --source lakebed_us_cse --chunksize 250000 --overwrite",
     ".venv/bin/python src/data/build_observations.py --source aquamatch_chla --chunksize 250000 --overwrite",
+    ".venv/bin/python src/data/build_observations.py --source nla --chunksize 250000 --overwrite",
     ".venv/bin/python src/data/build_observations.py --source wqp --chunksize 250000 --overwrite",
     ".venv/bin/python src/data/report_observations.py",
     ".venv/bin/python src/data/site_registry.py",
+    ".venv/bin/python src/data/build_waterbody_crosswalk.py",
     ".venv/bin/python src/data/build_panel.py --overwrite --progress-every-parts 25",
     ".venv/bin/python src/data/build_targets.py --overwrite",
     ".venv/bin/python src/data/diagnose_panel_targets.py --overwrite",
@@ -173,7 +175,7 @@ def write_records_csv(records: list[FileRecord], path: Path) -> None:
     tmp_path = path.with_suffix(path.suffix + ".tmp")
     fieldnames = list(asdict(records[0]).keys()) if records else list(FileRecord.__dataclass_fields__)
     with tmp_path.open("w", encoding="utf-8", newline="") as handle:
-        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, lineterminator="\n")
         writer.writeheader()
         for record in records:
             writer.writerow(asdict(record))
