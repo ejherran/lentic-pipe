@@ -26,8 +26,8 @@
     },
     {
       "path": "reports/anfis/refined_fuzzy_manifest.json",
-      "bytes": 2810,
-      "sha256": "d61c2bbb99d1320c64feaac356941d9a63c79ffa72d5c951a1d142af0dfedafd"
+      "bytes": 2984,
+      "sha256": "bceff515557a2de9e96a0fe9b5e24d7385fe55879a0f707305fd07095bea9cab"
     }
   ],
   "outputs": [
@@ -53,8 +53,8 @@
     }
   ],
   "script": {
-    "path": "/home/wolf/lentic-pipe/src/experiments/apply_refined_model.py",
-    "bytes": 16186,
-    "sha256": "2aa75c2e16c90cfa5af55071b960ac2d9b163472407704c1f08f997e677ac730"
+    "path": "src/experiments/apply_refined_model.py",
+    "bytes": 16280,
+    "sha256": "89cb066d6b9dc179cf6e22a924a47598bea360b829fe2b71056d4ced3d8c828a"
   }
 }

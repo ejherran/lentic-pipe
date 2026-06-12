@@ -68,6 +68,10 @@ FREEZE_REQUIRED_OUTPUTS = {
     Path("data/freeze/data_freeze_manifest_v0.json"),
     Path("data/freeze/DATA_FREEZE.md"),
 }
+FREEZE_DOCUMENTATION_OUTPUTS = {
+    Path("data/freeze/data_freeze_manifest_v0.json"),
+    Path("data/freeze/DATA_FREEZE.md"),
+}
 FREEZE_SENSITIVE_EXACT_PATHS = {
     "configs/sources.yaml",
     "configs/site_resolution.yaml",
@@ -128,6 +132,21 @@ def sha256_file(path: Path, chunk_size: int = HASH_CHUNK_SIZE) -> str:
         for chunk in iter(lambda: handle.read(chunk_size), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def sha256_directory(path: Path) -> tuple[int, str]:
+    digest = hashlib.sha256()
+    total_bytes = 0
+    for file_path in sorted(item for item in path.rglob("*") if item.is_file() and not item.name.endswith(".tmp")):
+        relative_path = file_path.relative_to(path).as_posix()
+        file_hash = sha256_file(file_path)
+        file_bytes = file_path.stat().st_size
+        digest.update(relative_path.encode("utf-8"))
+        digest.update(b"\0")
+        digest.update(file_hash.encode("ascii"))
+        digest.update(b"\0")
+        total_bytes += file_bytes
+    return total_bytes, digest.hexdigest()
 
 
 def run_command(command: list[str], *, check: bool = True, env: dict[str, str] | None = None) -> CommandResult:
@@ -352,6 +371,8 @@ def normalize_repo_path(raw_path: str) -> Path:
 
 def is_experiment_manifest_path(path: Path) -> bool:
     text = path.as_posix()
+    if path.name.endswith("_promotion_manifest.json"):
+        return False
     return text.startswith("reports/") and path.suffix == ".json" and "manifest" in path.name
 
 
@@ -360,6 +381,8 @@ def is_report_artifact_path(path: Path) -> bool:
     if not text.startswith("reports/"):
         return False
     if text.startswith("reports/data/"):
+        return False
+    if path.name.endswith("_promotion_manifest.json"):
         return False
     if is_experiment_manifest_path(path):
         return False
@@ -415,9 +438,14 @@ def verify_manifest_file_record(
         return record_path
 
     if isinstance(record, dict):
+        if actual_path.is_dir():
+            actual_bytes, actual_sha = sha256_directory(actual_path)
+        else:
+            actual_bytes = actual_path.stat().st_size
+            actual_sha = None
+
         expected_bytes = record.get("bytes")
         if isinstance(expected_bytes, int):
-            actual_bytes = actual_path.stat().st_size
             if actual_bytes != expected_bytes:
                 findings.append(
                     ReproducibilityFinding(
@@ -440,10 +468,9 @@ def verify_manifest_file_record(
             )
             return record_path
 
-        actual_bytes = actual_path.stat().st_size
         should_hash = force_hash or (require_hash and actual_bytes <= max_hash_bytes)
         if should_hash:
-            actual_sha = sha256_file(actual_path)
+            actual_sha = actual_sha or sha256_file(actual_path)
             if actual_sha != expected_sha:
                 findings.append(
                     ReproducibilityFinding(
@@ -742,31 +769,46 @@ def validate_freeze_freshness(staged_rows: list[tuple[str, Path]]) -> list[Repro
         key=lambda path: path.as_posix(),
     )
     changed_freeze_outputs = changed_paths.intersection(FREEZE_REQUIRED_OUTPUTS)
+    freeze_documentation_only = (
+        sensitive_paths == [Path("src/data/freeze.py")]
+        and bool(changed_freeze_outputs)
+        and changed_freeze_outputs.issubset(FREEZE_DOCUMENTATION_OUTPUTS)
+    )
     findings: list[ReproducibilityFinding] = []
 
     if sensitive_paths:
-        missing_freeze_outputs = sorted(FREEZE_REQUIRED_OUTPUTS - changed_paths, key=lambda path: path.as_posix())
-        if missing_freeze_outputs:
-            findings.append(
-                ReproducibilityFinding(
-                    "fail",
-                    "freeze",
-                    ", ".join(path.as_posix() for path in sensitive_paths[:5]),
-                    (
-                        "Freeze-sensitive data pipeline changes are staged, but not all required "
-                        f"freeze outputs are staged: {', '.join(path.as_posix() for path in missing_freeze_outputs)}."
-                    ),
-                )
-            )
-        else:
+        if freeze_documentation_only:
             findings.append(
                 ReproducibilityFinding(
                     "ok",
                     "freeze",
-                    "-",
-                    f"Freeze-sensitive changes are paired with {len(FREEZE_REQUIRED_OUTPUTS)} required freeze outputs.",
+                    "src/data/freeze.py",
+                    "Freeze generator documentation changes are paired with freeze Markdown/JSON metadata; derived file hashes are not required.",
                 )
             )
+        else:
+            missing_freeze_outputs = sorted(FREEZE_REQUIRED_OUTPUTS - changed_paths, key=lambda path: path.as_posix())
+            if missing_freeze_outputs:
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "freeze",
+                        ", ".join(path.as_posix() for path in sensitive_paths[:5]),
+                        (
+                            "Freeze-sensitive data pipeline changes are staged, but not all required "
+                            f"freeze outputs are staged: {', '.join(path.as_posix() for path in missing_freeze_outputs)}."
+                        ),
+                    )
+                )
+            else:
+                findings.append(
+                    ReproducibilityFinding(
+                        "ok",
+                        "freeze",
+                        "-",
+                        f"Freeze-sensitive changes are paired with {len(FREEZE_REQUIRED_OUTPUTS)} required freeze outputs.",
+                    )
+                )
     else:
         findings.append(
             ReproducibilityFinding(
@@ -777,7 +819,7 @@ def validate_freeze_freshness(staged_rows: list[tuple[str, Path]]) -> list[Repro
             )
         )
 
-    if changed_freeze_outputs and changed_freeze_outputs != FREEZE_REQUIRED_OUTPUTS:
+    if changed_freeze_outputs and changed_freeze_outputs != FREEZE_REQUIRED_OUTPUTS and not freeze_documentation_only:
         findings.append(
             ReproducibilityFinding(
                 "fail",

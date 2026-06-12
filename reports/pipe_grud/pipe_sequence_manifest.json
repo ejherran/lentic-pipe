@@ -91,9 +91,9 @@
     }
   ],
   "script": {
-    "path": "/home/wolf/lentic-pipe/src/experiments/build_pipe_sequences.py",
-    "bytes": 19776,
-    "sha256": "3eb95491816c6d3638fabeb8f8f7bc25f9f8afec19c86aca2ce89c1a18e997dd"
+    "path": "src/experiments/build_pipe_sequences.py",
+    "bytes": 19812,
+    "sha256": "7fb2facdcb97b2a8b5371dfec49756e9cf3692fea3e56ff0209d3514366a4949"
   },
   "by_source_split": [
     {

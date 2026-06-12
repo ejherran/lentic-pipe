@@ -111,6 +111,14 @@ if [[ -n "$secret_content_hits" ]]; then
   printf '%s\n' "$secret_content_hits"
 fi
 
+local_path_hits="$(git grep --untracked -nE '/home/(wolf|zero)(/|$)' -- . ':!private/**' ':!.git/**' ':!scripts/check_repo_publication_ready.sh' || true)"
+if [[ -n "$local_path_hits" ]]; then
+  status=1
+  echo
+  echo "Local absolute paths found in versionable files:"
+  printf '%s\n' "$local_path_hits"
+fi
+
 repo_language_hits="$(
   git grep --untracked -nE '([áéíóúÁÉÍÓÚñÑ¿¡]|(^|[^A-Za-z])(gestion|datos|codigo|documentacion|maquina|credenciales|fuentes|crudos|artefactos|proliferacion|simulacion|planificacion|trazabilidad|dependencias|instalacion|recuperar|publicar|actualizar|repositorio|pequenos|subir|bajar|configurar|diagnosticar|autorizada|cuenta|servicio|clave|trofico|lenticos|modelos|validar|regenerar|manifiestos|despues|politica)([^A-Za-z]|$))' \
     -- . \

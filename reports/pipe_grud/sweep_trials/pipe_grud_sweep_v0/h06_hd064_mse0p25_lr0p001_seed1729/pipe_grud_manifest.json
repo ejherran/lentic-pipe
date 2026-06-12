@@ -103,8 +103,8 @@
     },
     {
       "path": "reports/pipe_grud/pipe_sequence_manifest.json",
-      "bytes": 6427,
-      "sha256": "7285be6054ea9c027f5e6efd52a85cff717051ed056bab8709878c0065bc3cb2"
+      "bytes": 6404,
+      "sha256": "9ad60fb85f26da63b9567eb814fb46c7baf18253e73e866002c4f3219589113a"
     }
   ],
   "outputs": [
@@ -160,8 +160,8 @@
     }
   ],
   "script": {
-    "path": "/home/wolf/lentic-pipe/src/experiments/train_pipe_grud.py",
-    "bytes": 51163,
-    "sha256": "fc11114f219c7bd9218b32022518c7c390692a0c759e43a7755be19a32342cf9"
+    "path": "src/experiments/train_pipe_grud.py",
+    "bytes": 51184,
+    "sha256": "cfff7d0655e8963209cdd09c8890f5cb0a87335392b7e52a48fbf6031c3a8c0b"
   }
 }

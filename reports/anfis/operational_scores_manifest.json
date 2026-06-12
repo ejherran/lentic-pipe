@@ -31,13 +31,13 @@
   "inputs": [
     {
       "path": "data/panel/panel_monthly_v0.parquet",
-      "bytes": 103298009,
-      "sha256": "03cc633578cc1b842a6646ab77209aa5ced7c0fc48e2c24fc5a9debc25c8e883"
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
     },
     {
       "path": "data/splits/monthly_model_splits_v0.parquet",
-      "bytes": 35945895,
-      "sha256": "9d4a1c377aa39fa1552c9f36bd71e5a75283c988327ffa910b66c810d3e6d60e"
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
     },
     {
       "path": "data/fuzzy/state_vector_v0.parquet",
@@ -66,8 +66,8 @@
     },
     {
       "path": "reports/anfis/current_model_manifest.json",
-      "bytes": 1949,
-      "sha256": "14801aebea27c94ef0fbbae93aaaf86bffafdb2bf9abea5643b17109490f0da3"
+      "bytes": 1926,
+      "sha256": "80e0d00e6e3874d8cc9b0b33914c5814668370e7778ffe48df89254ff6617814"
     }
   ],
   "model_artifacts": [
@@ -186,8 +186,8 @@
     }
   ],
   "script": {
-    "path": "/home/wolf/lentic-pipe/src/experiments/score_current_model.py",
-    "bytes": 40817,
-    "sha256": "0eef063751bbd0828ece6f0e13ef2ea5d046abed86bd78e78d3d62b7f2ebedd7"
+    "path": "src/experiments/score_current_model.py",
+    "bytes": 40848,
+    "sha256": "395dc2f0819e8c2984d93435cfbe59313e19ef6495e838140e651a2d994eb5de"
   }
 }

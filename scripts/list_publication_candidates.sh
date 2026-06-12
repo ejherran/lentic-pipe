@@ -69,7 +69,7 @@ git status --short --ignored --untracked-files=all \
 
 echo
 echo "== Required checks =="
-echo "  /home/wolf/.local/bin/poetry run ty check"
-echo "  /home/wolf/.local/bin/poetry run pytest"
-echo "  /home/wolf/.local/bin/poetry check"
+echo "  poetry run ty check"
+echo "  poetry run pytest"
+echo "  poetry check"
 echo "  scripts/check_repo_publication_ready.sh"

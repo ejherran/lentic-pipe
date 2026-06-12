@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from src.data.prepare_commit_artifacts import (
@@ -7,8 +8,10 @@ from src.data.prepare_commit_artifacts import (
     declared_artifacts_missing_pointers,
     dvc_pointer_path,
     has_failing_findings,
+    is_experiment_manifest_path,
     is_report_artifact_path,
     reproducibility_checks,
+    sha256_directory,
     sha256_file,
     validate_experiment_manifests,
     validate_freeze_freshness,
@@ -85,6 +88,50 @@ def test_experiment_manifest_validation_checks_output_and_script_hashes(
     assert any("SHA-256 changed" in finding.message for finding in findings)
 
 
+def test_experiment_manifest_validation_checks_directory_records(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    output_dir = Path("reports/pipe/scores.parquet")
+    output_dir.mkdir(parents=True)
+    part = output_dir / "part-000.parquet"
+    part.write_text("score\n", encoding="utf-8")
+    script = Path("src/experiments/example.py")
+    script.parent.mkdir(parents=True)
+    script.write_text("print('ok')\n", encoding="utf-8")
+    total_bytes, directory_hash = sha256_directory(output_dir)
+    manifest = Path("reports/pipe/scores_manifest.json")
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "completed",
+                "outputs": [
+                    {
+                        "path": output_dir.as_posix(),
+                        "type": "directory",
+                        "bytes": total_bytes,
+                        "sha256": directory_hash,
+                    }
+                ],
+                "script": _manifest_record(script),
+                "inputs": [],
+            },
+            indent=2,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+    findings = validate_experiment_manifests(
+        staged_paths={manifest},
+        artifacts=[],
+        max_hash_bytes=1024 * 1024,
+        verify_manifest_inputs=False,
+    )
+
+    assert not has_failing_findings(findings)
+
+
 def test_experiment_manifest_validation_requires_staged_reports_to_be_listed(
     tmp_path: Path, monkeypatch
 ) -> None:
@@ -110,6 +157,13 @@ def test_data_governance_reports_are_not_experiment_artifacts() -> None:
     assert is_report_artifact_path(Path("reports/pipe_grud/pipe_sequence_report.md"))
 
 
+def test_promotion_manifests_are_not_experiment_manifests() -> None:
+    path = Path("reports/pipe_grud/pipe_grud_promotion_manifest.json")
+
+    assert not is_experiment_manifest_path(path)
+    assert not is_report_artifact_path(path)
+
+
 def test_freeze_freshness_requires_freeze_outputs_for_data_pipeline_changes() -> None:
     findings = validate_freeze_freshness([("M", Path("src/data/build_panel.py"))])
 
@@ -133,6 +187,19 @@ def test_dvc_inventory_only_change_does_not_warn_about_freeze() -> None:
     assert not has_failing_findings(findings)
     assert not any(finding.level == "warn" for finding in findings)
     assert any("data-freeze regeneration is not required" in finding.message for finding in findings)
+
+
+def test_freeze_documentation_update_does_not_require_derived_manifest() -> None:
+    findings = validate_freeze_freshness(
+        [
+            ("M", Path("src/data/freeze.py")),
+            ("M", Path("data/freeze/data_freeze_manifest_v0.json")),
+            ("M", Path("data/freeze/DATA_FREEZE.md")),
+        ]
+    )
+
+    assert not has_failing_findings(findings)
+    assert any("derived file hashes are not required" in finding.message for finding in findings)
 
 
 def test_reproducibility_checks_validate_dvc_pointer_structure(tmp_path: Path, monkeypatch) -> None:

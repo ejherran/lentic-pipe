@@ -69,8 +69,8 @@
     },
     {
       "path": "reports/pipe_grud/pipe_grud_manifest.json",
-      "bytes": 23772,
-      "sha256": "bf6bcdc3fe9e2c2602f52caa03368049b99fb51841e15b202128146166c9fc8d"
+      "bytes": 23703,
+      "sha256": "1b350e13a302112dcc1d6003d367da2f6f3d16ee67ae5c81c458599d17a06f6f"
     },
     {
       "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
@@ -116,7 +116,7 @@
     }
   ],
   "script": {
-    "path": "/home/zero/repos/lentic-pipe/src/experiments/rollout_pipe_grud.py",
+    "path": "src/experiments/rollout_pipe_grud.py",
     "bytes": 32780,
     "sha256": "8abdb506d46357d32a9c36b6ea8a67edd607385c5a6726580aeb42fda375a520"
   }

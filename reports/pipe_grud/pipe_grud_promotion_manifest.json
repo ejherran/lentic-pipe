@@ -68,9 +68,9 @@
     }
   ],
   "canonical_manifest": {
-    "bytes": 23772,
+    "bytes": 23703,
     "path": "reports/pipe_grud/pipe_grud_manifest.json",
-    "sha256": "bf6bcdc3fe9e2c2602f52caa03368049b99fb51841e15b202128146166c9fc8d"
+    "sha256": "1b350e13a302112dcc1d6003d367da2f6f3d16ee67ae5c81c458599d17a06f6f"
   },
   "copied": [
     {
@@ -148,7 +148,7 @@
   "promotion_id": "20260517T022613Z",
   "script": {
     "bytes": 15061,
-    "path": "/home/wolf/lentic-pipe/src/experiments/promote_pipe_grud_winner.py",
+    "path": "src/experiments/promote_pipe_grud_winner.py",
     "sha256": "5ef3f8215b961129392a6b23aac919cad356c507bbac4409120f936420711287"
   },
   "selected_trial": {

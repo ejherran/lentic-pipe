@@ -28,8 +28,8 @@
     },
     {
       "path": "reports/anfis/current_model_manifest.json",
-      "bytes": 1949,
-      "sha256": "14801aebea27c94ef0fbbae93aaaf86bffafdb2bf9abea5643b17109490f0da3"
+      "bytes": 1926,
+      "sha256": "80e0d00e6e3874d8cc9b0b33914c5814668370e7778ffe48df89254ff6617814"
     }
   ],
   "outputs": [
@@ -60,8 +60,8 @@
     }
   ],
   "script": {
-    "path": "/home/wolf/lentic-pipe/src/experiments/audit_current_model.py",
-    "bytes": 23951,
-    "sha256": "262de357142453a9a11805f606afcf907e001a21672af9e230b5604ea3fac5a0"
+    "path": "src/experiments/audit_current_model.py",
+    "bytes": 24080,
+    "sha256": "55433b37fae3758fe8bc83a7479f09dc2f08df1fa183bb9a5a816d19769122ae"
   }
 }

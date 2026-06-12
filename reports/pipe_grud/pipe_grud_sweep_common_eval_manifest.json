@@ -40,9 +40,9 @@
     "evaluated_trials": 27
   },
   "script": {
-    "bytes": 16470,
-    "path": "/home/wolf/lentic-pipe/src/experiments/evaluate_pipe_grud_sweep_common.py",
-    "sha256": "8e14722dbde60cbb96c9ac816fb76c944b20606abef6d7cb50a6f6544e0e1e6e"
+    "bytes": 16499,
+    "path": "src/experiments/evaluate_pipe_grud_sweep_common.py",
+    "sha256": "ece29473800721725e68d04ee2446de75d5c9268933e0c802b91112f4fb276cc"
   },
   "selection": {
     "common_history_length": 12,

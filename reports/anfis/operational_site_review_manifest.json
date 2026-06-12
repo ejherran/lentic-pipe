@@ -52,8 +52,8 @@
     },
     {
       "path": "reports/anfis/operational_scores_manifest.json",
-      "bytes": 6562,
-      "sha256": "4435161b41106148da125e9fa5c18dcaa30c1b45a9bea3ae7a84e0d38c9d7d1b"
+      "bytes": 6539,
+      "sha256": "5138f8bae128f6ecd4327f33628bc3c5411b4f9c73962f2758dce73c436eae19"
     }
   ],
   "score_parts": [
@@ -111,8 +111,8 @@
     }
   ],
   "script": {
-    "path": "/home/wolf/lentic-pipe/src/experiments/build_operational_site_review.py",
-    "bytes": 28039,
-    "sha256": "dc11067ee10edee92f907e23a911d1c37ad9aa95790e274fb65654a06066ab7c"
+    "path": "src/experiments/build_operational_site_review.py",
+    "bytes": 28150,
+    "sha256": "fbd2e8a3432cafcbf98eb02da7521dfadb9bc57c5f848acf8f8ae093ada726aa"
   }
 }

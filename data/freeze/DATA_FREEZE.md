@@ -2,64 +2,10 @@
 
 Generated at UTC: `2026-05-19T01:08:49.234972+00:00`
 Repository commit: `9f538e35ec07e8326daeec258a9814d82e6a6eeb`
-Worktree status: `M  README.md
-M  configs/dvc_artifacts.yaml
-A  configs/site_resolution.yaml
-M  configs/sources.yaml
-M  configs/variables.yaml
-M  data/.gitignore
-M  data/catalog/raw_file_manifest.csv
-M  data/catalog/source_catalog.json
-M  data/diagnostics.dvc
-M  data/freeze/DATA_FREEZE.md
-M  data/freeze/data_freeze_manifest_v0.json
-MM data/freeze/derived_file_manifest_v0.csv
-A  data/interim/observations/nla.dvc
-M  data/interim/site_registry.csv.dvc
-M  data/interim/site_registry.parquet.dvc
-A  data/interim/waterbody_crosswalk_candidates_v0.csv.dvc
-A  data/interim/waterbody_crosswalk_candidates_v0.parquet.dvc
-M  data/panel/monthly_long_v0.parquet.dvc
-M  data/panel/monthly_panel_manifest_v0.json
-M  data/panel/panel_monthly_v0.parquet.dvc
-A  data/raw/nla.dvc
-M  data/splits/SPLIT_REPORT.md
-M  data/splits/monthly_model_splits_v0.parquet.dvc
-M  data/splits/split_manifest.json
-M  data/targets.dvc
-M  docs/DATA_ACCESS.md
-M  docs/DATA_LICENSES.md
-M  docs/DATA_SOURCES.md
-M  docs/DATA_VERSIONING.md
-M  docs/DVC_GCS_SETUP.md
-A  docs/SITE_RESOLUTION.md
-M  reports/data/DATA_DIAGNOSTIC_REPORT_v0.md
-M  reports/data/PANEL_REPORT_v0.md
-M  reports/data/TARGET_REPORT_v0.md
-M  reports/data/figures/source_variable_coverage.svg
-M  reports/data/figures/target_coverage_by_source_horizon.svg
-M  reports/data/figures/variable_coverage.svg
-A  reports/data/nla_wqp_crosswalk_review.md
-M  reports/data/observations_report.md
-M  reports/data/site_registry_report.md
-M  reports/data/source_inventory.md
-AM reports/data/waterbody_crosswalk_candidates_manifest.json
-A  reports/data/waterbody_crosswalk_candidates_report.md
-M  scripts/reproduce_data_workspace.sh
-A  src/data/adapters/nla_survey.py
-M  src/data/build_observations.py
-M  src/data/build_splits.py
-M  src/data/build_targets.py
-AM src/data/build_waterbody_crosswalk.py
-M  src/data/diagnose_panel_targets.py
-M  src/data/freeze.py
-MM src/data/prepare_commit_artifacts.py
-M  src/data/site_registry.py
-AM tests/test_build_waterbody_crosswalk.py
-M  tests/test_data_versioning_config.py
-A  tests/test_nla_survey_adapter.py
- M tests/test_prepare_commit_artifacts.py`
+Worktree status: `dirty_at_generation`
 Python constraint: `>=3.14,<3.15`
+
+Publication note: this freeze was generated while the NLA integration commit was still staged in the local worktree. The current publication audit should use `git status --short` and `scripts/check_repo_publication_ready.sh`; the full historical dirty-file list is omitted here because it no longer describes the repository state after commit.
 
 ## Scope
 

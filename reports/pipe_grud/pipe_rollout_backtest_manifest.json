@@ -70,13 +70,13 @@
     },
     {
       "path": "data/splits/monthly_model_splits_v0.parquet",
-      "bytes": 35945895,
-      "sha256": "9d4a1c377aa39fa1552c9f36bd71e5a75283c988327ffa910b66c810d3e6d60e"
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
     },
     {
       "path": "reports/pipe_grud/pipe_grud_manifest.json",
-      "bytes": 23772,
-      "sha256": "bf6bcdc3fe9e2c2602f52caa03368049b99fb51841e15b202128146166c9fc8d"
+      "bytes": 23703,
+      "sha256": "1b350e13a302112dcc1d6003d367da2f6f3d16ee67ae5c81c458599d17a06f6f"
     },
     {
       "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
@@ -117,7 +117,7 @@
     }
   ],
   "script": {
-    "path": "/home/zero/repos/lentic-pipe/src/experiments/evaluate_pipe_grud_rollouts.py",
+    "path": "src/experiments/evaluate_pipe_grud_rollouts.py",
     "bytes": 36710,
     "sha256": "fd81147a14713e183648383c982a696d82eb0d8fa1855f0996e9961f7dd4179c"
   }

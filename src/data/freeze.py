@@ -101,6 +101,22 @@ def git_dirty_status() -> str:
     return status or "clean"
 
 
+def append_worktree_status(lines: list[str], dirty_state: str) -> None:
+    if dirty_state == "clean":
+        lines.append("Worktree status: `clean`")
+        return
+
+    lines.extend(
+        [
+            "Worktree status: `dirty_at_generation`",
+            "",
+            "```text",
+            dirty_state,
+            "```",
+        ]
+    )
+
+
 def collect_files(paths: list[Path]) -> list[Path]:
     files: list[Path] = []
     for path in paths:
@@ -237,25 +253,33 @@ def write_freeze_md(
         "",
         f"Generated at UTC: `{payload['generated_at_utc']}`",
         f"Repository commit: `{payload['git_commit']}`",
-        f"Worktree status: `{payload['git_dirty_state']}`",
-        f"Python constraint: `{payload['python_constraint']}`",
-        "",
-        "## Scope",
-        "",
-        "This freeze captures the current raw fingerprints, canonical observations, monthly panel, target tables, and diagnostics used before temporal splits and baselines.",
-        "",
-        "Downstream experiments must reference this freeze. If raw files, canonicalization logic, panel logic, target logic, or diagnostics change, regenerate this freeze before trusting new results.",
-        "",
-        "## Raw Sources",
-        "",
-        f"Raw manifest: `{payload['raw_manifest']}`",
-        f"Raw source catalog: `{payload['source_catalog']}`",
-        f"Raw files: `{format_int(raw_manifest_stats['file_count'])}`",
-        f"Raw total size: `{format_bytes(raw_manifest_stats['total_size_bytes'])}`",
-        "",
-        "| source_id | files | size | license | provenance_status | raw_path |",
-        "|---|---:|---:|---|---|---|",
     ]
+    append_worktree_status(lines, payload["git_dirty_state"])
+    lines.extend(
+        [
+            f"Python constraint: `{payload['python_constraint']}`",
+            "",
+            "## Scope",
+        ]
+    )
+    lines.extend(
+        [
+            "",
+            "This freeze captures the current raw fingerprints, canonical observations, monthly panel, target tables, and diagnostics used before temporal splits and baselines.",
+            "",
+            "Downstream experiments must reference this freeze. If raw files, canonicalization logic, panel logic, target logic, or diagnostics change, regenerate this freeze before trusting new results.",
+            "",
+            "## Raw Sources",
+            "",
+            f"Raw manifest: `{payload['raw_manifest']}`",
+            f"Raw source catalog: `{payload['source_catalog']}`",
+            f"Raw files: `{format_int(raw_manifest_stats['file_count'])}`",
+            f"Raw total size: `{format_bytes(raw_manifest_stats['total_size_bytes'])}`",
+            "",
+            "| source_id | files | size | license | provenance_status | raw_path |",
+            "|---|---:|---:|---|---|---|",
+        ]
+    )
     for source_id, source in source_catalog["sources"].items():
         lines.append(
             f"| `{source_id}` | {format_int(int(source['file_count']))} | {format_bytes(int(source['total_size_bytes']))} | "

@@ -806,6 +806,7 @@ def build_manifest(
         "inputs": [_file_record(path) for path in input_paths if path.exists()],
         "outputs": [_file_record(path) for path in output_paths if path.exists()],
         "model_artifacts": artifacts,
+        "script": _file_record(Path(__file__)),
     }
 
 
