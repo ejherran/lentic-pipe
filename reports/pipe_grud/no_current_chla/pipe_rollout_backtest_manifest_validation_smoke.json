@@ -1,0 +1,112 @@
+{
+  "generated_at_utc": "2026-06-12T18:46:34.702546+00:00",
+  "started_at_utc": "2026-06-12T18:46:29.531978+00:00",
+  "status": "completed",
+  "backtest_version": "pipe_grud_rollout_backtest_v0",
+  "rollout_version": "pipe_grud_rollout_alerts_v0",
+  "pipe_model_version": "pipe_grud_v0",
+  "config": {
+    "split": "validation",
+    "history_length": 12,
+    "rollout_horizon": 3,
+    "observed_state_source": "target",
+    "samples": 1,
+    "deterministic": true,
+    "batch_size": 256,
+    "max_origins": 512,
+    "allow_partial_horizons": false,
+    "irc_alpha": 0.5,
+    "irc_beta": 0.5,
+    "irc_gamma": 2.0,
+    "irc_alert_threshold": 0.5,
+    "alert_prob_threshold": 0.5,
+    "random_seed": 1729,
+    "model_config": {
+      "history_length": 12,
+      "input_dim": 13,
+      "target_dim": 9,
+      "hidden_dim": 96,
+      "num_layers": 1,
+      "dropout": 0.0,
+      "residual_mode": "add_last",
+      "mse_weight": 1.0,
+      "checkpoint_selection_metric": "balanced",
+      "blend_selection_metric": "balanced",
+      "blend_grid": [
+        0.0,
+        0.1,
+        0.2,
+        0.35,
+        0.5,
+        0.65,
+        0.8,
+        0.9,
+        1.0
+      ]
+    },
+    "calibrated_bloom_horizons": []
+  },
+  "row_counts": {
+    "selected_origins": 512,
+    "evaluated_rollout_rows": 1536,
+    "availability_summary_rows": 3,
+    "backtest_row_export_rows": 1536,
+    "metric_rows": 132,
+    "alert_metric_rows": 12,
+    "example_rows": 171
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_no_current_chla_v0.parquet",
+      "bytes": 63072695,
+      "sha256": "2f5e1db509919299761ec6ec81c808810d65c48b8f2cc21cc1c852293b2d9bfc"
+    },
+    {
+      "path": "models/pipe_grud/no_current_chla/pipe_grud_model_smoke.pt",
+      "bytes": 139604,
+      "sha256": "ba64bc307b028796f04f07d9bc55fc3b2086704449c2a1b975b26163e5d640e1"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_grud_manifest_smoke.json",
+      "bytes": 4874,
+      "sha256": "a86bd04af3f8130ce7e778fdd3a7b676597dd26af8b2b8815037a4c79e051346"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_validation_smoke.parquet",
+      "bytes": 65474,
+      "sha256": "9d23ecf9796e833b0882ae2ec94022e2b133221bb494e4241fd1a8c4737388d0"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_metrics_validation_smoke.csv",
+      "bytes": 28108,
+      "sha256": "ccb93de20e6ccb6d399c8931bb13618335b35ec17e4f32f905f0945e9cfc1634"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_alert_metrics_validation_smoke.csv",
+      "bytes": 2906,
+      "sha256": "8c8bac154a1243b60792fa18c3c0f077725d9501ea347d833e0cdf72528cd313"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_examples_validation_smoke.csv",
+      "bytes": 30666,
+      "sha256": "61c6f1fd0bf21ecc8341968873e1a35bfd8d529ddcce6ba7fbd6f6fe31dc9a46"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_report_validation_smoke.md",
+      "bytes": 3241,
+      "sha256": "2763cd41748a8a8217ee1cd9d9863cb775ac93b31148d6ab8606a5bceab97d35"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/evaluate_pipe_grud_rollouts.py",
+    "bytes": 39331,
+    "sha256": "526b1e0ef972f3acefd3c130702143e450c11f6ac8f74aeed430fc17c2a8bb0e"
+  }
+}

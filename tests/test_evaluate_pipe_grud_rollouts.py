@@ -110,6 +110,17 @@ def test_observed_state_frame_uses_origin_and_target_states() -> None:
     assert all(math.isclose(value, 0.70, rel_tol=1e-6) for value in observed["actual_yT"])
 
 
+def test_observed_state_frame_can_use_target_states_only() -> None:
+    sequences = _sequence_rows()
+    sequences["x_yT"] = 0.20
+    sequences["target_yT"] = 0.80
+
+    observed = observed_state_frame(sequences, source="target")
+
+    assert observed["observed_year_month"].tolist() == ["2022-02", "2022-03", "2022-04", "2022-05"]
+    assert all(math.isclose(value, 0.80, rel_tol=1e-6) for value in observed["actual_yT"])
+
+
 def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path) -> None:
     pytest.importorskip("torch")
 
@@ -157,6 +168,8 @@ def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path)
             str(manifest_path),
             "--rollout-horizon",
             "2",
+            "--observed-state-source",
+            "target",
             "--deterministic",
             "--disable-calibrated-bloom",
             "--batch-size",
@@ -188,6 +201,7 @@ def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path)
     assert len(backtest_rows) == 4
     assert {"alert_probability_irc", "actual_irc_alert", "irc_mean", "bloom_h"}.issubset(backtest_rows.columns)
     assert manifest["status"] == "completed"
+    assert manifest["config"]["observed_state_source"] == "target"
     assert manifest["row_counts"]["selected_origins"] == 2
     assert manifest["row_counts"]["evaluated_rollout_rows"] == 4
     assert manifest["row_counts"]["backtest_row_export_rows"] == 4

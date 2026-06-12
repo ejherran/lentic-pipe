@@ -1,0 +1,5 @@
+outs:
+- md5: 0224281e44242308f92a88439d7e8a65
+  size: 2011927
+  hash: md5
+  path: pipe_rollout_backtest_rows_test.parquet

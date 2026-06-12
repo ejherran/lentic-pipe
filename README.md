@@ -209,6 +209,10 @@ exports, or credential JSON files.
   reproducible evaluator for precomputed rollout score surfaces. Use
   `--output-name` for follow-up runs that must not overwrite the smoke
   artifacts.
+- `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
+  no-current-Chl-a early-warning surface, including the sequence input mapping,
+  target-only backtest guardrail, smoke commands, and full-run promotion
+  criteria.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

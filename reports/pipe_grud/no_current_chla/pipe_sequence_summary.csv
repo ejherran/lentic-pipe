@@ -1,0 +1,10 @@
+source_id,split,rows,sites,origin_min,origin_max,target_min,target_max,mean_gap_months,max_gap_months
+aquamatch_chla,test,66226,8829,2022-01,2024-05,2022-02,2024-06,1.0,1
+aquamatch_chla,train,901569,43288,1970-01,2018-11,1970-02,2018-12,1.0,1
+aquamatch_chla,validation,110443,12420,2019-01,2021-11,2019-02,2021-12,1.0,1
+lakebed_us_cse,test,254,21,2022-01,2024-03,2022-02,2024-04,1.0,1
+lakebed_us_cse,train,3309,21,1981-04,2018-11,1981-05,2018-12,1.0,1
+lakebed_us_cse,validation,549,21,2019-01,2021-11,2019-02,2021-12,1.0,1
+wqp,test,86478,10366,2022-01,2026-04,2022-02,2026-05,1.0,1
+wqp,train,808970,38508,1970-01,2018-11,1970-02,2018-12,1.0,1
+wqp,validation,91226,11283,2019-01,2021-11,2019-02,2021-12,1.0,1

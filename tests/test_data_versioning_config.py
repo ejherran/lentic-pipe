@@ -3,6 +3,8 @@ from __future__ import annotations
 import tomllib
 from pathlib import Path
 
+from src.data.prepare_commit_artifacts import is_heavy_ignored_path
+
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
@@ -123,6 +125,29 @@ def test_pipe_rollout_alerts_are_documented_as_dvc_artifacts() -> None:
         in rollout_iteration
     )
     assert "Iteration 2 Direction" in rollout_iteration
+
+
+def test_no_current_chla_full_artifacts_are_documented_as_dvc_artifacts() -> None:
+    dvc_artifacts = (REPO_ROOT / "configs/dvc_artifacts.yaml").read_text(encoding="utf-8")
+
+    assert "pipe_sequence_dataset_no_current_chla_v0" in dvc_artifacts
+    assert "data/pipe_grud/pipe_sequence_dataset_no_current_chla_v0.parquet" in dvc_artifacts
+    assert "pipe_rollout_backtest_rows_validation_no_current_chla_v0" in dvc_artifacts
+    assert "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_validation.parquet" in dvc_artifacts
+    assert "pipe_rollout_backtest_rows_test_no_current_chla_v0" in dvc_artifacts
+    assert "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_test.parquet" in dvc_artifacts
+    assert "pipe_rollout_calibrated_backtest_rows_no_current_chla_v0" in dvc_artifacts
+    assert "reports/pipe_grud/no_current_chla/pipe_rollout_calibrated_backtest_rows.parquet" in dvc_artifacts
+
+
+def test_prepare_commit_skips_row_level_smoke_parquets() -> None:
+    assert not is_heavy_ignored_path(
+        "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_test_smoke.parquet"
+    )
+    assert not is_heavy_ignored_path(
+        "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_test_stochastic_smoke.parquet"
+    )
+    assert is_heavy_ignored_path("reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_test.parquet")
 
 
 def test_site_resolution_candidates_are_documented_as_dvc_artifacts() -> None:

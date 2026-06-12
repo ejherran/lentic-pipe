@@ -150,16 +150,25 @@ def _clip01(values: np.ndarray | pd.Series) -> np.ndarray:
     return np.clip(np.asarray(values, dtype="float64"), 0.0, 1.0)
 
 
-def observed_state_frame(sequences: pd.DataFrame) -> pd.DataFrame:
-    origin = sequences[["source_id", "site_id", "split", "origin_year_month"] + INPUT_COLUMNS[: len(PIPE_STATE_COLUMNS)]].copy()
-    origin = origin.rename(columns={"origin_year_month": "observed_year_month"})
-    origin = origin.rename(columns={f"x_{column}": f"actual_{column}" for column in PIPE_STATE_COLUMNS})
+def observed_state_frame(sequences: pd.DataFrame, *, source: str = "origin_and_target") -> pd.DataFrame:
+    if source not in {"origin_and_target", "target"}:
+        raise ValueError(f"Unsupported observed state source: {source!r}")
+
+    parts = []
+    if source == "origin_and_target":
+        origin = sequences[
+            ["source_id", "site_id", "split", "origin_year_month"] + INPUT_COLUMNS[: len(PIPE_STATE_COLUMNS)]
+        ].copy()
+        origin = origin.rename(columns={"origin_year_month": "observed_year_month"})
+        origin = origin.rename(columns={f"x_{column}": f"actual_{column}" for column in PIPE_STATE_COLUMNS})
+        parts.append(origin)
 
     target = sequences[["source_id", "site_id", "split", "target_year_month"] + TARGET_COLUMNS].copy()
     target = target.rename(columns={"target_year_month": "observed_year_month"})
     target = target.rename(columns={f"target_{column}": f"actual_{column}" for column in PIPE_STATE_COLUMNS})
+    parts.append(target)
 
-    observed = pd.concat([origin, target], ignore_index=True)
+    observed = pd.concat(parts, ignore_index=True)
     observed = observed[observed["observed_year_month"].notna()].copy()
     for column in ["source_id", "site_id", "split", "observed_year_month"]:
         observed[column] = observed[column].astype(str)
@@ -616,6 +625,7 @@ def write_report(
         f"- Max origins cap: `{args.max_origins}`",
         f"- History length: `{history_length}`",
         f"- Rollout horizon: `{args.rollout_horizon}` month(s)",
+        f"- Observed state source: `{args.observed_state_source}`",
         f"- Samples per origin: `{1 if args.deterministic else args.samples}`",
         f"- Deterministic mode: `{bool(args.deterministic)}`",
         f"- Horizon policy: `{'partial' if args.allow_partial_horizons else 'complete'}`",
@@ -734,6 +744,7 @@ def manifest_payload(
             "split": args.split,
             "history_length": int(history_length),
             "rollout_horizon": int(args.rollout_horizon),
+            "observed_state_source": args.observed_state_source,
             "samples": int(1 if args.deterministic else args.samples),
             "deterministic": bool(args.deterministic),
             "batch_size": int(args.batch_size),
@@ -779,6 +790,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--split", choices=["all", "train", "validation", "test"], default="test")
     parser.add_argument("--history-length", type=int, default=None)
     parser.add_argument("--rollout-horizon", type=int, default=3)
+    parser.add_argument("--observed-state-source", choices=["origin_and_target", "target"], default="origin_and_target")
     parser.add_argument("--samples", type=int, default=128)
     parser.add_argument("--batch-size", type=int, default=512)
     parser.add_argument("--max-origins", type=int, default=None)
@@ -828,7 +840,7 @@ def main() -> None:
     print(f"loading sequences {args.sequences}", flush=True)
     frame = load_sequences(args.sequences, max_rows=args.max_rows)
     frame = prepare_window_frame(frame)
-    observed = observed_state_frame(frame)
+    observed = observed_state_frame(frame, source=args.observed_state_source)
     print(f"sequence rows={len(frame):,}; observed states={len(observed):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 
     calibrators = load_calibrators(args)

@@ -1,0 +1,276 @@
+{
+  "generated_at_utc": "2026-06-12T18:40:56.959580+00:00",
+  "started_at_utc": "2026-06-12T18:40:24.347378+00:00",
+  "dataset_version": "pipe_sequence_dataset_v0",
+  "config": {
+    "max_gap_months": 1,
+    "input_surface": "no_current_chla",
+    "input_state_mapping": {
+      "yN": "yN",
+      "yF": "yF",
+      "yT": "yT_no_chla",
+      "sigma_N": "sigma_N",
+      "sigma_F": "sigma_F",
+      "sigma_T": "sigma_T_no_chla",
+      "delta_yN": "delta_yN",
+      "delta_yF": "delta_yF",
+      "delta_yT": "delta_yT_no_chla"
+    },
+    "train_end": "2018-12",
+    "validation_start": "2019-01",
+    "validation_end": "2021-12",
+    "test_start": "2022-01",
+    "test_end": null,
+    "pipe_state_columns": [
+      "yN",
+      "yF",
+      "yT",
+      "sigma_N",
+      "sigma_F",
+      "sigma_T",
+      "delta_yN",
+      "delta_yF",
+      "delta_yT"
+    ],
+    "season_columns": [
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "candidate_rows": 3386676,
+    "kept_sequence_rows": 2069024,
+    "discarded_candidate_rows": 1317652,
+    "source_scoped_sites": 93168,
+    "summary_rows": 9,
+    "discarded_summary_rows": 9
+  },
+  "inputs": [
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_no_current_chla_v0.parquet",
+      "bytes": 63072695,
+      "sha256": "2f5e1db509919299761ec6ec81c808810d65c48b8f2cc21cc1c852293b2d9bfc"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_sequence_summary.csv",
+      "bytes": 708,
+      "sha256": "32148dae3dee2c4fbe357b77650b49ea4b2a4ac19b066d59e8e30f03947048bc"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_sequence_discarded_summary.csv",
+      "bytes": 386,
+      "sha256": "d463aa3a41d9f77ec737d557d442a77a75e11197b857415114cddf41df6ba06b"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_sequence_report.md",
+      "bytes": 3231,
+      "sha256": "33942a7818e048168ee03610c03f4e50098a56b5dc1bfc4cc30c78e50c8d6e83"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/build_pipe_sequences.py",
+    "bytes": 22696,
+    "sha256": "63bd989d59afdaac36bf8200fc5b7e2caf97795090b6448600241fa92c72a8f9"
+  },
+  "by_source_split": [
+    {
+      "source_id": "aquamatch_chla",
+      "split": "test",
+      "rows": 66226,
+      "sites": 8829,
+      "origin_min": "2022-01",
+      "origin_max": "2024-05",
+      "target_min": "2022-02",
+      "target_max": "2024-06",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "aquamatch_chla",
+      "split": "train",
+      "rows": 901569,
+      "sites": 43288,
+      "origin_min": "1970-01",
+      "origin_max": "2018-11",
+      "target_min": "1970-02",
+      "target_max": "2018-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "aquamatch_chla",
+      "split": "validation",
+      "rows": 110443,
+      "sites": 12420,
+      "origin_min": "2019-01",
+      "origin_max": "2021-11",
+      "target_min": "2019-02",
+      "target_max": "2021-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "lakebed_us_cse",
+      "split": "test",
+      "rows": 254,
+      "sites": 21,
+      "origin_min": "2022-01",
+      "origin_max": "2024-03",
+      "target_min": "2022-02",
+      "target_max": "2024-04",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "lakebed_us_cse",
+      "split": "train",
+      "rows": 3309,
+      "sites": 21,
+      "origin_min": "1981-04",
+      "origin_max": "2018-11",
+      "target_min": "1981-05",
+      "target_max": "2018-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "lakebed_us_cse",
+      "split": "validation",
+      "rows": 549,
+      "sites": 21,
+      "origin_min": "2019-01",
+      "origin_max": "2021-11",
+      "target_min": "2019-02",
+      "target_max": "2021-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "test",
+      "rows": 86478,
+      "sites": 10366,
+      "origin_min": "2022-01",
+      "origin_max": "2026-04",
+      "target_min": "2022-02",
+      "target_max": "2026-05",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "train",
+      "rows": 808970,
+      "sites": 38508,
+      "origin_min": "1970-01",
+      "origin_max": "2018-11",
+      "target_min": "1970-02",
+      "target_max": "2018-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "validation",
+      "rows": 91226,
+      "sites": 11283,
+      "origin_min": "2019-01",
+      "origin_max": "2021-11",
+      "target_min": "2019-02",
+      "target_max": "2021-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    }
+  ],
+  "discarded_summary": [
+    {
+      "source_id": "aquamatch_chla",
+      "split_reason": "crosses_split_boundary",
+      "rows": 26142,
+      "sites": 17569
+    },
+    {
+      "source_id": "aquamatch_chla",
+      "split_reason": "gap_too_large",
+      "rows": 509148,
+      "sites": 60610
+    },
+    {
+      "source_id": "aquamatch_chla",
+      "split_reason": "no_next_state",
+      "rows": 141544,
+      "sites": 141544
+    },
+    {
+      "source_id": "lakebed_us_cse",
+      "split_reason": "crosses_split_boundary",
+      "rows": 42,
+      "sites": 21
+    },
+    {
+      "source_id": "lakebed_us_cse",
+      "split_reason": "gap_too_large",
+      "rows": 757,
+      "sites": 21
+    },
+    {
+      "source_id": "lakebed_us_cse",
+      "split_reason": "no_next_state",
+      "rows": 21,
+      "sites": 21
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "crosses_split_boundary",
+      "rows": 24745,
+      "sites": 16536
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "gap_too_large",
+      "rows": 508534,
+      "sites": 63466
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "no_next_state",
+      "rows": 106719,
+      "sites": 106719
+    }
+  ]
+}

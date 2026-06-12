@@ -7,6 +7,7 @@ from argparse import Namespace
 from pathlib import Path
 
 import pandas as pd
+import pytest
 
 from src.experiments.build_pipe_sequences import (
     INPUT_COLUMNS,
@@ -32,14 +33,19 @@ def _state_frame() -> pd.DataFrame:
     frame = pd.DataFrame(rows, columns=["source_id", "site_id", "year_month", "base"])
     for offset, column in enumerate(PIPE_STATE_COLUMNS):
         frame[column] = frame["base"] + offset / 100.0
+    frame["yT_no_chla"] = frame["yT"] - 0.25
+    frame["sigma_T_no_chla"] = frame["sigma_T"] + 0.25
+    frame["delta_yT_no_chla"] = frame["delta_yT"] - 0.25
     frame["irc1"] = frame["base"]
     frame["irc1_no_chla"] = frame["base"] - 0.01
     frame["evidence_N"] = 1.0
     frame["evidence_F"] = 0.8
     frame["evidence_T"] = 0.6
+    frame["evidence_T_no_chla"] = 0.4
     frame["missing_N"] = 0.0
     frame["missing_F"] = 0.2
     frame["missing_T"] = 0.4
+    frame["missing_T_no_chla"] = 0.6
     return frame.drop(columns=["base"])
 
 
@@ -97,6 +103,20 @@ def test_sequence_summary_and_discarded_summary_are_source_scoped() -> None:
     assert discarded_summary.groupby("source_id")["rows"].sum().to_dict() == {"A": 4, "B": 1}
 
 
+def test_no_current_chla_surface_replaces_current_inputs_only() -> None:
+    candidates = build_sequence_candidates(_state_frame(), input_surface="no_current_chla")
+    sequences, _ = filter_leakage_safe_sequences(candidates, _args())
+
+    first = sequences.iloc[0]
+
+    assert first["x_yT"] == pytest.approx(first["target_yT"] - 0.35)
+    assert first["x_sigma_T"] == pytest.approx(first["target_sigma_T"] + 0.15)
+    assert first["x_delta_yT"] == pytest.approx(first["target_delta_yT"] - 0.35)
+    assert first["target_yT"] != first["x_yT"]
+    assert first["target_sigma_T"] != first["x_sigma_T"]
+    assert first["target_delta_yT"] != first["x_delta_yT"]
+
+
 def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
     state_path = tmp_path / "state.parquet"
     sequences_path = tmp_path / "sequences.parquet"
@@ -122,6 +142,8 @@ def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
             str(report_path),
             "--manifest",
             str(manifest_path),
+            "--input-surface",
+            "no_current_chla",
         ],
         check=True,
     )
@@ -136,5 +158,9 @@ def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
     assert not discarded.empty
     assert manifest["row_counts"]["kept_sequence_rows"] == 2
     assert manifest["row_counts"]["discarded_candidate_rows"] == 5
+    assert manifest["config"]["input_surface"] == "no_current_chla"
+    assert manifest["config"]["input_state_mapping"]["yT"] == "yT_no_chla"
     assert manifest["outputs"][0]["sha256"]
+    assert manifest["script"]["path"] == "src/experiments/build_pipe_sequences.py"
+    assert "No-current-Chl-a mode" in report_path.read_text(encoding="utf-8")
     assert "Input dimensionality" in report_path.read_text(encoding="utf-8")

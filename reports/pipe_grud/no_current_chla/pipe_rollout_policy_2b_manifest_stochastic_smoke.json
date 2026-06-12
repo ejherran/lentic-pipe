@@ -1,0 +1,59 @@
+{
+  "generated_at_utc": "2026-06-12T19:00:04.043673+00:00",
+  "status": "completed",
+  "policy_version": "pipe_grud_rollout_alert_policy_2b_v0",
+  "config": {
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "selection_objectives": [
+      "fixed",
+      "fbeta",
+      "f1",
+      "mcc",
+      "balanced_accuracy",
+      "gmean_pr",
+      "closest_pr"
+    ],
+    "fbeta_beta": 2.0,
+    "min_recall": null,
+    "min_precision": null,
+    "min_threshold_rows": 20
+  },
+  "row_counts": {
+    "calibrated_rows": 3072,
+    "threshold_rows": 39,
+    "metric_rows": 78
+  },
+  "inputs": [
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_calibrated_backtest_rows_stochastic_smoke.parquet",
+      "bytes": 194654,
+      "sha256": "513db70f0e67fcff0082bdb29f644d681c35eb9abd54fc1b0bee8cc88fc3fea2"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_policy_2b_thresholds_stochastic_smoke.csv",
+      "bytes": 14991,
+      "sha256": "960200b0d03eb2250abe1fe5bd897057b9b886919b92ca915d5872e1cc676020"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_policy_2b_metrics_stochastic_smoke.csv",
+      "bytes": 32055,
+      "sha256": "5e27462be8e74313ec9c319b288076e93107e70e5c072bb28b2ddcef1669e9af"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/pipe_rollout_policy_2b_report_stochastic_smoke.md",
+      "bytes": 6759,
+      "sha256": "7d1924baf49747e3a151e0949e7233ce833f831817f2eb271192f87dac3bdd46"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/compare_pipe_rollout_alert_policies.py",
+    "bytes": 26281,
+    "sha256": "8d432807bbaf08aa910fa676f6502eb9b405ee9417cf1213f8f93773a2c18adf"
+  }
+}

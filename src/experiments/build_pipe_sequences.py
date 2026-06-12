@@ -58,10 +58,20 @@ OPTIONAL_CONTEXT_COLUMNS = [
     "evidence_N",
     "evidence_F",
     "evidence_T",
+    "evidence_T_no_chla",
     "missing_N",
     "missing_F",
     "missing_T",
+    "missing_T_no_chla",
 ]
+INPUT_SURFACE_FULL = "full"
+INPUT_SURFACE_NO_CURRENT_CHLA = "no_current_chla"
+INPUT_SURFACES = [INPUT_SURFACE_FULL, INPUT_SURFACE_NO_CURRENT_CHLA]
+NO_CURRENT_CHLA_INPUT_MAPPING = {
+    "yT": "yT_no_chla",
+    "sigma_T": "sigma_T_no_chla",
+    "delta_yT": "delta_yT_no_chla",
+}
 
 
 def _format_int(value: int) -> str:
@@ -90,8 +100,15 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _manifest_path(path: Path) -> str:
+    try:
+        return path.resolve().relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def _file_record(path: Path) -> dict[str, Any]:
-    return {"path": path.as_posix(), "bytes": path.stat().st_size, "sha256": _sha256_file(path)}
+    return {"path": _manifest_path(path), "bytes": path.stat().st_size, "sha256": _sha256_file(path)}
 
 
 def _write_json_atomic(payload: dict[str, Any], path: Path) -> None:
@@ -174,10 +191,30 @@ def _coerce_numeric(frame: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     return out
 
 
-def load_state(path: Path) -> pd.DataFrame:
-    columns = KEY_COLUMNS + [column for column in STATE_FEATURE_COLUMNS if column in PIPE_STATE_COLUMNS + OPTIONAL_CONTEXT_COLUMNS]
+def _input_mapping(input_surface: str) -> dict[str, str]:
+    if input_surface == INPUT_SURFACE_FULL:
+        return {}
+    if input_surface == INPUT_SURFACE_NO_CURRENT_CHLA:
+        return NO_CURRENT_CHLA_INPUT_MAPPING
+    raise ValueError(f"Unsupported input surface: {input_surface!r}")
+
+
+def _source_column_for_input(column: str, input_surface: str) -> str:
+    return _input_mapping(input_surface).get(column, column)
+
+
+def _required_state_columns(input_surface: str) -> list[str]:
+    required = set(PIPE_STATE_COLUMNS)
+    required.update(_input_mapping(input_surface).values())
+    return [column for column in STATE_FEATURE_COLUMNS if column in required]
+
+
+def load_state(path: Path, *, input_surface: str = INPUT_SURFACE_FULL) -> pd.DataFrame:
+    required = _required_state_columns(input_surface)
+    optional = [column for column in STATE_FEATURE_COLUMNS if column in OPTIONAL_CONTEXT_COLUMNS]
+    columns = KEY_COLUMNS + required + optional
     state = pd.read_parquet(path, columns=columns)
-    missing = [column for column in KEY_COLUMNS + PIPE_STATE_COLUMNS if column not in state.columns]
+    missing = [column for column in KEY_COLUMNS + required if column not in state.columns]
     if missing:
         raise ValueError(f"State vector is missing required columns: {missing}")
     state = _coerce_numeric(state, [column for column in state.columns if column not in KEY_COLUMNS])
@@ -187,8 +224,12 @@ def load_state(path: Path) -> pd.DataFrame:
     return state
 
 
-def build_sequence_candidates(state: pd.DataFrame) -> pd.DataFrame:
+def build_sequence_candidates(state: pd.DataFrame, *, input_surface: str = INPUT_SURFACE_FULL) -> pd.DataFrame:
     frame = state.copy()
+    mapping = _input_mapping(input_surface)
+    missing = [source for source in mapping.values() if source not in frame.columns]
+    if missing:
+        raise ValueError(f"State vector is missing columns required by {input_surface}: {missing}")
     periods = _period_index(frame["year_month"])
     frame["period_ord"] = periods.asi8.astype("int64")
     frame["sequence_step"] = (
@@ -208,7 +249,8 @@ def build_sequence_candidates(state: pd.DataFrame) -> pd.DataFrame:
     candidates["target_gap_months"] = candidates["target_period_ord"] - candidates["origin_period_ord"]
 
     for column in PIPE_STATE_COLUMNS:
-        candidates[f"x_{column}"] = frame[column].to_numpy()
+        source_column = _source_column_for_input(column, input_surface)
+        candidates[f"x_{column}"] = frame[source_column].to_numpy()
         candidates[f"target_{column}"] = group[column].shift(-1).to_numpy()
     for column in OPTIONAL_CONTEXT_COLUMNS:
         if column in frame.columns:
@@ -359,21 +401,44 @@ def write_report(
         "",
         "This step builds a leakage-safe adjacent-month `S(t) -> S(t+1)` dataset for PIPE/GRU-D.",
         "It does not train or tune a temporal model.",
+        f"Input surface: `{args.input_surface}`.",
         f"Maximum allowed target gap: `{args.max_gap_months}` month(s).",
         f"Input dimensionality for the minimal PIPE model: `{len(INPUT_COLUMNS)}` = 9 state values + 4 seasonal values.",
-        "",
-        "## Row Counts",
-        "",
-        f"- Candidate state rows: `{_format_int(len(sequences) + len(discarded))}`",
-        f"- Kept sequence rows: `{_format_int(len(sequences))}`",
-        f"- Discarded candidate rows: `{_format_int(len(discarded))}`",
-        f"- Source-scoped sites kept: `{_format_int(int(sequences.groupby(['source_id', 'site_id']).ngroups if len(sequences) else 0))}`",
-        "",
-        "## By Split",
-        "",
-        "| split | rows | sites | origin range | target range |",
-        "|---|---:|---:|---|---|",
     ]
+    if args.input_surface == INPUT_SURFACE_NO_CURRENT_CHLA:
+        lines.extend(
+            [
+                "",
+                "No-current-Chl-a mode replaces current thermal/biological input channels with no-Chl-a fuzzy variants:",
+                "",
+                "| input channel | state source |",
+                "|---|---|",
+            ]
+        )
+        for input_column, source_column in NO_CURRENT_CHLA_INPUT_MAPPING.items():
+            lines.append(f"| `x_{input_column}` | `{source_column}` |")
+        lines.extend(
+            [
+                "",
+                "Targets remain the full next-month fuzzy state, so observed future Chl-a-derived state can still be evaluated.",
+            ]
+        )
+    lines.extend(
+        [
+            "",
+            "## Row Counts",
+            "",
+            f"- Candidate state rows: `{_format_int(len(sequences) + len(discarded))}`",
+            f"- Kept sequence rows: `{_format_int(len(sequences))}`",
+            f"- Discarded candidate rows: `{_format_int(len(discarded))}`",
+            f"- Source-scoped sites kept: `{_format_int(int(sequences.groupby(['source_id', 'site_id']).ngroups if len(sequences) else 0))}`",
+            "",
+            "## By Split",
+            "",
+            "| split | rows | sites | origin range | target range |",
+            "|---|---:|---:|---|---|",
+        ]
+    )
     if split_summary.empty:
         lines.append("| `NA` | 0 | 0 | `NA` | `NA` |")
     else:
@@ -436,6 +501,10 @@ def manifest_payload(
         "dataset_version": "pipe_sequence_dataset_v0",
         "config": {
             "max_gap_months": int(args.max_gap_months),
+            "input_surface": args.input_surface,
+            "input_state_mapping": {
+                column: _source_column_for_input(column, args.input_surface) for column in PIPE_STATE_COLUMNS
+            },
             "train_end": args.train_end,
             "validation_start": args.validation_start,
             "validation_end": args.validation_end,
@@ -470,6 +539,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--discarded", type=Path, default=DEFAULT_DISCARDED)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--input-surface", choices=INPUT_SURFACES, default=INPUT_SURFACE_FULL)
     parser.add_argument("--max-gap-months", type=int, default=1)
     parser.add_argument("--train-end", default="2018-12")
     parser.add_argument("--validation-start", default="2019-01")
@@ -486,11 +556,11 @@ def main() -> None:
 
     started_at = datetime.now(timezone.utc)
     print(f"loading state {args.state}", flush=True)
-    state = load_state(args.state)
+    state = load_state(args.state, input_surface=args.input_surface)
     print(f"state rows={len(state):,}", flush=True)
 
     print("building adjacent state transitions", flush=True)
-    candidates = build_sequence_candidates(state)
+    candidates = build_sequence_candidates(state, input_surface=args.input_surface)
     sequences, discarded = filter_leakage_safe_sequences(candidates, args)
     summary = summarize_sequences(sequences)
     discarded_summary = summarize_discarded(discarded)

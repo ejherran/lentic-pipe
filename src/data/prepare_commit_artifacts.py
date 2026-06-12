@@ -54,6 +54,7 @@ IGNORED_PATH_PARTS_TO_SKIP = {
     "__pycache__",
     ".ipynb_checkpoints",
 }
+REPORT_SMOKE_PARQUET_SUFFIXES = ("_smoke.parquet", "_stochastic_smoke.parquet")
 REGENERABLE_IGNORED_PATHS = {
     "data/interim/observations/observations_summary.csv",
 }
@@ -324,6 +325,8 @@ def should_skip_ignored_path(path: str) -> bool:
     if path in REGENERABLE_IGNORED_PATHS:
         return True
     if any(path.startswith(prefix) for prefix in IGNORED_PREFIXES_TO_SKIP):
+        return True
+    if path.startswith("reports/") and path.endswith(REPORT_SMOKE_PARQUET_SUFFIXES):
         return True
     return any(part in IGNORED_PATH_PARTS_TO_SKIP for part in Path(path).parts)
 

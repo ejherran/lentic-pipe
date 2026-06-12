@@ -173,6 +173,7 @@ def test_train_pipe_grud_cli_writes_signed_outputs(tmp_path: Path) -> None:
     assert manifest["row_counts"]["persistence_metric_rows"] == 30
     assert manifest["row_counts"]["comparison_rows"] == 30
     assert manifest["outputs"][0]["sha256"]
+    assert manifest["script"]["path"] == "src/experiments/train_pipe_grud.py"
     assert "Status: `completed`" in report_path.read_text(encoding="utf-8")
     assert "Output Blend Weights" in report_path.read_text(encoding="utf-8")
     assert "Persistence Comparison" in report_path.read_text(encoding="utf-8")
