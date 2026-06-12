@@ -425,6 +425,44 @@ State recomputation smoke interpretation:
   robustness result. A full run should remove the origin cap and decide whether
   row-level outputs need DVC tracking.
 
+State recomputation full execution, 2026-06-12:
+
+- generated at UTC: `2026-06-12T17:22:13.984884+00:00`;
+- scenario set: `pipe_state_recompute_smoke`;
+- output name: `pipe_state_recompute_full`;
+- split: `test`;
+- selected origins: 13,327;
+- rollout rows: 319,848 across 8 evaluated runs;
+- state metric rows: 1,056;
+- alert metric rows: 192;
+- policy metric rows: 576;
+- stochastic samples per origin: 128;
+- calibrated bloom horizons: 1, 2, and 3;
+- rollout bloom calibrator horizons: 1, 2, and 3;
+- script hash:
+  `54e56833a3e540d758f84e9d8dd3bde6d5b3b7cb64019d4d056667f389f22041`;
+- all input, output, and script SHA-256 hashes are recorded in
+  `reports/degradation/controlled_degradation_pipe_state_recompute_full_manifest.json`;
+- no row-level backtest table was materialized, so no new DVC artifact is
+  required for this run.
+
+State recomputation full interpretation:
+
+- The full run preserves the smoke conclusion: current fuzzy state levels are
+  essential for the PIPE/GRU-D alert surface.
+- Under `closest_pr`, `ablate_pipe_state_level` nearly collapses performance.
+  Mean delta F2 is about -0.66 for `bloom_h` and -0.82 for `irc_alert` across
+  horizons.
+- `random_pipe_state_dropout_25` is a material but non-collapsing degradation.
+  Mean delta F2 is about -0.24 for `bloom_h` and -0.19 for `irc_alert` across
+  horizons.
+- `temporal_pipe_state_blocks_3m_rate_10` remains close to the control. Mean
+  delta F2 is about -0.01 for `bloom_h` and -0.007 for `irc_alert`.
+- The seed-to-seed variation is small for random and temporal scenarios in the
+  full run, so the qualitative ordering is stable:
+  state-level ablation is severe, random state dropout is moderate/severe, and
+  moderate temporal blocks are mild.
+
 Phase 3:
 
 - repeat comparable scenarios for MIFAL once that pipeline exists;
