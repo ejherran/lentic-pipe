@@ -120,6 +120,7 @@ def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path)
     metrics_path = tmp_path / "metrics.csv"
     alert_metrics_path = tmp_path / "alert_metrics.csv"
     examples_path = tmp_path / "examples.csv"
+    backtest_rows_path = tmp_path / "backtest_rows.parquet"
     report_path = tmp_path / "report.md"
     manifest_path = tmp_path / "manifest.json"
 
@@ -148,6 +149,8 @@ def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path)
             str(alert_metrics_path),
             "--examples",
             str(examples_path),
+            "--backtest-rows",
+            str(backtest_rows_path),
             "--report",
             str(report_path),
             "--manifest",
@@ -168,6 +171,7 @@ def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path)
 
     metrics = pd.read_csv(metrics_path)
     alert_metrics = pd.read_csv(alert_metrics_path)
+    backtest_rows = pd.read_parquet(backtest_rows_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
     overall_all = metrics[
@@ -181,7 +185,11 @@ def test_evaluate_pipe_grud_rollouts_cli_writes_backtest_outputs(tmp_path: Path)
     assert all(math.isclose(value, 0.0, abs_tol=1e-7) for value in overall_all["rmse"])
     assert irc_alert["rows"].tolist() == [2, 2]
     assert irc_alert["positive_rows"].tolist() == [2, 2]
+    assert len(backtest_rows) == 4
+    assert {"alert_probability_irc", "actual_irc_alert", "irc_mean", "bloom_h"}.issubset(backtest_rows.columns)
     assert manifest["status"] == "completed"
     assert manifest["row_counts"]["selected_origins"] == 2
     assert manifest["row_counts"]["evaluated_rollout_rows"] == 4
+    assert manifest["row_counts"]["backtest_row_export_rows"] == 4
+    assert manifest["script"]["path"] == "src/experiments/evaluate_pipe_grud_rollouts.py"
     assert "PIPE/GRU-D Rollout Backtest Report v0" in report_path.read_text(encoding="utf-8")

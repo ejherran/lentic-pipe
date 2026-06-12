@@ -86,8 +86,16 @@ def _sha256_file(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _manifest_path(path: Path) -> str:
+    resolved = path.resolve()
+    try:
+        return resolved.relative_to(PROJECT_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def _file_record(path: Path) -> dict[str, Any]:
-    return {"path": path.as_posix(), "bytes": path.stat().st_size, "sha256": _sha256_file(path)}
+    return {"path": _manifest_path(path), "bytes": path.stat().st_size, "sha256": _sha256_file(path)}
 
 
 def _write_json_atomic(payload: dict[str, Any], path: Path) -> None:

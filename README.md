@@ -165,6 +165,7 @@ exports, or credential JSON files.
 - `docs/PUBLICATION_CHECKLIST.md`
 - `docs/DATA_FREEZE.md`
 - `docs/PIPE_ROLLOUT_ITERATION_1.md`
+- `docs/PIPE_ROLLOUT_ITERATION_2.md`
 
 ## Current State
 
@@ -196,6 +197,9 @@ exports, or credential JSON files.
 - `docs/PIPE_ROLLOUT_ITERATION_1.md` records the first reproducible rollout
   iteration, including operational artifacts, historical backtest metrics, and
   the Iteration 2 direction.
+- `docs/PIPE_ROLLOUT_ITERATION_2.md` defines the validation/test rollout alert
+  calibration protocol with horizon-specific thresholds before any PIPE/GRU-D
+  retraining decision.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

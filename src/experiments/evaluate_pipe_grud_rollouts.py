@@ -63,6 +63,7 @@ DEFAULT_REPORT_DIR = Path("reports/pipe_grud")
 DEFAULT_METRICS = DEFAULT_REPORT_DIR / "pipe_rollout_backtest_metrics.csv"
 DEFAULT_ALERT_METRICS = DEFAULT_REPORT_DIR / "pipe_rollout_backtest_alert_metrics.csv"
 DEFAULT_EXAMPLES = DEFAULT_REPORT_DIR / "pipe_rollout_backtest_examples.csv"
+DEFAULT_BACKTEST_ROWS = DEFAULT_REPORT_DIR / "pipe_rollout_backtest_rows.parquet"
 DEFAULT_REPORT = DEFAULT_REPORT_DIR / "pipe_rollout_backtest_report.md"
 DEFAULT_MANIFEST = DEFAULT_REPORT_DIR / "pipe_rollout_backtest_manifest.json"
 
@@ -93,6 +94,36 @@ EXAMPLE_COLUMNS = [
     "probability_bloom_mean",
     "predicted_bloom_alert_h",
     "bloom_h",
+]
+BACKTEST_ROW_COLUMNS = [
+    "source_id",
+    "site_id",
+    "split",
+    "origin_year_month",
+    "forecast_year_month",
+    "rollout_horizon_months",
+    "samples",
+    "alert_irc_threshold",
+    "alert_probability_irc",
+    "alert_probability_threshold",
+    "predicted_alert_h",
+    "actual_irc",
+    "actual_irc_alert",
+    "irc_mean",
+    "irc_p05",
+    "irc_p50",
+    "irc_p95",
+    "irc_abs_error",
+    "origin_irc1_rollout_basis",
+    "bloom_target_year_month",
+    "bloom_h",
+    "target_risk_chla_h",
+    "probability_bloom_mean",
+    "probability_bloom_p05",
+    "probability_bloom_p50",
+    "probability_bloom_p95",
+    "bloom_probability_threshold_h",
+    "predicted_bloom_alert_h",
 ]
 
 
@@ -526,12 +557,33 @@ def build_examples(backtest: pd.DataFrame, examples_per_group: int) -> pd.DataFr
     return examples[EXAMPLE_COLUMNS].sort_values(["rollout_horizon_months", "split", "example_type"])
 
 
+def compact_backtest_rows(backtest: pd.DataFrame) -> pd.DataFrame:
+    out = backtest.copy()
+    for column in BACKTEST_ROW_COLUMNS:
+        if column not in out.columns:
+            out[column] = np.nan
+    return out[BACKTEST_ROW_COLUMNS].sort_values(BACKTEST_KEY_COLUMNS).reset_index(drop=True)
+
+
+def write_table_atomic(frame: pd.DataFrame, path: Path) -> None:
+    suffix = path.suffix.lower()
+    if suffix == ".parquet":
+        from src.experiments.rollout_pipe_grud import _write_parquet_atomic
+
+        _write_parquet_atomic(frame, path)
+    elif suffix == ".csv":
+        _write_csv_atomic(frame, path)
+    else:
+        raise ValueError(f"Unsupported table output suffix for {path}: expected .parquet or .csv")
+
+
 def write_report(
     *,
     args: argparse.Namespace,
     metrics: pd.DataFrame,
     alert_metrics: pd.DataFrame,
     examples: pd.DataFrame,
+    backtest_rows: pd.DataFrame,
     availability_summary: pd.DataFrame,
     selected_origins: int,
     evaluated_rows: int,
@@ -637,6 +689,7 @@ def write_report(
             "",
             "## Outputs",
             "",
+            f"- Backtest rows: `{args.backtest_rows}`",
             f"- State metrics: `{args.metrics}`",
             f"- Alert metrics: `{args.alert_metrics}`",
             f"- Diagnostic examples: `{args.examples}`",
@@ -653,6 +706,7 @@ def manifest_payload(
     metrics: pd.DataFrame,
     alert_metrics: pd.DataFrame,
     examples: pd.DataFrame,
+    backtest_rows: pd.DataFrame,
     availability_summary: pd.DataFrame,
     selected_origins: int,
     evaluated_rows: int,
@@ -668,7 +722,7 @@ def manifest_payload(
     if args.model_manifest.exists():
         inputs.append(args.model_manifest)
     inputs.extend(info.path for info in calibrators.values())
-    outputs = [args.metrics, args.alert_metrics, args.examples, args.report]
+    outputs = [args.backtest_rows, args.metrics, args.alert_metrics, args.examples, args.report]
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "started_at_utc": started_at.isoformat(),
@@ -698,6 +752,7 @@ def manifest_payload(
             "selected_origins": int(selected_origins),
             "evaluated_rollout_rows": int(evaluated_rows),
             "availability_summary_rows": int(len(availability_summary)),
+            "backtest_row_export_rows": int(len(backtest_rows)),
             "metric_rows": int(len(metrics)),
             "alert_metric_rows": int(len(alert_metrics)),
             "example_rows": int(len(examples)),
@@ -718,6 +773,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--metrics", type=Path, default=DEFAULT_METRICS)
     parser.add_argument("--alert-metrics", type=Path, default=DEFAULT_ALERT_METRICS)
     parser.add_argument("--examples", type=Path, default=DEFAULT_EXAMPLES)
+    parser.add_argument("--backtest-rows", type=Path, default=DEFAULT_BACKTEST_ROWS)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--split", choices=["all", "train", "validation", "test"], default="test")
@@ -800,7 +856,10 @@ def main() -> None:
     metrics = build_state_metrics(backtest)
     alert_metrics = build_alert_metrics(backtest)
     examples = build_examples(backtest, args.examples_per_group)
+    backtest_rows = compact_backtest_rows(backtest)
 
+    write_table_atomic(backtest_rows, args.backtest_rows)
+    print(f"wrote {args.backtest_rows}", flush=True)
     _write_csv_atomic(metrics, args.metrics)
     print(f"wrote {args.metrics}", flush=True)
     _write_csv_atomic(alert_metrics, args.alert_metrics)
@@ -812,6 +871,7 @@ def main() -> None:
         metrics=metrics,
         alert_metrics=alert_metrics,
         examples=examples,
+        backtest_rows=backtest_rows,
         availability_summary=availability_summary,
         selected_origins=len(indices),
         evaluated_rows=len(backtest),
@@ -825,6 +885,7 @@ def main() -> None:
         metrics=metrics,
         alert_metrics=alert_metrics,
         examples=examples,
+        backtest_rows=backtest_rows,
         availability_summary=availability_summary,
         selected_origins=len(indices),
         evaluated_rows=len(backtest),

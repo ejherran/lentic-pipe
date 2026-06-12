@@ -69,9 +69,11 @@ flow.
 - Any adapter, site-resolution, panel, target, split, fuzzy state, PIPE
   sequence, PIPE rollout, rollout backtest, alert, or model change requires
   updated derived hashes before results are used.
-- PIPE rollout backtest outputs under `reports/pipe_grud/pipe_rollout_backtest_*`
-  are small report artifacts and are kept in Git. The heavy operational rollout
-  table remains DVC-tracked through `data/pipe_grud/pipe_rollout_alerts_v0.parquet.dvc`.
+- PIPE rollout backtest CSV/Markdown/JSON outputs under
+  `reports/pipe_grud/pipe_rollout_backtest_*` are small report artifacts and
+  are kept in Git. Row-level rollout backtest parquet exports are DVC-tracked
+  through their `.dvc` pointers. The heavy operational rollout table remains
+  DVC-tracked through `data/pipe_grud/pipe_rollout_alerts_v0.parquet.dvc`.
 - The pre-commit artifact assistant validates staged DVC pointer structure,
   verifies current SHA-256 hashes for experiment manifest outputs within the
   configured size limit, verifies generating-script hashes, and fails when
