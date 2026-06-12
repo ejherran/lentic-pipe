@@ -406,3 +406,67 @@ Small CSV, JSON, and Markdown reports should remain in Git.
   surface, and by how much?
 - Do nutrients and physicochemical variables carry enough signal to justify a
   strict early-warning claim, or is the correct result a documented limitation?
+
+## Operational Coverage Audit
+
+Before designing a stronger no-current-Chl-a model surface, audit whether rows
+with Chl-a targets have enough non-Chl-a precursor evidence at the origin
+month. This separates ecological interpretation from data-surface coverage.
+
+```bash
+poetry run python src/experiments/audit_no_chla_operational_surface.py
+```
+
+The audit treats current Chl-a columns as forbidden predictors. They are counted
+only as diagnostic references. Evidence bands are defined as:
+
+- `high`: nutrient evidence plus temperature plus either light proxy or
+  physicochemical evidence;
+- `medium`: nutrient evidence plus at least one nonseason companion group;
+- `low`: at least one nonseason exogenous group, but not enough for `medium`;
+- `season_only`: no nonseason exogenous group is available at the origin month.
+
+The output report is
+`reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_report.md`.
+
+## Operational Coverage Audit Snapshot
+
+The full audit was generated at UTC `2026-06-12T22:04:00.174841+00:00`
+and checked `4,610,977` source-scoped target rows across `93,310` sites.
+
+Global coverage shows that the full no-current-Chl-a surface is not uniformly
+supported by exogenous evidence:
+
+- rows with any nutrient precursor: `0.1644`;
+- rows with high precursor readiness: `0.1167`;
+- rows with season-only non-Chl-a evidence: `0.6919`;
+- rows where forbidden current Chl-a exists but must not be used: `0.9762`.
+
+The source split explains the weak no-current-Chl-a result. AquaMatch supplies
+many Chl-a targets, but under the current source-scoped policy it supplies no
+origin-month nutrient, temperature, light-proxy, or physicochemical predictors:
+`any_nutrient = 0.0000`, `high = 0.0000`, and `season_only = 1.0000` for
+validation and test horizons. Those rows are valid target evidence, but they
+are not a fair test of nutrient-driven early warning unless cross-source site
+equivalence is accepted later.
+
+WQP is the first appropriate source for a strict no-current-Chl-a early-warning
+test. In held-out test rows, WQP has strong nutrient coverage:
+
+| horizon | rows | bloom rate | any nutrient | high readiness | season only |
+|---:|---:|---:|---:|---:|---:|
+| 1 | `55,151` | `0.1620` | `0.8682` | `0.4772` | `0.0075` |
+| 2 | `50,423` | `0.1776` | `0.8770` | `0.4705` | `0.0066` |
+| 3 | `43,696` | `0.1815` | `0.8916` | `0.4687` | `0.0054` |
+
+LakeBeD-US-CSE also has useful precursor coverage, but the held-out row counts
+are small (`163`, `151`, and `143` test rows for horizons 1, 2, and 3).
+
+This audit changes the interpretation of the no-current-Chl-a experiment. The
+full-surface weakness should not be read as evidence that nutrients are
+ecologically unimportant. It is evidence that the current source-scoped
+training surface combines many Chl-a targets with no usable non-Chl-a precursor
+information at the same source-site-month. The next fair experiment should
+therefore be a WQP-focused no-current-Chl-a surface. A crosswalk-enabled
+AquaMatch/WQP expansion should be considered only after accepted site
+equivalences are promoted.

@@ -1,0 +1,136 @@
+source_id,site_id,site_id_source,site_name,split,horizon_months,origin_year_month,target_year_month,bloom_h,target_risk_chla_h,operational_evidence_band,has_tp,has_tn,has_temperature,has_light_proxy,has_physicochemical,has_current_chla_forbidden
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-GUIS_BISA,11NPSWRD_WQX-GUIS_BISA,,test,1,2022-01,2022-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-GUIS_NALO,11NPSWRD_WQX-GUIS_NALO,,test,1,2022-01,2022-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BAFF,11NPSWRD_WQX-PAIS_BAFF,,test,1,2022-01,2022-02,False,0.2247007045327077,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BIRD,11NPSWRD_WQX-PAIS_BIRD,,test,1,2022-01,2022-02,False,0.2743306432596534,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-116,21AWIC-116,,test,1,2022-01,2022-02,False,0.13749846761858428,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-GUIS_BISA,11NPSWRD_WQX-GUIS_BISA,,test,2,2022-01,2022-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-GUIS_NALO,11NPSWRD_WQX-GUIS_NALO,,test,2,2022-01,2022-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BAFF,11NPSWRD_WQX-PAIS_BAFF,,test,2,2022-01,2022-03,False,0.7998900430587986,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BIRD,11NPSWRD_WQX-PAIS_BIRD,,test,2,2022-01,2022-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-116,21AWIC-116,,test,2,2022-01,2022-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-GUIS_BISA,11NPSWRD_WQX-GUIS_BISA,,test,3,2022-01,2022-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-GUIS_NALO,11NPSWRD_WQX-GUIS_NALO,,test,3,2022-01,2022-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BAFF,11NPSWRD_WQX-PAIS_BAFF,,test,3,2022-01,2022-04,False,0.38489314433916905,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BIRD,11NPSWRD_WQX-PAIS_BIRD,,test,3,2022-01,2022-04,False,0.6814895493116643,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-116,21AWIC-116,,test,3,2022-01,2022-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01096550,USGS-01096550,,train,1,1970-01,1970-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01141900,USGS-01141900,,train,1,1970-01,1970-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01333300,USGS-01333300,,train,1,1970-01,1970-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01372058,USGS-01372058,,train,1,1970-01,1970-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01378575,USGS-01378575,,train,1,1970-01,1970-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01096550,USGS-01096550,,train,2,1970-01,1970-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01141900,USGS-01141900,,train,2,1970-01,1970-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01333300,USGS-01333300,,train,2,1970-01,1970-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01372058,USGS-01372058,,train,2,1970-01,1970-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01392100,USGS-01392100,,train,2,1970-01,1970-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01096550,USGS-01096550,,train,3,1970-01,1970-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01141900,USGS-01141900,,train,3,1970-01,1970-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01333300,USGS-01333300,,train,3,1970-01,1970-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01372058,USGS-01372058,,train,3,1970-01,1970-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:USGS-01378575,USGS-01378575,,train,3,1970-01,1970-04,False,0.18636687230243226,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BAFF,11NPSWRD_WQX-PAIS_BAFF,,validation,1,2019-01,2019-02,False,0.23933243509280297,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BIRD,11NPSWRD_WQX-PAIS_BIRD,,validation,1,2019-01,2019-02,False,0.48666275665730424,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-10409,21AWIC-10409,,validation,1,2019-01,2019-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-10449,21AWIC-10449,,validation,1,2019-01,2019-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-10450,21AWIC-10450,,validation,1,2019-01,2019-02,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:1119USBR_WQX-BLA101,1119USBR_WQX-BLA101,,validation,2,2019-01,2019-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:1119USBR_WQX-EMM015,1119USBR_WQX-EMM015,,validation,2,2019-01,2019-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:1119USBR_WQX-EMM025,1119USBR_WQX-EMM025,,validation,2,2019-01,2019-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BAFF,11NPSWRD_WQX-PAIS_BAFF,,validation,2,2019-01,2019-03,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BIRD,11NPSWRD_WQX-PAIS_BIRD,,validation,2,2019-01,2019-03,False,0.032196760344150914,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BAFF,11NPSWRD_WQX-PAIS_BAFF,,validation,3,2019-01,2019-04,False,0.2605911827336292,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:11NPSWRD_WQX-PAIS_BIRD,11NPSWRD_WQX-PAIS_BIRD,,validation,3,2019-01,2019-04,False,0.13663253362064645,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-10409,21AWIC-10409,,validation,3,2019-01,2019-04,False,0.0,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-10449,21AWIC-10449,,validation,3,2019-01,2019-04,False,0.2966190110415376,season_only,False,False,False,False,False,True
+aquamatch_chla,aquamatch_chla:21AWIC-10450,21AWIC-10450,,validation,3,2019-01,2019-04,False,0.0,season_only,False,False,False,False,False,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,1,2022-01,2022-02,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:SUGG,SUGG,Lake Suggs,test,1,2022-01,2022-02,True,1.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,1,2022-02,2022-03,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:SUGG,SUGG,Lake Suggs,test,1,2022-02,2022-03,True,1.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,1,2022-03,2022-04,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,2,2022-01,2022-03,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:SUGG,SUGG,Lake Suggs,test,2,2022-01,2022-03,True,1.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,2,2022-02,2022-04,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:ME,ME,Lake Mendota,test,2,2022-02,2022-04,False,0.4431251329391838,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:SUGG,SUGG,Lake Suggs,test,2,2022-02,2022-04,True,1.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,3,2022-01,2022-04,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:SUGG,SUGG,Lake Suggs,test,3,2022-01,2022-04,True,1.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:BARC,BARC,Lake Barco,test,3,2022-02,2022-05,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:ME,ME,Lake Mendota,test,3,2022-02,2022-05,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:MO,MO,Lake Monona,test,3,2022-02,2022-05,False,0.0,low,False,False,True,True,True,True
+lakebed_us_cse,lakebed_us_cse:CB,CB,Crystal Bog,train,1,1981-07,1981-08,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:TB,TB,Trout Bog,train,1,1981-07,1981-08,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:BM,BM,Big Muskellunge Lake,train,1,1981-10,1981-11,False,0.5977377976415303,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:CR,CR,Crystal Lake,train,1,1981-12,1982-01,False,0.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:SP,SP,Sparkling Lake,train,1,1981-12,1982-01,False,0.030891336921586982,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:AL,AL,Allequash Lake,train,2,1981-05,1981-07,True,1.0,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:TR,TR,Trout Lake,train,2,1981-05,1981-07,False,0.22012108617935197,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:CB,CB,Crystal Bog,train,2,1981-07,1981-09,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:TB,TB,Trout Bog,train,2,1981-07,1981-09,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:CR,CR,Crystal Lake,train,2,1981-10,1981-12,False,0.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:AL,AL,Allequash Lake,train,3,1981-05,1981-08,True,1.0,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:TR,TR,Trout Lake,train,3,1981-05,1981-08,False,0.30299737442960245,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:CB,CB,Crystal Bog,train,3,1981-07,1981-10,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:TB,TB,Trout Bog,train,3,1981-07,1981-10,False,0.7461493812484568,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:AL,AL,Allequash Lake,train,3,1981-10,1982-01,False,0.3702027041063201,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,1,2019-01,2019-02,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:ME,ME,Lake Mendota,validation,1,2019-01,2019-02,False,0.4121105135424978,low,False,False,True,False,False,False
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,1,2019-02,2019-03,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:BVR,BVR,Beaverdam Reservoir,validation,1,2019-03,2019-04,False,0.3302755883181824,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,1,2019-03,2019-04,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,2,2019-01,2019-03,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:BVR,BVR,Beaverdam Reservoir,validation,2,2019-02,2019-04,False,0.3302755883181824,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,2,2019-02,2019-04,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:BVR,BVR,Beaverdam Reservoir,validation,2,2019-03,2019-05,False,0.5332316132224346,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,2,2019-03,2019-05,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:BVR,BVR,Beaverdam Reservoir,validation,3,2019-01,2019-04,False,0.3302755883181824,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:GL4,GL4,Green Lake 4,validation,3,2019-01,2019-04,True,1.0,low,False,False,True,False,True,True
+lakebed_us_cse,lakebed_us_cse:LIRO,LIRO,Little Rock Lake,validation,3,2019-01,2019-04,False,0.38609174249671613,low,False,False,True,False,True,False
+lakebed_us_cse,lakebed_us_cse:ME,ME,Lake Mendota,validation,3,2019-01,2019-04,False,0.0,low,False,False,True,False,False,False
+lakebed_us_cse,lakebed_us_cse:BVR,BVR,Beaverdam Reservoir,validation,3,2019-02,2019-05,False,0.5332316132224346,low,False,False,True,False,True,False
+wqp,wqp:21FLGTM_WQX-GTMLSNUT,21FLGTM_WQX-GTMLSNUT,LAKE SOUTH,test,1,2022-01,2022-02,False,0.1620484215670282,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMMKNUT,21FLGTM_WQX-GTMMKNUT,MICKLERS,test,1,2022-01,2022-02,False,0.8863400689801484,low,True,False,False,False,False,True
+wqp,wqp:21FLKWAT_WQX-CHA-L-6-1,21FLKWAT_WQX-CHA-L-6-1,Charlotte-L-6-1,test,1,2022-01,2022-02,True,1.0,low,True,True,False,False,False,True
+wqp,wqp:21FLKWAT_WQX-CHA-L-6-2,21FLKWAT_WQX-CHA-L-6-2,Charlotte-L-6-2,test,1,2022-01,2022-02,True,1.0,low,True,True,False,False,False,True
+wqp,wqp:21FLKWAT_WQX-CHA-L-6-3,21FLKWAT_WQX-CHA-L-6-3,Charlotte-L-6-3,test,1,2022-01,2022-02,True,1.0,low,True,True,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL2NUT,21FLGTM_WQX-GTMGL2NUT,GUANA LAKE 2,test,2,2022-01,2022-03,False,0.8863400689801484,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL4NUT,21FLGTM_WQX-GTMGL4NUT,GUANA LAKE 4,test,2,2022-01,2022-03,False,0.17027177863203266,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLMNUT,21FLGTM_WQX-GTMLMNUT,LAKE MID,test,2,2022-01,2022-03,False,0.6475461520495154,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLSNUT,21FLGTM_WQX-GTMLSNUT,LAKE SOUTH,test,2,2022-01,2022-03,False,0.0,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMMKNUT,21FLGTM_WQX-GTMMKNUT,MICKLERS,test,2,2022-01,2022-03,False,0.5524912655235348,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL2NUT,21FLGTM_WQX-GTMGL2NUT,GUANA LAKE 2,test,3,2022-01,2022-04,False,0.5094711337616337,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL4NUT,21FLGTM_WQX-GTMGL4NUT,GUANA LAKE 4,test,3,2022-01,2022-04,False,0.253593702006051,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLMNUT,21FLGTM_WQX-GTMLMNUT,LAKE MID,test,3,2022-01,2022-04,False,0.8447719033649556,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLSNUT,21FLGTM_WQX-GTMLSNUT,LAKE SOUTH,test,3,2022-01,2022-04,False,0.10545438106713555,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMMKNUT,21FLGTM_WQX-GTMMKNUT,MICKLERS,test,3,2022-01,2022-04,False,0.8863400689801484,low,True,False,False,False,False,True
+wqp,wqp:MNPCA-27-0133-02-106,MNPCA-27-0133-02-106,MINNETONKA (LOWER LAKE),train,1,1970-03,1970-04,True,1.0,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-05-112,MNPCA-27-0133-05-112,MINNETONKA (UPPER LAKE),train,1,1970-03,1970-04,False,0.5728288519537973,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-05-203,MNPCA-27-0133-05-203,MINNETONKA (UPPER LAKE),train,1,1970-03,1970-04,False,0.9408593743362484,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-09-201,MNPCA-27-0133-09-201,MINNETONKA (HALSTEDS BAY),train,1,1970-03,1970-04,True,1.0,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-10-101,MNPCA-27-0133-10-101,MINNETONKA (CRYSTAL BAY),train,1,1970-03,1970-04,True,1.0,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-02-106,MNPCA-27-0133-02-106,MINNETONKA (LOWER LAKE),train,2,1970-02,1970-04,True,1.0,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-05-112,MNPCA-27-0133-05-112,MINNETONKA (UPPER LAKE),train,2,1970-02,1970-04,False,0.5728288519537973,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-05-203,MNPCA-27-0133-05-203,MINNETONKA (UPPER LAKE),train,2,1970-02,1970-04,False,0.9408593743362484,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-09-201,MNPCA-27-0133-09-201,MINNETONKA (HALSTEDS BAY),train,2,1970-02,1970-04,True,1.0,low,True,False,False,False,False,False
+wqp,wqp:MNPCA-27-0133-10-101,MNPCA-27-0133-10-101,MINNETONKA (CRYSTAL BAY),train,2,1970-02,1970-04,True,1.0,low,True,False,False,False,False,False
+wqp,wqp:11NPSWRD_WQX-BICA_SOLT_0,11NPSWRD_WQX-BICA_SOLT_0,BIGHORN LAKE AT YELLOWTAIL DAM,train,3,1970-06,1970-09,False,0.032196760344150914,low,False,False,True,False,True,True
+wqp,wqp:11NPSWRD_WQX-BICA_SOLT_1,11NPSWRD_WQX-BICA_SOLT_1,BIGHORN LAKE 10 MILES FROM DAM,train,3,1970-06,1970-09,False,0.0,low,False,False,False,False,True,True
+wqp,wqp:11NPSWRD_WQX-BICA_SOLT_2,11NPSWRD_WQX-BICA_SOLT_2,BIGHORN LAKE 20 MILES FROM DAM,train,3,1970-06,1970-09,False,0.32306043078145885,low,False,False,False,False,True,True
+wqp,wqp:11NPSWRD_WQX-BICA_SOLT_3,11NPSWRD_WQX-BICA_SOLT_3,BIGHORN LAKE 30 MILES FROM DAM,train,3,1970-06,1970-09,False,0.0,low,False,False,False,False,True,True
+wqp,wqp:11NPSWRD_WQX-BICA_SOLT_4,11NPSWRD_WQX-BICA_SOLT_4,BIGHORN LAKE 40 MILES FROM DAM,train,3,1970-06,1970-09,False,0.0,low,False,False,False,False,True,True
+wqp,wqp:21FLGTM_WQX-GTMLSNUT,21FLGTM_WQX-GTMLSNUT,LAKE SOUTH,validation,1,2019-01,2019-02,False,0.44813218772741187,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMMKNUT,21FLGTM_WQX-GTMMKNUT,MICKLERS,validation,1,2019-01,2019-02,False,0.0,low,True,False,False,False,False,True
+wqp,wqp:21FLKWAT_WQX-FLA-GRANDH4-1,21FLKWAT_WQX-FLA-GRANDH4-1,Flagler-Grand Haven 4-1,validation,1,2019-01,2019-02,False,0.0,low,True,True,False,False,False,True
+wqp,wqp:21FLKWAT_WQX-FLA-GRANDH4-2,21FLKWAT_WQX-FLA-GRANDH4-2,Flagler-Grand Haven 4-2,validation,1,2019-01,2019-02,False,0.0,low,True,True,False,False,False,True
+wqp,wqp:21FLKWAT_WQX-FLA-GRANDH4-3,21FLKWAT_WQX-FLA-GRANDH4-3,Flagler-Grand Haven 4-3,validation,1,2019-01,2019-02,False,0.0,low,True,True,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL1NUT,21FLGTM_WQX-GTMGL1NUT,GUANA LAKE 1,validation,2,2019-01,2019-03,False,0.0,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL2NUT,21FLGTM_WQX-GTMGL2NUT,GUANA LAKE 2,validation,2,2019-01,2019-03,False,0.43040924410011067,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL4NUT,21FLGTM_WQX-GTMGL4NUT,GUANA LAKE 4,validation,2,2019-01,2019-03,False,0.20585981926610364,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLMNUT,21FLGTM_WQX-GTMLMNUT,LAKE MID,validation,2,2019-01,2019-03,False,0.5183420250452357,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLSNUT,21FLGTM_WQX-GTMLSNUT,LAKE SOUTH,validation,2,2019-01,2019-03,False,0.2247007045327077,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL1NUT,21FLGTM_WQX-GTMGL1NUT,GUANA LAKE 1,validation,3,2019-01,2019-04,False,0.0,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL2NUT,21FLGTM_WQX-GTMGL2NUT,GUANA LAKE 2,validation,3,2019-01,2019-04,True,1.0,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMGL4NUT,21FLGTM_WQX-GTMGL4NUT,GUANA LAKE 4,validation,3,2019-01,2019-04,False,0.7363733964580741,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLMNUT,21FLGTM_WQX-GTMLMNUT,LAKE MID,validation,3,2019-01,2019-04,False,0.8360770677023291,low,True,False,False,False,False,True
+wqp,wqp:21FLGTM_WQX-GTMLSNUT,21FLGTM_WQX-GTMLSNUT,LAKE SOUTH,validation,3,2019-01,2019-04,False,0.42783125353744106,low,True,False,False,False,False,True

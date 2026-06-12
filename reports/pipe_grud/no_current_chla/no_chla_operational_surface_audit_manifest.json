@@ -1,0 +1,90 @@
+{
+  "audit_version": "no_chla_operational_surface_audit_v0",
+  "status": "completed",
+  "started_at_utc": "2026-06-12T22:03:52.078847+00:00",
+  "completed_at_utc": "2026-06-12T22:04:00.281676+00:00",
+  "config": {
+    "forbidden_chla_predictor_columns": [
+      "mean_chlorophyll_a_ugL",
+      "std_chlorophyll_a_ugL",
+      "min_chlorophyll_a_ugL",
+      "max_chlorophyll_a_ugL",
+      "n_obs_chlorophyll_a_ugL",
+      "n_bad_chlorophyll_a_ugL",
+      "qc_ok_rate_chlorophyll_a_ugL",
+      "log_chlorophyll_a",
+      "risk_chla"
+    ],
+    "evidence_band_rules": {
+      "high": "nutrient and temperature and (light_proxy or physicochemical)",
+      "medium": "nutrient and at least one of temperature, light_proxy, physicochemical",
+      "low": "at least one nonseason exogenous group, but not medium/high",
+      "season_only": "no nonseason exogenous group"
+    },
+    "examples_per_group": 5,
+    "sequence_optional": false
+  },
+  "row_counts": {
+    "audited_rows": 4610977,
+    "audited_sites": 93310,
+    "summary_rows": 9,
+    "by_source_rows": 27,
+    "feature_coverage_rows": 270,
+    "sequence_coverage_rows": 9,
+    "low_evidence_example_rows": 135
+  },
+  "inputs": [
+    {
+      "path": "data/targets/panel_monthly_with_targets_v0.parquet",
+      "bytes": 140348134,
+      "sha256": "ccbfe6545f72bcfcbdc800fca6b02ce5d3e99c140adbb310f12313a4357395f2"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_no_current_chla_v0.parquet",
+      "bytes": 63072695,
+      "sha256": "2f5e1db509919299761ec6ec81c808810d65c48b8f2cc21cc1c852293b2d9bfc"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_summary.csv",
+      "bytes": 4715,
+      "sha256": "56f276f23db860244a414c112af7a05d466d9f0d93771ebf561359c105793f7d"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_by_source_split_horizon.csv",
+      "bytes": 10232,
+      "sha256": "bb9789c42fb3df825e7cb153614e04f766e24a546ade53fb1a09290585accb64"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_feature_coverage.csv",
+      "bytes": 23091,
+      "sha256": "baa2f776cdbb9cf0d3cceab6aa9bd6222d34dc19b100ce25a07b86cefdb10524"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_sequence_coverage.csv",
+      "bytes": 2181,
+      "sha256": "4bce5a27e7fb0be7261c4a5d613bd57850b6a554a744bc4b3189bd62dc041212"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_low_evidence_examples.csv",
+      "bytes": 19707,
+      "sha256": "406bfef51eddf1ba498990562b30cd7a71ea66c2c61d970cb88eb882427dcb71"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla/no_chla_operational_surface_audit_report.md",
+      "bytes": 6964,
+      "sha256": "a801648ca3b8a693d2b8ca0de5a9c6c6afbeb7476386881243262caa0a5f5736"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/audit_no_chla_operational_surface.py",
+    "bytes": 30887,
+    "sha256": "c17503297129c40b7edfc2d17ee29d1d6b1d1b02415fdf16cebdf37e85925237"
+  }
+}
