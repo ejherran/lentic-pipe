@@ -70,6 +70,46 @@ under degraded training data is a later phase because it is more expensive and
 can obscure whether a failure comes from model learning or from operational
 evidence loss.
 
+## Recomputed Evaluation Modes
+
+The protocol separates three evaluation modes:
+
+- precomputed-score degradation: coverage/source/site scenarios that can be
+  evaluated directly on existing scored backtest rows;
+- PIPE state-input recomputation: controlled degradation of PIPE sequence input
+  columns followed by frozen PIPE/GRU-D rollout recomputation;
+- raw-predictor recomputation: degradation of monthly panel predictors followed
+  by deterministic fuzzy-state rebuild, PIPE sequence rebuild, and frozen
+  PIPE/GRU-D rollout recomputation.
+
+The raw-predictor mode must preserve labels by construction. Degraded raw
+predictors are allowed to change only the reconstructed input sequence consumed
+by PIPE/GRU-D. Observed future fuzzy states, bloom labels, split membership,
+model weights, calibrators, and alert thresholds remain fixed from the
+undegraded canonical artifacts. Fuzzy IRC weights are loaded from the current
+fuzzy manifest and are not re-optimized under degradation.
+
+Raw-predictor degradation measures operational dependence of the current
+pipeline. It must not be interpreted as ecological causal importance. In
+particular, if a frozen model remains accurate after nutrient ablation while
+using current Chl-a memory, the correct interpretation is that the current
+model/alert surface can rely on a target-proximal Chl-a signal. It does not
+mean nutrients are ecologically irrelevant to algal proliferation.
+
+For early-warning claims, the project must distinguish two surfaces:
+
+- monitoring/nowcasting: may use current Chl-a because it is an observed state
+  indicator;
+- no-current-Chl-a early warning: must estimate future Chl-a or bloom risk from
+  upstream evidence such as nutrients, physicochemical conditions, light, and
+  seasonality, using observed Chl-a only as the evaluation target.
+
+When canonical variables are expanded onto the monthly panel, raw-family
+ablations remove both direct monthly aggregates and their uncertainty/provenance
+signals where they influence the fuzzy layer. For example, `TP_ugL` maps to
+`mean_TP_ugL`, available aggregate/QC columns such as `qc_ok_rate_TP_ugL`, and
+derived nutrient columns such as `log_TP` and `TN_TP_ratio`.
+
 ## Scenario Families
 
 ### 1. Control

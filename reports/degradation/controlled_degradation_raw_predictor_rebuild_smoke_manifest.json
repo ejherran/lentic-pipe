@@ -1,0 +1,314 @@
+{
+  "generated_at_utc": "2026-06-12T18:14:18.842832+00:00",
+  "started_at_utc": "2026-06-12T18:11:48.058316+00:00",
+  "status": "completed",
+  "degradation_version": "pipe_grud_raw_predictor_recomputed_degradation_v0",
+  "rollout_version": "pipe_grud_rollout_alerts_v0",
+  "pipe_model_version": "pipe_grud_v0",
+  "config": {
+    "scenario_set": "raw_predictor_rebuild_smoke",
+    "scenarios": null,
+    "split": "test",
+    "history_length": 12,
+    "rollout_horizon": 3,
+    "samples": 1,
+    "deterministic": true,
+    "batch_size": 256,
+    "max_origins": 512,
+    "max_rows": null,
+    "allow_partial_horizons": false,
+    "irc_alpha": 0.5,
+    "irc_beta": 0.5,
+    "irc_gamma": 2.0,
+    "irc_alert_threshold": 0.5,
+    "alert_prob_threshold": 0.5,
+    "random_seed": 1729,
+    "model_config": {
+      "history_length": 12,
+      "input_dim": 13,
+      "target_dim": 9,
+      "hidden_dim": 96,
+      "num_layers": 1,
+      "dropout": 0.0,
+      "residual_mode": "add_last",
+      "mse_weight": 1.0,
+      "checkpoint_selection_metric": "balanced",
+      "blend_selection_metric": "balanced",
+      "blend_grid": [
+        0.0,
+        0.1,
+        0.2,
+        0.35,
+        0.5,
+        0.65,
+        0.8,
+        0.9,
+        1.0
+      ]
+    },
+    "calibrated_bloom_horizons": [
+      1,
+      2,
+      3
+    ],
+    "rollout_bloom_calibrator_horizons": [
+      1,
+      2,
+      3
+    ],
+    "thresholds": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv",
+    "policies": [
+      "closest_pr",
+      "fixed",
+      "fbeta"
+    ],
+    "evaluation_splits": [
+      "test"
+    ],
+    "include_all_sources": true,
+    "min_policy_rows": 1,
+    "max_gap_months": 1,
+    "train_end": "2018-12",
+    "validation_start": "2019-01",
+    "validation_end": "2021-12",
+    "test_start": "2022-01",
+    "test_end": null,
+    "fuzzy_weight_source": "fuzzy_manifest",
+    "frozen_irc_weights": {
+      "alpha": 0.5,
+      "beta": 0.5,
+      "gamma": 2.0
+    },
+    "scenario_config_protocol": {
+      "document": "docs/CONTROLLED_DEGRADATION_PROTOCOL.md",
+      "phase": "phase_0_protocol_definition",
+      "default_alert_policy": {
+        "policy_version": "pipe_grud_rollout_alert_policy_2b_v0",
+        "selection_objective": "closest_pr",
+        "threshold_source": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv"
+      },
+      "comparison_alert_policies": [
+        "fixed",
+        "fbeta"
+      ]
+    }
+  },
+  "row_counts": {
+    "selected_origins": 512,
+    "availability_summary_rows": 3,
+    "summary_rows": 3,
+    "state_metric_rows": 396,
+    "alert_metric_rows": 72,
+    "policy_metric_rows": 216,
+    "diagnostic_rows": 75,
+    "example_rows": 540,
+    "backtest_row_rows": 4608,
+    "evaluated_runs": 3
+  },
+  "scenario_summary": [
+    {
+      "degradation_version": "pipe_grud_raw_predictor_recomputed_degradation_v0",
+      "scenario_id": "control_observed",
+      "scenario_family": "control",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": null,
+      "score_recomputed": true,
+      "fuzzy_state_rebuilt": false,
+      "labels_preserved": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "raw_panel_rows": 3390728,
+      "rebuilt_state_rows": 0,
+      "rebuilt_sequence_rows": 2069024,
+      "raw_affected_rows": 0,
+      "raw_affected_cells": 0,
+      "affected_sequence_rows": 0,
+      "affected_sequence_cells": 0,
+      "affected_selected_window_rows": 0,
+      "affected_selected_window_cells": 0,
+      "operation_types": "",
+      "raw_variable_columns": ""
+    },
+    {
+      "degradation_version": "pipe_grud_raw_predictor_recomputed_degradation_v0",
+      "scenario_id": "ablate_nutrients",
+      "scenario_family": "feature_family_ablation",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": null,
+      "score_recomputed": true,
+      "fuzzy_state_rebuilt": true,
+      "labels_preserved": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "raw_panel_rows": 3390728,
+      "rebuilt_state_rows": 3390728,
+      "rebuilt_sequence_rows": 2069024,
+      "raw_affected_rows": 663487,
+      "raw_affected_cells": 6503188,
+      "affected_sequence_rows": 396585,
+      "affected_sequence_cells": 1049437,
+      "affected_selected_window_rows": 2257,
+      "affected_selected_window_cells": 6230,
+      "operation_types": "set_variables_missing",
+      "raw_variable_columns": "mean_TP_ugL,std_TP_ugL,min_TP_ugL,max_TP_ugL,n_obs_TP_ugL,n_bad_TP_ugL,qc_ok_rate_TP_ugL,log_TP,TN_TP_ratio,mean_TN_ugL,std_TN_ugL,min_TN_ugL,max_TN_ugL,n_obs_TN_ugL,n_bad_TN_ugL,qc_ok_rate_TN_ugL,log_TN"
+    },
+    {
+      "degradation_version": "pipe_grud_raw_predictor_recomputed_degradation_v0",
+      "scenario_id": "ablate_chlorophyll_memory",
+      "scenario_family": "feature_family_ablation",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": null,
+      "score_recomputed": true,
+      "fuzzy_state_rebuilt": true,
+      "labels_preserved": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "raw_panel_rows": 3390728,
+      "rebuilt_state_rows": 3390728,
+      "rebuilt_sequence_rows": 2069024,
+      "raw_affected_rows": 2639230,
+      "raw_affected_cells": 21795816,
+      "affected_sequence_rows": 1658162,
+      "affected_sequence_cells": 4186753,
+      "affected_selected_window_rows": 5063,
+      "affected_selected_window_cells": 12955,
+      "operation_types": "set_variables_missing",
+      "raw_variable_columns": "mean_chlorophyll_a_ugL,std_chlorophyll_a_ugL,min_chlorophyll_a_ugL,max_chlorophyll_a_ugL,n_obs_chlorophyll_a_ugL,n_bad_chlorophyll_a_ugL,qc_ok_rate_chlorophyll_a_ugL,log_chlorophyll_a,risk_chla"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "configs/degradation_scenarios.yaml",
+      "bytes": 15389,
+      "sha256": "b193c65083442109c427db17a8dbb3f34a2c347d6902205ea1a78c5510efef45"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "bytes": 73436574,
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "path": "models/pipe_grud/pipe_grud_model_v0.pt",
+      "bytes": 139474,
+      "sha256": "3c8d848aa4ad770ff885ca0af7c8948d198fdb44c77e5c09e0f892dcf3feabc2"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv",
+      "bytes": 17030,
+      "sha256": "283acee1c7692b697e7a89085d9724b3f3386a7da433293ebe3f5a281384cc6a"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_manifest.json",
+      "bytes": 23703,
+      "sha256": "1b350e13a302112dcc1d6003d367da2f6f3d16ee67ae5c81c458599d17a06f6f"
+    },
+    {
+      "path": "reports/anfis/fuzzy_manifest.json",
+      "bytes": 3884,
+      "sha256": "3e37503f2db2f805a3d099688666fca9580044c575f0d65ef8ddf0db4485e7d2"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
+      "bytes": 2726,
+      "sha256": "3b260cdb7dcb10fb4ffc72a96a13e387123631be512f777412361f7f3430dacc"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h2_isotonic.joblib",
+      "bytes": 2950,
+      "sha256": "04346fac63cf670b59bdff37fa0544c7bcfa3e590f7ff48627bea8a5fec7adff"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h3_isotonic.joblib",
+      "bytes": 2822,
+      "sha256": "389ca9ac472a25ae24fa7a7ed6c796d3b1a1da71da7d0693df131ffab4a39cee"
+    },
+    {
+      "path": "models/pipe_grud/rollout_calibrators/rollout_bloom_h1_irc_mean_isotonic.joblib",
+      "bytes": 2318,
+      "sha256": "9911d942ef524c92ffe16b3e4b37f9b73141792fd02901b6f62e27717a1bae8c"
+    },
+    {
+      "path": "models/pipe_grud/rollout_calibrators/rollout_bloom_h2_irc_mean_isotonic.joblib",
+      "bytes": 2222,
+      "sha256": "74bee87bccbcfdb28eca08816a90db7e150205c5ce6acb6f5247960768c3f7d6"
+    },
+    {
+      "path": "models/pipe_grud/rollout_calibrators/rollout_bloom_h3_irc_mean_isotonic.joblib",
+      "bytes": 2550,
+      "sha256": "acd56c19dc6c662d34a31f65a4be316f3629554ed2821a8bd740693b60dd5674"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_state_metrics.csv",
+      "bytes": 131748,
+      "sha256": "67b61e8ae4701dfd6bfefd9fd39e4ad910e4db2d38e0b7f9c31bca99977c6244"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_alert_metrics.csv",
+      "bytes": 25517,
+      "sha256": "8115171b1006427d40935c37141d9e440119136563f3219e60b6fa07e37fc852"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_policy_metrics.csv",
+      "bytes": 107572,
+      "sha256": "8cfb527852e167bd78e20c5ac381ca10707bda84d84af304f43ffa8a764e6c5f"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_summary.csv",
+      "bytes": 1565,
+      "sha256": "9ca456e8c9fb3ae4c10490c2511c30c1eacd1e588386347b9cadca872f8b26e6"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_examples.csv",
+      "bytes": 169312,
+      "sha256": "7edbd9f20cc68087453577bfa47773b9f5c17670f9b26985ef8f9d158cc19f21"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_diagnostics.csv",
+      "bytes": 18643,
+      "sha256": "bd03993a48a7eaf301a79ec39fcddb11a88ec3f7e6a4f643cf575a11e902e995"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_raw_predictor_rebuild_smoke_report.md",
+      "bytes": 16097,
+      "sha256": "2174ee07b45787423b277af02a3a22deb92a3c8e8083097332b02c5c63f98c53"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/evaluate_raw_degraded_pipe_grud_rollouts.py",
+    "bytes": 62175,
+    "sha256": "e371746c73ce651a27a56a8af3859aa1606043c56fd40f5cadbee0d888ddf380"
+  }
+}

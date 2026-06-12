@@ -164,6 +164,21 @@ defaults:
   report_empty_groups: true
 
 scenario_sets:
+  raw_predictor_rebuild_smoke:
+    - control_observed
+    - ablate_nutrients
+    - ablate_chlorophyll_memory
+  raw_predictor_rebuild_core:
+    - control_observed
+    - ablate_chlorophyll_memory
+    - ablate_nutrients
+    - ablate_light
+    - ablate_physicochemical
+  raw_predictor_no_chla_factorial:
+    - control_observed
+    - ablate_chlorophyll_memory
+    - ablate_nutrients
+    - ablate_chlorophyll_memory_and_nutrients
   pipe_state_recompute_smoke:
     - control_observed
     - ablate_pipe_state_level
@@ -281,6 +296,16 @@ scenarios:
     tier: core
     description: Remove total phosphorus, total nitrogen, and derived nutrient predictors.
     operations:
+      - type: set_variables_missing
+        variable_group: nutrients
+
+  - scenario_id: ablate_chlorophyll_memory_and_nutrients
+    family: feature_family_ablation
+    tier: core
+    description: Remove Chl-a memory/proxy predictors and nutrient-pressure predictors together.
+    operations:
+      - type: set_variables_missing
+        variable_group: chlorophyll_memory
       - type: set_variables_missing
         variable_group: nutrients
 
