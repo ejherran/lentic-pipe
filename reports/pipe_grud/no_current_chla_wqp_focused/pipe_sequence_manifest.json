@@ -1,0 +1,171 @@
+{
+  "generated_at_utc": "2026-06-12T22:18:43.661604+00:00",
+  "started_at_utc": "2026-06-12T22:18:27.000696+00:00",
+  "dataset_version": "pipe_sequence_dataset_v0",
+  "config": {
+    "max_gap_months": 1,
+    "input_surface": "no_current_chla",
+    "source_ids": [
+      "wqp"
+    ],
+    "input_state_mapping": {
+      "yN": "yN",
+      "yF": "yF",
+      "yT": "yT_no_chla",
+      "sigma_N": "sigma_N",
+      "sigma_F": "sigma_F",
+      "sigma_T": "sigma_T_no_chla",
+      "delta_yN": "delta_yN",
+      "delta_yF": "delta_yF",
+      "delta_yT": "delta_yT_no_chla"
+    },
+    "train_end": "2018-12",
+    "validation_start": "2019-01",
+    "validation_end": "2021-12",
+    "test_start": "2022-01",
+    "test_end": null,
+    "pipe_state_columns": [
+      "yN",
+      "yF",
+      "yT",
+      "sigma_N",
+      "sigma_F",
+      "sigma_T",
+      "delta_yN",
+      "delta_yF",
+      "delta_yT"
+    ],
+    "season_columns": [
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "candidate_rows": 1626672,
+    "kept_sequence_rows": 986674,
+    "discarded_candidate_rows": 639998,
+    "source_scoped_sites": 43715,
+    "summary_rows": 3,
+    "discarded_summary_rows": 3
+  },
+  "inputs": [
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet",
+      "bytes": 49839147,
+      "sha256": "cadce724b78ef7cf62df841dfd6eb01d0640004206e69299f1d0f4c924f24099"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_summary.csv",
+      "bytes": 287,
+      "sha256": "70165e71d43cf302fc2ef00e844082d018d0adcf56e16aa4662360a4c4118ddf"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_discarded_summary.csv",
+      "bytes": 136,
+      "sha256": "95aa2950790b9a569a7e44e59b8673bb8395c066c7c1995d7f52656123ffe481"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_report.md",
+      "bytes": 2339,
+      "sha256": "77d557567eb4d497757e4f40703a6ca3975b76e14bb7068da13fd30273332a0b"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/build_pipe_sequences.py",
+    "bytes": 24361,
+    "sha256": "8e21d7c9a9b4cbe120d01a029a899680047641afde73a69773515c70d5a16f13"
+  },
+  "by_source_split": [
+    {
+      "source_id": "wqp",
+      "split": "test",
+      "rows": 86478,
+      "sites": 10366,
+      "origin_min": "2022-01",
+      "origin_max": "2026-04",
+      "target_min": "2022-02",
+      "target_max": "2026-05",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "train",
+      "rows": 808970,
+      "sites": 38508,
+      "origin_min": "1970-01",
+      "origin_max": "2018-11",
+      "target_min": "1970-02",
+      "target_max": "2018-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "validation",
+      "rows": 91226,
+      "sites": 11283,
+      "origin_min": "2019-01",
+      "origin_max": "2021-11",
+      "target_min": "2019-02",
+      "target_max": "2021-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    }
+  ],
+  "discarded_summary": [
+    {
+      "source_id": "wqp",
+      "split_reason": "crosses_split_boundary",
+      "rows": 24745,
+      "sites": 16536
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "gap_too_large",
+      "rows": 508534,
+      "sites": 63466
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "no_next_state",
+      "rows": 106719,
+      "sites": 106719
+    }
+  ]
+}

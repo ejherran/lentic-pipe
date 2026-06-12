@@ -1,0 +1,80 @@
+{
+  "generated_at_utc": "2026-06-12T22:55:52.777174+00:00",
+  "status": "completed",
+  "calibration_version": "pipe_grud_rollout_alert_calibration_v0",
+  "backtest_version": "pipe_grud_rollout_backtest_v0",
+  "config": {
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "bloom_score_column": "irc_mean",
+    "selection_objective": "fbeta",
+    "fbeta_beta": 2.0,
+    "min_recall": null,
+    "min_precision": null,
+    "min_calibration_rows": 20,
+    "min_threshold_rows": 20
+  },
+  "row_counts": {
+    "backtest_rows": 33642,
+    "threshold_rows": 6,
+    "metric_rows": 12,
+    "calibrator_files": 3
+  },
+  "inputs": [
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_rows_validation.parquet",
+      "bytes": 828579,
+      "sha256": "08943a04bf3569c757a71f60cbf397167e4b5a900a93fdd46470eddb051d2bf5"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_rows_test.parquet",
+      "bytes": 1012488,
+      "sha256": "2de0a74e2b7682f0972d72c65ab238241b493ad43e3601f911f7f591474a4c5a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibration_thresholds.csv",
+      "bytes": 2534,
+      "sha256": "f709a98eef75298d84489684228afb89884b9c6a4a7f407bda930666fe355176"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibration_metrics.csv",
+      "bytes": 4134,
+      "sha256": "f55193a2d41d04f65b133113d5b95178fbab9c998ed55e00d59fbbefdfc45112"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet",
+      "bytes": 1881710,
+      "sha256": "b4261d423a760167cb05952ae34f7ed527a5cd4ff5bb82726140fbb8fdd57ee2"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibration_report.md",
+      "bytes": 4262,
+      "sha256": "f93257b4c942a04f5be8a5970b59b99451a77282a1a2dc92412543e0b6addf75"
+    },
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/rollout_calibrators/rollout_bloom_h1_irc_mean_isotonic.joblib",
+      "bytes": 1526,
+      "sha256": "88c4065d68e7a07fa5cc492bda1abe44c82193d5eda18e3a03ae7176a6008c45"
+    },
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/rollout_calibrators/rollout_bloom_h2_irc_mean_isotonic.joblib",
+      "bytes": 1558,
+      "sha256": "265172ef4c78e17d3246c52553156e50457c88c93f54855c2f159105fb48583a"
+    },
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/rollout_calibrators/rollout_bloom_h3_irc_mean_isotonic.joblib",
+      "bytes": 1494,
+      "sha256": "55431afd4e861e535c7b63e9325ba51338e54bf6933d926ec562497cf4b7e779"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/calibrate_pipe_rollout_alerts.py",
+    "bytes": 33471,
+    "sha256": "9982bbf3e4d69239ce0b8b56e6161b97a4b5b8b52bc1ef582c648a6289002c9d"
+  }
+}

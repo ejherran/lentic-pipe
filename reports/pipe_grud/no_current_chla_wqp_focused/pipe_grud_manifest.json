@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-06-12T22:46:01.319731+00:00",
+  "started_at_utc": "2026-06-12T22:45:46.395166+00:00",
+  "model_version": "pipe_grud_v0",
+  "status": "completed",
+  "config": {
+    "history_length": 12,
+    "hidden_dim": 96,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "residual_mode": "add_last",
+    "mse_weight": 1.0,
+    "checkpoint_selection_metric": "balanced",
+    "checkpoint_selection_uses_output_blend": true,
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "blend_selection_metric": "balanced",
+    "epochs": 20,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "random_seed": 1729,
+    "max_train_windows": 0,
+    "max_eval_windows": 0,
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "available_windows": {
+      "train": 112470,
+      "validation": 7079,
+      "test": 7582
+    },
+    "sampled_windows": {
+      "train": 112470,
+      "validation": 7079,
+      "test": 7582
+    },
+    "metric_rows": 30,
+    "blend_weight_rows": 9,
+    "blend_search_rows": 81,
+    "persistence_metric_rows": 30,
+    "comparison_rows": 30,
+    "training_curve_rows": 20
+  },
+  "selection": {
+    "checkpoint_selection_metric": "balanced",
+    "best_epoch": 6,
+    "best_validation_loss": -0.9998011065162598,
+    "best_validation_rmse_all": 0.1631807400779172,
+    "best_validation_mae_all": 0.11156055245487267,
+    "best_validation_objective": 0.7448831951260098
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet",
+      "bytes": 49839147,
+      "sha256": "cadce724b78ef7cf62df841dfd6eb01d0640004206e69299f1d0f4c924f24099"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_manifest.json",
+      "bytes": 4313,
+      "sha256": "5698b4412936045400c4daabbc37e359f2585d6721d86bf204bfa3a1f8c0f14e"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/pipe_grud_model.pt",
+      "bytes": 139410,
+      "sha256": "206cb585939db4e9746770ffe6f985767ca8eb049c761e334e4503d2d7355019"
+    },
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/pipe_grud_checkpoint.pt",
+      "bytes": 417468,
+      "sha256": "34ddd5c181cc8465eee67fdd4b2a8c07bb4a4d190046bec7f5bccd8c3cf0f2f8"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_metrics.csv",
+      "bytes": 3574,
+      "sha256": "f42a107e5bb0914d8a3b09198944f4021262dcf2c560eead5bbccd0dc2ce6b8e"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_persistence_metrics.csv",
+      "bytes": 1790,
+      "sha256": "a9b8ef3bd24421f84b59ffd9652928b41e432b3d31738a5c4121179a858a0b7e"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_persistence_comparison.csv",
+      "bytes": 5825,
+      "sha256": "74e01fb5ed66a008346e3d286a9ef4d1840064f42a4a0994b0acc86c1d4c58cc"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_output_blend_weights.csv",
+      "bytes": 827,
+      "sha256": "cfda7db2b552e1e07957e719e6a19fc99bd1391582a07cc6a84a23c58b63b5c7"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_output_blend_search.csv",
+      "bytes": 6808,
+      "sha256": "d362432672d4341ebaa4da3e0557509faf0734fe113e5c329bdbf56588cf99f3"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_training_curve.csv",
+      "bytes": 3547,
+      "sha256": "9646f84401d7701ad3637b45b0149a0ed87117780546377aa2763c015fdfc5c7"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_prediction_examples.csv",
+      "bytes": 286334,
+      "sha256": "5973168365e067a406cdaf371ecb0353926fdfc2dfa506aa57ed175e711c9359"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_report.md",
+      "bytes": 5755,
+      "sha256": "e543b18fdaa5a979d256d976175a81f1f6e1947cf239fb1e540b9a2cc0a48f6e"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/train_pipe_grud.py",
+    "bytes": 51360,
+    "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+  }
+}

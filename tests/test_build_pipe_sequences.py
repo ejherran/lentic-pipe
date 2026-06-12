@@ -14,6 +14,7 @@ from src.experiments.build_pipe_sequences import (
     PIPE_STATE_COLUMNS,
     TARGET_COLUMNS,
     build_sequence_candidates,
+    filter_state_sources,
     filter_leakage_safe_sequences,
     summarize_discarded,
     summarize_sequences,
@@ -117,6 +118,16 @@ def test_no_current_chla_surface_replaces_current_inputs_only() -> None:
     assert first["target_delta_yT"] != first["x_delta_yT"]
 
 
+def test_source_filter_keeps_requested_sources_only() -> None:
+    state = filter_state_sources(_state_frame(), ["B"])
+    candidates = build_sequence_candidates(state, input_surface="no_current_chla")
+    sequences, discarded = filter_leakage_safe_sequences(candidates, _args())
+
+    assert set(state["source_id"]) == {"B"}
+    assert sequences["source_id"].tolist() == ["B"]
+    assert discarded["source_id"].tolist() == ["B"]
+
+
 def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
     state_path = tmp_path / "state.parquet"
     sequences_path = tmp_path / "sequences.parquet"
@@ -144,6 +155,8 @@ def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
             str(manifest_path),
             "--input-surface",
             "no_current_chla",
+            "--source-ids",
+            "B",
         ],
         check=True,
     )
@@ -153,12 +166,13 @@ def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
     discarded = pd.read_csv(discarded_path)
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-    assert len(sequences) == 2
-    assert len(summary) == 2
+    assert len(sequences) == 1
+    assert len(summary) == 1
     assert not discarded.empty
-    assert manifest["row_counts"]["kept_sequence_rows"] == 2
-    assert manifest["row_counts"]["discarded_candidate_rows"] == 5
+    assert manifest["row_counts"]["kept_sequence_rows"] == 1
+    assert manifest["row_counts"]["discarded_candidate_rows"] == 1
     assert manifest["config"]["input_surface"] == "no_current_chla"
+    assert manifest["config"]["source_ids"] == ["B"]
     assert manifest["config"]["input_state_mapping"]["yT"] == "yT_no_chla"
     assert manifest["outputs"][0]["sha256"]
     assert manifest["script"]["path"] == "src/experiments/build_pipe_sequences.py"

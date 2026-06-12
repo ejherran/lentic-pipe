@@ -191,6 +191,22 @@ def _coerce_numeric(frame: pd.DataFrame, columns: list[str]) -> pd.DataFrame:
     return out
 
 
+def _parse_source_ids(values: list[str] | None) -> list[str]:
+    if not values:
+        return []
+    source_ids = []
+    for value in values:
+        source_ids.extend(part.strip() for part in value.split(",") if part.strip())
+    return sorted(set(source_ids))
+
+
+def _source_filter_label(args: argparse.Namespace) -> str:
+    source_ids = getattr(args, "source_ids_normalized", [])
+    if not source_ids:
+        return "all"
+    return ", ".join(source_ids)
+
+
 def _input_mapping(input_surface: str) -> dict[str, str]:
     if input_surface == INPUT_SURFACE_FULL:
         return {}
@@ -222,6 +238,19 @@ def load_state(path: Path, *, input_surface: str = INPUT_SURFACE_FULL) -> pd.Dat
     state["site_id"] = state["site_id"].astype(str)
     state["year_month"] = state["year_month"].astype(str)
     return state
+
+
+def filter_state_sources(state: pd.DataFrame, source_ids: list[str]) -> pd.DataFrame:
+    if not source_ids:
+        return state
+    available = set(state["source_id"].unique())
+    missing = sorted(set(source_ids).difference(available))
+    if missing:
+        raise ValueError(f"Requested source_id values are not present in the state vector: {missing}")
+    out = state[state["source_id"].isin(source_ids)].copy()
+    if out.empty:
+        raise ValueError(f"Source filter removed all state rows: {source_ids}")
+    return out.reset_index(drop=True)
 
 
 def build_sequence_candidates(state: pd.DataFrame, *, input_surface: str = INPUT_SURFACE_FULL) -> pd.DataFrame:
@@ -402,6 +431,7 @@ def write_report(
         "This step builds a leakage-safe adjacent-month `S(t) -> S(t+1)` dataset for PIPE/GRU-D.",
         "It does not train or tune a temporal model.",
         f"Input surface: `{args.input_surface}`.",
+        f"Source filter: `{_source_filter_label(args)}`.",
         f"Maximum allowed target gap: `{args.max_gap_months}` month(s).",
         f"Input dimensionality for the minimal PIPE model: `{len(INPUT_COLUMNS)}` = 9 state values + 4 seasonal values.",
     ]
@@ -502,6 +532,7 @@ def manifest_payload(
         "config": {
             "max_gap_months": int(args.max_gap_months),
             "input_surface": args.input_surface,
+            "source_ids": getattr(args, "source_ids_normalized", []),
             "input_state_mapping": {
                 column: _source_column_for_input(column, args.input_surface) for column in PIPE_STATE_COLUMNS
             },
@@ -540,6 +571,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
     parser.add_argument("--input-surface", choices=INPUT_SURFACES, default=INPUT_SURFACE_FULL)
+    parser.add_argument(
+        "--source-ids",
+        nargs="+",
+        default=None,
+        help="Optional source_id filter. Accepts one or more values, or comma-separated values.",
+    )
     parser.add_argument("--max-gap-months", type=int, default=1)
     parser.add_argument("--train-end", default="2018-12")
     parser.add_argument("--validation-start", default="2019-01")
@@ -551,6 +588,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    args.source_ids_normalized = _parse_source_ids(args.source_ids)
     if args.max_gap_months < 1:
         raise ValueError("--max-gap-months must be >= 1")
 
@@ -558,6 +596,10 @@ def main() -> None:
     print(f"loading state {args.state}", flush=True)
     state = load_state(args.state, input_surface=args.input_surface)
     print(f"state rows={len(state):,}", flush=True)
+    if args.source_ids_normalized:
+        print(f"filtering source_id to {args.source_ids_normalized}", flush=True)
+        state = filter_state_sources(state, args.source_ids_normalized)
+        print(f"filtered state rows={len(state):,}", flush=True)
 
     print("building adjacent state transitions", flush=True)
     candidates = build_sequence_candidates(state, input_surface=args.input_surface)

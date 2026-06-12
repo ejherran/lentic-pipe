@@ -247,6 +247,16 @@ def is_artifact_covered(candidate: str, artifacts: list[DvcArtifact]) -> bool:
     return False
 
 
+def has_local_dvc_pointer(candidate: Path) -> bool:
+    """Return true when a path is protected by a local DVC pointer file."""
+    for path in [candidate, *candidate.parents]:
+        if path == Path("."):
+            break
+        if dvc_pointer_path(path).exists():
+            return True
+    return False
+
+
 def collect_strings(value: Any) -> set[str]:
     strings: set[str] = set()
     if isinstance(value, str):
@@ -351,6 +361,8 @@ def unmanaged_ignored_heavy_paths(artifacts: list[DvcArtifact]) -> list[Path]:
         if not is_heavy_ignored_path(normalized):
             continue
         if is_artifact_covered(normalized, artifacts):
+            continue
+        if has_local_dvc_pointer(Path(normalized)):
             continue
         paths.append(Path(normalized))
     return sorted(set(paths), key=lambda path: path.as_posix())

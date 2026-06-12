@@ -4,15 +4,18 @@ import json
 from pathlib import Path
 
 from src.data.prepare_commit_artifacts import (
+    CommandResult,
     DvcArtifact,
     declared_artifacts_missing_pointers,
     dvc_pointer_path,
     has_failing_findings,
+    has_local_dvc_pointer,
     is_experiment_manifest_path,
     is_report_artifact_path,
     reproducibility_checks,
     sha256_directory,
     sha256_file,
+    unmanaged_ignored_heavy_paths,
     validate_experiment_manifests,
     validate_freeze_freshness,
 )
@@ -37,6 +40,43 @@ def test_declared_artifacts_missing_pointers_selects_existing_declared_targets(t
     selected = declared_artifacts_missing_pointers(artifacts)
 
     assert selected == [artifacts[0]]
+
+
+def test_unmanaged_ignored_heavy_paths_skips_paths_with_local_dvc_pointer(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    managed = Path("reports/pipe/full_rows.parquet")
+    unmanaged = Path("reports/pipe/untracked_rows.parquet")
+    managed.parent.mkdir(parents=True)
+    managed.write_text("managed", encoding="utf-8")
+    unmanaged.write_text("unmanaged", encoding="utf-8")
+    dvc_pointer_path(managed).write_text(
+        "outs:\n"
+        "- md5: abc123\n"
+        "  size: 7\n"
+        "  hash: md5\n"
+        "  path: full_rows.parquet\n",
+        encoding="utf-8",
+    )
+
+    def fake_run_command(command: list[str], **_: object) -> CommandResult:
+        assert command == ["git", "status", "--short", "--ignored", "--untracked-files=normal"]
+        return CommandResult(
+            command=command,
+            returncode=0,
+            stdout=(
+                "!! reports/pipe/full_rows.parquet\n"
+                "!! reports/pipe/untracked_rows.parquet\n"
+            ),
+            stderr="",
+        )
+
+    monkeypatch.setattr("src.data.prepare_commit_artifacts.run_command", fake_run_command)
+
+    assert has_local_dvc_pointer(managed)
+    assert not has_local_dvc_pointer(unmanaged)
+    assert unmanaged_ignored_heavy_paths([]) == [unmanaged]
 
 
 def _manifest_record(path: Path) -> dict[str, object]:

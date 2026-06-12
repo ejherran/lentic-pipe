@@ -138,6 +138,20 @@ def test_no_current_chla_full_artifacts_are_documented_as_dvc_artifacts() -> Non
     assert "reports/pipe_grud/no_current_chla/pipe_rollout_backtest_rows_test.parquet" in dvc_artifacts
     assert "pipe_rollout_calibrated_backtest_rows_no_current_chla_v0" in dvc_artifacts
     assert "reports/pipe_grud/no_current_chla/pipe_rollout_calibrated_backtest_rows.parquet" in dvc_artifacts
+    assert "pipe_sequence_dataset_no_current_chla_wqp_focused_v0" in dvc_artifacts
+    assert "data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet" in dvc_artifacts
+    assert "pipe_rollout_backtest_rows_validation_no_current_chla_wqp_focused_v0" in dvc_artifacts
+    assert (
+        "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_rows_validation.parquet"
+        in dvc_artifacts
+    )
+    assert "pipe_rollout_backtest_rows_test_no_current_chla_wqp_focused_v0" in dvc_artifacts
+    assert "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_rows_test.parquet" in dvc_artifacts
+    assert "pipe_rollout_calibrated_backtest_rows_no_current_chla_wqp_focused_v0" in dvc_artifacts
+    assert (
+        "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet"
+        in dvc_artifacts
+    )
 
 
 def test_prepare_commit_skips_row_level_smoke_parquets() -> None:

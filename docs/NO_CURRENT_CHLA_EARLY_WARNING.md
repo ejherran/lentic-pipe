@@ -470,3 +470,115 @@ information at the same source-site-month. The next fair experiment should
 therefore be a WQP-focused no-current-Chl-a surface. A crosswalk-enabled
 AquaMatch/WQP expansion should be considered only after accepted site
 equivalences are promoted.
+
+## WQP-Focused No-Current-Chl-a Surface
+
+The WQP-focused variant keeps the same no-current-Chl-a input contract but
+restricts sequence construction to `source_id = wqp`. This makes the first
+strict early-warning refinement focus on rows where nutrient and precursor
+coverage are actually available under the source-scoped policy.
+
+Build the filtered sequence surface first:
+
+```bash
+poetry run python src/experiments/build_pipe_sequences.py \
+  --input-surface no_current_chla \
+  --source-ids wqp \
+  --sequences data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet \
+  --summary reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_summary.csv \
+  --discarded reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_discarded_summary.csv \
+  --report reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_report.md \
+  --manifest reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_manifest.json
+```
+
+Review this sequence manifest before training. It should show:
+
+- `input_surface = no_current_chla`;
+- `source_ids = ["wqp"]`;
+- only `wqp` rows in `by_source_split`;
+- the no-current-Chl-a mapping `x_yT <- yT_no_chla`,
+  `x_sigma_T <- sigma_T_no_chla`, and
+  `x_delta_yT <- delta_yT_no_chla`.
+
+If the filtered sequence surface is healthy, proceed to a bounded smoke
+training run under `reports/pipe_grud/no_current_chla_wqp_focused/` and
+`models/pipe_grud/no_current_chla_wqp_focused/`.
+
+## WQP-Focused Full Snapshot
+
+The WQP-focused full run evaluates the strict no-current-Chl-a contract on the
+source where precursor nutrient evidence is actually available under the
+source-scoped policy. This is a different surface from the full all-source
+no-current-Chl-a run above and should be reported separately.
+
+The sequence manifest is
+`reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_manifest.json`.
+It records `986,674` kept sequence rows from `43,715` source-scoped sites:
+`808,970` train rows, `91,226` validation rows, and `86,478` test rows.
+
+The full training manifest is
+`reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_manifest.json`.
+It used history length `12`, hidden dimension `96`, MSE weight `1.0`, batch
+size `2048`, `20` epochs, and all available windows. Held-out test performance
+improved over WQP-focused no-current persistence:
+
+- all-state RMSE improvement `31.8%` and MAE improvement `30.8%`;
+- `yT` RMSE improvement `25.8%` and MAE improvement `26.7%`;
+- `sigma_T` RMSE improvement `59.5%` and MAE improvement `60.8%`;
+- `delta_yT` RMSE improvement `34.1%` and MAE improvement `28.6%`.
+
+Full stochastic rollout backtests used `samples=128`,
+`observed_state_source=target`, rollout horizon `3`, and no `max_origins` cap.
+The validation manifest is
+`reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_manifest_validation.json`
+(`5,069` complete-horizon origins, `15,207` rollout rows). The test manifest is
+`reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_manifest_test.json`
+(`6,145` complete-horizon origins, `18,435` rollout rows).
+
+Held-out test rollout state behavior is positive at all horizons:
+
+| horizon | all RMSE improvement | irc1 RMSE improvement | irc1 MAE improvement |
+|---:|---:|---:|---:|
+| 1 | `0.3107` | `0.2378` | `0.2196` |
+| 2 | `0.2592` | `0.2658` | `0.2740` |
+| 3 | `0.2264` | `0.2901` | `0.3082` |
+
+With the fixed `0.5` IRC alert threshold, held-out test alert quality remains
+useful through horizon 3:
+
+| horizon | PR-AUC | ROC-AUC | Brier | recall | precision | alert rate |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | `0.7963` | `0.8335` | `0.1684` | `0.7579` | `0.7007` | `0.4915` |
+| 2 | `0.7456` | `0.8176` | `0.1754` | `0.6903` | `0.7456` | `0.4343` |
+| 3 | `0.7276` | `0.8048` | `0.1857` | `0.6283` | `0.7441` | `0.4037` |
+
+Full calibration and policy-frontier comparison were written to:
+
+- `reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibration_manifest.json`;
+- `reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_policy_2b_manifest.json`.
+
+The F2 calibration remains a high-recall sensitivity profile rather than a
+default policy. On held-out test rows, it reaches recall `0.9620`, `0.9941`,
+and `0.9894`, but alert rates are also high: `0.7707`, `0.8923`, and `0.8788`
+for horizons 1, 2, and 3.
+
+The 2B frontier is more suitable for operational interpretation:
+
+| policy | h1 recall / precision / alert rate | h2 recall / precision / alert rate | h3 recall / precision / alert rate |
+|---|---|---|---|
+| `closest_pr` | `0.7636 / 0.6976 / 0.4973` | `0.8287 / 0.6903 / 0.5632` | `0.8907 / 0.6478 / 0.6574` |
+| `balanced_accuracy` | `0.7350 / 0.7155 / 0.4667` | `0.7461 / 0.7324 / 0.4779` | `0.7941 / 0.7148 / 0.5312` |
+| `fixed` | `0.7579 / 0.7007 / 0.4915` | `0.6903 / 0.7456 / 0.4343` | `0.6283 / 0.7441 / 0.4037` |
+| `fbeta` | `0.9620 / 0.5671 / 0.7707` | `0.9941 / 0.5227 / 0.8923` | `0.9894 / 0.5383 / 0.8788` |
+
+The provisional interpretation is:
+
+- WQP-focused no-current-Chl-a is the fair source-scoped test of nutrient and
+  physicochemical early-warning signal;
+- it retains useful multi-horizon IRC alert skill without current Chl-a;
+- `closest_pr` remains a defensible experimental 2B default when recall is
+  prioritized without accepting F2's alert volume;
+- `balanced_accuracy`/`mcc` should be reported as conservative operational
+  alternatives, especially if alert burden matters;
+- direct `bloom_h` calibration now has real support, but it remains secondary
+  to `irc_alert` for the no-current-Chl-a claim.

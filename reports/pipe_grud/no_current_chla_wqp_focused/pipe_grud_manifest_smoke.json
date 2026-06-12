@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-06-12T22:20:43.234662+00:00",
+  "started_at_utc": "2026-06-12T22:20:41.065833+00:00",
+  "model_version": "pipe_grud_v0",
+  "status": "completed",
+  "config": {
+    "history_length": 12,
+    "hidden_dim": 96,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "residual_mode": "add_last",
+    "mse_weight": 1.0,
+    "checkpoint_selection_metric": "balanced",
+    "checkpoint_selection_uses_output_blend": true,
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "blend_selection_metric": "balanced",
+    "epochs": 2,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "random_seed": 1729,
+    "max_train_windows": 50000,
+    "max_eval_windows": 20000,
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "available_windows": {
+      "train": 112470,
+      "validation": 7079,
+      "test": 7582
+    },
+    "sampled_windows": {
+      "train": 50000,
+      "validation": 7079,
+      "test": 7582
+    },
+    "metric_rows": 30,
+    "blend_weight_rows": 9,
+    "blend_search_rows": 81,
+    "persistence_metric_rows": 30,
+    "comparison_rows": 30,
+    "training_curve_rows": 2
+  },
+  "selection": {
+    "checkpoint_selection_metric": "balanced",
+    "best_epoch": 1,
+    "best_validation_loss": -0.9049207045712332,
+    "best_validation_rmse_all": 0.21440541650804523,
+    "best_validation_mae_all": 0.1469906614462587,
+    "best_validation_objective": 0.9801044578246065
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet",
+      "bytes": 49839147,
+      "sha256": "cadce724b78ef7cf62df841dfd6eb01d0640004206e69299f1d0f4c924f24099"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_sequence_manifest.json",
+      "bytes": 4313,
+      "sha256": "5698b4412936045400c4daabbc37e359f2585d6721d86bf204bfa3a1f8c0f14e"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/pipe_grud_model_smoke.pt",
+      "bytes": 139604,
+      "sha256": "6f7b1ec488c80fa2b102ad6faa3ae31340aa8e77d7113aa7a2fb18a62e8f0248"
+    },
+    {
+      "path": "models/pipe_grud/no_current_chla_wqp_focused/pipe_grud_checkpoint_smoke.pt",
+      "bytes": 415758,
+      "sha256": "34f1a4c8b7fdd1caa490fd02ef1ffece94fcb73df96c95ebe128264bfef935a9"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_metrics_smoke.csv",
+      "bytes": 3391,
+      "sha256": "fa5af24ba915934732f6c8a668b67ffd3229cde1769f0946a1b1a374ec135163"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_persistence_metrics_smoke.csv",
+      "bytes": 1780,
+      "sha256": "73c982482a20bef3ec9d7af0ca6931e4132f488bd2eece098b137252db45dfd4"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_persistence_comparison_smoke.csv",
+      "bytes": 5943,
+      "sha256": "a73c53c9b62b9dbc6a2b2ca563af1ec51b6d9c29f94a15b580f98fdb0baba884"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_output_blend_weights_smoke.csv",
+      "bytes": 794,
+      "sha256": "c53d904d904fcd4120b0b9ec6b39a3f9dbe8b05bf277c6ab116ff0ee22166318"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_output_blend_search_smoke.csv",
+      "bytes": 6772,
+      "sha256": "5e0bf7a5fdf10fa6a21a37cf887bae0f1c782120c109c926317f49493314b25b"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_training_curve_smoke.csv",
+      "bytes": 531,
+      "sha256": "005421c1610b3a10093357a5f7a7dcf724d51844093c7a9623ab6001e015da8f"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_prediction_examples_smoke.csv",
+      "bytes": 113488,
+      "sha256": "a27c4432382c214e5bd90d5b5098606f2c6d84bea4198e55a5f3e19021e432fa"
+    },
+    {
+      "path": "reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_report_smoke.md",
+      "bytes": 5805,
+      "sha256": "90cbad46a307977d1e0dbaa844e9264c5ea5e2163410d05f53d43c1dce9f3f7c"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/train_pipe_grud.py",
+    "bytes": 51360,
+    "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+  }
+}

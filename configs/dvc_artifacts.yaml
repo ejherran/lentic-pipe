@@ -158,6 +158,13 @@ artifacts:
     dvc: true
     github_policy: pointer_only
 
+  - artifact_id: pipe_sequence_dataset_no_current_chla_wqp_focused_v0
+    path: data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet
+    type: pipe_sequence_dataset_no_current_chla_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only
+
   - artifact_id: pipe_rollout_alerts_v0
     path: data/pipe_grud/pipe_rollout_alerts_v0.parquet
     type: pipe_rollout_alerts
@@ -204,6 +211,27 @@ artifacts:
     path: reports/pipe_grud/no_current_chla/pipe_rollout_calibrated_backtest_rows.parquet
     type: pipe_rollout_calibrated_backtest_rows_no_current_chla
     source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_rollout_backtest_rows_validation_no_current_chla_wqp_focused_v0
+    path: reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_rows_validation.parquet
+    type: pipe_rollout_backtest_rows_no_current_chla_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_rollout_backtest_rows_test_no_current_chla_wqp_focused_v0
+    path: reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_backtest_rows_test.parquet
+    type: pipe_rollout_backtest_rows_no_current_chla_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_rollout_calibrated_backtest_rows_no_current_chla_wqp_focused_v0
+    path: reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet
+    type: pipe_rollout_calibrated_backtest_rows_no_current_chla_wqp_focused
+    source_id: wqp
     dvc: true
     github_policy: pointer_only_keep_small_reports_in_git
 
