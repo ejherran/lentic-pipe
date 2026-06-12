@@ -119,6 +119,88 @@ the ecological precursor interpretation. If not, the project should inspect
 data support, horizon choice, target construction, fuzzy weights, and model
 architecture before making early-warning claims.
 
+## No-Current-Chl-a Factorial Smoke
+
+The factorial smoke was run on 2026-06-12 to separate Chl-a-memory dependence
+from nutrient dependence on the frozen raw-predictor recomputation surface:
+
+```bash
+poetry run python src/experiments/evaluate_raw_degraded_pipe_grud_rollouts.py \
+  --scenario-set raw_predictor_no_chla_factorial \
+  --output-name raw_predictor_no_chla_factorial_smoke \
+  --deterministic \
+  --max-origins 512 \
+  --batch-size 256 \
+  --require-calibrators \
+  --require-rollout-calibrators
+```
+
+Reproducibility summary:
+
+- generated at UTC: `2026-06-12T18:23:58.876343+00:00`;
+- selected origins: `512`;
+- evaluated runs: `4`;
+- state metric rows: `528`;
+- alert metric rows: `96`;
+- policy metric rows: `288`;
+- diagnostic rows: `95`;
+- internal backtest rows: `6,144`;
+- script SHA-256:
+  `e371746c73ce651a27a56a8af3859aa1606043c56fd40f5cadbee0d888ddf380`;
+- diagnostics SHA-256:
+  `5c114d72bd9e6c587acec810a488bd436da3fa9eee673482b240c07b4c2881a1`;
+- report SHA-256:
+  `5492e7536297025c96dd1da7c0e8c35ea32795cf6947adbc9a2da3af47603ae1`.
+
+The undegraded control rebuild again had zero drift:
+
+- canonical sequence rows: `2,069,024`;
+- rebuilt state rows: `3,390,728`;
+- rebuilt sequence rows: `2,069,024`;
+- alignment missing rows: `0`;
+- sequence cells changed: `0`;
+- selected-window cells changed: `0`.
+
+Under `closest_pr`, `source_id=all`, and `split=test`, mean metrics across
+horizons were:
+
+| scenario | event | mean F2 | mean delta F2 vs control | mean recall | mean precision | mean alert rate |
+|---|---|---:|---:|---:|---:|---:|
+| `control_observed` | `bloom_h` | 0.6896 | 0.0000 | 0.7333 | 0.5640 | 0.1750 |
+| `control_observed` | `irc_alert` | 0.6831 | 0.0000 | 0.6531 | 0.8400 | 0.2689 |
+| `ablate_chlorophyll_memory` | `bloom_h` | 0.2624 | -0.4272 | 0.2491 | 0.3517 | 0.0950 |
+| `ablate_chlorophyll_memory` | `irc_alert` | 0.4759 | -0.2072 | 0.4517 | 0.6253 | 0.2552 |
+| `ablate_nutrients` | `bloom_h` | 0.6915 | 0.0019 | 0.7439 | 0.5493 | 0.1829 |
+| `ablate_nutrients` | `irc_alert` | 0.7160 | 0.0329 | 0.6942 | 0.8199 | 0.2930 |
+| `ablate_chlorophyll_memory_and_nutrients` | `bloom_h` | 0.2485 | -0.4411 | 0.2545 | 0.2408 | 0.1403 |
+| `ablate_chlorophyll_memory_and_nutrients` | `irc_alert` | 0.5002 | -0.1829 | 0.4908 | 0.5517 | 0.3125 |
+
+Selected-window diagnostics show why the nutrient-only ablation did not degrade
+alerts on this frozen surface:
+
+| scenario | input | changed rows | mean delta | mean absolute delta |
+|---|---|---:|---:|---:|
+| `ablate_chlorophyll_memory` | `x_yT` | 4,857 | 0.1848 | 0.3354 |
+| `ablate_chlorophyll_memory` | `x_irc_basis` | 4,857 | 0.1232 | 0.2236 |
+| `ablate_nutrients` | `x_yN` | 2,097 | -0.0017 | 0.1078 |
+| `ablate_nutrients` | `x_irc_basis` | 2,097 | -0.0003 | 0.0180 |
+| `ablate_chlorophyll_memory_and_nutrients` | `x_yT` | 4,857 | 0.1848 | 0.3354 |
+| `ablate_chlorophyll_memory_and_nutrients` | `x_yN` | 2,097 | -0.0017 | 0.1078 |
+| `ablate_chlorophyll_memory_and_nutrients` | `x_irc_basis` | 5,313 | 0.1229 | 0.2365 |
+
+The factorial confirms that the current frozen monitoring surface is dominated
+by Chl-a memory or proxy evidence. Nutrient ablation strongly changes `yN`
+state errors, but it barely moves the IRC basis under the current frozen
+weights. The combined ablation mostly follows the Chl-a-removal failure mode,
+with additional precision loss.
+
+This is a useful negative result for early-warning claims. It does not imply
+that nutrients are ecologically unimportant. It means the current trained and
+calibrated surface is not yet a strict no-current-Chl-a early-warning model.
+The next methodological step is to define, train, calibrate, and evaluate a
+formal no-current-Chl-a surface where current Chl-a is excluded from predictors
+before model fitting and threshold selection.
+
 ## Reproducibility Notes
 
 The current monthly panel includes NLA rows, but the canonical PIPE sequence

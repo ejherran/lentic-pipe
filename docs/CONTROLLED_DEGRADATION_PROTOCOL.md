@@ -507,6 +507,12 @@ Phase 3:
 
 - repeat comparable scenarios for MIFAL once that pipeline exists;
 - compare baseline, fuzzy, PIPE/GRU-D, and MIFAL on a shared degradation grid.
+- define a formal no-current-Chl-a early-warning surface before making strong
+  precursor claims from nutrient sensitivity. The raw-predictor factorial smoke
+  showed target-proximal Chl-a-memory dominance on the current frozen
+  monitoring surface, so early-warning evaluation must remove current Chl-a
+  from model fitting, calibration, and threshold selection, not only from
+  post-hoc degradation scenarios.
 
 ## Decisions Made
 
@@ -518,3 +524,6 @@ Phase 3:
   source-scope, and combined operational-stress scenarios.
 - Keep NLA as validation/provenance/enrichment unless the crosswalk policy
   changes.
+- Treat nutrient-ablation robustness on a Chl-a-aware frozen surface as
+  operational dependence evidence, not as evidence that nutrients are
+  ecologically unimportant.
