@@ -40,6 +40,12 @@ DEFAULT_METRICS = DEFAULT_REPORT_DIR / "controlled_degradation_metrics.csv"
 DEFAULT_SUMMARY = DEFAULT_REPORT_DIR / "controlled_degradation_summary.csv"
 DEFAULT_REPORT = DEFAULT_REPORT_DIR / "controlled_degradation_report.md"
 DEFAULT_MANIFEST = DEFAULT_REPORT_DIR / "controlled_degradation_manifest.json"
+OUTPUT_SUFFIXES = {
+    "metrics": "metrics.csv",
+    "summary": "summary.csv",
+    "report": "report.md",
+    "manifest": "manifest.json",
+}
 
 KEY_COLUMNS = [
     "source_id",
@@ -213,6 +219,14 @@ def _parse_csv_list(value: str) -> list[str]:
     return items
 
 
+def _safe_output_name(value: str) -> str:
+    normalized = value.strip()
+    allowed = set("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-")
+    if not normalized or any(character not in allowed for character in normalized):
+        raise argparse.ArgumentTypeError("Use only letters, numbers, underscores, and hyphens")
+    return normalized
+
+
 def _clip01(values: np.ndarray | pd.Series) -> np.ndarray:
     return np.clip(np.asarray(values, dtype="float64"), 0.0, 1.0)
 
@@ -269,9 +283,20 @@ def read_config(path: Path) -> dict[str, Any]:
     return payload
 
 
-def default_output(path_from_args: Path | None, config: dict[str, Any], key: str, fallback: Path) -> Path:
+def default_output(
+    path_from_args: Path | None,
+    config: dict[str, Any],
+    key: str,
+    fallback: Path,
+    *,
+    output_name: str | None = None,
+    output_dir: Path = DEFAULT_REPORT_DIR,
+) -> Path:
     if path_from_args is not None:
         return path_from_args
+    if output_name is not None:
+        suffix = OUTPUT_SUFFIXES[key]
+        return output_dir / f"controlled_degradation_{output_name}_{suffix}"
     value = config.get("outputs", {}).get(key)
     return Path(value) if value else fallback
 
@@ -540,12 +565,16 @@ def _metric_dict(probability: np.ndarray, actual: np.ndarray, threshold: float) 
     fp = int(((predicted == 1) & (actual == 0)).sum())
     fn = int(((predicted == 0) & (actual == 1)).sum())
     tp = int(((predicted == 1) & (actual == 1)).sum())
+    positive_rows = int(actual.sum())
+    negative_rows = int(len(actual) - positive_rows)
+    has_both_classes = positive_rows > 0 and negative_rows > 0
     precision = _safe_metric(precision_score, actual, predicted, zero_division=0)
     recall = _safe_metric(recall_score, actual, predicted, zero_division=0)
     specificity = _safe_rate(tn, tn + fp)
+    balanced_accuracy = float(np.mean([recall, specificity])) if has_both_classes else float("nan")
     return {
         "rows": int(len(actual)),
-        "positive_rows": int(actual.sum()),
+        "positive_rows": positive_rows,
         "positive_rate": float(actual.mean()) if len(actual) else np.nan,
         "predicted_positive_rows": int(predicted.sum()),
         "alert_rate": float(predicted.mean()) if len(predicted) else np.nan,
@@ -559,9 +588,9 @@ def _metric_dict(probability: np.ndarray, actual: np.ndarray, threshold: float) 
         "f1": _safe_metric(f1_score, actual, predicted, zero_division=0),
         "f2": _f2_score(precision, recall),
         "mcc": _mcc(tn, fp, fn, tp),
-        "balanced_accuracy": float(np.nanmean([recall, specificity])),
-        "pr_auc": _safe_metric(average_precision_score, actual, probability),
-        "roc_auc": _safe_metric(roc_auc_score, actual, probability),
+        "balanced_accuracy": balanced_accuracy,
+        "pr_auc": _safe_metric(average_precision_score, actual, probability) if has_both_classes else np.nan,
+        "roc_auc": _safe_metric(roc_auc_score, actual, probability) if has_both_classes else np.nan,
         "brier": _safe_metric(brier_score_loss, actual, probability),
     }
 
@@ -754,6 +783,7 @@ def write_report(args: argparse.Namespace, config: dict[str, Any], metrics: pd.D
         f"- Scored rows: `{args.scored_rows}`",
         f"- Thresholds: `{args.thresholds}`",
         f"- Scenario set: `{args.scenario_set}`",
+        f"- Output name: `{args.output_name}`",
         f"- Policies: `{args.policies}`",
         f"- Evaluation splits: `{args.evaluation_splits}`",
         f"- Default policy: `{default_policy}`",
@@ -807,6 +837,7 @@ def write_report(args: argparse.Namespace, config: dict[str, Any], metrics: pd.D
             "",
             "- Labels are not modified by this evaluator.",
             "- Source-scoped site identity is preserved.",
+            "- Ranking metrics are reported as NA for groups with only one observed class.",
             "- Predictor-degradation scenarios require model recomputation for scientific performance claims.",
             "- Degraded outputs are stress-test evidence, not official environmental alerts.",
             "",
@@ -836,6 +867,8 @@ def manifest_payload(
         "config": {
             "scenario_set": args.scenario_set,
             "scenarios": args.scenarios,
+            "output_name": args.output_name,
+            "output_dir": args.output_dir,
             "policies": args.policies,
             "evaluation_splits": args.evaluation_splits,
             "include_all_sources": bool(args.include_all_sources),
@@ -872,6 +905,13 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--summary", type=Path, default=None)
     parser.add_argument("--report", type=Path, default=None)
     parser.add_argument("--manifest", type=Path, default=None)
+    parser.add_argument(
+        "--output-name",
+        type=_safe_output_name,
+        default=None,
+        help="Write named outputs without overriding the default smoke artifacts.",
+    )
+    parser.add_argument("--output-dir", type=Path, default=DEFAULT_REPORT_DIR)
     parser.add_argument("--scenario-set", default="smoke")
     parser.add_argument("--scenarios", type=_parse_csv_list, default=None)
     parser.add_argument("--policies", type=_parse_csv_list, default=None)
@@ -890,10 +930,38 @@ def main() -> None:
     args = parse_args()
     config = read_config(args.config)
     validate_scenarios(config)
-    args.metrics = default_output(args.metrics, config, "metrics", DEFAULT_METRICS)
-    args.summary = default_output(args.summary, config, "summary", DEFAULT_SUMMARY)
-    args.report = default_output(args.report, config, "report", DEFAULT_REPORT)
-    args.manifest = default_output(args.manifest, config, "manifest", DEFAULT_MANIFEST)
+    args.metrics = default_output(
+        args.metrics,
+        config,
+        "metrics",
+        DEFAULT_METRICS,
+        output_name=args.output_name,
+        output_dir=args.output_dir,
+    )
+    args.summary = default_output(
+        args.summary,
+        config,
+        "summary",
+        DEFAULT_SUMMARY,
+        output_name=args.output_name,
+        output_dir=args.output_dir,
+    )
+    args.report = default_output(
+        args.report,
+        config,
+        "report",
+        DEFAULT_REPORT,
+        output_name=args.output_name,
+        output_dir=args.output_dir,
+    )
+    args.manifest = default_output(
+        args.manifest,
+        config,
+        "manifest",
+        DEFAULT_MANIFEST,
+        output_name=args.output_name,
+        output_dir=args.output_dir,
+    )
     if args.min_rows < 1:
         raise ValueError("--min-rows must be >= 1")
     if args.evaluation_splits is None:

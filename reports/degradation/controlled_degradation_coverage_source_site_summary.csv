@@ -1,0 +1,15 @@
+degradation_version,scenario_id,scenario_family,scenario_tier,scenario_status,seed,reason,score_recomputed,input_rows,output_rows,rows_retained_rate,affected_rows,affected_cells,metrics_rows,operation_types
+controlled_degradation_v0,control_observed,control,core,evaluated,,,False,88761,88761,1.0,0,0,144,
+controlled_degradation_v0,source_scope_wqp_only,source_scope_diagnostic,extended,evaluated,,,False,88761,33642,0.3790178118768378,0,0,72,filter_source_id
+controlled_degradation_v0,source_scope_no_wqp,source_scope_diagnostic,extended,evaluated,,,False,88761,55119,0.6209821881231622,0,0,108,filter_source_id
+controlled_degradation_v0,source_scope_aquamatch_chla_only,source_scope_diagnostic,extended,evaluated,,,False,88761,54552,0.6145942474735526,0,0,72,filter_source_id
+controlled_degradation_v0,source_scope_lakebed_us_cse_only,source_scope_diagnostic,extended,evaluated,,,False,88761,567,0.006387940649609626,0,0,72,filter_source_id
+controlled_degradation_v0,site_retention_75,site_retention,core,evaluated,20260612.0,,False,88761,66870,0.7533714131206273,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_75,site_retention,core,evaluated,20260613.0,,False,88761,67326,0.7585088045425356,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_75,site_retention,core,evaluated,20260614.0,,False,88761,67365,0.7589481867036199,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_50,site_retention,core,evaluated,20260612.0,,False,88761,44601,0.5024841991415149,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_50,site_retention,core,evaluated,20260613.0,,False,88761,43383,0.48876195626457564,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_50,site_retention,core,evaluated,20260614.0,,False,88761,44841,0.5051880893635718,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_25,site_retention,core,evaluated,20260612.0,,False,88761,21153,0.23831412444654748,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_25,site_retention,core,evaluated,20260613.0,,False,88761,21483,0.24203197350187583,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_25,site_retention,core,evaluated,20260614.0,,False,88761,22737,0.25615979991212356,0,0,144,stratified_site_retention

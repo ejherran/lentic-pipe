@@ -1,6 +1,6 @@
 # Controlled Degradation Report
 
-Generated at UTC: `2026-06-12T16:31:10.281081+00:00`
+Generated at UTC: `2026-06-12T16:47:25.961081+00:00`
 
 ## Scope
 
@@ -13,6 +13,7 @@ Scenarios that modify predictor evidence are skipped unless passthrough-score ev
 - Scored rows: `reports/pipe_grud/pipe_rollout_calibrated_backtest_rows.parquet`
 - Thresholds: `reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv`
 - Scenario set: `smoke`
+- Output name: `None`
 - Policies: `['closest_pr', 'fixed', 'fbeta']`
 - Evaluation splits: `['validation', 'test']`
 - Default policy: `closest_pr`
@@ -70,6 +71,7 @@ Scenarios that modify predictor evidence are skipped unless passthrough-score ev
 
 - Labels are not modified by this evaluator.
 - Source-scoped site identity is preserved.
+- Ranking metrics are reported as NA for groups with only one observed class.
 - Predictor-degradation scenarios require model recomputation for scientific performance claims.
 - Degraded outputs are stress-test evidence, not official environmental alerts.
 

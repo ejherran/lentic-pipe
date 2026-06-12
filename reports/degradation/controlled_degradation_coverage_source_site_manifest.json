@@ -1,11 +1,11 @@
 {
-  "generated_at_utc": "2026-06-12T16:47:25.964686+00:00",
+  "generated_at_utc": "2026-06-12T16:44:25.269542+00:00",
   "status": "completed",
   "degradation_version": "controlled_degradation_v0",
   "config": {
-    "scenario_set": "smoke",
+    "scenario_set": "coverage_source_site",
     "scenarios": null,
-    "output_name": null,
+    "output_name": "coverage_source_site",
     "output_dir": "reports/degradation",
     "policies": [
       "closest_pr",
@@ -28,12 +28,12 @@
   "row_counts": {
     "input_rows": 88761,
     "threshold_rows": 42,
-    "metric_rows": 648,
-    "summary_rows": 8,
-    "evaluated_runs": 5,
-    "skipped_runs": 3,
-    "evaluated_scenarios": 3,
-    "skipped_scenarios": 3
+    "metric_rows": 1764,
+    "summary_rows": 14,
+    "evaluated_runs": 14,
+    "skipped_runs": 0,
+    "evaluated_scenarios": 8,
+    "skipped_scenarios": 0
   },
   "inputs": [
     {
@@ -54,19 +54,19 @@
   ],
   "outputs": [
     {
-      "path": "reports/degradation/controlled_degradation_metrics.csv",
-      "bytes": 395562,
-      "sha256": "1eb8c17ff443148993eb2bfd54b36c5fe86ab642d07591a263b3f559be2f5ea6"
+      "path": "reports/degradation/controlled_degradation_coverage_source_site_metrics.csv",
+      "bytes": 1113377,
+      "sha256": "9ab039dd41ac4ca29a6115a7da1ea6c6aa2ea69f6cfd337f5cf035edcbf0eb69"
     },
     {
-      "path": "reports/degradation/controlled_degradation_summary.csv",
-      "bytes": 1629,
-      "sha256": "46ac71b834c5d1434a40f1d7a4f54a3f2d8a1c05319cb968ef303889c604b7b4"
+      "path": "reports/degradation/controlled_degradation_coverage_source_site_summary.csv",
+      "bytes": 2360,
+      "sha256": "8ea4e7515aa8c0c9f5c3b1127331d5c8e1b81cdc8615cd344ba618297bc5eb9c"
     },
     {
-      "path": "reports/degradation/controlled_degradation_report.md",
-      "bytes": 5846,
-      "sha256": "6a008aef7e09079bade9ecee83cabfcf5e7830bc1b3b07b263bd76fde3f7a573"
+      "path": "reports/degradation/controlled_degradation_coverage_source_site_report.md",
+      "bytes": 12360,
+      "sha256": "87bfffcbed7d3ae59ef92f1f911062a30566b48b80dc4ad024b1a655a729cddb"
     }
   ],
   "script": {

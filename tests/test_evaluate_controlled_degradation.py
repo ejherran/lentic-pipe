@@ -4,9 +4,25 @@ import json
 import subprocess
 import sys
 import textwrap
+import warnings
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
+
+from src.experiments.evaluate_controlled_degradation import _metric_dict
+
+
+def test_metric_dict_marks_ranking_metrics_undefined_for_single_class() -> None:
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        metrics = _metric_dict(np.array([0.05, 0.10, 0.20]), np.array([0, 0, 0]), threshold=0.5)
+
+    assert not caught
+    assert metrics["positive_rows"] == 0
+    assert pd.isna(metrics["pr_auc"])
+    assert pd.isna(metrics["roc_auc"])
+    assert pd.isna(metrics["balanced_accuracy"])
 
 
 def _score_rows() -> pd.DataFrame:
@@ -127,10 +143,11 @@ def test_evaluate_controlled_degradation_cli_writes_reproducible_outputs(tmp_pat
     config_path = tmp_path / "degradation_scenarios.yaml"
     scored_rows_path = tmp_path / "score_rows.parquet"
     thresholds_path = tmp_path / "thresholds.csv"
-    metrics_path = tmp_path / "metrics.csv"
-    summary_path = tmp_path / "summary.csv"
-    report_path = tmp_path / "report.md"
-    manifest_path = tmp_path / "manifest.json"
+    output_dir = tmp_path / "degradation"
+    metrics_path = output_dir / "controlled_degradation_coverage_test_metrics.csv"
+    summary_path = output_dir / "controlled_degradation_coverage_test_summary.csv"
+    report_path = output_dir / "controlled_degradation_coverage_test_report.md"
+    manifest_path = output_dir / "controlled_degradation_coverage_test_manifest.json"
 
     config_path.write_text(_config_text(), encoding="utf-8")
     _score_rows().to_parquet(scored_rows_path, index=False)
@@ -146,14 +163,10 @@ def test_evaluate_controlled_degradation_cli_writes_reproducible_outputs(tmp_pat
             str(scored_rows_path),
             "--thresholds",
             str(thresholds_path),
-            "--metrics",
-            str(metrics_path),
-            "--summary",
-            str(summary_path),
-            "--report",
-            str(report_path),
-            "--manifest",
-            str(manifest_path),
+            "--output-name",
+            "coverage_test",
+            "--output-dir",
+            str(output_dir),
             "--scenario-set",
             "test",
             "--policies",
@@ -190,6 +203,7 @@ def test_evaluate_controlled_degradation_cli_writes_reproducible_outputs(tmp_pat
     assert skipped["metrics_rows"] == 0
     assert not bool(skipped["score_recomputed"])
     assert manifest["status"] == "completed"
+    assert manifest["config"]["output_name"] == "coverage_test"
     assert manifest["row_counts"]["summary_rows"] == 4
     assert manifest["row_counts"]["evaluated_runs"] == 3
     assert manifest["row_counts"]["skipped_runs"] == 1

@@ -243,6 +243,7 @@ Expected future DVC artifacts, only if row-level degraded tables are materialize
 8. Record input/output/script SHA-256 hashes in the manifest.
 9. Report failures and empty scenarios; do not silently drop them.
 10. Treat degraded outputs as stress-test evidence, not operational alerts.
+11. Report ranking metrics as `NA` when a group has only one observed class.
 
 ## Phased Execution Plan
 
@@ -265,12 +266,15 @@ Phase 1, completed smoke step:
 Smoke execution, 2026-06-12:
 
 - command: `poetry run python src/experiments/evaluate_controlled_degradation.py --scenario-set smoke`;
+- regenerated after the ranking-metric guardrail was added;
+- generated at UTC: `2026-06-12T16:47:25.964686+00:00`;
 - input rows: 88,761;
 - threshold rows: 42;
 - metric rows: 648;
 - summary rows: 8;
 - evaluated runs: 5 across 3 unique scenarios;
 - skipped runs: 3 across 3 unique scenarios;
+- ranking metrics marked as `NA` for one-class groups: 21 rows;
 - all input, output, and script SHA-256 hashes are recorded in
   `reports/degradation/controlled_degradation_manifest.json`;
 - `score_recomputed` is false for this smoke run because the evaluator operates
@@ -288,9 +292,59 @@ Smoke interpretation:
 
 Phase 1, next technical step:
 
-- either expand the precomputed-score evaluation to the valid site/source
-  scenarios in `core` and `extended`, or implement the model-score recomputation
+- run Iteration 1B, a source/site-coverage expansion that remains valid on
+  precomputed score rows;
+- keep Iteration 1B outputs separate from the smoke artifacts;
+- after reviewing 1B, decide whether to implement the model-score recomputation
   path required for predictor-degradation scenarios.
+
+Iteration 1B scenario set:
+
+- `coverage_source_site`
+
+Iteration 1B command:
+
+```bash
+poetry run python src/experiments/evaluate_controlled_degradation.py \
+  --scenario-set coverage_source_site \
+  --output-name coverage_source_site
+```
+
+Iteration 1B expected artifacts:
+
+- `reports/degradation/controlled_degradation_coverage_source_site_metrics.csv`
+- `reports/degradation/controlled_degradation_coverage_source_site_summary.csv`
+- `reports/degradation/controlled_degradation_coverage_source_site_report.md`
+- `reports/degradation/controlled_degradation_coverage_source_site_manifest.json`
+
+Iteration 1B execution, 2026-06-12:
+
+- generated at UTC: `2026-06-12T16:44:25.269542+00:00`;
+- input rows: 88,761;
+- threshold rows: 42;
+- metric rows: 1,764;
+- summary rows: 14;
+- evaluated runs: 14 across 8 unique scenarios;
+- skipped runs: 0;
+- ranking metrics marked as `NA` for one-class groups: 72 rows;
+- all input, output, and script SHA-256 hashes are recorded in
+  `reports/degradation/controlled_degradation_coverage_source_site_manifest.json`;
+- `score_recomputed` is false for this run because the evaluator operates on
+  precomputed rollout score rows.
+
+Iteration 1B interpretation:
+
+- Site-retention scenarios at 75%, 50%, and 25% preserved `closest_pr`
+  performance close to the control, with larger seed sensitivity for bloom than
+  for IRC alert.
+- `source_scope_wqp_only` increased IRC-alert recall/F2 but also changed event
+  prevalence and alert rate, so it is a source-mix diagnostic rather than a
+  claim that WQP is intrinsically superior.
+- `source_scope_no_wqp` and `source_scope_aquamatch_chla_only` degraded
+  IRC-alert performance, consistent with dependence on WQP-backed coverage for
+  that alert surface.
+- `source_scope_lakebed_us_cse_only` has too few rows for stable comparison and
+  should be reported as insufficient-coverage evidence.
 
 Phase 2:
 

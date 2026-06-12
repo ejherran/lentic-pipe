@@ -206,7 +206,9 @@ exports, or credential JSON files.
   scenario families, `configs/degradation_scenarios.yaml` provides the
   machine-readable scenario grid, and
   `src/experiments/evaluate_controlled_degradation.py` provides the first
-  reproducible evaluator for precomputed rollout score surfaces.
+  reproducible evaluator for precomputed rollout score surfaces. Use
+  `--output-name` for follow-up runs that must not overwrite the smoke
+  artifacts.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
