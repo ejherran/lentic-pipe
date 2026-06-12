@@ -1,0 +1,403 @@
+schema_version: 1
+description: >
+  Controlled degradation scenario definitions for lentic-pipe. These scenarios
+  define reproducible stress tests only; they do not contain executed results.
+
+protocol:
+  document: docs/CONTROLLED_DEGRADATION_PROTOCOL.md
+  phase: phase_0_protocol_definition
+  default_alert_policy:
+    policy_version: pipe_grud_rollout_alert_policy_2b_v0
+    selection_objective: closest_pr
+    threshold_source: reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv
+  comparison_alert_policies:
+    - fixed
+    - fbeta
+
+inputs:
+  freeze_report: data/freeze/DATA_FREEZE.md
+  freeze_manifest: data/freeze/data_freeze_manifest_v0.json
+  split_manifest: data/splits/split_manifest.json
+  monthly_panel: data/panel/panel_monthly_v0.parquet
+  monthly_targets: data/targets/monthly_targets_model_v0.parquet
+  panel_with_targets: data/targets/panel_monthly_with_targets_v0.parquet
+  rollout_policy_thresholds: reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv
+  rollout_policy_metrics: reports/pipe_grud/pipe_rollout_policy_2b_metrics.csv
+
+outputs:
+  metrics: reports/degradation/controlled_degradation_metrics.csv
+  summary: reports/degradation/controlled_degradation_summary.csv
+  report: reports/degradation/controlled_degradation_report.md
+  manifest: reports/degradation/controlled_degradation_manifest.json
+  optional_heavy_rows:
+    path: reports/degradation/controlled_degradation_rows.parquet
+    dvc_required_if_materialized: true
+
+evaluation:
+  splits:
+    - validation
+    - test
+  horizons_months:
+    - 1
+    - 2
+    - 3
+  target_events:
+    - bloom_h
+    - irc_alert
+  group_by:
+    - scenario_id
+    - split
+    - horizon_months
+    - source_id
+    - target_event
+    - alert_policy
+  metrics:
+    - rows
+    - rows_retained_rate
+    - positive_rate
+    - pr_auc
+    - roc_auc
+    - brier
+    - precision
+    - recall
+    - specificity
+    - f1
+    - f2
+    - mcc
+    - balanced_accuracy
+    - alert_rate
+    - delta_vs_control
+
+randomization:
+  seed_policy: deterministic_per_scenario
+  seeds:
+    - 20260612
+    - 20260613
+    - 20260614
+
+canonical_variable_groups:
+  chlorophyll_memory:
+    variables:
+      - chlorophyll_a_ugL
+      - log_chlorophyll_a
+      - risk_chla
+    rationale: >
+      Tests dependence on current Chl-a memory and target-proxy history.
+  nutrients:
+    variables:
+      - TP_ugL
+      - TN_ugL
+      - TN_TP_ratio
+      - log_TP
+      - log_TN
+    rationale: >
+      Tests nutrient-pressure evidence.
+  light:
+    variables:
+      - secchi_depth_m
+      - turbidity_NTU
+    rationale: >
+      Tests light-availability evidence.
+  physicochemical:
+    variables:
+      - temperature_C
+      - DO_mgL
+      - pH
+    rationale: >
+      Tests thermal and physicochemical condition evidence.
+  all_core_predictors:
+    variables:
+      - chlorophyll_a_ugL
+      - TP_ugL
+      - TN_ugL
+      - DO_mgL
+      - pH
+      - turbidity_NTU
+      - temperature_C
+      - secchi_depth_m
+
+defaults:
+  apply_to: predictors_only
+  preserve_labels: true
+  preserve_split_boundaries: true
+  preserve_source_scoped_site_identity: true
+  stratify_site_sampling_by:
+    - source_id
+    - split
+  report_empty_groups: true
+
+scenario_sets:
+  smoke:
+    - control_observed
+    - source_scope_wqp_only
+    - site_retention_50
+    - ablate_chlorophyll_memory
+    - random_dropout_mcar_25
+    - temporal_blocks_3m_rate_10
+  core:
+    - control_observed
+    - ablate_chlorophyll_memory
+    - ablate_nutrients
+    - ablate_light
+    - ablate_physicochemical
+    - random_dropout_mcar_10
+    - random_dropout_mcar_25
+    - random_dropout_mcar_50
+    - temporal_blocks_1m_rate_10
+    - temporal_blocks_3m_rate_10
+    - temporal_blocks_6m_rate_25
+    - site_retention_75
+    - site_retention_50
+    - site_retention_25
+  extended:
+    - source_scope_wqp_only
+    - source_scope_no_wqp
+    - source_scope_aquamatch_chla_only
+    - source_scope_lakebed_us_cse_only
+    - ops_moderate
+    - ops_sparse_network
+    - ops_no_chla_memory
+    - ops_severe
+
+scenarios:
+  - scenario_id: control_observed
+    family: control
+    tier: core
+    description: Current undegraded freeze-derived evaluation surface.
+    operations: []
+
+  - scenario_id: ablate_chlorophyll_memory
+    family: feature_family_ablation
+    tier: core
+    description: Remove Chl-a memory/proxy predictors while preserving targets.
+    operations:
+      - type: set_variables_missing
+        variable_group: chlorophyll_memory
+
+  - scenario_id: ablate_nutrients
+    family: feature_family_ablation
+    tier: core
+    description: Remove total phosphorus, total nitrogen, and derived nutrient predictors.
+    operations:
+      - type: set_variables_missing
+        variable_group: nutrients
+
+  - scenario_id: ablate_light
+    family: feature_family_ablation
+    tier: core
+    description: Remove Secchi depth and turbidity predictors.
+    operations:
+      - type: set_variables_missing
+        variable_group: light
+
+  - scenario_id: ablate_physicochemical
+    family: feature_family_ablation
+    tier: core
+    description: Remove temperature, dissolved oxygen, and pH predictors.
+    operations:
+      - type: set_variables_missing
+        variable_group: physicochemical
+
+  - scenario_id: random_dropout_mcar_10
+    family: random_value_dropout
+    tier: core
+    description: Mild MCAR-style predictor dropout.
+    operations:
+      - type: random_value_dropout
+        mechanism: mcar
+        variable_group: all_core_predictors
+        rate: 0.10
+        seeds_from: randomization.seeds
+
+  - scenario_id: random_dropout_mcar_25
+    family: random_value_dropout
+    tier: core
+    description: Moderate MCAR-style predictor dropout.
+    operations:
+      - type: random_value_dropout
+        mechanism: mcar
+        variable_group: all_core_predictors
+        rate: 0.25
+        seeds_from: randomization.seeds
+
+  - scenario_id: random_dropout_mcar_50
+    family: random_value_dropout
+    tier: core
+    description: Severe MCAR-style predictor dropout.
+    operations:
+      - type: random_value_dropout
+        mechanism: mcar
+        variable_group: all_core_predictors
+        rate: 0.50
+        seeds_from: randomization.seeds
+
+  - scenario_id: temporal_blocks_1m_rate_10
+    family: temporal_block_missingness
+    tier: core
+    description: Missed-visit predictor gaps.
+    operations:
+      - type: temporal_block_dropout
+        block_length_months: 1
+        site_history_block_rate: 0.10
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+
+  - scenario_id: temporal_blocks_3m_rate_10
+    family: temporal_block_missingness
+    tier: core
+    description: Seasonal or quarterly predictor gaps.
+    operations:
+      - type: temporal_block_dropout
+        block_length_months: 3
+        site_history_block_rate: 0.10
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+
+  - scenario_id: temporal_blocks_6m_rate_25
+    family: temporal_block_missingness
+    tier: core
+    description: Extended monitoring interruption.
+    operations:
+      - type: temporal_block_dropout
+        block_length_months: 6
+        site_history_block_rate: 0.25
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+
+  - scenario_id: site_retention_75
+    family: site_retention
+    tier: core
+    description: Mild spatial coverage contraction.
+    operations:
+      - type: stratified_site_retention
+        retain_fraction: 0.75
+        seeds_from: randomization.seeds
+
+  - scenario_id: site_retention_50
+    family: site_retention
+    tier: core
+    description: Moderate spatial coverage contraction.
+    operations:
+      - type: stratified_site_retention
+        retain_fraction: 0.50
+        seeds_from: randomization.seeds
+
+  - scenario_id: site_retention_25
+    family: site_retention
+    tier: core
+    description: Severe spatial coverage contraction.
+    operations:
+      - type: stratified_site_retention
+        retain_fraction: 0.25
+        seeds_from: randomization.seeds
+
+  - scenario_id: source_scope_wqp_only
+    family: source_scope_diagnostic
+    tier: extended
+    description: Evaluate only WQP rows; diagnostic for backbone dependence.
+    operations:
+      - type: filter_source_id
+        include:
+          - wqp
+
+  - scenario_id: source_scope_no_wqp
+    family: source_scope_diagnostic
+    tier: extended
+    description: Exclude WQP rows; diagnostic for backbone loss.
+    operations:
+      - type: filter_source_id
+        exclude:
+          - wqp
+
+  - scenario_id: source_scope_aquamatch_chla_only
+    family: source_scope_diagnostic
+    tier: extended
+    description: Evaluate only AquaMatch Chl-a rows.
+    operations:
+      - type: filter_source_id
+        include:
+          - aquamatch_chla
+
+  - scenario_id: source_scope_lakebed_us_cse_only
+    family: source_scope_diagnostic
+    tier: extended
+    description: Evaluate only LakeBeD-US-CSE rows; interpret small counts cautiously.
+    operations:
+      - type: filter_source_id
+        include:
+          - lakebed_us_cse
+
+  - scenario_id: ops_moderate
+    family: combined_operational_stress
+    tier: extended
+    description: Moderate realistic monitoring stress.
+    operations:
+      - type: random_value_dropout
+        mechanism: mcar
+        variable_group: all_core_predictors
+        rate: 0.25
+        seeds_from: randomization.seeds
+      - type: temporal_block_dropout
+        block_length_months: 3
+        site_history_block_rate: 0.10
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+      - type: stratified_site_retention
+        retain_fraction: 0.75
+        seeds_from: randomization.seeds
+
+  - scenario_id: ops_sparse_network
+    family: combined_operational_stress
+    tier: extended
+    description: Sparse network with nutrient measurements unavailable.
+    operations:
+      - type: set_variables_missing
+        variable_group: nutrients
+      - type: temporal_block_dropout
+        block_length_months: 3
+        site_history_block_rate: 0.25
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+      - type: stratified_site_retention
+        retain_fraction: 0.50
+        seeds_from: randomization.seeds
+
+  - scenario_id: ops_no_chla_memory
+    family: combined_operational_stress
+    tier: extended
+    description: No current Chl-a memory with moderate temporal gaps.
+    operations:
+      - type: set_variables_missing
+        variable_group: chlorophyll_memory
+      - type: temporal_block_dropout
+        block_length_months: 3
+        site_history_block_rate: 0.10
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+
+  - scenario_id: ops_severe
+    family: combined_operational_stress
+    tier: extended
+    description: Severe combined stress across measurements, time, and sites.
+    operations:
+      - type: random_value_dropout
+        mechanism: mcar
+        variable_group: all_core_predictors
+        rate: 0.50
+        seeds_from: randomization.seeds
+      - type: temporal_block_dropout
+        block_length_months: 6
+        site_history_block_rate: 0.25
+        variable_group: all_core_predictors
+        seeds_from: randomization.seeds
+      - type: stratified_site_retention
+        retain_fraction: 0.25
+        seeds_from: randomization.seeds
+
+guardrails:
+  do_not_modify_targets: true
+  do_not_tune_on_test: true
+  do_not_accept_cross_source_site_matches: true
+  dvc_required_for_heavy_materialized_rows: true
+  report_failures_and_empty_groups: true
+  official_alert_disclaimer_required: true

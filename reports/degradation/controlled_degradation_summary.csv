@@ -1,0 +1,9 @@
+degradation_version,scenario_id,scenario_family,scenario_tier,scenario_status,seed,reason,score_recomputed,input_rows,output_rows,rows_retained_rate,affected_rows,affected_cells,metrics_rows,operation_types
+controlled_degradation_v0,control_observed,control,core,evaluated,,,False,88761,88761,1.0,0,0,144,
+controlled_degradation_v0,source_scope_wqp_only,source_scope_diagnostic,extended,evaluated,,,False,88761,33642,0.3790178118768378,0,0,72,filter_source_id
+controlled_degradation_v0,site_retention_50,site_retention,core,evaluated,20260612.0,,False,88761,44601,0.5024841991415149,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_50,site_retention,core,evaluated,20260613.0,,False,88761,43383,0.48876195626457564,0,0,144,stratified_site_retention
+controlled_degradation_v0,site_retention_50,site_retention,core,evaluated,20260614.0,,False,88761,44841,0.5051880893635718,0,0,144,stratified_site_retention
+controlled_degradation_v0,ablate_chlorophyll_memory,feature_family_ablation,core,skipped_requires_model_recompute,,scenario changes predictor evidence and requires model score recomputation,False,88761,0,,0,0,0,set_variables_missing
+controlled_degradation_v0,random_dropout_mcar_25,random_value_dropout,core,skipped_requires_model_recompute,,scenario changes predictor evidence and requires model score recomputation,False,88761,0,,0,0,0,random_value_dropout
+controlled_degradation_v0,temporal_blocks_3m_rate_10,temporal_block_missingness,core,skipped_requires_model_recompute,,scenario changes predictor evidence and requires model score recomputation,False,88761,0,,0,0,0,temporal_block_dropout

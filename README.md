@@ -166,6 +166,7 @@ exports, or credential JSON files.
 - `docs/DATA_FREEZE.md`
 - `docs/PIPE_ROLLOUT_ITERATION_1.md`
 - `docs/PIPE_ROLLOUT_ITERATION_2.md`
+- `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 
 ## Current State
 
@@ -201,6 +202,11 @@ exports, or credential JSON files.
   calibration protocol, the Iteration 2B policy frontier, and the provisional
   downstream default: the balanced `closest_pr` policy. Conservative fixed
   thresholds and sensitive F2 thresholds remain documented comparison profiles.
+- `docs/CONTROLLED_DEGRADATION_PROTOCOL.md` defines the controlled degradation
+  scenario families, `configs/degradation_scenarios.yaml` provides the
+  machine-readable scenario grid, and
+  `src/experiments/evaluate_controlled_degradation.py` provides the first
+  reproducible evaluator for precomputed rollout score surfaces.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

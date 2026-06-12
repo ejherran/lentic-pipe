@@ -1,0 +1,75 @@
+{
+  "generated_at_utc": "2026-06-12T16:31:10.284680+00:00",
+  "status": "completed",
+  "degradation_version": "controlled_degradation_v0",
+  "config": {
+    "scenario_set": "smoke",
+    "scenarios": null,
+    "policies": [
+      "closest_pr",
+      "fixed",
+      "fbeta"
+    ],
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "include_all_sources": true,
+    "evaluate_passthrough_scores": false,
+    "min_rows": 1,
+    "default_alert_policy": {
+      "policy_version": "pipe_grud_rollout_alert_policy_2b_v0",
+      "selection_objective": "closest_pr",
+      "threshold_source": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv"
+    }
+  },
+  "row_counts": {
+    "input_rows": 88761,
+    "threshold_rows": 42,
+    "metric_rows": 648,
+    "summary_rows": 8,
+    "evaluated_runs": 5,
+    "skipped_runs": 3,
+    "evaluated_scenarios": 3,
+    "skipped_scenarios": 3
+  },
+  "inputs": [
+    {
+      "path": "configs/degradation_scenarios.yaml",
+      "bytes": 11521,
+      "sha256": "8d5b0744276040f0175c4edbba1a263618251e04df7c5699492ec147cb4abe39"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_calibrated_backtest_rows.parquet",
+      "bytes": 5795230,
+      "sha256": "88486e1bd1af4010a5a9a8f12b0b0946df806e6db1bb87d6ea38cf634954d215"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv",
+      "bytes": 17030,
+      "sha256": "283acee1c7692b697e7a89085d9724b3f3386a7da433293ebe3f5a281384cc6a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/degradation/controlled_degradation_metrics.csv",
+      "bytes": 396026,
+      "sha256": "a3649dfd6bbbacf49faf78cbec4076284a0da14a7d01115fc785ab1bf5bcf5c8"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_summary.csv",
+      "bytes": 1629,
+      "sha256": "46ac71b834c5d1434a40f1d7a4f54a3f2d8a1c05319cb968ef303889c604b7b4"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_report.md",
+      "bytes": 5746,
+      "sha256": "efde791464a7d191f42483e75121c0c42c8e179842aa34e2e0a67b04f713936b"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/evaluate_controlled_degradation.py",
+    "bytes": 36988,
+    "sha256": "fa3fdd37f7dc75331d8da9a6c66f0668d4b644278e165aad85b5b8d744b8f32b"
+  }
+}

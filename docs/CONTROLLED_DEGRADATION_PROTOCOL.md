@@ -1,0 +1,314 @@
+# Controlled Degradation Protocol
+
+This document defines the first controlled-degradation protocol for
+`lentic-pipe`. It is a protocol and scenario design only; it does not report
+executed degradation results.
+
+## Purpose
+
+Controlled degradation tests whether the project remains useful when the
+available environmental evidence becomes weaker. This is different from simply
+optimizing model performance: the objective is to expose failure modes under
+realistic data loss, sparse monitoring, and partial-variable settings.
+
+The protocol supports the doctoral claim that the system is reproducible,
+auditable, and honest about limits. Every degradation run must preserve the
+frozen target labels, leakage-safe temporal splits, and source-scoped site
+identity.
+
+## Verified Basis
+
+The scenario criteria are grounded in the repository and external source
+definitions:
+
+| Basis | Source | Design implication |
+|---|---|---|
+| The project models algal proliferation and trophic state in lentic water bodies using frozen data, temporal splits, fuzzy scoring, PIPE/GRU-D, and DVC-backed artifacts. | `README.md` | Degradation must be reproducible, split-safe, and artifact-tracked. |
+| The freeze defines canonical panel, target, split, and hash surfaces. | `data/freeze/DATA_FREEZE.md` | Degradation must not silently change the freeze or target labels. |
+| Temporal splits keep only rows where origin and target are in the same split and report zero leakage rows. | `data/splits/SPLIT_REPORT.md`, `data/splits/split_manifest.json` | Degradation must operate inside existing split boundaries. |
+| Canonical variables include Chl-a, nutrients, dissolved oxygen, pH, turbidity, temperature, and Secchi depth with ecological roles. | `configs/variables.yaml` | Feature-family degradation should follow ecological roles, not arbitrary column order. |
+| NLA is a statistical survey of U.S. lakes, ponds, and reservoirs. | EPA National Lakes Assessment: <https://www.epa.gov/national-aquatic-resource-surveys/nla> | NLA should remain validation/provenance/enrichment unless crosswalk acceptance changes. |
+| WQP integrates publicly available water-quality data from USGS, EPA, and many other organizations. | Water Quality Portal: <https://www.waterqualitydata.us/> | Source and site coverage degradation should be explicit because provider coverage is heterogeneous. |
+| GRU-D was designed for multivariate time series with missing values and uses masking/time-gap information. | Che et al., GRU-D: <https://arxiv.org/abs/1606.01865> | Temporal missingness and missing-pattern stress tests are relevant to PIPE/GRU-D. |
+| Missingness mechanisms such as MCAR, MAR, MNAR, and structured missingness are distinct and can bias conclusions differently. | Missing-data review: <https://arxiv.org/abs/2404.04905> | The first protocol should separate random dropout, structured feature loss, and temporal blocks. |
+| Iteration 2B selected `closest_pr` as the provisional downstream alert policy. | `docs/PIPE_ROLLOUT_ITERATION_2.md` | Degradation runs should use `closest_pr` as default and keep `fixed`/`fbeta` as comparisons. |
+
+## Non-Goals
+
+- Do not redefine the bloom threshold.
+- Do not change target labels during evaluation.
+- Do not accept cross-source site matches as truth.
+- Do not use test rows for scenario selection.
+- Do not present degraded alert outputs as official environmental alerts.
+- Do not write heavy degraded row-level artifacts to Git.
+
+## Default Alert Policy
+
+The default downstream alert policy is:
+
+```text
+policy_version: pipe_grud_rollout_alert_policy_2b_v0
+selection_objective: closest_pr
+threshold_source: reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv
+```
+
+The `fixed` and `fbeta` policies remain comparison profiles. This lets later
+work distinguish model robustness from alert-policy sensitivity.
+
+## Evaluation Surface
+
+The first degradation pass should evaluate the current frozen surface:
+
+- panel and targets from `data/freeze/DATA_FREEZE.md`;
+- temporal splits from `data/splits/split_manifest.json`;
+- canonical variables from `configs/variables.yaml`;
+- PIPE/GRU-D rollout evidence from Iterations 1, 2, and 2B;
+- default alert policy `closest_pr`.
+
+The first implementation should be evaluation-only where possible. Retraining
+under degraded training data is a later phase because it is more expensive and
+can obscure whether a failure comes from model learning or from operational
+evidence loss.
+
+## Scenario Families
+
+### 1. Control
+
+The control scenario is the current, undegraded freeze-derived evaluation
+surface. Every reported metric must include an absolute value and a delta
+against this control.
+
+### 2. Feature-Family Ablation
+
+Feature-family ablations remove semantically related predictor families while
+preserving labels. They answer: which ecological evidence family carries the
+system?
+
+Core families:
+
+- `chlorophyll_memory`: `chlorophyll_a_ugL`, `log_chlorophyll_a`, `risk_chla`.
+- `nutrients`: `TP_ugL`, `TN_ugL`, `TN_TP_ratio`, `log_TP`, `log_TN`.
+- `light`: `secchi_depth_m`, `turbidity_NTU`.
+- `physicochemical`: `temperature_C`, `DO_mgL`, `pH`.
+
+These are core because they match the repository's canonical variable roles:
+target/memory, nutrient pressure, light availability, and physicochemical
+condition.
+
+### 3. Random Value Dropout
+
+Random dropout simulates generic loss of measurements. It should be applied to
+predictors only and never to held-out labels. The core rates are:
+
+- mild: 10%;
+- moderate: 25%;
+- severe: 50%.
+
+Use deterministic seeds and report results per seed. The first implementation
+should use MCAR-style random dropout only; MAR/MNAR-like mechanisms can be added
+later after the first reproducible baseline exists.
+
+### 4. Temporal Block Missingness
+
+Temporal block missingness simulates gaps in monitoring. It removes contiguous
+origin-month predictor evidence within source-scoped site histories while
+leaving target labels fixed for evaluation.
+
+Core block lengths:
+
+- 1 month: missed visit;
+- 3 months: seasonal or quarterly gap;
+- 6 months: extended monitoring interruption.
+
+Temporal blocks are especially important for PIPE/GRU-D because missing
+patterns and time gaps are part of the modeling premise.
+
+### 5. Site Retention
+
+Site retention simulates reduced spatial monitoring coverage. It retains a
+deterministic stratified sample of source-scoped sites and reports metrics on
+the retained rows.
+
+Core retention levels:
+
+- 75% retained: mild contraction;
+- 50% retained: moderate contraction;
+- 25% retained: severe contraction.
+
+Sampling must be stratified by `source_id` and split where possible so source
+coverage changes are reported rather than hidden.
+
+### 6. Source-Scope Diagnostics
+
+Source-scope scenarios are diagnostic, not primary adoption criteria. They help
+answer whether conclusions are driven by one source.
+
+Core diagnostics:
+
+- `wqp_only`: WQP is the current multivariable backbone.
+- `no_wqp`: stress test for dependence on WQP.
+- `aquamatch_chla_only`: Chl-a auxiliary coverage stress.
+- `lakebed_us_cse_only`: small-source cautionary diagnostic.
+
+NLA is not a direct target-transfer source under the current conservative
+policy and should not be used as a monthly predictive target source unless a
+reviewed crosswalk is promoted.
+
+### 7. Combined Operational Stress
+
+Combined scenarios approximate realistic failure regimes:
+
+- `ops_moderate`: 25% random dropout, 3-month blocks at 10%, and 75% site
+  retention.
+- `ops_sparse_network`: nutrient family removed, 3-month blocks at 25%, and
+  50% site retention.
+- `ops_no_chla_memory`: Chl-a memory removed plus 3-month blocks at 10%.
+- `ops_severe`: 50% random dropout, 6-month blocks at 25%, and 25% site
+  retention.
+
+Combined scenarios must be interpreted as stress tests, not estimates of a
+specific real monitoring program.
+
+## Metrics
+
+Required metrics:
+
+- rows retained;
+- positive rate;
+- PR-AUC;
+- ROC-AUC;
+- Brier score;
+- precision;
+- recall;
+- specificity;
+- F1;
+- F2;
+- MCC;
+- balanced accuracy;
+- alert rate;
+- delta versus control for all performance metrics.
+
+Report metrics by:
+
+- scenario;
+- split;
+- horizon;
+- source_id;
+- event family where applicable (`bloom_h`, `irc_alert`);
+- policy profile where applicable (`closest_pr`, `fixed`, `fbeta`).
+
+## Artifact Plan
+
+Configuration:
+
+- `configs/degradation_scenarios.yaml`
+
+Implemented evaluator:
+
+- `src/experiments/evaluate_controlled_degradation.py`
+
+Current evaluator scope:
+
+- control, source-scope, and site-retention scenarios can be evaluated directly
+  on precomputed rollout score rows;
+- predictor-evidence degradation scenarios are recorded as
+  `skipped_requires_model_recompute` by default, because scientific performance
+  claims require recomputing model scores after the degraded predictors are
+  applied;
+- `--evaluate-passthrough-scores` exists only for diagnostics and must not be
+  interpreted as degraded-model performance.
+
+Expected future small Git artifacts:
+
+- `reports/degradation/controlled_degradation_metrics.csv`
+- `reports/degradation/controlled_degradation_summary.csv`
+- `reports/degradation/controlled_degradation_report.md`
+- `reports/degradation/controlled_degradation_manifest.json`
+
+Expected future DVC artifacts, only if row-level degraded tables are materialized:
+
+- `data/degradation/controlled_degradation_rows.parquet`
+- `reports/degradation/controlled_degradation_rows.parquet`
+
+## Reproducibility Rules
+
+1. Keep labels fixed for evaluation-only degradation.
+2. Apply degradation to predictors only unless a training-scarcity phase is
+   explicitly declared.
+3. Use deterministic seeds from the config.
+4. Report row counts before and after degradation.
+5. Preserve source-scoped site identity.
+6. Do not tune scenarios on test results.
+7. Keep small reports in Git and heavy row-level outputs in DVC.
+8. Record input/output/script SHA-256 hashes in the manifest.
+9. Report failures and empty scenarios; do not silently drop them.
+10. Treat degraded outputs as stress-test evidence, not operational alerts.
+
+## Phased Execution Plan
+
+Phase 0, completed by this protocol:
+
+- define scenario criteria;
+- create machine-readable config;
+- document source rationale.
+
+Phase 1, completed smoke step:
+
+- run the implemented evaluator as a smoke test and inspect its summary;
+- use control, source-scope, and site-retention metrics as valid
+  precomputed-score degradation evidence;
+- treat feature-family ablations, random dropout, temporal blocks, and combined
+  predictor-degradation scenarios as queued until a model-score recomputation
+  path is added;
+- evaluate `closest_pr` as default and include `fixed`/`fbeta` comparisons.
+
+Smoke execution, 2026-06-12:
+
+- command: `poetry run python src/experiments/evaluate_controlled_degradation.py --scenario-set smoke`;
+- input rows: 88,761;
+- threshold rows: 42;
+- metric rows: 648;
+- summary rows: 8;
+- evaluated runs: 5 across 3 unique scenarios;
+- skipped runs: 3 across 3 unique scenarios;
+- all input, output, and script SHA-256 hashes are recorded in
+  `reports/degradation/controlled_degradation_manifest.json`;
+- `score_recomputed` is false for this smoke run because the evaluator operates
+  on precomputed rollout score rows.
+
+Smoke interpretation:
+
+- `site_retention_50` preserved approximately half of the rows and kept
+  `closest_pr` test performance close to the undegraded control.
+- `source_scope_wqp_only` changed both row mix and event prevalence, so its
+  stronger IRC-alert recall/F2 should be treated as a source-scope diagnostic,
+  not as evidence that WQP is intrinsically superior.
+- Predictor-evidence degradation scenarios were intentionally skipped because
+  they require recomputing model scores after degradation.
+
+Phase 1, next technical step:
+
+- either expand the precomputed-score evaluation to the valid site/source
+  scenarios in `core` and `extended`, or implement the model-score recomputation
+  path required for predictor-degradation scenarios.
+
+Phase 2:
+
+- add combined operational stress scenarios;
+- decide whether selected degraded row-level artifacts need DVC promotion.
+
+Phase 3:
+
+- repeat comparable scenarios for MIFAL once that pipeline exists;
+- compare baseline, fuzzy, PIPE/GRU-D, and MIFAL on a shared degradation grid.
+
+## Decisions Made
+
+- Use `closest_pr` as the default alert policy for downstream degradation
+  because it is a single validation-selected rule across event/horizon surfaces.
+- Start with evaluation-only degradation before retraining under degraded
+  training data.
+- Prioritize feature-family, random dropout, temporal block, site-retention,
+  source-scope, and combined operational-stress scenarios.
+- Keep NLA as validation/provenance/enrichment unless the crosswalk policy
+  changes.
