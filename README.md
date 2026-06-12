@@ -198,8 +198,9 @@ exports, or credential JSON files.
   iteration, including operational artifacts, historical backtest metrics, and
   the Iteration 2 direction.
 - `docs/PIPE_ROLLOUT_ITERATION_2.md` defines the validation/test rollout alert
-  calibration protocol with horizon-specific thresholds before any PIPE/GRU-D
-  retraining decision.
+  calibration protocol, the Iteration 2B policy frontier, and the provisional
+  downstream default: the balanced `closest_pr` policy. Conservative fixed
+  thresholds and sensitive F2 thresholds remain documented comparison profiles.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
