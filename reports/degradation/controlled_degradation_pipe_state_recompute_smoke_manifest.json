@@ -1,0 +1,372 @@
+{
+  "generated_at_utc": "2026-06-12T17:14:13.975172+00:00",
+  "started_at_utc": "2026-06-12T17:13:29.699476+00:00",
+  "status": "completed",
+  "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+  "rollout_version": "pipe_grud_rollout_alerts_v0",
+  "pipe_model_version": "pipe_grud_v0",
+  "config": {
+    "scenario_set": "pipe_state_recompute_smoke",
+    "scenarios": null,
+    "split": "test",
+    "history_length": 12,
+    "rollout_horizon": 3,
+    "samples": 1,
+    "deterministic": true,
+    "batch_size": 512,
+    "max_origins": 512,
+    "max_rows": null,
+    "allow_partial_horizons": false,
+    "irc_alpha": 0.5,
+    "irc_beta": 0.5,
+    "irc_gamma": 2.0,
+    "irc_alert_threshold": 0.5,
+    "alert_prob_threshold": 0.5,
+    "random_seed": 1729,
+    "model_config": {
+      "history_length": 12,
+      "input_dim": 13,
+      "target_dim": 9,
+      "hidden_dim": 96,
+      "num_layers": 1,
+      "dropout": 0.0,
+      "residual_mode": "add_last",
+      "mse_weight": 1.0,
+      "checkpoint_selection_metric": "balanced",
+      "blend_selection_metric": "balanced",
+      "blend_grid": [
+        0.0,
+        0.1,
+        0.2,
+        0.35,
+        0.5,
+        0.65,
+        0.8,
+        0.9,
+        1.0
+      ]
+    },
+    "calibrated_bloom_horizons": [
+      1,
+      2,
+      3
+    ],
+    "rollout_bloom_calibrator_horizons": [
+      1,
+      2,
+      3
+    ],
+    "thresholds": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv",
+    "policies": [
+      "closest_pr",
+      "fixed",
+      "fbeta"
+    ],
+    "evaluation_splits": [
+      "test"
+    ],
+    "include_all_sources": true,
+    "min_policy_rows": 1,
+    "scenario_config_protocol": {
+      "document": "docs/CONTROLLED_DEGRADATION_PROTOCOL.md",
+      "phase": "phase_0_protocol_definition",
+      "default_alert_policy": {
+        "policy_version": "pipe_grud_rollout_alert_policy_2b_v0",
+        "selection_objective": "closest_pr",
+        "threshold_source": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv"
+      },
+      "comparison_alert_policies": [
+        "fixed",
+        "fbeta"
+      ]
+    }
+  },
+  "row_counts": {
+    "selected_origins": 512,
+    "availability_summary_rows": 3,
+    "summary_rows": 8,
+    "state_metric_rows": 1056,
+    "alert_metric_rows": 192,
+    "policy_metric_rows": 576,
+    "example_rows": 1334,
+    "backtest_row_rows": 12288,
+    "evaluated_runs": 8
+  },
+  "scenario_summary": [
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "control_observed",
+      "scenario_family": "control",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": NaN,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "affected_rows": 0,
+      "affected_cells": 0,
+      "affected_selected_window_rows": 0,
+      "affected_selected_window_cells": 0,
+      "operation_types": ""
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "ablate_pipe_state_level",
+      "scenario_family": "pipe_state_ablation",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": NaN,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 120,
+      "backtest_row_rows": 1536,
+      "affected_rows": 2068291,
+      "affected_cells": 5460016,
+      "affected_selected_window_rows": 5490,
+      "affected_selected_window_cells": 14223,
+      "operation_types": "set_sequence_inputs"
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "random_pipe_state_dropout_25",
+      "scenario_family": "pipe_state_random_dropout",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": 20260612.0,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 168,
+      "backtest_row_rows": 1536,
+      "affected_rows": 1745390,
+      "affected_cells": 3434413,
+      "affected_selected_window_rows": 4695,
+      "affected_selected_window_cells": 9540,
+      "operation_types": "random_sequence_dropout"
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "random_pipe_state_dropout_25",
+      "scenario_family": "pipe_state_random_dropout",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": 20260613.0,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 159,
+      "backtest_row_rows": 1536,
+      "affected_rows": 1744753,
+      "affected_cells": 3435221,
+      "affected_selected_window_rows": 4694,
+      "affected_selected_window_cells": 9655,
+      "operation_types": "random_sequence_dropout"
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "random_pipe_state_dropout_25",
+      "scenario_family": "pipe_state_random_dropout",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": 20260614.0,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 167,
+      "backtest_row_rows": 1536,
+      "affected_rows": 1744751,
+      "affected_cells": 3433142,
+      "affected_selected_window_rows": 4633,
+      "affected_selected_window_cells": 9397,
+      "operation_types": "random_sequence_dropout"
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "temporal_pipe_state_blocks_3m_rate_10",
+      "scenario_family": "pipe_state_temporal_block_missingness",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": 20260612.0,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "affected_rows": 23490,
+      "affected_cells": 156569,
+      "affected_selected_window_rows": 56,
+      "affected_selected_window_cells": 389,
+      "operation_types": "temporal_sequence_block_dropout"
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "temporal_pipe_state_blocks_3m_rate_10",
+      "scenario_family": "pipe_state_temporal_block_missingness",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": 20260613.0,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "affected_rows": 22935,
+      "affected_cells": 153028,
+      "affected_selected_window_rows": 75,
+      "affected_selected_window_cells": 496,
+      "operation_types": "temporal_sequence_block_dropout"
+    },
+    {
+      "degradation_version": "pipe_grud_state_recomputed_degradation_v0",
+      "scenario_id": "temporal_pipe_state_blocks_3m_rate_10",
+      "scenario_family": "pipe_state_temporal_block_missingness",
+      "scenario_tier": "core",
+      "scenario_status": "evaluated",
+      "seed": 20260614.0,
+      "score_recomputed": true,
+      "reason": "",
+      "selected_origins": 512,
+      "evaluated_rollout_rows": 1536,
+      "state_metric_rows": 132,
+      "alert_metric_rows": 24,
+      "policy_metric_rows": 72,
+      "example_rows": 180,
+      "backtest_row_rows": 1536,
+      "affected_rows": 23512,
+      "affected_cells": 156292,
+      "affected_selected_window_rows": 79,
+      "affected_selected_window_cells": 527,
+      "operation_types": "temporal_sequence_block_dropout"
+    }
+  ],
+  "inputs": [
+    {
+      "path": "configs/degradation_scenarios.yaml",
+      "bytes": 14594,
+      "sha256": "7d7648662ff6b9b638aea4d916b73d31fe3f97d1996f60a7ed33f9053f3c1757"
+    },
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_v0.parquet",
+      "bytes": 73436574,
+      "sha256": "32d6773abbda9a1ce1a80bb49117c1fa3cbac8b67c71e4139e8a2cabf3a861f3"
+    },
+    {
+      "path": "models/pipe_grud/pipe_grud_model_v0.pt",
+      "bytes": 139474,
+      "sha256": "3c8d848aa4ad770ff885ca0af7c8948d198fdb44c77e5c09e0f892dcf3feabc2"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_rollout_policy_2b_thresholds.csv",
+      "bytes": 17030,
+      "sha256": "283acee1c7692b697e7a89085d9724b3f3386a7da433293ebe3f5a281384cc6a"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "reports/pipe_grud/pipe_grud_manifest.json",
+      "bytes": 23703,
+      "sha256": "1b350e13a302112dcc1d6003d367da2f6f3d16ee67ae5c81c458599d17a06f6f"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
+      "bytes": 2726,
+      "sha256": "3b260cdb7dcb10fb4ffc72a96a13e387123631be512f777412361f7f3430dacc"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h2_isotonic.joblib",
+      "bytes": 2950,
+      "sha256": "04346fac63cf670b59bdff37fa0544c7bcfa3e590f7ff48627bea8a5fec7adff"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h3_isotonic.joblib",
+      "bytes": 2822,
+      "sha256": "389ca9ac472a25ae24fa7a7ed6c796d3b1a1da71da7d0693df131ffab4a39cee"
+    },
+    {
+      "path": "models/pipe_grud/rollout_calibrators/rollout_bloom_h1_irc_mean_isotonic.joblib",
+      "bytes": 2318,
+      "sha256": "9911d942ef524c92ffe16b3e4b37f9b73141792fd02901b6f62e27717a1bae8c"
+    },
+    {
+      "path": "models/pipe_grud/rollout_calibrators/rollout_bloom_h2_irc_mean_isotonic.joblib",
+      "bytes": 2222,
+      "sha256": "74bee87bccbcfdb28eca08816a90db7e150205c5ce6acb6f5247960768c3f7d6"
+    },
+    {
+      "path": "models/pipe_grud/rollout_calibrators/rollout_bloom_h3_irc_mean_isotonic.joblib",
+      "bytes": 2550,
+      "sha256": "acd56c19dc6c662d34a31f65a4be316f3629554ed2821a8bd740693b60dd5674"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/degradation/controlled_degradation_pipe_state_recompute_smoke_state_metrics.csv",
+      "bytes": 360255,
+      "sha256": "25bfd372401a1324dc2527405a0a2f544c04ae7d3e13a9e12b801608f46f8e14"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_pipe_state_recompute_smoke_alert_metrics.csv",
+      "bytes": 68068,
+      "sha256": "37a34c2cbfed91a01a67d212c3fc5b771f7ecee160ee31ade5feb78e8647b3e8"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_pipe_state_recompute_smoke_policy_metrics.csv",
+      "bytes": 311656,
+      "sha256": "6026990436d5efbbed2e1fadddf9a87dfb44d0a85b7ba76a2c59b10774b2b196"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_pipe_state_recompute_smoke_summary.csv",
+      "bytes": 1959,
+      "sha256": "f2ef9f4e78fd95bb55f8f50a8bd917b9946013510eb7e850f7662b11d10f1888"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_pipe_state_recompute_smoke_examples.csv",
+      "bytes": 427606,
+      "sha256": "8ff2c9229d3cb4dfc46d8c7e943dd1d5e3e4c4cf1ea88989e2aa904b9f62ff6a"
+    },
+    {
+      "path": "reports/degradation/controlled_degradation_pipe_state_recompute_smoke_report.md",
+      "bytes": 34620,
+      "sha256": "fde1383d7d73234f6ab90468e9e1ceca31d45a7a87bcfc801256317d5fdb126c"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/evaluate_degraded_pipe_grud_rollouts.py",
+    "bytes": 43388,
+    "sha256": "54e56833a3e540d758f84e9d8dd3bde6d5b3b7cb64019d4d056667f389f22041"
+  }
+}

@@ -116,6 +116,43 @@ canonical_variable_groups:
       - temperature_C
       - secchi_depth_m
 
+pipe_state_variable_groups:
+  pipe_state_level:
+    variables:
+      - x_yN
+      - x_yF
+      - x_yT
+    rationale: >
+      Tests dependence on the current fuzzy nutrient, functional, and trophic
+      state levels consumed directly by PIPE/GRU-D.
+  pipe_state_uncertainty:
+    variables:
+      - x_sigma_N
+      - x_sigma_F
+      - x_sigma_T
+    rationale: >
+      Tests dependence on uncertainty channels carried into the sequence model.
+  pipe_state_delta:
+    variables:
+      - x_delta_yN
+      - x_delta_yF
+      - x_delta_yT
+    rationale: >
+      Tests dependence on recent fuzzy-state change evidence.
+  pipe_state_all:
+    variables:
+      - x_yN
+      - x_yF
+      - x_yT
+      - x_sigma_N
+      - x_sigma_F
+      - x_sigma_T
+      - x_delta_yN
+      - x_delta_yF
+      - x_delta_yT
+    rationale: >
+      Tests sensitivity to the complete nonseasonal PIPE state input block.
+
 defaults:
   apply_to: predictors_only
   preserve_labels: true
@@ -127,6 +164,11 @@ defaults:
   report_empty_groups: true
 
 scenario_sets:
+  pipe_state_recompute_smoke:
+    - control_observed
+    - ablate_pipe_state_level
+    - random_pipe_state_dropout_25
+    - temporal_pipe_state_blocks_3m_rate_10
   smoke:
     - control_observed
     - source_scope_wqp_only
@@ -174,6 +216,57 @@ scenarios:
     tier: core
     description: Current undegraded freeze-derived evaluation surface.
     operations: []
+
+  - scenario_id: ablate_pipe_state_level
+    family: pipe_state_ablation
+    tier: core
+    description: Zero-impute current fuzzy state levels before recomputing PIPE/GRU-D rollouts.
+    operations:
+      - type: set_sequence_inputs
+        variable_group: pipe_state_level
+        fill_value: 0.0
+
+  - scenario_id: ablate_pipe_state_uncertainty
+    family: pipe_state_ablation
+    tier: core
+    description: Zero-impute PIPE uncertainty channels before recomputing PIPE/GRU-D rollouts.
+    operations:
+      - type: set_sequence_inputs
+        variable_group: pipe_state_uncertainty
+        fill_value: 0.0
+
+  - scenario_id: ablate_pipe_state_delta
+    family: pipe_state_ablation
+    tier: core
+    description: Zero-impute PIPE state-delta channels before recomputing PIPE/GRU-D rollouts.
+    operations:
+      - type: set_sequence_inputs
+        variable_group: pipe_state_delta
+        fill_value: 0.0
+
+  - scenario_id: random_pipe_state_dropout_25
+    family: pipe_state_random_dropout
+    tier: core
+    description: Zero-impute 25% of nonseasonal PIPE state input cells before recomputing rollouts.
+    operations:
+      - type: random_sequence_dropout
+        mechanism: mcar
+        variable_group: pipe_state_all
+        rate: 0.25
+        fill_value: 0.0
+        seeds_from: randomization.seeds
+
+  - scenario_id: temporal_pipe_state_blocks_3m_rate_10
+    family: pipe_state_temporal_block_missingness
+    tier: core
+    description: Zero-impute 3-month blocks of PIPE state inputs for 10% of source-scoped site histories.
+    operations:
+      - type: temporal_sequence_block_dropout
+        block_length_months: 3
+        site_history_block_rate: 0.10
+        variable_group: pipe_state_all
+        fill_value: 0.0
+        seeds_from: randomization.seeds
 
   - scenario_id: ablate_chlorophyll_memory
     family: feature_family_ablation

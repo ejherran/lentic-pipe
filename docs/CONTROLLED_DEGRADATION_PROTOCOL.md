@@ -206,6 +206,7 @@ Configuration:
 Implemented evaluator:
 
 - `src/experiments/evaluate_controlled_degradation.py`
+- `src/experiments/evaluate_degraded_pipe_grud_rollouts.py`
 
 Current evaluator scope:
 
@@ -218,17 +219,37 @@ Current evaluator scope:
 - `--evaluate-passthrough-scores` exists only for diagnostics and must not be
   interpreted as degraded-model performance.
 
+Recomputed PIPE/GRU-D evaluator scope:
+
+- `evaluate_degraded_pipe_grud_rollouts.py` recomputes PIPE/GRU-D rollout
+  scores after degrading PIPE sequence input columns;
+- this is a state-level recomputation path, not a raw-predictor ablation path;
+- it also evaluates the configured downstream alert-policy thresholds on the
+  recomputed scores;
+- the default state recomputation smoke set is
+  `pipe_state_recompute_smoke`;
+- raw-variable family ablations such as nutrients, light, and Chl-a memory
+  still require an upstream rebuild of fuzzy states and sequence datasets.
+
 Expected future small Git artifacts:
 
 - `reports/degradation/controlled_degradation_metrics.csv`
 - `reports/degradation/controlled_degradation_summary.csv`
 - `reports/degradation/controlled_degradation_report.md`
 - `reports/degradation/controlled_degradation_manifest.json`
+- `reports/degradation/controlled_degradation_pipe_recomputed_state_metrics.csv`
+- `reports/degradation/controlled_degradation_pipe_recomputed_alert_metrics.csv`
+- `reports/degradation/controlled_degradation_pipe_recomputed_policy_metrics.csv`
+- `reports/degradation/controlled_degradation_pipe_recomputed_summary.csv`
+- `reports/degradation/controlled_degradation_pipe_recomputed_examples.csv`
+- `reports/degradation/controlled_degradation_pipe_recomputed_report.md`
+- `reports/degradation/controlled_degradation_pipe_recomputed_manifest.json`
 
 Expected future DVC artifacts, only if row-level degraded tables are materialized:
 
 - `data/degradation/controlled_degradation_rows.parquet`
 - `reports/degradation/controlled_degradation_rows.parquet`
+- `reports/degradation/controlled_degradation_pipe_recomputed_backtest_rows.parquet`
 
 ## Reproducibility Rules
 
@@ -348,8 +369,61 @@ Iteration 1B interpretation:
 
 Phase 2:
 
+- run a state-level PIPE/GRU-D recomputation smoke using
+  `pipe_state_recompute_smoke`;
+- inspect whether state-level degradation meaningfully changes rollout
+  behavior before materializing row-level outputs;
 - add combined operational stress scenarios;
 - decide whether selected degraded row-level artifacts need DVC promotion.
+
+State recomputation smoke command:
+
+```bash
+poetry run python src/experiments/evaluate_degraded_pipe_grud_rollouts.py \
+  --scenario-set pipe_state_recompute_smoke \
+  --output-name pipe_state_recompute_smoke \
+  --deterministic \
+  --max-origins 512
+```
+
+The smoke command is intentionally capped and deterministic. A full scientific
+run should remove the cap, use the intended sampling configuration, and decide
+explicitly whether to materialize `--backtest-rows` under DVC.
+
+State recomputation smoke execution, 2026-06-12:
+
+- generated at UTC: `2026-06-12T17:14:13.975172+00:00`;
+- scenario set: `pipe_state_recompute_smoke`;
+- split: `test`;
+- selected origins: 512;
+- rollout rows: 12,288 across 8 evaluated runs;
+- state metric rows: 1,056;
+- alert metric rows: 192;
+- policy metric rows: 576;
+- deterministic samples per origin: 1;
+- calibrated bloom horizons: 1, 2, and 3;
+- rollout bloom calibrator horizons: 1, 2, and 3;
+- script hash:
+  `54e56833a3e540d758f84e9d8dd3bde6d5b3b7cb64019d4d056667f389f22041`;
+- all input, output, and script SHA-256 hashes are recorded in
+  `reports/degradation/controlled_degradation_pipe_state_recompute_smoke_manifest.json`.
+
+State recomputation smoke interpretation:
+
+- `ablate_pipe_state_level` collapses the alert surface under the configured
+  policies: test alert rate and recall are 0 for both `bloom_h` and
+  `irc_alert` across horizons, confirming strong dependence on current fuzzy
+  state levels.
+- `random_pipe_state_dropout_25` degrades performance materially but does not
+  collapse the system. Under `closest_pr`, mean F2 deltas across the three seeds
+  are approximately -0.20 to -0.22 for `bloom_h` and -0.16 to -0.17 for
+  `irc_alert`, depending on horizon.
+- `temporal_pipe_state_blocks_3m_rate_10` is much less damaging in this capped
+  smoke. Under `closest_pr`, mean F2 deltas are approximately -0.01 to -0.02
+  for most horizons and events.
+- These results should be treated as a capped technical smoke, not the final
+  robustness result. A full run should remove the origin cap and decide whether
+  row-level outputs need DVC tracking.
 
 Phase 3:
 

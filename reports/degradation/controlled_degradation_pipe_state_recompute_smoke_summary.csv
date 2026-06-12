@@ -1,0 +1,9 @@
+degradation_version,scenario_id,scenario_family,scenario_tier,scenario_status,seed,score_recomputed,reason,selected_origins,evaluated_rollout_rows,state_metric_rows,alert_metric_rows,policy_metric_rows,example_rows,backtest_row_rows,affected_rows,affected_cells,affected_selected_window_rows,affected_selected_window_cells,operation_types
+pipe_grud_state_recomputed_degradation_v0,control_observed,control,core,evaluated,,True,,512,1536,132,24,72,180,1536,0,0,0,0,
+pipe_grud_state_recomputed_degradation_v0,ablate_pipe_state_level,pipe_state_ablation,core,evaluated,,True,,512,1536,132,24,72,120,1536,2068291,5460016,5490,14223,set_sequence_inputs
+pipe_grud_state_recomputed_degradation_v0,random_pipe_state_dropout_25,pipe_state_random_dropout,core,evaluated,20260612.0,True,,512,1536,132,24,72,168,1536,1745390,3434413,4695,9540,random_sequence_dropout
+pipe_grud_state_recomputed_degradation_v0,random_pipe_state_dropout_25,pipe_state_random_dropout,core,evaluated,20260613.0,True,,512,1536,132,24,72,159,1536,1744753,3435221,4694,9655,random_sequence_dropout
+pipe_grud_state_recomputed_degradation_v0,random_pipe_state_dropout_25,pipe_state_random_dropout,core,evaluated,20260614.0,True,,512,1536,132,24,72,167,1536,1744751,3433142,4633,9397,random_sequence_dropout
+pipe_grud_state_recomputed_degradation_v0,temporal_pipe_state_blocks_3m_rate_10,pipe_state_temporal_block_missingness,core,evaluated,20260612.0,True,,512,1536,132,24,72,180,1536,23490,156569,56,389,temporal_sequence_block_dropout
+pipe_grud_state_recomputed_degradation_v0,temporal_pipe_state_blocks_3m_rate_10,pipe_state_temporal_block_missingness,core,evaluated,20260613.0,True,,512,1536,132,24,72,180,1536,22935,153028,75,496,temporal_sequence_block_dropout
+pipe_grud_state_recomputed_degradation_v0,temporal_pipe_state_blocks_3m_rate_10,pipe_state_temporal_block_missingness,core,evaluated,20260614.0,True,,512,1536,132,24,72,180,1536,23512,156292,79,527,temporal_sequence_block_dropout
