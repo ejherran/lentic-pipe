@@ -225,6 +225,7 @@ __marimo__/
 *service-account*.json
 *gcloud*.json
 private/
+AGENTS.md
 .dvc/config.local
 .dvc/cache/
 .dvc/tmp/
