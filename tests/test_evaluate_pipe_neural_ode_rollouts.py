@@ -15,6 +15,7 @@ from src.experiments.train_pipe_neural_ode import (
     STATE_INPUT_COLUMNS,
     make_neural_ode_model,
 )
+from src.experiments.train_pipe_neural_ode_v1 import make_history_neural_ode_model
 
 
 def _sequence_rows() -> pd.DataFrame:
@@ -100,6 +101,68 @@ def _write_identity_neural_ode_model(path: Path) -> None:
                 "depth": 1,
                 "dropout": 0.0,
                 "derivative_scale": 0.2,
+                "integration_time": 1.0,
+                "ode_method": "rk4",
+                "ode_step_size": 0.5,
+                "rtol": 1e-3,
+                "atol": 1e-4,
+                "mse_weight": 0.0,
+            },
+            "input_columns": INPUT_COLUMNS,
+            "state_input_columns": STATE_INPUT_COLUMNS,
+            "season_columns": SEASON_COLUMNS,
+            "target_columns": TARGET_COLUMNS,
+            "target_weights": {},
+            "output_blend_weights": {target: 1.0 for target in PIPE_STATE_COLUMNS},
+            "model_state_dict": model.state_dict(),
+        },
+        path,
+    )
+
+
+def _write_identity_history_neural_ode_model(path: Path, *, history_length: int = 2) -> None:
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("torchdiffeq")
+    model = make_history_neural_ode_model(
+        input_dim=len(INPUT_COLUMNS),
+        state_dim=len(STATE_INPUT_COLUMNS),
+        season_dim=len(SEASON_COLUMNS),
+        history_hidden_dim=4,
+        history_layers=1,
+        latent_dim=3,
+        dynamics_hidden_dim=4,
+        dynamics_depth=1,
+        dropout=0.0,
+        derivative_scale=0.2,
+        state_delta_scale=0.5,
+        integration_time=1.0,
+        ode_method="rk4",
+        ode_step_size=0.5,
+        rtol=1e-3,
+        atol=1e-4,
+    )
+    for parameter in model.parameters():
+        torch.nn.init.zeros_(parameter)
+    torch.save(
+        {
+            "model_version": "pipe_neural_ode_history_v1",
+            "best_epoch": 1,
+            "best_validation_loss": 0.0,
+            "best_validation_objective": 0.0,
+            "config": {
+                "architecture": "history_encoder_latent_ode",
+                "history_length": history_length,
+                "input_dim": len(INPUT_COLUMNS),
+                "state_dim": len(STATE_INPUT_COLUMNS),
+                "season_dim": len(SEASON_COLUMNS),
+                "history_hidden_dim": 4,
+                "history_layers": 1,
+                "latent_dim": 3,
+                "dynamics_hidden_dim": 4,
+                "dynamics_depth": 1,
+                "dropout": 0.0,
+                "derivative_scale": 0.2,
+                "state_delta_scale": 0.5,
                 "integration_time": 1.0,
                 "ode_method": "rk4",
                 "ode_step_size": 0.5,
@@ -302,3 +365,80 @@ def test_evaluate_pipe_neural_ode_rollouts_can_match_reference_origins(tmp_path:
     assert manifest["config"]["reference_backtest_rows"] == str(reference_path)
     assert manifest["row_counts"]["selected_origins"] == 1
     assert manifest["row_counts"]["evaluated_rollout_rows"] == 2
+
+
+def test_evaluate_pipe_neural_ode_rollouts_supports_history_v1(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    pytest.importorskip("torchdiffeq")
+
+    sequences_path = tmp_path / "sequences.parquet"
+    splits_path = tmp_path / "splits.parquet"
+    model_path = tmp_path / "history_model.pt"
+    model_manifest_path = tmp_path / "model_manifest.json"
+    metrics_path = tmp_path / "metrics.csv"
+    alert_metrics_path = tmp_path / "alert_metrics.csv"
+    examples_path = tmp_path / "examples.csv"
+    backtest_rows_path = tmp_path / "backtest_rows.parquet"
+    report_path = tmp_path / "report.md"
+    manifest_path = tmp_path / "manifest.json"
+
+    _sequence_rows().to_parquet(sequences_path, index=False)
+    _target_rows().to_parquet(splits_path, index=False)
+    _write_identity_history_neural_ode_model(model_path, history_length=2)
+    model_manifest_path.write_text('{"status": "test"}\n', encoding="utf-8")
+
+    subprocess.run(
+        [
+            sys.executable,
+            "src/experiments/evaluate_pipe_neural_ode_rollouts.py",
+            "--sequences",
+            str(sequences_path),
+            "--splits",
+            str(splits_path),
+            "--model",
+            str(model_path),
+            "--model-manifest",
+            str(model_manifest_path),
+            "--fuzzy-calibrators-dir",
+            str(tmp_path / "missing_calibrators"),
+            "--metrics",
+            str(metrics_path),
+            "--alert-metrics",
+            str(alert_metrics_path),
+            "--examples",
+            str(examples_path),
+            "--backtest-rows",
+            str(backtest_rows_path),
+            "--report",
+            str(report_path),
+            "--manifest",
+            str(manifest_path),
+            "--rollout-horizon",
+            "2",
+            "--observed-state-source",
+            "target",
+            "--deterministic",
+            "--disable-calibrated-bloom",
+            "--batch-size",
+            "1",
+        ],
+        check=True,
+    )
+
+    metrics = pd.read_csv(metrics_path)
+    backtest_rows = pd.read_parquet(backtest_rows_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    overall_all = metrics[
+        (metrics["group_type"] == "overall") & (metrics["target"] == "all")
+    ].sort_values("rollout_horizon_months")
+
+    assert overall_all["rows"].tolist() == [18, 18]
+    assert all(math.isclose(value, 0.0, abs_tol=1e-7) for value in overall_all["rmse"])
+    assert len(backtest_rows) == 4
+    assert backtest_rows["origin_year_month"].tolist() == ["2022-02", "2022-02", "2022-03", "2022-03"]
+    assert manifest["backtest_version"] == "pipe_neural_ode_history_rollout_backtest_v1"
+    assert manifest["rollout_version"] == "pipe_neural_ode_history_rollout_v1"
+    assert manifest["config"]["history_length"] == 2
+    assert manifest["row_counts"]["selected_origins"] == 2
+    assert manifest["row_counts"]["evaluated_rollout_rows"] == 4
+    assert "PIPE Neural ODE Rollout Backtest Report v1" in report_path.read_text(encoding="utf-8")

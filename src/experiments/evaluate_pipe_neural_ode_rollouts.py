@@ -47,7 +47,7 @@ from src.experiments.rollout_pipe_grud import (
     _write_json_atomic,
     _write_text_atomic,
 )
-from src.experiments.train_pipe_grud import load_sequences, _require_torch
+from src.experiments.train_pipe_grud import load_sequences, prepare_window_frame, _require_torch
 from src.experiments.train_pipe_neural_ode import (
     MODEL_VERSION as PIPE_NEURAL_ODE_MODEL_VERSION,
     STATE_INPUT_COLUMNS,
@@ -55,6 +55,10 @@ from src.experiments.train_pipe_neural_ode import (
     make_neural_ode_model,
     prepare_transition_frame,
     _bound_state_tensor,
+)
+from src.experiments.train_pipe_neural_ode_v1 import (
+    MODEL_VERSION as PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION,
+    make_history_neural_ode_model,
 )
 
 
@@ -72,6 +76,8 @@ DEFAULT_MANIFEST = DEFAULT_REPORT_DIR / "pipe_neural_ode_rollout_backtest_manife
 
 ROLLOUT_VERSION = "pipe_neural_ode_rollout_v0"
 BACKTEST_VERSION = "pipe_neural_ode_rollout_backtest_v0"
+HISTORY_ROLLOUT_VERSION = "pipe_neural_ode_history_rollout_v1"
+HISTORY_BACKTEST_VERSION = "pipe_neural_ode_history_rollout_backtest_v1"
 STATE_KEY_COLUMNS = ["source_id", "site_id", "split", "observed_year_month"]
 REFERENCE_ORIGIN_COLUMNS = ["source_id", "site_id", "split", "origin_year_month"]
 
@@ -99,11 +105,18 @@ def load_reference_origin_filter(path: Path | None) -> pd.DataFrame | None:
     return reference.sort_values(REFERENCE_ORIGIN_COLUMNS).reset_index(drop=True)
 
 
+def _model_versions(model_payload: dict[str, Any]) -> tuple[str, str]:
+    if model_payload.get("model_version") == PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION:
+        return HISTORY_ROLLOUT_VERSION, HISTORY_BACKTEST_VERSION
+    return ROLLOUT_VERSION, BACKTEST_VERSION
+
+
 def _load_model(path: Path, device: Any) -> tuple[Any, dict[str, Any], dict[str, Any], Any | None]:
     torch = _require_torch()
     payload = torch.load(path, map_location=device, weights_only=False)
-    if payload.get("model_version") != PIPE_NEURAL_ODE_MODEL_VERSION:
-        raise ValueError(f"Unsupported Neural ODE model version: {payload.get('model_version')!r}")
+    model_version = payload.get("model_version")
+    if model_version not in {PIPE_NEURAL_ODE_MODEL_VERSION, PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION}:
+        raise ValueError(f"Unsupported Neural ODE model version: {model_version!r}")
     input_columns = list(payload.get("input_columns", INPUT_COLUMNS))
     target_columns = list(payload.get("target_columns", TARGET_COLUMNS))
     state_input_columns = list(payload.get("state_input_columns", STATE_INPUT_COLUMNS))
@@ -118,19 +131,39 @@ def _load_model(path: Path, device: Any) -> tuple[Any, dict[str, Any], dict[str,
         raise ValueError("Model season columns do not match the Neural ODE rollout schema")
 
     config = dict(payload["config"])
-    model = make_neural_ode_model(
-        state_dim=len(STATE_INPUT_COLUMNS),
-        season_dim=len(SEASON_COLUMNS),
-        hidden_dim=int(config["hidden_dim"]),
-        depth=int(config["depth"]),
-        dropout=float(config["dropout"]),
-        derivative_scale=float(config["derivative_scale"]),
-        integration_time=float(config["integration_time"]),
-        ode_method=str(config["ode_method"]),
-        ode_step_size=float(config["ode_step_size"]),
-        rtol=float(config["rtol"]),
-        atol=float(config["atol"]),
-    )
+    if model_version == PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION:
+        model = make_history_neural_ode_model(
+            input_dim=len(INPUT_COLUMNS),
+            state_dim=len(STATE_INPUT_COLUMNS),
+            season_dim=len(SEASON_COLUMNS),
+            history_hidden_dim=int(config["history_hidden_dim"]),
+            history_layers=int(config["history_layers"]),
+            latent_dim=int(config["latent_dim"]),
+            dynamics_hidden_dim=int(config["dynamics_hidden_dim"]),
+            dynamics_depth=int(config["dynamics_depth"]),
+            dropout=float(config["dropout"]),
+            derivative_scale=float(config["derivative_scale"]),
+            state_delta_scale=float(config["state_delta_scale"]),
+            integration_time=float(config["integration_time"]),
+            ode_method=str(config["ode_method"]),
+            ode_step_size=float(config["ode_step_size"]),
+            rtol=float(config["rtol"]),
+            atol=float(config["atol"]),
+        )
+    else:
+        model = make_neural_ode_model(
+            state_dim=len(STATE_INPUT_COLUMNS),
+            season_dim=len(SEASON_COLUMNS),
+            hidden_dim=int(config["hidden_dim"]),
+            depth=int(config["depth"]),
+            dropout=float(config["dropout"]),
+            derivative_scale=float(config["derivative_scale"]),
+            integration_time=float(config["integration_time"]),
+            ode_method=str(config["ode_method"]),
+            ode_step_size=float(config["ode_step_size"]),
+            rtol=float(config["rtol"]),
+            atol=float(config["atol"]),
+        )
     model.load_state_dict(payload["model_state_dict"])
     model.to(device)
     model.eval()
@@ -151,9 +184,14 @@ def select_backtest_indices(
     args: argparse.Namespace,
     observed: pd.DataFrame,
     reference_origin_filter: pd.DataFrame | None,
+    history_length: int,
 ) -> tuple[np.ndarray, pd.DataFrame]:
     eligible = frame.copy()
     eligible["_frame_index"] = eligible.index.astype("int64")
+    if history_length > 1:
+        if "window_position" not in eligible.columns:
+            raise ValueError("History-window Neural ODE rollouts require a prepared window frame")
+        eligible = eligible[eligible["window_position"] >= history_length - 1].copy()
     if args.split != "all":
         eligible = eligible[eligible["split"] == args.split].copy()
     if reference_origin_filter is not None:
@@ -274,12 +312,107 @@ def rollout_batch(
     return parts
 
 
+def _initial_history_windows(x_values: np.ndarray, indices: np.ndarray, history_length: int) -> np.ndarray:
+    windows: list[np.ndarray] = []
+    for end_index in indices:
+        start_index = int(end_index) - history_length + 1
+        if start_index < 0:
+            raise ValueError("Selected origin does not have enough history for Neural ODE v1 rollout")
+        windows.append(x_values[start_index : int(end_index) + 1])
+    if not windows:
+        return np.empty((0, history_length, len(INPUT_COLUMNS)), dtype="float32")
+    return np.stack(windows).astype("float32")
+
+
+def rollout_history_batch(
+    *,
+    model: Any,
+    blend_weights: Any | None,
+    history_values: np.ndarray,
+    origin_months: pd.Series,
+    args: argparse.Namespace,
+    device: Any,
+    generator: Any,
+    calibrators: dict[int, Any],
+) -> list[pd.DataFrame]:
+    torch = _require_torch()
+    sample_count = 1 if args.deterministic else int(args.samples)
+    if sample_count < 1:
+        raise ValueError("--samples must be >= 1")
+    window = torch.from_numpy(history_values.astype("float32")).to(device=device, dtype=torch.float32)
+    window = window.repeat_interleave(sample_count, dim=0)
+    origin_periods = pd.PeriodIndex(origin_months.astype(str), freq="M")
+    batch_size = len(origin_months)
+    parts: list[pd.DataFrame] = []
+
+    with torch.no_grad():
+        for horizon in range(1, args.rollout_horizon + 1):
+            mu, logvar = model(window)
+            last_state = window[:, -1, : len(PIPE_STATE_COLUMNS)]
+            mu = apply_output_blend(mu, last_state, blend_weights)
+            if args.deterministic:
+                next_state = mu
+            else:
+                sigma = torch.sqrt(torch.exp(torch.clamp(logvar, min=-10.0, max=2.0)))
+                noise = torch.randn(mu.shape, generator=generator, device=device, dtype=mu.dtype)
+                next_state = mu + sigma * noise
+            next_state = _bound_state_tensor(next_state)
+
+            target_periods = origin_periods + horizon
+            states = next_state.detach().cpu().numpy().reshape(batch_size, sample_count, len(PIPE_STATE_COLUMNS))
+            irc_values = compute_irc(states, alpha=args.irc_alpha, beta=args.irc_beta, gamma=args.irc_gamma)
+            calibrated = _calibrate_probabilities(irc_values, calibrators.get(horizon))
+            frame = pd.DataFrame(
+                {
+                    "forecast_year_month": target_periods.astype(str),
+                    "rollout_horizon_months": horizon,
+                    "samples": sample_count,
+                    "irc_mean": irc_values.mean(axis=1),
+                    "irc_p05": _quantile(irc_values, 0.05),
+                    "irc_p50": _quantile(irc_values, 0.50),
+                    "irc_p95": _quantile(irc_values, 0.95),
+                    "alert_irc_threshold": float(args.irc_alert_threshold),
+                    "alert_probability_irc": (irc_values >= args.irc_alert_threshold).mean(axis=1),
+                    "alert_probability_threshold": float(args.alert_prob_threshold),
+                }
+            )
+            if calibrated is not None:
+                threshold = calibrators[horizon].threshold
+                frame["probability_bloom_mean"] = calibrated.mean(axis=1)
+                frame["probability_bloom_p05"] = _quantile(calibrated, 0.05)
+                frame["probability_bloom_p50"] = _quantile(calibrated, 0.50)
+                frame["probability_bloom_p95"] = _quantile(calibrated, 0.95)
+                frame["bloom_probability_threshold_h"] = threshold
+                frame["predicted_bloom_alert_h"] = frame["probability_bloom_mean"] >= threshold
+            else:
+                frame["probability_bloom_mean"] = np.nan
+                frame["probability_bloom_p05"] = np.nan
+                frame["probability_bloom_p50"] = np.nan
+                frame["probability_bloom_p95"] = np.nan
+                frame["bloom_probability_threshold_h"] = np.nan
+                frame["predicted_bloom_alert_h"] = False
+            for column_index, column in enumerate(PIPE_STATE_COLUMNS):
+                values = states[:, :, column_index]
+                frame[f"{column}_mean"] = values.mean(axis=1)
+                frame[f"{column}_p05"] = _quantile(values, 0.05)
+                frame[f"{column}_p95"] = _quantile(values, 0.95)
+            parts.append(frame)
+
+            next_season = _season_features_from_month(target_periods.month.to_numpy())
+            next_season = np.repeat(next_season, sample_count, axis=0)
+            next_season_tensor = torch.from_numpy(next_season).to(device=device, dtype=torch.float32)
+            next_input = torch.cat([next_state, next_season_tensor], dim=1)
+            window = torch.cat([window[:, 1:, :], next_input[:, None, :]], dim=1)
+    return parts
+
+
 def build_rollouts(
     frame: pd.DataFrame,
     indices: np.ndarray,
     *,
     model: Any,
     blend_weights: Any | None,
+    model_payload: dict[str, Any],
     args: argparse.Namespace,
     device: Any,
     calibrators: dict[int, Any],
@@ -289,23 +422,40 @@ def build_rollouts(
     generator.manual_seed(int(args.random_seed))
     state_values = frame[STATE_INPUT_COLUMNS].to_numpy(dtype="float32")
     season_values = frame[SEASON_COLUMNS].to_numpy(dtype="float32")
+    x_values = frame[INPUT_COLUMNS].to_numpy(dtype="float32")
+    model_version = str(model_payload.get("model_version", PIPE_NEURAL_ODE_MODEL_VERSION))
+    history_length = int(model_payload.get("config", {}).get("history_length", 1))
+    rollout_version, _ = _model_versions(model_payload)
     parts: list[pd.DataFrame] = []
     for start in range(0, len(indices), args.batch_size):
         batch_indices = indices[start : start + args.batch_size]
         batch_info = frame.loc[batch_indices].reset_index(drop=True)
         batch_state = state_values[batch_indices]
         batch_season = season_values[batch_indices]
-        batch_parts = rollout_batch(
-            model=model,
-            blend_weights=blend_weights,
-            state_values=batch_state,
-            season_values=batch_season,
-            origin_months=batch_info["origin_year_month"],
-            args=args,
-            device=device,
-            generator=generator,
-            calibrators=calibrators,
-        )
+        if model_version == PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION:
+            batch_history = _initial_history_windows(x_values, batch_indices, history_length)
+            batch_parts = rollout_history_batch(
+                model=model,
+                blend_weights=blend_weights,
+                history_values=batch_history,
+                origin_months=batch_info["origin_year_month"],
+                args=args,
+                device=device,
+                generator=generator,
+                calibrators=calibrators,
+            )
+        else:
+            batch_parts = rollout_batch(
+                model=model,
+                blend_weights=blend_weights,
+                state_values=batch_state,
+                season_values=batch_season,
+                origin_months=batch_info["origin_year_month"],
+                args=args,
+                device=device,
+                generator=generator,
+                calibrators=calibrators,
+            )
         identity = batch_info[["source_id", "site_id", "split", "origin_year_month"]].copy()
         identity["origin_irc1_rollout_basis"] = compute_irc(
             batch_state,
@@ -318,21 +468,23 @@ def build_rollouts(
         for batch_part in batch_parts:
             parts.append(pd.concat([identity.reset_index(drop=True), batch_part.reset_index(drop=True)], axis=1))
     rollouts = pd.concat(parts, ignore_index=True) if parts else pd.DataFrame()
-    rollouts.insert(0, "rollout_version", ROLLOUT_VERSION)
-    rollouts["pipe_model_version"] = PIPE_NEURAL_ODE_MODEL_VERSION
+    rollouts.insert(0, "rollout_version", rollout_version)
+    rollouts["pipe_model_version"] = model_version
     rollouts["deterministic"] = bool(args.deterministic)
     rollouts["predicted_alert_h"] = rollouts["alert_probability_irc"] >= args.alert_prob_threshold
     rollouts["alert_band"] = alert_band(rollouts["alert_probability_irc"])
     return rollouts
 
 
-def _retag_metric_versions(metrics: pd.DataFrame, alert_metrics: pd.DataFrame) -> tuple[pd.DataFrame, pd.DataFrame]:
+def _retag_metric_versions(
+    metrics: pd.DataFrame, alert_metrics: pd.DataFrame, *, backtest_version: str
+) -> tuple[pd.DataFrame, pd.DataFrame]:
     metrics = metrics.copy()
     alert_metrics = alert_metrics.copy()
     if "backtest_version" in metrics.columns:
-        metrics["backtest_version"] = BACKTEST_VERSION
+        metrics["backtest_version"] = backtest_version
     if "backtest_version" in alert_metrics.columns:
-        alert_metrics["backtest_version"] = BACKTEST_VERSION
+        alert_metrics["backtest_version"] = backtest_version
     return metrics, alert_metrics
 
 
@@ -345,8 +497,12 @@ def write_report(
     selected_origins: int,
     evaluated_rows: int,
     calibrated_horizons: list[int],
+    model_payload: dict[str, Any],
     started_at: datetime,
 ) -> None:
+    model_version = str(model_payload.get("model_version", PIPE_NEURAL_ODE_MODEL_VERSION))
+    report_suffix = "v1" if model_version == PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION else "v0"
+    history_length = int(model_payload.get("config", {}).get("history_length", 1))
     headline = metrics[
         (metrics["group_type"] == "overall") & (metrics["source_id"] == "all") & (metrics["target"].isin(["all", "irc1"]))
     ].copy()
@@ -354,7 +510,7 @@ def write_report(
         (alert_metrics["group_type"] == "overall") & (alert_metrics["source_id"] == "all")
     ].copy()
     lines = [
-        "# PIPE Neural ODE Rollout Backtest Report v0",
+        f"# PIPE Neural ODE Rollout Backtest Report {report_suffix}",
         "",
         f"Generated at UTC: `{datetime.now(timezone.utc).isoformat()}`",
         f"Started at UTC: `{started_at.isoformat()}`",
@@ -370,6 +526,8 @@ def write_report(
         f"- Selected origins: `{_format_int(selected_origins)}`",
         f"- Evaluated rollout rows: `{_format_int(evaluated_rows)}`",
         f"- Max origins cap: `{args.max_origins}`",
+        f"- Model version: `{model_version}`",
+        f"- History length: `{history_length}`",
         f"- Rollout horizon: `{args.rollout_horizon}` month(s)",
         f"- Observed state source: `{args.observed_state_source}`",
         f"- Reference backtest rows: `{args.reference_backtest_rows}`",
@@ -472,6 +630,7 @@ def manifest_payload(
     model_payload: dict[str, Any],
     started_at: datetime,
 ) -> dict[str, Any]:
+    rollout_version, backtest_version = _model_versions(model_payload)
     inputs = [args.sequences, args.model]
     if args.splits.exists():
         inputs.append(args.splits)
@@ -485,11 +644,12 @@ def manifest_payload(
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "started_at_utc": started_at.isoformat(),
         "status": "completed",
-        "backtest_version": BACKTEST_VERSION,
-        "rollout_version": ROLLOUT_VERSION,
+        "backtest_version": backtest_version,
+        "rollout_version": rollout_version,
         "pipe_model_version": model_payload.get("model_version", PIPE_NEURAL_ODE_MODEL_VERSION),
         "config": {
             "split": args.split,
+            "history_length": int(model_config.get("history_length", 1)),
             "rollout_horizon": int(args.rollout_horizon),
             "observed_state_source": args.observed_state_source,
             "reference_backtest_rows": str(args.reference_backtest_rows) if args.reference_backtest_rows else None,
@@ -584,7 +744,7 @@ def main() -> None:
 
     print(f"loading sequences {args.sequences}", flush=True)
     frame = load_sequences(args.sequences, max_rows=args.max_rows)
-    frame = prepare_transition_frame(frame)
+    frame = prepare_window_frame(prepare_transition_frame(frame))
     observed = observed_state_frame(frame, source=args.observed_state_source)
     print(f"sequence rows={len(frame):,}; observed states={len(observed):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 
@@ -595,7 +755,8 @@ def main() -> None:
     calibrators = load_calibrators(args)
     print(f"loaded calibrated bloom horizons={sorted(calibrators)}", flush=True)
 
-    indices, availability_summary = select_backtest_indices(frame, args, observed, reference_origin_filter)
+    history_length = int(model_config.get("history_length", 1))
+    indices, availability_summary = select_backtest_indices(frame, args, observed, reference_origin_filter, history_length)
     print(f"selected backtest origins={len(indices):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 
     rollouts = build_rollouts(
@@ -603,6 +764,7 @@ def main() -> None:
         indices,
         model=model,
         blend_weights=blend_weights,
+        model_payload=model_payload,
         args=args,
         device=device,
         calibrators=calibrators,
@@ -613,7 +775,10 @@ def main() -> None:
         raise ValueError("No Neural ODE rollout rows could be matched to observed future states")
     print(f"matched observed rollout rows={len(backtest):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 
-    metrics, alert_metrics = _retag_metric_versions(build_state_metrics(backtest), build_alert_metrics(backtest))
+    _, backtest_version = _model_versions(model_payload)
+    metrics, alert_metrics = _retag_metric_versions(
+        build_state_metrics(backtest), build_alert_metrics(backtest), backtest_version=backtest_version
+    )
     examples = build_examples(backtest, args.examples_per_group)
     backtest_rows = compact_backtest_rows(backtest)
 
@@ -633,6 +798,7 @@ def main() -> None:
         selected_origins=len(indices),
         evaluated_rows=len(backtest),
         calibrated_horizons=sorted(calibrators),
+        model_payload=model_payload,
         started_at=started_at,
     )
     print(f"wrote {args.report}", flush=True)

@@ -226,9 +226,15 @@ exports, or credential JSON files.
 - `docs/PIPE_NEURAL_ODE_PROTOCOL.md` documents the Neural ODE branch as a
   temporal PIPE variant over the same sequence schema used by PIPE/GRU-D,
   including one-step training, recursive rollout backtests, calibration, and
-  2B policy-frontier evidence. The runners are
-  `src/experiments/train_pipe_neural_ode.py` and
-  `src/experiments/evaluate_pipe_neural_ode_rollouts.py`.
+  2B policy-frontier evidence. The v1 refinement runner
+  `src/experiments/train_pipe_neural_ode_v1.py` adds a history encoder and
+  latent ODE for methodical comparison against the GRU-D history window; its
+  current matched-origin rollout and 2B alert evidence make it the leading
+  temporal candidate for `irc_alert`, with PIPE/GRU-D retained as the simpler
+  benchmark and fallback.
+  Recursive rollout evaluation is handled by
+  `src/experiments/evaluate_pipe_neural_ode_rollouts.py`, which supports both
+  v0 Markovian and v1 history-encoded Neural ODE artifacts.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

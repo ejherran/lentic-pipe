@@ -1,0 +1,203 @@
+{
+  "generated_at_utc": "2026-06-15T20:58:47.316117+00:00",
+  "started_at_utc": "2026-06-15T20:58:37.694103+00:00",
+  "status": "completed",
+  "backtest_version": "pipe_neural_ode_history_rollout_backtest_v1",
+  "rollout_version": "pipe_neural_ode_history_rollout_v1",
+  "pipe_model_version": "pipe_neural_ode_history_v1",
+  "config": {
+    "split": "test",
+    "history_length": 12,
+    "rollout_horizon": 3,
+    "observed_state_source": "target",
+    "reference_backtest_rows": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_test.parquet",
+    "samples": 128,
+    "deterministic": false,
+    "batch_size": 128,
+    "max_origins": null,
+    "allow_partial_horizons": false,
+    "irc_alpha": 0.5,
+    "irc_beta": 0.5,
+    "irc_gamma": 2.0,
+    "irc_alert_threshold": 0.5,
+    "alert_prob_threshold": 0.5,
+    "random_seed": 1729,
+    "model_config": {
+      "architecture": "history_encoder_latent_ode",
+      "history_length": 12,
+      "input_dim": 13,
+      "state_dim": 9,
+      "season_dim": 4,
+      "history_hidden_dim": 96,
+      "history_layers": 1,
+      "latent_dim": 64,
+      "dynamics_hidden_dim": 96,
+      "dynamics_depth": 2,
+      "dropout": 0.0,
+      "derivative_scale": 0.5,
+      "state_delta_scale": 0.5,
+      "integration_time": 1.0,
+      "ode_method": "rk4",
+      "ode_step_size": 0.25,
+      "rtol": 0.001,
+      "atol": 0.0001,
+      "mse_weight": 0.5,
+      "checkpoint_selection_metric": "balanced",
+      "checkpoint_selection_uses_output_blend": true,
+      "blend_selection_metric": "balanced",
+      "blend_grid": [
+        0.0,
+        0.1,
+        0.2,
+        0.35,
+        0.5,
+        0.65,
+        0.8,
+        0.9,
+        1.0
+      ],
+      "target_weights": {
+        "yN": 2.0,
+        "yF": 1.0,
+        "yT": 2.5,
+        "sigma_N": 0.5,
+        "sigma_F": 0.5,
+        "sigma_T": 0.5,
+        "delta_yN": 1.5,
+        "delta_yF": 1.5,
+        "delta_yT": 1.5
+      },
+      "input_columns": [
+        "x_yN",
+        "x_yF",
+        "x_yT",
+        "x_sigma_N",
+        "x_sigma_F",
+        "x_sigma_T",
+        "x_delta_yN",
+        "x_delta_yF",
+        "x_delta_yT",
+        "season_sin_annual",
+        "season_cos_annual",
+        "season_sin_semiannual",
+        "season_cos_semiannual"
+      ],
+      "state_input_columns": [
+        "x_yN",
+        "x_yF",
+        "x_yT",
+        "x_sigma_N",
+        "x_sigma_F",
+        "x_sigma_T",
+        "x_delta_yN",
+        "x_delta_yF",
+        "x_delta_yT"
+      ],
+      "season_columns": [
+        "season_sin_annual",
+        "season_cos_annual",
+        "season_sin_semiannual",
+        "season_cos_semiannual"
+      ],
+      "target_columns": [
+        "target_yN",
+        "target_yF",
+        "target_yT",
+        "target_sigma_N",
+        "target_sigma_F",
+        "target_sigma_T",
+        "target_delta_yN",
+        "target_delta_yF",
+        "target_delta_yT"
+      ]
+    },
+    "calibrated_bloom_horizons": [
+      1,
+      2,
+      3
+    ]
+  },
+  "row_counts": {
+    "selected_origins": 6145,
+    "evaluated_rollout_rows": 18435,
+    "availability_summary_rows": 3,
+    "backtest_row_export_rows": 18435,
+    "metric_rows": 66,
+    "alert_metric_rows": 12,
+    "example_rows": 180
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_model_v1.pt",
+      "bytes": 432436,
+      "sha256": "3f4caf5940e3faea94d483eb2ff45ce402452cdafc61ed9628af16b40a21a0ea"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_manifest.json",
+      "bytes": 6102,
+      "sha256": "eb3796b7295d6ed30a5b3957fcf087f980c851484a2a799d57c284e4ae7172ad"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_test.parquet",
+      "bytes": 1236304,
+      "sha256": "207ab148192219c82ba5d8e9468920c7b4406815981f7fe56db2327af99996aa"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h1_isotonic.joblib",
+      "bytes": 2726,
+      "sha256": "3b260cdb7dcb10fb4ffc72a96a13e387123631be512f777412361f7f3430dacc"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h2_isotonic.joblib",
+      "bytes": 2950,
+      "sha256": "04346fac63cf670b59bdff37fa0544c7bcfa3e590f7ff48627bea8a5fec7adff"
+    },
+    {
+      "path": "models/anfis/calibrators/irc1_h3_isotonic.joblib",
+      "bytes": 2822,
+      "sha256": "389ca9ac472a25ae24fa7a7ed6c796d3b1a1da71da7d0693df131ffab4a39cee"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_test.parquet",
+      "bytes": 1230190,
+      "sha256": "7077e19c17fbd5b72b8bc1d527170054f32482e01015232bfdfcf1c5e6525b76"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_metrics_matched_grud_test.csv",
+      "bytes": 17252,
+      "sha256": "b015e4f3c33c7da5371924f3dca14a74dc3dc67798146a7ca174297609936851"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_alert_metrics_matched_grud_test.csv",
+      "bytes": 3690,
+      "sha256": "30d4ce904a8a4ad0cf62485b4ba4e5cdfea82b7e896d94d3aba3d0d65ac41cff"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_examples_matched_grud_test.csv",
+      "bytes": 33366,
+      "sha256": "b8fb939a30b442d45c3092ae9b89e8f8b166e0ef8380bd0b35b41dd57fb30109"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_report_matched_grud_test.md",
+      "bytes": 3899,
+      "sha256": "7f2dd61a4d628ce82926dfd0ccd533819d2e429d8030125b057912e1b868bcb5"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/evaluate_pipe_neural_ode_rollouts.py",
+    "bytes": 38543,
+    "sha256": "10bc0d01f83cbf351bbf1253b3f7af902299dfa4dc1c6b9da5324fce4f37adf0"
+  }
+}

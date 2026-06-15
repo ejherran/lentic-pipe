@@ -1,0 +1,203 @@
+{
+  "generated_at_utc": "2026-06-15T20:35:48.629696+00:00",
+  "started_at_utc": "2026-06-15T20:35:05.549678+00:00",
+  "model_version": "pipe_neural_ode_history_v1",
+  "status": "completed",
+  "scope": {
+    "synthetic_smoke": false
+  },
+  "config": {
+    "architecture": "history_encoder_latent_ode",
+    "history_length": 12,
+    "input_dim": 13,
+    "state_dim": 9,
+    "season_dim": 4,
+    "history_hidden_dim": 96,
+    "history_layers": 1,
+    "latent_dim": 64,
+    "dynamics_hidden_dim": 96,
+    "dynamics_depth": 2,
+    "dropout": 0.0,
+    "derivative_scale": 0.5,
+    "state_delta_scale": 0.5,
+    "integration_time": 1.0,
+    "ode_method": "rk4",
+    "ode_step_size": 0.25,
+    "rtol": 0.001,
+    "atol": 0.0001,
+    "mse_weight": 0.5,
+    "checkpoint_selection_metric": "balanced",
+    "checkpoint_selection_uses_output_blend": true,
+    "blend_selection_metric": "balanced",
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "state_input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT"
+    ],
+    "season_columns": [
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ],
+    "epochs": 40,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "random_seed": 1729,
+    "max_rows": null,
+    "max_train_windows": 0,
+    "max_eval_windows": 0,
+    "synthetic_sites": 16,
+    "synthetic_months_per_split": 24
+  },
+  "row_counts": {
+    "available_windows": {
+      "train": 112470,
+      "validation": 7079,
+      "test": 7582
+    },
+    "sampled_windows": {
+      "train": 112470,
+      "validation": 7079,
+      "test": 7582
+    },
+    "metric_rows": 30,
+    "blend_weight_rows": 9,
+    "blend_search_rows": 81,
+    "persistence_metric_rows": 30,
+    "comparison_rows": 30,
+    "training_curve_rows": 40
+  },
+  "selection": {
+    "checkpoint_selection_metric": "balanced",
+    "best_epoch": 40,
+    "best_validation_loss": -2.2480238412527536,
+    "best_validation_rmse_all": 0.11279307783526199,
+    "best_validation_mae_all": 0.06984724672679181,
+    "best_validation_objective": 0.7703433594909121
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json",
+      "bytes": 4688,
+      "sha256": "b274fb7a8861dd4230156fd8012bdc76e42bee199d5a6913ea494f40facd1cbe"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_model_v1.pt",
+      "bytes": 432436,
+      "sha256": "e3e07f62d50ed2a8133bf642392a0316fc4fe181167414f8c8e9b2e9acdef88a"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_checkpoint_v1.pt",
+      "bytes": 1300719,
+      "sha256": "79af13625acf33ba68ca1f664d559ade8c8942d5ae9066ed934f15cff88b9624"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_metrics.csv",
+      "bytes": 3597,
+      "sha256": "30fd7b29a3b98dae9f0011edcf055035b68857521575ea0231259da60771e2d1"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_persistence_metrics.csv",
+      "bytes": 1812,
+      "sha256": "f773361adeaa4cc22593f0227fac67000960c841795032e9e467bc576144c00e"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_persistence_comparison.csv",
+      "bytes": 5923,
+      "sha256": "294be34c7eb83bbaf6e684664648fd991000b1656c64c17b4050613fd7a60db1"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_output_blend_weights.csv",
+      "bytes": 841,
+      "sha256": "f101ddfa9324d4839d26d4c65265a611f91d80b2cc33c9d9aed3d0234974b2ab"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_output_blend_search.csv",
+      "bytes": 6870,
+      "sha256": "d1739bc5aad9f8f6e8599102dd887f760ffb9c89aec83c0bc790ee75a0bb51e9"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_training_curve.csv",
+      "bytes": 6860,
+      "sha256": "e069670218e56a0096bdaa7441e3df34f6f691db3915a04617357ccd80deff0e"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_prediction_examples.csv",
+      "bytes": 290528,
+      "sha256": "2e636bcd541501467d047241fd48c16ec0125112bd5c7c5ccd6cbead2ddf65e6"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long40/pipe_neural_ode_history_report.md",
+      "bytes": 6383,
+      "sha256": "fe3b6c904b558669cc5e7593488f79500d90aa228f6621956a67b14f2c1cacce"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/train_pipe_neural_ode_v1.py",
+    "bytes": 38699,
+    "sha256": "ac903466b6eb68551d1097e6ee9e303b48e670b989517bb1141ba4330b2fb182"
+  }
+}
