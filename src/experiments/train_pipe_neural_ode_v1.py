@@ -47,6 +47,7 @@ from src.experiments.train_pipe_grud import (
     select_output_blend_weights,
     set_reproducible_seed,
     train_epoch,
+    training_loss,
     validation_selection_objective,
 )
 from src.experiments.train_pipe_neural_ode import (
@@ -74,6 +75,12 @@ DEFAULT_REPORT = DEFAULT_REPORT_DIR / "pipe_neural_ode_history_report.md"
 DEFAULT_MANIFEST = DEFAULT_REPORT_DIR / "pipe_neural_ode_history_manifest.json"
 
 MODEL_VERSION = "pipe_neural_ode_history_v1"
+MULTI_STEP_CONFIG_KEYS = {
+    "training_objective",
+    "multi_step_horizon",
+    "multi_step_loss_weight",
+    "multi_step_checkpoint_objective",
+}
 
 
 def make_history_neural_ode_model(
@@ -191,6 +198,10 @@ def model_config(args: argparse.Namespace) -> dict[str, Any]:
     return {
         "architecture": "history_encoder_latent_ode",
         "history_length": int(args.history_length),
+        "training_objective": args.training_objective,
+        "multi_step_horizon": int(args.multi_step_horizon),
+        "multi_step_loss_weight": float(args.multi_step_loss_weight),
+        "multi_step_checkpoint_objective": args.multi_step_checkpoint_objective,
         "input_dim": len(INPUT_COLUMNS),
         "state_dim": len(STATE_INPUT_COLUMNS),
         "season_dim": len(SEASON_COLUMNS),
@@ -218,6 +229,175 @@ def model_config(args: argparse.Namespace) -> dict[str, Any]:
         "season_columns": SEASON_COLUMNS,
         "target_columns": TARGET_COLUMNS,
     }
+
+
+def checkpoint_selection_label(args: argparse.Namespace) -> str:
+    if args.training_objective == "multi_step":
+        if args.multi_step_checkpoint_objective == "one_step":
+            return f"multi_step_one_step_{args.checkpoint_selection_metric}"
+        return "multi_step_rollout_loss"
+    return str(args.checkpoint_selection_metric)
+
+
+def checkpoint_selection_objective(
+    *,
+    args: argparse.Namespace,
+    validation_rollout_loss: float,
+    validation_one_step_objective: float,
+) -> float:
+    if args.training_objective != "multi_step":
+        return float(validation_one_step_objective)
+    if args.multi_step_checkpoint_objective == "one_step":
+        return float(validation_one_step_objective)
+    return float(validation_rollout_loss)
+
+
+def eligible_multistep_window_indices(
+    frame: pd.DataFrame, split: str, history_length: int, horizon: int
+) -> np.ndarray:
+    if horizon < 1:
+        raise ValueError("horizon must be >= 1")
+    candidates = eligible_window_indices(frame, split, history_length)
+    if horizon == 1 or len(candidates) == 0:
+        return candidates
+    run_ids = frame["window_run_id"].to_numpy(dtype="int64")
+    positions = frame["window_position"].to_numpy(dtype="int64")
+    selected: list[int] = []
+    last_frame_index = len(frame) - 1
+    for index in candidates:
+        final_index = int(index) + horizon - 1
+        if final_index > last_frame_index:
+            continue
+        if run_ids[final_index] != run_ids[int(index)]:
+            continue
+        if positions[final_index] != positions[int(index)] + horizon - 1:
+            continue
+        selected.append(int(index))
+    return np.asarray(selected, dtype="int64")
+
+
+class MultiStepWindowDataset:
+    def __init__(
+        self,
+        x_values: np.ndarray,
+        y_values: np.ndarray,
+        end_indices: np.ndarray,
+        history_length: int,
+        horizon: int,
+    ) -> None:
+        if horizon < 1:
+            raise ValueError("horizon must be >= 1")
+        self.x_values = x_values
+        self.y_values = y_values
+        self.end_indices = end_indices.astype("int64")
+        self.history_length = int(history_length)
+        self.horizon = int(horizon)
+
+    def __len__(self) -> int:
+        return int(len(self.end_indices))
+
+    def __getitem__(self, item: int) -> tuple[Any, Any, Any]:
+        torch = _require_torch()
+        end_index = int(self.end_indices[item])
+        start_index = end_index - self.history_length + 1
+        x_window = self.x_values[start_index : end_index + 1]
+        future_targets = self.y_values[end_index : end_index + self.horizon]
+        future_inputs = self.x_values[end_index + 1 : end_index + self.horizon]
+        return torch.from_numpy(x_window), torch.from_numpy(future_targets), torch.from_numpy(future_inputs)
+
+
+def multistep_data_loader(
+    dataset: MultiStepWindowDataset, *, batch_size: int, shuffle: bool, seed: int
+) -> Any:
+    torch = _require_torch()
+    generator = torch.Generator()
+    generator.manual_seed(seed)
+    return torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=shuffle, generator=generator)
+
+
+def multistep_training_loss(
+    model: Any,
+    x_batch: Any,
+    future_targets: Any,
+    future_inputs: Any,
+    weights: Any,
+    args: argparse.Namespace,
+) -> Any:
+    torch = _require_torch()
+    window = x_batch
+    step_losses = []
+    horizon = int(future_targets.shape[1])
+    for step in range(horizon):
+        mu, logvar = model(window)
+        target = future_targets[:, step, :]
+        step_losses.append(training_loss(mu, logvar, target, weights, args.mse_weight))
+        if step + 1 < horizon:
+            next_input = future_inputs[:, step, :].clone()
+            next_input[:, : len(STATE_INPUT_COLUMNS)] = _bound_state_tensor(mu)
+            window = torch.cat([window[:, 1:, :], next_input[:, None, :]], dim=1)
+    if len(step_losses) == 1 or args.multi_step_loss_weight <= 0:
+        return step_losses[0]
+    rollout_loss = torch.stack(step_losses[1:]).mean()
+    weight = float(args.multi_step_loss_weight)
+    return (step_losses[0] + weight * rollout_loss) / (1.0 + weight)
+
+
+def train_multistep_epoch(
+    model: Any,
+    dataset: MultiStepWindowDataset,
+    args: argparse.Namespace,
+    optimizer: Any,
+    weights: Any,
+    device: Any,
+    epoch: int,
+) -> float:
+    torch = _require_torch()
+    model.train()
+    loader = multistep_data_loader(dataset, batch_size=args.batch_size, shuffle=True, seed=args.random_seed + epoch)
+    total_loss = 0.0
+    total_rows = 0
+    for batch_index, (x_batch, future_targets, future_inputs) in enumerate(loader, start=1):
+        x_batch = x_batch.to(device=device, dtype=weights.dtype)
+        future_targets = future_targets.to(device=device, dtype=weights.dtype)
+        future_inputs = future_inputs.to(device=device, dtype=weights.dtype)
+        optimizer.zero_grad(set_to_none=True)
+        loss = multistep_training_loss(model, x_batch, future_targets, future_inputs, weights, args)
+        loss.backward()
+        if args.grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=float(args.grad_clip))
+        optimizer.step()
+        rows = int(len(x_batch))
+        total_loss += float(loss.item()) * rows
+        total_rows += rows
+        if args.progress_every_batches and batch_index % args.progress_every_batches == 0:
+            print(f"  batch {batch_index}: loss={float(loss.item()):.5f}", flush=True)
+    return total_loss / max(total_rows, 1)
+
+
+def evaluate_multistep_loss(
+    model: Any,
+    dataset: MultiStepWindowDataset,
+    *,
+    args: argparse.Namespace,
+    batch_size: int,
+    weights: Any,
+    device: Any,
+) -> float:
+    torch = _require_torch()
+    model.eval()
+    loader = multistep_data_loader(dataset, batch_size=batch_size, shuffle=False, seed=0)
+    total_loss = 0.0
+    total_rows = 0
+    with torch.no_grad():
+        for x_batch, future_targets, future_inputs in loader:
+            x_batch = x_batch.to(device=device, dtype=weights.dtype)
+            future_targets = future_targets.to(device=device, dtype=weights.dtype)
+            future_inputs = future_inputs.to(device=device, dtype=weights.dtype)
+            loss = multistep_training_loss(model, x_batch, future_targets, future_inputs, weights, args)
+            rows = int(len(x_batch))
+            total_loss += float(loss.item()) * rows
+            total_rows += rows
+    return total_loss / max(total_rows, 1)
 
 
 def save_checkpoint(
@@ -295,11 +475,19 @@ def load_checkpoint_if_requested(
     checkpoint = torch.load(args.checkpoint, map_location="cpu", weights_only=False)
     checkpoint_config = checkpoint.get("config", {})
     expected_config = model_config(args)
-    mismatches = [
-        key
-        for key, expected in expected_config.items()
-        if key not in checkpoint_config or checkpoint_config[key] != expected
-    ]
+    mismatches = []
+    for key, expected in expected_config.items():
+        if args.training_objective == "one_step" and key in MULTI_STEP_CONFIG_KEYS:
+            continue
+        if key not in checkpoint_config:
+            if key == "multi_step_checkpoint_objective" and expected == "rollout_loss":
+                continue
+            if args.training_objective == "one_step" and key in MULTI_STEP_CONFIG_KEYS:
+                continue
+            mismatches.append(key)
+            continue
+        if checkpoint_config[key] != expected:
+            mismatches.append(key)
     if mismatches:
         raise ValueError(
             "Checkpoint config is incompatible with current arguments; "
@@ -344,12 +532,17 @@ def write_report(
         "",
         "This step trains a history-encoded Neural ODE variant over the frozen PIPE sequence schema.",
         "A GRU encoder summarizes the recent PIPE history, initializes a latent ODE, and decodes the next fuzzy state.",
-        "The v1 runner is one-step; recursive rollout support is a downstream gate after one-step validation.",
+        "The default objective remains one-step; optional multi-step training rolls predictions forward through future seasons.",
+        "The metrics tables below remain one-step diagnostics so runs stay comparable with earlier v1 artifacts.",
         f"Synthetic smoke mode: `{bool(args.synthetic_smoke)}`.",
         "",
         "## Configuration",
         "",
         f"- History length: `{args.history_length}`",
+        f"- Training objective: `{args.training_objective}`",
+        f"- Multi-step horizon: `{args.multi_step_horizon}`",
+        f"- Multi-step continuation loss weight: `{args.multi_step_loss_weight}`",
+        f"- Multi-step checkpoint objective: `{args.multi_step_checkpoint_objective}`",
         f"- History hidden dimension: `{args.history_hidden_dim}`",
         f"- History layers: `{args.history_layers}`",
         f"- Latent dimension: `{args.latent_dim}`",
@@ -362,7 +555,8 @@ def write_report(
         f"- ODE method: `{args.ode_method}`",
         f"- ODE step size: `{args.ode_step_size}`",
         f"- Auxiliary MSE weight: `{args.mse_weight}`",
-        f"- Checkpoint selection metric: `{args.checkpoint_selection_metric}`",
+        f"- Checkpoint selection metric: `{checkpoint_selection_label(args)}`",
+        f"- One-step checkpoint metric: `{args.checkpoint_selection_metric}`",
         f"- Output blend selection metric: `{args.blend_selection_metric}`",
         f"- Epochs requested: `{args.epochs}`",
         f"- Batch size: `{args.batch_size}`",
@@ -386,13 +580,16 @@ def write_report(
                 "## Best Epoch",
                 "",
                 f"- Epoch: `{int(best_row.epoch)}`",
-                f"- Selection metric: `{args.checkpoint_selection_metric}`",
+                f"- Selection metric: `{checkpoint_selection_label(args)}`",
                 f"- Selection objective: `{_format_float(float(getattr(best_row, best_sort_column)))}`",
                 f"- Validation loss: `{_format_float(float(best_row.validation_loss))}`",
                 f"- Validation RMSE all: `{_format_float(float(best_row.validation_rmse_all))}`",
                 f"- Validation MAE all: `{_format_float(float(best_row.validation_mae_all))}`",
             ]
         )
+        rollout_loss = getattr(best_row, "validation_rollout_loss", np.nan)
+        if pd.notna(rollout_loss):
+            lines.append(f"- Validation multi-step rollout loss: `{_format_float(float(rollout_loss))}`")
     lines.extend(
         [
             "",
@@ -540,11 +737,16 @@ def manifest_payload(
             "training_curve_rows": int(len(history)),
         },
         "selection": {
-            "checkpoint_selection_metric": args.checkpoint_selection_metric,
+            "checkpoint_selection_metric": checkpoint_selection_label(args),
+            "one_step_checkpoint_selection_metric": args.checkpoint_selection_metric,
             "best_epoch": int(best_row["epoch"]) if best_row else None,
             "best_validation_loss": float(best_row["validation_loss"]) if best_row else None,
             "best_validation_rmse_all": float(best_row.get("validation_rmse_all", np.nan)) if best_row else None,
             "best_validation_mae_all": float(best_row.get("validation_mae_all", np.nan)) if best_row else None,
+            "best_validation_rollout_loss": float(best_row.get("validation_rollout_loss", np.nan)) if best_row else None,
+            "best_validation_one_step_selection_objective": (
+                float(best_row.get("validation_one_step_selection_objective", np.nan)) if best_row else None
+            ),
             "best_validation_objective": float(best_row.get(best_sort_column, np.nan)) if best_row else None,
         },
         "inputs": input_records,
@@ -572,6 +774,19 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--synthetic-sites", type=int, default=16)
     parser.add_argument("--synthetic-months-per-split", type=int, default=24)
     parser.add_argument("--history-length", type=int, default=12)
+    parser.add_argument("--training-objective", choices=["one_step", "multi_step"], default="one_step")
+    parser.add_argument("--multi-step-horizon", type=int, default=3)
+    parser.add_argument("--multi-step-loss-weight", type=float, default=1.0)
+    parser.add_argument(
+        "--multi-step-checkpoint-objective",
+        choices=["rollout_loss", "one_step"],
+        default="rollout_loss",
+        help=(
+            "Checkpoint selection objective for multi-step training. "
+            "Use rollout_loss to optimize the recursive training loss, or one_step to keep the best "
+            "validation one-step checkpoint while still training with multi-step continuation loss."
+        ),
+    )
     parser.add_argument("--history-hidden-dim", type=int, default=96)
     parser.add_argument("--history-layers", type=int, default=1)
     parser.add_argument("--latent-dim", type=int, default=64)
@@ -617,6 +832,10 @@ def main() -> None:
         raise ValueError("--history-layers must be >= 1")
     if args.epochs < 1:
         raise ValueError("--epochs must be >= 1")
+    if args.multi_step_horizon < 1:
+        raise ValueError("--multi-step-horizon must be >= 1")
+    if args.multi_step_loss_weight < 0:
+        raise ValueError("--multi-step-loss-weight must be >= 0")
     if args.dynamics_depth < 0:
         raise ValueError("--dynamics-depth must be >= 0")
     if args.derivative_scale <= 0:
@@ -654,9 +873,15 @@ def main() -> None:
     x_values = frame[INPUT_COLUMNS].to_numpy(dtype="float32")
     y_values = frame[TARGET_COLUMNS].to_numpy(dtype="float32")
 
-    available_indices = {
-        split: eligible_window_indices(frame, split, args.history_length) for split in ["train", "validation", "test"]
-    }
+    if args.training_objective == "multi_step":
+        available_indices = {
+            split: eligible_multistep_window_indices(frame, split, args.history_length, args.multi_step_horizon)
+            for split in ["train", "validation", "test"]
+        }
+    else:
+        available_indices = {
+            split: eligible_window_indices(frame, split, args.history_length) for split in ["train", "validation", "test"]
+        }
     sampled_indices = {
         "train": sample_indices(available_indices["train"], args.max_train_windows, args.random_seed),
         "validation": sample_indices(available_indices["validation"], args.max_eval_windows, args.random_seed + 1),
@@ -672,6 +897,10 @@ def main() -> None:
 
     datasets = {
         split: WindowDataset(x_values, y_values, indices, args.history_length) for split, indices in sampled_indices.items()
+    }
+    multistep_datasets = {
+        split: MultiStepWindowDataset(x_values, y_values, indices, args.history_length, args.multi_step_horizon)
+        for split, indices in sampled_indices.items()
     }
     model = make_history_neural_ode_model(
         input_dim=len(INPUT_COLUMNS),
@@ -710,7 +939,27 @@ def main() -> None:
         for epoch in range(start_epoch + 1, args.epochs + 1):
             epoch_started = time.monotonic()
             print(f"epoch {epoch}/{args.epochs}: training", flush=True)
-            train_loss = train_epoch(model, datasets["train"], args, optimizer, weights, device, epoch)
+            if args.training_objective == "multi_step":
+                train_loss = train_multistep_epoch(
+                    model,
+                    multistep_datasets["train"],
+                    args,
+                    optimizer,
+                    weights,
+                    device,
+                    epoch,
+                )
+                validation_rollout_loss = evaluate_multistep_loss(
+                    model,
+                    multistep_datasets["validation"],
+                    args=args,
+                    batch_size=args.batch_size,
+                    weights=weights,
+                    device=device,
+                )
+            else:
+                train_loss = train_epoch(model, datasets["train"], args, optimizer, weights, device, epoch)
+                validation_rollout_loss = np.nan
             epoch_blend_weights, _ = select_output_blend_weights(
                 model,
                 datasets["validation"],
@@ -728,11 +977,16 @@ def main() -> None:
                 device=device,
                 blend_weights=epoch_blend_tensor,
             )
-            validation_objective = validation_selection_objective(
+            validation_one_step_objective = validation_selection_objective(
                 validation_metrics,
                 validation_loss,
                 persistence_metrics,
                 args.checkpoint_selection_metric,
+            )
+            validation_objective = checkpoint_selection_objective(
+                args=args,
+                validation_rollout_loss=float(validation_rollout_loss),
+                validation_one_step_objective=float(validation_one_step_objective),
             )
             if validation_objective < best_validation_objective:
                 best_validation_loss = validation_loss
@@ -753,8 +1007,12 @@ def main() -> None:
                 "validation_loss": float(validation_loss),
                 "validation_rmse_all": float(validation_all.rmse),
                 "validation_mae_all": float(validation_all.mae),
+                "validation_rollout_loss": float(validation_rollout_loss),
+                "validation_one_step_selection_objective": float(validation_one_step_objective),
                 "validation_selection_objective": float(validation_objective),
                 "validation_blend_selection_metric": args.blend_selection_metric,
+                "training_objective": args.training_objective,
+                "multi_step_checkpoint_objective": args.multi_step_checkpoint_objective,
                 "epoch_seconds": float(time.monotonic() - epoch_started),
                 "best_validation_loss": float(best_validation_loss),
                 "best_validation_objective": float(best_validation_objective),
@@ -770,11 +1028,13 @@ def main() -> None:
                 history=history_rows,
                 config=config,
             )
-            print(
+            message = (
                 f"epoch {epoch}: train_loss={train_loss:.5f}; validation_loss={validation_loss:.5f}; "
-                f"selection_objective={validation_objective:.5f}; elapsed={_elapsed(started_monotonic)}",
-                flush=True,
+                f"selection_objective={validation_objective:.5f}"
             )
+            if args.training_objective == "multi_step":
+                message += f"; validation_rollout_loss={float(validation_rollout_loss):.5f}"
+            print(f"{message}; elapsed={_elapsed(started_monotonic)}", flush=True)
     except KeyboardInterrupt:
         status = "interrupted"
         print("interrupted; last completed epoch checkpoint is preserved", flush=True)

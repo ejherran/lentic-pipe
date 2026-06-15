@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -7,9 +8,17 @@ from pathlib import Path
 
 import pytest
 
-from src.experiments.build_pipe_sequences import INPUT_COLUMNS, SEASON_COLUMNS
-from src.experiments.train_pipe_neural_ode import STATE_INPUT_COLUMNS
-from src.experiments.train_pipe_neural_ode_v1 import make_history_neural_ode_model
+from src.experiments.build_pipe_sequences import INPUT_COLUMNS, SEASON_COLUMNS, TARGET_COLUMNS
+from src.experiments.train_pipe_grud import make_loss_weights, prepare_window_frame
+from src.experiments.train_pipe_neural_ode import STATE_INPUT_COLUMNS, synthetic_sequence_frame
+from src.experiments.train_pipe_neural_ode_v1 import (
+    MultiStepWindowDataset,
+    checkpoint_selection_label,
+    checkpoint_selection_objective,
+    eligible_multistep_window_indices,
+    make_history_neural_ode_model,
+    multistep_training_loss,
+)
 
 
 def test_history_neural_ode_model_forward_returns_bounded_state() -> None:
@@ -45,6 +54,106 @@ def test_history_neural_ode_model_forward_returns_bounded_state() -> None:
     assert torch.all(mu[:, :6] <= 1.0)
     assert torch.all(mu[:, 6:] >= -1.0)
     assert torch.all(mu[:, 6:] <= 1.0)
+
+
+def test_multistep_window_dataset_requires_complete_future_horizon() -> None:
+    frame = prepare_window_frame(synthetic_sequence_frame(sites_per_split=1, months_per_split=6, seed=11))
+
+    indices = eligible_multistep_window_indices(frame, split="train", history_length=3, horizon=3)
+
+    assert frame.loc[indices, "window_position"].tolist() == [2, 3]
+
+    dataset = MultiStepWindowDataset(
+        frame[INPUT_COLUMNS].to_numpy(dtype="float32"),
+        frame[TARGET_COLUMNS].to_numpy(dtype="float32"),
+        indices,
+        history_length=3,
+        horizon=3,
+    )
+    x_window, future_targets, future_inputs = dataset[0]
+
+    assert tuple(x_window.shape) == (3, len(INPUT_COLUMNS))
+    assert tuple(future_targets.shape) == (3, len(TARGET_COLUMNS))
+    assert tuple(future_inputs.shape) == (2, len(INPUT_COLUMNS))
+
+
+def test_multistep_training_loss_is_finite() -> None:
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("torchdiffeq")
+
+    frame = prepare_window_frame(synthetic_sequence_frame(sites_per_split=1, months_per_split=6, seed=17))
+    indices = eligible_multistep_window_indices(frame, split="train", history_length=3, horizon=2)
+    dataset = MultiStepWindowDataset(
+        frame[INPUT_COLUMNS].to_numpy(dtype="float32"),
+        frame[TARGET_COLUMNS].to_numpy(dtype="float32"),
+        indices,
+        history_length=3,
+        horizon=2,
+    )
+    x_window, future_targets, future_inputs = dataset[0]
+    model = make_history_neural_ode_model(
+        input_dim=len(INPUT_COLUMNS),
+        state_dim=len(STATE_INPUT_COLUMNS),
+        season_dim=len(SEASON_COLUMNS),
+        history_hidden_dim=8,
+        history_layers=1,
+        latent_dim=6,
+        dynamics_hidden_dim=8,
+        dynamics_depth=1,
+        dropout=0.0,
+        derivative_scale=0.2,
+        state_delta_scale=0.3,
+        integration_time=1.0,
+        ode_method="rk4",
+        ode_step_size=0.5,
+        rtol=1e-3,
+        atol=1e-4,
+    )
+    args = argparse.Namespace(mse_weight=0.5, multi_step_loss_weight=1.0)
+    weights = torch.from_numpy(make_loss_weights())
+
+    loss = multistep_training_loss(
+        model,
+        x_window.unsqueeze(0),
+        future_targets.unsqueeze(0),
+        future_inputs.unsqueeze(0),
+        weights,
+        args,
+    )
+
+    assert bool(torch.isfinite(loss))
+
+
+def test_multistep_checkpoint_objective_can_use_one_step_selection() -> None:
+    rollout_args = argparse.Namespace(
+        training_objective="multi_step",
+        multi_step_checkpoint_objective="rollout_loss",
+        checkpoint_selection_metric="balanced",
+    )
+    one_step_args = argparse.Namespace(
+        training_objective="multi_step",
+        multi_step_checkpoint_objective="one_step",
+        checkpoint_selection_metric="balanced",
+    )
+
+    assert checkpoint_selection_label(rollout_args) == "multi_step_rollout_loss"
+    assert checkpoint_selection_label(one_step_args) == "multi_step_one_step_balanced"
+    assert (
+        checkpoint_selection_objective(
+            args=rollout_args,
+            validation_rollout_loss=-2.0,
+            validation_one_step_objective=0.75,
+        )
+        == -2.0
+    )
+    assert (
+        checkpoint_selection_objective(
+            args=one_step_args,
+            validation_rollout_loss=-2.0,
+            validation_one_step_objective=0.75,
+        )
+        == 0.75
+    )
 
 
 def test_train_pipe_neural_ode_v1_cli_writes_synthetic_smoke_outputs(tmp_path: Path) -> None:

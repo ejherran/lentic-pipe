@@ -1392,3 +1392,200 @@ DVC promotion note:
   rows and calibrated backtest rows;
 - the DVC objects still need to be pushed to the configured private remote
   before the Git commit is finalized.
+
+## Gate v1.9-v1.11 Multi-Step Refinement
+
+The multi-step Neural ODE refinement was attempted after the long80
+history-window v1 branch had already become the leading balanced temporal
+candidate. The refinement tested whether training on a recursive h1-h3
+continuation objective could improve operational rollout alerts without
+degrading continuous-state behavior.
+
+Implemented trainer extensions:
+
+- optional `--training-objective multi_step`;
+- configurable `--multi-step-horizon`;
+- configurable `--multi-step-loss-weight`;
+- optional `--multi-step-checkpoint-objective`, allowing multi-step training
+  while selecting the checkpoint by the one-step validation objective.
+
+Evaluated branches:
+
+- h3 multi-step with continuation weight `1.0`;
+- h3 multi-step with continuation weight `0.5`;
+- h3 multi-step with continuation weight `0.25`;
+- h3 multi-step with continuation weight `0.25` and one-step checkpoint
+  selection.
+
+The `0.25` one-step-checkpoint branch was the strongest refined multi-step
+variant. It selected epoch `79` by `multi_step_one_step_balanced`, reached
+one-step test RMSE/MAE `0.1052` / `0.0644` on the h3-eligible surface, and was
+therefore carried through validation rollout, test rollout, F2 calibration, and
+2B policy-frontier evaluation.
+
+Held-out test rollout comparison:
+
+- long80 all-state RMSE h1/h2/h3:
+  `0.1125` / `0.1217` / `0.1242`;
+- multi-step `0.25` one-step-checkpoint all-state RMSE h1/h2/h3:
+  `0.1131` / `0.1220` / `0.1251`;
+- long80 `irc_alert` PR-AUC h1/h2/h3:
+  `0.9331` / `0.9208` / `0.9238`;
+- multi-step `0.25` one-step-checkpoint `irc_alert` PR-AUC h1/h2/h3:
+  `0.9335` / `0.9231` / `0.9263`;
+- long80 `bloom_h` PR-AUC h1/h2/h3:
+  `0.6691` / `0.6426` / `0.6422`;
+- multi-step `0.25` one-step-checkpoint `bloom_h` PR-AUC h1/h2/h3:
+  `0.6464` / `0.6254` / `0.6244`.
+
+F2 calibration did not promote the refined branch over long80:
+
+- long80 test F2 `irc_alert` h1/h2/h3:
+  `0.8965` / `0.8896` / `0.8933`;
+- multi-step `0.25` one-step-checkpoint test F2 `irc_alert` h1/h2/h3:
+  `0.8921` / `0.8858` / `0.8870`.
+
+2B `closest_pr` test comparison:
+
+- long80 F2 h1/h2/h3:
+  `0.8761` / `0.8705` / `0.8686`;
+- multi-step `0.25` one-step-checkpoint F2 h1/h2/h3:
+  `0.8703` / `0.8697` / `0.8717`;
+- long80 MCC h1/h2/h3:
+  `0.7474` / `0.7209` / `0.7224`;
+- multi-step `0.25` one-step-checkpoint MCC h1/h2/h3:
+  `0.7481` / `0.7297` / `0.7289`.
+
+Interpretation:
+
+- The multi-step objective can improve `irc_alert` ranking and several balanced
+  frontier metrics, especially h2-h3 MCC, but it does not improve aggregate
+  recursive state RMSE or `bloom_h`.
+- The refined branch is scientifically useful because it shows the method was
+  attempted beyond a minimal implementation and because checkpoint selection
+  materially changes behavior.
+- It is not a clear replacement for long80. Long80 remains the Neural ODE v1
+  temporal leader because it has stronger aggregate state behavior, stronger
+  `bloom_h`, and the best sensitive F2 profile while remaining competitive in
+  the 2B balanced frontier.
+
+Decision: close the multi-step refinement as evaluated but not promoted. Keep
+long80 as the Neural ODE v1 candidate for thesis-level comparison. The
+generated multi-step branch artifacts were reviewed locally but are not promoted
+as default Git/DVC artifacts; the reproducible public record is the trainer
+extension, tests, and this summarized ablation evidence.
+
+### Regenerating Non-Promoted Multi-Step Branches
+
+The multi-step branch artifacts are intentionally not promoted as default
+Git/DVC outputs. They can be regenerated from the public trainer and the
+existing adaptive WQP-focused sequence surface. Before rerunning these commands,
+pull the required DVC data/model inputs, including the adaptive PIPE/GRU-D
+matched-origin rollout rows and the Neural ODE v1 long80 comparison artifacts.
+
+Branch settings:
+
+- `adaptive_wqp_focused_history_v1_multistep_h3`:
+  `WEIGHT=1.0`, `CKPT_OBJECTIVE=rollout_loss`;
+- `adaptive_wqp_focused_history_v1_multistep_h3_w05`:
+  `WEIGHT=0.5`, `CKPT_OBJECTIVE=rollout_loss`;
+- `adaptive_wqp_focused_history_v1_multistep_h3_w025`:
+  `WEIGHT=0.25`, `CKPT_OBJECTIVE=rollout_loss`;
+- `adaptive_wqp_focused_history_v1_multistep_h3_w025_onestep_ckpt`:
+  `WEIGHT=0.25`, `CKPT_OBJECTIVE=one_step`.
+
+Training recipe:
+
+```bash
+BRANCH=adaptive_wqp_focused_history_v1_multistep_h3_w025_onestep_ckpt
+WEIGHT=0.25
+CKPT_OBJECTIVE=one_step
+
+poetry run python src/experiments/train_pipe_neural_ode_v1.py \
+  --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+  --sequence-manifest reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json \
+  --history-length 12 \
+  --training-objective multi_step \
+  --multi-step-horizon 3 \
+  --multi-step-loss-weight "${WEIGHT}" \
+  --multi-step-checkpoint-objective "${CKPT_OBJECTIVE}" \
+  --epochs 80 \
+  --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_model_v1.pt" \
+  --checkpoint "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_checkpoint_v1.pt" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_metrics.csv" \
+  --persistence-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_persistence_metrics.csv" \
+  --comparison "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_persistence_comparison.csv" \
+  --blend-weights "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_output_blend_weights.csv" \
+  --blend-search "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_output_blend_search.csv" \
+  --training-curve "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_training_curve.csv" \
+  --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_prediction_examples.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_manifest.json"
+```
+
+Matched-origin rollout recipe. Run this for `validation` and `test` when a
+branch is carried to held-out rollout evaluation. In the evaluated sequence,
+weight `1.0` and `w025_onestep_ckpt` were carried through test, calibration,
+and 2B; `w05` and `w025` were stopped after validation evidence.
+
+```bash
+for SPLIT in validation test; do
+  poetry run python src/experiments/evaluate_pipe_neural_ode_rollouts.py \
+    --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+    --splits data/splits/monthly_model_splits_v0.parquet \
+    --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_model_v1.pt" \
+    --model-manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_manifest.json" \
+    --reference-backtest-rows "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_${SPLIT}.parquet" \
+    --split "${SPLIT}" \
+    --rollout-horizon 3 \
+    --samples 128 \
+    --require-calibrators \
+    --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_${SPLIT}.parquet" \
+    --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_metrics_matched_grud_${SPLIT}.csv" \
+    --alert-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_alert_metrics_matched_grud_${SPLIT}.csv" \
+    --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_examples_matched_grud_${SPLIT}.csv" \
+    --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_report_matched_grud_${SPLIT}.md" \
+    --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_manifest_matched_grud_${SPLIT}.json"
+done
+```
+
+Calibration and 2B policy-frontier recipe:
+
+```bash
+CALIBRATION_VERSION="pipe_neural_ode_history_${BRANCH}_rollout_alert_calibration_v1"
+POLICY_VERSION="pipe_neural_ode_history_${BRANCH}_rollout_alert_policy_2b_v1"
+
+poetry run python src/experiments/calibrate_pipe_rollout_alerts.py \
+  --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_validation.parquet" \
+  --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_test.parquet" \
+  --calibrator-dir "models/pipe_neural_ode/${BRANCH}/rollout_calibrators" \
+  --thresholds "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_calibration_thresholds.csv" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_calibration_metrics.csv" \
+  --calibrated-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_calibrated_backtest_rows.parquet" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_calibration_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_calibration_manifest.json" \
+  --model-label "PIPE Neural ODE v1 ${BRANCH}" \
+  --calibration-version "${CALIBRATION_VERSION}" \
+  --backtest-version pipe_neural_ode_history_rollout_backtest_v1 \
+  --calibration-split validation \
+  --evaluation-splits validation,test \
+  --selection-objective fbeta \
+  --fbeta-beta 2.0 \
+  --bloom-score-column irc_mean
+
+poetry run python src/experiments/compare_pipe_rollout_alert_policies.py \
+  --calibrated-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_calibrated_backtest_rows.parquet" \
+  --thresholds "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_policy_2b_thresholds.csv" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_policy_2b_metrics.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_policy_2b_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_rollout_policy_2b_manifest.json" \
+  --model-label "PIPE Neural ODE v1 ${BRANCH}" \
+  --policy-version "${POLICY_VERSION}" \
+  --calibration-split validation \
+  --evaluation-splits validation,test \
+  --fbeta-beta 2.0
+```
+
+If these artifacts are regenerated only for an ablation audit, keep them local
+or promote the complete artifact set consistently through DVC. Do not commit
+report files without their matching manifests and declared heavy outputs.
