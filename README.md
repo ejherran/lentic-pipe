@@ -167,6 +167,7 @@ exports, or credential JSON files.
 - `docs/PIPE_ROLLOUT_ITERATION_1.md`
 - `docs/PIPE_ROLLOUT_ITERATION_2.md`
 - `docs/PIPE_LIGHTWEIGHT_SYNTHESIS.md`
+- `docs/ADAPTIVE_ANFIS_PROTOCOL.md`
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 
 ## Current State
@@ -219,6 +220,9 @@ exports, or credential JSON files.
   no-current WQP-focused surfaces, while explicitly separating it from
   adaptive ANFIS, Neural ODE, MIFAL, counterfactual planning, and the final
   thesis-wide evaluation.
+- `docs/ADAPTIVE_ANFIS_PROTOCOL.md` audits the existing expert/refined fuzzy
+  layer and defines the v0 protocol for adaptive `ANFIS-N`, `ANFIS-F`, and
+  `ANFIS-T` before any adaptive training result is claimed.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
