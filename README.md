@@ -166,6 +166,7 @@ exports, or credential JSON files.
 - `docs/DATA_FREEZE.md`
 - `docs/PIPE_ROLLOUT_ITERATION_1.md`
 - `docs/PIPE_ROLLOUT_ITERATION_2.md`
+- `docs/PIPE_LIGHTWEIGHT_SYNTHESIS.md`
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 
 ## Current State
@@ -213,6 +214,11 @@ exports, or credential JSON files.
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion
   criteria.
+- `docs/PIPE_LIGHTWEIGHT_SYNTHESIS.md` closes the current lightweight PIPE
+  comparison block across the Chl-a-aware, no-current all-source, and
+  no-current WQP-focused surfaces, while explicitly separating it from
+  adaptive ANFIS, Neural ODE, MIFAL, counterfactual planning, and the final
+  thesis-wide evaluation.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
