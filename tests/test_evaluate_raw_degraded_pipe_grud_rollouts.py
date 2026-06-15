@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import argparse
 import json
 import subprocess
 import sys
@@ -227,7 +228,7 @@ def test_recomputed_sequences_preserve_requested_input_surface(monkeypatch: pyte
     raw_degradation.build_recomputed_sequences(
         pd.DataFrame({"source_id": ["wqp"]}),
         irc_weights={"alpha": 0.5, "beta": 0.5, "gamma": 2.0},
-        sequence_args=type("Args", (), {"input_surface": "no_current_chla", "source_ids_normalized": ["wqp"]})(),
+        sequence_args=argparse.Namespace(input_surface="no_current_chla", source_ids_normalized=["wqp"]),
     )
 
     assert captured["input_surface"] == "no_current_chla"
@@ -264,18 +265,14 @@ def test_evaluate_raw_degraded_pipe_grud_rollouts_preserves_labels(tmp_path: Pat
     sequences, _, _ = build_recomputed_sequences(
         panel,
         irc_weights={"alpha": 0.5, "beta": 0.5, "gamma": 2.0},
-        sequence_args=type(
-            "Args",
-            (),
-            {
-                "max_gap_months": 1,
-                "train_end": "2018-12",
-                "validation_start": "2019-01",
-                "validation_end": "2021-12",
-                "test_start": "2022-01",
-                "test_end": None,
-            },
-        )(),
+        sequence_args=argparse.Namespace(
+            max_gap_months=1,
+            train_end="2018-12",
+            validation_start="2019-01",
+            validation_end="2021-12",
+            test_start="2022-01",
+            test_end=None,
+        ),
     )
     sequences.to_parquet(sequences_path, index=False)
     _target_rows().to_parquet(splits_path, index=False)

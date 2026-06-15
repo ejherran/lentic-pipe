@@ -208,6 +208,204 @@ Required artifacts:
 - validation/test comparison against expert/refined fuzzy;
 - manifest with code hashes, inputs, outputs, and random seed.
 
+Implementation path:
+
+- builder: `src/experiments/build_adaptive_anfis_state.py`;
+- tests: `tests/test_adaptive_anfis_real_smoke.py`;
+- default adaptive state:
+  `data/fuzzy/adaptive_state_vector_v0.parquet`;
+- default checkpoints: `models/anfis/adaptive/`;
+- default report: `reports/anfis/adaptive_anfis_state_report.md`;
+- default manifest: `reports/anfis/adaptive_anfis_state_manifest.json`;
+- default module metrics:
+  `reports/anfis/adaptive_anfis_state_module_metrics.csv`;
+- default target metrics:
+  `reports/anfis/adaptive_anfis_state_target_metrics.csv`;
+- default coverage diagnostics:
+  `reports/anfis/adaptive_anfis_state_coverage.csv`;
+- default memberships:
+  `reports/anfis/adaptive_anfis_memberships_initial.csv` and
+  `reports/anfis/adaptive_anfis_memberships_final.csv`.
+
+The Gate 3 builder adds two refinements motivated by Gate 2:
+
+- coverage-aware training through `--max-train-missing-fraction`;
+- unit-constrained ordered centers through `--center-constraint unit`.
+
+Initial WQP-focused diagnostic command:
+
+```bash
+poetry run python src/experiments/build_adaptive_anfis_state.py \
+  --source-ids wqp \
+  --train-rows-per-module 4096 \
+  --max-export-rows 50000 \
+  --epochs 60 \
+  --center-constraint unit \
+  --max-train-missing-fraction 0.5
+```
+
+This command is still a bounded diagnostic. A full Gate 3 export should remove
+`--max-export-rows` only after reviewing the bounded WQP-focused report and
+deciding whether the missingness and target metrics are stable enough.
+
+## Gate 3 WQP-Focused Bounded Diagnostic Snapshot
+
+The first bounded Gate 3 WQP-focused diagnostic completed successfully on
+2026-06-15.
+
+Command:
+
+```bash
+poetry run python src/experiments/build_adaptive_anfis_state.py \
+  --source-ids wqp \
+  --train-rows-per-module 4096 \
+  --max-export-rows 50000 \
+  --epochs 60 \
+  --center-constraint unit \
+  --max-train-missing-fraction 0.5
+```
+
+Artifacts:
+
+- adaptive state:
+  `data/fuzzy/adaptive_state_vector_v0.parquet`;
+- checkpoints: `models/anfis/adaptive/`;
+- report:
+  `reports/anfis/adaptive_anfis_state_report.md`;
+- manifest:
+  `reports/anfis/adaptive_anfis_state_manifest.json`;
+- module metrics:
+  `reports/anfis/adaptive_anfis_state_module_metrics.csv`;
+- target metrics:
+  `reports/anfis/adaptive_anfis_state_target_metrics.csv`;
+- coverage diagnostics:
+  `reports/anfis/adaptive_anfis_state_coverage.csv`;
+- memberships:
+  `reports/anfis/adaptive_anfis_memberships_initial.csv` and
+  `reports/anfis/adaptive_anfis_memberships_final.csv`.
+
+Configuration and alignment:
+
+- source: `wqp`;
+- source state rows: `1,626,672`;
+- panel matched rows: `1,626,672`;
+- panel missing rows: `0`;
+- exported adaptive rows: `50,000`;
+- evaluation matched rows: `45,435`;
+- evaluation missing rows: `1,441,389`.
+
+The large number of evaluation missing rows is expected for this diagnostic
+because `--max-export-rows 50000` exports only a bounded sample of the WQP
+state. These target metrics should therefore be read as sample diagnostics, not
+as full Gate 3 validation.
+
+Training module metrics:
+
+| module | final loss | anchor MAE | Spearman | output std | missing fraction |
+|---|---:|---:|---:|---:|---:|
+| `ANFIS-N` | 0.0036 | 0.0682 | 0.9907 | 0.1315 | 0.7901 |
+| `ANFIS-F` | 0.0019 | 0.0971 | 0.9339 | 0.2107 | 0.5100 |
+| `ANFIS-T` | 0.0120 | 0.0925 | 0.9481 | 0.3099 | 0.2710 |
+| `ANFIS-T-no-current` | 0.0151 | 0.0610 | 0.9976 | 0.2413 | 0.4608 |
+
+Export anchor metrics:
+
+| module | rows | anchor MAE | anchor RMSE | Spearman | output std |
+|---|---:|---:|---:|---:|---:|
+| `ANFIS-N` | 50,000 | 0.0587 | 0.0966 | 0.9869 | 0.1262 |
+| `ANFIS-F` | 50,000 | 0.1049 | 0.1447 | 0.8993 | 0.2048 |
+| `ANFIS-T` | 50,000 | 0.0921 | 0.1111 | 0.9632 | 0.2616 |
+| `ANFIS-T-no-current` | 50,000 | 0.0607 | 0.0914 | 0.9974 | 0.2379 |
+
+Validation diagnostic metrics:
+
+| score | horizon | PR-AUC | ROC-AUC | Brier | recall | macro-F1 | risk RMSE |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `irc1_adaptive` | 1 | 0.5624 | 0.8661 | 0.1816 | 0.8543 | 0.6842 | 0.3121 |
+| `irc1_adaptive` | 2 | 0.5234 | 0.8313 | 0.1843 | 0.8008 | 0.6834 | 0.3271 |
+| `irc1_adaptive` | 3 | 0.5378 | 0.8326 | 0.1776 | 0.7489 | 0.6885 | 0.3353 |
+| `irc1_no_chla_adaptive` | 1 | 0.4227 | 0.7777 | 0.2214 | 0.7953 | 0.5810 | 0.3654 |
+| `irc1_no_chla_adaptive` | 2 | 0.3778 | 0.7324 | 0.2245 | 0.7415 | 0.5770 | 0.3766 |
+| `irc1_no_chla_adaptive` | 3 | 0.4201 | 0.7526 | 0.2133 | 0.7265 | 0.6030 | 0.3767 |
+
+Interpretation:
+
+- Gate 3 bounded WQP-focused execution is mechanically healthy.
+- Unit-constrained centers kept all final centers within `[0, 1]`.
+- Full `irc1_adaptive` has mixed target behavior against expert `irc1`: lower
+  PR-AUC/risk RMSE than expert IRC in this bounded sample, but stronger
+  macro-F1.
+- No-current `irc1_no_chla_adaptive` improves over expert `irc1_no_chla` on
+  validation PR-AUC, ROC-AUC, Brier, macro-F1, and risk error in this bounded
+  sample.
+- A full WQP export without `--max-export-rows` is the next required step
+  before accepting `S_adaptive(t)` as a retained Gate 3 artifact.
+
+## Gate 3 WQP-Focused Full Export Snapshot
+
+The full WQP-focused Gate 3 export completed successfully on 2026-06-15.
+
+Command:
+
+```bash
+poetry run python src/experiments/build_adaptive_anfis_state.py \
+  --source-ids wqp \
+  --train-rows-per-module 4096 \
+  --epochs 60 \
+  --center-constraint unit \
+  --max-train-missing-fraction 0.5
+```
+
+Configuration and alignment:
+
+- source: `wqp`;
+- source state rows: `1,626,672`;
+- panel matched rows: `1,626,672`;
+- panel missing rows: `0`;
+- exported adaptive rows: `1,626,672`;
+- evaluation matched rows: `1,486,824`;
+- evaluation missing rows: `0`;
+- adaptive state size: about `49 MB`;
+- checkpoints directory size: about `20 KB`.
+
+Export anchor metrics:
+
+| module | rows | anchor MAE | anchor RMSE | Spearman | output std |
+|---|---:|---:|---:|---:|---:|
+| `ANFIS-N` | 1,626,672 | 0.0587 | 0.0966 | 0.9880 | 0.1272 |
+| `ANFIS-F` | 1,626,672 | 0.1052 | 0.1449 | 0.8975 | 0.2048 |
+| `ANFIS-T` | 1,626,672 | 0.0917 | 0.1107 | 0.9631 | 0.2618 |
+| `ANFIS-T-no-current` | 1,626,672 | 0.0607 | 0.0915 | 0.9974 | 0.2382 |
+
+Validation target metrics for full adaptive IRC:
+
+| score | horizon | PR-AUC | ROC-AUC | Brier | recall | macro-F1 | risk RMSE |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `irc1_adaptive` | 1 | 0.5797 | 0.8773 | 0.1754 | 0.8524 | 0.6956 | 0.3130 |
+| `irc1_adaptive` | 2 | 0.5238 | 0.8363 | 0.1787 | 0.7726 | 0.6810 | 0.3267 |
+| `irc1_adaptive` | 3 | 0.4983 | 0.8119 | 0.1797 | 0.7180 | 0.6709 | 0.3353 |
+
+Validation target metrics for adaptive no-current IRC:
+
+| score | horizon | PR-AUC | ROC-AUC | Brier | recall | macro-F1 | risk RMSE |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `irc1_no_chla_adaptive` | 1 | 0.4212 | 0.7966 | 0.2175 | 0.8277 | 0.6027 | 0.3674 |
+| `irc1_no_chla_adaptive` | 2 | 0.3789 | 0.7581 | 0.2174 | 0.7621 | 0.5975 | 0.3718 |
+| `irc1_no_chla_adaptive` | 3 | 0.3594 | 0.7254 | 0.2165 | 0.7036 | 0.5946 | 0.3761 |
+
+Interpretation:
+
+- Gate 3 WQP-focused full export is accepted as a retained adaptive-state
+  surface for the next PIPE-adaptive step.
+- The no-current adaptive IRC improves over expert `irc1_no_chla` on
+  validation PR-AUC, ROC-AUC, Brier, macro-F1, and risk RMSE/MAE.
+- The full Chl-a-aware adaptive IRC remains mixed against expert `irc1`: it
+  improves macro-F1 and slightly improves Brier in validation, but loses
+  PR-AUC and risk RMSE/MAE. It should therefore be treated as an adaptive
+  comparison surface, not as a replacement for the expert full surface.
+- The adaptive state parquet and checkpoints must be promoted through DVC
+  rather than committed as Git blobs.
+
 ### Gate 4 - PIPE Re-evaluation
 
 Purpose: compare PIPE lightweight against PIPE adaptive.
@@ -456,11 +654,19 @@ Interpretation:
 - Synthetic adaptive ANFIS mechanics have passed Gate 1.
 - The Gate 2 bounded real-data smoke completed on sampled real rows without
   overwriting existing PIPE lightweight artifacts.
+- The Gate 3 WQP-focused full adaptive-state export completed and is retained
+  as a comparison surface for the next PIPE-adaptive step.
+- In validation, the WQP-focused no-current adaptive IRC improves over the
+  expert no-current IRC across PR-AUC, ROC-AUC, Brier, macro-F1, and risk
+  error.
+- In validation, the WQP-focused full Chl-a-aware adaptive IRC is mixed against
+  the expert full IRC and should not replace it without downstream PIPE
+  re-evaluation.
 
 ## Claims Not Allowed Yet
 
 - Do not claim adaptive ANFIS improves PIPE until validation/test comparisons
   and downstream PIPE re-evaluation exist.
 - Do not claim the adaptive ANFIS layer is thesis-complete before full
-  adaptive-state export, validation/test comparison, and downstream PIPE
-  re-evaluation exist.
+  downstream PIPE re-evaluation, degradation analysis, and final comparison
+  against PIPE lightweight, Neural ODE if stable, and MIFAL exist.

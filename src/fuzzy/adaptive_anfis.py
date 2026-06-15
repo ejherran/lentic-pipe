@@ -54,6 +54,7 @@ def make_adaptive_anfis(
     min_width: float = 0.03,
     min_gap: float = 1e-4,
     output_activation: str = "sigmoid",
+    center_constraint: str = "ordered",
 ) -> Any:
     """Create a small ordered Gaussian-membership Sugeno ANFIS model.
 
@@ -72,6 +73,10 @@ def make_adaptive_anfis(
         raise ValueError("min_gap must be non-negative")
     if output_activation not in {"sigmoid", "clip"}:
         raise ValueError("output_activation must be 'sigmoid' or 'clip'")
+    if center_constraint not in {"ordered", "unit"}:
+        raise ValueError("center_constraint must be 'ordered' or 'unit'")
+    if center_constraint == "unit" and min_gap * (membership_count + 1) >= 1.0:
+        raise ValueError("min_gap is too large for unit-constrained centers")
 
     torch = _require_torch()
 
@@ -83,12 +88,31 @@ def make_adaptive_anfis(
             self.min_width = float(min_width)
             self.min_gap = float(min_gap)
             self.output_activation = output_activation
-            initial_centers = torch.linspace(0.0, 1.0, membership_count, dtype=torch.float32).repeat(input_dim, 1)
-            spacing = torch.diff(initial_centers, dim=1) - float(min_gap)
-            spacing = torch.clamp(spacing, min=1e-3)
+            self.center_constraint = center_constraint
             initial_widths = torch.full((input_dim, membership_count), 0.25, dtype=torch.float32)
-            self.first_center = torch.nn.Parameter(initial_centers[:, 0].clone())
-            self.raw_deltas = torch.nn.Parameter(_inverse_softplus(spacing))
+            if center_constraint == "unit":
+                margin = max(0.05, float(min_gap) * 2.0)
+                margin = min(margin, 0.45)
+                unit_centers = torch.linspace(margin, 1.0 - margin, membership_count, dtype=torch.float32)
+                unit_gaps = torch.cat(
+                    [
+                        unit_centers[:1],
+                        torch.diff(unit_centers),
+                        1.0 - unit_centers[-1:],
+                    ]
+                )
+                residual = 1.0 - float(min_gap) * (membership_count + 1)
+                proportions = torch.clamp((unit_gaps - float(min_gap)) / residual, min=1e-6)
+                self.raw_center_gaps = torch.nn.Parameter(torch.log(proportions).repeat(input_dim, 1))
+                self.register_parameter("first_center", None)
+                self.register_parameter("raw_deltas", None)
+            else:
+                initial_centers = torch.linspace(0.0, 1.0, membership_count, dtype=torch.float32).repeat(input_dim, 1)
+                spacing = torch.diff(initial_centers, dim=1) - float(min_gap)
+                spacing = torch.clamp(spacing, min=1e-3)
+                self.first_center = torch.nn.Parameter(initial_centers[:, 0].clone())
+                self.raw_deltas = torch.nn.Parameter(_inverse_softplus(spacing))
+                self.register_parameter("raw_center_gaps", None)
             self.raw_widths = torch.nn.Parameter(_inverse_softplus(initial_widths - float(min_width)))
             self.consequent_weights = torch.nn.Parameter(torch.zeros(self.rule_count, input_dim, dtype=torch.float32))
             self.consequent_bias = torch.nn.Parameter(torch.zeros(self.rule_count, dtype=torch.float32))
@@ -99,8 +123,21 @@ def make_adaptive_anfis(
             return int(self.membership_count**self.input_dim)
 
         def ordered_centers(self) -> Any:
+            if self.center_constraint == "unit":
+                residual = 1.0 - self.min_gap * (self.membership_count + 1)
+                gaps = self.min_gap + residual * torch.nn.functional.softmax(self.raw_center_gaps, dim=1)
+                return torch.cumsum(gaps[:, :-1], dim=1)
             deltas = torch.nn.functional.softplus(self.raw_deltas) + self.min_gap
             return torch.cat([self.first_center[:, None], self.first_center[:, None] + torch.cumsum(deltas, dim=1)], dim=1)
+
+        def centers_in_unit_interval(self, tolerance: float = 1e-7) -> bool:
+            centers = self.ordered_centers().detach()
+            return bool(
+                (
+                    torch.all(centers >= -float(tolerance))
+                    & torch.all(centers <= 1.0 + float(tolerance))
+                ).item()
+            )
 
         def positive_widths(self) -> Any:
             return torch.nn.functional.softplus(self.raw_widths) + self.min_width

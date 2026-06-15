@@ -331,8 +331,11 @@ def _module_xy(frame: pd.DataFrame, spec: dict[str, Any]) -> tuple[pd.DataFrame,
 
 def _sample_training_rows(frame: pd.DataFrame, spec: dict[str, Any], args: argparse.Namespace, seed_offset: int) -> pd.DataFrame:
     candidate = frame[frame["split"] == "train"].drop_duplicates(KEY_COLUMNS).copy()
-    features, target, _ = _module_xy(candidate, spec)
+    _, target, missing_fraction = _module_xy(candidate, spec)
     valid = target.notna()
+    max_missing_fraction = getattr(args, "max_train_missing_fraction", None)
+    if max_missing_fraction is not None:
+        valid &= missing_fraction <= float(max_missing_fraction)
     candidate = candidate.loc[valid].copy()
     if len(candidate) > args.train_rows_per_module:
         candidate = candidate.sample(n=args.train_rows_per_module, random_state=args.random_seed + seed_offset)
@@ -394,6 +397,7 @@ def train_modules(
             membership_count=args.memberships,
             min_width=args.min_width,
             min_gap=args.min_gap,
+            center_constraint=getattr(args, "center_constraint", "ordered"),
         )
         initial_memberships.append(_membership_table(model, module, list(train_x.columns), "initial"))
         before = parameter_snapshot(model)
@@ -491,7 +495,9 @@ def add_composite_scores(frame: pd.DataFrame) -> pd.DataFrame:
 def target_metrics(frame: pd.DataFrame) -> pd.DataFrame:
     rows = []
     for score_name in TARGET_SCORE_COLUMNS:
-        for (horizon, split), group in frame.groupby(["horizon_months", "split"], dropna=False, sort=True):
+        for _, group in frame.groupby(["horizon_months", "split"], dropna=False, sort=True):
+            horizon = int(group["horizon_months"].iloc[0])
+            split = str(group["split"].iloc[0])
             score = pd.to_numeric(group[score_name], errors="coerce").clip(0.0, 1.0)
             target_risk = pd.to_numeric(group["target_risk_chla_h"], errors="coerce").clip(0.0, 1.0)
             bloom = pd.to_numeric(group["bloom_h"], errors="coerce")
@@ -506,7 +512,7 @@ def target_metrics(frame: pd.DataFrame) -> pd.DataFrame:
             rows.append(
                 {
                     "score_name": score_name,
-                    "horizon_months": int(horizon),
+                    "horizon_months": horizon,
                     "split": split,
                     "rows": int(len(group)),
                     "bloom_rows": int(len(y_true)),
@@ -603,12 +609,13 @@ def write_report(
         "| module | status | train rows | eval rows | final loss | anchor MAE | anchor RMSE | Spearman | output std | ordered |",
         "|---|---|---:|---:|---:|---:|---:|---:|---:|---|",
     ]
-    for row in module_metrics.itertuples(index=False):
+    for row in module_metrics.to_dict(orient="records"):
         lines.append(
-            f"| `{row.module}` | `{row.status}` | {_format_int(row.train_rows)} | {_format_int(row.eval_rows)} | "
-            f"{_format_float(row.final_train_loss)} | {_format_float(row.anchor_mae)} | "
-            f"{_format_float(row.anchor_rmse)} | {_format_float(row.anchor_spearman)} | "
-            f"{_format_float(row.output_std)} | `{bool(row.centers_ordered)}` |"
+            f"| `{row['module']}` | `{row['status']}` | {_format_int(row['train_rows'])} | "
+            f"{_format_int(row['eval_rows'])} | "
+            f"{_format_float(row['final_train_loss'])} | {_format_float(row['anchor_mae'])} | "
+            f"{_format_float(row['anchor_rmse'])} | {_format_float(row['anchor_spearman'])} | "
+            f"{_format_float(row['output_std'])} | `{bool(row['centers_ordered'])}` |"
         )
     lines.extend(
         [
@@ -622,12 +629,12 @@ def write_report(
     if validation.empty:
         lines.append("| `NA` | NA | NA | NA | NA | NA | NA | NA | NA | NA |")
     else:
-        for row in validation.itertuples(index=False):
+        for row in validation.to_dict(orient="records"):
             lines.append(
-                f"| `{row.score_name}` | {int(row.horizon_months)} | {_format_int(row.rows)} | "
-                f"{_format_float(row.pr_auc)} | {_format_float(row.roc_auc)} | {_format_float(row.brier)} | "
-                f"{_format_float(row.recall)} | {_format_float(row.macro_f1)} | "
-                f"{_format_float(row.risk_rmse)} | {_format_float(row.risk_mae)} |"
+                f"| `{row['score_name']}` | {int(row['horizon_months'])} | {_format_int(row['rows'])} | "
+                f"{_format_float(row['pr_auc'])} | {_format_float(row['roc_auc'])} | {_format_float(row['brier'])} | "
+                f"{_format_float(row['recall'])} | {_format_float(row['macro_f1'])} | "
+                f"{_format_float(row['risk_rmse'])} | {_format_float(row['risk_mae'])} |"
             )
     lines.extend(
         [
@@ -662,13 +669,13 @@ def write_manifest(
     module_metrics: pd.DataFrame,
 ) -> None:
     curve_summary = {
-        row.module: {
-            "epochs": int(row.epochs),
-            "initial_loss": float(row.curve_initial_loss),
-            "final_loss": float(row.curve_final_loss),
-            "min_loss": float(row.curve_min_loss),
+        row["module"]: {
+            "epochs": int(row["epochs"]),
+            "initial_loss": float(row["curve_initial_loss"]),
+            "final_loss": float(row["curve_final_loss"]),
+            "min_loss": float(row["curve_min_loss"]),
         }
-        for row in module_metrics.itertuples(index=False)
+        for row in module_metrics.to_dict(orient="records")
     }
     payload = {
         "status": status,

@@ -344,15 +344,17 @@ def summarize_operational_coverage(frame: pd.DataFrame, group_columns: list[str]
 def build_feature_coverage(frame: pd.DataFrame) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     group_columns = ["source_id", "split", "horizon_months"]
-    for group_key, group in frame.groupby(group_columns, dropna=False):
-        source_id, split, horizon = group_key if isinstance(group_key, tuple) else (group_key, "", 0)
+    for _, group in frame.groupby(group_columns, dropna=False):
+        source_id = str(group["source_id"].iloc[0])
+        split = str(group["split"].iloc[0])
+        horizon = int(group["horizon_months"].iloc[0])
         for family, variable, column in FEATURE_ROWS:
             present = _numeric_present(group, column)
             rows.append(
                 {
                     "source_id": source_id,
                     "split": split,
-                    "horizon_months": int(horizon),
+                    "horizon_months": horizon,
                     "feature_family": family,
                     "feature_name": variable,
                     "column": column,

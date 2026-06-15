@@ -1,0 +1,271 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-06-15T15:36:32.801358+00:00",
+  "config": {
+    "source_ids": [
+      "wqp"
+    ],
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "evaluation_splits": [
+      "train",
+      "validation",
+      "test"
+    ],
+    "train_rows_per_module": 4096,
+    "max_export_rows": 0,
+    "max_train_missing_fraction": 0.5,
+    "predict_batch_rows": 32768,
+    "center_constraint": "unit",
+    "memberships": 3,
+    "epochs": 60,
+    "learning_rate": 0.03,
+    "random_seed": 1729,
+    "min_width": 0.03,
+    "min_gap": 0.0001,
+    "grad_clip": 1.0,
+    "min_output_std": 0.0001
+  },
+  "alignment": {
+    "state_rows": 1626672,
+    "panel_rows_after_source_filter": 1626672,
+    "panel_matched_rows": 1626672,
+    "panel_missing_rows": 0,
+    "export_rows": 1626672,
+    "evaluation_split_rows": 1486824,
+    "evaluation_matched_rows": 1486824,
+    "evaluation_missing_rows": 0
+  },
+  "module_metrics": [
+    {
+      "module": "ANFIS-N",
+      "status": "passed",
+      "train_rows": 4096,
+      "eval_rows": 563421,
+      "input_dim": 3,
+      "memberships": 3,
+      "rules": 27,
+      "initial_train_loss": 0.0862857848405838,
+      "final_train_loss": 0.0035524279810488224,
+      "relative_train_loss_improvement": 0.9588295107054764,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.4602882862091064,
+      "output_min": 0.14537225663661957,
+      "output_max": 0.9375625848770142,
+      "output_std": 0.1315160095691681,
+      "anchor_mae": 0.06821190555302786,
+      "anchor_rmse": 0.1072791992094786,
+      "anchor_spearman": 0.9907212890186028,
+      "mean_missing_fraction": 0.7900841466682995,
+      "epochs": 60,
+      "curve_initial_loss": 0.0862857848405838,
+      "curve_final_loss": 0.0035524279810488224,
+      "curve_min_loss": 0.0035524279810488224
+    },
+    {
+      "module": "ANFIS-F",
+      "status": "passed",
+      "train_rows": 4096,
+      "eval_rows": 563421,
+      "input_dim": 4,
+      "memberships": 3,
+      "rules": 81,
+      "initial_train_loss": 0.09445570409297943,
+      "final_train_loss": 0.0018813129281625152,
+      "relative_train_loss_improvement": 0.9800825906044742,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.4102858304977417,
+      "output_min": 0.13191793859004974,
+      "output_max": 0.9656739830970764,
+      "output_std": 0.21070300042629242,
+      "anchor_mae": 0.09709237618155722,
+      "anchor_rmse": 0.14072030163697777,
+      "anchor_spearman": 0.9338852353550287,
+      "mean_missing_fraction": 0.5100377870189432,
+      "epochs": 60,
+      "curve_initial_loss": 0.09445570409297943,
+      "curve_final_loss": 0.0018813129281625152,
+      "curve_min_loss": 0.0018813129281625152
+    },
+    {
+      "module": "ANFIS-T",
+      "status": "passed",
+      "train_rows": 4096,
+      "eval_rows": 563421,
+      "input_dim": 2,
+      "memberships": 3,
+      "rules": 9,
+      "initial_train_loss": 0.14552588760852814,
+      "final_train_loss": 0.012004021555185318,
+      "relative_train_loss_improvement": 0.9175128099030962,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.4900939464569092,
+      "output_min": 0.14161518216133118,
+      "output_max": 0.9274830222129822,
+      "output_std": 0.30992501974105835,
+      "anchor_mae": 0.09254399816642314,
+      "anchor_rmse": 0.10826707212122792,
+      "anchor_spearman": 0.9480770863036513,
+      "mean_missing_fraction": 0.27101403746044256,
+      "epochs": 60,
+      "curve_initial_loss": 0.14552588760852814,
+      "curve_final_loss": 0.012004021555185318,
+      "curve_min_loss": 0.012004021555185318
+    },
+    {
+      "module": "ANFIS-T-no-current",
+      "status": "passed",
+      "train_rows": 4096,
+      "eval_rows": 563421,
+      "input_dim": 1,
+      "memberships": 3,
+      "rules": 3,
+      "initial_train_loss": 0.18434540927410126,
+      "final_train_loss": 0.015103415586054325,
+      "relative_train_loss_improvement": 0.9180700205905469,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.449205994606018,
+      "output_min": 0.19886870682239532,
+      "output_max": 0.9008706212043762,
+      "output_std": 0.24125809967517853,
+      "anchor_mae": 0.0609637868528036,
+      "anchor_rmse": 0.09064065863565543,
+      "anchor_spearman": 0.997569282104243,
+      "mean_missing_fraction": 0.46082236906327595,
+      "epochs": 60,
+      "curve_initial_loss": 0.18434540927410126,
+      "curve_final_loss": 0.015103415586054325,
+      "curve_min_loss": 0.015103415586054325
+    }
+  ],
+  "inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/build_adaptive_anfis_state.py",
+    "bytes": 25852,
+    "sha256": "5e7a6d896c277a0a460424bf99cc8b00251291d9a3206eb4bbbca44741dd4d79"
+  },
+  "adaptive_anfis_module": {
+    "path": "src/fuzzy/adaptive_anfis.py",
+    "bytes": 9927,
+    "sha256": "704cf96c0f531865ef03be8c7ce7bb35e7c04b2d488a81bc2d77aa4b9b6830c0"
+  },
+  "gate2_runner_module": {
+    "path": "src/experiments/run_adaptive_anfis_real_smoke.py",
+    "bytes": 33258,
+    "sha256": "ebfbe2693ef2303ee164d5f8e7dbe0404ea7a08672ad5a24788df5800232ff3c"
+  },
+  "outputs": [
+    {
+      "path": "data/fuzzy/adaptive_state_vector_v0.parquet",
+      "bytes": 50840498,
+      "sha256": "3c0b64c192622482be8a82ee43fd067ee59d176325a08a121154eadfb54025ec"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_state_module_metrics.csv",
+      "bytes": 1641,
+      "sha256": "65337c74d4383665b219c4c7bff5b966c734405a6a1c776684f7d2478ae6f1de"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_state_target_metrics.csv",
+      "bytes": 7521,
+      "sha256": "206166857abd91ecf2084828610d2d5126e26276dfe78a87e8867da580046b6c"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_state_coverage.csv",
+      "bytes": 467,
+      "sha256": "63aa94d7dcd1dec47056970faab57c23023f07f005122cae81ee018b318761aa"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_memberships_initial.csv",
+      "bytes": 1626,
+      "sha256": "a27399da3fbf194f284c841723849ff02dce7d55b870e500f36bda80824fb847"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_memberships_final.csv",
+      "bytes": 2167,
+      "sha256": "e947300c04604be8c47a2c5ab954dac97c1ebb742bea06bb5ce37946d6226dbf"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_state_report.md",
+      "bytes": 3008,
+      "sha256": "b1f238d3bc39848aaf4e25ed00fb08b82577d0ffaedfac1bb345e722961dfa03"
+    },
+    {
+      "path": "models/anfis/adaptive",
+      "type": "directory",
+      "bytes": 17241,
+      "sha256": "8b9dae9faf3636888a4f8f3b4a4ff8fc47df63c54852829288afbc41736646a9",
+      "files": [
+        {
+          "path": "models/anfis/adaptive/f.pt",
+          "relative_path": "f.pt",
+          "bytes": 7096,
+          "sha256": "b461bd3955bed9a631f33285916631a3fdfa54136427b6cf245f49734ffcc0f6"
+        },
+        {
+          "path": "models/anfis/adaptive/n.pt",
+          "relative_path": "n.pt",
+          "bytes": 3960,
+          "sha256": "6651c3c3327dd95345e53a64a1eb5d357bd4d21282296ec6ef3e8c2b0bd69fa3"
+        },
+        {
+          "path": "models/anfis/adaptive/t.pt",
+          "relative_path": "t.pt",
+          "bytes": 3128,
+          "sha256": "a55e4e1fbae948ca328d341ba9a192fe6064137e1ac3d5f20a5ce9eebf7faf12"
+        },
+        {
+          "path": "models/anfis/adaptive/t_no_current.pt",
+          "relative_path": "t_no_current.pt",
+          "bytes": 3057,
+          "sha256": "6969def56756a601af6ad4f0bd93e271ee5199473afd174fe2479db0e17f2ce6"
+        }
+      ]
+    }
+  ],
+  "checkpoints": [
+    {
+      "path": "models/anfis/adaptive/n.pt",
+      "bytes": 3960,
+      "sha256": "6651c3c3327dd95345e53a64a1eb5d357bd4d21282296ec6ef3e8c2b0bd69fa3"
+    },
+    {
+      "path": "models/anfis/adaptive/f.pt",
+      "bytes": 7096,
+      "sha256": "b461bd3955bed9a631f33285916631a3fdfa54136427b6cf245f49734ffcc0f6"
+    },
+    {
+      "path": "models/anfis/adaptive/t.pt",
+      "bytes": 3128,
+      "sha256": "a55e4e1fbae948ca328d341ba9a192fe6064137e1ac3d5f20a5ce9eebf7faf12"
+    },
+    {
+      "path": "models/anfis/adaptive/t_no_current.pt",
+      "bytes": 3057,
+      "sha256": "6969def56756a601af6ad4f0bd93e271ee5199473afd174fe2479db0e17f2ce6"
+    }
+  ]
+}

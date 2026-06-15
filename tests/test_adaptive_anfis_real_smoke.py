@@ -56,7 +56,7 @@ def _panel() -> pd.DataFrame:
 def _splits(panel: pd.DataFrame) -> pd.DataFrame:
     rows = []
     split_by_index = ["train"] * 10 + ["validation"] * 4 + ["test"] * 4
-    for index, row in panel.reset_index(drop=True).iterrows():
+    for index, (_, row) in enumerate(panel.reset_index(drop=True).iterrows()):
         risk = float(row["risk_chla"])
         rows.append(
             {
@@ -145,4 +145,97 @@ def test_adaptive_anfis_real_smoke_cli_writes_bounded_outputs(tmp_path: Path) ->
     assert set(module_metrics["status"]) == {"passed"}
     assert {"irc1_adaptive", "irc1_no_chla_adaptive"}.issubset(target_metrics["score_name"].unique())
     assert {"yT_adaptive", "yT_no_chla_adaptive"}.issubset(predictions.columns)
+    assert "Status: `completed`" in report
+
+
+def test_build_adaptive_anfis_state_cli_exports_state_and_checkpoints(tmp_path: Path) -> None:
+    pytest.importorskip("torch")
+    panel = _panel()
+    state, _ = build_expert_state(panel)
+    panel_path = tmp_path / "panel.parquet"
+    state_path = tmp_path / "state.parquet"
+    splits_path = tmp_path / "splits.parquet"
+    output_state_path = tmp_path / "adaptive_state.parquet"
+    models_dir = tmp_path / "models"
+    report_path = tmp_path / "adaptive_state_report.md"
+    manifest_path = tmp_path / "adaptive_state_manifest.json"
+    module_metrics_path = tmp_path / "adaptive_state_module_metrics.csv"
+    target_metrics_path = tmp_path / "adaptive_state_target_metrics.csv"
+    coverage_path = tmp_path / "adaptive_state_coverage.csv"
+    memberships_initial_path = tmp_path / "adaptive_memberships_initial.csv"
+    memberships_final_path = tmp_path / "adaptive_memberships_final.csv"
+    panel.to_parquet(panel_path, index=False)
+    state.to_parquet(state_path, index=False)
+    _splits(panel).to_parquet(splits_path, index=False)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "src/experiments/build_adaptive_anfis_state.py",
+            "--panel",
+            str(panel_path),
+            "--state",
+            str(state_path),
+            "--splits",
+            str(splits_path),
+            "--output-state",
+            str(output_state_path),
+            "--models-dir",
+            str(models_dir),
+            "--report",
+            str(report_path),
+            "--manifest",
+            str(manifest_path),
+            "--module-metrics",
+            str(module_metrics_path),
+            "--target-metrics",
+            str(target_metrics_path),
+            "--coverage",
+            str(coverage_path),
+            "--memberships-initial",
+            str(memberships_initial_path),
+            "--memberships-final",
+            str(memberships_final_path),
+            "--source-ids",
+            "unit",
+            "--horizons",
+            "1",
+            "--train-rows-per-module",
+            "10",
+            "--max-export-rows",
+            "18",
+            "--max-train-missing-fraction",
+            "1.0",
+            "--min-module-rows",
+            "3",
+            "--epochs",
+            "12",
+            "--learning-rate",
+            "0.04",
+            "--predict-batch-rows",
+            "6",
+            "--center-constraint",
+            "unit",
+            "--min-output-std",
+            "0.0",
+        ],
+        check=True,
+    )
+
+    adaptive_state = pd.read_parquet(output_state_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    module_metrics = pd.read_csv(module_metrics_path)
+    target_metrics = pd.read_csv(target_metrics_path)
+    memberships_final = pd.read_csv(memberships_final_path)
+    report = report_path.read_text(encoding="utf-8")
+
+    assert manifest["status"] == "completed"
+    assert manifest["config"]["center_constraint"] == "unit"
+    assert manifest["alignment"]["export_rows"] == 18
+    assert {"yN_adaptive", "sigma_N_adaptive", "delta_yT_no_chla_adaptive"}.issubset(adaptive_state.columns)
+    assert adaptive_state["irc1_adaptive"].between(0.0, 1.0).all()
+    assert set(module_metrics["module"]) == {"ANFIS-N", "ANFIS-F", "ANFIS-T", "ANFIS-T-no-current"}
+    assert {"irc1_adaptive", "irc1_no_chla_adaptive"}.issubset(target_metrics["score_name"].unique())
+    assert memberships_final["center"].between(0.0, 1.0).all()
+    assert len(list(models_dir.glob("*.pt"))) == 4
     assert "Status: `completed`" in report

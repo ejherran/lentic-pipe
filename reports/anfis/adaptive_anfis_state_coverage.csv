@@ -1,0 +1,5 @@
+module,source_id,rows,target_non_null,mean_missing_fraction,complete_feature_rows,feature_columns
+ANFIS-N,wqp,563421,563421,0.7900841466682995,52919,"tp_pressure,tn_pressure,ratio_imbalance_pressure"
+ANFIS-F,wqp,563421,563421,0.5100377870189432,91625,"do_good,ph_good,turbidity_good,secchi_good"
+ANFIS-T,wqp,563421,563421,0.27101403746044256,272629,"temp_favorable,current_chla_pressure"
+ANFIS-T-no-current,wqp,563421,563421,0.46082236906327595,303784,temp_favorable

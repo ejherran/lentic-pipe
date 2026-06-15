@@ -227,13 +227,14 @@ def write_report(results: list[dict[str, Any]], metrics: pd.DataFrame, args: arg
         "| module | status | rows | input dim | rules | initial loss | final loss | relative improvement | output range | centers ordered | max parameter delta |",
         "|---|---|---:|---:|---:|---:|---:|---:|---|---|---:|",
     ]
-    for row in metrics.itertuples(index=False):
+    for row in metrics.to_dict(orient="records"):
         lines.append(
-            f"| `{row.module}` | `{row.status}` | {int(row.rows):,} | {int(row.input_dim)} | {int(row.rules):,} | "
-            f"{_format_float(float(row.initial_loss))} | {_format_float(float(row.final_loss))} | "
-            f"{_format_float(float(row.relative_loss_improvement))} | "
-            f"`{_format_float(float(row.output_min))}-{_format_float(float(row.output_max))}` | "
-            f"`{bool(row.centers_ordered)}` | {_format_float(float(row.max_parameter_delta))} |"
+            f"| `{row['module']}` | `{row['status']}` | {int(row['rows']):,} | "
+            f"{int(row['input_dim'])} | {int(row['rules']):,} | "
+            f"{_format_float(float(row['initial_loss']))} | {_format_float(float(row['final_loss']))} | "
+            f"{_format_float(float(row['relative_loss_improvement']))} | "
+            f"`{_format_float(float(row['output_min']))}-{_format_float(float(row['output_max']))}` | "
+            f"`{bool(row['centers_ordered'])}` | {_format_float(float(row['max_parameter_delta']))} |"
         )
     lines.extend(
         [

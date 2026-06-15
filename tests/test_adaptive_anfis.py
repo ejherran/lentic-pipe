@@ -33,6 +33,25 @@ def test_adaptive_anfis_output_range_and_ordered_centers() -> None:
     assert bool((model.positive_widths() > 0).all().item())
 
 
+def test_adaptive_anfis_unit_center_constraint_keeps_centers_bounded() -> None:
+    torch = pytest.importorskip("torch")
+    rng = np.random.default_rng(123)
+    x = rng.uniform(0.0, 1.0, size=(64, 2)).astype("float32")
+    y = np.clip(0.25 + 0.35 * x[:, 0] + 0.25 * x[:, 1], 0.0, 1.0).astype("float32")
+    model = make_adaptive_anfis(input_dim=2, membership_count=3, center_constraint="unit")
+
+    train_supervised_anfis(model, x, y, epochs=30, learning_rate=0.04, random_seed=123)
+
+    centers = model.ordered_centers().detach()
+    assert model.centers_are_ordered()
+    assert model.centers_in_unit_interval()
+    assert bool((centers >= 0.0).all().item())
+    assert bool((centers <= 1.0).all().item())
+    prediction = model(torch.as_tensor(x, dtype=torch.float32))
+    assert prediction.min().item() >= 0.0
+    assert prediction.max().item() <= 1.0
+
+
 def test_adaptive_anfis_synthetic_training_updates_parameters() -> None:
     torch = pytest.importorskip("torch")
     rng = np.random.default_rng(1729)
