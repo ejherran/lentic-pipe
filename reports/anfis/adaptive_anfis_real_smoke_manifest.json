@@ -1,0 +1,225 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-06-15T15:04:13.547617+00:00",
+  "config": {
+    "sample_rows_per_split_horizon": 256,
+    "train_rows_per_module": 256,
+    "min_module_rows": 16,
+    "memberships": 3,
+    "epochs": 40,
+    "learning_rate": 0.03,
+    "random_seed": 1729,
+    "min_width": 0.03,
+    "min_gap": 0.0001,
+    "grad_clip": 1.0,
+    "min_output_std": 0.0001,
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "splits_to_use": [
+      "train",
+      "validation",
+      "test"
+    ]
+  },
+  "sample_alignment": {
+    "sampled_split_rows": 2304,
+    "state_matched_rows": 2304,
+    "panel_matched_rows": 2304,
+    "state_missing_rows": 0,
+    "panel_missing_rows": 0
+  },
+  "module_metrics": [
+    {
+      "module": "ANFIS-N",
+      "status": "passed",
+      "train_rows": 256,
+      "eval_rows": 2304,
+      "input_dim": 3,
+      "memberships": 3,
+      "rules": 27,
+      "initial_train_loss": 0.013624097220599651,
+      "final_train_loss": 0.0006845014868304133,
+      "relative_train_loss_improvement": 0.9497580297800983,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.219277024269104,
+      "output_min": 0.14287585020065308,
+      "output_max": 0.9449774026870728,
+      "output_std": 0.14753074944019318,
+      "anchor_mae": 0.03155313994751943,
+      "anchor_rmse": 0.06738591603802446,
+      "anchor_spearman": 0.8829528101548743,
+      "mean_missing_fraction": 0.8247974537037037,
+      "epochs": 40,
+      "curve_initial_loss": 0.013624097220599651,
+      "curve_final_loss": 0.0006845014868304133,
+      "curve_min_loss": 0.0006520187016576529
+    },
+    {
+      "module": "ANFIS-F",
+      "status": "passed",
+      "train_rows": 256,
+      "eval_rows": 2304,
+      "input_dim": 4,
+      "memberships": 3,
+      "rules": 81,
+      "initial_train_loss": 0.032983265817165375,
+      "final_train_loss": 0.001373962266370654,
+      "relative_train_loss_improvement": 0.9583436560228185,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.142372727394104,
+      "output_min": 0.11052995175123215,
+      "output_max": 0.960493266582489,
+      "output_std": 0.18796096742153168,
+      "anchor_mae": 0.024965023065243373,
+      "anchor_rmse": 0.05713492671540475,
+      "anchor_spearman": 0.9597527483077024,
+      "mean_missing_fraction": 0.8280164930555556,
+      "epochs": 40,
+      "curve_initial_loss": 0.032983265817165375,
+      "curve_final_loss": 0.001373962266370654,
+      "curve_min_loss": 0.001373962266370654
+    },
+    {
+      "module": "ANFIS-T",
+      "status": "passed",
+      "train_rows": 256,
+      "eval_rows": 2304,
+      "input_dim": 2,
+      "memberships": 3,
+      "rules": 9,
+      "initial_train_loss": 0.16858159005641937,
+      "final_train_loss": 0.018293442204594612,
+      "relative_train_loss_improvement": 0.8914861213583741,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.1875321865081787,
+      "output_min": 0.15283392369747162,
+      "output_max": 0.9063875079154968,
+      "output_std": 0.2889191210269928,
+      "anchor_mae": 0.11696034581593823,
+      "anchor_rmse": 0.13534961074740198,
+      "anchor_spearman": 0.9564255952009438,
+      "mean_missing_fraction": 0.4233940972222222,
+      "epochs": 40,
+      "curve_initial_loss": 0.16858159005641937,
+      "curve_final_loss": 0.018293442204594612,
+      "curve_min_loss": 0.018293442204594612
+    },
+    {
+      "module": "ANFIS-T-no-current",
+      "status": "passed",
+      "train_rows": 256,
+      "eval_rows": 2304,
+      "input_dim": 1,
+      "memberships": 3,
+      "rules": 3,
+      "initial_train_loss": 0.029941845685243607,
+      "final_train_loss": 0.004904703237116337,
+      "relative_train_loss_improvement": 0.8361923547173464,
+      "finite_loss": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.0886324644088745,
+      "output_min": 0.2324659377336502,
+      "output_max": 0.8689635992050171,
+      "output_std": 0.12621359527111053,
+      "anchor_mae": 0.024566582316979016,
+      "anchor_rmse": 0.0663268792266452,
+      "anchor_spearman": 0.999608465365964,
+      "mean_missing_fraction": 0.8194444444444444,
+      "epochs": 40,
+      "curve_initial_loss": 0.029941845685243607,
+      "curve_final_loss": 0.004904703237116337,
+      "curve_min_loss": 0.004904703237116337
+    }
+  ],
+  "training_curve_summary": {
+    "ANFIS-N": {
+      "epochs": 40,
+      "initial_loss": 0.013624097220599651,
+      "final_loss": 0.0006845014868304133,
+      "min_loss": 0.0006520187016576529
+    },
+    "ANFIS-F": {
+      "epochs": 40,
+      "initial_loss": 0.032983265817165375,
+      "final_loss": 0.001373962266370654,
+      "min_loss": 0.001373962266370654
+    },
+    "ANFIS-T": {
+      "epochs": 40,
+      "initial_loss": 0.16858159005641937,
+      "final_loss": 0.018293442204594612,
+      "min_loss": 0.018293442204594612
+    },
+    "ANFIS-T-no-current": {
+      "epochs": 40,
+      "initial_loss": 0.029941845685243607,
+      "final_loss": 0.004904703237116337,
+      "min_loss": 0.004904703237116337
+    }
+  },
+  "inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/run_adaptive_anfis_real_smoke.py",
+    "bytes": 32806,
+    "sha256": "1220d018c21b5f912f019df241e819f6b13ca4c255712f55744273a2f136ff92"
+  },
+  "adaptive_anfis_module": {
+    "path": "src/fuzzy/adaptive_anfis.py",
+    "bytes": 7931,
+    "sha256": "26a4f9a95f15a6088b87ea56e86e95ce2930f5d1f5f42387aecf3665c4c221f4"
+  },
+  "outputs": [
+    {
+      "path": "reports/anfis/adaptive_anfis_real_smoke_module_metrics.csv",
+      "bytes": 1632,
+      "sha256": "a248d48c3bf9c5239cb6b04a441d7470f5e0c7705642cc5faeee453d1d2aa669"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_real_smoke_target_metrics.csv",
+      "bytes": 6716,
+      "sha256": "7bfd5172068c0fceffd86be693c9dccccdfc9423f5c688f4f26bd6d9265b4bbe"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_real_smoke_predictions.csv",
+      "bytes": 636441,
+      "sha256": "dab45e45ccee3e48960b0d8fde585a3a7e0486bee176671fb1e0688d134ef576"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_real_smoke_memberships_initial.csv",
+      "bytes": 1326,
+      "sha256": "3f69b9acea9c9c2f6e1790666ef83bc10b0b06f4841025aebf87d68298498fd8"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_real_smoke_memberships_final.csv",
+      "bytes": 2165,
+      "sha256": "9cff2b71a308c7817fdf37dae140308fb7b6495d11dfb30981fb06375a6191ca"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_real_smoke_report.md",
+      "bytes": 2777,
+      "sha256": "9eb93f4608476894d4950eef994a6bddcfe269b6ce86e7afdde06ecae806c5ee"
+    }
+  ]
+}

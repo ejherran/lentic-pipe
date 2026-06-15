@@ -261,6 +261,7 @@ Suggested new paths:
 | final memberships | `reports/anfis/adaptive_anfis_memberships_final.csv` |
 | model checkpoints | `models/anfis/adaptive/` |
 | synthetic smoke report | `reports/anfis/adaptive_anfis_synthetic_smoke_report.md` |
+| real-data smoke report | `reports/anfis/adaptive_anfis_real_smoke_report.md` |
 
 If any adaptive state, checkpoint, or row-level output is large, it must be
 managed through DVC pointers rather than committed as a Git blob.
@@ -323,18 +324,143 @@ Gate checks passed for synthetic `ANFIS-N`, `ANFIS-F`, and `ANFIS-T`:
 This result validates only the minimal adaptive training mechanics. It does
 not yet validate real-data ANFIS behavior or produce `S_adaptive(t)`.
 
+## Gate 2 Real-Data Smoke Implementation
+
+The bounded real-data smoke runner has been added as the next executable gate:
+
+- runner: `src/experiments/run_adaptive_anfis_real_smoke.py`;
+- tests: `tests/test_adaptive_anfis_real_smoke.py`;
+- report:
+  `reports/anfis/adaptive_anfis_real_smoke_report.md`;
+- manifest:
+  `reports/anfis/adaptive_anfis_real_smoke_manifest.json`;
+- module metrics:
+  `reports/anfis/adaptive_anfis_real_smoke_module_metrics.csv`;
+- target metrics:
+  `reports/anfis/adaptive_anfis_real_smoke_target_metrics.csv`;
+- bounded prediction sample:
+  `reports/anfis/adaptive_anfis_real_smoke_predictions.csv`;
+- initial/final memberships:
+  `reports/anfis/adaptive_anfis_real_smoke_memberships_initial.csv` and
+  `reports/anfis/adaptive_anfis_real_smoke_memberships_final.csv`.
+
+This runner trains `ANFIS-N`, `ANFIS-F`, `ANFIS-T`, and
+`ANFIS-T-no-current` on sampled train rows only, using expert fuzzy substates
+as pseudo-label anchors. It then evaluates anchor metrics and target metrics
+on the sampled real-data slice, including separate full and no-current IRC
+surfaces.
+
+The default command is intentionally bounded:
+
+```bash
+poetry run python src/experiments/run_adaptive_anfis_real_smoke.py
+```
+
+The smoke is a readiness gate, not a final adaptive-state result. Passing it
+justifies moving toward Gate 3 design, but it does not by itself prove that the
+adaptive surface improves PIPE.
+
+## Gate 2 Real-Data Smoke Snapshot
+
+The bounded real-data Gate 2 smoke completed successfully on 2026-06-15.
+
+Command:
+
+```bash
+poetry run python src/experiments/run_adaptive_anfis_real_smoke.py \
+  --sample-rows-per-split-horizon 256 \
+  --train-rows-per-module 256 \
+  --epochs 40
+```
+
+Artifacts:
+
+- report:
+  `reports/anfis/adaptive_anfis_real_smoke_report.md`;
+- manifest:
+  `reports/anfis/adaptive_anfis_real_smoke_manifest.json`;
+- module metrics:
+  `reports/anfis/adaptive_anfis_real_smoke_module_metrics.csv`;
+- target metrics:
+  `reports/anfis/adaptive_anfis_real_smoke_target_metrics.csv`;
+- prediction sample:
+  `reports/anfis/adaptive_anfis_real_smoke_predictions.csv`;
+- initial/final memberships:
+  `reports/anfis/adaptive_anfis_real_smoke_memberships_initial.csv` and
+  `reports/anfis/adaptive_anfis_real_smoke_memberships_final.csv`.
+
+Smoke configuration:
+
+- sampled rows per split/horizon: `256`;
+- total sampled split rows: `2,304`;
+- train rows per module: `256`;
+- memberships per input: `3`;
+- epochs: `40`;
+- learning rate: `0.03`;
+- random seed: `1729`.
+
+Gate checks passed:
+
+- split/state/panel alignment: `2,304 / 2,304` rows matched;
+- state missing rows: `0`;
+- panel missing rows: `0`;
+- all four adaptive modules passed finite-loss, ordered-center,
+  parameter-update, and non-constant-output checks;
+- target metrics were produced for full and no-current adaptive IRC surfaces.
+
+Module anchor summary:
+
+| module | final loss | anchor MAE | anchor RMSE | Spearman | output std | mean missing fraction |
+|---|---:|---:|---:|---:|---:|---:|
+| `ANFIS-N` | 0.0007 | 0.0316 | 0.0674 | 0.8830 | 0.1475 | 0.8248 |
+| `ANFIS-F` | 0.0014 | 0.0250 | 0.0571 | 0.9598 | 0.1880 | 0.8280 |
+| `ANFIS-T` | 0.0183 | 0.1170 | 0.1353 | 0.9564 | 0.2889 | 0.4234 |
+| `ANFIS-T-no-current` | 0.0049 | 0.0246 | 0.0663 | 0.9996 | 0.1262 | 0.8194 |
+
+Validation target metrics for adaptive full IRC:
+
+| score | horizon | PR-AUC | ROC-AUC | Brier | recall | macro-F1 | risk RMSE |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `irc1_adaptive` | 1 | 0.3504 | 0.7979 | 0.1884 | 0.7407 | 0.6555 | 0.3234 |
+| `irc1_adaptive` | 2 | 0.4493 | 0.8852 | 0.1899 | 0.8929 | 0.6742 | 0.3360 |
+| `irc1_adaptive` | 3 | 0.4494 | 0.7983 | 0.1874 | 0.6667 | 0.6884 | 0.3557 |
+
+Validation target metrics for adaptive no-current IRC:
+
+| score | horizon | PR-AUC | ROC-AUC | Brier | recall | macro-F1 | risk RMSE |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `irc1_no_chla_adaptive` | 1 | 0.2662 | 0.6791 | 0.2365 | 0.3704 | 0.5964 | 0.3850 |
+| `irc1_no_chla_adaptive` | 2 | 0.1726 | 0.6067 | 0.2391 | 0.2500 | 0.5596 | 0.4022 |
+| `irc1_no_chla_adaptive` | 3 | 0.2270 | 0.5626 | 0.2391 | 0.2222 | 0.5714 | 0.4117 |
+
+Interpretation:
+
+- Gate 2 is satisfied as a real-data training and reporting smoke.
+- The adaptive modules can learn expert-substate anchors on sampled real rows
+  while preserving ordered centers and bounded outputs.
+- This run is not evidence of downstream PIPE improvement. The target metrics
+  are diagnostic only and use an uncalibrated threshold of `0.5`.
+- The all-source sample has high missingness for nutrient, physicochemical,
+  and no-current thermal modules. Gate 3 should therefore add
+  coverage-aware training and a source-focused diagnostic, especially for WQP,
+  before exporting a full adaptive state.
+- Final memberships are ordered but not constrained to remain inside the
+  normalized `[0, 1]` feature interval. Gate 3 should decide whether to add
+  bounded-center parameterization or an explicit prior/drift penalty.
+
 ## Claims Allowed After This Protocol
 
 - The repository contains a documented expert/refined fuzzy baseline for PIPE
   Layer 1.
 - The adaptive ANFIS implementation gap is now explicitly mapped.
-- The next implementation can proceed through synthetic and real bounded
-  gates without overwriting existing PIPE lightweight artifacts.
+- Synthetic adaptive ANFIS mechanics have passed Gate 1.
+- The Gate 2 bounded real-data smoke completed on sampled real rows without
+  overwriting existing PIPE lightweight artifacts.
 
 ## Claims Not Allowed Yet
 
-- Do not claim adaptive ANFIS has been implemented.
-- Do not claim learned memberships or learned consequents exist.
 - Do not claim adaptive ANFIS improves PIPE until validation/test comparisons
   and downstream PIPE re-evaluation exist.
-- Do not claim ANFIS failure or success before the required gates are run.
+- Do not claim the adaptive ANFIS layer is thesis-complete before full
+  adaptive-state export, validation/test comparison, and downstream PIPE
+  re-evaluation exist.
