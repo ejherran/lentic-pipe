@@ -77,6 +77,12 @@ def test_calibrate_pipe_rollout_alerts_cli_writes_thresholds_and_metrics(tmp_pat
             str(report_path),
             "--manifest",
             str(manifest_path),
+            "--model-label",
+            "PIPE Neural ODE",
+            "--calibration-version",
+            "pipe_neural_ode_rollout_alert_calibration_v0",
+            "--backtest-version",
+            "pipe_neural_ode_rollout_backtest_v0",
             "--evaluation-splits",
             "validation,test",
             "--min-calibration-rows",
@@ -99,6 +105,12 @@ def test_calibrate_pipe_rollout_alerts_cli_writes_thresholds_and_metrics(tmp_pat
     assert {"rollout_probability_bloom_calibrated", "rollout_predicted_bloom_h"}.issubset(calibrated.columns)
     assert len(list(calibrator_dir.glob("*.joblib"))) == 2
     assert manifest["status"] == "completed"
+    assert manifest["calibration_version"] == "pipe_neural_ode_rollout_alert_calibration_v0"
+    assert manifest["backtest_version"] == "pipe_neural_ode_rollout_backtest_v0"
+    assert manifest["config"]["model_label"] == "PIPE Neural ODE"
     assert manifest["row_counts"]["threshold_rows"] == 4
     assert manifest["script"]["path"] == "src/experiments/calibrate_pipe_rollout_alerts.py"
-    assert "Rollout Alert Calibration Report" in report_path.read_text(encoding="utf-8")
+    assert set(thresholds["calibration_version"]) == {"pipe_neural_ode_rollout_alert_calibration_v0"}
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "PIPE Neural ODE Rollout Alert Calibration Report" in report_text
+    assert "do not retrain PIPE Neural ODE" in report_text

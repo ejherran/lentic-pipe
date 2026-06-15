@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Calibrate PIPE/GRU-D rollout alerts and select horizon-specific thresholds."""
+"""Calibrate rollout alerts and select horizon-specific thresholds."""
 
 from __future__ import annotations
 
@@ -424,6 +424,7 @@ def select_threshold(
 
 def _metric_row(
     *,
+    calibration_version: str,
     target_event: str,
     split: str,
     horizon: int,
@@ -438,7 +439,7 @@ def _metric_row(
     precision = _safe_metric(precision_score, actual, predicted, zero_division=0)
     recall = _safe_metric(recall_score, actual, predicted, zero_division=0)
     return {
-        "calibration_version": CALIBRATION_VERSION,
+        "calibration_version": calibration_version,
         "target_event": target_event,
         "split": split,
         "rollout_horizon_months": int(horizon),
@@ -500,7 +501,7 @@ def select_thresholds(rows: pd.DataFrame, args: argparse.Namespace) -> pd.DataFr
             selected = select_threshold(scores=scores, actual=actual_values, args=args)
             threshold_rows.append(
                 {
-                    "calibration_version": CALIBRATION_VERSION,
+                    "calibration_version": args.calibration_version,
                     "target_event": spec["target_event"],
                     "rollout_horizon_months": int(horizon),
                     "calibration_split": args.calibration_split,
@@ -583,6 +584,7 @@ def build_metrics(rows: pd.DataFrame, thresholds: pd.DataFrame, evaluation_split
                 continue
             metric_rows.append(
                 _metric_row(
+                    calibration_version=str(row.calibration_version),
                     target_event=str(row.target_event),
                     split=split,
                     horizon=int(row.rollout_horizon_months),
@@ -606,7 +608,7 @@ def write_calibrators(calibrators: dict[int, CalibratorRecord], thresholds: pd.D
         ]
         threshold = float(threshold_rows["selected_threshold"].iloc[0]) if not threshold_rows.empty else 0.5
         payload = {
-            "calibration_version": CALIBRATION_VERSION,
+            "calibration_version": args.calibration_version,
             "calibrator": record.calibrator,
             "method": record.method,
             "score_column": record.score_column,
@@ -626,7 +628,7 @@ def write_calibrators(calibrators: dict[int, CalibratorRecord], thresholds: pd.D
 def write_report(args: argparse.Namespace, thresholds: pd.DataFrame, metrics: pd.DataFrame, calibrator_paths: list[Path]) -> None:
     headline = metrics[metrics["split"].isin(args.evaluation_splits)].copy()
     lines = [
-        "# PIPE/GRU-D Rollout Alert Calibration Report",
+        f"# {args.model_label} Rollout Alert Calibration Report",
         "",
         f"Generated at UTC: `{datetime.now(timezone.utc).isoformat()}`",
         "",
@@ -693,7 +695,7 @@ def write_report(args: argparse.Namespace, thresholds: pd.DataFrame, metrics: pd
             "- Thresholds are selected on validation/calibration rows only.",
             "- Test metrics must be read as held-out evaluation, not threshold tuning evidence.",
             "- If a horizon has insufficient bloom positives, its calibrator is omitted.",
-            "- These outputs refine alert decisions; they do not retrain PIPE/GRU-D.",
+            f"- These outputs refine alert decisions; they do not retrain {args.model_label}.",
             "",
             "## Outputs",
             "",
@@ -721,9 +723,10 @@ def manifest_payload(
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "status": "completed",
-        "calibration_version": CALIBRATION_VERSION,
-        "backtest_version": BACKTEST_VERSION,
+        "calibration_version": args.calibration_version,
+        "backtest_version": args.backtest_version,
         "config": {
+            "model_label": args.model_label,
             "calibration_split": args.calibration_split,
             "evaluation_splits": args.evaluation_splits,
             "bloom_score_column": args.bloom_score_column,
@@ -768,6 +771,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--calibrated-rows", type=Path, default=DEFAULT_CALIBRATED_ROWS)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--model-label", default="PIPE/GRU-D")
+    parser.add_argument("--calibration-version", default=CALIBRATION_VERSION)
+    parser.add_argument("--backtest-version", default=BACKTEST_VERSION)
     parser.add_argument("--calibration-split", default="validation")
     parser.add_argument("--evaluation-splits", type=_parse_splits, default=["validation", "test"])
     parser.add_argument(

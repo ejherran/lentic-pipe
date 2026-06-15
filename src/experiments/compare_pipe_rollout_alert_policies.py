@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Compare PIPE/GRU-D rollout alert threshold policies on validation and test."""
+"""Compare rollout alert threshold policies on validation and test."""
 
 from __future__ import annotations
 
@@ -403,7 +403,7 @@ def build_thresholds(rows: pd.DataFrame, args: argparse.Namespace) -> pd.DataFra
 
                 threshold_rows.append(
                     {
-                        "policy_version": POLICY_VERSION,
+                        "policy_version": args.policy_version,
                         "policy_name": objective,
                         "target_event": spec["target_event"],
                         "rollout_horizon_months": int(horizon),
@@ -465,7 +465,7 @@ def build_metrics(rows: pd.DataFrame, thresholds: pd.DataFrame, evaluation_split
             )
             metric_rows.append(
                 {
-                    "policy_version": POLICY_VERSION,
+                    "policy_version": str(threshold.policy_version),
                     "policy_name": str(threshold.policy_name),
                     "target_event": str(threshold.target_event),
                     "split": split,
@@ -487,7 +487,7 @@ def build_metrics(rows: pd.DataFrame, thresholds: pd.DataFrame, evaluation_split
 def write_report(args: argparse.Namespace, thresholds: pd.DataFrame, metrics: pd.DataFrame) -> None:
     test = metrics[metrics["split"] == "test"].copy()
     lines = [
-        "# PIPE/GRU-D Rollout Alert Policy Frontier Report",
+        f"# {args.model_label} Rollout Alert Policy Frontier Report",
         "",
         f"Generated at UTC: `{datetime.now(timezone.utc).isoformat()}`",
         "",
@@ -540,7 +540,7 @@ def write_report(args: argparse.Namespace, thresholds: pd.DataFrame, metrics: pd
             "",
             "- All non-fixed thresholds are selected on validation rows only.",
             "- Test rows are used for evaluation only.",
-            "- These policies compare alert decisions; they do not retrain PIPE/GRU-D.",
+            f"- These policies compare alert decisions; they do not retrain {args.model_label}.",
             "- A balanced objective is a modeling choice, not an objective truth; it should be defended by the decision context.",
             "",
             "## Outputs",
@@ -558,8 +558,9 @@ def manifest_payload(args: argparse.Namespace, rows: pd.DataFrame, thresholds: p
     return {
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
         "status": "completed",
-        "policy_version": POLICY_VERSION,
+        "policy_version": args.policy_version,
         "config": {
+            "model_label": args.model_label,
             "calibration_split": args.calibration_split,
             "evaluation_splits": args.evaluation_splits,
             "selection_objectives": args.selection_objectives,
@@ -586,6 +587,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--metrics", type=Path, default=DEFAULT_METRICS)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
     parser.add_argument("--manifest", type=Path, default=DEFAULT_MANIFEST)
+    parser.add_argument("--model-label", default="PIPE/GRU-D")
+    parser.add_argument("--policy-version", default=POLICY_VERSION)
     parser.add_argument("--calibration-split", default="validation")
     parser.add_argument("--evaluation-splits", type=_parse_csv_list, default=["validation", "test"])
     parser.add_argument("--selection-objectives", type=_parse_csv_list, default=SELECTION_OBJECTIVES)

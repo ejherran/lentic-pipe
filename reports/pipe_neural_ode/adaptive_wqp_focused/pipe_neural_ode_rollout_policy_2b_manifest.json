@@ -1,0 +1,60 @@
+{
+  "generated_at_utc": "2026-06-15T19:56:26.314118+00:00",
+  "status": "completed",
+  "policy_version": "pipe_neural_ode_rollout_alert_policy_2b_v0",
+  "config": {
+    "model_label": "PIPE Neural ODE",
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "selection_objectives": [
+      "fixed",
+      "fbeta",
+      "f1",
+      "mcc",
+      "balanced_accuracy",
+      "gmean_pr",
+      "closest_pr"
+    ],
+    "fbeta_beta": 2.0,
+    "min_recall": null,
+    "min_precision": null,
+    "min_threshold_rows": 20
+  },
+  "row_counts": {
+    "calibrated_rows": 33642,
+    "threshold_rows": 42,
+    "metric_rows": 84
+  },
+  "inputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibrated_backtest_rows.parquet",
+      "bytes": 2296661,
+      "sha256": "fd239661ba23abfae6415a5423ff9d39eed057136c2a4718dc7c078032682200"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_policy_2b_thresholds.csv",
+      "bytes": 17132,
+      "sha256": "ba35e52f6a678b309237d336ad6149b151ea40e84f6bd83bfbb4d8c0e4c73de3"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_policy_2b_metrics.csv",
+      "bytes": 36417,
+      "sha256": "877317cd5adbd3e9df49805395078e3ffd118dd2cf68cdb5bac6077c92722446"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_policy_2b_report.md",
+      "bytes": 7214,
+      "sha256": "ac50dbc40fac09f20cd9779a21bfdbc7dc52bc111556d311e67cb2bb02fffeee"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/compare_pipe_rollout_alert_policies.py",
+    "bytes": 26489,
+    "sha256": "5eb76f65f685cf96e09ea63ee399563a5cf2813c0a7beaa4d1e5007c1c72eff4"
+  }
+}

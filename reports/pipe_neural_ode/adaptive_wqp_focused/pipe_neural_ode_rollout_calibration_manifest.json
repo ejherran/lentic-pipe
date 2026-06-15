@@ -1,0 +1,81 @@
+{
+  "generated_at_utc": "2026-06-15T19:54:07.958590+00:00",
+  "status": "completed",
+  "calibration_version": "pipe_neural_ode_rollout_alert_calibration_v0",
+  "backtest_version": "pipe_neural_ode_rollout_backtest_v0",
+  "config": {
+    "model_label": "PIPE Neural ODE",
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "bloom_score_column": "irc_mean",
+    "selection_objective": "fbeta",
+    "fbeta_beta": 2.0,
+    "min_recall": null,
+    "min_precision": null,
+    "min_calibration_rows": 20,
+    "min_threshold_rows": 20
+  },
+  "row_counts": {
+    "backtest_rows": 33642,
+    "threshold_rows": 6,
+    "metric_rows": 12,
+    "calibrator_files": 3
+  },
+  "inputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_matched_grud_validation.parquet",
+      "bytes": 1017125,
+      "sha256": "e0a813b2ddb1ee778c7298af33caeb4a52dfce9646ec00efb7664d7cbe3e87f2"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_matched_grud_test.parquet",
+      "bytes": 1243331,
+      "sha256": "d4a634f176a84298816b9d3b99710b1bd25fa5ad301cd5161a6bf2b3d7e6be35"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibration_thresholds.csv",
+      "bytes": 2566,
+      "sha256": "83c508e91bb8bc99fd17c05c208d4e260aba9e73a414dea623339962abcfbffa"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibration_metrics.csv",
+      "bytes": 4220,
+      "sha256": "8207449887782f14a7eee8853b9c72652a16e4a9cbef7512229212aacb97a090"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibrated_backtest_rows.parquet",
+      "bytes": 2296661,
+      "sha256": "fd239661ba23abfae6415a5423ff9d39eed057136c2a4718dc7c078032682200"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibration_report.md",
+      "bytes": 4354,
+      "sha256": "6861648d754d6d1abfae0031bdaae999e9b042faf9551e35628eb0cb0af82a90"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused/rollout_calibrators/rollout_bloom_h1_irc_mean_isotonic.joblib",
+      "bytes": 1382,
+      "sha256": "5d5f61d1ec14c712c1167a2a20fea8f248c33af99d8214d363f9427a62e0d830"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused/rollout_calibrators/rollout_bloom_h2_irc_mean_isotonic.joblib",
+      "bytes": 1606,
+      "sha256": "03b32daa2b5d5990e798ef84b11715a67edeb4c82fbf0d8700279166c25c620d"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused/rollout_calibrators/rollout_bloom_h3_irc_mean_isotonic.joblib",
+      "bytes": 1670,
+      "sha256": "6c69da7b8b3d0ebcd12da6775c619a09af6ea159c136fee42f89bd1654704b93"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/calibrate_pipe_rollout_alerts.py",
+    "bytes": 33856,
+    "sha256": "289ec1bc8b6bc25f63fc4e11b9ccf66f5cb0ccae29d324f26c2faaf04168eedb"
+  }
+}

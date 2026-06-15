@@ -223,6 +223,12 @@ exports, or credential JSON files.
 - `docs/ADAPTIVE_ANFIS_PROTOCOL.md` audits the existing expert/refined fuzzy
   layer and defines the v0 protocol for adaptive `ANFIS-N`, `ANFIS-F`, and
   `ANFIS-T` before any adaptive training result is claimed.
+- `docs/PIPE_NEURAL_ODE_PROTOCOL.md` documents the Neural ODE branch as a
+  temporal PIPE variant over the same sequence schema used by PIPE/GRU-D,
+  including one-step training, recursive rollout backtests, calibration, and
+  2B policy-frontier evidence. The runners are
+  `src/experiments/train_pipe_neural_ode.py` and
+  `src/experiments/evaluate_pipe_neural_ode_rollouts.py`.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

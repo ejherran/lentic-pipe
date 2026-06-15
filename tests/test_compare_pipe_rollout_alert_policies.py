@@ -72,6 +72,10 @@ def test_compare_pipe_rollout_alert_policies_cli_writes_policy_frontier(tmp_path
             str(report_path),
             "--manifest",
             str(manifest_path),
+            "--model-label",
+            "PIPE Neural ODE",
+            "--policy-version",
+            "pipe_neural_ode_rollout_alert_policy_2b_v0",
             "--selection-objectives",
             "fixed,f1,mcc,closest_pr",
             "--min-threshold-rows",
@@ -93,6 +97,11 @@ def test_compare_pipe_rollout_alert_policies_cli_writes_policy_frontier(tmp_path
     assert set(test_bloom["rows"]) == {5}
     assert set(test_irc["rows"]) == {6}
     assert manifest["status"] == "completed"
+    assert manifest["policy_version"] == "pipe_neural_ode_rollout_alert_policy_2b_v0"
+    assert manifest["config"]["model_label"] == "PIPE Neural ODE"
     assert manifest["row_counts"]["threshold_rows"] == 8
     assert manifest["script"]["path"] == "src/experiments/compare_pipe_rollout_alert_policies.py"
-    assert "Policy Frontier Report" in report_path.read_text(encoding="utf-8")
+    assert set(thresholds["policy_version"]) == {"pipe_neural_ode_rollout_alert_policy_2b_v0"}
+    report_text = report_path.read_text(encoding="utf-8")
+    assert "PIPE Neural ODE Rollout Alert Policy Frontier Report" in report_text
+    assert "do not retrain PIPE Neural ODE" in report_text
