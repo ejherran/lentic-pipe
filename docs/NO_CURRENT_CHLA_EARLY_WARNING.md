@@ -582,3 +582,129 @@ The provisional interpretation is:
   alternatives, especially if alert burden matters;
 - direct `bloom_h` calibration now has real support, but it remains secondary
   to `irc_alert` for the no-current-Chl-a claim.
+
+## Controlled Degradation Gate
+
+The no-current-Chl-a variants are not closed until controlled degradation is
+run against the same no-current input contract. The raw-predictor recomputation
+evaluator must rebuild degraded sequences with `--input-surface
+no_current_chla`; otherwise the degraded rebuild would silently return to the
+full Chl-a-aware PIPE input surface.
+
+Start with bounded deterministic smokes. For the all-source no-current surface:
+
+```bash
+poetry run python src/experiments/evaluate_raw_degraded_pipe_grud_rollouts.py \
+  --scenario-set no_current_raw_smoke \
+  --output-name no_current_chla_raw_smoke \
+  --input-surface no_current_chla \
+  --sequences data/pipe_grud/pipe_sequence_dataset_no_current_chla_v0.parquet \
+  --model models/pipe_grud/no_current_chla/pipe_grud_model_v0.pt \
+  --model-manifest reports/pipe_grud/no_current_chla/pipe_grud_manifest.json \
+  --rollout-calibrator-dir models/pipe_grud/no_current_chla/rollout_calibrators \
+  --thresholds reports/pipe_grud/no_current_chla/pipe_rollout_policy_2b_thresholds.csv \
+  --deterministic \
+  --max-origins 512 \
+  --batch-size 256 \
+  --require-calibrators \
+  --require-rollout-calibrators
+```
+
+For the WQP-focused no-current surface, preserve both the no-current input
+surface and the source scope:
+
+```bash
+poetry run python src/experiments/evaluate_raw_degraded_pipe_grud_rollouts.py \
+  --scenario-set no_current_raw_smoke \
+  --output-name no_current_chla_wqp_focused_raw_smoke \
+  --input-surface no_current_chla \
+  --source-ids wqp \
+  --sequences data/pipe_grud/pipe_sequence_dataset_no_current_chla_wqp_focused_v0.parquet \
+  --model models/pipe_grud/no_current_chla_wqp_focused/pipe_grud_model.pt \
+  --model-manifest reports/pipe_grud/no_current_chla_wqp_focused/pipe_grud_manifest.json \
+  --rollout-calibrator-dir models/pipe_grud/no_current_chla_wqp_focused/rollout_calibrators \
+  --thresholds reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_policy_2b_thresholds.csv \
+  --deterministic \
+  --max-origins 512 \
+  --batch-size 256 \
+  --require-calibrators \
+  --require-rollout-calibrators
+```
+
+Review criteria before scaling:
+
+- `control_observed` should show no material input drift after rebuild;
+- nutrient, light-proxy, physicochemical, random-dropout, and temporal-block
+  scenarios should be compared against the frozen validation-selected policies;
+- WQP-focused degradation should be interpreted separately from the all-source
+  no-current surface because its precursor coverage is materially stronger;
+- if the smoke exposes unstable coverage, excessive alert volume, or threshold
+  fragility, refine the no-current variant before calling PIPE ligera closed.
+
+If both smokes are healthy, rerun with `--scenario-set no_current_raw_core` and
+remove the smoke origin cap. The full run should decide explicitly whether
+row-level degraded backtest outputs need DVC tracking.
+
+## Controlled Degradation Snapshot
+
+The no-current degradation gate was executed on 2026-06-15. The all-source
+smoke was technically healthy and is useful as a coverage-limited diagnostic:
+`control_observed` had zero rebuild drift, all scenarios evaluated, and
+`ablate_light` strongly degraded `irc_alert` while nutrient ablation did not.
+Because the all-source no-current surface mixes WQP-supported rows with many
+rows that lack same-source non-Chl-a precursors, it remains exploratory rather
+than the main strict early-warning robustness surface.
+
+The WQP-focused no-current full run is the primary controlled-degradation
+evidence for strict early warning. It used:
+
+- report:
+  `reports/degradation/controlled_degradation_no_current_chla_wqp_focused_raw_core_full_report.md`;
+- manifest:
+  `reports/degradation/controlled_degradation_no_current_chla_wqp_focused_raw_core_full_manifest.json`;
+- scenario set: `no_current_raw_core`;
+- selected origins: `6,145`;
+- samples per origin: `128`;
+- evaluated runs: `22`;
+- rebuilt input surface: `no_current_chla`;
+- rebuilt source filter: `["wqp"]`;
+- control rebuild drift: `0` missing alignment rows and `0` changed sequence
+  or selected-window input cells.
+
+Under `closest_pr`, mean held-out test behavior across horizons for
+`irc_alert` was:
+
+| scenario | mean recall | mean precision | mean alert rate | mean F2 | mean delta F2 |
+|---|---:|---:|---:|---:|---:|
+| `control_observed` | `0.8031` | `0.7546` | `0.5727` | `0.7918` | `0.0000` |
+| `ablate_light` | `0.4855` | `0.8428` | `0.3088` | `0.5299` | `-0.2619` |
+| `ablate_physicochemical` | `0.5138` | `0.7275` | `0.3782` | `0.5452` | `-0.2466` |
+| `ablate_nutrients` | `0.8427` | `0.7214` | `0.6292` | `0.8137` | `0.0219` |
+| `random_dropout_mcar_10` | `0.7541` | `0.7625` | `0.5317` | `0.7547` | `-0.0371` |
+| `random_dropout_mcar_25` | `0.6670` | `0.7734` | `0.4635` | `0.6849` | `-0.1069` |
+| `random_dropout_mcar_50` | `0.4781` | `0.7831` | `0.3276` | `0.5178` | `-0.2740` |
+| `temporal_blocks_6m_rate_25` | `0.7847` | `0.7556` | `0.5590` | `0.7776` | `-0.0142` |
+
+For direct `bloom_h`, nutrient ablation was more damaging than for
+`irc_alert`: mean F2 fell from `0.5280` to `0.3556`
+(`delta = -0.1724`). Light ablation and severe random dropout were stronger
+failure modes, with mean F2 near `0.1855` and `0.21`, respectively.
+
+The refined interpretation is:
+
+- WQP-focused no-current-Chl-a retains robust multi-horizon `irc_alert`
+  performance under the frozen validation-selected policy;
+- the strict early-warning surface is most fragile to light-proxy removal,
+  physicochemical removal, and severe MCAR missingness;
+- nutrients are important for the direct `bloom_h` endpoint and materially
+  move `x_yN`, but isolated nutrient ablation does not degrade the aggregated
+  `irc_alert` endpoint under the current IRC weights and `closest_pr` policy;
+- moderate temporal blocks have little effect in this configuration because
+  they change relatively few selected-window cells;
+- no model weights, fuzzy weights, calibrators, or thresholds were refit under
+  degradation.
+
+No degraded row-level backtest table was materialized in this run, so no new
+DVC-tracked row-level artifact is required at this stage. The small CSV, JSON,
+and Markdown reports are reproducibility evidence for the no-current
+degradation gate.

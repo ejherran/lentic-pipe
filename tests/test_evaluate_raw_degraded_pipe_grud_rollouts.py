@@ -13,6 +13,7 @@ import pytest
 import yaml
 
 from src.experiments.build_pipe_sequences import INPUT_COLUMNS, PIPE_STATE_COLUMNS, TARGET_COLUMNS
+from src.experiments import evaluate_raw_degraded_pipe_grud_rollouts as raw_degradation
 from src.experiments.evaluate_raw_degraded_pipe_grud_rollouts import raw_variable_group_columns
 from src.experiments.train_pipe_grud import STATE_TARGET_NAMES, make_model
 
@@ -196,6 +197,41 @@ def test_raw_variable_group_columns_expand_panel_aggregates_and_derivatives() ->
     assert "TN_TP_ratio" in columns
     assert "log_TP" in columns
     assert "log_TN" in columns
+
+
+def test_recomputed_sequences_preserve_requested_input_surface(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+
+    def fake_build_expert_state(panel: pd.DataFrame, *, irc_weights: dict[str, float]) -> tuple[pd.DataFrame, dict]:
+        return panel, {}
+
+    def fake_filter_state_sources(state: pd.DataFrame, source_ids: list[str]) -> pd.DataFrame:
+        captured["source_ids"] = source_ids
+        return state
+
+    def fake_build_sequence_candidates(state: pd.DataFrame, *, input_surface: str = "full") -> pd.DataFrame:
+        captured["input_surface"] = input_surface
+        return state
+
+    def fake_filter_leakage_safe_sequences(
+        candidates: pd.DataFrame,
+        args: object,
+    ) -> tuple[pd.DataFrame, pd.DataFrame]:
+        return candidates, pd.DataFrame()
+
+    monkeypatch.setattr(raw_degradation, "build_expert_state", fake_build_expert_state)
+    monkeypatch.setattr(raw_degradation, "filter_state_sources", fake_filter_state_sources)
+    monkeypatch.setattr(raw_degradation, "build_sequence_candidates", fake_build_sequence_candidates)
+    monkeypatch.setattr(raw_degradation, "filter_leakage_safe_sequences", fake_filter_leakage_safe_sequences)
+
+    raw_degradation.build_recomputed_sequences(
+        pd.DataFrame({"source_id": ["wqp"]}),
+        irc_weights={"alpha": 0.5, "beta": 0.5, "gamma": 2.0},
+        sequence_args=type("Args", (), {"input_surface": "no_current_chla", "source_ids_normalized": ["wqp"]})(),
+    )
+
+    assert captured["input_surface"] == "no_current_chla"
+    assert captured["source_ids"] == ["wqp"]
 
 
 def test_evaluate_raw_degraded_pipe_grud_rollouts_preserves_labels(tmp_path: Path) -> None:

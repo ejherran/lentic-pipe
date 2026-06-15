@@ -22,9 +22,11 @@ Implemented artifacts:
 
 - `src/experiments/evaluate_raw_degraded_pipe_grud_rollouts.py`;
 - `tests/test_evaluate_raw_degraded_pipe_grud_rollouts.py`;
-- `raw_predictor_rebuild_smoke`, `raw_predictor_rebuild_core`, and
-  `raw_predictor_no_chla_factorial` scenario sets in
-  `configs/degradation_scenarios.yaml`.
+- `raw_predictor_rebuild_smoke`, `raw_predictor_rebuild_core`,
+  `raw_predictor_no_chla_factorial`, `no_current_raw_smoke`, and
+  `no_current_raw_core` scenario sets in `configs/degradation_scenarios.yaml`;
+- configurable degraded-sequence rebuilds through `--input-surface` and
+  optional `--source-ids`.
 
 The first smoke was run with:
 
@@ -200,6 +202,46 @@ calibrated surface is not yet a strict no-current-Chl-a early-warning model.
 The next methodological step is to define, train, calibrate, and evaluate a
 formal no-current-Chl-a surface where current Chl-a is excluded from predictors
 before model fitting and threshold selection.
+
+## No-Current-Chl-a Degradation Readiness
+
+The no-current-Chl-a surface has now been trained and calibrated separately, so
+the raw-predictor degradation evaluator can be reused against that frozen
+surface instead of the Chl-a-aware monitoring surface.
+
+Use `--input-surface no_current_chla` whenever the degraded monthly panel is
+rebuilt for this experiment. Without this option, the raw-predictor rebuild
+would reconstruct the full PIPE input surface and would no longer match the
+trained no-current-Chl-a model contract. For source-focused experiments such as
+WQP-focused no-current-Chl-a, also pass `--source-ids wqp` so the degraded
+rebuild preserves the same source scope as the canonical sequence/model.
+
+The configured no-current scenario sets are:
+
+- `no_current_raw_smoke`: bounded technical check with observed control,
+  nutrient ablation, light-proxy ablation, MCAR dropout, and temporal blocks;
+- `no_current_raw_core`: broader robustness grid that adds physicochemical
+  ablation and stronger random/temporal missingness.
+
+These scenarios intentionally avoid `ablate_chlorophyll_memory`: the no-current
+surface already excludes current observed Chl-a from model inputs. The
+appropriate question is whether non-Chl-a precursor groups and missingness
+patterns degrade the frozen early-warning surface.
+
+Before interpreting any no-current degradation result, verify that
+`control_observed` has no material rebuild drift. If the undegraded no-current
+rebuild changes sequence inputs, fix the surface contract before making
+scientific claims.
+
+The WQP-focused no-current core full run was completed on 2026-06-15 with
+`6,145` selected origins, `samples=128`, `22` evaluated runs, and zero
+undegraded rebuild drift. The report is
+`reports/degradation/controlled_degradation_no_current_chla_wqp_focused_raw_core_full_report.md`.
+It confirms that the WQP-focused strict early-warning surface is most fragile
+to light-proxy ablation, physicochemical ablation, and severe MCAR missingness.
+Isolated nutrient ablation degrades direct `bloom_h` more than `irc_alert`,
+which should be reported as endpoint-specific behavior rather than ecological
+irrelevance of nutrients.
 
 ## Reproducibility Notes
 

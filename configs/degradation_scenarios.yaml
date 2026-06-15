@@ -179,6 +179,23 @@ scenario_sets:
     - ablate_chlorophyll_memory
     - ablate_nutrients
     - ablate_chlorophyll_memory_and_nutrients
+  no_current_raw_smoke:
+    - control_observed
+    - ablate_nutrients
+    - ablate_light
+    - random_dropout_mcar_25
+    - temporal_blocks_3m_rate_10
+  no_current_raw_core:
+    - control_observed
+    - ablate_nutrients
+    - ablate_light
+    - ablate_physicochemical
+    - random_dropout_mcar_10
+    - random_dropout_mcar_25
+    - random_dropout_mcar_50
+    - temporal_blocks_1m_rate_10
+    - temporal_blocks_3m_rate_10
+    - temporal_blocks_6m_rate_25
   pipe_state_recompute_smoke:
     - control_observed
     - ablate_pipe_state_level

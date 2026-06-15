@@ -21,8 +21,12 @@ import pandas as pd
 from src.experiments.build_expert_fuzzy import DEFAULT_MANIFEST as DEFAULT_FUZZY_MANIFEST
 from src.experiments.build_expert_fuzzy import DEFAULT_PANEL
 from src.experiments.build_pipe_sequences import (
+    INPUT_SURFACE_FULL,
+    INPUT_SURFACE_NO_CURRENT_CHLA,
     INPUT_COLUMNS,
+    _parse_source_ids,
     build_sequence_candidates,
+    filter_state_sources,
     filter_leakage_safe_sequences,
 )
 from src.experiments.calibrate_pipe_rollout_alerts import apply_bloom_calibrators
@@ -370,14 +374,33 @@ def validate_raw_scenarios(scenarios: list[dict[str, Any]]) -> None:
             )
 
 
+def filter_panel_sources(panel: pd.DataFrame, source_ids: list[str]) -> pd.DataFrame:
+    if not source_ids:
+        return panel
+    available = set(panel["source_id"].astype(str).unique())
+    missing = sorted(set(source_ids).difference(available))
+    if missing:
+        raise ValueError(f"Requested source_id values are not present in the monthly panel: {missing}")
+    out = panel[panel["source_id"].astype(str).isin(source_ids)].copy()
+    if out.empty:
+        raise ValueError(f"Source filter removed all monthly panel rows: {source_ids}")
+    return out.reset_index(drop=True)
+
+
 def build_recomputed_sequences(
     panel: pd.DataFrame,
     *,
     irc_weights: dict[str, float],
     sequence_args: argparse.Namespace,
 ) -> tuple[pd.DataFrame, int, int]:
+    source_ids = getattr(sequence_args, "source_ids_normalized", [])
+    panel = filter_panel_sources(panel, source_ids)
     state, _ = build_expert_state(panel, irc_weights=irc_weights)
-    candidates = build_sequence_candidates(state)
+    state = filter_state_sources(state, source_ids)
+    candidates = build_sequence_candidates(
+        state,
+        input_surface=getattr(sequence_args, "input_surface", INPUT_SURFACE_FULL),
+    )
     sequences, discarded = filter_leakage_safe_sequences(candidates, sequence_args)
     return sequences, int(len(state)), int(len(discarded))
 
@@ -614,6 +637,7 @@ def run_scenario(
     rebuilt_sequence_rows = len(frame)
 
     if fuzzy_state_rebuilt:
+        panel = filter_panel_sources(panel, getattr(sequence_args, "source_ids_normalized", []))
         degraded_panel, raw_affected_rows, raw_affected_cells, raw_columns = apply_raw_operations(
             panel,
             scenario,
@@ -833,6 +857,8 @@ def build_report(
         f"- Config: `{args.config}`",
         f"- Panel: `{args.panel}`",
         f"- Canonical sequences/labels: `{args.sequences}`",
+        f"- Rebuilt input surface: `{args.input_surface}`",
+        f"- Rebuilt source filter: `{args.source_ids_normalized or 'all'}`",
         f"- Fuzzy manifest for frozen weights: `{args.fuzzy_manifest}`",
         f"- Fuzzy weight source: `{args.fuzzy_weight_source}`",
         f"- Scenario set: `{args.scenario_set}`",
@@ -1119,6 +1145,8 @@ def manifest_payload(
             "include_all_sources": bool(args.include_all_sources),
             "min_policy_rows": int(args.min_policy_rows),
             "max_gap_months": int(args.max_gap_months),
+            "input_surface": args.input_surface,
+            "source_ids": args.source_ids_normalized,
             "train_end": args.train_end,
             "validation_start": args.validation_start,
             "validation_end": args.validation_end,
@@ -1184,6 +1212,18 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-origins", type=int, default=None)
     parser.add_argument("--max-rows", type=int, default=None)
     parser.add_argument("--examples-per-group", type=int, default=20)
+    parser.add_argument(
+        "--input-surface",
+        choices=[INPUT_SURFACE_FULL, INPUT_SURFACE_NO_CURRENT_CHLA],
+        default=INPUT_SURFACE_FULL,
+        help="PIPE input surface to rebuild after raw predictor degradation.",
+    )
+    parser.add_argument(
+        "--source-ids",
+        nargs="*",
+        default=None,
+        help="Optional source_id filter to apply before rebuilding degraded PIPE sequences.",
+    )
     parser.add_argument("--irc-alpha", type=float, default=0.5)
     parser.add_argument("--irc-beta", type=float, default=0.5)
     parser.add_argument("--irc-gamma", type=float, default=2.0)
@@ -1207,6 +1247,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    args.source_ids_normalized = _parse_source_ids(args.source_ids)
     if args.rollout_horizon < 1:
         raise ValueError("--rollout-horizon must be >= 1")
     if args.samples < 1:
@@ -1364,11 +1405,14 @@ def main() -> None:
         validation_end=args.validation_end,
         test_start=args.test_start,
         test_end=args.test_end,
+        input_surface=args.input_surface,
+        source_ids_normalized=args.source_ids_normalized,
     )
     print(f"selected backtest origins={len(indices):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 
     print("building evaluation-surface diagnostics", flush=True)
-    diagnostic_parts: list[pd.DataFrame] = [build_surface_diagnostics(panel, frame, indices)]
+    diagnostic_panel = filter_panel_sources(panel, args.source_ids_normalized)
+    diagnostic_parts: list[pd.DataFrame] = [build_surface_diagnostics(diagnostic_panel, frame, indices)]
     print("rebuilding undegraded fuzzy state/sequence for drift diagnostics", flush=True)
     control_rebuild, control_rebuild_inputs = control_rebuild_diagnostics(
         panel=panel,

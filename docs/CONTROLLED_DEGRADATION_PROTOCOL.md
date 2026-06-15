@@ -507,12 +507,13 @@ Phase 3:
 
 - repeat comparable scenarios for MIFAL once that pipeline exists;
 - compare baseline, fuzzy, PIPE/GRU-D, and MIFAL on a shared degradation grid.
-- define a formal no-current-Chl-a early-warning surface before making strong
-  precursor claims from nutrient sensitivity. The raw-predictor factorial smoke
-  showed target-proximal Chl-a-memory dominance on the current frozen
-  monitoring surface, so early-warning evaluation must remove current Chl-a
-  from model fitting, calibration, and threshold selection, not only from
-  post-hoc degradation scenarios.
+- run controlled degradation for the formal no-current-Chl-a early-warning
+  surfaces before closing PIPE ligera. The raw-predictor factorial smoke showed
+  target-proximal Chl-a-memory dominance on the current frozen monitoring
+  surface, so early-warning evaluation must remove current Chl-a from model
+  fitting, calibration, threshold selection, and degraded-sequence rebuilds.
+  Use `--input-surface no_current_chla`; use `--source-ids wqp` for the
+  WQP-focused no-current surface.
 
 ## Decisions Made
 
