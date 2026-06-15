@@ -267,7 +267,7 @@ managed through DVC pointers rather than committed as a Git blob.
 
 ## First Implementation Slice
 
-The first code slice should be deliberately small:
+The first code slice is deliberately small:
 
 1. add a lightweight adaptive ANFIS module with trainable Gaussian membership
    centers, positive widths, normalized firing strengths, and Sugeno-style
@@ -277,8 +277,51 @@ The first code slice should be deliberately small:
 3. add a synthetic smoke runner that writes report and manifest artifacts;
 4. only after that smoke passes, add bounded real-data training.
 
+Implementation paths:
+
+- module: `src/fuzzy/adaptive_anfis.py`;
+- smoke runner:
+  `src/experiments/run_adaptive_anfis_synthetic_smoke.py`;
+- tests: `tests/test_adaptive_anfis.py`;
+- default smoke report:
+  `reports/anfis/adaptive_anfis_synthetic_smoke_report.md`;
+- default smoke manifest:
+  `reports/anfis/adaptive_anfis_synthetic_smoke_manifest.json`.
+
 This sequence keeps adaptive ANFIS from contaminating the already closed PIPE
 lightweight baseline.
+
+## Gate 1 Synthetic Smoke Snapshot
+
+The synthetic-only Gate 1 runner completed successfully on 2026-06-15.
+
+Artifacts:
+
+- report:
+  `reports/anfis/adaptive_anfis_synthetic_smoke_report.md`;
+- manifest:
+  `reports/anfis/adaptive_anfis_synthetic_smoke_manifest.json`;
+- metrics:
+  `reports/anfis/adaptive_anfis_synthetic_smoke_metrics.csv`.
+
+Smoke configuration:
+
+- rows per module: `128`;
+- memberships per input: `3`;
+- epochs: `80`;
+- learning rate: `0.05`;
+- random seed: `1729`.
+
+Gate checks passed for synthetic `ANFIS-N`, `ANFIS-F`, and `ANFIS-T`:
+
+- finite final losses;
+- outputs remained in `[0, 1]`;
+- centers remained ordered;
+- trainable parameters changed;
+- losses improved by more than `98%` in all three synthetic modules.
+
+This result validates only the minimal adaptive training mechanics. It does
+not yet validate real-data ANFIS behavior or produce `S_adaptive(t)`.
 
 ## Claims Allowed After This Protocol
 

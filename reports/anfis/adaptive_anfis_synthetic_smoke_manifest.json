@@ -1,0 +1,137 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-06-15T14:50:03.564404+00:00",
+  "config": {
+    "rows": 128,
+    "memberships": 3,
+    "epochs": 80,
+    "learning_rate": 0.05,
+    "random_seed": 1729,
+    "min_width": 0.03,
+    "min_gap": 0.0001,
+    "grad_clip": 1.0
+  },
+  "modules": [
+    {
+      "module": "ANFIS-N",
+      "status": "passed",
+      "rows": 128,
+      "input_dim": 3,
+      "feature_names": [
+        "TP_scaled",
+        "TN_scaled",
+        "ratio_imbalance_scaled"
+      ],
+      "memberships": 3,
+      "rules": 27,
+      "initial_loss": 0.03489602357149124,
+      "final_loss": 0.0003331323969177902,
+      "relative_loss_improvement": 0.9904535714152272,
+      "finite_loss": true,
+      "output_min": 0.15564103424549103,
+      "output_max": 0.8713830709457397,
+      "output_in_range": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.8301327228546143,
+      "center_min": -0.019100641831755638,
+      "center_max": 1.2699627876281738,
+      "width_min": 0.2174961417913437,
+      "width_max": 0.4179176092147827
+    },
+    {
+      "module": "ANFIS-F",
+      "status": "passed",
+      "rows": 128,
+      "input_dim": 4,
+      "feature_names": [
+        "DO_good",
+        "pH_good",
+        "turbidity_good",
+        "secchi_good"
+      ],
+      "memberships": 3,
+      "rules": 81,
+      "initial_loss": 0.026297103613615036,
+      "final_loss": 0.00019943431834690273,
+      "relative_loss_improvement": 0.9924161108661546,
+      "finite_loss": true,
+      "output_min": 0.17534887790679932,
+      "output_max": 0.8322802186012268,
+      "output_in_range": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.6324957609176636,
+      "center_min": -0.02881700173020363,
+      "center_max": 1.047555685043335,
+      "width_min": 0.24110473692417145,
+      "width_max": 0.3738633692264557
+    },
+    {
+      "module": "ANFIS-T",
+      "status": "passed",
+      "rows": 128,
+      "input_dim": 2,
+      "feature_names": [
+        "temperature_favorable",
+        "current_chla_pressure"
+      ],
+      "memberships": 3,
+      "rules": 9,
+      "initial_loss": 0.033847834914922714,
+      "final_loss": 0.0003841394209302962,
+      "relative_loss_improvement": 0.9886509898817505,
+      "finite_loss": true,
+      "output_min": 0.16583310067653656,
+      "output_max": 0.8482561707496643,
+      "output_in_range": true,
+      "centers_ordered": true,
+      "max_parameter_delta": 1.7140017747879028,
+      "center_min": 0.11587747186422348,
+      "center_max": 0.816731333732605,
+      "width_min": 0.18843062222003937,
+      "width_max": 0.4288919270038605
+    }
+  ],
+  "inputs": [],
+  "training_curve_summary": {
+    "ANFIS-N": {
+      "epochs": 80,
+      "initial_loss": 0.03489602357149124,
+      "final_loss": 0.0003331323969177902,
+      "min_loss": 0.0003331323969177902
+    },
+    "ANFIS-F": {
+      "epochs": 80,
+      "initial_loss": 0.026297103613615036,
+      "final_loss": 0.00019943431834690273,
+      "min_loss": 0.00019943431834690273
+    },
+    "ANFIS-T": {
+      "epochs": 80,
+      "initial_loss": 0.033847834914922714,
+      "final_loss": 0.0003841394209302962,
+      "min_loss": 0.0003841394209302962
+    }
+  },
+  "script": {
+    "path": "src/experiments/run_adaptive_anfis_synthetic_smoke.py",
+    "bytes": 13307,
+    "sha256": "8e47da681807d0141bc490cf37b7c77f52a44a66e6d8c5bd5b1a161696beadcc"
+  },
+  "adaptive_anfis_module": {
+    "path": "src/fuzzy/adaptive_anfis.py",
+    "bytes": 7931,
+    "sha256": "26a4f9a95f15a6088b87ea56e86e95ce2930f5d1f5f42387aecf3665c4c221f4"
+  },
+  "outputs": [
+    {
+      "path": "reports/anfis/adaptive_anfis_synthetic_smoke_metrics.csv",
+      "bytes": 941,
+      "sha256": "d69ebd3ed9f447d3e87b6b996a2ef339804b92a8c780e95e53f027265f64fa9e"
+    },
+    {
+      "path": "reports/anfis/adaptive_anfis_synthetic_smoke_report.md",
+      "bytes": 1300,
+      "sha256": "fc07d0e175bc4ab947be2a740170c39b676cf3abe0797325de426f0e94859922"
+    }
+  ]
+}
