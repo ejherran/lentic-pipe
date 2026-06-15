@@ -417,6 +417,456 @@ Required artifacts:
 - rollout backtests and 2B policy comparison;
 - degradation protocol extension for adaptive state.
 
+Implementation path:
+
+- sequence builder: `src/experiments/build_pipe_sequences.py`;
+- input surfaces:
+  - `adaptive` maps trained ANFIS columns such as `yN_adaptive`,
+    `sigma_N_adaptive`, and `delta_yN_adaptive` into the canonical PIPE
+    sequence schema;
+  - `adaptive_no_current_chla` uses adaptive no-current thermal inputs while
+    keeping full adaptive next-state targets;
+- tests: `tests/test_build_pipe_sequences.py`.
+
+Initial WQP-focused adaptive sequence command:
+
+```bash
+poetry run python src/experiments/build_pipe_sequences.py \
+  --state data/fuzzy/adaptive_state_vector_v0.parquet \
+  --input-surface adaptive \
+  --source-ids wqp \
+  --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+  --summary reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_summary.csv \
+  --discarded reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_discarded_summary.csv \
+  --report reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_report.md \
+  --manifest reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json
+```
+
+This command should be reviewed before training. The expected first decision is
+whether the adaptive sequence row counts match the WQP-focused expert/no-current
+sequence geometry closely enough to support a fair PIPE-GRU-D comparison.
+
+### Gate 4 WQP-Focused Adaptive Sequence Snapshot
+
+The WQP-focused adaptive sequence build completed successfully on 2026-06-15.
+
+Artifacts:
+
+- sequence dataset:
+  `data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet`;
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_report.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json`;
+- summary:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_summary.csv`;
+- discarded summary:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_discarded_summary.csv`.
+
+Geometry:
+
+- candidate state rows: `1,626,672`;
+- kept sequence rows: `986,674`;
+- discarded candidate rows: `639,998`;
+- source-scoped sites kept: `43,715`;
+- train rows/sites: `808,970` / `38,508`;
+- validation rows/sites: `91,226` / `11,283`;
+- test rows/sites: `86,478` / `10,366`.
+
+Interpretation:
+
+- The sequence geometry matches the WQP-focused lightweight/no-current surface.
+- This supports a fair first PIPE-GRU-D adaptive smoke comparison over the same
+  source, split geometry, adjacent-month target gap, and site-domain scale.
+- The sequence parquet should be promoted through DVC if retained after the
+  adaptive PIPE smoke is reviewed.
+
+### Gate 4 WQP-Focused Adaptive Training Smoke Snapshot
+
+The first WQP-focused adaptive PIPE/GRU-D training smoke completed on
+2026-06-15.
+
+Artifacts:
+
+- model:
+  `models/pipe_grud/adaptive_wqp_focused/pipe_grud_model_smoke.pt`;
+- checkpoint:
+  `models/pipe_grud/adaptive_wqp_focused/pipe_grud_checkpoint_smoke.pt`;
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_report_smoke.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest_smoke.json`;
+- metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_metrics_smoke.csv`;
+- persistence comparison:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_persistence_comparison_smoke.csv`.
+
+Configuration:
+
+- history length: `12`;
+- hidden dimension: `96`;
+- epochs: `2`;
+- train windows used: `50,000` of `112,470`;
+- validation windows used: `7,079`;
+- test windows used: `7,582`.
+
+Smoke result:
+
+- status: `completed`;
+- best epoch: `2`;
+- validation all-state RMSE: `0.1507`;
+- validation all-state RMSE improvement over persistence: `1.40%`;
+- test all-state RMSE: `0.1453`;
+- test all-state RMSE improvement over persistence: `1.48%`;
+- test `yT` RMSE improvement over persistence: `2.06%`;
+- test `delta_yT` RMSE improvement over persistence: `2.69%`.
+
+Interpretation:
+
+- The adaptive temporal smoke is mechanically healthy and does not collapse.
+- The adaptive state is smoother than the no-current lightweight state, so the
+  persistence baseline is stronger and the relative GRU-D gain is smaller.
+- The best checkpoint occurs at the final smoke epoch, so a longer bounded
+  training probe is required before deciding whether to scale to full training
+  or treat the adaptive temporal variant as persistence-dominated.
+
+### Gate 4 WQP-Focused Adaptive Extended Smoke Snapshot
+
+The extended WQP-focused adaptive PIPE/GRU-D training smoke completed on
+2026-06-15.
+
+Artifacts:
+
+- model:
+  `models/pipe_grud/adaptive_wqp_focused/pipe_grud_model_extended_smoke.pt`;
+- checkpoint:
+  `models/pipe_grud/adaptive_wqp_focused/pipe_grud_checkpoint_extended_smoke.pt`;
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_report_extended_smoke.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest_extended_smoke.json`;
+- metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_metrics_extended_smoke.csv`;
+- persistence comparison:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_persistence_comparison_extended_smoke.csv`.
+
+Configuration:
+
+- history length: `12`;
+- hidden dimension: `96`;
+- epochs: `8`;
+- train windows used: `50,000` of `112,470`;
+- validation windows used: `7,079`;
+- test windows used: `7,582`.
+
+Extended smoke result:
+
+- status: `completed`;
+- best epoch: `8`;
+- validation all-state RMSE: `0.1371`;
+- validation all-state RMSE improvement over persistence: `10.32%`;
+- test all-state RMSE: `0.1322`;
+- test all-state RMSE improvement over persistence: `10.40%`;
+- test all-state MAE improvement over persistence: `6.59%`;
+- test `delta_yN`, `delta_yF`, and `delta_yT` RMSE improvements:
+  `14.41%`, `18.72%`, and `18.94%`.
+
+Interpretation:
+
+- The extended smoke shows non-trivial temporal signal over the adaptive state.
+- The strongest gains are in change/delta channels, while sigma channels remain
+  persistence-dominated.
+- Because the best checkpoint occurs at the final extended-smoke epoch, the next
+  step is a full WQP-focused adaptive PIPE/GRU-D training run using all
+  available windows before rollout/backtest evaluation.
+
+### Gate 4 WQP-Focused Adaptive Full Training Snapshot
+
+The full WQP-focused adaptive PIPE/GRU-D training run completed on 2026-06-15.
+
+Artifacts:
+
+- model: `models/pipe_grud/adaptive_wqp_focused/pipe_grud_model.pt`;
+- checkpoint: `models/pipe_grud/adaptive_wqp_focused/pipe_grud_checkpoint.pt`;
+- report: `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_report.md`;
+- manifest: `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest.json`;
+- metrics: `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_metrics.csv`;
+- persistence comparison:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_grud_persistence_comparison.csv`.
+
+Configuration:
+
+- history length: `12`;
+- hidden dimension: `96`;
+- epochs: `20`;
+- train windows used: `112,470`;
+- validation windows used: `7,079`;
+- test windows used: `7,582`.
+
+Full training result:
+
+- status: `completed`;
+- best epoch: `19`;
+- validation all-state RMSE: `0.1130`;
+- validation all-state RMSE improvement over persistence: `26.07%`;
+- test all-state RMSE: `0.1097`;
+- test all-state RMSE improvement over persistence: `25.60%`;
+- test all-state MAE improvement over persistence: `19.52%`;
+- test `delta_yN`, `delta_yF`, and `delta_yT` RMSE improvements:
+  `45.88%`, `44.58%`, and `44.18%`.
+
+Interpretation:
+
+- Full adaptive PIPE/GRU-D training shows strong one-step temporal signal over
+  the adaptive WQP-focused state.
+- The strongest gains remain in change/delta channels.
+- `sigma_T` remains effectively persistence-dominated.
+- The next required step is recursive rollout backtesting on validation and
+  test before any claim about adaptive PIPE alert performance is allowed.
+
+### Gate 4 WQP-Focused Adaptive Validation Rollout Snapshot
+
+The validation recursive rollout backtest completed on 2026-06-15.
+
+Artifacts:
+
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_report_validation.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_manifest_validation.json`;
+- state metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_metrics_validation.csv`;
+- alert metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_alert_metrics_validation.csv`;
+- diagnostic examples:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_examples_validation.csv`;
+- row-level backtest export:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_validation.parquet`.
+
+Configuration:
+
+- split: `validation`;
+- selected origins: `5,069`;
+- evaluated rollout rows: `15,207`;
+- observed state source: `target`;
+- samples per origin: `128`;
+- rollout horizon: `3`;
+- horizon policy: complete horizons.
+
+Validation state metrics:
+
+| horizon | all-state RMSE | persistence RMSE | RMSE improvement | IRC RMSE | IRC RMSE improvement | IRC coverage |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.1273 | 0.1726 | 26.27% | 0.1265 | 9.06% | 0.8627 |
+| 2 | 0.1422 | 0.1761 | 19.29% | 0.1490 | 15.17% | 0.8980 |
+| 3 | 0.1476 | 0.1842 | 19.87% | 0.1611 | 19.90% | 0.9292 |
+
+Validation alert metrics:
+
+| event | horizon | PR-AUC | Brier | recall | macro-F1 |
+|---|---:|---:|---:|---:|---:|
+| `irc_alert` | 1 | 0.8703 | 0.1216 | 0.7997 | 0.8414 |
+| `irc_alert` | 2 | 0.8217 | 0.1507 | 0.7225 | 0.7817 |
+| `irc_alert` | 3 | 0.7910 | 0.1682 | 0.6656 | 0.7479 |
+| `bloom_h` | 1 | 0.5814 | 0.0854 | 0.5244 | 0.7510 |
+| `bloom_h` | 2 | 0.5531 | 0.0951 | 0.2993 | 0.6765 |
+| `bloom_h` | 3 | 0.5115 | 0.1021 | 0.1729 | 0.5991 |
+
+Interpretation:
+
+- Validation rollouts remain better than persistence for all-state RMSE and
+  IRC RMSE across horizons 1-3.
+- The adaptive validation IRC alert surface is stronger than the lightweight
+  WQP-focused no-current validation run in PR-AUC and Brier, while using the
+  same selected-origin geometry.
+- Bloom alert recall weakens materially by horizon 3 and should remain a
+  limitation until calibrated policy comparisons are run.
+- This validation snapshot is a gate check; final adaptive policy claims still
+  require the held-out test split and policy calibration.
+
+### Gate 4 WQP-Focused Adaptive Test Rollout Snapshot
+
+The held-out test recursive rollout backtest completed on 2026-06-15.
+
+Artifacts:
+
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_report_test.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_manifest_test.json`;
+- state metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_metrics_test.csv`;
+- alert metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_alert_metrics_test.csv`;
+- diagnostic examples:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_examples_test.csv`;
+- row-level backtest export:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_test.parquet`.
+
+Configuration:
+
+- split: `test`;
+- selected origins: `6,145`;
+- evaluated rollout rows: `18,435`;
+- observed state source: `target`;
+- samples per origin: `128`;
+- rollout horizon: `3`;
+- horizon policy: complete horizons.
+
+Test state metrics:
+
+| horizon | all-state RMSE | persistence RMSE | RMSE improvement | IRC RMSE | IRC RMSE improvement | IRC coverage |
+|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 0.1233 | 0.1645 | 25.03% | 0.1236 | 9.58% | 0.8871 |
+| 2 | 0.1342 | 0.1691 | 20.66% | 0.1461 | 15.86% | 0.9120 |
+| 3 | 0.1394 | 0.1749 | 20.31% | 0.1553 | 19.71% | 0.9390 |
+
+Test alert metrics:
+
+| event | horizon | PR-AUC | Brier | recall | macro-F1 |
+|---|---:|---:|---:|---:|---:|
+| `irc_alert` | 1 | 0.9013 | 0.1059 | 0.8215 | 0.8523 |
+| `irc_alert` | 2 | 0.8630 | 0.1329 | 0.7554 | 0.8071 |
+| `irc_alert` | 3 | 0.8547 | 0.1424 | 0.7278 | 0.7923 |
+| `bloom_h` | 1 | 0.6559 | 0.1086 | 0.5282 | 0.7620 |
+| `bloom_h` | 2 | 0.6131 | 0.1169 | 0.2990 | 0.6650 |
+| `bloom_h` | 3 | 0.5983 | 0.1236 | 0.2503 | 0.6375 |
+
+Interpretation:
+
+- Held-out test confirms that recursive adaptive rollouts improve persistence
+  for all-state RMSE and IRC RMSE across horizons 1-3.
+- The adaptive test `irc_alert` surface is stronger than the lightweight
+  WQP-focused no-current test run in PR-AUC, Brier, recall, and macro-F1 under
+  the same selected-origin geometry.
+- `bloom_h` is stronger on test than validation in ranking terms, but fixed
+  recall remains low for horizons 2-3; it remains a secondary diagnostic.
+- Validation and test are now healthy enough to run adaptive rollout
+  calibration and 2B policy-frontier comparison.
+
+### Gate 4 WQP-Focused Adaptive Calibration Snapshot
+
+The validation-to-test adaptive rollout calibration completed on 2026-06-15.
+
+Artifacts:
+
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibration_report.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibration_manifest.json`;
+- thresholds:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibration_thresholds.csv`;
+- metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibration_metrics.csv`;
+- calibrated rows:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet`;
+- bloom calibrators:
+  `models/pipe_grud/adaptive_wqp_focused/rollout_calibrators/`.
+
+Configuration:
+
+- calibration split: `validation`;
+- evaluation splits: `validation`, `test`;
+- backtest rows: `33,642`;
+- threshold rows: `6`;
+- metric rows: `12`;
+- selection objective: `fbeta`;
+- F-beta beta: `2.0`;
+- bloom score column: `irc_mean`;
+- fitted bloom calibrators: `3`.
+
+F2-selected thresholds:
+
+| event | horizon | threshold | validation recall | validation precision | validation F2 |
+|---|---:|---:|---:|---:|---:|
+| `irc_alert` | 1 | 0.1094 | 0.9503 | 0.6284 | 0.8620 |
+| `irc_alert` | 2 | 0.1250 | 0.9629 | 0.5625 | 0.8429 |
+| `irc_alert` | 3 | 0.1641 | 0.9678 | 0.5452 | 0.8379 |
+| `bloom_h` | 1 | 0.1571 | 0.8098 | 0.4079 | 0.6764 |
+| `bloom_h` | 2 | 0.1448 | 0.8617 | 0.3299 | 0.6516 |
+| `bloom_h` | 3 | 0.1406 | 0.8665 | 0.3281 | 0.6524 |
+
+Held-out test metrics under F2 thresholds:
+
+| event | horizon | alert rate | PR-AUC | Brier | recall | precision | F2 |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| `irc_alert` | 1 | 0.6161 | 0.9013 | 0.1059 | 0.9521 | 0.6410 | 0.8679 |
+| `irc_alert` | 2 | 0.7268 | 0.8630 | 0.1329 | 0.9688 | 0.5773 | 0.8531 |
+| `irc_alert` | 3 | 0.7557 | 0.8547 | 0.1424 | 0.9755 | 0.5741 | 0.8558 |
+| `bloom_h` | 1 | 0.2726 | 0.6405 | 0.0946 | 0.7758 | 0.5188 | 0.7059 |
+| `bloom_h` | 2 | 0.3671 | 0.5879 | 0.1016 | 0.8714 | 0.4349 | 0.7257 |
+| `bloom_h` | 3 | 0.3868 | 0.5593 | 0.1056 | 0.8777 | 0.4212 | 0.7213 |
+
+Interpretation:
+
+- F2 calibration is technically healthy and selected thresholds on validation
+  only.
+- Adaptive F2 `irc_alert` keeps very high held-out recall with lower alert
+  rates and higher precision than the lightweight WQP-focused no-current F2
+  profile.
+- Bloom calibration is materially stronger than the lightweight WQP-focused
+  no-current bloom calibration, but it is still a secondary diagnostic.
+- F2 remains a recall-first profile. A balanced/default adaptive policy still
+  requires the 2B policy-frontier comparison.
+
+### Gate 4 WQP-Focused Adaptive 2B Policy Frontier Snapshot
+
+The adaptive 2B policy-frontier comparison completed on 2026-06-15.
+
+Artifacts:
+
+- report:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_report.md`;
+- manifest:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_manifest.json`;
+- thresholds:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_thresholds.csv`;
+- metrics:
+  `reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_metrics.csv`.
+
+Configuration:
+
+- calibration split: `validation`;
+- evaluation splits: `validation`, `test`;
+- calibrated rows: `33,642`;
+- threshold rows: `42`;
+- metric rows: `84`;
+- objectives: `fixed`, `fbeta`, `f1`, `mcc`, `balanced_accuracy`,
+  `gmean_pr`, and `closest_pr`.
+
+Held-out test `irc_alert` frontier:
+
+| horizon | policy | threshold | recall | precision | alert rate | F2 | MCC | balanced accuracy |
+|---:|---|---:|---:|---:|---:|---:|---:|---:|
+| 1 | `closest_pr` | 0.4062 | 0.8568 | 0.8083 | 0.4397 | 0.8466 | 0.7075 | 0.8564 |
+| 1 | `fbeta` | 0.1094 | 0.9521 | 0.6410 | 0.6161 | 0.8679 | 0.5817 | 0.7871 |
+| 1 | `balanced_accuracy` | 0.4297 | 0.8482 | 0.8146 | 0.4319 | 0.8412 | 0.7075 | 0.8557 |
+| 2 | `closest_pr` | 0.3828 | 0.8159 | 0.7583 | 0.4659 | 0.8037 | 0.6131 | 0.8086 |
+| 2 | `fbeta` | 0.1250 | 0.9688 | 0.5773 | 0.7268 | 0.8531 | 0.4747 | 0.7135 |
+| 2 | `balanced_accuracy` | 0.4375 | 0.7896 | 0.7790 | 0.4389 | 0.7874 | 0.6175 | 0.8092 |
+| 3 | `closest_pr` | 0.3750 | 0.8053 | 0.7369 | 0.4861 | 0.7906 | 0.5717 | 0.7875 |
+| 3 | `fbeta` | 0.1641 | 0.9755 | 0.5741 | 0.7557 | 0.8558 | 0.4577 | 0.6979 |
+| 3 | `balanced_accuracy` | 0.4609 | 0.7552 | 0.7815 | 0.4298 | 0.7603 | 0.5883 | 0.7931 |
+
+Held-out test `bloom_h` frontier:
+
+| horizon | default comparison policy | recall | precision | alert rate | F2 | MCC |
+|---:|---|---:|---:|---:|---:|---:|
+| 1 | `closest_pr` | 0.6221 | 0.6479 | 0.1750 | 0.6271 | 0.5555 |
+| 2 | `closest_pr` | 0.6315 | 0.5943 | 0.1947 | 0.6237 | 0.5225 |
+| 3 | `closest_pr` | 0.5651 | 0.5857 | 0.1791 | 0.5691 | 0.4806 |
+
+Interpretation:
+
+- `closest_pr` remains a defensible default experimental profile for adaptive
+  `irc_alert`: it keeps recall above `0.80` on all horizons while avoiding the
+  high alert volume of F2.
+- `fbeta`/F2 should be retained as the sensitive recall-first profile.
+- `balanced_accuracy`/`mcc` provide a conservative alternative, especially at
+  horizons 2-3 where they trade recall for precision and lower alert volume.
+- The adaptive bloom frontier is strong enough to report, but `irc_alert`
+  remains the primary operational target.
+
 ## Metrics
 
 Module-level metrics:

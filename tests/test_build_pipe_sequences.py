@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 from src.experiments.build_pipe_sequences import (
+    ADAPTIVE_STATE_MAPPING,
     INPUT_COLUMNS,
     PIPE_STATE_COLUMNS,
     TARGET_COLUMNS,
@@ -47,6 +48,12 @@ def _state_frame() -> pd.DataFrame:
     frame["missing_F"] = 0.2
     frame["missing_T"] = 0.4
     frame["missing_T_no_chla"] = 0.6
+    for column in PIPE_STATE_COLUMNS:
+        frame[ADAPTIVE_STATE_MAPPING[column]] = frame[column] + 1.0
+    for column in ["yT_no_chla", "sigma_T_no_chla", "delta_yT_no_chla"]:
+        frame[ADAPTIVE_STATE_MAPPING[column]] = frame[column] + 2.0
+    frame["irc1_adaptive"] = frame["irc1"] + 1.0
+    frame["irc1_no_chla_adaptive"] = frame["irc1_no_chla"] + 1.0
     return frame.drop(columns=["base"])
 
 
@@ -118,6 +125,20 @@ def test_no_current_chla_surface_replaces_current_inputs_only() -> None:
     assert first["target_delta_yT"] != first["x_delta_yT"]
 
 
+def test_adaptive_no_current_surface_uses_adaptive_inputs_and_full_targets() -> None:
+    candidates = build_sequence_candidates(_state_frame(), input_surface="adaptive_no_current_chla")
+    sequences, _ = filter_leakage_safe_sequences(candidates, _args())
+
+    first = sequences.iloc[0]
+
+    assert first["x_yN"] == pytest.approx(1.10)
+    assert first["target_yN"] == pytest.approx(1.20)
+    assert first["x_yT"] == pytest.approx(1.87)
+    assert first["target_yT"] == pytest.approx(1.22)
+    assert first["x_irc1"] == pytest.approx(1.10)
+    assert first["x_irc1_no_chla"] == pytest.approx(1.09)
+
+
 def test_source_filter_keeps_requested_sources_only() -> None:
     state = filter_state_sources(_state_frame(), ["B"])
     candidates = build_sequence_candidates(state, input_surface="no_current_chla")
@@ -174,7 +195,60 @@ def test_build_pipe_sequences_cli_writes_signed_outputs(tmp_path: Path) -> None:
     assert manifest["config"]["input_surface"] == "no_current_chla"
     assert manifest["config"]["source_ids"] == ["B"]
     assert manifest["config"]["input_state_mapping"]["yT"] == "yT_no_chla"
+    assert manifest["config"]["target_state_mapping"]["yT"] == "yT"
     assert manifest["outputs"][0]["sha256"]
     assert manifest["script"]["path"] == "src/experiments/build_pipe_sequences.py"
     assert "No-current-Chl-a mode" in report_path.read_text(encoding="utf-8")
     assert "Input dimensionality" in report_path.read_text(encoding="utf-8")
+
+
+def test_build_pipe_sequences_cli_reads_adaptive_state(tmp_path: Path) -> None:
+    state_path = tmp_path / "adaptive_state.parquet"
+    sequences_path = tmp_path / "adaptive_sequences.parquet"
+    summary_path = tmp_path / "adaptive_summary.csv"
+    discarded_path = tmp_path / "adaptive_discarded.csv"
+    report_path = tmp_path / "adaptive_report.md"
+    manifest_path = tmp_path / "adaptive_manifest.json"
+    adaptive_columns = [
+        "source_id",
+        "site_id",
+        "year_month",
+        *sorted(set(ADAPTIVE_STATE_MAPPING.values())),
+    ]
+    _state_frame()[adaptive_columns].to_parquet(state_path, index=False)
+
+    subprocess.run(
+        [
+            sys.executable,
+            "src/experiments/build_pipe_sequences.py",
+            "--state",
+            str(state_path),
+            "--sequences",
+            str(sequences_path),
+            "--summary",
+            str(summary_path),
+            "--discarded",
+            str(discarded_path),
+            "--report",
+            str(report_path),
+            "--manifest",
+            str(manifest_path),
+            "--input-surface",
+            "adaptive_no_current_chla",
+            "--source-ids",
+            "B",
+        ],
+        check=True,
+    )
+
+    sequences = pd.read_parquet(sequences_path)
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    report = report_path.read_text(encoding="utf-8")
+
+    assert len(sequences) == 1
+    assert sequences.iloc[0]["x_yT"] == pytest.approx(2.37)
+    assert sequences.iloc[0]["target_yT"] == pytest.approx(1.72)
+    assert manifest["config"]["input_surface"] == "adaptive_no_current_chla"
+    assert manifest["config"]["input_state_mapping"]["yT"] == "yT_no_chla_adaptive"
+    assert manifest["config"]["target_state_mapping"]["yT"] == "yT_adaptive"
+    assert "Adaptive mode reads trained ANFIS state columns" in report

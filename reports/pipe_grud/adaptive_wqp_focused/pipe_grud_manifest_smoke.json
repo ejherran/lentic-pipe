@@ -1,0 +1,167 @@
+{
+  "generated_at_utc": "2026-06-15T16:43:20.728492+00:00",
+  "started_at_utc": "2026-06-15T16:43:18.097164+00:00",
+  "model_version": "pipe_grud_v0",
+  "status": "completed",
+  "config": {
+    "history_length": 12,
+    "hidden_dim": 96,
+    "num_layers": 1,
+    "dropout": 0.0,
+    "residual_mode": "add_last",
+    "mse_weight": 1.0,
+    "checkpoint_selection_metric": "balanced",
+    "checkpoint_selection_uses_output_blend": true,
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "blend_selection_metric": "balanced",
+    "epochs": 2,
+    "batch_size": 2048,
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "random_seed": 1729,
+    "max_train_windows": 50000,
+    "max_eval_windows": 20000,
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "available_windows": {
+      "train": 112470,
+      "validation": 7079,
+      "test": 7582
+    },
+    "sampled_windows": {
+      "train": 50000,
+      "validation": 7079,
+      "test": 7582
+    },
+    "metric_rows": 30,
+    "blend_weight_rows": 9,
+    "blend_search_rows": 81,
+    "persistence_metric_rows": 30,
+    "comparison_rows": 30,
+    "training_curve_rows": 2
+  },
+  "selection": {
+    "checkpoint_selection_metric": "balanced",
+    "best_epoch": 2,
+    "best_validation_loss": -1.5558830888817954,
+    "best_validation_rmse_all": 0.15071207671179743,
+    "best_validation_mae_all": 0.08689394075179595,
+    "best_validation_objective": 0.992340035692301
+  },
+  "inputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json",
+      "bytes": 4688,
+      "sha256": "b274fb7a8861dd4230156fd8012bdc76e42bee199d5a6913ea494f40facd1cbe"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "models/pipe_grud/adaptive_wqp_focused/pipe_grud_model_smoke.pt",
+      "bytes": 139604,
+      "sha256": "a582662e66bef808f87c95d2e7277d66ef08c122ae6e70031e8f761e06194f42"
+    },
+    {
+      "path": "models/pipe_grud/adaptive_wqp_focused/pipe_grud_checkpoint_smoke.pt",
+      "bytes": 415758,
+      "sha256": "29b660d2c81661305a011c7a38690b668d631e2259ccb351619d247b32d24050"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_metrics_smoke.csv",
+      "bytes": 3485,
+      "sha256": "7e8d6cc79820f744f93f1c3be7855514cc53fe40b9bc0e6d4d90d8f6cc110e9a"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_persistence_metrics_smoke.csv",
+      "bytes": 1799,
+      "sha256": "1607579d1f9d3082ef526232ac0316d9eec169fc5a1766674ecc8ba26b3e6656"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_persistence_comparison_smoke.csv",
+      "bytes": 6011,
+      "sha256": "15d9f21d4cc5e20b07552f65ddcf1bd31e71555316cffe0ec7fe1876dc44e1dd"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_output_blend_weights_smoke.csv",
+      "bytes": 777,
+      "sha256": "e53d25738f82f38ca5f0d57ead83ed95662fb6bd0af1d92e395ba28ef52f52f8"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_output_blend_search_smoke.csv",
+      "bytes": 6801,
+      "sha256": "5d7cd84fdf06658901b0332a96f7cc705eb974e0a2776efd27e058b784810b42"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_training_curve_smoke.csv",
+      "bytes": 531,
+      "sha256": "6b7e94ff360a0f46775ef9a99f93bc89a23d52d159bd7bf259cb919f88e369fe"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_prediction_examples_smoke.csv",
+      "bytes": 115799,
+      "sha256": "38fde269c1d9220b99bfdedffeef07078d07049cf5f2880e4505be5e7e7960e5"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_report_smoke.md",
+      "bytes": 5736,
+      "sha256": "3444b1713ae6008387d00f01fda043109dbf495e78a5aba7adb282eda8698df4"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/train_pipe_grud.py",
+    "bytes": 51360,
+    "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+  }
+}

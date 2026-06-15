@@ -1,0 +1,182 @@
+{
+  "generated_at_utc": "2026-06-15T16:39:41.176505+00:00",
+  "started_at_utc": "2026-06-15T16:39:25.796427+00:00",
+  "dataset_version": "pipe_sequence_dataset_v0",
+  "config": {
+    "max_gap_months": 1,
+    "input_surface": "adaptive",
+    "source_ids": [
+      "wqp"
+    ],
+    "input_state_mapping": {
+      "yN": "yN_adaptive",
+      "yF": "yF_adaptive",
+      "yT": "yT_adaptive",
+      "sigma_N": "sigma_N_adaptive",
+      "sigma_F": "sigma_F_adaptive",
+      "sigma_T": "sigma_T_adaptive",
+      "delta_yN": "delta_yN_adaptive",
+      "delta_yF": "delta_yF_adaptive",
+      "delta_yT": "delta_yT_adaptive"
+    },
+    "target_state_mapping": {
+      "yN": "yN_adaptive",
+      "yF": "yF_adaptive",
+      "yT": "yT_adaptive",
+      "sigma_N": "sigma_N_adaptive",
+      "sigma_F": "sigma_F_adaptive",
+      "sigma_T": "sigma_T_adaptive",
+      "delta_yN": "delta_yN_adaptive",
+      "delta_yF": "delta_yF_adaptive",
+      "delta_yT": "delta_yT_adaptive"
+    },
+    "train_end": "2018-12",
+    "validation_start": "2019-01",
+    "validation_end": "2021-12",
+    "test_start": "2022-01",
+    "test_end": null,
+    "pipe_state_columns": [
+      "yN",
+      "yF",
+      "yT",
+      "sigma_N",
+      "sigma_F",
+      "sigma_T",
+      "delta_yN",
+      "delta_yF",
+      "delta_yT"
+    ],
+    "season_columns": [
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "input_columns": [
+      "x_yN",
+      "x_yF",
+      "x_yT",
+      "x_sigma_N",
+      "x_sigma_F",
+      "x_sigma_T",
+      "x_delta_yN",
+      "x_delta_yF",
+      "x_delta_yT",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "target_columns": [
+      "target_yN",
+      "target_yF",
+      "target_yT",
+      "target_sigma_N",
+      "target_sigma_F",
+      "target_sigma_T",
+      "target_delta_yN",
+      "target_delta_yF",
+      "target_delta_yT"
+    ]
+  },
+  "row_counts": {
+    "candidate_rows": 1626672,
+    "kept_sequence_rows": 986674,
+    "discarded_candidate_rows": 639998,
+    "source_scoped_sites": 43715,
+    "summary_rows": 3,
+    "discarded_summary_rows": 3
+  },
+  "inputs": [
+    {
+      "path": "data/fuzzy/adaptive_state_vector_v0.parquet",
+      "bytes": 50840498,
+      "sha256": "3c0b64c192622482be8a82ee43fd067ee59d176325a08a121154eadfb54025ec"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_summary.csv",
+      "bytes": 287,
+      "sha256": "70165e71d43cf302fc2ef00e844082d018d0adcf56e16aa4662360a4c4118ddf"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_discarded_summary.csv",
+      "bytes": 136,
+      "sha256": "95aa2950790b9a569a7e44e59b8673bb8395c066c7c1995d7f52656123ffe481"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_report.md",
+      "bytes": 2543,
+      "sha256": "22bcdc0abc4c56d49e79b4233bf07b44db2799b12c6c6bc178b721a674395fd9"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/build_pipe_sequences.py",
+    "bytes": 27658,
+    "sha256": "05fd7b401fc20555ad94c3b2f9cec4939330b70edae5ac0857f3536328f9bc27"
+  },
+  "by_source_split": [
+    {
+      "source_id": "wqp",
+      "split": "test",
+      "rows": 86478,
+      "sites": 10366,
+      "origin_min": "2022-01",
+      "origin_max": "2026-04",
+      "target_min": "2022-02",
+      "target_max": "2026-05",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "train",
+      "rows": 808970,
+      "sites": 38508,
+      "origin_min": "1970-01",
+      "origin_max": "2018-11",
+      "target_min": "1970-02",
+      "target_max": "2018-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    },
+    {
+      "source_id": "wqp",
+      "split": "validation",
+      "rows": 91226,
+      "sites": 11283,
+      "origin_min": "2019-01",
+      "origin_max": "2021-11",
+      "target_min": "2019-02",
+      "target_max": "2021-12",
+      "mean_gap_months": 1.0,
+      "max_gap_months": 1
+    }
+  ],
+  "discarded_summary": [
+    {
+      "source_id": "wqp",
+      "split_reason": "crosses_split_boundary",
+      "rows": 24745,
+      "sites": 16536
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "gap_too_large",
+      "rows": 508534,
+      "sites": 63466
+    },
+    {
+      "source_id": "wqp",
+      "split_reason": "no_next_state",
+      "rows": 106719,
+      "sites": 106719
+    }
+  ]
+}

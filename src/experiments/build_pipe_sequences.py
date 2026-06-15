@@ -20,9 +20,6 @@ import pandas as pd
 
 from src.pandas_utils import dataframe_rows, year_month_month
 
-from src.experiments.refine_expert_fuzzy import STATE_FEATURE_COLUMNS
-
-
 DEFAULT_STATE = Path("data/fuzzy/state_vector_v0.parquet")
 DEFAULT_OUTPUT_DIR = Path("data/pipe_grud")
 DEFAULT_REPORT_DIR = Path("reports/pipe_grud")
@@ -66,11 +63,34 @@ OPTIONAL_CONTEXT_COLUMNS = [
 ]
 INPUT_SURFACE_FULL = "full"
 INPUT_SURFACE_NO_CURRENT_CHLA = "no_current_chla"
-INPUT_SURFACES = [INPUT_SURFACE_FULL, INPUT_SURFACE_NO_CURRENT_CHLA]
+INPUT_SURFACE_ADAPTIVE = "adaptive"
+INPUT_SURFACE_ADAPTIVE_NO_CURRENT_CHLA = "adaptive_no_current_chla"
+INPUT_SURFACES = [
+    INPUT_SURFACE_FULL,
+    INPUT_SURFACE_NO_CURRENT_CHLA,
+    INPUT_SURFACE_ADAPTIVE,
+    INPUT_SURFACE_ADAPTIVE_NO_CURRENT_CHLA,
+]
 NO_CURRENT_CHLA_INPUT_MAPPING = {
     "yT": "yT_no_chla",
     "sigma_T": "sigma_T_no_chla",
     "delta_yT": "delta_yT_no_chla",
+}
+ADAPTIVE_STATE_MAPPING = {
+    "irc1": "irc1_adaptive",
+    "irc1_no_chla": "irc1_no_chla_adaptive",
+    "yN": "yN_adaptive",
+    "yF": "yF_adaptive",
+    "yT": "yT_adaptive",
+    "yT_no_chla": "yT_no_chla_adaptive",
+    "sigma_N": "sigma_N_adaptive",
+    "sigma_F": "sigma_F_adaptive",
+    "sigma_T": "sigma_T_adaptive",
+    "sigma_T_no_chla": "sigma_T_no_chla_adaptive",
+    "delta_yN": "delta_yN_adaptive",
+    "delta_yF": "delta_yF_adaptive",
+    "delta_yT": "delta_yT_adaptive",
+    "delta_yT_no_chla": "delta_yT_no_chla_adaptive",
 }
 
 
@@ -208,27 +228,67 @@ def _source_filter_label(args: argparse.Namespace) -> str:
 
 
 def _input_mapping(input_surface: str) -> dict[str, str]:
-    if input_surface == INPUT_SURFACE_FULL:
+    if input_surface in {INPUT_SURFACE_FULL, INPUT_SURFACE_ADAPTIVE}:
         return {}
-    if input_surface == INPUT_SURFACE_NO_CURRENT_CHLA:
+    if input_surface in {INPUT_SURFACE_NO_CURRENT_CHLA, INPUT_SURFACE_ADAPTIVE_NO_CURRENT_CHLA}:
         return NO_CURRENT_CHLA_INPUT_MAPPING
     raise ValueError(f"Unsupported input surface: {input_surface!r}")
 
 
+def _uses_adaptive_state(input_surface: str) -> bool:
+    return input_surface in {INPUT_SURFACE_ADAPTIVE, INPUT_SURFACE_ADAPTIVE_NO_CURRENT_CHLA}
+
+
+def _source_column_for_state_column(column: str, input_surface: str) -> str:
+    if _uses_adaptive_state(input_surface):
+        return ADAPTIVE_STATE_MAPPING[column]
+    return column
+
+
 def _source_column_for_input(column: str, input_surface: str) -> str:
-    return _input_mapping(input_surface).get(column, column)
+    mapped_column = _input_mapping(input_surface).get(column, column)
+    return _source_column_for_state_column(mapped_column, input_surface)
+
+
+def _source_column_for_target(column: str, input_surface: str) -> str:
+    return _source_column_for_state_column(column, input_surface)
+
+
+def _source_column_for_context(column: str, input_surface: str) -> str | None:
+    if _uses_adaptive_state(input_surface):
+        return ADAPTIVE_STATE_MAPPING.get(column)
+    return column
+
+
+def _input_state_mapping(input_surface: str) -> dict[str, str]:
+    return {column: _source_column_for_input(column, input_surface) for column in PIPE_STATE_COLUMNS}
+
+
+def _target_state_mapping(input_surface: str) -> dict[str, str]:
+    return {column: _source_column_for_target(column, input_surface) for column in PIPE_STATE_COLUMNS}
 
 
 def _required_state_columns(input_surface: str) -> list[str]:
-    required = set(PIPE_STATE_COLUMNS)
-    required.update(_input_mapping(input_surface).values())
-    return [column for column in STATE_FEATURE_COLUMNS if column in required]
+    required = set()
+    for column in PIPE_STATE_COLUMNS:
+        required.add(_source_column_for_input(column, input_surface))
+        required.add(_source_column_for_target(column, input_surface))
+    return sorted(required)
+
+
+def _optional_state_columns(input_surface: str) -> list[str]:
+    columns = []
+    for column in OPTIONAL_CONTEXT_COLUMNS:
+        source_column = _source_column_for_context(column, input_surface)
+        if source_column is not None:
+            columns.append(source_column)
+    return sorted(set(columns))
 
 
 def load_state(path: Path, *, input_surface: str = INPUT_SURFACE_FULL) -> pd.DataFrame:
     required = _required_state_columns(input_surface)
-    optional = [column for column in STATE_FEATURE_COLUMNS if column in OPTIONAL_CONTEXT_COLUMNS]
-    columns = KEY_COLUMNS + required + optional
+    optional = _optional_state_columns(input_surface)
+    columns = KEY_COLUMNS + sorted(set(required + optional))
     state = pd.read_parquet(path, columns=columns)
     missing = [column for column in KEY_COLUMNS + required if column not in state.columns]
     if missing:
@@ -255,8 +315,11 @@ def filter_state_sources(state: pd.DataFrame, source_ids: list[str]) -> pd.DataF
 
 def build_sequence_candidates(state: pd.DataFrame, *, input_surface: str = INPUT_SURFACE_FULL) -> pd.DataFrame:
     frame = state.copy()
-    mapping = _input_mapping(input_surface)
-    missing = [source for source in mapping.values() if source not in frame.columns]
+    required_sources = set()
+    for column in PIPE_STATE_COLUMNS:
+        required_sources.add(_source_column_for_input(column, input_surface))
+        required_sources.add(_source_column_for_target(column, input_surface))
+    missing = sorted(source for source in required_sources if source not in frame.columns)
     if missing:
         raise ValueError(f"State vector is missing columns required by {input_surface}: {missing}")
     periods = _period_index(frame["year_month"])
@@ -278,12 +341,14 @@ def build_sequence_candidates(state: pd.DataFrame, *, input_surface: str = INPUT
     candidates["target_gap_months"] = candidates["target_period_ord"] - candidates["origin_period_ord"]
 
     for column in PIPE_STATE_COLUMNS:
-        source_column = _source_column_for_input(column, input_surface)
-        candidates[f"x_{column}"] = frame[source_column].to_numpy()
-        candidates[f"target_{column}"] = group[column].shift(-1).to_numpy()
+        input_source_column = _source_column_for_input(column, input_surface)
+        target_source_column = _source_column_for_target(column, input_surface)
+        candidates[f"x_{column}"] = frame[input_source_column].to_numpy()
+        candidates[f"target_{column}"] = group[target_source_column].shift(-1).to_numpy()
     for column in OPTIONAL_CONTEXT_COLUMNS:
-        if column in frame.columns:
-            candidates[f"x_{column}"] = frame[column].to_numpy()
+        source_column = _source_column_for_context(column, input_surface)
+        if source_column is not None and source_column in frame.columns:
+            candidates[f"x_{column}"] = frame[source_column].to_numpy()
 
     return candidates
 
@@ -435,7 +500,21 @@ def write_report(
         f"Maximum allowed target gap: `{args.max_gap_months}` month(s).",
         f"Input dimensionality for the minimal PIPE model: `{len(INPUT_COLUMNS)}` = 9 state values + 4 seasonal values.",
     ]
-    if args.input_surface == INPUT_SURFACE_NO_CURRENT_CHLA:
+    if _uses_adaptive_state(args.input_surface):
+        lines.extend(
+            [
+                "",
+                "Adaptive mode reads trained ANFIS state columns and emits the same canonical PIPE feature",
+                "and target names used by the expert-state temporal model. This keeps downstream PIPE/GRU-D",
+                "scripts comparable while preserving the source-column mapping in the manifest.",
+                "",
+                "| canonical target | state source |",
+                "|---|---|",
+            ]
+        )
+        for target_column, source_column in _target_state_mapping(args.input_surface).items():
+            lines.append(f"| `{target_column}` | `{source_column}` |")
+    if args.input_surface in {INPUT_SURFACE_NO_CURRENT_CHLA, INPUT_SURFACE_ADAPTIVE_NO_CURRENT_CHLA}:
         lines.extend(
             [
                 "",
@@ -450,7 +529,7 @@ def write_report(
         lines.extend(
             [
                 "",
-                "Targets remain the full next-month fuzzy state, so observed future Chl-a-derived state can still be evaluated.",
+                "Targets remain the full next-month state, so observed future Chl-a-derived state can still be evaluated.",
             ]
         )
     lines.extend(
@@ -533,9 +612,8 @@ def manifest_payload(
             "max_gap_months": int(args.max_gap_months),
             "input_surface": args.input_surface,
             "source_ids": getattr(args, "source_ids_normalized", []),
-            "input_state_mapping": {
-                column: _source_column_for_input(column, args.input_surface) for column in PIPE_STATE_COLUMNS
-            },
+            "input_state_mapping": _input_state_mapping(args.input_surface),
+            "target_state_mapping": _target_state_mapping(args.input_surface),
             "train_end": args.train_end,
             "validation_start": args.validation_start,
             "validation_end": args.validation_end,

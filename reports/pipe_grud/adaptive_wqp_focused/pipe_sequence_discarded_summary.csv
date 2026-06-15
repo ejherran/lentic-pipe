@@ -1,0 +1,4 @@
+source_id,split_reason,rows,sites
+wqp,crosses_split_boundary,24745,16536
+wqp,gap_too_large,508534,63466
+wqp,no_next_state,106719,106719
