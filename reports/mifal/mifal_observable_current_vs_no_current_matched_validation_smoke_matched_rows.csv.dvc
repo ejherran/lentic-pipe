@@ -1,0 +1,6 @@
+outs:
+- md5: c648eccf502e78f901065a4324dde1c5
+  size: 148966
+  hash: md5
+  path: 
+    mifal_observable_current_vs_no_current_matched_validation_smoke_matched_rows.csv

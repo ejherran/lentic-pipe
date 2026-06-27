@@ -1,0 +1,78 @@
+{
+  "status": "completed",
+  "mifal_calibration_version": "mifal_observable_alert_calibration_v0",
+  "started_at_utc": "2026-06-27T17:19:12.180595+00:00",
+  "completed_at_utc": "2026-06-27T17:19:12.276743+00:00",
+  "script": {
+    "path": "src/experiments/calibrate_mifal_observable_alerts.py",
+    "bytes": 27083,
+    "sha256": "329729e20e08d095834be75d2998c35ef086febec03c04fbd66ee223171a16e7"
+  },
+  "config": {
+    "predictions": "reports/mifal/mifal_observable_current_chla_smoke_predictions.csv",
+    "calibrator_dir": "models/mifal/observable_calibrators/current_chla_smoke",
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation"
+    ],
+    "selection_objective": "f_beta",
+    "fbeta_beta": 2.0,
+    "min_recall": 0.0,
+    "min_precision": 0.0,
+    "min_calibration_rows": 20,
+    "min_threshold_rows": 20,
+    "output_name": "mifal_observable_current_chla_validation_calibration_smoke"
+  },
+  "inputs": [
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_smoke_predictions.csv",
+      "bytes": 199738,
+      "sha256": "1a703e0749ca4c25d6bb3b6e38cff15610eae097d1ef0aab86f961f4a126bc4a"
+    }
+  ],
+  "row_counts": {
+    "input_rows": 600,
+    "threshold_rows": 3,
+    "metric_rows": 3,
+    "calibrator_rows": 3
+  },
+  "calibrators": [
+    {
+      "path": "models/mifal/observable_calibrators/current_chla_smoke/observable_current_chla_h1_bloom_h_calibrator.json",
+      "bytes": 852,
+      "sha256": "2fbdbb955888a151aaedc81f1ee221b9f0b169d47c198690f13e60f2b20283b2"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/current_chla_smoke/observable_current_chla_h2_bloom_h_calibrator.json",
+      "bytes": 685,
+      "sha256": "7a3664413186112e5a368578849ad72eef6af5d7990609d5fb974040fbf221b8"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/current_chla_smoke/observable_current_chla_h3_bloom_h_calibrator.json",
+      "bytes": 853,
+      "sha256": "938612af30fbea0bcc04d522dea59f8186818bd89b773fd726fc7dacaaa1c58b"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_thresholds.csv",
+      "bytes": 1596,
+      "sha256": "01c1890492b4256b56b3c5347c4c91d74417aee5bb2e45b5fe59a063069e9465"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_metrics.csv",
+      "bytes": 1375,
+      "sha256": "a6dc922381a327da9ae618f94745e803e35b010ec9e46d00d390550bc34c39c9"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_calibrated_predictions.csv",
+      "bytes": 212773,
+      "sha256": "ae729a95c2b0833c893fe1d85eccef55e92ce989c12478ae4320e633d9354b79"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_report.md",
+      "bytes": 2288,
+      "sha256": "96e5d0cdf837e7227fa1bdecc7c48a78d5f39f3eab8682067e61277670b32ba3"
+    }
+  ]
+}

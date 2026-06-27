@@ -1,0 +1,48 @@
+{
+  "status": "completed",
+  "comparison_version": "mifal_pipe_bloom_metric_comparison_v0",
+  "started_at_utc": "2026-06-27T17:23:53.472028+00:00",
+  "completed_at_utc": "2026-06-27T17:23:53.484148+00:00",
+  "script": {
+    "path": "src/experiments/compare_mifal_pipe_bloom_metrics.py",
+    "bytes": 13169,
+    "sha256": "1a524579b0d33fd8e5509e9cd15c5f7912c7fe3c5f59b50736fba64f5858bdf3"
+  },
+  "config": {
+    "mifal_metrics": "reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_holdout_matched_metrics.csv",
+    "pipe_metrics": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibration_metrics.csv",
+    "pipe_model": "pipe_grud_adaptive_wqp_focused",
+    "target_event": "bloom_h",
+    "evaluation_splits": [
+      "test"
+    ],
+    "output_name": "mifal_vs_pipe_grud_bloom_holdout_comparison"
+  },
+  "row_counts": {
+    "comparison_rows": 6
+  },
+  "inputs": [
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_holdout_matched_metrics.csv",
+      "bytes": 6370,
+      "sha256": "884f2364d7808dfb844b174201b65415594567369fd278050389c8837e3be259"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibration_metrics.csv",
+      "bytes": 4118,
+      "sha256": "57ef7ea626223f23f78888398159a5f48b9065a30cc1828009569ed007c44b27"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_vs_pipe_grud_bloom_holdout_comparison_comparison.csv",
+      "bytes": 3400,
+      "sha256": "1ce044673b7faaa78cf7dfe96af5a223c788dd8f695759a4fc20d289821fa1ac"
+    },
+    {
+      "path": "reports/mifal/mifal_vs_pipe_grud_bloom_holdout_comparison_report.md",
+      "bytes": 1478,
+      "sha256": "176618f5db44b4a01bd73210177b30598aa987ea0ff9fbdba691d39871c1f645"
+    }
+  ]
+}

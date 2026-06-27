@@ -1,0 +1,76 @@
+{
+  "status": "completed",
+  "mifal_observable_version": "mifal_observable_v0",
+  "started_at_utc": "2026-06-27T17:18:49.362054+00:00",
+  "completed_at_utc": "2026-06-27T17:19:03.137104+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_mifal_observable.py",
+    "bytes": 22237,
+    "sha256": "37a401ca75e2277ebcf27835de7dcb93ed98863f357f7a849d94112af2d78a56"
+  },
+  "config": {
+    "panel": "data/panel/panel_monthly_v0.parquet",
+    "splits": "data/splits/monthly_model_splits_v0.parquet",
+    "reference_rows": null,
+    "surface": "observable_no_current_chla",
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "max_rows_per_split": 100,
+    "random_seed": 1729,
+    "include_voi": false,
+    "output_name": "mifal_observable_no_current_chla_smoke"
+  },
+  "inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    }
+  ],
+  "row_counts": {
+    "surface_rows": 600,
+    "prediction_rows": 600,
+    "metric_rows": 6,
+    "availability_rows": 72,
+    "example_rows": 30
+  },
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_smoke_predictions.csv",
+      "bytes": 188340,
+      "sha256": "5f11df785ea2fc15bdb670c1c35f462e3ad8803e4484895ccac0ce529189aad7"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_smoke_metrics.csv",
+      "bytes": 2370,
+      "sha256": "a4da26a69fa3cdd123fc4ba3f0d1a3d20b35c619774d22f90b207bb95ddd310e"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_smoke_availability.csv",
+      "bytes": 6792,
+      "sha256": "9b7c8c3f89f8bc910151f421e4fc140fe431c1b493f02c4a929f891b4f7c8c97"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_smoke_examples.csv",
+      "bytes": 9548,
+      "sha256": "72c89bbab404459f7c0aecceaec004d8cc15f15de203b37117c178c77fa438cf"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_smoke_report.md",
+      "bytes": 1979,
+      "sha256": "d40c52345cab13a23dc1b530b0b2ba0abbac94ada5343b5ddfcf6e767f08f7a9"
+    }
+  ]
+}

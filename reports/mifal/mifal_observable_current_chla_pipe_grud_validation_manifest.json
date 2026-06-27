@@ -1,0 +1,80 @@
+{
+  "status": "completed",
+  "mifal_observable_version": "mifal_observable_v0",
+  "started_at_utc": "2026-06-27T17:22:28.028641+00:00",
+  "completed_at_utc": "2026-06-27T17:22:45.631974+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_mifal_observable.py",
+    "bytes": 22237,
+    "sha256": "37a401ca75e2277ebcf27835de7dcb93ed98863f357f7a849d94112af2d78a56"
+  },
+  "config": {
+    "panel": "data/panel/panel_monthly_v0.parquet",
+    "splits": "data/splits/monthly_model_splits_v0.parquet",
+    "reference_rows": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_validation.parquet",
+    "surface": "observable_current_chla",
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "evaluation_splits": [
+      "validation"
+    ],
+    "max_rows_per_split": 100000000,
+    "random_seed": 1729,
+    "include_voi": false,
+    "output_name": "mifal_observable_current_chla_pipe_grud_validation"
+  },
+  "inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_validation.parquet",
+      "bytes": 1010609,
+      "sha256": "01547832de448923cee7d51118c391e2b8b9f541b36fe5d297baf443531092eb"
+    }
+  ],
+  "row_counts": {
+    "surface_rows": 9391,
+    "prediction_rows": 9391,
+    "metric_rows": 3,
+    "availability_rows": 40,
+    "example_rows": 30
+  },
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_predictions.csv",
+      "bytes": 3117447,
+      "sha256": "c2d73c72c0e8628f21727d094007139f12e9fd379a1248d412e22a0d7f4e4243"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_metrics.csv",
+      "bytes": 1531,
+      "sha256": "750b81debf97611f6f9d43a395194f33fac834b9a1a91b5e4b6507baa2d28805"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_availability.csv",
+      "bytes": 4314,
+      "sha256": "83997076d449699b1c9a6150271f8c7f8172f8c1b90621b7385cdb5a00ddddd2"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_examples.csv",
+      "bytes": 10336,
+      "sha256": "545e609bb05684146ec93830d978b526c710fef44111f731643c8c73c4bf3206"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_report.md",
+      "bytes": 1841,
+      "sha256": "c1f8c15bb95c47f085d9d156a63353d66722ddebb8f71b13e3b4defcb593e07e"
+    }
+  ]
+}

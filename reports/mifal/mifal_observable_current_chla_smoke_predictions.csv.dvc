@@ -1,0 +1,5 @@
+outs:
+- md5: e1aa8aa928c7a1905251b5a13363039e
+  size: 199738
+  hash: md5
+  path: mifal_observable_current_chla_smoke_predictions.csv

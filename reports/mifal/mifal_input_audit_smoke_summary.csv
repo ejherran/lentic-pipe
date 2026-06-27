@@ -1,0 +1,18 @@
+mifal_input_audit_version,mifal_variable,role,adapter_status,panel_columns_expected,panel_columns_found,panel_units,mifal_units,rows,present_rows,missing_rows,coverage_rate,adapter_note
+mifal_input_audit_v0,Tw,minimum_temperature,direct_observable,mean_temperature_C,mean_temperature_C,deg C,deg C,18000,3494,14506,0.19411111111111112,Origin-month water temperature maps directly to MIFAL water temperature.
+mifal_input_audit_v0,TP,minimum_nutrients,direct_observable,mean_TP_ugL,mean_TP_ugL,ug/L,ug/L,18000,4645,13355,0.25805555555555554,Total phosphorus maps directly to MIFAL TP.
+mifal_input_audit_v0,TN,optional_nutrients,unit_transform_observable,mean_TN_ugL,mean_TN_ugL,ug/L,mg/L,18000,2482,15518,0.1378888888888889,Adapter must divide by 1000 before passing TN to MIFAL.
+mifal_input_audit_v0,Secchi,minimum_light,direct_observable,mean_secchi_depth_m,mean_secchi_depth_m,m,m,18000,5412,12588,0.3006666666666667,Secchi depth maps directly to transparency/light availability.
+mifal_input_audit_v0,Turb,light_support,direct_observable,mean_turbidity_NTU,mean_turbidity_NTU,NTU,NTU,18000,1859,16141,0.10327777777777777,Turbidity can support light limitation when Secchi is absent.
+mifal_input_audit_v0,DOb,optional_internal_loading,qualified_observable,mean_DO_mgL,mean_DO_mgL,mg/L,mg/L,18000,2924,15076,0.16244444444444445,Panel DO is not guaranteed to be bottom oxygen; treat as qualified evidence unless depth policy is added.
+mifal_input_audit_v0,Chl,minimum_biological_observation,direct_observable,mean_chlorophyll_a_ugL,mean_chlorophyll_a_ugL,ug/L,ug/L,18000,17449,551,0.9693888888888889,Origin-month Chl-a can assimilate the analysis state before forecasting.
+mifal_input_audit_v0,Chl_prev,minimum_biological_memory,constructible_from_origin,mean_chlorophyll_a_ugL,mean_chlorophyll_a_ugL,ug/L,ug/L,18000,17449,551,0.9693888888888889,First adapter can seed biological memory from origin-month Chl-a; later versions should audit explicit lags.
+mifal_input_audit_v0,Wind,minimum_hydrodynamics,unavailable_in_freeze,,,m/s,m/s,18000,0,18000,0.0,No wind or mixing column is present in the current frozen monthly panel.
+mifal_input_audit_v0,Residence,optional_hydrodynamics,unavailable_in_freeze,,,days,days,18000,0,18000,0.0,No lake-specific residence-time column is present in the current frozen monthly panel.
+mifal_input_audit_v0,Flushing,optional_hydrodynamics,unavailable_in_freeze,,,day^-1,day^-1,18000,0,18000,0.0,No flushing-rate column is present in the current frozen monthly panel.
+mifal_input_audit_v0,Strat,optional_hydrodynamics,unavailable_in_freeze,,,"[0,1]","[0,1]",18000,0,18000,0.0,No stratification index is present in the current frozen monthly panel.
+mifal_input_audit_v0,Phyco,optional_biological_proxy,unavailable_in_freeze,,,source-specific,normalized_or_configured,18000,0,18000,0.0,Phyco signals were reserved for future extension and are not in the current canonical panel.
+mifal_input_audit_v0,Sat,optional_spatial_bloom_proxy,unavailable_in_freeze,,,"[0,1]","[0,1]",18000,0,18000,0.0,Satellite bloom index is not in the current frozen monthly panel.
+mifal_input_audit_v0,Visual,optional_qualitative_bloom_proxy,unavailable_in_freeze,,,"[0,1]","[0,1]",18000,0,18000,0.0,Visual bloom reports are not in the current frozen monthly panel.
+mifal_input_audit_v0,Rain,optional_runoff,unavailable_in_freeze,,,mm,mm,18000,0,18000,0.0,Recent precipitation is not in the current frozen monthly panel.
+mifal_input_audit_v0,LandLoad,optional_runoff,unavailable_in_freeze,,,"[0,1]","[0,1]",18000,0,18000,0.0,Land-load/runoff pressure is not in the current frozen monthly panel.

@@ -1,0 +1,79 @@
+{
+  "status": "completed",
+  "mifal_calibration_version": "mifal_observable_alert_calibration_v0",
+  "started_at_utc": "2026-06-27T17:23:07.309738+00:00",
+  "completed_at_utc": "2026-06-27T17:23:08.085302+00:00",
+  "script": {
+    "path": "src/experiments/calibrate_mifal_observable_alerts.py",
+    "bytes": 27083,
+    "sha256": "329729e20e08d095834be75d2998c35ef086febec03c04fbd66ee223171a16e7"
+  },
+  "config": {
+    "predictions": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_predictions.csv",
+    "calibrator_dir": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout",
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "selection_objective": "f_beta",
+    "fbeta_beta": 2.0,
+    "min_recall": 0.0,
+    "min_precision": 0.0,
+    "min_calibration_rows": 20,
+    "min_threshold_rows": 20,
+    "output_name": "mifal_observable_no_current_chla_pipe_grud_holdout_calibration"
+  },
+  "inputs": [
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_predictions.csv",
+      "bytes": 7426418,
+      "sha256": "3fcbb23f63a0de8584fb280953b34621114ca5a2a33d015643df519f2a360379"
+    }
+  ],
+  "row_counts": {
+    "input_rows": 23531,
+    "threshold_rows": 3,
+    "metric_rows": 6,
+    "calibrator_rows": 3
+  },
+  "calibrators": [
+    {
+      "path": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout/observable_no_current_chla_h1_bloom_h_calibrator.json",
+      "bytes": 924,
+      "sha256": "07488cd473b46f069e13e67ff2d8e3ba4daaa33e14b32bcfee179bd5910f4ca7"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout/observable_no_current_chla_h2_bloom_h_calibrator.json",
+      "bytes": 1236,
+      "sha256": "fd6cfa994455370883db76b33344200186aeb60a43d87fd207adf45703a0aaac"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout/observable_no_current_chla_h3_bloom_h_calibrator.json",
+      "bytes": 1022,
+      "sha256": "49a812db3b404c14d719cde121f2e8ff404b6091e47fa353376bb12640d4c485"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_thresholds.csv",
+      "bytes": 1800,
+      "sha256": "99da46caa12851144150e9c436ade78f2a9c15f6ad48d31150e33ecdc6c60752"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_metrics.csv",
+      "bytes": 2798,
+      "sha256": "b04fb65258468eee6c2245b8f7a25c72f121a763dc33b475cc1def3ecea68bc4"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_calibrated_predictions.csv",
+      "bytes": 8338953,
+      "sha256": "18e4d7bf1ec96219b3453632c56cbaafbdd0236505a336539e4839a529b0f3d6"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_report.md",
+      "bytes": 2703,
+      "sha256": "f78050263577d0a1a4f3b023cfe769693eea52209ad438e0e4da38e3ddc4736c"
+    }
+  ]
+}

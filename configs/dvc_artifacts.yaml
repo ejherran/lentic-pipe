@@ -263,6 +263,118 @@ artifacts:
     dvc: true
     github_policy: pointer_only_keep_small_reports_in_git
 
+  - artifact_id: mifal_observable_current_chla_smoke_predictions_v0
+    path: reports/mifal/mifal_observable_current_chla_smoke_predictions.csv
+    type: mifal_row_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_no_current_chla_smoke_predictions_v0
+    path: reports/mifal/mifal_observable_no_current_chla_smoke_predictions.csv
+    type: mifal_row_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_chla_validation_calibration_smoke_rows_v0
+    path: reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_calibrated_predictions.csv
+    type: mifal_calibrated_row_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_no_current_chla_validation_calibration_smoke_rows_v0
+    path: reports/mifal/mifal_observable_no_current_chla_validation_calibration_smoke_calibrated_predictions.csv
+    type: mifal_calibrated_row_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_vs_no_current_matched_validation_smoke_rows_v0
+    path: reports/mifal/mifal_observable_current_vs_no_current_matched_validation_smoke_matched_rows.csv
+    type: mifal_matched_row_export
+    source_id: multi_source
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_vs_no_current_matched_pipe_grud_validation_smoke_rows_v0
+    path: reports/mifal/mifal_observable_current_vs_no_current_matched_pipe_grud_validation_smoke_matched_rows.csv
+    type: mifal_matched_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_chla_pipe_grud_validation_predictions_v0
+    path: reports/mifal/mifal_observable_current_chla_pipe_grud_validation_predictions.csv
+    type: mifal_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_no_current_chla_pipe_grud_validation_predictions_v0
+    path: reports/mifal/mifal_observable_no_current_chla_pipe_grud_validation_predictions.csv
+    type: mifal_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_chla_pipe_grud_validation_calibrated_rows_v0
+    path: reports/mifal/mifal_observable_current_chla_pipe_grud_validation_calibration_calibrated_predictions.csv
+    type: mifal_calibrated_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_no_current_chla_pipe_grud_validation_calibrated_rows_v0
+    path: reports/mifal/mifal_observable_no_current_chla_pipe_grud_validation_calibration_calibrated_predictions.csv
+    type: mifal_calibrated_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_vs_no_current_pipe_grud_validation_matched_rows_v0
+    path: reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_validation_matched_matched_rows.csv
+    type: mifal_matched_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_chla_pipe_grud_holdout_predictions_v0
+    path: reports/mifal/mifal_observable_current_chla_pipe_grud_holdout_predictions.csv
+    type: mifal_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_no_current_chla_pipe_grud_holdout_predictions_v0
+    path: reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_predictions.csv
+    type: mifal_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_chla_pipe_grud_holdout_calibrated_rows_v0
+    path: reports/mifal/mifal_observable_current_chla_pipe_grud_holdout_calibration_calibrated_predictions.csv
+    type: mifal_calibrated_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_no_current_chla_pipe_grud_holdout_calibrated_rows_v0
+    path: reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_calibrated_predictions.csv
+    type: mifal_calibrated_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: mifal_observable_current_vs_no_current_pipe_grud_holdout_matched_rows_v0
+    path: reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_holdout_matched_matched_rows.csv
+    type: mifal_matched_row_export
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
   - artifact_id: trained_models
     path: models
     type: model_artifacts

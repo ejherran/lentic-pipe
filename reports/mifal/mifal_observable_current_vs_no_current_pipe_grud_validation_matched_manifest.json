@@ -1,0 +1,76 @@
+{
+  "status": "completed",
+  "mifal_matched_version": "mifal_observable_matched_surface_v0",
+  "started_at_utc": "2026-06-27T17:23:28.900444+00:00",
+  "completed_at_utc": "2026-06-27T17:23:29.199510+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_mifal_matched_surface.py",
+    "bytes": 27526,
+    "sha256": "7b936d324e6d2df784db29c3aa8d7c9081bec1a91ccf2056acf0ed4aa369aa3b"
+  },
+  "config": {
+    "predictions": [
+      {
+        "name": "no_current_chla",
+        "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_validation_calibration_calibrated_predictions.csv"
+      },
+      {
+        "name": "current_chla",
+        "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_calibration_calibrated_predictions.csv"
+      }
+    ],
+    "reference_rows": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_validation.parquet",
+    "evaluation_splits": [
+      "validation"
+    ],
+    "max_rows_per_group": null,
+    "fbeta_beta": 2.0,
+    "random_seed": 1729,
+    "output_name": "mifal_observable_current_vs_no_current_pipe_grud_validation_matched"
+  },
+  "row_counts": {
+    "matched_key_rows": 9391,
+    "matched_prediction_rows": 18782,
+    "metric_rows": 6,
+    "comparison_rows": 3
+  },
+  "inputs": [
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_validation_calibration_calibrated_predictions.csv",
+      "bytes": 3352716,
+      "sha256": "f0635123eb1067603442528d1ecf285b1c9b94af7f92218eabd551e06d4be35b"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_pipe_grud_validation_calibration_calibrated_predictions.csv",
+      "bytes": 3415682,
+      "sha256": "091ac812de337fb7d0377b077f0976675534446c0cc92d3996906f805b6e227b"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_validation.parquet",
+      "bytes": 1010609,
+      "sha256": "01547832de448923cee7d51118c391e2b8b9f541b36fe5d297baf443531092eb"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_validation_matched_matched_rows.csv",
+      "bytes": 4670294,
+      "sha256": "d1197bfe22e14ac9baf9776b19d482461bd685c4c7e2781c69d9c0be4d4f5dec"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_validation_matched_metrics.csv",
+      "bytes": 3383,
+      "sha256": "adf1d7b049d71601f03f45c0b283d0e34452ed2901f2a25667dd720e45807c8f"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_validation_matched_comparison.csv",
+      "bytes": 1112,
+      "sha256": "433791e85669bbf89c60e1e3cdd25065f54272fb6a929eccf55045b1c446ad9c"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_pipe_grud_validation_matched_report.md",
+      "bytes": 3150,
+      "sha256": "15fef771956df934314152e629a888389b2175853c557ee62d82636c3411067f"
+    }
+  ]
+}

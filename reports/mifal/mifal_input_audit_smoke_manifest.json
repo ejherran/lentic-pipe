@@ -1,0 +1,259 @@
+{
+  "status": "completed",
+  "mifal_input_audit_version": "mifal_input_audit_v0",
+  "started_at_utc": "2026-06-27T17:21:41.046090+00:00",
+  "completed_at_utc": "2026-06-27T17:21:42.608868+00:00",
+  "script": {
+    "path": "src/experiments/audit_mifal_inputs.py",
+    "bytes": 20173,
+    "sha256": "03da3005ed9925d58fbae69b4d768a84d6fc4a73dea24dbbc6d4b6d13474d9ee"
+  },
+  "config": {
+    "panel": "data/panel/panel_monthly_v0.parquet",
+    "splits": "data/splits/monthly_model_splits_v0.parquet",
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "evaluation_splits": [
+      "train",
+      "validation",
+      "test"
+    ],
+    "max_rows_per_split": 2000,
+    "random_seed": 1729,
+    "output_name": "mifal_input_audit_smoke"
+  },
+  "inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    }
+  ],
+  "input_specs": [
+    {
+      "mifal_variable": "Tw",
+      "role": "minimum_temperature",
+      "adapter_status": "direct_observable",
+      "panel_columns": [
+        "mean_temperature_C"
+      ],
+      "panel_units": "deg C",
+      "mifal_units": "deg C",
+      "adapter_note": "Origin-month water temperature maps directly to MIFAL water temperature."
+    },
+    {
+      "mifal_variable": "TP",
+      "role": "minimum_nutrients",
+      "adapter_status": "direct_observable",
+      "panel_columns": [
+        "mean_TP_ugL"
+      ],
+      "panel_units": "ug/L",
+      "mifal_units": "ug/L",
+      "adapter_note": "Total phosphorus maps directly to MIFAL TP."
+    },
+    {
+      "mifal_variable": "TN",
+      "role": "optional_nutrients",
+      "adapter_status": "unit_transform_observable",
+      "panel_columns": [
+        "mean_TN_ugL"
+      ],
+      "panel_units": "ug/L",
+      "mifal_units": "mg/L",
+      "adapter_note": "Adapter must divide by 1000 before passing TN to MIFAL."
+    },
+    {
+      "mifal_variable": "Secchi",
+      "role": "minimum_light",
+      "adapter_status": "direct_observable",
+      "panel_columns": [
+        "mean_secchi_depth_m"
+      ],
+      "panel_units": "m",
+      "mifal_units": "m",
+      "adapter_note": "Secchi depth maps directly to transparency/light availability."
+    },
+    {
+      "mifal_variable": "Turb",
+      "role": "light_support",
+      "adapter_status": "direct_observable",
+      "panel_columns": [
+        "mean_turbidity_NTU"
+      ],
+      "panel_units": "NTU",
+      "mifal_units": "NTU",
+      "adapter_note": "Turbidity can support light limitation when Secchi is absent."
+    },
+    {
+      "mifal_variable": "DOb",
+      "role": "optional_internal_loading",
+      "adapter_status": "qualified_observable",
+      "panel_columns": [
+        "mean_DO_mgL"
+      ],
+      "panel_units": "mg/L",
+      "mifal_units": "mg/L",
+      "adapter_note": "Panel DO is not guaranteed to be bottom oxygen; treat as qualified evidence unless depth policy is added."
+    },
+    {
+      "mifal_variable": "Chl",
+      "role": "minimum_biological_observation",
+      "adapter_status": "direct_observable",
+      "panel_columns": [
+        "mean_chlorophyll_a_ugL"
+      ],
+      "panel_units": "ug/L",
+      "mifal_units": "ug/L",
+      "adapter_note": "Origin-month Chl-a can assimilate the analysis state before forecasting."
+    },
+    {
+      "mifal_variable": "Chl_prev",
+      "role": "minimum_biological_memory",
+      "adapter_status": "constructible_from_origin",
+      "panel_columns": [
+        "mean_chlorophyll_a_ugL"
+      ],
+      "panel_units": "ug/L",
+      "mifal_units": "ug/L",
+      "adapter_note": "First adapter can seed biological memory from origin-month Chl-a; later versions should audit explicit lags."
+    },
+    {
+      "mifal_variable": "Wind",
+      "role": "minimum_hydrodynamics",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "m/s",
+      "mifal_units": "m/s",
+      "adapter_note": "No wind or mixing column is present in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "Residence",
+      "role": "optional_hydrodynamics",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "days",
+      "mifal_units": "days",
+      "adapter_note": "No lake-specific residence-time column is present in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "Flushing",
+      "role": "optional_hydrodynamics",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "day^-1",
+      "mifal_units": "day^-1",
+      "adapter_note": "No flushing-rate column is present in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "Strat",
+      "role": "optional_hydrodynamics",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "[0,1]",
+      "mifal_units": "[0,1]",
+      "adapter_note": "No stratification index is present in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "Phyco",
+      "role": "optional_biological_proxy",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "source-specific",
+      "mifal_units": "normalized_or_configured",
+      "adapter_note": "Phyco signals were reserved for future extension and are not in the current canonical panel."
+    },
+    {
+      "mifal_variable": "Sat",
+      "role": "optional_spatial_bloom_proxy",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "[0,1]",
+      "mifal_units": "[0,1]",
+      "adapter_note": "Satellite bloom index is not in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "Visual",
+      "role": "optional_qualitative_bloom_proxy",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "[0,1]",
+      "mifal_units": "[0,1]",
+      "adapter_note": "Visual bloom reports are not in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "Rain",
+      "role": "optional_runoff",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "mm",
+      "mifal_units": "mm",
+      "adapter_note": "Recent precipitation is not in the current frozen monthly panel."
+    },
+    {
+      "mifal_variable": "LandLoad",
+      "role": "optional_runoff",
+      "adapter_status": "unavailable_in_freeze",
+      "panel_columns": [],
+      "panel_units": "[0,1]",
+      "mifal_units": "[0,1]",
+      "adapter_note": "Land-load/runoff pressure is not in the current frozen monthly panel."
+    }
+  ],
+  "decision": {
+    "minimum_recommended_variables": [
+      "Chl",
+      "Secchi",
+      "TP",
+      "Tw",
+      "Wind"
+    ],
+    "observed_minimum_variables": [
+      "Chl",
+      "Secchi",
+      "TP",
+      "Tw"
+    ],
+    "missing_minimum_variables": [
+      "Wind"
+    ],
+    "complete_minimum_surface": false,
+    "recommended_next_gate": "build_mifal_observable_minimal_adapter"
+  },
+  "row_counts": {
+    "audit_rows": 18000,
+    "summary_rows": 17,
+    "by_split_rows": 153,
+    "by_source_rows": 459
+  },
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_input_audit_smoke_summary.csv",
+      "bytes": 3599,
+      "sha256": "072635a4cf78df3805a0f2af318be1d767e8afb81d4b6520d1602c5bebb73497"
+    },
+    {
+      "path": "reports/mifal/mifal_input_audit_smoke_by_split.csv",
+      "bytes": 31026,
+      "sha256": "bd8932f3a943c01584666ea7d967a09ef6695a032337dd3fa4dd63664c2d55d0"
+    },
+    {
+      "path": "reports/mifal/mifal_input_audit_smoke_by_source.csv",
+      "bytes": 97110,
+      "sha256": "f5e8f4a8a5750668b744d209dcb9cab8f999d2c96238edaa836a137cd22a7032"
+    },
+    {
+      "path": "reports/mifal/mifal_input_audit_smoke_report.md",
+      "bytes": 7847,
+      "sha256": "281eb51a8ab57adf4d7378991c50eb7768828ebbf90c2798fd4b36d9cba223ca"
+    }
+  ]
+}

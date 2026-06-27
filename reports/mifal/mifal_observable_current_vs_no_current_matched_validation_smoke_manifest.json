@@ -1,0 +1,71 @@
+{
+  "status": "completed",
+  "mifal_matched_version": "mifal_observable_matched_surface_v0",
+  "started_at_utc": "2026-06-27T17:19:21.909451+00:00",
+  "completed_at_utc": "2026-06-27T17:19:21.979398+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_mifal_matched_surface.py",
+    "bytes": 27526,
+    "sha256": "7b936d324e6d2df784db29c3aa8d7c9081bec1a91ccf2056acf0ed4aa369aa3b"
+  },
+  "config": {
+    "predictions": [
+      {
+        "name": "no_current_chla",
+        "path": "reports/mifal/mifal_observable_no_current_chla_validation_calibration_smoke_calibrated_predictions.csv"
+      },
+      {
+        "name": "current_chla",
+        "path": "reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_calibrated_predictions.csv"
+      }
+    ],
+    "reference_rows": null,
+    "evaluation_splits": [
+      "validation"
+    ],
+    "max_rows_per_group": null,
+    "fbeta_beta": 2.0,
+    "random_seed": 1729,
+    "output_name": "mifal_observable_current_vs_no_current_matched_validation_smoke"
+  },
+  "row_counts": {
+    "matched_key_rows": 300,
+    "matched_prediction_rows": 600,
+    "metric_rows": 6,
+    "comparison_rows": 3
+  },
+  "inputs": [
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_validation_calibration_smoke_calibrated_predictions.csv",
+      "bytes": 204063,
+      "sha256": "d20d79bf9937e1bb02054886f59115fe9312e32c3c1eddb5ad93c62390326bf1"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_chla_validation_calibration_smoke_calibrated_predictions.csv",
+      "bytes": 212773,
+      "sha256": "ae729a95c2b0833c893fe1d85eccef55e92ce989c12478ae4320e633d9354b79"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_matched_validation_smoke_matched_rows.csv",
+      "bytes": 148966,
+      "sha256": "122d713b0e150f51d2b450d48fc095aba44954aeec0bdcdbed9f67a4ed2cebe9"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_matched_validation_smoke_metrics.csv",
+      "bytes": 3003,
+      "sha256": "47ab4f90ca61b9622965dc43d990b93bca1f356cb00c680fc67c70cf6dedadbb"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_matched_validation_smoke_comparison.csv",
+      "bytes": 1082,
+      "sha256": "150ad6d88d333e5227d91bad14f5047cad1904a12376c5e1278db8c6d92ef091"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_current_vs_no_current_matched_validation_smoke_report.md",
+      "bytes": 3019,
+      "sha256": "f6612f133563345934cdbe914d12d35bee759990ba84afd48288e84d6d1c1d40"
+    }
+  ]
+}

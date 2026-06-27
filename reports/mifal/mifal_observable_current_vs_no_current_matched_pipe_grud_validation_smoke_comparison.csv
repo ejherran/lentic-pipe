@@ -1,0 +1,4 @@
+mifal_matched_version,baseline_model,comparison_model,split,horizon_months,rows,delta_pr_auc,delta_brier,delta_fbeta,delta_mcc,delta_precision,delta_recall,delta_rmse_risk,delta_mae_risk,delta_interval_width,delta_data_reliability
+mifal_observable_matched_surface_v0,no_current_chla,current_chla,validation,1,2,0.0,0.0075159604397506685,0.0,0.0,0.0,0.0,0.11039972146144227,0.07816860347820748,0.013639470151351696,0.004801099676137351
+mifal_observable_matched_surface_v0,no_current_chla,current_chla,validation,2,1,0.0,0.07211638114531496,0.0,0.0,0.0,0.0,-0.15478927203065146,-0.15478927203065146,0.011755619683893603,0.0039048538118901938
+mifal_observable_matched_surface_v0,no_current_chla,current_chla,validation,3,4,0.0,-0.009795570080776403,0.0,0.0,0.0,0.0,0.004317869090459503,-0.004017047214116665,0.01111119467937216,0.004027563598903973

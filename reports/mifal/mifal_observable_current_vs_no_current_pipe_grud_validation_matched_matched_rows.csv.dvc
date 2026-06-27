@@ -1,0 +1,6 @@
+outs:
+- md5: 569fcddcfcae9e5e3bd534b28fb58695
+  size: 4670294
+  hash: md5
+  path: 
+    mifal_observable_current_vs_no_current_pipe_grud_validation_matched_matched_rows.csv

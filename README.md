@@ -235,6 +235,21 @@ exports, or credential JSON files.
   Recursive rollout evaluation is handled by
   `src/experiments/evaluate_pipe_neural_ode_rollouts.py`, which supports both
   v0 Markovian and v1 history-encoded Neural ODE artifacts.
+- `docs/MIFAL_ED_T2_PROTOCOL.md` opens MIFAL-ED/T2 as a structurally separate
+  interval type-2 eco-fuzzy comparator. The first public gate is input
+  availability, implemented in `src/experiments/audit_mifal_inputs.py`; it
+  should be run before any MIFAL calibration or comparison claim. The first
+  observable adapter lives in `src/mifal/panel_adapter.py`, with an isolated
+  smoke runner in `src/experiments/evaluate_mifal_observable.py`. Validation
+  calibration is handled separately by
+  `src/experiments/calibrate_mifal_observable_alerts.py`, which fits
+  per-horizon calibrators and thresholds on validation only. Matched-surface
+  diagnostics are handled by `src/experiments/evaluate_mifal_matched_surface.py`;
+  these intersect calibrated MIFAL predictions, and optionally a reference
+  backtest surface, before any comparison claim is made. Metric-level `bloom_h`
+  comparison against PIPE is handled by
+  `src/experiments/compare_mifal_pipe_bloom_metrics.py`; MIFAL does not emit the
+  PIPE `irc_alert` target.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
