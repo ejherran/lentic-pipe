@@ -47,17 +47,17 @@ from src.experiments.rollout_pipe_grud import (
     _write_json_atomic,
     _write_text_atomic,
 )
-from src.experiments.train_pipe_grud import load_sequences, prepare_window_frame, _require_torch
+from src.experiments.train_pipe_grud import prepare_window_frame, _require_torch
 from src.experiments.train_pipe_neural_ode import (
     MODEL_VERSION as PIPE_NEURAL_ODE_MODEL_VERSION,
     STATE_INPUT_COLUMNS,
     apply_output_blend,
     make_neural_ode_model,
-    prepare_transition_frame,
     _bound_state_tensor,
 )
 from src.experiments.train_pipe_neural_ode_v1 import (
     MODEL_VERSION as PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION,
+    load_history_sequences,
     make_history_neural_ode_model,
 )
 
@@ -121,8 +121,10 @@ def _load_model(path: Path, device: Any) -> tuple[Any, dict[str, Any], dict[str,
     target_columns = list(payload.get("target_columns", TARGET_COLUMNS))
     state_input_columns = list(payload.get("state_input_columns", STATE_INPUT_COLUMNS))
     season_columns = list(payload.get("season_columns", SEASON_COLUMNS))
-    if input_columns != INPUT_COLUMNS:
-        raise ValueError("Model input columns do not match the current PIPE sequence schema")
+    if input_columns[: len(INPUT_COLUMNS)] != INPUT_COLUMNS:
+        raise ValueError("Model input columns do not start with the current PIPE sequence schema")
+    if len(set(input_columns)) != len(input_columns):
+        raise ValueError("Model input columns contain duplicates")
     if target_columns != TARGET_COLUMNS:
         raise ValueError("Model target columns do not match the current PIPE sequence schema")
     if state_input_columns != STATE_INPUT_COLUMNS:
@@ -132,10 +134,18 @@ def _load_model(path: Path, device: Any) -> tuple[Any, dict[str, Any], dict[str,
 
     config = dict(payload["config"])
     if model_version == PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION:
+        context_dim = len(input_columns) - len(INPUT_COLUMNS)
+        configured_input_dim = int(config.get("input_dim", len(input_columns)))
+        configured_context_dim = int(config.get("context_dim", context_dim))
+        if configured_input_dim != len(input_columns):
+            raise ValueError("History Neural ODE input dimension does not match serialized input columns")
+        if configured_context_dim != context_dim:
+            raise ValueError("History Neural ODE context dimension does not match serialized input columns")
         model = make_history_neural_ode_model(
-            input_dim=len(INPUT_COLUMNS),
+            input_dim=len(input_columns),
             state_dim=len(STATE_INPUT_COLUMNS),
             season_dim=len(SEASON_COLUMNS),
+            context_dim=context_dim,
             history_hidden_dim=int(config["history_hidden_dim"]),
             history_layers=int(config["history_layers"]),
             latent_dim=int(config["latent_dim"]),
@@ -312,7 +322,9 @@ def rollout_batch(
     return parts
 
 
-def _initial_history_windows(x_values: np.ndarray, indices: np.ndarray, history_length: int) -> np.ndarray:
+def _initial_history_windows(
+    x_values: np.ndarray, indices: np.ndarray, history_length: int, input_dim: int
+) -> np.ndarray:
     windows: list[np.ndarray] = []
     for end_index in indices:
         start_index = int(end_index) - history_length + 1
@@ -320,7 +332,7 @@ def _initial_history_windows(x_values: np.ndarray, indices: np.ndarray, history_
             raise ValueError("Selected origin does not have enough history for Neural ODE v1 rollout")
         windows.append(x_values[start_index : int(end_index) + 1])
     if not windows:
-        return np.empty((0, history_length, len(INPUT_COLUMNS)), dtype="float32")
+        return np.empty((0, history_length, input_dim), dtype="float32")
     return np.stack(windows).astype("float32")
 
 
@@ -341,6 +353,10 @@ def rollout_history_batch(
         raise ValueError("--samples must be >= 1")
     window = torch.from_numpy(history_values.astype("float32")).to(device=device, dtype=torch.float32)
     window = window.repeat_interleave(sample_count, dim=0)
+    context_start = len(STATE_INPUT_COLUMNS) + len(SEASON_COLUMNS)
+    context_dim = int(window.shape[2]) - context_start
+    if context_dim < 0:
+        raise ValueError("History Neural ODE window has fewer columns than state plus season inputs")
     origin_periods = pd.PeriodIndex(origin_months.astype(str), freq="M")
     batch_size = len(origin_months)
     parts: list[pd.DataFrame] = []
@@ -401,7 +417,11 @@ def rollout_history_batch(
             next_season = _season_features_from_month(target_periods.month.to_numpy())
             next_season = np.repeat(next_season, sample_count, axis=0)
             next_season_tensor = torch.from_numpy(next_season).to(device=device, dtype=torch.float32)
-            next_input = torch.cat([next_state, next_season_tensor], dim=1)
+            if context_dim > 0:
+                next_context = window[:, -1, context_start : context_start + context_dim]
+                next_input = torch.cat([next_state, next_season_tensor, next_context], dim=1)
+            else:
+                next_input = torch.cat([next_state, next_season_tensor], dim=1)
             window = torch.cat([window[:, 1:, :], next_input[:, None, :]], dim=1)
     return parts
 
@@ -420,9 +440,10 @@ def build_rollouts(
     torch = _require_torch()
     generator = torch.Generator(device=device)
     generator.manual_seed(int(args.random_seed))
+    model_input_columns = list(model_payload.get("input_columns", INPUT_COLUMNS))
     state_values = frame[STATE_INPUT_COLUMNS].to_numpy(dtype="float32")
     season_values = frame[SEASON_COLUMNS].to_numpy(dtype="float32")
-    x_values = frame[INPUT_COLUMNS].to_numpy(dtype="float32")
+    x_values = frame[model_input_columns].to_numpy(dtype="float32")
     model_version = str(model_payload.get("model_version", PIPE_NEURAL_ODE_MODEL_VERSION))
     history_length = int(model_payload.get("config", {}).get("history_length", 1))
     rollout_version, _ = _model_versions(model_payload)
@@ -433,7 +454,12 @@ def build_rollouts(
         batch_state = state_values[batch_indices]
         batch_season = season_values[batch_indices]
         if model_version == PIPE_NEURAL_ODE_HISTORY_MODEL_VERSION:
-            batch_history = _initial_history_windows(x_values, batch_indices, history_length)
+            batch_history = _initial_history_windows(
+                x_values,
+                batch_indices,
+                history_length,
+                input_dim=len(model_input_columns),
+            )
             batch_parts = rollout_history_batch(
                 model=model,
                 blend_weights=blend_weights,
@@ -741,10 +767,11 @@ def main() -> None:
 
     print(f"loading Neural ODE model {args.model}", flush=True)
     model, model_config, model_payload, blend_weights = _load_model(args.model, device)
+    model_input_columns = list(model_payload.get("input_columns", INPUT_COLUMNS))
 
     print(f"loading sequences {args.sequences}", flush=True)
-    frame = load_sequences(args.sequences, max_rows=args.max_rows)
-    frame = prepare_window_frame(prepare_transition_frame(frame))
+    frame = load_history_sequences(args.sequences, max_rows=args.max_rows, input_columns=model_input_columns)
+    frame = prepare_window_frame(frame)
     observed = observed_state_frame(frame, source=args.observed_state_source)
     print(f"sequence rows={len(frame):,}; observed states={len(observed):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 

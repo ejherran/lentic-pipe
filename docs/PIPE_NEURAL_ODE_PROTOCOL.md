@@ -1589,3 +1589,124 @@ poetry run python src/experiments/compare_pipe_rollout_alert_policies.py \
 If these artifacts are regenerated only for an ablation audit, keep them local
 or promote the complete artifact set consistently through DVC. Do not commit
 report files without their matching manifests and declared heavy outputs.
+
+## Gate v1.12 Context-Aware IRC-Aligned Refinement
+
+The next scientifically bounded refinement is not a larger model or a longer
+run. It can add observed context that already belongs to the frozen PIPE
+sequence surface. The current adaptive WQP-focused sequence artifact exposes:
+
+- contextual risk indices: `x_irc1`, `x_irc1_no_chla`.
+
+If the sequence dataset is regenerated with the newer optional context surface,
+the same runner can also consume:
+
+- optional evidence-count context: `x_evidence_N`, `x_evidence_F`,
+  `x_evidence_T`, `x_evidence_T_no_chla`;
+- optional missingness context: `x_missing_N`, `x_missing_F`, `x_missing_T`,
+  `x_missing_T_no_chla`.
+
+These columns are treated as observed context, not target leakage. During
+recursive rollouts, future evidence and missingness are not read from the
+sequence table. The rollout evaluator carries the last observed context forward
+while updating only the predicted state and deterministic season features.
+
+The runner also supports an optional differentiable IRC auxiliary term:
+
+```text
+IRC = (alpha * yN + beta * (1 - yF) + gamma * yT) / (alpha + beta + gamma)
+```
+
+This is aligned with the primary alert score used by rollout calibration. The
+default weight is `0.0`, so historical v1 runs remain reproducible unless the
+new option is explicitly enabled.
+
+Recommended bounded smoke:
+
+```bash
+BRANCH=adaptive_wqp_focused_history_v1_context_irc_smoke
+
+poetry run python src/experiments/train_pipe_neural_ode_v1.py \
+  --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+  --sequence-manifest reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json \
+  --history-length 12 \
+  --context-columns irc \
+  --irc-loss-weight 0.25 \
+  --checkpoint-selection-metric balanced_irc \
+  --epochs 5 \
+  --max-train-windows 50000 \
+  --max-eval-windows 20000 \
+  --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_model_v1.pt" \
+  --checkpoint "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_checkpoint_v1.pt" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_metrics.csv" \
+  --persistence-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_persistence_metrics.csv" \
+  --comparison "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_persistence_comparison.csv" \
+  --blend-weights "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_output_blend_weights.csv" \
+  --blend-search "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_output_blend_search.csv" \
+  --training-curve "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_training_curve.csv" \
+  --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_prediction_examples.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_history_manifest.json"
+```
+
+Selection rule:
+
+- decide from validation first;
+- compare against long80 and PIPE-GRU-D on matched-origin validation before
+  touching held-out test;
+- promote only if state metrics do not regress materially and IRC/alert
+  behavior improves after the same rollout calibration and 2B policy workflow.
+
+## Gate v1.12 Context-Aware IRC-Aligned Result
+
+The context-aware IRC-aligned ablation completed on 2026-06-27 using the
+current adaptive WQP-focused sequence artifact. Because that artifact exposes
+only `x_irc1` and `x_irc1_no_chla` among optional context columns, the evaluated
+variant used:
+
+- `--context-columns irc`;
+- `--irc-loss-weight 0.25`;
+- `--checkpoint-selection-metric balanced_irc`;
+- `--max-train-windows 50000`;
+- all validation/test history windows.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_context_irc_smoke/pipe_neural_ode_history_report.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_context_irc_smoke/pipe_neural_ode_history_manifest.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_context_irc_smoke/pipe_neural_ode_history_training_curve.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_context_irc_smoke/pipe_neural_ode_history_persistence_comparison.csv`.
+
+The first 5-epoch smoke completed, selected epoch `5`, and improved one-step
+validation all-state RMSE/MAE against persistence by `16.96%` / `11.05%`.
+Because the best epoch was the final requested epoch, the branch was continued
+with `--resume` to 20 epochs.
+
+Final 20-epoch result:
+
+- status: `completed`;
+- best epoch: `20`;
+- validation all-state RMSE/MAE: `0.1219` / `0.0737`;
+- test all-state RMSE/MAE: `0.1179` / `0.0709`;
+- validation IRC RMSE/MAE: `0.1359` / `0.0870`;
+- validation all-state RMSE/MAE improvement against persistence:
+  `20.25%` / `15.34%`.
+
+Long80 reference:
+
+- validation all-state RMSE/MAE: `0.1102` / `0.0677`;
+- test all-state RMSE/MAE: `0.1064` / `0.0648`.
+
+Interpretation:
+
+- The branch learns temporal signal and improves persistence, so it is a valid
+  ablation.
+- It does not approach the long80 one-step candidate on aggregate state error.
+- The auxiliary IRC objective does not produce a useful IRC RMSE gain in this
+  bounded run.
+- The larger uncertainty widths and weaker state metrics do not justify
+  matched-origin rollouts, calibration, or 2B policy comparison.
+
+Decision: close Gate v1.12 as a documented negative/provisional ablation. Do
+not promote its model artifacts through DVC. Keep Neural ODE v1 long80 as the
+leading temporal candidate for thesis-level comparison.

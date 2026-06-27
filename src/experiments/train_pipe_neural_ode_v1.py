@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 import time
 from datetime import datetime, timezone
@@ -22,6 +23,7 @@ from src.pandas_utils import dataframe_rows
 
 from src.experiments.build_pipe_sequences import INPUT_COLUMNS, SEASON_COLUMNS, TARGET_COLUMNS
 from src.experiments.train_pipe_grud import (
+    ID_COLUMNS,
     STATE_TARGET_NAMES,
     TARGET_WEIGHTS,
     WindowDataset,
@@ -37,7 +39,6 @@ from src.experiments.train_pipe_grud import (
     _write_text_atomic,
     compare_to_persistence,
     eligible_window_indices,
-    evaluate_model,
     evaluate_persistence,
     load_sequences,
     make_loss_weights,
@@ -46,7 +47,6 @@ from src.experiments.train_pipe_grud import (
     sample_indices,
     select_output_blend_weights,
     set_reproducible_seed,
-    train_epoch,
     training_loss,
     validation_selection_objective,
 )
@@ -75,6 +75,44 @@ DEFAULT_REPORT = DEFAULT_REPORT_DIR / "pipe_neural_ode_history_report.md"
 DEFAULT_MANIFEST = DEFAULT_REPORT_DIR / "pipe_neural_ode_history_manifest.json"
 
 MODEL_VERSION = "pipe_neural_ode_history_v1"
+EVIDENCE_CONTEXT_COLUMNS = [
+    "x_evidence_N",
+    "x_evidence_F",
+    "x_evidence_T",
+    "x_evidence_T_no_chla",
+]
+MISSINGNESS_CONTEXT_COLUMNS = [
+    "x_missing_N",
+    "x_missing_F",
+    "x_missing_T",
+    "x_missing_T_no_chla",
+]
+IRC_CONTEXT_COLUMNS = [
+    "x_irc1",
+    "x_irc1_no_chla",
+]
+ALL_CONTEXT_COLUMNS = EVIDENCE_CONTEXT_COLUMNS + MISSINGNESS_CONTEXT_COLUMNS + IRC_CONTEXT_COLUMNS
+CONTEXT_COLUMN_GROUPS = {
+    "none": [],
+    "irc": IRC_CONTEXT_COLUMNS,
+    "evidence": EVIDENCE_CONTEXT_COLUMNS,
+    "missingness": MISSINGNESS_CONTEXT_COLUMNS,
+    "evidence_missingness": EVIDENCE_CONTEXT_COLUMNS + MISSINGNESS_CONTEXT_COLUMNS,
+}
+CONTEXT_FILL_VALUES = {
+    **{column: 1.0 for column in EVIDENCE_CONTEXT_COLUMNS},
+    **{column: 0.0 for column in MISSINGNESS_CONTEXT_COLUMNS},
+    **{column: 0.0 for column in IRC_CONTEXT_COLUMNS},
+}
+BACKWARD_COMPAT_CONFIG_DEFAULTS = {
+    "context_dim": 0,
+    "context_columns": [],
+    "input_columns": INPUT_COLUMNS,
+    "irc_loss_weight": 0.0,
+    "irc_alpha": 0.5,
+    "irc_beta": 0.5,
+    "irc_gamma": 2.0,
+}
 MULTI_STEP_CONFIG_KEYS = {
     "training_objective",
     "multi_step_horizon",
@@ -83,11 +121,94 @@ MULTI_STEP_CONFIG_KEYS = {
 }
 
 
+def resolve_context_columns(value: str | list[str]) -> list[str]:
+    if isinstance(value, list):
+        return value
+    raw_tokens = [part.strip() for part in str(value).split(",") if part.strip()]
+    if not raw_tokens:
+        raw_tokens = ["none"]
+    if "none" in raw_tokens and len(raw_tokens) > 1:
+        raise ValueError("--context-columns cannot mix 'none' with other context groups")
+    columns: list[str] = []
+    for token in raw_tokens:
+        if token in CONTEXT_COLUMN_GROUPS:
+            columns.extend(CONTEXT_COLUMN_GROUPS[token])
+        elif token in ALL_CONTEXT_COLUMNS:
+            columns.append(token)
+        else:
+            valid = sorted(set(CONTEXT_COLUMN_GROUPS) | set(ALL_CONTEXT_COLUMNS))
+            raise ValueError(f"Unsupported context column group or column {token!r}. Valid values: {valid}")
+    return list(dict.fromkeys(columns))
+
+
+def input_columns_for_context(context_columns: list[str]) -> list[str]:
+    return INPUT_COLUMNS + list(context_columns)
+
+
+def context_columns_label(context_columns: list[str]) -> str:
+    if not context_columns:
+        return "none"
+    if context_columns == CONTEXT_COLUMN_GROUPS["irc"]:
+        return "irc"
+    if context_columns == CONTEXT_COLUMN_GROUPS["evidence"]:
+        return "evidence"
+    if context_columns == CONTEXT_COLUMN_GROUPS["missingness"]:
+        return "missingness"
+    if context_columns == CONTEXT_COLUMN_GROUPS["evidence_missingness"]:
+        return "evidence,missingness"
+    return ",".join(context_columns)
+
+
+def _context_start() -> int:
+    return len(STATE_INPUT_COLUMNS) + len(SEASON_COLUMNS)
+
+
+def add_synthetic_context_columns(frame: pd.DataFrame, context_columns: list[str]) -> pd.DataFrame:
+    if not context_columns:
+        return frame
+    out = frame.copy()
+    for column in context_columns:
+        out[column] = float(CONTEXT_FILL_VALUES[column])
+    return out
+
+
+def load_history_sequences(path: Path, *, max_rows: int | None, input_columns: list[str]) -> pd.DataFrame:
+    frame = load_sequences(path, max_rows=max_rows)
+    for column in ["source_id", "site_id", "origin_year_month", "target_year_month", "split"]:
+        frame[column] = frame[column].astype(str)
+    frame["sequence_step"] = pd.to_numeric(frame["sequence_step"], errors="coerce").astype("int64")
+    extra_columns = [column for column in input_columns if column not in INPUT_COLUMNS]
+    if extra_columns:
+        try:
+            extras = pd.read_parquet(path, columns=ID_COLUMNS + extra_columns)
+        except Exception as exc:
+            raise ValueError(
+                "Sequence frame is missing one or more requested Neural ODE context columns: "
+                f"{extra_columns}. The current adaptive WQP-focused sequence artifact exposes "
+                "`x_irc1` and `x_irc1_no_chla`; use `--context-columns irc`, or regenerate the "
+                "sequence dataset with evidence/missingness context before requesting those groups."
+            ) from exc
+        if max_rows:
+            extras = extras.head(max_rows).copy()
+        for column in ["source_id", "site_id", "origin_year_month", "target_year_month", "split"]:
+            extras[column] = extras[column].astype(str)
+        extras["sequence_step"] = pd.to_numeric(extras["sequence_step"], errors="coerce").astype("int64")
+        frame = frame.merge(extras, on=ID_COLUMNS, how="left", validate="one_to_one")
+    missing = [column for column in input_columns if column not in frame.columns]
+    if missing:
+        raise ValueError(f"Sequence frame is missing requested Neural ODE context columns: {missing}")
+    for column in input_columns:
+        frame[column] = pd.to_numeric(frame[column], errors="coerce").replace([np.inf, -np.inf], np.nan)
+        frame[column] = frame[column].fillna(float(CONTEXT_FILL_VALUES.get(column, 0.0)))
+    return frame
+
+
 def make_history_neural_ode_model(
     *,
     input_dim: int,
     state_dim: int,
     season_dim: int,
+    context_dim: int = 0,
     history_hidden_dim: int,
     history_layers: int,
     latent_dim: int,
@@ -108,8 +229,8 @@ def make_history_neural_ode_model(
         def __init__(self) -> None:
             super().__init__()
             layers: list[Any] = []
-            context_dim = history_hidden_dim + season_dim
-            layer_input_dim = latent_dim + context_dim + 1
+            ode_context_dim = history_hidden_dim + season_dim + context_dim
+            layer_input_dim = latent_dim + ode_context_dim + 1
             for layer_index in range(dynamics_depth):
                 in_dim = layer_input_dim if layer_index == 0 else dynamics_hidden_dim
                 layers.append(torch.nn.Linear(in_dim, dynamics_hidden_dim))
@@ -142,11 +263,11 @@ def make_history_neural_ode_model(
                 dropout=dropout if history_layers > 1 else 0.0,
             )
             self.latent_initial = torch.nn.Sequential(
-                torch.nn.Linear(history_hidden_dim + state_dim + season_dim, latent_dim),
+                torch.nn.Linear(history_hidden_dim + state_dim + season_dim + context_dim, latent_dim),
                 torch.nn.Tanh(),
             )
             self.dynamics = LatentDynamics()
-            decoder_input_dim = latent_dim + history_hidden_dim + state_dim + season_dim
+            decoder_input_dim = latent_dim + history_hidden_dim + state_dim + season_dim + context_dim
             self.delta_head = torch.nn.Sequential(
                 torch.nn.Linear(decoder_input_dim, dynamics_hidden_dim),
                 torch.nn.SiLU(),
@@ -171,8 +292,12 @@ def make_history_neural_ode_model(
             last_input = x_window[:, -1, :]
             last_state = _bound_state_tensor(last_input[:, :state_dim])
             season = last_input[:, state_dim : state_dim + season_dim]
-            context = torch.cat([history_context, season], dim=1)
-            latent0 = self.latent_initial(torch.cat([history_context, last_state, season], dim=1))
+            if context_dim > 0:
+                extra_context = last_input[:, state_dim + season_dim : state_dim + season_dim + context_dim]
+            else:
+                extra_context = last_input.new_zeros((last_input.shape[0], 0))
+            context = torch.cat([history_context, season, extra_context], dim=1)
+            latent0 = self.latent_initial(torch.cat([history_context, last_state, season, extra_context], dim=1))
             self.dynamics.set_context(context)
             times = torch.tensor([0.0, float(integration_time)], device=x_window.device, dtype=x_window.dtype)
             trajectory = _require_torchdiffeq().odeint(
@@ -185,7 +310,7 @@ def make_history_neural_ode_model(
                 options=self._ode_options(),
             )
             latent1 = trajectory[-1]
-            decoder_input = torch.cat([latent1, history_context, last_state, season], dim=1)
+            decoder_input = torch.cat([latent1, history_context, last_state, season, extra_context], dim=1)
             delta = float(state_delta_scale) * torch.tanh(self.delta_head(decoder_input))
             mu = _bound_state_tensor(last_state + delta)
             logvar = torch.clamp(self.logvar_head(decoder_input), min=-10.0, max=2.0)
@@ -195,6 +320,8 @@ def make_history_neural_ode_model(
 
 
 def model_config(args: argparse.Namespace) -> dict[str, Any]:
+    context_columns = resolve_context_columns(args.context_columns)
+    input_columns = input_columns_for_context(context_columns)
     return {
         "architecture": "history_encoder_latent_ode",
         "history_length": int(args.history_length),
@@ -202,9 +329,11 @@ def model_config(args: argparse.Namespace) -> dict[str, Any]:
         "multi_step_horizon": int(args.multi_step_horizon),
         "multi_step_loss_weight": float(args.multi_step_loss_weight),
         "multi_step_checkpoint_objective": args.multi_step_checkpoint_objective,
-        "input_dim": len(INPUT_COLUMNS),
+        "input_dim": len(input_columns),
         "state_dim": len(STATE_INPUT_COLUMNS),
         "season_dim": len(SEASON_COLUMNS),
+        "context_dim": len(context_columns),
+        "context_columns": context_columns,
         "history_hidden_dim": int(args.history_hidden_dim),
         "history_layers": int(args.history_layers),
         "latent_dim": int(args.latent_dim),
@@ -219,12 +348,16 @@ def model_config(args: argparse.Namespace) -> dict[str, Any]:
         "rtol": float(args.rtol),
         "atol": float(args.atol),
         "mse_weight": float(args.mse_weight),
+        "irc_loss_weight": float(args.irc_loss_weight),
+        "irc_alpha": float(args.irc_alpha),
+        "irc_beta": float(args.irc_beta),
+        "irc_gamma": float(args.irc_gamma),
         "checkpoint_selection_metric": args.checkpoint_selection_metric,
         "checkpoint_selection_uses_output_blend": True,
         "blend_selection_metric": args.blend_selection_metric,
         "blend_grid": _parse_float_grid(args.blend_grid),
         "target_weights": TARGET_WEIGHTS,
-        "input_columns": INPUT_COLUMNS,
+        "input_columns": input_columns,
         "state_input_columns": STATE_INPUT_COLUMNS,
         "season_columns": SEASON_COLUMNS,
         "target_columns": TARGET_COLUMNS,
@@ -250,6 +383,85 @@ def checkpoint_selection_objective(
     if args.multi_step_checkpoint_objective == "one_step":
         return float(validation_one_step_objective)
     return float(validation_rollout_loss)
+
+
+def differentiable_irc(state: Any, *, alpha: float, beta: float, gamma: float) -> Any:
+    return (float(alpha) * state[:, 0] + float(beta) * (1.0 - state[:, 1]) + float(gamma) * state[:, 2]) / (
+        float(alpha) + float(beta) + float(gamma)
+    )
+
+
+def history_training_loss(mu: Any, logvar: Any, target: Any, weights: Any, args: argparse.Namespace) -> Any:
+    loss = training_loss(mu, logvar, target, weights, args.mse_weight)
+    if args.irc_loss_weight <= 0:
+        return loss
+    predicted_irc = differentiable_irc(mu, alpha=args.irc_alpha, beta=args.irc_beta, gamma=args.irc_gamma)
+    target_irc = differentiable_irc(target, alpha=args.irc_alpha, beta=args.irc_beta, gamma=args.irc_gamma)
+    return loss + float(args.irc_loss_weight) * ((predicted_irc - target_irc) ** 2).mean()
+
+
+def numpy_irc(values: np.ndarray, *, alpha: float, beta: float, gamma: float) -> np.ndarray:
+    return (float(alpha) * values[:, 0] + float(beta) * (1.0 - values[:, 1]) + float(gamma) * values[:, 2]) / (
+        float(alpha) + float(beta) + float(gamma)
+    )
+
+
+def evaluate_irc_persistence(
+    frame: pd.DataFrame, indices_by_split: dict[str, np.ndarray], args: argparse.Namespace
+) -> pd.DataFrame:
+    rows = []
+    for split, indices in indices_by_split.items():
+        if len(indices) == 0:
+            continue
+        y_true = frame.loc[indices, TARGET_COLUMNS].to_numpy(dtype="float64")
+        y_pred = frame.loc[indices, STATE_INPUT_COLUMNS].to_numpy(dtype="float64")
+        error = numpy_irc(y_pred, alpha=args.irc_alpha, beta=args.irc_beta, gamma=args.irc_gamma) - numpy_irc(
+            y_true,
+            alpha=args.irc_alpha,
+            beta=args.irc_beta,
+            gamma=args.irc_gamma,
+        )
+        rows.append(
+            {
+                "split": split,
+                "target": "irc1",
+                "rows": int(len(indices)),
+                "rmse": float(np.sqrt(np.mean(error**2))),
+                "mae": float(np.mean(np.abs(error))),
+            }
+        )
+    return pd.DataFrame(rows)
+
+
+def validation_selection_objective_v1(
+    *,
+    args: argparse.Namespace,
+    validation_metrics: pd.DataFrame,
+    validation_loss: float,
+    persistence_metrics: pd.DataFrame,
+    persistence_irc_metrics: pd.DataFrame,
+    validation_irc_rmse: float,
+) -> float:
+    if args.checkpoint_selection_metric in {"nll", "rmse", "mae", "balanced"}:
+        return validation_selection_objective(
+            validation_metrics,
+            validation_loss,
+            persistence_metrics,
+            args.checkpoint_selection_metric,
+        )
+    if args.checkpoint_selection_metric == "irc_rmse":
+        return float(validation_irc_rmse)
+    if args.checkpoint_selection_metric != "balanced_irc":
+        raise ValueError(f"Unsupported checkpoint selection metric: {args.checkpoint_selection_metric}")
+    state_objective = validation_selection_objective(
+        validation_metrics,
+        validation_loss,
+        persistence_metrics,
+        "balanced",
+    )
+    persistence = persistence_irc_metrics[persistence_irc_metrics["split"] == "validation"].iloc[0]
+    irc_scale = max(float(persistence.rmse), 1e-12)
+    return 0.5 * float(state_objective) + 0.5 * (float(validation_irc_rmse) / irc_scale)
 
 
 def eligible_multistep_window_indices(
@@ -327,13 +539,19 @@ def multistep_training_loss(
     window = x_batch
     step_losses = []
     horizon = int(future_targets.shape[1])
+    context_dim = len(resolve_context_columns(args.context_columns))
+    context_start = _context_start()
     for step in range(horizon):
         mu, logvar = model(window)
         target = future_targets[:, step, :]
-        step_losses.append(training_loss(mu, logvar, target, weights, args.mse_weight))
+        step_losses.append(history_training_loss(mu, logvar, target, weights, args))
         if step + 1 < horizon:
             next_input = future_inputs[:, step, :].clone()
             next_input[:, : len(STATE_INPUT_COLUMNS)] = _bound_state_tensor(mu)
+            if context_dim > 0:
+                next_input[:, context_start : context_start + context_dim] = window[
+                    :, -1, context_start : context_start + context_dim
+                ]
             window = torch.cat([window[:, 1:, :], next_input[:, None, :]], dim=1)
     if len(step_losses) == 1 or args.multi_step_loss_weight <= 0:
         return step_losses[0]
@@ -372,6 +590,126 @@ def train_multistep_epoch(
         if args.progress_every_batches and batch_index % args.progress_every_batches == 0:
             print(f"  batch {batch_index}: loss={float(loss.item()):.5f}", flush=True)
     return total_loss / max(total_rows, 1)
+
+
+def train_history_epoch(
+    model: Any,
+    dataset: WindowDataset,
+    args: argparse.Namespace,
+    optimizer: Any,
+    weights: Any,
+    device: Any,
+    epoch: int,
+) -> float:
+    torch = _require_torch()
+    model.train()
+    loader = torch.utils.data.DataLoader(
+        dataset,
+        batch_size=args.batch_size,
+        shuffle=True,
+        generator=torch.Generator().manual_seed(args.random_seed + epoch),
+    )
+    total_loss = 0.0
+    total_rows = 0
+    for batch_index, (x_batch, y_batch) in enumerate(loader, start=1):
+        x_batch = x_batch.to(device=device, dtype=weights.dtype)
+        y_batch = y_batch.to(device=device, dtype=weights.dtype)
+        optimizer.zero_grad(set_to_none=True)
+        mu, logvar = model(x_batch)
+        loss = history_training_loss(mu, logvar, y_batch, weights, args)
+        loss.backward()
+        if args.grad_clip > 0:
+            torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=float(args.grad_clip))
+        optimizer.step()
+        rows = int(len(y_batch))
+        total_loss += float(loss.item()) * rows
+        total_rows += rows
+        if args.progress_every_batches and batch_index % args.progress_every_batches == 0:
+            print(f"  batch {batch_index}: loss={float(loss.item()):.5f}", flush=True)
+    return total_loss / max(total_rows, 1)
+
+
+def evaluate_history_model(
+    model: Any,
+    dataset: WindowDataset,
+    *,
+    batch_size: int,
+    weights: Any,
+    device: Any,
+    args: argparse.Namespace,
+    blend_weights: Any | None = None,
+) -> tuple[pd.DataFrame, float, dict[str, float]]:
+    torch = _require_torch()
+    model.eval()
+    target_dim = len(TARGET_COLUMNS)
+    sum_squared = np.zeros(target_dim, dtype="float64")
+    sum_abs = np.zeros(target_dim, dtype="float64")
+    sum_nll = np.zeros(target_dim, dtype="float64")
+    sum_width = np.zeros(target_dim, dtype="float64")
+    coverage = np.zeros(target_dim, dtype="float64")
+    total_rows = 0
+    total_loss = 0.0
+    irc_squared = 0.0
+    irc_abs = 0.0
+    loader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False)
+    with torch.no_grad():
+        for x_batch, y_batch in loader:
+            x_batch = x_batch.to(device=device, dtype=weights.dtype)
+            y_batch = y_batch.to(device=device, dtype=weights.dtype)
+            mu, logvar = model(x_batch)
+            if blend_weights is not None:
+                persistence = x_batch[:, -1, :target_dim]
+                mu = persistence + blend_weights * (mu - persistence)
+            loss = history_training_loss(mu, logvar, y_batch, weights, args)
+            variance = torch.exp(torch.clamp(logvar, min=-10.0, max=2.0))
+            sigma = torch.sqrt(variance)
+            lower = mu - 1.6448536269514722 * sigma
+            upper = mu + 1.6448536269514722 * sigma
+            error = mu - y_batch
+            nll_by_value = 0.5 * (torch.clamp(logvar, min=-10.0, max=2.0) + (error**2) / variance)
+            irc_error = differentiable_irc(mu, alpha=args.irc_alpha, beta=args.irc_beta, gamma=args.irc_gamma) - (
+                differentiable_irc(y_batch, alpha=args.irc_alpha, beta=args.irc_beta, gamma=args.irc_gamma)
+            )
+            rows = int(len(y_batch))
+            total_loss += float(loss.item()) * rows
+            total_rows += rows
+            sum_squared += (error.detach().cpu().numpy() ** 2).sum(axis=0)
+            sum_abs += np.abs(error.detach().cpu().numpy()).sum(axis=0)
+            sum_nll += nll_by_value.detach().cpu().numpy().sum(axis=0)
+            sum_width += (upper - lower).detach().cpu().numpy().sum(axis=0)
+            coverage += ((y_batch >= lower) & (y_batch <= upper)).detach().cpu().numpy().sum(axis=0)
+            irc_squared += float((irc_error**2).sum().detach().cpu())
+            irc_abs += float(irc_error.abs().sum().detach().cpu())
+
+    rows_out = []
+    for index, target in enumerate(TARGET_COLUMNS):
+        rows_out.append(
+            {
+                "target": target.removeprefix("target_"),
+                "rows": int(total_rows),
+                "rmse": math.sqrt(sum_squared[index] / max(total_rows, 1)),
+                "mae": sum_abs[index] / max(total_rows, 1),
+                "nll": sum_nll[index] / max(total_rows, 1),
+                "interval_90_coverage": coverage[index] / max(total_rows, 1),
+                "interval_90_mean_width": sum_width[index] / max(total_rows, 1),
+            }
+        )
+    metrics = pd.DataFrame(rows_out)
+    overall = {
+        "target": "all",
+        "rows": int(total_rows),
+        "rmse": float(metrics["rmse"].mean()),
+        "mae": float(metrics["mae"].mean()),
+        "nll": float(metrics["nll"].mean()),
+        "interval_90_coverage": float(metrics["interval_90_coverage"].mean()),
+        "interval_90_mean_width": float(metrics["interval_90_mean_width"].mean()),
+    }
+    metrics = pd.concat([pd.DataFrame([overall]), metrics], ignore_index=True)
+    aux = {
+        "irc_rmse": math.sqrt(irc_squared / max(total_rows, 1)),
+        "irc_mae": irc_abs / max(total_rows, 1),
+    }
+    return metrics, total_loss / max(total_rows, 1), aux
 
 
 def evaluate_multistep_loss(
@@ -450,7 +788,7 @@ def save_model_artifact(
             "best_validation_loss": float(best_validation_loss),
             "best_validation_objective": float(best_validation_objective),
             "config": config,
-            "input_columns": INPUT_COLUMNS,
+            "input_columns": list(config.get("input_columns", INPUT_COLUMNS)),
             "state_input_columns": STATE_INPUT_COLUMNS,
             "season_columns": SEASON_COLUMNS,
             "target_columns": TARGET_COLUMNS,
@@ -480,6 +818,8 @@ def load_checkpoint_if_requested(
         if args.training_objective == "one_step" and key in MULTI_STEP_CONFIG_KEYS:
             continue
         if key not in checkpoint_config:
+            if key in BACKWARD_COMPAT_CONFIG_DEFAULTS and expected == BACKWARD_COMPAT_CONFIG_DEFAULTS[key]:
+                continue
             if key == "multi_step_checkpoint_objective" and expected == "rollout_loss":
                 continue
             if args.training_objective == "one_step" and key in MULTI_STEP_CONFIG_KEYS:
@@ -543,6 +883,7 @@ def write_report(
         f"- Multi-step horizon: `{args.multi_step_horizon}`",
         f"- Multi-step continuation loss weight: `{args.multi_step_loss_weight}`",
         f"- Multi-step checkpoint objective: `{args.multi_step_checkpoint_objective}`",
+        f"- Context columns: `{context_columns_label(resolve_context_columns(args.context_columns))}`",
         f"- History hidden dimension: `{args.history_hidden_dim}`",
         f"- History layers: `{args.history_layers}`",
         f"- Latent dimension: `{args.latent_dim}`",
@@ -555,6 +896,8 @@ def write_report(
         f"- ODE method: `{args.ode_method}`",
         f"- ODE step size: `{args.ode_step_size}`",
         f"- Auxiliary MSE weight: `{args.mse_weight}`",
+        f"- Auxiliary IRC loss weight: `{args.irc_loss_weight}`",
+        f"- IRC weights: alpha=`{args.irc_alpha}`, beta=`{args.irc_beta}`, gamma=`{args.irc_gamma}`",
         f"- Checkpoint selection metric: `{checkpoint_selection_label(args)}`",
         f"- One-step checkpoint metric: `{args.checkpoint_selection_metric}`",
         f"- Output blend selection metric: `{args.blend_selection_metric}`",
@@ -585,6 +928,8 @@ def write_report(
                 f"- Validation loss: `{_format_float(float(best_row.validation_loss))}`",
                 f"- Validation RMSE all: `{_format_float(float(best_row.validation_rmse_all))}`",
                 f"- Validation MAE all: `{_format_float(float(best_row.validation_mae_all))}`",
+                f"- Validation IRC RMSE: `{_format_float(float(getattr(best_row, 'validation_irc_rmse', np.nan)))}`",
+                f"- Validation IRC MAE: `{_format_float(float(getattr(best_row, 'validation_irc_mae', np.nan)))}`",
             ]
         )
         rollout_loss = getattr(best_row, "validation_rollout_loss", np.nan)
@@ -743,6 +1088,8 @@ def manifest_payload(
             "best_validation_loss": float(best_row["validation_loss"]) if best_row else None,
             "best_validation_rmse_all": float(best_row.get("validation_rmse_all", np.nan)) if best_row else None,
             "best_validation_mae_all": float(best_row.get("validation_mae_all", np.nan)) if best_row else None,
+            "best_validation_irc_rmse": float(best_row.get("validation_irc_rmse", np.nan)) if best_row else None,
+            "best_validation_irc_mae": float(best_row.get("validation_irc_mae", np.nan)) if best_row else None,
             "best_validation_rollout_loss": float(best_row.get("validation_rollout_loss", np.nan)) if best_row else None,
             "best_validation_one_step_selection_objective": (
                 float(best_row.get("validation_one_step_selection_objective", np.nan)) if best_row else None
@@ -787,6 +1134,14 @@ def parse_args() -> argparse.Namespace:
             "validation one-step checkpoint while still training with multi-step continuation loss."
         ),
     )
+    parser.add_argument(
+        "--context-columns",
+        default="none",
+        help=(
+            "Optional sequence context for the history encoder. Use 'none', 'irc', 'evidence', "
+            "'missingness', 'evidence,missingness', or explicit x_* context column names."
+        ),
+    )
     parser.add_argument("--history-hidden-dim", type=int, default=96)
     parser.add_argument("--history-layers", type=int, default=1)
     parser.add_argument("--latent-dim", type=int, default=64)
@@ -805,7 +1160,15 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rtol", type=float, default=1e-3)
     parser.add_argument("--atol", type=float, default=1e-4)
     parser.add_argument("--mse-weight", type=float, default=0.5)
-    parser.add_argument("--checkpoint-selection-metric", choices=["nll", "rmse", "mae", "balanced"], default="balanced")
+    parser.add_argument("--irc-loss-weight", type=float, default=0.0)
+    parser.add_argument("--irc-alpha", type=float, default=0.5)
+    parser.add_argument("--irc-beta", type=float, default=0.5)
+    parser.add_argument("--irc-gamma", type=float, default=2.0)
+    parser.add_argument(
+        "--checkpoint-selection-metric",
+        choices=["nll", "rmse", "mae", "balanced", "irc_rmse", "balanced_irc"],
+        default="balanced",
+    )
     parser.add_argument("--blend-selection-metric", choices=["mae", "rmse", "balanced"], default="balanced")
     parser.add_argument("--blend-grid", default="0,0.1,0.2,0.35,0.5,0.65,0.8,0.9,1")
     parser.add_argument("--epochs", type=int, default=8)
@@ -836,6 +1199,12 @@ def main() -> None:
         raise ValueError("--multi-step-horizon must be >= 1")
     if args.multi_step_loss_weight < 0:
         raise ValueError("--multi-step-loss-weight must be >= 0")
+    if args.irc_loss_weight < 0:
+        raise ValueError("--irc-loss-weight must be >= 0")
+    if args.irc_alpha < 0 or args.irc_beta < 0 or args.irc_gamma < 0:
+        raise ValueError("--irc-alpha, --irc-beta, and --irc-gamma must be >= 0")
+    if args.irc_alpha + args.irc_beta + args.irc_gamma <= 0:
+        raise ValueError("At least one IRC weight must be positive")
     if args.dynamics_depth < 0:
         raise ValueError("--dynamics-depth must be >= 0")
     if args.derivative_scale <= 0:
@@ -844,6 +1213,8 @@ def main() -> None:
         raise ValueError("--state-delta-scale must be > 0")
     if args.integration_time <= 0:
         raise ValueError("--integration-time must be > 0")
+    context_columns = resolve_context_columns(args.context_columns)
+    selected_input_columns = input_columns_for_context(context_columns)
     blend_grid = _parse_float_grid(args.blend_grid)
 
     _require_torchdiffeq()
@@ -864,13 +1235,14 @@ def main() -> None:
             months_per_split=args.synthetic_months_per_split,
             seed=args.random_seed,
         )
+        frame = add_synthetic_context_columns(frame, context_columns)
     else:
         print(f"loading sequences {args.sequences}", flush=True)
-        frame = load_sequences(args.sequences, max_rows=args.max_rows)
+        frame = load_history_sequences(args.sequences, max_rows=args.max_rows, input_columns=selected_input_columns)
     frame = prepare_window_frame(frame)
     print(f"sequence rows={len(frame):,}; elapsed={_elapsed(started_monotonic)}", flush=True)
 
-    x_values = frame[INPUT_COLUMNS].to_numpy(dtype="float32")
+    x_values = frame[selected_input_columns].to_numpy(dtype="float32")
     y_values = frame[TARGET_COLUMNS].to_numpy(dtype="float32")
 
     if args.training_objective == "multi_step":
@@ -894,6 +1266,7 @@ def main() -> None:
     if sampled_windows["train"] == 0 or sampled_windows["validation"] == 0:
         raise ValueError("Training and validation splits must each have at least one eligible window")
     persistence_metrics = evaluate_persistence(frame, sampled_indices)
+    persistence_irc_metrics = evaluate_irc_persistence(frame, sampled_indices, args)
 
     datasets = {
         split: WindowDataset(x_values, y_values, indices, args.history_length) for split, indices in sampled_indices.items()
@@ -903,9 +1276,10 @@ def main() -> None:
         for split, indices in sampled_indices.items()
     }
     model = make_history_neural_ode_model(
-        input_dim=len(INPUT_COLUMNS),
+        input_dim=len(selected_input_columns),
         state_dim=len(STATE_INPUT_COLUMNS),
         season_dim=len(SEASON_COLUMNS),
+        context_dim=len(context_columns),
         history_hidden_dim=args.history_hidden_dim,
         history_layers=args.history_layers,
         latent_dim=args.latent_dim,
@@ -958,7 +1332,7 @@ def main() -> None:
                     device=device,
                 )
             else:
-                train_loss = train_epoch(model, datasets["train"], args, optimizer, weights, device, epoch)
+                train_loss = train_history_epoch(model, datasets["train"], args, optimizer, weights, device, epoch)
                 validation_rollout_loss = np.nan
             epoch_blend_weights, _ = select_output_blend_weights(
                 model,
@@ -969,19 +1343,22 @@ def main() -> None:
                 device=device,
             )
             epoch_blend_tensor = _blend_weight_tensor(epoch_blend_weights, device)
-            validation_metrics, validation_loss = evaluate_model(
+            validation_metrics, validation_loss, validation_aux = evaluate_history_model(
                 model,
                 datasets["validation"],
                 batch_size=args.batch_size,
                 weights=weights,
                 device=device,
+                args=args,
                 blend_weights=epoch_blend_tensor,
             )
-            validation_one_step_objective = validation_selection_objective(
-                validation_metrics,
-                validation_loss,
-                persistence_metrics,
-                args.checkpoint_selection_metric,
+            validation_one_step_objective = validation_selection_objective_v1(
+                args=args,
+                validation_metrics=validation_metrics,
+                validation_loss=validation_loss,
+                persistence_metrics=persistence_metrics,
+                persistence_irc_metrics=persistence_irc_metrics,
+                validation_irc_rmse=float(validation_aux["irc_rmse"]),
             )
             validation_objective = checkpoint_selection_objective(
                 args=args,
@@ -1007,6 +1384,8 @@ def main() -> None:
                 "validation_loss": float(validation_loss),
                 "validation_rmse_all": float(validation_all.rmse),
                 "validation_mae_all": float(validation_all.mae),
+                "validation_irc_rmse": float(validation_aux["irc_rmse"]),
+                "validation_irc_mae": float(validation_aux["irc_mae"]),
                 "validation_rollout_loss": float(validation_rollout_loss),
                 "validation_one_step_selection_objective": float(validation_one_step_objective),
                 "validation_selection_objective": float(validation_objective),
@@ -1077,12 +1456,13 @@ def main() -> None:
         if len(datasets[split]) == 0:
             continue
         print(f"evaluating {split}", flush=True)
-        metrics, _ = evaluate_model(
+        metrics, _, _ = evaluate_history_model(
             model,
             datasets[split],
             batch_size=args.batch_size,
             weights=weights,
             device=device,
+            args=args,
             blend_weights=blend_weight_tensor,
         )
         metrics.insert(0, "split", split)

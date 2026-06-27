@@ -12,12 +12,17 @@ from src.experiments.build_pipe_sequences import INPUT_COLUMNS, SEASON_COLUMNS, 
 from src.experiments.train_pipe_grud import make_loss_weights, prepare_window_frame
 from src.experiments.train_pipe_neural_ode import STATE_INPUT_COLUMNS, synthetic_sequence_frame
 from src.experiments.train_pipe_neural_ode_v1 import (
+    EVIDENCE_CONTEXT_COLUMNS,
+    IRC_CONTEXT_COLUMNS,
     MultiStepWindowDataset,
     checkpoint_selection_label,
     checkpoint_selection_objective,
     eligible_multistep_window_indices,
+    history_training_loss,
+    input_columns_for_context,
     make_history_neural_ode_model,
     multistep_training_loss,
+    resolve_context_columns,
 )
 
 
@@ -54,6 +59,68 @@ def test_history_neural_ode_model_forward_returns_bounded_state() -> None:
     assert torch.all(mu[:, :6] <= 1.0)
     assert torch.all(mu[:, 6:] >= -1.0)
     assert torch.all(mu[:, 6:] <= 1.0)
+
+
+def test_context_columns_extend_history_neural_ode_input() -> None:
+    torch = pytest.importorskip("torch")
+    pytest.importorskip("torchdiffeq")
+
+    context_columns = resolve_context_columns("evidence")
+    input_columns = input_columns_for_context(context_columns)
+    model = make_history_neural_ode_model(
+        input_dim=len(input_columns),
+        state_dim=len(STATE_INPUT_COLUMNS),
+        season_dim=len(SEASON_COLUMNS),
+        context_dim=len(context_columns),
+        history_hidden_dim=8,
+        history_layers=1,
+        latent_dim=6,
+        dynamics_hidden_dim=8,
+        dynamics_depth=1,
+        dropout=0.0,
+        derivative_scale=0.2,
+        state_delta_scale=0.3,
+        integration_time=1.0,
+        ode_method="rk4",
+        ode_step_size=0.5,
+        rtol=1e-3,
+        atol=1e-4,
+    )
+    x_window = torch.zeros((3, 4, len(input_columns)))
+    x_window[:, :, : len(STATE_INPUT_COLUMNS)] = 0.5
+    x_window[:, :, len(INPUT_COLUMNS) :] = 1.0
+
+    mu, logvar = model(x_window)
+
+    assert context_columns == EVIDENCE_CONTEXT_COLUMNS
+    assert tuple(mu.shape) == (3, len(STATE_INPUT_COLUMNS))
+    assert tuple(logvar.shape) == (3, len(STATE_INPUT_COLUMNS))
+    assert torch.all(mu[:, :6] >= 0.0)
+    assert torch.all(mu[:, :6] <= 1.0)
+
+
+def test_irc_context_group_matches_current_adaptive_sequence_artifact() -> None:
+    assert resolve_context_columns("irc") == IRC_CONTEXT_COLUMNS
+
+
+def test_history_training_loss_accepts_irc_auxiliary_term() -> None:
+    torch = pytest.importorskip("torch")
+
+    mu = torch.full((2, len(TARGET_COLUMNS)), 0.5)
+    logvar = torch.zeros_like(mu)
+    target = torch.full((2, len(TARGET_COLUMNS)), 0.4)
+    weights = torch.from_numpy(make_loss_weights())
+    args = argparse.Namespace(
+        mse_weight=0.5,
+        irc_loss_weight=0.25,
+        irc_alpha=0.5,
+        irc_beta=0.5,
+        irc_gamma=2.0,
+    )
+
+    loss = history_training_loss(mu, logvar, target, weights, args)
+
+    assert bool(torch.isfinite(loss))
 
 
 def test_multistep_window_dataset_requires_complete_future_horizon() -> None:
@@ -109,7 +176,15 @@ def test_multistep_training_loss_is_finite() -> None:
         rtol=1e-3,
         atol=1e-4,
     )
-    args = argparse.Namespace(mse_weight=0.5, multi_step_loss_weight=1.0)
+    args = argparse.Namespace(
+        mse_weight=0.5,
+        multi_step_loss_weight=1.0,
+        context_columns="none",
+        irc_loss_weight=0.25,
+        irc_alpha=0.5,
+        irc_beta=0.5,
+        irc_gamma=2.0,
+    )
     weights = torch.from_numpy(make_loss_weights())
 
     loss = multistep_training_loss(
@@ -183,6 +258,12 @@ def test_train_pipe_neural_ode_v1_cli_writes_synthetic_smoke_outputs(tmp_path: P
             "6",
             "--history-length",
             "3",
+            "--context-columns",
+            "irc",
+            "--irc-loss-weight",
+            "0.25",
+            "--checkpoint-selection-metric",
+            "balanced_irc",
             "--epochs",
             "1",
             "--batch-size",
@@ -235,6 +316,11 @@ def test_train_pipe_neural_ode_v1_cli_writes_synthetic_smoke_outputs(tmp_path: P
     assert manifest["status"] == "completed"
     assert manifest["model_version"] == "pipe_neural_ode_history_v1"
     assert manifest["scope"]["synthetic_smoke"] is True
+    assert manifest["config"]["context_columns"] == IRC_CONTEXT_COLUMNS
+    assert manifest["config"]["input_dim"] == len(INPUT_COLUMNS) + len(IRC_CONTEXT_COLUMNS)
+    assert manifest["config"]["irc_loss_weight"] == 0.25
+    assert manifest["selection"]["one_step_checkpoint_selection_metric"] == "balanced_irc"
+    assert manifest["selection"]["best_validation_irc_rmse"] is not None
     assert manifest["row_counts"]["sampled_windows"]["train"] == 8
     assert manifest["outputs"]
     assert "PIPE Neural ODE History Training Report v1" in report
