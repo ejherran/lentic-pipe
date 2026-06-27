@@ -2401,3 +2401,36 @@ Decision: close v2 direct as a calibrated comparison branch. Do not promote it
 as the operational default unless the decision context explicitly favors a more
 precision-oriented direct h2/h3 diagnostic over the current recall-oriented
 alert profile.
+
+## Formal Closure
+
+The PIPE Neural ODE line is closed as an active refinement cycle as of
+2026-06-27.
+
+Closed variants:
+
+- v0: one-step latent ODE baseline and recursive rollout comparison;
+- v1: history-encoded latent ODE, selected as the strongest Neural ODE
+  candidate after matched-origin rollout, calibration, and 2B policy review;
+- v1 ablations: context-aware, IRC-aligned, and multi-step refinements that did
+  not displace v1 long80;
+- v2: continuous-time direct multi-gap refinement, retained as a calibrated
+  comparison branch but not promoted as an operational default.
+
+Final status:
+
+- Neural ODE is scientifically useful in this project and improves over
+  persistence by a wide margin.
+- Neural ODE v1 long80 remains the strongest Neural ODE candidate.
+- Neural ODE v2 demonstrates that direct multi-gap continuous-time modeling can
+  improve some h2/h3 IRC diagnostics, but it does not consistently beat v1 on
+  the primary calibrated alert criteria.
+- Adaptive PIPE/GRU-D remains the simpler operational fallback/default unless a
+  deployment context explicitly prefers the Neural ODE v1 calibrated alert
+  profile.
+
+No v3 should be opened in the current work package. A future v3 would require a
+new, falsifiable hypothesis that is not already covered by v1/v2 evidence, a
+pre-declared validation criterion, and a strict run budget. The next thesis work
+should move to the broader pending gates rather than continue Neural ODE
+architecture search.
