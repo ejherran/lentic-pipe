@@ -1,0 +1,10 @@
+mifal_degradation_version,scenario_id,scenario_family,scenario_tier,scenario_status,seed,surface,input_rows,output_rows,rows_retained_rate,affected_rows,affected_cells,metrics_rows,operation_types
+mifal_controlled_degradation_v0,control_observed,control,core,evaluated,,observable_no_current_chla,180,180,1.0,0,0,12,
+mifal_controlled_degradation_v0,ablate_nutrients,feature_family_ablation,core,evaluated,,observable_no_current_chla,180,180,1.0,175,935,12,set_variables_missing
+mifal_controlled_degradation_v0,ablate_light,feature_family_ablation,core,evaluated,,observable_no_current_chla,180,180,1.0,180,747,12,set_variables_missing
+mifal_controlled_degradation_v0,random_dropout_mcar_25,random_value_dropout,core,evaluated,20260612.0,observable_no_current_chla,180,180,1.0,131,674,12,random_value_dropout
+mifal_controlled_degradation_v0,random_dropout_mcar_25,random_value_dropout,core,evaluated,20260613.0,observable_no_current_chla,180,180,1.0,119,619,12,random_value_dropout
+mifal_controlled_degradation_v0,random_dropout_mcar_25,random_value_dropout,core,evaluated,20260614.0,observable_no_current_chla,180,180,1.0,127,733,12,random_value_dropout
+mifal_controlled_degradation_v0,temporal_blocks_3m_rate_10,temporal_block_missingness,core,evaluated,20260612.0,observable_no_current_chla,180,180,1.0,19,290,12,temporal_block_dropout
+mifal_controlled_degradation_v0,temporal_blocks_3m_rate_10,temporal_block_missingness,core,evaluated,20260613.0,observable_no_current_chla,180,180,1.0,15,239,12,temporal_block_dropout
+mifal_controlled_degradation_v0,temporal_blocks_3m_rate_10,temporal_block_missingness,core,evaluated,20260614.0,observable_no_current_chla,180,180,1.0,21,376,12,temporal_block_dropout

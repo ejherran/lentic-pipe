@@ -228,6 +228,62 @@ Repeat comparable degradation scenarios for MIFAL and PIPE. The key outcomes
 are degradation slope, overconfidence, interval coverage, and operational
 failure modes, not only peak predictive performance.
 
+The first MIFAL degradation runner is
+`src/experiments/evaluate_mifal_controlled_degradation.py`. It degrades
+observable panel evidence packets, recomputes MIFAL, and keeps validation
+calibrators and thresholds fixed. This avoids tuning on degraded or test rows
+and preserves the interpretation of MIFAL as a structurally separate
+comparator.
+
+Gate 4 smoke was executed for both observable MIFAL surfaces:
+
+- current-Chl-a:
+  `reports/degradation/mifal_controlled_degradation_current_chla_smoke_report.md`;
+- no-current-Chl-a:
+  `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_report.md`.
+
+Both smokes used the PIPE-compatible holdout reference surface, fixed MIFAL
+validation calibrators/thresholds, the `mifal_observable_smoke` scenario set,
+and 30 rows per split/horizon. They validate the degradation harness; they are
+not final robustness evidence.
+
+Full-row smoke runs were then executed on the same scenario set:
+
+- current-Chl-a full smoke:
+  `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_report.md`;
+- no-current-Chl-a full smoke:
+  `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_report.md`.
+
+Each full smoke used 23,531 rows, generated 9 evaluated runs, and produced 108
+metric rows. The current-Chl-a control reproduced the held-out MIFAL baseline
+for `bloom_h` (test PR-AUC h1/h2/h3: 0.6147/0.5416/0.4872; F-beta:
+0.6338/0.5300/0.5218). The no-current-Chl-a control remained weaker in
+ranking (test PR-AUC h1/h2/h3: 0.3608/0.3307/0.3218; F-beta:
+0.5949/0.5922/0.5693). Nutrient ablation and random 25% dropout were the main
+stressors in the smoke set; temporal 3-month blocks at 10% produced smaller
+degradation.
+
+Full core runs were then executed for both MIFAL surfaces using the
+`mifal_observable_core` scenario set:
+
+- current-Chl-a core:
+  `reports/degradation/mifal_controlled_degradation_current_chla_core_full_report.md`;
+- no-current-Chl-a core:
+  `reports/degradation/mifal_controlled_degradation_no_current_chla_core_full_report.md`.
+
+Each core run used 23,531 rows, 32 evaluated scenario/seed runs, 384 metric
+rows, 1,536 availability rows, and 160 examples. The current-Chl-a surface was
+most sensitive to Chl-a memory removal in ranking (test PR-AUC h1/h2/h3:
+0.2059/0.2043/0.2030) and to nutrients in thresholded F-beta
+(-0.1618/-0.0478/-0.0728). Severe MCAR 50% dropout also caused material loss,
+while 6-month temporal blocks at 25% caused moderate degradation. On the
+no-current-Chl-a surface, nutrient ablation was the dominant failure mode
+(test F-beta delta h1/h2/h3: -0.3400/-0.3366/-0.3315), followed by Chl-a memory
+removal and severe random dropout. Light ablation was small on both surfaces.
+Physicochemical ablation sometimes improved current-Chl-a F-beta, which should
+be interpreted as noisy-channel or cohort-mix sensitivity rather than evidence
+that those variables are ecologically irrelevant.
+
 ## Reporting Rules
 
 - Do not claim MIFAL is superior globally.

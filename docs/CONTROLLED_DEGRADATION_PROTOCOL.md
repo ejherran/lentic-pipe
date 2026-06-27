@@ -247,6 +247,7 @@ Implemented evaluator:
 
 - `src/experiments/evaluate_controlled_degradation.py`
 - `src/experiments/evaluate_degraded_pipe_grud_rollouts.py`
+- `src/experiments/evaluate_mifal_controlled_degradation.py`
 
 Current evaluator scope:
 
@@ -271,6 +272,18 @@ Recomputed PIPE/GRU-D evaluator scope:
 - raw-variable family ablations such as nutrients, light, and Chl-a memory
   still require an upstream rebuild of fuzzy states and sequence datasets.
 
+Recomputed MIFAL evaluator scope:
+
+- `evaluate_mifal_controlled_degradation.py` recomputes MIFAL-ED/T2 after
+  degrading observable panel evidence packets;
+- calibration JSON files and bloom thresholds selected on validation remain
+  fixed under degraded evidence;
+- labels, split membership, and matched reference rows remain fixed;
+- the evaluator reports degradation deltas, group-level calibration bias,
+  interval coverage, interval width, uncertainty, data reliability, and
+  confidence;
+- MIFAL is evaluated for `bloom_h` only because it does not emit `irc_alert`.
+
 Expected future small Git artifacts:
 
 - `reports/degradation/controlled_degradation_metrics.csv`
@@ -284,6 +297,36 @@ Expected future small Git artifacts:
 - `reports/degradation/controlled_degradation_pipe_recomputed_examples.csv`
 - `reports/degradation/controlled_degradation_pipe_recomputed_report.md`
 - `reports/degradation/controlled_degradation_pipe_recomputed_manifest.json`
+- `reports/degradation/mifal_controlled_degradation_smoke_metrics.csv`
+- `reports/degradation/mifal_controlled_degradation_smoke_summary.csv`
+- `reports/degradation/mifal_controlled_degradation_smoke_availability.csv`
+- `reports/degradation/mifal_controlled_degradation_smoke_examples.csv`
+- `reports/degradation/mifal_controlled_degradation_smoke_report.md`
+- `reports/degradation/mifal_controlled_degradation_smoke_manifest.json`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_metrics.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_summary.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_availability.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_examples.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_report.md`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_manifest.json`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_metrics.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_summary.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_availability.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_examples.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_report.md`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_manifest.json`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_metrics.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_summary.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_availability.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_examples.csv`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_report.md`
+- `reports/degradation/mifal_controlled_degradation_current_chla_smoke_full_manifest.json`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_metrics.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_summary.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_availability.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_examples.csv`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_report.md`
+- `reports/degradation/mifal_controlled_degradation_no_current_chla_smoke_full_manifest.json`
 
 Expected future DVC artifacts, only if row-level degraded tables are materialized:
 
@@ -514,6 +557,27 @@ Phase 3:
   fitting, calibration, threshold selection, and degraded-sequence rebuilds.
   Use `--input-surface no_current_chla`; use `--source-ids wqp` for the
   WQP-focused no-current surface.
+
+MIFAL controlled-degradation execution, 2026-06-27:
+
+- `evaluate_mifal_controlled_degradation.py` was executed on both observable
+  MIFAL surfaces with fixed validation calibrators and thresholds;
+- full smoke runs used `mifal_observable_smoke` on 23,531 matched rows and
+  confirmed that the harness scales beyond capped diagnostics;
+- full core runs used `mifal_observable_core` on the same 23,531 matched rows,
+  with 32 evaluated scenario/seed runs and 384 metric rows per surface;
+- current-Chl-a control test PR-AUC h1/h2/h3 remained
+  0.6147/0.5416/0.4872 and F-beta remained 0.6338/0.5300/0.5218;
+- no-current-Chl-a control test PR-AUC h1/h2/h3 remained
+  0.3608/0.3307/0.3218 and F-beta remained 0.5949/0.5922/0.5693;
+- nutrient ablation was the clearest thresholded failure mode, especially for
+  no-current-Chl-a where test F-beta deltas were
+  -0.3400/-0.3366/-0.3315 by horizon;
+- current-Chl-a ranking depended strongly on Chl-a memory under ablation, with
+  test PR-AUC reduced to 0.2059/0.2043/0.2030;
+- temporal block scenarios were milder than nutrient ablation or severe MCAR
+  dropout, while site-retention scenarios should be read as cohort/subset
+  diagnostics because row mix and prevalence change.
 
 ## Decisions Made
 

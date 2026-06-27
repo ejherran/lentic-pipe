@@ -1,0 +1,115 @@
+{
+  "status": "completed",
+  "mifal_degradation_version": "mifal_controlled_degradation_v0",
+  "started_at_utc": "2026-06-27T17:59:04.044049+00:00",
+  "completed_at_utc": "2026-06-27T18:01:44.005828+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_mifal_controlled_degradation.py",
+    "bytes": 42858,
+    "sha256": "e8b816a0c0d86d123f3e1bad29fab16546808f911daa3821db0f386ff8617b9e"
+  },
+  "config": {
+    "config": "configs/degradation_scenarios.yaml",
+    "panel": "data/panel/panel_monthly_v0.parquet",
+    "splits": "data/splits/monthly_model_splits_v0.parquet",
+    "reference_rows": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet",
+    "thresholds": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_thresholds.csv",
+    "surface": "observable_no_current_chla",
+    "scenario_set": "mifal_observable_core",
+    "scenarios": null,
+    "horizons": [
+      1,
+      2,
+      3
+    ],
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "max_rows_per_split": 100000000,
+    "random_seed": 1729,
+    "include_all_sources": true,
+    "include_voi": false,
+    "min_rows": 20,
+    "fbeta_beta": 2.0,
+    "output_name": "mifal_controlled_degradation_no_current_chla_core_full"
+  },
+  "row_counts": {
+    "surface_rows": 23531,
+    "threshold_rows": 3,
+    "calibrator_rows": 3,
+    "metric_rows": 384,
+    "summary_rows": 32,
+    "availability_rows": 1536,
+    "example_rows": 160
+  },
+  "inputs": [
+    {
+      "path": "configs/degradation_scenarios.yaml",
+      "bytes": 16405,
+      "sha256": "5e821a1152feb53724dc1907452493637e9f0394bfa2af2d5d768e5e91fa44db"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet",
+      "bytes": 2282358,
+      "sha256": "36ea5e04040b0aa1d9970cffa3ef5ce2b94e60767aaaf07f6641f46634c079c8"
+    },
+    {
+      "path": "reports/mifal/mifal_observable_no_current_chla_pipe_grud_holdout_calibration_thresholds.csv",
+      "bytes": 1800,
+      "sha256": "99da46caa12851144150e9c436ade78f2a9c15f6ad48d31150e33ecdc6c60752"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout/observable_no_current_chla_h1_bloom_h_calibrator.json",
+      "bytes": 924,
+      "sha256": "07488cd473b46f069e13e67ff2d8e3ba4daaa33e14b32bcfee179bd5910f4ca7"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout/observable_no_current_chla_h2_bloom_h_calibrator.json",
+      "bytes": 1236,
+      "sha256": "fd6cfa994455370883db76b33344200186aeb60a43d87fd207adf45703a0aaac"
+    },
+    {
+      "path": "models/mifal/observable_calibrators/no_current_chla_pipe_grud_holdout/observable_no_current_chla_h3_bloom_h_calibrator.json",
+      "bytes": 1022,
+      "sha256": "49a812db3b404c14d719cde121f2e8ff404b6091e47fa353376bb12640d4c485"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/degradation/mifal_controlled_degradation_no_current_chla_core_full_metrics.csv",
+      "bytes": 436787,
+      "sha256": "5d6eeb157cfb288c428254f5aff7553a4c48d32be3191dc661f3e750031fe999"
+    },
+    {
+      "path": "reports/degradation/mifal_controlled_degradation_no_current_chla_core_full_summary.csv",
+      "bytes": 5992,
+      "sha256": "39cea56b90a636a51f2b4b5140d28efa12b8d3444ec0b2d499c9611582be8380"
+    },
+    {
+      "path": "reports/degradation/mifal_controlled_degradation_no_current_chla_core_full_availability.csv",
+      "bytes": 239401,
+      "sha256": "642e15b3bd6633ba8c46cc6988d6e5df33c845947674c8906c866b831545d33d"
+    },
+    {
+      "path": "reports/degradation/mifal_controlled_degradation_no_current_chla_core_full_examples.csv",
+      "bytes": 41329,
+      "sha256": "772b7461dbc61e3934b9616ba2e41a1f29d6eb2a892cc364f2a7bc4aeb1e5942"
+    },
+    {
+      "path": "reports/degradation/mifal_controlled_degradation_no_current_chla_core_full_report.md",
+      "bytes": 16271,
+      "sha256": "292647c52679973ce8f1601970346abcb0de24ce66651cd3f20ce7bb56b9040a"
+    }
+  ]
+}

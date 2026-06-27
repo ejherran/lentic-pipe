@@ -211,6 +211,12 @@ exports, or credential JSON files.
   reproducible evaluator for precomputed rollout score surfaces. Use
   `--output-name` for follow-up runs that must not overwrite the smoke
   artifacts.
+- `src/experiments/evaluate_mifal_controlled_degradation.py` recomputes
+  MIFAL-ED/T2 after degrading observable panel evidence while keeping labels,
+  validation calibrators, and thresholds fixed. The current MIFAL degradation
+  evidence is under `reports/degradation/mifal_controlled_degradation_*` and
+  identifies nutrient removal, Chl-a memory removal, and severe MCAR dropout as
+  the main observable-evidence stressors.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion
