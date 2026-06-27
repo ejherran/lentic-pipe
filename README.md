@@ -217,6 +217,9 @@ exports, or credential JSON files.
   evidence is under `reports/degradation/mifal_controlled_degradation_*` and
   identifies nutrient removal, Chl-a memory removal, and severe MCAR dropout as
   the main observable-evidence stressors.
+- `docs/MIFAL_ED_T2_SYNTHESIS.md` closes MIFAL-ED/T2 as an interpretable
+  comparator with a negative held-out `bloom_h` result against adaptive
+  PIPE/GRU-D, while preserving its value for degradation diagnostics.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion

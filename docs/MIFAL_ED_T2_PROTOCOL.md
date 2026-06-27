@@ -284,6 +284,10 @@ Physicochemical ablation sometimes improved current-Chl-a F-beta, which should
 be interpreted as noisy-channel or cohort-mix sensitivity rather than evidence
 that those variables are ecologically irrelevant.
 
+The closure synthesis is maintained in `docs/MIFAL_ED_T2_SYNTHESIS.md`. It
+records the final role of MIFAL-ED/T2 as an interpretable comparator and
+controlled-degradation diagnostic, not as the operational default.
+
 ## Reporting Rules
 
 - Do not claim MIFAL is superior globally.
