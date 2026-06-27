@@ -1,0 +1,81 @@
+{
+  "generated_at_utc": "2026-06-27T15:34:19.724864+00:00",
+  "status": "completed",
+  "calibration_version": "pipe_neural_ode_continuous_direct_alert_calibration_v2",
+  "backtest_version": "pipe_neural_ode_continuous_direct_backtest_v2",
+  "config": {
+    "model_label": "PIPE Neural ODE v2 direct",
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "bloom_score_column": "irc_mean",
+    "selection_objective": "fbeta",
+    "fbeta_beta": 2.0,
+    "min_recall": null,
+    "min_precision": null,
+    "min_calibration_rows": 20,
+    "min_threshold_rows": 20
+  },
+  "row_counts": {
+    "backtest_rows": 33642,
+    "threshold_rows": 6,
+    "metric_rows": 12,
+    "calibrator_files": 3
+  },
+  "inputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_validation.parquet",
+      "bytes": 803185,
+      "sha256": "9520e2c5dfcc9d78e9513059c31a1f0fb1a51f3c0f061a9fe7070c07d95ffd5c"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_test.parquet",
+      "bytes": 977543,
+      "sha256": "4ffea758b66a4cf333f2dcbe70b401da8334ab0bf60d02add431d4938093f2ce"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_thresholds.csv",
+      "bytes": 2721,
+      "sha256": "d863ff3953cbaf703aceeacb40864d3090d5136009caec2b2ca330c0a90296c3"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_metrics.csv",
+      "bytes": 4307,
+      "sha256": "1510c6605cabaf658944a41c2db4c7ee53ae1327dd898b0f56e676e48e762ff1"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet",
+      "bytes": 1825315,
+      "sha256": "46e10efcf3a955da092e44d6cbfb132510f5ce0eba2039784825d25a6d90b8b3"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_report.md",
+      "bytes": 4782,
+      "sha256": "80fdf56d614ec0adc5723bcc7b1df0f9840d4e60f058f41eae4a489a34ccf1ad"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/direct_alert_calibrators/rollout_bloom_h1_irc_mean_isotonic.joblib",
+      "bytes": 1702,
+      "sha256": "6421375848744ecea74242886fd07ee36ca8b91bc4150bb1520a73edd6ab1acd"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/direct_alert_calibrators/rollout_bloom_h2_irc_mean_isotonic.joblib",
+      "bytes": 1542,
+      "sha256": "b2ab9a1512265f51896ae7b8eed07062ab14525a46065524ab3cb8abdc321d0e"
+    },
+    {
+      "path": "models/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/direct_alert_calibrators/rollout_bloom_h3_irc_mean_isotonic.joblib",
+      "bytes": 1766,
+      "sha256": "0622d1230bf84279354396e4c4c99d1b929c33cc3e0635605e7ac2b9f6bc2e23"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/calibrate_pipe_rollout_alerts.py",
+    "bytes": 33856,
+    "sha256": "289ec1bc8b6bc25f63fc4e11b9ccf66f5cb0ccae29d324f26c2faaf04168eedb"
+  }
+}

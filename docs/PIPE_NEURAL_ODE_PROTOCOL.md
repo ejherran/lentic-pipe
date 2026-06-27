@@ -1710,3 +1710,694 @@ Interpretation:
 Decision: close Gate v1.12 as a documented negative/provisional ablation. Do
 not promote its model artifacts through DVC. Keep Neural ODE v1 long80 as the
 leading temporal candidate for thesis-level comparison.
+
+## Gate v2.0 Continuous-Time Multi-Gap Neural ODE
+
+The v2 branch is a structurally separate Neural ODE attempt, not a modification
+of the v0 or v1 runners. Its implementation lives in:
+
+- `src/experiments/train_pipe_neural_ode_v2.py`;
+- model version tag: `pipe_neural_ode_continuous_v2`;
+- default model directory:
+  `models/pipe_neural_ode/adaptive_wqp_focused_continuous_v2`;
+- default report directory:
+  `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2`.
+
+The scientific reason for v2 is that the strongest v1 model still learns a
+one-month transition and relies on recursive application for h2/h3. V2 trains
+direct continuous-time transitions from a historical origin window to requested
+forecast gaps:
+
+```text
+history(t - k ... t), dt -> S(t + dt)
+dz/dtau = f_theta(z, history_context, observed_context, season(tau), tau)
+S_hat(t + dt) = decode(z(dt), S(t), season(t + dt), dt)
+```
+
+Key differences from v1:
+
+- v2 samples direct h1/h2/h3 examples during training;
+- `dt` is an explicit model input and integration horizon;
+- seasonal forcing is evaluated as a continuous function of integration time;
+- the latent ODE dynamics receives history context during integration;
+- the decoder uses a residual bounded state update scaled by `dt`;
+- validation-selected output blending against persistence is still preserved;
+- optional observed context groups use the same schema as v1, but the default
+  first smoke should use no extra context.
+
+This is not a brute-force scaling step. The expected benefit is methodological:
+the model is asked to learn a continuous transition operator over the actual
+forecast gap instead of being judged through repeated one-step composition.
+
+### V2 Gates
+
+Gate v2.0A, implementation smoke:
+
+- run synthetic smoke;
+- require all outputs, manifest status `completed`, and non-empty h1/h2/h3
+  examples;
+- do not interpret this as real-data performance.
+
+Gate v2.0B, bounded real smoke:
+
+- use adaptive WQP-focused sequences;
+- train with bounded sampled examples;
+- evaluate direct h1/h2/h3 metrics against persistence;
+- decide from validation before inspecting held-out test details.
+
+Gate v2.0C, full direct multi-gap run:
+
+- scale examples and epochs only if the bounded smoke is stable;
+- compare against v1 long80 and PIPE-GRU-D matched-origin evidence;
+- proceed to rollout/calibration only if direct h1/h2/h3 validation clearly
+  justifies the extra machinery.
+
+The existing recursive rollout evaluator does not yet load v2 artifacts. That
+is intentional: rollout support should be added only after the direct multi-gap
+runner proves useful on validation.
+
+### V2 Synthetic Smoke Command
+
+```bash
+BRANCH=continuous_v2_synthetic_smoke
+
+poetry run python src/experiments/train_pipe_neural_ode_v2.py \
+  --synthetic-smoke \
+  --synthetic-sites 8 \
+  --synthetic-months-per-split 12 \
+  --history-length 6 \
+  --forecast-horizons 1,2,3 \
+  --epochs 5 \
+  --batch-size 32 \
+  --history-hidden-dim 32 \
+  --latent-dim 24 \
+  --dynamics-hidden-dim 32 \
+  --dynamics-depth 2 \
+  --ode-method rk4 \
+  --ode-step-size 0.5 \
+  --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_model_v2.pt" \
+  --checkpoint "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_checkpoint_v2.pt" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_metrics.csv" \
+  --persistence-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_persistence_metrics.csv" \
+  --comparison "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_persistence_comparison.csv" \
+  --blend-weights "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_output_blend_weights.csv" \
+  --blend-search "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_output_blend_search.csv" \
+  --training-curve "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_training_curve.csv" \
+  --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_prediction_examples.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_manifest.json"
+```
+
+### V2 Bounded Real Smoke Command
+
+```bash
+BRANCH=adaptive_wqp_focused_continuous_v2_smoke
+
+poetry run python src/experiments/train_pipe_neural_ode_v2.py \
+  --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+  --sequence-manifest reports/pipe_grud/adaptive_wqp_focused/pipe_sequence_manifest.json \
+  --history-length 12 \
+  --forecast-horizons 1,2,3 \
+  --epochs 5 \
+  --batch-size 2048 \
+  --max-train-examples 50000 \
+  --max-eval-examples 30000 \
+  --checkpoint-selection-metric balanced \
+  --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_model_v2.pt" \
+  --checkpoint "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_checkpoint_v2.pt" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_metrics.csv" \
+  --persistence-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_persistence_metrics.csv" \
+  --comparison "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_persistence_comparison.csv" \
+  --blend-weights "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_output_blend_weights.csv" \
+  --blend-search "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_output_blend_search.csv" \
+  --training-curve "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_training_curve.csv" \
+  --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_prediction_examples.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_manifest.json"
+```
+
+Review the aggregate `horizon_months = 0` row and each direct h1/h2/h3 row in
+`pipe_neural_ode_continuous_persistence_comparison.csv`. Promotion requires a
+validation improvement that is not explained only by the output blend falling
+back to persistence.
+
+### Gate v2.0A Synthetic Smoke Result
+
+The first versioned v2 synthetic smoke completed on 2026-06-27.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/continuous_v2_synthetic_smoke/pipe_neural_ode_continuous_report.md`;
+- `reports/pipe_neural_ode/continuous_v2_synthetic_smoke/pipe_neural_ode_continuous_manifest.json`;
+- `reports/pipe_neural_ode/continuous_v2_synthetic_smoke/pipe_neural_ode_continuous_training_curve.csv`;
+- `reports/pipe_neural_ode/continuous_v2_synthetic_smoke/pipe_neural_ode_continuous_persistence_comparison.csv`;
+- `reports/pipe_neural_ode/continuous_v2_synthetic_smoke/pipe_neural_ode_continuous_output_blend_weights.csv`.
+
+Status: `completed`.
+
+Geometry:
+
+- train direct examples: `144`;
+- validation direct examples: `144`;
+- test direct examples: `144`;
+- direct horizons: `1`, `2`, `3`.
+
+Selection:
+
+- best epoch: `5`;
+- validation all-horizon RMSE/MAE: `0.0137` / `0.0106`;
+- validation balanced selection objective: `0.6350`.
+
+Aggregate direct h1/h2/h3 comparison against persistence:
+
+- train all-state RMSE/MAE improvement: `25.74%` / `23.92%`;
+- validation all-state RMSE/MAE improvement: `35.44%` / `37.56%`;
+- test all-state RMSE/MAE improvement: `31.80%` / `32.10%`.
+
+Held-out test by direct horizon:
+
+- h1 all-state RMSE/MAE improvement: `6.44%` / `9.36%`;
+- h2 all-state RMSE/MAE improvement: `33.38%` / `36.07%`;
+- h3 all-state RMSE/MAE improvement: `38.09%` / `40.09%`.
+
+Interpretation:
+
+- Gate v2.0A passes as an implementation smoke: the runner writes complete
+  artifacts, direct h1/h2/h3 examples are non-empty, and the model learns
+  useful synthetic multi-gap dynamics.
+- The best epoch is the final requested epoch, so a real bounded smoke may
+  still be under-trained at five epochs; use validation to decide whether to
+  continue.
+- Sigma channels select persistence blend in this synthetic surface, which is
+  acceptable because they are nearly persistence-optimal here.
+- Uncertainty remains provisional: 90% coverage is `1.0`, but intervals are
+  wide. Do not make uncertainty claims from this smoke.
+
+Decision: proceed to Gate v2.0B bounded real smoke over the adaptive
+WQP-focused sequence dataset. Do not add v2 rollout/calibration support until
+direct real-data validation is healthy.
+
+### Gate v2.0B Bounded Real Smoke Result
+
+The first bounded real v2 smoke completed on 2026-06-27 over the adaptive
+WQP-focused sequence dataset.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_smoke/pipe_neural_ode_continuous_report.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_smoke/pipe_neural_ode_continuous_manifest.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_smoke/pipe_neural_ode_continuous_training_curve.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_smoke/pipe_neural_ode_continuous_persistence_comparison.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_smoke/pipe_neural_ode_continuous_output_blend_weights.csv`.
+
+Status: `completed`.
+
+Geometry:
+
+- available train direct examples: `319,652`;
+- sampled train direct examples: `50,000`;
+- validation direct examples: `18,186`;
+- test direct examples: `20,553`;
+- direct horizons: `1`, `2`, `3`.
+
+Initial five-epoch selection:
+
+- best epoch: `5`;
+- validation all-horizon RMSE/MAE: `0.1384` / `0.0859`;
+- validation balanced selection objective improved from `0.9768` at epoch 1
+  to `0.8919` at epoch 5.
+
+Aggregate direct h1/h2/h3 comparison against persistence:
+
+- train all-state RMSE/MAE improvement: `14.85%` / `4.10%`;
+- validation all-state RMSE/MAE improvement: `12.94%` / `8.67%`;
+- test all-state RMSE/MAE improvement: `13.30%` / `8.44%`.
+
+Held-out test by direct horizon:
+
+- h1 all-state RMSE/MAE improvement: `9.77%` / `6.68%`;
+- h2 all-state RMSE/MAE improvement: `14.80%` / `9.85%`;
+- h3 all-state RMSE/MAE improvement: `15.92%` / `8.87%`.
+
+Interpretation:
+
+- The real bounded smoke is healthy as an optimization run: the model improves
+  persistence on validation and test across all direct horizons.
+- The magnitude is still well below the strongest v1 long80 matched-origin
+  rollout evidence, so v2 is not a leading candidate yet.
+- The best epoch is the last requested epoch and the validation objective is
+  still improving, so the five-epoch result should be treated as undertrained
+  rather than final.
+- Output blending does not collapse fully to persistence: state and delta
+  channels select high Neural ODE weights, while sigma channels mostly select
+  persistence.
+
+Decision: resume the same bounded real smoke to 20 epochs before deciding
+whether to scale examples or compare against v1 long80 more formally. Do not
+add v2 rollout/calibration support yet.
+
+The same branch was resumed to 20 epochs. The resumed run selected an internal
+best epoch rather than the final epoch:
+
+- best epoch: `12`;
+- validation all-horizon RMSE/MAE: `0.1352` / `0.0837`;
+- validation balanced selection objective: `0.8700`;
+- test aggregate all-state RMSE/MAE improvement against persistence:
+  `15.69%` / `11.29%`.
+
+Held-out test by direct horizon after the 20-epoch resume:
+
+- h1 all-state RMSE/MAE improvement: `12.17%` / `8.96%`;
+- h2 all-state RMSE/MAE improvement: `17.49%` / `13.24%`;
+- h3 all-state RMSE/MAE improvement: `17.93%` / `11.75%`.
+
+Updated interpretation:
+
+- The bounded real smoke improves with more training, then starts to overfit
+  mildly after epoch 12.
+- V2 learns real multi-gap signal and does not collapse to persistence in state
+  or delta channels.
+- It remains weaker than the leading v1 long80 evidence, especially for h1.
+- Because this smoke used only `50,000` of `319,652` available train examples,
+  the next scientifically bounded step is to run the same architecture with
+  full direct-example coverage before changing model capacity or losses.
+
+Decision: proceed to a full direct h1/h2/h3 V2 run with all train examples and
+the same architecture. Do not add v2 rollout/calibration support yet.
+
+### Gate v2.0C Full Direct Multi-Gap Result
+
+The full direct h1/h2/h3 v2 run completed on 2026-06-27 using all available
+adaptive WQP-focused train examples, then resumed to 40 epochs because the
+20-epoch run selected epoch 19.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_report.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_manifest.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_training_curve.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_persistence_comparison.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_output_blend_weights.csv`.
+
+Status: `completed`.
+
+Geometry:
+
+- train direct examples: `319,652`;
+- validation direct examples: `18,186`;
+- test direct examples: `20,553`;
+- direct horizons: `1`, `2`, `3`.
+
+Final 40-epoch selection:
+
+- best epoch: `40`;
+- validation all-horizon RMSE/MAE: `0.1189` / `0.0743`;
+- validation balanced selection objective: `0.7690`.
+
+Aggregate direct h1/h2/h3 comparison against persistence:
+
+- train all-state RMSE/MAE improvement: `28.37%` / `25.64%`;
+- validation all-state RMSE/MAE improvement: `25.22%` / `20.98%`;
+- test all-state RMSE/MAE improvement: `25.49%` / `22.06%`.
+
+Held-out test by direct horizon:
+
+- h1 all-state RMSE/MAE improvement: `24.74%` / `19.54%`;
+- h2 all-state RMSE/MAE improvement: `24.74%` / `22.27%`;
+- h3 all-state RMSE/MAE improvement: `26.51%` / `24.54%`.
+
+Interpretation:
+
+- Full direct coverage materially improves the bounded smoke, confirming that
+  the 50,000-example result was under-sampled.
+- The selected blend weights rely mostly on Neural ODE outputs for state and
+  delta channels rather than collapsing to persistence.
+- Against the documented v1 long80 matched-origin rollout state RMSEs, v2 full
+  direct is now lower at h1/h2/h3 (`0.1110`/`0.1143`/`0.1155` vs
+  `0.1125`/`0.1217`/`0.1242`). This is a promising signal, but it is not yet a
+  final apples-to-apples comparison because v2 is currently evaluated as direct
+  multi-gap prediction, not as row-level calibrated recursive rollout.
+- The best epoch is the final requested epoch, but the improvement from epoch
+  35 to 40 is small enough that the next step should be evaluation on matched
+  origins, not another training extension.
+
+Decision: implement and run a v2 matched-origin direct backtest/evaluation path
+before any calibration or 2B policy comparison. Keep the direct/recursive
+distinction explicit in all comparisons.
+
+### Gate v2.0D Matched-Origin Direct Backtest
+
+The v2 direct backtest evaluator is structurally separate from the recursive
+v0/v1 rollout evaluator:
+
+- `src/experiments/evaluate_pipe_neural_ode_v2_direct_backtest.py`;
+- direct version tag: `pipe_neural_ode_continuous_direct_v2`;
+- backtest version tag:
+  `pipe_neural_ode_continuous_direct_backtest_v2`.
+
+It starts every h1/h2/h3 forecast from the same observed origin history and
+integrates the continuous-time model directly to `dt = 1`, `2`, or `3`. It can
+filter origins through the existing PIPE-GRU-D row-level backtest files so that
+V2 direct forecasts are evaluated on the same origin set as GRU-D and v1
+matched-origin evidence.
+
+Validation matched-origin command:
+
+```bash
+BRANCH=adaptive_wqp_focused_continuous_v2_full_direct_h123
+SPLIT=validation
+
+poetry run python src/experiments/evaluate_pipe_neural_ode_v2_direct_backtest.py \
+  --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+  --splits data/splits/monthly_model_splits_v0.parquet \
+  --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_model_v2.pt" \
+  --model-manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_manifest.json" \
+  --reference-backtest-rows "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_${SPLIT}.parquet" \
+  --split "${SPLIT}" \
+  --rollout-horizon 3 \
+  --samples 128 \
+  --observed-state-source target \
+  --disable-calibrated-bloom \
+  --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_${SPLIT}.parquet" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_metrics_matched_grud_${SPLIT}.csv" \
+  --alert-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_alert_metrics_matched_grud_${SPLIT}.csv" \
+  --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_examples_matched_grud_${SPLIT}.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_report_matched_grud_${SPLIT}.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_manifest_matched_grud_${SPLIT}.json"
+```
+
+If validation confirms the direct h1/h2/h3 signal on matched origins, repeat the
+same command with `SPLIT=test`. Do not calibrate bloom alerts or run 2B policy
+comparison before matched-origin validation is reviewed.
+
+### Gate v2.0D Validation Result
+
+The matched-origin validation direct backtest completed on 2026-06-27.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_report_matched_grud_validation.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_manifest_matched_grud_validation.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_metrics_matched_grud_validation.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_alert_metrics_matched_grud_validation.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_validation.parquet`.
+
+Status: `completed`.
+
+Geometry:
+
+- matched origins: `5,069`;
+- evaluated direct rows: `15,207`;
+- samples per origin: `128`;
+- complete direct horizons: h1/h2/h3.
+
+Validation state metrics:
+
+- all-state RMSE improvement h1/h2/h3:
+  `28.53%` / `26.44%` / `28.30%`;
+- all-state RMSE h1/h2/h3: `0.1234` / `0.1296` / `0.1321`;
+- IRC RMSE improvement h1/h2/h3: `17.38%` / `28.85%` / `35.13%`;
+- IRC RMSE h1/h2/h3: `0.1149` / `0.1250` / `0.1305`.
+
+Validation `irc_alert` metrics at probability threshold `0.5`:
+
+- PR-AUC h1/h2/h3: `0.9084` / `0.8926` / `0.8785`;
+- recall h1/h2/h3: `0.8513` / `0.8324` / `0.8194`;
+- precision h1/h2/h3: `0.8319` / `0.8208` / `0.8073`;
+- macro-F1 h1/h2/h3: `0.8570` / `0.8422` / `0.8299`.
+
+Interpretation:
+
+- V2 direct validates on the same origin set used by PIPE/GRU-D validation
+  rollouts.
+- Against the documented v1 long80 validation matched-origin rollout evidence,
+  v2 direct is slightly weaker at h1 all-state and h1 IRC RMSE, slightly
+  stronger at h2/h3 IRC RMSE, and effectively tied on `irc_alert` PR-AUC.
+- The gate is healthy enough to run matched-origin test, but not strong enough
+  to justify calibration or 2B policy work before test is reviewed.
+
+Test matched-origin command:
+
+```bash
+BRANCH=adaptive_wqp_focused_continuous_v2_full_direct_h123
+SPLIT=test
+
+poetry run python src/experiments/evaluate_pipe_neural_ode_v2_direct_backtest.py \
+  --sequences data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet \
+  --splits data/splits/monthly_model_splits_v0.parquet \
+  --model "models/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_model_v2.pt" \
+  --model-manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_manifest.json" \
+  --reference-backtest-rows "reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_backtest_rows_${SPLIT}.parquet" \
+  --split "${SPLIT}" \
+  --rollout-horizon 3 \
+  --samples 128 \
+  --observed-state-source target \
+  --disable-calibrated-bloom \
+  --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_${SPLIT}.parquet" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_metrics_matched_grud_${SPLIT}.csv" \
+  --alert-metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_alert_metrics_matched_grud_${SPLIT}.csv" \
+  --examples "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_examples_matched_grud_${SPLIT}.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_report_matched_grud_${SPLIT}.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_manifest_matched_grud_${SPLIT}.json"
+```
+
+### Gate v2.0E Test Result
+
+The matched-origin test direct backtest completed on 2026-06-27.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_report_matched_grud_test.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_manifest_matched_grud_test.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_metrics_matched_grud_test.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_alert_metrics_matched_grud_test.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_test.parquet`.
+
+Status: `completed`.
+
+Geometry:
+
+- matched origins: `6,145`;
+- evaluated direct rows: `18,435`;
+- samples per origin: `128`;
+- complete direct horizons: h1/h2/h3.
+
+Held-out test state metrics:
+
+- all-state RMSE improvement h1/h2/h3:
+  `28.50%` / `27.78%` / `29.23%`;
+- all-state RMSE h1/h2/h3: `0.1176` / `0.1222` / `0.1238`;
+- IRC RMSE improvement h1/h2/h3:
+  `19.54%` / `31.27%` / `38.46%`;
+- IRC RMSE h1/h2/h3: `0.1100` / `0.1193` / `0.1190`.
+
+Held-out test `irc_alert` metrics at probability threshold `0.5`:
+
+- PR-AUC h1/h2/h3: `0.9298` / `0.9218` / `0.9292`;
+- recall h1/h2/h3: `0.8721` / `0.8715` / `0.8771`;
+- precision h1/h2/h3: `0.8382` / `0.8297` / `0.8271`;
+- macro-F1 h1/h2/h3: `0.8742` / `0.8652` / `0.8628`.
+
+Interpretation:
+
+- V2 direct remains healthy on held-out test and is clearly above
+  persistence.
+- It does not dominate v1 long80 on aggregate state RMSE: v1 remains stronger
+  at h1, nearly tied at h2, and v2 is slightly stronger at h3.
+- The direct model is more interesting for long-horizon IRC behavior: compared
+  with the documented v1 long80 test matched-origin rollout evidence, v2 is
+  weaker at h1 IRC RMSE but stronger at h2/h3 IRC RMSE and h2/h3
+  `irc_alert` PR-AUC.
+- This mixed result should not replace the current v1/GRU-D operational
+  default, but it is strong enough to run a version-separated F2 calibration
+  and 2B policy-frontier audit.
+
+### Gate v2.0F Direct Alert Calibration Command
+
+Run calibration only after both matched-origin validation and test direct
+backtests exist. This calibration uses validation for threshold selection and
+reports validation/test metrics over the concatenated direct backtest rows.
+
+```bash
+BRANCH=adaptive_wqp_focused_continuous_v2_full_direct_h123
+CALIBRATION_VERSION=pipe_neural_ode_continuous_direct_alert_calibration_v2
+
+poetry run python src/experiments/calibrate_pipe_rollout_alerts.py \
+  --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_validation.parquet" \
+  --backtest-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_test.parquet" \
+  --calibrator-dir "models/pipe_neural_ode/${BRANCH}/direct_alert_calibrators" \
+  --thresholds "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_calibration_thresholds.csv" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_calibration_metrics.csv" \
+  --calibrated-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_calibration_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_calibration_manifest.json" \
+  --model-label "PIPE Neural ODE v2 direct" \
+  --calibration-version "${CALIBRATION_VERSION}" \
+  --backtest-version pipe_neural_ode_continuous_direct_backtest_v2 \
+  --calibration-split validation \
+  --evaluation-splits validation,test \
+  --selection-objective fbeta \
+  --fbeta-beta 2.0 \
+  --bloom-score-column irc_mean
+```
+
+### Gate v2.0F Direct Alert Calibration Result
+
+The direct v2 alert calibration completed on 2026-06-27.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_report.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_manifest.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_thresholds.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_calibration_metrics.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet`;
+- `models/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/direct_alert_calibrators/`.
+
+Status: `completed`.
+
+Configuration:
+
+- calibration split: `validation`;
+- evaluation splits: `validation,test`;
+- selection objective: `fbeta`;
+- F-beta beta: `2.0`;
+- bloom score column: `irc_mean`;
+- calibration version: `pipe_neural_ode_continuous_direct_alert_calibration_v2`;
+- backtest version: `pipe_neural_ode_continuous_direct_backtest_v2`;
+- concatenated backtest rows: `33,642`;
+- selected threshold rows: `6`;
+- metric rows: `12`;
+- bloom calibrators: `3`.
+
+Selected F2 thresholds:
+
+- `irc_alert` h1/h2/h3:
+  `0.2422` / `0.1875` / `0.2344`;
+- `bloom_h` h1/h2/h3:
+  `0.1406` / `0.1414` / `0.1260`.
+
+Held-out test F2 profile:
+
+- `irc_alert` recall h1/h2/h3:
+  `0.9478` / `0.9590` / `0.9572`;
+- `irc_alert` precision h1/h2/h3:
+  `0.7205` / `0.6809` / `0.6895`;
+- `irc_alert` F2 h1/h2/h3:
+  `0.8916` / `0.8866` / `0.8882`;
+- `bloom_h` recall h1/h2/h3:
+  `0.8369` / `0.8783` / `0.8822`;
+- `bloom_h` precision h1/h2/h3:
+  `0.5100` / `0.4547` / `0.4371`;
+- `bloom_h` F2 h1/h2/h3:
+  `0.7418` / `0.7404` / `0.7330`.
+
+Interpretation:
+
+- The sensitive F2 profile is reproducible and high-recall, but it does not
+  beat the documented v1 long80 `irc_alert` F2 profile
+  (`0.8965`/`0.8896`/`0.8933`).
+- V2 direct improves the documented v1 long80 `bloom_h` F2 profile at h1/h2
+  and is weaker at h3 (`0.7418`/`0.7404`/`0.7330` vs
+  `0.7348`/`0.7308`/`0.7416`).
+- V2 should remain a comparison branch at this stage. A 2B policy-frontier
+  audit is justified because raw threshold `0.5` showed a more conservative
+  precision/recall balance than the F2 policy, but calibration alone does not
+  justify replacing v1 long80.
+
+### Gate v2.0G Direct 2B Policy Frontier Command
+
+```bash
+BRANCH=adaptive_wqp_focused_continuous_v2_full_direct_h123
+POLICY_VERSION=pipe_neural_ode_continuous_direct_alert_policy_2b_v2
+
+poetry run python src/experiments/compare_pipe_rollout_alert_policies.py \
+  --calibrated-rows "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet" \
+  --thresholds "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_policy_2b_thresholds.csv" \
+  --metrics "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_policy_2b_metrics.csv" \
+  --report "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_policy_2b_report.md" \
+  --manifest "reports/pipe_neural_ode/${BRANCH}/pipe_neural_ode_continuous_direct_alert_policy_2b_manifest.json" \
+  --model-label "PIPE Neural ODE v2 direct" \
+  --policy-version "${POLICY_VERSION}" \
+  --calibration-split validation \
+  --evaluation-splits validation,test \
+  --selection-objectives fixed,fbeta,f1,mcc,balanced_accuracy,gmean_pr,closest_pr \
+  --fbeta-beta 2.0
+```
+
+### Gate v2.0G Direct 2B Policy Frontier Result
+
+The direct v2 2B policy-frontier audit completed on 2026-06-27.
+
+Artifacts:
+
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_report.md`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_manifest.json`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_thresholds.csv`;
+- `reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_metrics.csv`.
+
+Status: `completed`.
+
+Configuration:
+
+- policy version: `pipe_neural_ode_continuous_direct_alert_policy_2b_v2`;
+- calibrated rows: `33,642`;
+- threshold rows: `39`;
+- metric rows: `78`;
+- selection objectives:
+  `fixed`, `fbeta`, `f1`, `mcc`, `balanced_accuracy`, `gmean_pr`,
+  `closest_pr`.
+
+Note: the `fixed` policy is emitted for `irc_alert`; `bloom_h` fixed rows are
+not emitted because the direct v2 matched-origin backtests were generated
+without pre-existing fixed calibrated bloom probabilities.
+
+Held-out test `irc_alert` frontier:
+
+- `fixed` h1/h2/h3 recall:
+  `0.8721` / `0.8715` / `0.8771`;
+- `fixed` h1/h2/h3 precision:
+  `0.8382` / `0.8297` / `0.8271`;
+- `fixed` h1/h2/h3 F2:
+  `0.8651` / `0.8628` / `0.8666`;
+- `fixed` h1/h2/h3 MCC:
+  `0.7488` / `0.7312` / `0.7269`;
+- `closest_pr` h1/h2/h3 recall:
+  `0.8823` / `0.8790` / `0.9166`;
+- `closest_pr` h1/h2/h3 precision:
+  `0.8284` / `0.8187` / `0.7729`;
+- `closest_pr` h1/h2/h3 F2:
+  `0.8710` / `0.8662` / `0.8837`;
+- `closest_pr` h1/h2/h3 MCC:
+  `0.7468` / `0.7255` / `0.6976`.
+
+Held-out test `bloom_h` balanced frontier:
+
+- `closest_pr` h1/h2/h3 recall:
+  `0.6502` / `0.6605` / `0.7089`;
+- `closest_pr` h1/h2/h3 precision:
+  `0.6580` / `0.6278` / `0.5934`;
+- `closest_pr` h1/h2/h3 F2:
+  `0.6518` / `0.6537` / `0.6824`;
+- `closest_pr` h1/h2/h3 MCC:
+  `0.5775` / `0.5616` / `0.5598`.
+
+Interpretation:
+
+- The sensitive `fbeta` profile remains the highest-recall option but does not
+  beat the documented v1 long80 `irc_alert` F2 profile.
+- The `fixed` and `closest_pr` profiles are more conservative: they improve
+  precision and reduce alert rate, but trade away recall.
+- Compared with the documented v1 long80 `closest_pr` profile, v2 direct is not
+  a clean replacement: it has slightly higher precision in h1/h2 under some
+  policies and a stronger h3 F2 under `closest_pr`, but it loses recall and
+  does not improve MCC consistently.
+- Therefore v2 direct should be retained as a methodologically useful
+  comparison branch, especially for direct long-horizon IRC diagnostics, while
+  v1 long80 remains the stronger Neural ODE candidate and adaptive PIPE/GRU-D
+  remains the simpler fallback.
+
+Decision: close v2 direct as a calibrated comparison branch. Do not promote it
+as the operational default unless the decision context explicitly favors a more
+precision-oriented direct h2/h3 diagnostic over the current recall-oriented
+alert profile.

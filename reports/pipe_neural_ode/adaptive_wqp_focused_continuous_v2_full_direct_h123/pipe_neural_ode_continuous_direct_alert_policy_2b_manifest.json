@@ -1,0 +1,60 @@
+{
+  "generated_at_utc": "2026-06-27T15:38:23.047716+00:00",
+  "status": "completed",
+  "policy_version": "pipe_neural_ode_continuous_direct_alert_policy_2b_v2",
+  "config": {
+    "model_label": "PIPE Neural ODE v2 direct",
+    "calibration_split": "validation",
+    "evaluation_splits": [
+      "validation",
+      "test"
+    ],
+    "selection_objectives": [
+      "fixed",
+      "fbeta",
+      "f1",
+      "mcc",
+      "balanced_accuracy",
+      "gmean_pr",
+      "closest_pr"
+    ],
+    "fbeta_beta": 2.0,
+    "min_recall": null,
+    "min_precision": null,
+    "min_threshold_rows": 20
+  },
+  "row_counts": {
+    "calibrated_rows": 33642,
+    "threshold_rows": 39,
+    "metric_rows": 78
+  },
+  "inputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet",
+      "bytes": 1825315,
+      "sha256": "46e10efcf3a955da092e44d6cbfb132510f5ce0eba2039784825d25a6d90b8b3"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_thresholds.csv",
+      "bytes": 16255,
+      "sha256": "6a0bf4a1cc5ebcb270c86bc415182d04225f7c7a1b0070008046d9bf5bd69565"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_metrics.csv",
+      "bytes": 34445,
+      "sha256": "3475e5c23a892c7d1cd44f7e2c415d51dc3ed8658809f98c669ff3da72fac5ca"
+    },
+    {
+      "path": "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_report.md",
+      "bytes": 7065,
+      "sha256": "87a8c966475a2892aaec8f9ad6a40a877b6eca4cfb2d30330557c2ecbea55dc7"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/compare_pipe_rollout_alert_policies.py",
+    "bytes": 26489,
+    "sha256": "5eb76f65f685cf96e09ea63ee399563a5cf2813c0a7beaa4d1e5007c1c72eff4"
+  }
+}
