@@ -1,0 +1,70 @@
+{
+  "status": "completed",
+  "planning_version": "counterfactual_planning_grid_v0",
+  "created_at_utc": "2026-06-28T13:38:08.064176+00:00",
+  "started_at_utc": "2026-06-28T13:37:56.263047+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_counterfactual_planning.py",
+    "sha256": "96915e9844b8b0ca49a78d8b9873d83c4065b48156415c4698fae03ed911fb19"
+  },
+  "inputs": [
+    {
+      "role": "config",
+      "path": "configs/counterfactual_planning.yaml",
+      "bytes": 9398,
+      "sha256": "eecc1736ac62383b67364f2fb27f8fc7269574e04c951569c0e6d59703df3848"
+    },
+    {
+      "role": "planning_rows",
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    }
+  ],
+  "config": {
+    "output_name": "counterfactual_grid_test",
+    "output_dir": "reports/planning",
+    "scenario_family": "minimal_state_grid",
+    "planning_mode": "normal",
+    "evaluation_splits": [
+      "test"
+    ],
+    "source_ids": null,
+    "max_rows_per_split": null,
+    "alert_threshold": 0.5,
+    "config_phase": "protocol_and_initial_config"
+  },
+  "row_counts": {
+    "metric_rows": 60,
+    "summary_rows": 20,
+    "pareto_rows": 8
+  },
+  "outputs": [
+    {
+      "path": "reports/planning/counterfactual_grid_test_metrics.csv",
+      "bytes": 23559,
+      "sha256": "15c5813843b7c0b90a8eb35a3694757bdec54ed1b7de4a6472318863a66f1955"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_test_summary.csv",
+      "bytes": 5818,
+      "sha256": "5e59a03867a4d531e2409ad9144ea71d3966029785bd05b1ec6bc4e0af676386"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_test_pareto.csv",
+      "bytes": 2380,
+      "sha256": "83ef53c9cbb1c8122132534e1e6747e0e47b1e8e943f30b2742d607aa25e0950"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_test_examples.csv",
+      "bytes": 23444,
+      "sha256": "3936e8e1454176bf1c6dc190816c1e2db68e3245611fbc462dea5c9d98b33cd0"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_test_report.md",
+      "bytes": 2409,
+      "sha256": "69d444262081fda34df8213b563b01bb8f5c11e27ecd329c467146d8ea0e3c9a"
+    }
+  ],
+  "guardrail": "Counterfactual planning is simulation-based decision support, not field causality, and not official environmental advice."
+}

@@ -241,6 +241,12 @@ exports, or credential JSON files.
   record validation-only sensitivity runs over declared planning modes. The
   crisis mode yields positive objective scenarios under a lower cost penalty;
   the budget-constrained mode keeps `no_action` top-ranked.
+- `reports/planning/counterfactual_grid_test_report.md`,
+  `reports/planning/counterfactual_grid_test_crisis_report.md`, and
+  `reports/planning/counterfactual_grid_test_budget_constrained_report.md`
+  record the locked held-out test evaluation. The validation pattern
+  generalizes: crisis mode retains positive simulated planning scenarios while
+  normal and budget-constrained modes keep `no_action` top-ranked.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion
