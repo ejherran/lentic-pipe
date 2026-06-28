@@ -170,6 +170,7 @@ exports, or credential JSON files.
 - `docs/ADAPTIVE_ANFIS_PROTOCOL.md`
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md`
+- `docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md`
 
 ## Current State
 
@@ -247,6 +248,11 @@ exports, or credential JSON files.
   record the locked held-out test evaluation. The validation pattern
   generalizes: crisis mode retains positive simulated planning scenarios while
   normal and budget-constrained modes keep `no_action` top-ranked.
+- `docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md` closes counterfactual planning v0
+  as a reproducible state-proxy benchmark. It states the conditional result:
+  positive simulated planning utility appears only under the predeclared
+  `crisis` mode, while `normal` and `budget_constrained` remain conservative
+  no-action benchmarks.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion
