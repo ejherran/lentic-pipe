@@ -169,6 +169,7 @@ exports, or credential JSON files.
 - `docs/PIPE_LIGHTWEIGHT_SYNTHESIS.md`
 - `docs/ADAPTIVE_ANFIS_PROTOCOL.md`
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
+- `docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md`
 
 ## Current State
 
@@ -220,6 +221,16 @@ exports, or credential JSON files.
 - `docs/MIFAL_ED_T2_SYNTHESIS.md` closes MIFAL-ED/T2 as an interpretable
   comparator with a negative held-out `bloom_h` result against adaptive
   PIPE/GRU-D, while preserving its value for degradation diagnostics.
+- `docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md` opens the counterfactual planning
+  block. `configs/counterfactual_planning.yaml` defines the initial adaptive
+  PIPE-GRU-D planning surface, defensible proxy actions, constraints, costs,
+  search stages, outputs, and the explicit guardrail that planning is simulated
+  decision-support research rather than field causality or official
+  environmental advice.
+- `reports/planning/counterfactual_grid_smoke_validation_report.md` records a
+  bounded validation smoke of the first state-proxy grid. The smoke confirms
+  the runner/report/manifest path and currently ranks `no_action` above the
+  tested proxy scenarios under the normal cost-weighted objective.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion

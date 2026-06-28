@@ -1,0 +1,325 @@
+schema_version: 1
+description: >
+  Initial counterfactual planning configuration for lentic-pipe. The scenarios
+  defined here are simulation proxies only. They must not be interpreted as
+  causal field interventions or official environmental recommendations.
+
+protocol:
+  document: docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md
+  phase: protocol_and_initial_config
+  causal_guardrail: >
+    Counterfactual planning compares simulated scenarios under a learned model.
+    It does not estimate causal intervention effects in the field.
+  official_recommendation_guardrail: >
+    Outputs are research decision-support diagnostics, not environmental
+    management advice.
+
+inputs:
+  freeze_report: data/freeze/DATA_FREEZE.md
+  freeze_manifest: data/freeze/data_freeze_manifest_v0.json
+  split_manifest: data/splits/split_manifest.json
+  variables_config: configs/variables.yaml
+  monthly_panel: data/panel/panel_monthly_v0.parquet
+  monthly_targets: data/targets/monthly_targets_model_v0.parquet
+  adaptive_sequence_dataset: data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet
+  adaptive_model_dir: models/pipe_grud/adaptive_wqp_focused
+  adaptive_rollout_dir: reports/pipe_grud/adaptive_wqp_focused
+  adaptive_policy_thresholds: reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_thresholds.csv
+  adaptive_policy_metrics: reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_metrics.csv
+
+initial_surface:
+  surface_id: pipe_grud_adaptive_wqp_focused
+  role: primary_functional_planning_surface
+  source_scope:
+    - wqp
+  model_family: pipe_grud
+  state_surface: adaptive_anfis_wqp_focused
+  default_alert_policy:
+    target_event: irc_alert
+    selection_objective: closest_pr
+    threshold_source: reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_thresholds.csv
+  comparison_surfaces:
+    neural_ode_v1_long80:
+      role: temporal_comparison_only
+      enabled_by_default: false
+      reason: >
+        Neural ODE is closed as a calibrated comparison branch; do not use as
+        the first planning surface.
+    mifal_ed_t2:
+      role: interpretability_and_degradation_lens_only
+      enabled_by_default: false
+      target_scope:
+        - bloom_h
+      reason: >
+        MIFAL does not emit irc_alert and has negative held-out bloom_h
+        predictive evidence against adaptive PIPE-GRU-D.
+
+planning_unit:
+  keys:
+    - source_id
+    - site_id
+    - origin_year_month
+  horizons_months:
+    - 1
+    - 2
+    - 3
+  selection_split: validation
+  heldout_split: test
+  preserve_source_scoped_site_identity: true
+  preserve_labels: true
+  preserve_calibrators_and_thresholds: true
+
+scenario_spaces:
+  state_proxy:
+    enabled: true
+    implementation_priority: 1
+    description: >
+      Minimal planning space over PIPE state channels. These scenarios are
+      model-input perturbations, not literal management actions.
+    channels:
+      x_yN:
+        ecological_role: nutrient_pressure_state
+        direction: decrease
+        absolute_offsets:
+          - 0.0
+          - -0.025
+          - -0.05
+          - -0.10
+          - -0.15
+        bounds:
+          min: 0.0
+          max: 1.0
+      x_yF:
+        ecological_role: functional_physicochemical_condition
+        direction: increase
+        absolute_offsets:
+          - 0.0
+          - 0.025
+          - 0.05
+          - 0.10
+        bounds:
+          min: 0.0
+          max: 1.0
+      x_yT:
+        ecological_role: trophic_state_proxy
+        direct_action_allowed: false
+        reason: trophic state is treated as state/result, not a direct lever.
+    uncertainty_policy:
+      first_pass: keep_current_uncertainty_channels
+      sensitivity_option: increase_uncertainty_when_outside_historical_support
+
+  raw_proxy:
+    enabled: false
+    implementation_priority: 2
+    description: >
+      More interpretable but more expensive space over monthly panel-derived
+      predictors. Use after the state-proxy path is reviewed.
+    historical_envelope:
+      site_level_quantiles:
+        enabled: true
+        min_observed_months: 24
+        lower: 0.05
+        upper: 0.95
+      fallback_source_level_quantiles:
+        lower: 0.01
+        upper: 0.99
+    variables:
+      TP_ugL:
+        proxy_action: nutrient_reduction_tp
+        multiplier_levels:
+          - 1.00
+          - 0.95
+          - 0.90
+          - 0.85
+          - 0.75
+      TN_ugL:
+        proxy_action: nutrient_reduction_tn
+        multiplier_levels:
+          - 1.00
+          - 0.95
+          - 0.90
+          - 0.85
+          - 0.75
+      secchi_depth_m:
+        proxy_action: clarity_improvement
+        multiplier_levels:
+          - 1.00
+          - 1.05
+          - 1.10
+          - 1.20
+      turbidity_NTU:
+        proxy_action: clarity_improvement
+        multiplier_levels:
+          - 1.00
+          - 0.95
+          - 0.90
+          - 0.80
+      DO_mgL:
+        proxy_action: oxygen_support_proxy
+        additive_offsets:
+          - 0.00
+          - 0.25
+          - 0.50
+          - 1.00
+    non_intervenable_context:
+      - temperature_C
+      - season_sin
+      - season_cos
+    prohibited_direct_actions:
+      - chlorophyll_a_ugL
+      - risk_chla
+      - log_chlorophyll_a
+
+proxy_actions:
+  no_action:
+    required: true
+    relative_unit_cost: 0.0
+    description: reference rollout with no perturbation.
+  nutrient_reduction_tp:
+    relative_unit_cost: 1.00
+    guardrail: proxy for phosphorus-pressure reduction only.
+  nutrient_reduction_tn:
+    relative_unit_cost: 0.80
+    guardrail: proxy for nitrogen-pressure reduction only.
+  clarity_improvement:
+    relative_unit_cost: 0.70
+    guardrail: proxy for clearer-water evidence only.
+  oxygen_support_proxy:
+    relative_unit_cost: 0.60
+    guardrail: proxy for improved oxygen evidence only.
+  combined_nutrient_clarity:
+    relative_coordination_cost: 0.20
+    guardrail: joint proxy scenario; report cost and uncertainty jointly.
+
+scenario_families:
+  minimal_state_grid:
+    enabled: true
+    search_space: state_proxy
+    include_actions:
+      - no_action
+      - nutrient_reduction_tp
+      - nutrient_reduction_tn
+      - clarity_improvement
+      - combined_nutrient_clarity
+    max_combined_nonzero_offsets: 2
+  raw_proxy_grid:
+    enabled: false
+    search_space: raw_proxy
+    include_actions:
+      - no_action
+      - nutrient_reduction_tp
+      - nutrient_reduction_tn
+      - clarity_improvement
+      - oxygen_support_proxy
+      - combined_nutrient_clarity
+    max_combined_nonbaseline_variables: 3
+
+constraints:
+  state_channels_clip_to_unit_interval: true
+  raw_variables_use_configs_variables_plausible_ranges: true
+  raw_variables_use_historical_envelope: true
+  forbid_future_target_values: true
+  forbid_split_changes: true
+  forbid_label_changes: true
+  forbid_test_selection: true
+  max_relative_cost:
+    crisis: 3.00
+    normal: 2.00
+    budget_constrained: 1.00
+
+objective:
+  default_planning_mode: normal
+  planning_modes:
+    crisis:
+      lambda_cost: 0.01
+    normal:
+      lambda_cost: 0.05
+    budget_constrained:
+      lambda_cost: 0.20
+  weights:
+    irc_alert_risk_reduction: 0.60
+    bloom_probability_reduction: 0.40
+  lambda_uncertainty: 0.10
+  formula: >
+    objective = weighted_risk_reduction - lambda_cost * relative_cost -
+    lambda_uncertainty * max(0, scenario_uncertainty - baseline_uncertainty)
+
+search:
+  first_stage:
+    method: grid
+    enabled: true
+    scenario_family: minimal_state_grid
+    split_for_selection: validation
+  second_stage:
+    method: random_shooting
+    enabled: false
+    requires_review_of: grid
+    samples: 512
+    seed: 20260628
+  third_stage:
+    method: cem
+    enabled: false
+    requires_review_of: random_shooting
+    population_size: 256
+    elite_fraction: 0.20
+    iterations: 5
+    seed: 20260628
+  out_of_scope:
+    - reinforcement_learning
+
+metrics:
+  group_by:
+    - scenario_family
+    - scenario_id
+    - split
+    - horizon_months
+    - source_id
+  values:
+    - rows
+    - feasible_rows
+    - infeasible_rows
+    - baseline_irc_alert_score
+    - scenario_irc_alert_score
+    - baseline_bloom_probability
+    - scenario_bloom_probability
+    - risk_reduction_absolute
+    - risk_reduction_relative
+    - relative_cost
+    - uncertainty_delta
+    - objective_value
+    - pareto_rank
+    - alert_rate
+    - precision
+    - recall
+    - f2
+    - mcc
+
+outputs:
+  output_dir: reports/planning
+  grid_metrics: reports/planning/counterfactual_grid_metrics.csv
+  grid_summary: reports/planning/counterfactual_grid_summary.csv
+  grid_pareto: reports/planning/counterfactual_grid_pareto.csv
+  grid_examples: reports/planning/counterfactual_grid_examples.csv
+  grid_report: reports/planning/counterfactual_grid_report.md
+  grid_manifest: reports/planning/counterfactual_grid_manifest.json
+  optional_row_level:
+    path: reports/planning/counterfactual_grid_rows.parquet
+    dvc_required_if_materialized: true
+
+reporting:
+  required_sections:
+    - no_action_baseline
+    - scenario_grid
+    - validation_selection
+    - heldout_test_if_executed
+    - pareto_risk_cost
+    - uncertainty_changes
+    - infeasible_scenarios
+    - non_causal_interpretation
+  required_negative_results: true
+  allowed_claim: >
+    The scenario reduced simulated risk under the learned model and declared
+    assumptions.
+  prohibited_claim: >
+    The scenario will reduce real-world eutrophication or should be implemented
+    as an official environmental intervention.

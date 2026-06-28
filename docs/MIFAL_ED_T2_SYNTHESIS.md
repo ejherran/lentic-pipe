@@ -135,4 +135,7 @@ Future reports should state:
 
 With MIFAL closed, the next major doctoral block is counterfactual planning:
 define defensible intervenable proxies, constraints, costs, and a minimal
-search strategy over already-established predictive surfaces.
+search strategy over already-established predictive surfaces. The initial
+protocol and machine-readable configuration now live in
+`docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md` and
+`configs/counterfactual_planning.yaml`.
