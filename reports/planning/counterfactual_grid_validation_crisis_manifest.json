@@ -1,0 +1,70 @@
+{
+  "status": "completed",
+  "planning_version": "counterfactual_planning_grid_v0",
+  "created_at_utc": "2026-06-28T13:31:51.006167+00:00",
+  "started_at_utc": "2026-06-28T13:31:39.315503+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_counterfactual_planning.py",
+    "sha256": "96915e9844b8b0ca49a78d8b9873d83c4065b48156415c4698fae03ed911fb19"
+  },
+  "inputs": [
+    {
+      "role": "config",
+      "path": "configs/counterfactual_planning.yaml",
+      "bytes": 9398,
+      "sha256": "eecc1736ac62383b67364f2fb27f8fc7269574e04c951569c0e6d59703df3848"
+    },
+    {
+      "role": "planning_rows",
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    }
+  ],
+  "config": {
+    "output_name": "counterfactual_grid_validation_crisis",
+    "output_dir": "reports/planning",
+    "scenario_family": "minimal_state_grid",
+    "planning_mode": "crisis",
+    "evaluation_splits": [
+      "validation"
+    ],
+    "source_ids": null,
+    "max_rows_per_split": null,
+    "alert_threshold": 0.5,
+    "config_phase": "protocol_and_initial_config"
+  },
+  "row_counts": {
+    "metric_rows": 60,
+    "summary_rows": 20,
+    "pareto_rows": 13
+  },
+  "outputs": [
+    {
+      "path": "reports/planning/counterfactual_grid_validation_crisis_metrics.csv",
+      "bytes": 23631,
+      "sha256": "c5df8d28cf1c65e20fa4ccc673cd864f0182d0ed33c7f6dc5f3d9f0a19a19db9"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_validation_crisis_summary.csv",
+      "bytes": 5744,
+      "sha256": "88c7019e2ccd2ea5fb7c95e06a2491bc1c0c884a54281fcf90ae0677770a5256"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_validation_crisis_pareto.csv",
+      "bytes": 3767,
+      "sha256": "12b11c5f45e59a32b5251b996a258616125843d137f77f7056a7eb4efb7c1cdc"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_validation_crisis_examples.csv",
+      "bytes": 23722,
+      "sha256": "c587c401ac01adaef970b297db261ed1ee0d100b18b7d07b36bdfcba5beec91e"
+    },
+    {
+      "path": "reports/planning/counterfactual_grid_validation_crisis_report.md",
+      "bytes": 2437,
+      "sha256": "0669a135d0b30e286d04e94369c21ae1918bb7df084a5b2c413ae09f12c8392c"
+    }
+  ],
+  "guardrail": "Counterfactual planning is simulation-based decision support, not field causality, and not official environmental advice."
+}

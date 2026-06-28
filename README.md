@@ -236,6 +236,11 @@ exports, or credential JSON files.
   a cautious negative benchmark: tested proxy scenarios reduce simulated risk
   but do not overcome the configured relative-cost penalty, so `no_action`
   remains top-ranked before any test-set evaluation.
+- `reports/planning/counterfactual_grid_validation_crisis_report.md` and
+  `reports/planning/counterfactual_grid_validation_budget_constrained_report.md`
+  record validation-only sensitivity runs over declared planning modes. The
+  crisis mode yields positive objective scenarios under a lower cost penalty;
+  the budget-constrained mode keeps `no_action` top-ranked.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion
