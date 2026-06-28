@@ -231,6 +231,11 @@ exports, or credential JSON files.
   bounded validation smoke of the first state-proxy grid. The smoke confirms
   the runner/report/manifest path and currently ranks `no_action` above the
   tested proxy scenarios under the normal cost-weighted objective.
+- `reports/planning/counterfactual_grid_validation_report.md` records the full
+  validation run under the same declared grid and objective. The result remains
+  a cautious negative benchmark: tested proxy scenarios reduce simulated risk
+  but do not overcome the configured relative-cost penalty, so `no_action`
+  remains top-ranked before any test-set evaluation.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion
