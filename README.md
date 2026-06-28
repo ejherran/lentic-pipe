@@ -253,6 +253,36 @@ exports, or credential JSON files.
   positive simulated planning utility appears only under the predeclared
   `crisis` mode, while `normal` and `budget_constrained` remain conservative
   no-action benchmarks.
+- `docs/COUNTERFACTUAL_PLANNING_V1_PROTOCOL.md` opens counterfactual planning
+  v1 as a validation-first raw-proxy, support-aware extension of the v0
+  benchmark. `configs/counterfactual_planning_v1.yaml` declares the curated
+  raw-proxy scenario family, and
+  `src/experiments/evaluate_counterfactual_planning_v1.py` recomputes the
+  expert fuzzy state after raw input perturbations while reporting historical
+  support violations.
+- `reports/planning/counterfactual_raw_proxy_v1_smoke_validation_report.md`
+  records the first bounded validation smoke for the v1 raw-proxy surface. The
+  runner completed and produced support-aware outputs; under the normal
+  objective, `no_action` remains top-ranked and all completed non-baseline
+  scenarios have negative net objective in the smoke subset.
+- `reports/planning/counterfactual_raw_proxy_v1_validation_report.md` records
+  the full validation run for the v1 normal objective. The full validation
+  result matches the smoke direction: raw-proxy scenarios reduce simulated
+  risk but do not overcome relative cost and support penalties, so `no_action`
+  remains top-ranked before any v1 held-out test evaluation.
+- `reports/planning/counterfactual_raw_proxy_v1_validation_crisis_report.md`
+  records validation-only sensitivity under the permissive `crisis` planning
+  mode. Unlike the v0 state-proxy grid, v1 remains negative even under crisis:
+  all raw-proxy scenarios retain negative net objective after cost and support
+  penalties, and `no_action` remains top-ranked.
+- `reports/planning/counterfactual_raw_proxy_v1_test_report.md` and
+  `reports/planning/counterfactual_raw_proxy_v1_test_crisis_report.md` record
+  the locked held-out test evaluation for v1. Test confirms validation:
+  `no_action` remains top-ranked under both `normal` and `crisis`.
+- `docs/COUNTERFACTUAL_PLANNING_V1_SYNTHESIS.md` closes counterfactual
+  planning v1 as a reproducible raw-proxy/support-aware benchmark. It states
+  the final result: v1 is more interpretable and support-aware than v0, but it
+  does not reproduce v0's positive `crisis` utility.
 - `docs/NO_CURRENT_CHLA_EARLY_WARNING.md` defines the first formal
   no-current-Chl-a early-warning surface, including the sequence input mapping,
   target-only backtest guardrail, smoke commands, and full-run promotion

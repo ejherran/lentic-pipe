@@ -1,0 +1,185 @@
+schema_version: 1
+description: >
+  Counterfactual planning v1 configuration. V1 freezes the state-proxy v0 test
+  result and opens a validation-first raw-proxy, support-aware planning family.
+
+protocol:
+  document: docs/COUNTERFACTUAL_PLANNING_V1_PROTOCOL.md
+  prior_synthesis: docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md
+  phase: v1_protocol_and_initial_config
+  guardrail: >
+    Raw-proxy scenarios are simulation diagnostics only. They are not causal
+    field interventions or official environmental advice.
+
+inputs:
+  monthly_panel: data/panel/panel_monthly_v0.parquet
+  adaptive_sequence_dataset: data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet
+  variables_config: configs/variables.yaml
+  v0_synthesis: docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md
+
+planning_unit:
+  keys:
+    - source_id
+    - site_id
+    - origin_year_month
+  horizons_months:
+    - 1
+    - 2
+    - 3
+  selection_split: validation
+  heldout_split: test
+  test_policy: locked_after_validation_only
+
+scenario_family:
+  name: raw_proxy_support_grid
+  enabled: true
+  description: >
+    Curated raw-proxy scenarios over monthly panel predictors. The scenarios
+    are passed through the expert fuzzy state builder and penalized when they
+    leave historical support.
+  scenarios:
+    - scenario_id: no_action
+      action_type: no_action
+      relative_cost: 0.0
+      operations: []
+    - scenario_id: tp_reduction_10
+      action_type: nutrient_reduction_tp
+      relative_cost: 1.0
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.90
+    - scenario_id: tp_reduction_25
+      action_type: nutrient_reduction_tp
+      relative_cost: 2.5
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.75
+    - scenario_id: tn_reduction_10
+      action_type: nutrient_reduction_tn
+      relative_cost: 0.8
+      operations:
+        - variable: TN_ugL
+          panel_column: mean_TN_ugL
+          operation: multiply
+          value: 0.90
+    - scenario_id: tp_tn_reduction_10
+      action_type: combined_nutrient
+      relative_cost: 2.0
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.90
+        - variable: TN_ugL
+          panel_column: mean_TN_ugL
+          operation: multiply
+          value: 0.90
+    - scenario_id: clarity_mild
+      action_type: clarity_improvement
+      relative_cost: 1.4
+      operations:
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.10
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.90
+    - scenario_id: clarity_strong
+      action_type: clarity_improvement
+      relative_cost: 2.8
+      operations:
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.20
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.80
+    - scenario_id: oxygen_support_05
+      action_type: oxygen_support_proxy
+      relative_cost: 0.6
+      operations:
+        - variable: DO_mgL
+          panel_column: mean_DO_mgL
+          operation: add
+          value: 0.50
+    - scenario_id: nutrient_clarity_mild
+      action_type: combined_nutrient_clarity
+      relative_cost: 2.6
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.90
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.10
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.90
+    - scenario_id: nutrient_clarity_strong
+      action_type: combined_nutrient_clarity
+      relative_cost: 4.0
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.75
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.20
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.80
+
+constraints:
+  clip_to_plausible_range: true
+  support_violation_policy: penalize
+  max_relative_cost:
+    crisis: 4.0
+    normal: 2.5
+    budget_constrained: 1.0
+  historical_support:
+    site_level_quantiles:
+      min_observed_months: 24
+      lower: 0.05
+      upper: 0.95
+    source_level_fallback_quantiles:
+      lower: 0.01
+      upper: 0.99
+
+objective:
+  default_planning_mode: normal
+  planning_modes:
+    crisis:
+      lambda_cost: 0.01
+    normal:
+      lambda_cost: 0.05
+    budget_constrained:
+      lambda_cost: 0.20
+  weights:
+    irc_alert_risk_reduction: 0.60
+    bloom_probability_reduction: 0.40
+  lambda_uncertainty: 0.10
+  lambda_support: 0.05
+
+outputs:
+  output_dir: reports/planning
+  output_name: counterfactual_raw_proxy_v1
+  row_level_materialization: false
+
+reporting:
+  prohibited_claim: >
+    The scenario will reduce real-world eutrophication or should be implemented
+    as an official environmental intervention.

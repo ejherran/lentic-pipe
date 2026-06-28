@@ -1,0 +1,80 @@
+{
+  "status": "completed",
+  "planning_version": "counterfactual_planning_raw_proxy_v1",
+  "created_at_utc": "2026-06-28T14:58:55.602300+00:00",
+  "started_at_utc": "2026-06-28T14:57:33.499288+00:00",
+  "script": {
+    "path": "src/experiments/evaluate_counterfactual_planning_v1.py",
+    "sha256": "6daaf4d66d969447ad73104a74180d19540abd85fc6753760e72ea12c1e429f4"
+  },
+  "inputs": [
+    {
+      "role": "config",
+      "path": "configs/counterfactual_planning_v1.yaml",
+      "bytes": 5359,
+      "sha256": "ee594a4bece416a60e962437aadc826f019b8015433860d18a1b3cd8435d2648"
+    },
+    {
+      "role": "planning_rows",
+      "path": "data/pipe_grud/pipe_sequence_dataset_adaptive_wqp_focused_v0.parquet",
+      "bytes": 43900649,
+      "sha256": "8d968e6c42815917da1a53e2980a60dd56448c09143b59ebe37e2563052cb1c2"
+    },
+    {
+      "role": "panel",
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "role": "variables_config",
+      "path": "configs/variables.yaml",
+      "bytes": 11088,
+      "sha256": "e945ae0fb7ccb4cd2cb9c742c7177e45a17bb8f96217b971259c0d61ef11cc57"
+    }
+  ],
+  "config": {
+    "output_name": "counterfactual_raw_proxy_v1_test",
+    "output_dir": "reports/planning",
+    "planning_mode": "normal",
+    "evaluation_splits": [
+      "test"
+    ],
+    "source_ids": null,
+    "max_rows_per_split": null,
+    "config_phase": "v1_protocol_and_initial_config"
+  },
+  "row_counts": {
+    "metric_rows": 30,
+    "summary_rows": 10,
+    "pareto_rows": 6
+  },
+  "outputs": [
+    {
+      "path": "reports/planning/counterfactual_raw_proxy_v1_test_metrics.csv",
+      "bytes": 13365,
+      "sha256": "b111328cf1d0a836e6ed6070b3f71050afba7bf407d2529935c8a4e79a80a6a9"
+    },
+    {
+      "path": "reports/planning/counterfactual_raw_proxy_v1_test_summary.csv",
+      "bytes": 3509,
+      "sha256": "00f8b096ca4f452262508a4c6bd8595c528879712c4b6f57be302d8bae1c55b8"
+    },
+    {
+      "path": "reports/planning/counterfactual_raw_proxy_v1_test_pareto.csv",
+      "bytes": 2176,
+      "sha256": "c09af47e8b265a6dd5e59faf6f8d283f7fca3919812f225bca0f8c21b777c7cf"
+    },
+    {
+      "path": "reports/planning/counterfactual_raw_proxy_v1_test_examples.csv",
+      "bytes": 11613,
+      "sha256": "c7391faceb2f7f21a45d4c25c07acf2eb667f81547702d11853b27063d2e0c15"
+    },
+    {
+      "path": "reports/planning/counterfactual_raw_proxy_v1_test_report.md",
+      "bytes": 1892,
+      "sha256": "c847b81e887d55936bb29d81d77f5593fbea1032aea3cb5ccbfe9ea0faaa8f3d"
+    }
+  ],
+  "guardrail": "Counterfactual planning is simulation-based decision support, not field causality, and not official environmental advice."
+}
