@@ -254,6 +254,49 @@ def test_pipe_grud_sequence_build_adapter_writes_external_sequence_artifacts(
     } <= artifact_names
 
 
+def test_pipe_grud_expert_surface_inference_adapter_writes_diagnostic_rollouts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("torch")
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {
+                "execution_mode": "infer_expert_surface",
+                "rollout_horizon": 2,
+                "max_origins": 1,
+                "deterministic": True,
+            },
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_grud_reference_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["selected_origins"] == 1
+    assert row_counts["rollout_rows"] == 2
+    summary = result["summary"]["summaries"]["pipe_grud_expert_surface_inference"]
+    assert summary["execution_mode"] == "infer_expert_surface"
+    assert summary["outcome"] == "completed_with_limitations"
+    assert summary["readiness"]["rollout_generated"] is True
+    assert summary["readiness"]["ready_for_reference_inference"] is False
+    blocker_codes = {blocker["code"] for blocker in summary["blockers"]}
+    assert "adaptive_reference_surface_not_available" in blocker_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "pipe_grud_external_rollouts.parquet",
+        "pipe_grud_external_rollout_summary.csv",
+        "pipe_grud_external_inference_report.md",
+        "pipe_grud_external_inference_manifest.json",
+    } <= artifact_names
+
+
 def test_pipe_grud_reference_adapter_writes_manifest_and_report(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

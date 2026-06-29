@@ -15,9 +15,10 @@ PIPE-GRU-D diagnostic/reference adapter:
 Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
 counterfactual planning are not executed by the local synchronous executor yet.
 PIPE-GRU-D is available through experiment-scoped jobs for preflight
-diagnostics, external sequence artifact builds, and reviewed artifact-reference
-reporting. Dataset-specific temporal inference still remains pending until an
-adaptive-compatible external state surface is reviewed.
+diagnostics, external sequence artifact builds, diagnostic expert-surface
+rollouts, and reviewed artifact-reference reporting. Reference-profile temporal
+inference still remains pending until an adaptive-compatible external state
+surface is reviewed.
 
 ## Install
 
@@ -347,6 +348,34 @@ artifacts. It does not claim that the generated surface matches the reviewed
 adaptive WQP-focused reference profile, and it still does not run model
 inference or calibrated alerts.
 
+Use `infer_expert_surface` only when the user explicitly accepts diagnostic
+rollouts over the expert-fuzzy surface:
+
+```json
+{
+  "name": "pipe-grud-expert-surface-inference",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_grud",
+    "parameters": {
+      "execution_mode": "infer_expert_surface",
+      "rollout_horizon": 3,
+      "deterministic": true
+    }
+  }
+}
+```
+
+This mode rebuilds the external sequence artifacts, loads the reviewed
+PIPE-GRU-D model, and writes `pipe_grud_external_rollouts.csv` / `.parquet`,
+`pipe_grud_external_rollout_summary.csv`, `pipe_grud_external_top_alerts.csv`,
+`pipe_grud_external_recent_top_alerts.csv`,
+`pipe_grud_external_inference_report.md`, and
+`pipe_grud_external_inference_manifest.json`. It does not apply reference bloom
+calibrators or 2B policy thresholds because the input surface is expert-fuzzy,
+not adaptive WQP-focused.
+
 Use artifact-reference mode only to validate and report the reviewed adaptive
 PIPE-GRU-D artifacts:
 
@@ -373,9 +402,9 @@ with:
 curl -sS http://127.0.0.1:8000/version
 ```
 
-Dataset-specific PIPE-GRU-D inference, model training, temporal rollouts,
-Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain explicit
-placeholders until their reviewed adapters are connected.
+Dataset-specific adaptive/calibrated PIPE-GRU-D reference inference, model
+training, Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain
+explicit placeholders until their reviewed adapters are connected.
 
 ## Inspect Artifacts And Results
 
