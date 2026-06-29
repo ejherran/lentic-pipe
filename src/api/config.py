@@ -150,21 +150,34 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     ),
     PipelineInfo(
         name="pipe_neural_ode",
-        status="planned",
-        description="Run Neural ODE temporal workflows on compatible state histories.",
-        notes=("Advanced workflow; eligibility must be checked explicitly.",),
+        status="reference_preflight_adapter",
+        description="Diagnose external Neural ODE readiness and report reviewed Neural ODE v1 reference artifacts.",
+        notes=(
+            "Use parameters.execution_mode='preflight' for external dataset diagnostics.",
+            "Use parameters.execution_mode='artifact_reference' to validate the reviewed Neural ODE v1 artifacts.",
+            "Dataset-specific Neural ODE rollout execution is not exposed until the v1 history-window loader is wired into the API.",
+        ),
     ),
     PipelineInfo(
         name="mifal_ed_t2",
-        status="planned",
-        description="Run the MIFAL-ED/T2 eco-fuzzy comparator on observable-minimal inputs.",
-        notes=("Comparator workflow; does not emit irc_alert.",),
+        status="observable_execution_adapter",
+        description="Run the MIFAL-ED/T2 eco-fuzzy comparator on observable-minimal external inputs.",
+        notes=(
+            "Use parameters.execution_mode='preflight' for observable input diagnostics.",
+            "Use parameters.execution_mode='run_observable' to produce MIFAL bloom_h scores and calibrated alerts.",
+            "Use parameters.execution_mode='artifact_reference' to validate reviewed MIFAL calibration artifacts.",
+            "Comparator workflow; does not emit irc_alert.",
+        ),
     ),
     PipelineInfo(
         name="counterfactual_planning",
-        status="planned",
-        description="Run simulated counterfactual planning on eligible temporal outputs.",
-        notes=("Model-simulated comparison only; not causal field intervention evidence.",),
+        status="upstream_preflight_reference_adapter",
+        description="Check planning readiness against upstream temporal outputs and report reviewed planning V1 artifacts.",
+        notes=(
+            "Use parameters.execution_mode='preflight' with parameters.upstream_plan_id to check planning readiness.",
+            "Use parameters.execution_mode='artifact_reference' to validate reviewed planning V1 artifacts.",
+            "Model-simulated comparison only; not causal field intervention evidence.",
+        ),
     ),
 )
 

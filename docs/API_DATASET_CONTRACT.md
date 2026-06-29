@@ -230,7 +230,8 @@ weights declared in `reports/anfis/fuzzy_manifest.json`.
 
 This layer is expert fuzzy scoring only. Adaptive ANFIS retraining, PIPE-GRU-D,
 Neural ODE, MIFAL-ED/T2, and counterfactual planning are intentionally refused
-by the synchronous executor until their scientific adapters are integrated.
+by the synchronous executor. Those workflows are exposed, where available,
+through registered job-backed scientific adapters instead.
 
 Generated artifacts can be listed and previewed after execution. Artifact
 previews are intentionally bounded and JSON-safe; they are intended for
@@ -249,6 +250,15 @@ endpoints read the generated adaptive reference-profile rollout artifacts.
 `calibrated_probability`. `/alerts` exposes horizon- and event-specific 2B
 policy decisions from `pipe_grud_reference_alerts.csv`; the per-record
 threshold is authoritative.
+
+For completed `mifal_ed_t2` runs with
+`parameters.execution_mode="run_observable"`, prediction and alert endpoints
+read generated MIFAL observable artifacts. `/predictions` exposes `bloom_h`
+from `mifal_scores.csv`, using `calibrated_probability` when reviewed
+calibrators cover the horizon and `expert_score` otherwise. `/alerts` exposes
+thresholded `bloom_h` decisions from `mifal_alerts.csv`. MIFAL does not emit
+`irc_alert`, and calibration transferability is not guaranteed for a new water
+body.
 
 The minimal counterfactual simulation endpoint is also limited to completed
 `fuzzy_state` runs. It applies declared current-state variable changes to the
@@ -290,6 +300,39 @@ report, and a manifest. It reports external-domain warnings because skill is
 not guaranteed for a new water body.
 `parameters.execution_mode="artifact_reference"` validates and reports the
 reviewed adaptive PIPE-GRU-D artifacts.
+
+`mifal_ed_t2` is registered as `mifal_observable_workflow_v0` with three modes.
+`parameters.execution_mode="preflight"` reports observable variable coverage,
+calibration artifact coverage, planner readiness, blockers, warnings, and next
+actions. `parameters.execution_mode="run_observable"` builds a MIFAL-compatible
+observable surface from the registered dataset, runs deterministic MIFAL-ED/T2
+scoring over requested horizons, applies reviewed bloom calibrators/thresholds
+when available, and writes:
+
+| Artifact | Meaning |
+|---|---|
+| `canonical_observations.parquet` | Canonicalized input rows used by the MIFAL adapter. |
+| `monthly_panel.parquet` | MIFAL-compatible monthly panel with value/count/QC/std columns. |
+| `mifal_observable_surface.csv` / `.parquet` | Observable surface including previous chlorophyll-a memory columns. |
+| `mifal_scores.csv` / `.parquet` | MIFAL risk intervals, conservative risk, calibrated bloom probabilities, reliability, and components. |
+| `mifal_alerts.csv` / `.parquet` | Thresholded `bloom_h` alert records for the prediction/alert API views. |
+| `mifal_run_report.md` | Human-readable run report. |
+| `mifal_run_manifest.json` | Reproducibility manifest with row counts, readiness, warnings, calibration coverage, and artifact hashes. |
+
+`parameters.execution_mode="artifact_reference"` validates and reports reviewed
+MIFAL observable calibration artifacts.
+
+`pipe_neural_ode` is registered as `pipe_neural_ode_reference_workflow_v0` for
+`preflight` and `artifact_reference` only. The preflight mode diagnoses external
+temporal coverage and compatible trophic/nutrient signals for the reviewed
+Neural ODE v1 history geometry, but it does not run dataset-specific Neural ODE
+rollouts yet.
+
+`counterfactual_planning` is registered as
+`counterfactual_planning_workflow_v0` for `preflight` and `artifact_reference`.
+Preflight requires `parameters.upstream_plan_id` pointing to a completed
+compatible temporal alert run for the same dataset. It reports readiness and
+blockers but does not execute planning scenarios yet.
 Direct `dataset_id` configs are retained as a compatibility path for local
 reproducibility checks.
 

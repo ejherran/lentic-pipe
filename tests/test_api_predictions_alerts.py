@@ -108,6 +108,48 @@ def _pipe_grud_sequence_dataset_request() -> DatasetValidationRequest:
     )
 
 
+def _mifal_dataset_request() -> DatasetValidationRequest:
+    observations: list[DatasetObservation] = []
+    values_by_month = {
+        "2024-01": {
+            "TP_ugL": (35.0, "ug/L"),
+            "TN_ugL": (900.0, "ug/L"),
+            "DO_mgL": (7.5, "mg/L"),
+            "temperature_C": (18.0, "deg C"),
+            "secchi_depth_m": (1.4, "m"),
+            "turbidity_NTU": (8.0, "NTU"),
+            "chlorophyll_a_ugL": (12.0, "ug/L"),
+        },
+        "2024-02": {
+            "TP_ugL": (45.0, "ug/L"),
+            "TN_ugL": (980.0, "ug/L"),
+            "DO_mgL": (6.8, "mg/L"),
+            "temperature_C": (19.5, "deg C"),
+            "secchi_depth_m": (1.1, "m"),
+            "turbidity_NTU": (12.0, "NTU"),
+            "chlorophyll_a_ugL": (18.0, "ug/L"),
+        },
+    }
+    for year_month, values in values_by_month.items():
+        for variable, (value, unit) in values.items():
+            observations.append(
+                DatasetObservation(
+                    source_id="mifal-observable",
+                    site_id="lake-a",
+                    observed_at=f"{year_month}-15",
+                    variable=variable,
+                    value=value,
+                    unit=unit,
+                    qc_flag="ok",
+                )
+            )
+    return DatasetValidationRequest(
+        dataset_name="MIFAL Observable Lake",
+        requested_workflow="mifal_ed_t2",
+        observations=observations,
+    )
+
+
 def test_api_exposes_current_state_predictions_and_alerts(
     tmp_path: Path,
     monkeypatch,
@@ -237,6 +279,63 @@ def test_api_exposes_pipe_grud_reference_predictions_and_alerts(
     assert all(record["threshold"] >= 0.0 for record in alerts["alerts"])
 
 
+def test_api_exposes_mifal_predictions_and_alerts(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_mifal_dataset_request())
+    result = run_scientific_workflow_job(
+        ModelType.mifal,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "mifal_ed_t2",
+            "parameters": {
+                "execution_mode": "run_observable",
+                "surface": "observable_no_current_chla",
+                "horizons": [1, 2],
+            },
+        },
+    )
+    plan_id = result["plan"]["plan_id"]
+
+    async def request() -> dict[str, dict]:
+        app = create_app()
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as client:
+            predictions = await client.get(
+                f"/runs/plans/{plan_id}/predictions",
+                params={"limit": 4},
+            )
+            alerts = await client.get(
+                f"/runs/plans/{plan_id}/alerts",
+                params={"limit": 4},
+            )
+            return {
+                "predictions": {"status_code": predictions.status_code, "payload": predictions.json()},
+                "alerts": {"status_code": alerts.status_code, "payload": alerts.json()},
+            }
+
+    responses = asyncio.run(request())
+
+    predictions = responses["predictions"]["payload"]
+    assert responses["predictions"]["status_code"] == 200
+    assert predictions["prediction_surface"] == "mifal_ed_t2_observable_bloom_risk"
+    assert len(predictions["predictions"]) == 4
+    assert {record["target"] for record in predictions["predictions"]} == {"bloom_h"}
+    assert {record["score_kind"] for record in predictions["predictions"]} == {"calibrated_probability"}
+    assert {record["horizon_months"] for record in predictions["predictions"]} == {1, 2}
+
+    alerts = responses["alerts"]["payload"]
+    assert responses["alerts"]["status_code"] == 200
+    assert alerts["alert_surface"] == "mifal_ed_t2_observable_bloom_policy"
+    assert len(alerts["alerts"]) == 4
+    assert {record["target_event"] for record in alerts["alerts"]} == {"bloom_h"}
+    assert all(record["threshold"] >= 0.0 for record in alerts["alerts"])
+
+
 def test_api_rejects_predictions_when_surface_is_unavailable(
     tmp_path: Path,
     monkeypatch,
@@ -264,4 +363,4 @@ def test_api_rejects_predictions_when_surface_is_unavailable(
 
     assert status_code == 409
     assert payload["error"]["code"] == "unsupported_pipeline_for_dataset"
-    assert payload["error"]["details"]["supported_workflows"] == ["fuzzy_state"]
+    assert payload["error"]["details"]["supported_workflows"] == ["fuzzy_state", "pipe_grud", "mifal_ed_t2"]

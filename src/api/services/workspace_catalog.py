@@ -39,12 +39,14 @@ _PREDICTION_ARTIFACTS = frozenset(
     {
         "fuzzy_state_scores.csv",
         "pipe_grud_reference_rollouts.csv",
+        "mifal_scores.csv",
     }
 )
 _ALERT_ARTIFACTS = frozenset(
     {
         "fuzzy_state_scores.csv",
         "pipe_grud_reference_alerts.csv",
+        "mifal_alerts.csv",
     }
 )
 

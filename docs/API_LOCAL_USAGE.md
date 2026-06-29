@@ -5,19 +5,22 @@ the former prototype platform as its base: authentication, users, experiments,
 collaborators, API keys, SQL persistence, Taskiq/Redis jobs, cancellation, and
 metrics are part of the public `src/api` tree. The scientific layer currently
 validates external long-form observations, registers a dataset, plans a
-workflow, executes the initial safe workflows, and exposes a job-backed
-PIPE-GRU-D diagnostic/reference adapter:
+workflow, executes the initial safe workflows, and exposes job-backed
+scientific adapters:
 
 - `canonical_observations`
 - `monthly_panel`
 - `fuzzy_state`
 
-Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
-counterfactual planning are not executed by the local synchronous executor yet.
+Temporal/model workflows are not executed by the local synchronous executor.
 PIPE-GRU-D is available through experiment-scoped jobs for preflight
 diagnostics, external expert sequence artifact builds, adaptive ANFIS surface
 builds, diagnostic expert-surface rollouts, calibrated adaptive
 reference-profile inference, and reviewed artifact-reference reporting.
+MIFAL-ED/T2 is available through experiment-scoped jobs for observable
+preflight, deterministic observable scoring, calibrated `bloom_h` alerts, and
+reviewed artifact-reference reporting. Neural ODE and counterfactual planning
+are currently available as job-backed preflight/reference adapters.
 
 ## Install
 
@@ -499,8 +502,67 @@ with:
 curl -sS http://127.0.0.1:8000/version
 ```
 
-Model training, Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain
-explicit placeholders until their reviewed adapters are connected.
+Use `mifal_ed_t2` with `run_observable` for deterministic MIFAL-ED/T2 scoring:
+
+```json
+{
+  "name": "mifal-observable",
+  "model_type": "MIFAL",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "mifal_ed_t2",
+    "parameters": {
+      "execution_mode": "run_observable",
+      "surface": "observable_no_current_chla",
+      "horizons": [1, 2, 3]
+    }
+  }
+}
+```
+
+This mode writes `canonical_observations.parquet`, `monthly_panel.parquet`,
+`mifal_observable_surface.csv` / `.parquet`, `mifal_scores.csv` / `.parquet`,
+`mifal_alerts.csv` / `.parquet`, `mifal_run_report.md`, and
+`mifal_run_manifest.json`. Prediction endpoints expose `bloom_h` scores;
+alert endpoints expose thresholded `bloom_h` decisions. MIFAL does not emit
+`irc_alert`.
+
+Use `pipe_neural_ode` only for preflight or artifact-reference until the
+dataset-specific v1 history-window runner is wired into the API:
+
+```json
+{
+  "name": "neural-ode-preflight",
+  "model_type": "PIPE_NEURAL_ODE",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_neural_ode",
+    "parameters": {
+      "execution_mode": "preflight"
+    }
+  }
+}
+```
+
+Use `counterfactual_planning` preflight with an upstream temporal run plan id:
+
+```json
+{
+  "name": "planning-preflight",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "counterfactual_planning",
+    "parameters": {
+      "execution_mode": "preflight",
+      "upstream_plan_id": "plan_..."
+    }
+  }
+}
+```
+
+Full model training, dataset-specific Neural ODE rollouts, and full
+counterfactual scenario execution remain future adapter work.
 
 ## Inspect Artifacts And Results
 

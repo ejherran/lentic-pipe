@@ -5,12 +5,14 @@ from __future__ import annotations
 import csv
 import json
 from pathlib import Path
+from collections.abc import Mapping
 from typing import Any, cast
 
 from src.api.errors import ErrorCode
 from src.api.schemas.dataset import WorkflowName
 from src.api.schemas.prediction import (
     AlertSeverity,
+    PredictionScoreKind,
     RunAlertRecord,
     RunAlertResponse,
     RunPredictionRecord,
@@ -24,6 +26,9 @@ _FUZZY_ROOT_MANIFEST = Path("reports/anfis/fuzzy_manifest.json")
 _PIPE_GRUD_REFERENCE_ROLLOUTS = "pipe_grud_reference_rollouts.csv"
 _PIPE_GRUD_REFERENCE_ALERTS = "pipe_grud_reference_alerts.csv"
 _PIPE_GRUD_REFERENCE_MANIFEST = "pipe_grud_reference_inference_manifest.json"
+_MIFAL_SCORES = "mifal_scores.csv"
+_MIFAL_ALERTS = "mifal_alerts.csv"
+_MIFAL_MANIFEST = "mifal_run_manifest.json"
 _PREDICTION_LIMITS = [
     "These records are current-month expert fuzzy state scores, not temporal forecasts.",
     "The score is an expert IRC state-risk score, not a calibrated probability.",
@@ -43,6 +48,16 @@ _PIPE_GRUD_REFERENCE_ALERT_LIMITS = [
     "These alerts are thresholded model-derived early-warning indicators, not official public advisories.",
     "Thresholds are horizon- and event-specific; the per-record threshold is authoritative.",
     "Predictive skill and field transferability are not guaranteed for a new water body.",
+]
+_MIFAL_PREDICTION_LIMITS = [
+    "These records are deterministic MIFAL-ED/T2 eco-fuzzy bloom-risk indicators.",
+    "Calibrated bloom probabilities depend on validation-derived calibrators; transferability is not guaranteed.",
+    "MIFAL emits bloom_h comparator scores and does not emit irc_alert.",
+]
+_MIFAL_ALERT_LIMITS = [
+    "These alerts are thresholded MIFAL-ED/T2 bloom_h indicators, not official public advisories.",
+    "Thresholds are horizon-specific and validation-calibrated; inspect the run manifest for calibration coverage.",
+    "The alert policy is model-derived comparison, not causal field evidence.",
 ]
 
 
@@ -82,6 +97,20 @@ def list_run_predictions(plan_id: str, *, limit: int) -> RunPredictionResponse:
             prediction_surface="pipe_grud_adaptive_reference_rollout",
             predictions=records,
             interpretation_limits=_PIPE_GRUD_REFERENCE_PREDICTION_LIMITS,
+        )
+    if (run_dir / _MIFAL_SCORES).exists():
+        rows = _read_csv_rows(run_dir / _MIFAL_SCORES)
+        manifest = _read_mifal_manifest(run_dir)
+        records = _mifal_prediction_records(rows, execution.workflow, manifest)[:limit]
+        return RunPredictionResponse(
+            plan_id=execution.plan_id,
+            execution_id=execution.execution_id,
+            dataset_id=execution.dataset_id,
+            workflow=execution.workflow,
+            status="available",
+            prediction_surface="mifal_ed_t2_observable_bloom_risk",
+            predictions=records,
+            interpretation_limits=_MIFAL_PREDICTION_LIMITS,
         )
     rows = _read_fuzzy_score_rows(run_dir, workflow=execution.workflow)
     manifest = _read_fuzzy_manifest(run_dir)
@@ -130,6 +159,32 @@ def list_run_alerts(plan_id: str, *, limit: int, only_alerts: bool) -> RunAlertR
             alerts=ranked_records,
             interpretation_limits=_PIPE_GRUD_REFERENCE_ALERT_LIMITS,
         )
+    if (run_dir / _MIFAL_ALERTS).exists():
+        rows = _read_csv_rows(run_dir / _MIFAL_ALERTS)
+        manifest = _read_mifal_manifest(run_dir)
+        records = [
+            record
+            for record in (_mifal_alert_record(row, execution.workflow) for row in rows)
+            if record is not None
+        ]
+        records = sorted(records, key=lambda record: (-int(record.is_alert), -record.score, record.rank))
+        ranked_records = [
+            record.model_copy(update={"rank": rank})
+            for rank, record in enumerate(records, start=1)
+            if not only_alerts or record.is_alert
+        ][:limit]
+        return RunAlertResponse(
+            plan_id=execution.plan_id,
+            execution_id=execution.execution_id,
+            dataset_id=execution.dataset_id,
+            workflow=execution.workflow,
+            status="available",
+            alert_surface="mifal_ed_t2_observable_bloom_policy",
+            policy_version=str(manifest.get("policy_version", "")) or _mifal_manifest_policy(manifest),
+            threshold=_first_threshold(ranked_records),
+            alerts=ranked_records,
+            interpretation_limits=_MIFAL_ALERT_LIMITS,
+        )
     rows = _read_fuzzy_score_rows(run_dir, workflow=execution.workflow)
     manifest = _read_fuzzy_manifest(run_dir)
     threshold = _manifest_threshold(manifest)
@@ -168,7 +223,7 @@ def _read_fuzzy_score_rows(run_dir: Path, *, workflow: str) -> list[dict[str, st
             details={
                 "workflow": workflow,
                 "required_artifact": _FUZZY_STATE_SCORES,
-                "supported_workflows": ["fuzzy_state"],
+                "supported_workflows": ["fuzzy_state", "pipe_grud", "mifal_ed_t2"],
             },
         )
     with path.open("r", encoding="utf-8", newline="") as handle:
@@ -202,6 +257,18 @@ def _read_pipe_grud_reference_manifest(run_dir: Path) -> dict[str, object]:
         ErrorCode.dependency_not_ready,
         "PIPE-GRU-D reference inference manifest is required to interpret prediction and alert surfaces.",
         details={"required_artifact": _PIPE_GRUD_REFERENCE_MANIFEST},
+        http_status=424,
+    )
+
+
+def _read_mifal_manifest(run_dir: Path) -> dict[str, object]:
+    path = run_dir / _MIFAL_MANIFEST
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    raise RunPredictionError(
+        ErrorCode.dependency_not_ready,
+        "MIFAL run manifest is required to interpret prediction and alert surfaces.",
+        details={"required_artifact": _MIFAL_MANIFEST},
         http_status=424,
     )
 
@@ -280,6 +347,45 @@ def _reference_prediction_records(
     return records
 
 
+def _mifal_prediction_records(
+    rows: list[dict[str, str]],
+    workflow: WorkflowName,
+    manifest: dict[str, object],
+) -> list[RunPredictionRecord]:
+    records: list[RunPredictionRecord] = []
+    model_family = str(manifest.get("mifal_observable_version", "external_mifal_observable_api_v0"))
+    for row in rows:
+        horizon = _int_or_none(row.get("horizon_months"))
+        if horizon is None:
+            continue
+        calibrated = _float_or_none(row.get("mifal_probability_bloom_calibrated"))
+        conservative = _float_or_none(row.get("risk_conservative"))
+        if calibrated is None and conservative is None:
+            continue
+        score = calibrated if calibrated is not None else conservative
+        if score is None:
+            continue
+        score_name = "mifal_probability_bloom_calibrated" if calibrated is not None else "risk_conservative"
+        score_kind: PredictionScoreKind = "calibrated_probability" if calibrated is not None else "expert_score"
+        records.append(
+            RunPredictionRecord(
+                source_id=str(row.get("source_id", "")),
+                site_id=str(row.get("site_id", "")),
+                year_month=str(row.get("forecast_year_month", "")),
+                horizon_months=horizon,
+                target="bloom_h",
+                score_name=score_name,
+                score=score,
+                score_kind=score_kind,
+                model_family=model_family,
+                workflow=workflow,
+                components=_mifal_prediction_components(row),
+                interpretation="MIFAL-ED/T2 observable bloom-risk indicator.",
+            )
+        )
+    return records
+
+
 def _alert_record(
     row: dict[str, str],
     workflow: WorkflowName,
@@ -305,6 +411,34 @@ def _alert_record(
         policy_version=policy_version,
         workflow=workflow,
         interpretation="Thresholded current-month expert fuzzy composite risk indicator.",
+    )
+
+
+def _mifal_alert_record(
+    row: dict[str, str],
+    workflow: WorkflowName,
+) -> RunAlertRecord | None:
+    score = _float_or_none(row.get("score"))
+    threshold = _float_or_none(row.get("threshold"))
+    horizon = _int_or_none(row.get("horizon_months"))
+    if score is None or threshold is None or horizon is None:
+        return None
+    rank = _int_or_none(row.get("rank")) or 1
+    return RunAlertRecord(
+        source_id=str(row.get("source_id", "")),
+        site_id=str(row.get("site_id", "")),
+        year_month=str(row.get("forecast_year_month", "")),
+        horizon_months=horizon,
+        target_event=str(row.get("target_event", "")) or "bloom_h",
+        score_name=str(row.get("score_name", "")) or "mifal_probability_bloom_calibrated",
+        score=score,
+        threshold=threshold,
+        is_alert=_boolish(row.get("is_alert")),
+        severity=cast(AlertSeverity, row.get("severity") or _severity(score, threshold)),
+        rank=rank,
+        policy_version=str(row.get("policy_version", "")),
+        workflow=workflow,
+        interpretation=str(row.get("interpretation", "MIFAL-ED/T2 bloom alert.")),
     )
 
 
@@ -383,6 +517,53 @@ def _reference_prediction_components(row: dict[str, str]) -> dict[str, object]:
     return components
 
 
+def _mifal_prediction_components(row: dict[str, str]) -> dict[str, object]:
+    components: dict[str, object] = {}
+    for column in (
+        "origin_year_month",
+        "surface",
+        "alert_class",
+        "dominant_factors",
+        "recommended_sampling",
+    ):
+        if row.get(column) not in {None, ""}:
+            components[column] = str(row[column])
+    for column in (
+        "risk_conservative",
+        "risk_interval_low",
+        "risk_interval_high",
+        "uncertainty",
+        "interval_confidence",
+        "data_reliability",
+        "confidence",
+        "observation_reliability",
+        "mifal_bloom_probability_threshold",
+        "index_growth",
+        "index_nutrients",
+        "index_light",
+        "index_stability",
+        "index_disturbance",
+        "index_memory",
+    ):
+        value = _float_or_none(row.get(column))
+        if value is not None:
+            components[column] = value
+    for column in (
+        "has_Tw",
+        "has_TP",
+        "has_TN",
+        "has_Secchi",
+        "has_Turb",
+        "has_DOb",
+        "has_Chl",
+        "has_Chl_prev",
+        "mifal_predicted_bloom_h",
+    ):
+        if row.get(column) not in {None, ""}:
+            components[column] = _boolish(row.get(column))
+    return components
+
+
 def _manifest_threshold(manifest: dict[str, object]) -> float:
     threshold = _float_or_none(manifest.get("alert_threshold"))
     if threshold is None:
@@ -409,6 +590,24 @@ def _first_threshold(records: list[RunAlertRecord]) -> float:
     if records:
         return records[0].threshold
     return 0.0
+
+
+def _mifal_manifest_policy(manifest: dict[str, object]) -> str:
+    calibration = manifest.get("calibration", {})
+    if not isinstance(calibration, dict):
+        return "mifal_observable_alert_calibration_v0"
+    calibration_map = cast(Mapping[str, object], calibration)
+    thresholds = calibration_map.get("thresholds", [])
+    if isinstance(thresholds, list):
+        for threshold in thresholds:
+            if isinstance(threshold, Mapping):
+                threshold_map = cast(Mapping[str, object], threshold)
+                if not threshold_map.get("available"):
+                    continue
+                split = str(threshold_map.get("calibration_split", "validation"))
+                objective = str(threshold_map.get("selection_objective", "threshold"))
+                return f"mifal_observable_alert_calibration_v0:{split}:{objective}"
+    return "mifal_observable_alert_calibration_v0"
 
 
 def _float_or_none(value: object) -> float | None:

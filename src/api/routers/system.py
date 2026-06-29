@@ -138,9 +138,9 @@ async def version():
             ],
         },
         "models": {
-            "PIPE_GRUD": "planned",
-            "PIPE_NEURAL_ODE": "planned",
-            "MIFAL": "planned",
+            "PIPE_GRUD": "calibrated_reference_inference_adapter",
+            "PIPE_NEURAL_ODE": "reference_preflight_adapter",
+            "MIFAL": "observable_execution_adapter",
             "BASELINE_CONSTANT": "planned",
             "BASELINE_LOGISTIC": "planned",
             "BASELINE_RF": "planned",

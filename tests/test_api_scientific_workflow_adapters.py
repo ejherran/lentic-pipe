@@ -8,7 +8,6 @@ from src.api.services.dataset_repository import register_dataset_request
 from src.api.services.scientific_workflow_adapters import (
     ADAPTER_INTERFACE_VERSION,
     ScientificWorkflowAdapterError,
-    UnsupportedScientificWorkflowError,
     adapter_for_workflow,
     executable_scientific_workflows,
     registered_scientific_workflow_adapters,
@@ -114,22 +113,76 @@ def _pipe_grud_sequence_dataset_request() -> DatasetValidationRequest:
     )
 
 
+def _mifal_dataset_request() -> DatasetValidationRequest:
+    observations: list[DatasetObservation] = []
+    values_by_month = {
+        "2024-01": {
+            "TP_ugL": (35.0, "ug/L"),
+            "TN_ugL": (900.0, "ug/L"),
+            "DO_mgL": (7.5, "mg/L"),
+            "temperature_C": (18.0, "deg C"),
+            "secchi_depth_m": (1.4, "m"),
+            "turbidity_NTU": (8.0, "NTU"),
+            "chlorophyll_a_ugL": (12.0, "ug/L"),
+        },
+        "2024-02": {
+            "TP_ugL": (45.0, "ug/L"),
+            "TN_ugL": (980.0, "ug/L"),
+            "DO_mgL": (6.8, "mg/L"),
+            "temperature_C": (19.5, "deg C"),
+            "secchi_depth_m": (1.1, "m"),
+            "turbidity_NTU": (12.0, "NTU"),
+            "chlorophyll_a_ugL": (18.0, "ug/L"),
+        },
+    }
+    for year_month, values in values_by_month.items():
+        for variable, (value, unit) in values.items():
+            observations.append(
+                DatasetObservation(
+                    source_id="mifal-observable",
+                    site_id="lake-a",
+                    observed_at=f"{year_month}-15",
+                    variable=variable,
+                    value=value,
+                    unit=unit,
+                    qc_flag="ok",
+                )
+            )
+    return DatasetValidationRequest(
+        dataset_name="MIFAL Observable Lake",
+        requested_workflow="mifal_ed_t2",
+        observations=observations,
+    )
+
+
 def test_scientific_adapter_registry_exposes_safe_executable_workflows() -> None:
     adapters = registered_scientific_workflow_adapters()
 
     assert [adapter.adapter_id for adapter in adapters] == [
         "local_scientific_workflow_v0",
         "pipe_grud_reference_workflow_v0",
+        "pipe_neural_ode_reference_workflow_v0",
+        "mifal_observable_workflow_v0",
+        "counterfactual_planning_workflow_v0",
     ]
     assert executable_scientific_workflows() == frozenset(
-        {"canonical_observations", "monthly_panel", "fuzzy_state", "pipe_grud"}
+        {
+            "canonical_observations",
+            "monthly_panel",
+            "fuzzy_state",
+            "pipe_grud",
+            "pipe_neural_ode",
+            "mifal_ed_t2",
+            "counterfactual_planning",
+        }
     )
     assert adapter_for_workflow("monthly_panel").interface_version == ADAPTER_INTERFACE_VERSION
     assert adapter_for_workflow("pipe_grud").adapter_id == "pipe_grud_reference_workflow_v0"
+    assert adapter_for_workflow("mifal_ed_t2").adapter_id == "mifal_observable_workflow_v0"
 
 
-def test_missing_heavy_workflow_adapter_fails_with_clear_error() -> None:
-    with pytest.raises(UnsupportedScientificWorkflowError, match="No job-backed adapter"):
+def test_neural_ode_reference_adapter_requires_explicit_mode() -> None:
+    with pytest.raises(ScientificWorkflowAdapterError, match="requires parameters.execution_mode"):
         run_scientific_workflow_job(
             ModelType.pipe_neural_ode,
             {
@@ -162,6 +215,103 @@ def test_local_deterministic_adapter_runs_registered_monthly_panel(
         "canonical_observations": 2,
         "monthly_panel": 2,
     }
+
+
+def test_neural_ode_preflight_adapter_writes_dataset_diagnostic(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_neural_ode,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_neural_ode",
+            "parameters": {"execution_mode": "preflight"},
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_neural_ode_reference_workflow_v0"
+    assert result["workflow"] == "pipe_neural_ode"
+    summary = result["summary"]["summaries"]["pipe_neural_ode_preflight"]
+    assert summary["execution_mode"] == "preflight"
+    assert summary["outcome"] == "not_ready"
+    assert summary["readiness"]["history_candidate"] is True
+    blocker_codes = {blocker["code"] for blocker in summary["blockers"]}
+    assert "neural_ode_history_window_loader_not_available" in blocker_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert artifact_names == {
+        "pipe_neural_ode_preflight_report.md",
+        "pipe_neural_ode_preflight_manifest.json",
+    }
+
+
+def test_mifal_observable_adapter_writes_scores_and_alerts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_mifal_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.mifal,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "mifal_ed_t2",
+            "parameters": {
+                "execution_mode": "run_observable",
+                "surface": "observable_no_current_chla",
+                "horizons": [1, 2],
+            },
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "mifal_observable_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["mifal_observable_surface"] == 2
+    assert row_counts["mifal_scores"] == 4
+    assert row_counts["mifal_alerts"] == 4
+    summary = result["summary"]["summaries"]["mifal_observable"]
+    assert summary["execution_mode"] == "run_observable"
+    assert summary["surface"] == "observable_no_current_chla"
+    assert summary["readiness"]["ready_for_mifal_scoring"] is True
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "mifal_observable_surface.csv",
+        "mifal_scores.csv",
+        "mifal_alerts.csv",
+        "mifal_run_report.md",
+        "mifal_run_manifest.json",
+    } <= artifact_names
+
+
+def test_counterfactual_planning_preflight_requires_upstream_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "counterfactual_planning",
+            "parameters": {"execution_mode": "preflight"},
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "counterfactual_planning_workflow_v0"
+    summary = result["summary"]["summaries"]["counterfactual_planning_preflight"]
+    assert summary["execution_mode"] == "preflight"
+    assert summary["outcome"] == "not_ready"
+    blocker_codes = {blocker["code"] for blocker in summary["blockers"]}
+    assert "missing_upstream_plan_id" in blocker_codes
 
 
 def test_pipe_grud_reference_adapter_requires_explicit_artifact_mode(

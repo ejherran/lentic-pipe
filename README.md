@@ -336,16 +336,15 @@ exports, or credential JSON files.
   Async runs should prefer `config.experiment_dataset_id` so the worker can
   resolve a validated dataset owned by the same experiment. Registered
   job-backed adapters are reported by `/version`; the initial adapter interface
-  executes `canonical_observations`, `monthly_panel`, `fuzzy_state`, and a
-  PIPE-GRU-D preflight/sequence-build/adaptive-surface/expert-inference/
-  reference-inference/artifact-reference adapter. PIPE-GRU-D `preflight` diagnoses external
-  dataset readiness, `build_sequences` creates expert-fuzzy external PIPE
-  state/sequence artifacts, `build_adaptive_surface` applies the reviewed ANFIS
-  transform to create adaptive state/sequence artifacts, `infer_expert_surface`
-  runs diagnostic rollouts over the expert surface,
+  executes `canonical_observations`, `monthly_panel`, `fuzzy_state`, PIPE-GRU-D
+  preflight/sequence/adaptive-surface/inference modes, Neural ODE
+  preflight/reference modes, MIFAL observable scoring/reference modes, and
+  counterfactual-planning preflight/reference modes. PIPE-GRU-D
   `infer_reference_profile` runs calibrated adaptive reference-profile rollouts
-  with bloom calibrators and selected 2B policy thresholds, and
-  artifact-reference mode reports the reviewed adaptive profile.
+  with bloom calibrators and selected 2B policy thresholds. MIFAL
+  `run_observable` writes observable bloom-risk scores and calibrated `bloom_h`
+  alerts. Neural ODE and planning currently expose job-backed diagnostics and
+  reviewed artifact references, not dataset-specific heavy execution.
   `GET /workspace/catalog` provides an authenticated metadata-only view of
   visible experiments, registered datasets, runs, and discoverable scientific
   output views so clients do not need to inspect internal workspace paths.

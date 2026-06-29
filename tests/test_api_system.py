@@ -54,6 +54,9 @@ def test_version_exposes_contracts_and_workflows(app) -> None:
     assert workflows["fuzzy_state"]["status"] == "local_executor"
     assert workflows["current_state_counterfactual"]["status"] == "local_simulation"
     assert workflows["pipe_grud"]["status"] == "calibrated_reference_inference_adapter"
+    assert workflows["pipe_neural_ode"]["status"] == "reference_preflight_adapter"
+    assert workflows["mifal_ed_t2"]["status"] == "observable_execution_adapter"
+    assert workflows["counterfactual_planning"]["status"] == "upstream_preflight_reference_adapter"
     assert payload["job_adapters"]["interface_version"] == "job_adapter_interface_v1"
     adapters = {adapter["adapter_id"]: adapter for adapter in payload["job_adapters"]["registered"]}
     assert adapters["local_scientific_workflow_v0"]["workflows"] == [
@@ -62,6 +65,9 @@ def test_version_exposes_contracts_and_workflows(app) -> None:
         "monthly_panel",
     ]
     assert adapters["pipe_grud_reference_workflow_v0"]["workflows"] == ["pipe_grud"]
+    assert adapters["pipe_neural_ode_reference_workflow_v0"]["workflows"] == ["pipe_neural_ode"]
+    assert adapters["mifal_observable_workflow_v0"]["workflows"] == ["mifal_ed_t2"]
+    assert adapters["counterfactual_planning_workflow_v0"]["workflows"] == ["counterfactual_planning"]
 
 
 def test_error_catalog_endpoint(app) -> None:

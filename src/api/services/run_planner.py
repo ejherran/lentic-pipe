@@ -191,8 +191,12 @@ _WORKFLOW_OUTPUTS: dict[str, tuple[str, ...]] = {
     "mifal_ed_t2": (
         "canonical_observations.parquet",
         "monthly_panel.parquet",
+        "mifal_observable_surface.csv",
         "mifal_observable_surface.parquet",
+        "mifal_scores.csv",
         "mifal_scores.parquet",
+        "mifal_alerts.csv",
+        "mifal_alerts.parquet",
         "mifal_run_report.md",
         "mifal_run_manifest.json",
     ),

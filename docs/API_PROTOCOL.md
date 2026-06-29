@@ -201,6 +201,15 @@ compatible with the reviewed adaptive profile but does not apply reference bloom
 calibrators or 2B policy thresholds. `infer_reference_profile` is the calibrated
 reference-profile inference path; it still reports external-domain warnings
 because predictive skill on a new water body is not guaranteed.
+The registry also exposes `pipe_neural_ode_reference_workflow_v0` for Neural
+ODE v1 `preflight` and `artifact_reference` modes, `mifal_observable_workflow_v0`
+for MIFAL-ED/T2 `preflight`, `run_observable`, and `artifact_reference` modes,
+and `counterfactual_planning_workflow_v0` for planning `preflight` and
+`artifact_reference` modes. MIFAL `run_observable` executes deterministic
+MIFAL-ED/T2 scoring for the submitted dataset and writes calibrated `bloom_h`
+prediction/alert artifacts when reviewed calibrators are available. Neural ODE
+and counterfactual planning are wired as job-backed diagnostics/reference
+adapters only until their dataset-specific execution paths are reviewed.
 Adapters persist the plan,
 execution, artifact list, result summary, and row-count metrics in
 `Run.results`. Direct `dataset_id` configs remain supported only as a
@@ -249,7 +258,8 @@ The first wired simulation scenario is:
 
 That scenario executes the minimal expert-fuzzy current-state counterfactual
 adapter behind the asynchronous simulation job. Temporal rollout simulations
-remain placeholders until PIPE-GRU-D or Neural ODE adapters are connected.
+remain placeholders until the relevant temporal execution adapter provides a
+compatible generated surface for simulation.
 
 ## Dry-Run Planning
 
@@ -309,9 +319,12 @@ local executor. PIPE-GRU-D is reachable through the asynchronous job adapter for
 preflight diagnostics, external sequence artifact builds, adaptive-surface
 builds, diagnostic expert-surface rollouts, calibrated adaptive
 reference-profile inference, and reviewed artifact-reference reporting.
-Neural ODE, MIFAL-ED/T2, and
-counterfactual planning must remain planned-only until their adapters, artifact
-dependencies, and diagnostics are wired and reviewed.
+MIFAL-ED/T2 is reachable through the asynchronous job adapter for observable
+input preflight, deterministic observable scoring, calibrated `bloom_h` alert
+artifacts, and reviewed artifact-reference reporting. Neural ODE and
+counterfactual planning are reachable through asynchronous preflight and
+artifact-reference adapters; dataset-specific Neural ODE rollouts and full
+planning scenario execution remain future adapter work.
 
 ## Artifact And Result Access
 
@@ -383,6 +396,15 @@ threshold decisions from `pipe_grud_reference_alerts.csv`; the per-record
 threshold is authoritative. These outputs are model-derived early-warning
 indicators, not official advisories or causal field evidence.
 
+Completed `mifal_ed_t2` runs produced with
+`parameters.execution_mode="run_observable"` expose deterministic observable
+MIFAL-ED/T2 outputs through the same query endpoints. `/predictions` returns
+`bloom_h` scores as `calibrated_probability` when the reviewed MIFAL
+calibrators cover the requested horizon, otherwise as an expert risk score.
+`/alerts` reads `mifal_alerts.csv` and returns horizon-specific threshold
+decisions for `bloom_h`. MIFAL does not emit `irc_alert`, and its calibration
+transferability is not guaranteed for a new water body.
+
 ## Minimal Counterfactual Simulation
 
 Completed local `fuzzy_state` executions expose a minimal current-state
@@ -425,12 +447,12 @@ available or unavailable for a dataset.
 Eligibility is not the same as executable adapter availability. `/version`
 reports currently registered job adapters and their executable workflows. As of
 `job_adapter_interface_v1`, executable job workflows are
-`canonical_observations`, `monthly_panel`, `fuzzy_state`, and `pipe_grud` in
-preflight/sequence-build/adaptive-surface/expert-surface-inference/
-reference-profile-inference/artifact-reference modes.
-Neural ODE, MIFAL-ED/T2, and
-counterfactual planning remain planned until their job adapters are reviewed and
-connected.
+`canonical_observations`, `monthly_panel`, `fuzzy_state`, `pipe_grud`,
+`pipe_neural_ode`, `mifal_ed_t2`, and `counterfactual_planning`. Not every
+workflow exposes the same execution depth: PIPE-GRU-D includes calibrated
+reference-profile inference; MIFAL includes observable scoring and calibrated
+`bloom_h` alerts; Neural ODE and counterfactual planning currently expose
+preflight/reference modes only.
 
 ## Status Semantics
 
