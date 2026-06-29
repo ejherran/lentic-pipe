@@ -15,10 +15,10 @@ PIPE-GRU-D diagnostic/reference adapter:
 Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
 counterfactual planning are not executed by the local synchronous executor yet.
 PIPE-GRU-D is available through experiment-scoped jobs for preflight
-diagnostics, external sequence artifact builds, diagnostic expert-surface
-rollouts, and reviewed artifact-reference reporting. Reference-profile temporal
-inference still remains pending until an adaptive-compatible external state
-surface is reviewed.
+diagnostics, external expert sequence artifact builds, adaptive ANFIS surface
+builds, diagnostic expert-surface rollouts, and reviewed artifact-reference
+reporting. Calibrated reference-profile temporal inference remains pending until
+adaptive-surface inference and alert policy application are reviewed.
 
 ## Install
 
@@ -348,6 +348,35 @@ artifacts. It does not claim that the generated surface matches the reviewed
 adaptive WQP-focused reference profile, and it still does not run model
 inference or calibrated alerts.
 
+Use `build_adaptive_surface` to apply the reviewed adaptive ANFIS transform and
+create adaptive PIPE sequence artifacts for a registered external dataset:
+
+```json
+{
+  "name": "pipe-grud-adaptive-surface",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_grud",
+    "parameters": {
+      "execution_mode": "build_adaptive_surface"
+    }
+  }
+}
+```
+
+This mode writes `pipe_adaptive_features.csv`,
+`pipe_adaptive_state_surface.csv` / `.parquet`,
+`pipe_adaptive_sequence_state.csv` / `.parquet`,
+`pipe_state_surface.csv` / `.parquet`, `pipe_sequences.csv` / `.parquet`,
+`pipe_inference_origins.csv` / `.parquet`,
+`pipe_adaptive_module_coverage.csv`,
+`pipe_adaptive_surface_report.md`, and
+`pipe_adaptive_surface_manifest.json`. It uses the reviewed adaptive ANFIS
+checkpoints without retraining and can mark
+`ready_for_reference_inference=true` when contiguous complete origins exist. It
+does not apply bloom calibrators or 2B policy thresholds.
+
 Use `infer_expert_surface` only when the user explicitly accepts diagnostic
 rollouts over the expert-fuzzy surface:
 
@@ -402,9 +431,9 @@ with:
 curl -sS http://127.0.0.1:8000/version
 ```
 
-Dataset-specific adaptive/calibrated PIPE-GRU-D reference inference, model
-training, Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain
-explicit placeholders until their reviewed adapters are connected.
+Dataset-specific calibrated PIPE-GRU-D reference inference, model training,
+Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain explicit
+placeholders until their reviewed adapters are connected.
 
 ## Inspect Artifacts And Results
 

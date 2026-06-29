@@ -237,7 +237,7 @@ worker resolves the experiment-owned SQL row to its `scientific_dataset_id`,
 verifies it belongs to the run's experiment, dispatches through
 `job_adapter_interface_v1`, and fails with an explicit error if the row is
 metadata-only, missing, or targets a workflow without a registered adapter.
-`pipe_grud` is registered as `pipe_grud_reference_workflow_v0` with four explicit
+`pipe_grud` is registered as `pipe_grud_reference_workflow_v0` with five explicit
 execution modes. `parameters.execution_mode="preflight"` writes
 `pipe_grud_preflight_report.md` and `pipe_grud_preflight_manifest.json` with
 dataset coverage, signal-variable availability, contiguous monthly history,
@@ -248,13 +248,18 @@ state and sequence artifacts, including `pipe_state_surface.*`,
 `pipe_sequences.*`, `pipe_inference_origins.*`, sequence summaries, a report,
 and a manifest. This mode uses expert fuzzy state construction and therefore
 does not yet match the reviewed adaptive WQP-focused reference profile.
+`parameters.execution_mode="build_adaptive_surface"` applies the reviewed
+adaptive ANFIS transform to external monthly panel rows and writes adaptive
+state, canonical PIPE state, sequence, origin, coverage, report, and manifest
+artifacts. This mode is schema-compatible with the reviewed adaptive reference
+profile when readiness is true, but it does not apply calibrated alert policy.
 `parameters.execution_mode="infer_expert_surface"` rebuilds those external
 sequence artifacts and runs diagnostic PIPE-GRU-D rollouts over the expert-fuzzy
 surface, writing rollout rows, summaries, top-alert previews, a report, and a
 manifest. It does not apply reference bloom calibrators or 2B policy thresholds.
 `parameters.execution_mode="artifact_reference"` validates and reports the
 reviewed adaptive PIPE-GRU-D artifacts. No mode performs dataset-specific
-adaptive reference-profile inference yet.
+calibrated reference-profile inference yet.
 Direct `dataset_id` configs are retained as a compatibility path for local
 reproducibility checks.
 

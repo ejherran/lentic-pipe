@@ -161,19 +161,23 @@ first registered adapter is `local_scientific_workflow_v0`, which executes
 `canonical_observations`, `monthly_panel`, and deterministic expert
 `fuzzy_state` by reusing the reviewed planner/executor path. The first heavy
 adapter is `pipe_grud_reference_workflow_v0`, which supports `pipe_grud` with
-three explicit modes: `parameters.execution_mode="preflight"` diagnoses whether
+five explicit modes: `parameters.execution_mode="preflight"` diagnoses whether
 an uploaded external dataset has the minimum temporal coverage, signal
 variables, planner readiness, and sequence-surface prerequisites for future
 PIPE-GRU-D inference; `parameters.execution_mode="build_sequences"` builds
 external expert-fuzzy PIPE state and sequence artifacts with the reviewed PIPE
 schema, plus eligible inference origins;
+`parameters.execution_mode="build_adaptive_surface"` applies the reviewed
+adaptive ANFIS transform and builds schema-compatible adaptive PIPE state and
+sequence artifacts;
 `parameters.execution_mode="infer_expert_surface"` runs diagnostic PIPE-GRU-D
 rollouts over that expert-fuzzy surface; `parameters.execution_mode="artifact_reference"`
 validates and reports the reviewed adaptive PIPE-GRU-D artifact profile.
 `build_sequences` and `infer_expert_surface` do not match the adaptive
-WQP-focused reference surface yet. `infer_expert_surface` does not apply
-reference bloom calibrators or 2B policy thresholds, and reference-profile
-dataset-specific inference remains pending.
+WQP-focused reference surface. `build_adaptive_surface` is mechanically
+compatible with the reviewed adaptive profile but does not apply reference bloom
+calibrators or 2B policy thresholds; calibrated reference-profile inference
+remains pending.
 Adapters persist the plan,
 execution, artifact list, result summary, and row-count metrics in
 `Run.results`. Direct `dataset_id` configs remain supported only as a
@@ -357,7 +361,8 @@ Eligibility is not the same as executable adapter availability. `/version`
 reports currently registered job adapters and their executable workflows. As of
 `job_adapter_interface_v1`, executable job workflows are
 `canonical_observations`, `monthly_panel`, `fuzzy_state`, and `pipe_grud` in
-preflight/sequence-build/expert-surface-inference/artifact-reference modes.
+preflight/sequence-build/adaptive-surface/expert-surface-inference/
+artifact-reference modes.
 Neural ODE, MIFAL-ED/T2, and
 counterfactual planning remain planned until their job adapters are reviewed and
 connected.

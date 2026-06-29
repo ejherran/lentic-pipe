@@ -173,7 +173,7 @@ def build_external_pipe_sequence_artifacts(
         "limitations": [
             "This build creates an expert-fuzzy external PIPE state surface, not the reviewed adaptive WQP-focused state surface.",
             "It does not run PIPE-GRU-D model inference, rollout calibration, or alert policy application.",
-            "Reference-profile inference must stay disabled until an adaptive-compatible external state adapter is reviewed.",
+            "Use execution_mode='build_adaptive_surface' to create adaptive-compatible external state artifacts.",
         ],
         "artifacts": [_file_record(path, workspace=workspace) for path in output_paths],
     }
@@ -471,7 +471,7 @@ def _sequence_build_report(manifest: Mapping[str, object]) -> str:
             "",
             "- These artifacts prepare external data for future PIPE-GRU-D inference.",
             "- They do not run the temporal model or emit calibrated alerts.",
-            "- Reference-profile inference remains disabled until adaptive-compatible external state construction is reviewed.",
+            "- Use `build_adaptive_surface` for adaptive-compatible external state construction.",
             "",
         ]
     )

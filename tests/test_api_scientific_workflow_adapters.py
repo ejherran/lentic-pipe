@@ -254,6 +254,50 @@ def test_pipe_grud_sequence_build_adapter_writes_external_sequence_artifacts(
     } <= artifact_names
 
 
+def test_pipe_grud_adaptive_surface_adapter_writes_reference_ready_sequences(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("torch")
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {"execution_mode": "build_adaptive_surface"},
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_grud_reference_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["adaptive_state_surface"] == 13
+    assert row_counts["pipe_state_surface"] == 13
+    assert row_counts["kept_sequence_rows"] == 12
+    assert row_counts["inference_candidate_origins"] == 2
+    summary = result["summary"]["summaries"]["pipe_grud_adaptive_surface_build"]
+    assert summary["execution_mode"] == "build_adaptive_surface"
+    assert summary["outcome"] == "built_reference_ready"
+    assert summary["readiness"]["adaptive_reference_transform_applied"] is True
+    assert summary["readiness"]["ready_for_reference_inference"] is True
+    assert summary["blockers"] == []
+    warning_codes = {warning["code"] for warning in summary["warnings"]}
+    assert "external_domain_not_validated" in warning_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "pipe_adaptive_state_surface.parquet",
+        "pipe_adaptive_sequence_state.parquet",
+        "pipe_state_surface.parquet",
+        "pipe_sequences.parquet",
+        "pipe_inference_origins.parquet",
+        "pipe_adaptive_surface_report.md",
+        "pipe_adaptive_surface_manifest.json",
+    } <= artifact_names
+
+
 def test_pipe_grud_expert_surface_inference_adapter_writes_diagnostic_rollouts(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
