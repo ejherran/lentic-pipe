@@ -63,6 +63,15 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
         ),
     ),
     PipelineInfo(
+        name="current_state_counterfactual",
+        status="local_simulation",
+        description="Simulate declared current-state input changes over an executed fuzzy state surface.",
+        notes=(
+            "This is deterministic expert fuzzy recomputation, not causal field evidence.",
+            "Requires a completed fuzzy_state run.",
+        ),
+    ),
+    PipelineInfo(
         name="pipe_grud",
         status="planned",
         description="Run PIPE-GRU-D compatible scoring, rollout, and alert workflows.",

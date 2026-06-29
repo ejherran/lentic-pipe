@@ -81,7 +81,7 @@ The intended public surface is:
 | `/runs/.../artifacts` | Query run-scoped reports, manifests, and generated files. | Synchronous |
 | `/runs/.../predictions` | Query run-scoped prediction or state-score surfaces. | Synchronous |
 | `/runs/.../alerts` | Query run-scoped alert views derived from available surfaces. | Synchronous |
-| `/simulations` | Counterfactual or rollout jobs when preconditions hold. | Asynchronous |
+| `/runs/.../simulations` | Run-scoped bounded simulations when preconditions hold. | Synchronous |
 
 The first public integration implements the system endpoints, the contracts, a
 deterministic `POST /datasets/validate` endpoint for long-form observations,
@@ -200,6 +200,28 @@ expert fuzzy score and the frozen threshold recorded in
 official advisories and they are not PIPE-GRU-D or Neural ODE early-warning
 alerts. Temporal early-warning alert endpoints remain future work until the
 model adapters and diagnostics are wired.
+
+## Minimal Counterfactual Simulation
+
+Completed local `fuzzy_state` executions expose a minimal current-state
+counterfactual endpoint:
+
+```http
+POST /runs/plans/{plan_id}/simulations/counterfactual
+```
+
+The request declares simple interventions over canonical variables, using
+`scale`, `add`, or `set`. The endpoint applies those interventions to the
+generated `monthly_panel_wide.csv`, recomputes derived `TN_TP_ratio` and
+chlorophyll-a risk, reruns deterministic expert fuzzy scoring, and compares the
+simulated `irc1` state-risk score against the baseline `fuzzy_state_scores.csv`.
+The response includes score deltas, baseline/simulated alert flags, alert
+change labels, a deterministic `simulation_id`, and a lightweight JSON result
+artifact under the run workspace.
+
+This is not causal field evidence, temporal planning, or a PIPE-GRU-D/Neural
+ODE rollout. It is a bounded "what changes in the current expert fuzzy state
+score if these input assumptions are applied?" simulation.
 
 ## Pipeline Eligibility
 

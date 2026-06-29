@@ -44,8 +44,15 @@ def test_version_exposes_contracts_and_workflows(app) -> None:
     assert payload["supported_horizons"] == ["h1", "h2", "h3"]
     assert payload["documents"]["dataset_contract"] == "docs/API_DATASET_CONTRACT.md"
     workflows = {workflow["name"]: workflow for workflow in payload["workflows"]}
-    assert {"dataset_validation", "fuzzy_state", "pipe_grud", "counterfactual_planning"} <= set(workflows)
+    assert {
+        "dataset_validation",
+        "fuzzy_state",
+        "current_state_counterfactual",
+        "pipe_grud",
+        "counterfactual_planning",
+    } <= set(workflows)
     assert workflows["fuzzy_state"]["status"] == "local_executor"
+    assert workflows["current_state_counterfactual"]["status"] == "local_simulation"
 
 
 def test_error_catalog_endpoint(app) -> None:
@@ -77,3 +84,4 @@ def test_openapi_is_available(app) -> None:
     assert "/runs/plans/{plan_id}/results/summary" in payload["paths"]
     assert "/runs/plans/{plan_id}/predictions" in payload["paths"]
     assert "/runs/plans/{plan_id}/alerts" in payload["paths"]
+    assert "/runs/plans/{plan_id}/simulations/counterfactual" in payload["paths"]

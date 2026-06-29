@@ -242,13 +242,44 @@ These endpoints currently expose `horizon_months = 0` expert fuzzy state
 scores. They do not run model inference, temporal forecasts, or official alert
 issuance.
 
+## Run A Minimal Counterfactual Simulation
+
+For a completed `fuzzy_state` run, declare current-state input changes and
+recompute the expert fuzzy state score:
+
+```bash
+cat > /tmp/lentic-counterfactual.json <<'JSON'
+{
+  "scenario_name": "nutrient-and-bloom-pressure-reduction",
+  "interventions": [
+    {"variable": "TP_ugL", "operation": "scale", "value": 0.8},
+    {"variable": "TN_ugL", "operation": "scale", "value": 0.8},
+    {"variable": "chlorophyll_a_ugL", "operation": "scale", "value": 0.7}
+  ],
+  "only_changed_alerts": false,
+  "limit": 20
+}
+JSON
+
+curl -sS \
+  -H "Content-Type: application/json" \
+  --data @/tmp/lentic-counterfactual.json \
+  http://127.0.0.1:8000/runs/plans/{plan_id}/simulations/counterfactual
+```
+
+The response compares baseline and simulated current-state `irc1` scores and
+alert flags. The simulation writes a lightweight JSON result under the run
+workspace. This is a sensitivity calculation over declared assumptions, not a
+causal estimate or temporal intervention plan.
+
 ## Interpretation Limits
 
 This local flow canonicalizes observations, builds a long monthly panel, and
-can compute deterministic expert fuzzy state scores and thresholded
-current-state risk indicators. It does not run temporal forecasts, adaptive
-ANFIS retraining, Neural ODE, MIFAL-ED/T2, or counterfactual planning. A
-successful `fuzzy_state` execution means the input data were converted,
-aggregated, and scored by the current expert fuzzy rules and frozen IRC weights
-in `reports/anfis/fuzzy_manifest.json`; it is not a temporal model result or
+can compute deterministic expert fuzzy state scores, thresholded current-state
+risk indicators, and bounded current-state counterfactual sensitivity
+simulations. It does not run temporal forecasts, adaptive ANFIS retraining,
+Neural ODE, MIFAL-ED/T2, or full counterfactual planning. A successful
+`fuzzy_state` execution means the input data were converted, aggregated, and
+scored by the current expert fuzzy rules and frozen IRC weights in
+`reports/anfis/fuzzy_manifest.json`; it is not a temporal model result or
 environmental decision recommendation.

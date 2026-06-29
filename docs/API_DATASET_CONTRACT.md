@@ -159,6 +159,7 @@ GET /runs/plans/{plan_id}/artifacts/{artifact_name}/preview
 GET /runs/plans/{plan_id}/results/summary
 GET /runs/plans/{plan_id}/predictions
 GET /runs/plans/{plan_id}/alerts
+POST /runs/plans/{plan_id}/simulations/counterfactual
 ```
 
 The planner references the saved dataset manifest by `dataset_id`, reuses the
@@ -198,6 +199,12 @@ For `fuzzy_state`, prediction and alert endpoints expose current-month expert
 fuzzy state scores and thresholded current-state indicators. They do not emit
 temporal forecasts, official advisories, or model-calibrated early-warning
 alerts.
+
+The minimal counterfactual simulation endpoint is also limited to completed
+`fuzzy_state` runs. It applies declared current-state variable changes to the
+generated wide panel, recomputes expert fuzzy scores, and returns score/alert
+deltas. It is a deterministic sensitivity simulation, not causal evidence or
+temporal intervention planning.
 
 ## Privacy And Provenance
 

@@ -15,6 +15,7 @@ from src.api.schemas.run import (
     RunResultSummaryResponse,
 )
 from src.api.schemas.prediction import RunAlertResponse, RunPredictionResponse
+from src.api.schemas.simulation import CurrentStateCounterfactualRequest, CurrentStateCounterfactualResponse
 from src.api.services.dataset_repository import DatasetNotFoundError
 from src.api.services.run_artifacts import (
     RunArtifactError,
@@ -27,6 +28,10 @@ from src.api.services.run_predictions import (
     RunPredictionError,
     list_run_alerts,
     list_run_predictions,
+)
+from src.api.services.run_simulations import (
+    RunSimulationError,
+    simulate_current_state_counterfactual,
 )
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import (
@@ -185,6 +190,25 @@ async def get_plan_alerts(
         return _prediction_error_response(error)
 
 
+@router.post(
+    "/plans/{plan_id}/simulations/counterfactual",
+    response_model=CurrentStateCounterfactualResponse,
+    responses={400: {"model": ApiErrorResponse}, 404: {"model": ApiErrorResponse}, 409: {"model": ApiErrorResponse}},
+)
+async def simulate_plan_counterfactual(
+    plan_id: str,
+    request: CurrentStateCounterfactualRequest,
+) -> CurrentStateCounterfactualResponse | JSONResponse:
+    """Run a minimal current-state counterfactual simulation over fuzzy outputs."""
+
+    try:
+        return simulate_current_state_counterfactual(plan_id, request)
+    except RunExecutionNotFoundError:
+        return _not_found(plan_id)
+    except RunSimulationError as error:
+        return _simulation_error_response(error)
+
+
 def _not_found(resource_id: str) -> JSONResponse:
     response = ApiErrorResponse(
         error=ApiProblem(
@@ -228,6 +252,20 @@ def _artifact_error_response(error: RunArtifactError) -> JSONResponse:
 
 
 def _prediction_error_response(error: RunPredictionError) -> JSONResponse:
+    response = ApiErrorResponse(
+        error=ApiProblem(
+            code=error.code,
+            message=error.message,
+            details=error.details,
+        )
+    )
+    return JSONResponse(
+        status_code=error.http_status,
+        content=response.model_dump(mode="json"),
+    )
+
+
+def _simulation_error_response(error: RunSimulationError) -> JSONResponse:
     response = ApiErrorResponse(
         error=ApiProblem(
             code=error.code,
