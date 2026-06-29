@@ -84,6 +84,7 @@ def test_openapi_is_available(app) -> None:
     assert "/datasets" in payload["paths"]
     assert "/datasets/{dataset_id}" in payload["paths"]
     assert "/datasets/validate" in payload["paths"]
+    assert "/workspace/catalog" in payload["paths"]
     assert "/runs/plan" in payload["paths"]
     assert "/runs/plans/{plan_id}" in payload["paths"]
     assert "/runs/plans/{plan_id}/execute" in payload["paths"]

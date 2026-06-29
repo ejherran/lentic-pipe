@@ -28,6 +28,7 @@ from src.api.routers import (
     simulations,
     system,
     users,
+    workspace,
 )
 from src.api.tasks.broker import broker
 from src.api.tasks.maintenance import purge_expired_email_codes, purge_expired_tokens_now, purge_old_audit_log, refresh_queue_metrics
@@ -152,6 +153,13 @@ _TAGS = [
         ),
     },
     {
+        "name": "Workspace",
+        "description": (
+            "Authenticated metadata catalog for navigating visible experiments, datasets, "
+            "runs, and discoverable scientific output views without inspecting internal paths."
+        ),
+    },
+    {
         "name": "Datasets",
         "description": (
             "Scientific dataset validation and local reproducibility artifacts. "
@@ -252,6 +260,7 @@ app.include_router(email_verification.router)
 app.include_router(users.router)
 app.include_router(datasets.router)
 app.include_router(experiments.router)
+app.include_router(workspace.router)
 app.include_router(science.router)
 app.include_router(runs.router)
 app.include_router(predictions.router)

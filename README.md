@@ -331,8 +331,8 @@ exports, or credential JSON files.
   cancellation, metrics, and Alembic migrations. The existing scientific API
   work is preserved as a workflow layer for dataset validation, experiment-owned
   scientific dataset registration, planning, safe local execution, artifact
-  previews, run-id prediction/alert views, current-state alerts, and minimal
-  counterfactual recomputation.
+  previews, workspace catalog navigation, run-id prediction/alert views,
+  current-state alerts, and minimal counterfactual recomputation.
   Async runs should prefer `config.experiment_dataset_id` so the worker can
   resolve a validated dataset owned by the same experiment. Registered
   job-backed adapters are reported by `/version`; the initial adapter interface
@@ -346,6 +346,9 @@ exports, or credential JSON files.
   `infer_reference_profile` runs calibrated adaptive reference-profile rollouts
   with bloom calibrators and selected 2B policy thresholds, and
   artifact-reference mode reports the reviewed adaptive profile.
+  `GET /workspace/catalog` provides an authenticated metadata-only view of
+  visible experiments, registered datasets, runs, and discoverable scientific
+  output views so clients do not need to inspect internal workspace paths.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

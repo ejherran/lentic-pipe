@@ -249,6 +249,22 @@ Use `dataset.id` as `config.experiment_dataset_id` for experiment-scoped jobs.
 Use `scientific_dataset.dataset_id` only for the compatibility `/runs/plan`
 surface.
 
+## Catalog The Workspace
+
+After creating experiments, registering datasets, or launching runs, use the
+workspace catalog to discover the visible SQL resources and their available
+scientific output views:
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://127.0.0.1:8000/workspace/catalog?limit=20"
+```
+
+The response is metadata-only. It includes dataset/run counts, latest dataset
+and run summaries, run status counts, and output-view flags derived from
+persisted `Run.results`. It does not read large artifacts or execute scientific
+work.
+
 ## Execute Through The Job System
 
 The compatibility endpoints above are useful for local reproducibility checks.

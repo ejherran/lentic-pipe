@@ -197,6 +197,13 @@ GET /runs/{run_id}/predictions
 GET /runs/{run_id}/alerts
 ```
 
+Clients can discover visible experiments, latest datasets/runs, run status
+counts, and available output views through the authenticated metadata catalog:
+
+```http
+GET /workspace/catalog
+```
+
 The planner references the saved dataset manifest by `dataset_id`, reuses the
 validation summary for workflow eligibility, and reports whether the requested
 workflow is `ready`, `not_eligible`, or `blocked`. This is a planning boundary:

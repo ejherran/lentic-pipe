@@ -92,6 +92,7 @@ The intended public surface is:
 | `GET /version` | API and scientific workflow registry. | Synchronous |
 | `GET /errors` | Machine-readable error catalog. | Synchronous |
 | `/experiments` | Reproducible workspace metadata. | Synchronous |
+| `GET /workspace/catalog` | Authenticated metadata catalog for visible experiments, datasets, runs, and output views. | Synchronous |
 | `/datasets` | Upload, register, validate, and inspect external datasets. | Mixed |
 | `/runs` | Plan, launch, and inspect processing/modeling jobs. | Mixed |
 | `/runs/.../artifacts` | Query run-scoped reports, manifests, and generated files. | Synchronous |
@@ -123,6 +124,23 @@ a compatibility surface for reproducible local workflows. The target production
 shape is now the recommended path: datasets are owned by experiments, and heavy
 scientific execution runs through `/experiments/{experiment_id}/runs` and the
 Taskiq worker.
+
+## Workspace Catalog
+
+The catalog endpoint gives clients a lightweight navigation layer over the SQL
+workspace:
+
+```http
+GET /workspace/catalog
+```
+
+It is authenticated and permission-aware. Admin users see all experiments;
+other users see only experiments where they are collaborators. The response is
+paginated and includes, for each visible experiment, dataset/run counts, run
+status counts, the latest dataset, the latest run, the latest job-backed
+scientific run, and output views discoverable from persisted `Run.results`
+(`artifacts`, `result_summary`, `predictions`, and `alerts`). It does not read
+large model outputs or execute scientific code.
 
 ## Async Job Architecture
 
