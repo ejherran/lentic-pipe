@@ -154,6 +154,9 @@ POST /runs/plan
 GET /runs/plans/{plan_id}
 POST /runs/plans/{plan_id}/execute
 GET /runs/plans/{plan_id}/execution
+GET /runs/plans/{plan_id}/artifacts
+GET /runs/plans/{plan_id}/artifacts/{artifact_name}/preview
+GET /runs/plans/{plan_id}/results/summary
 ```
 
 The planner references the saved dataset manifest by `dataset_id`, reuses the
@@ -183,6 +186,11 @@ weights declared in `reports/anfis/fuzzy_manifest.json`.
 This layer is expert fuzzy scoring only. Adaptive ANFIS retraining, PIPE-GRU-D,
 Neural ODE, MIFAL-ED/T2, and counterfactual planning are intentionally refused
 by the synchronous executor until their scientific adapters are integrated.
+
+Generated artifacts can be listed and previewed after execution. Artifact
+previews are intentionally bounded and JSON-safe; they are intended for
+inspection, UI rendering, and reproducibility checks, not as a replacement for
+downloading complete scientific exports.
 
 ## Privacy And Provenance
 

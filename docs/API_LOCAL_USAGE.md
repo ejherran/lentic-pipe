@@ -183,6 +183,38 @@ Fetch the persisted execution response:
 curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/execution
 ```
 
+## Inspect Artifacts And Results
+
+List generated artifacts:
+
+```bash
+curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/artifacts
+```
+
+Preview a bounded number of CSV or JSONL rows:
+
+```bash
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{plan_id}/artifacts/monthly_panel.csv/preview?limit=5"
+```
+
+For `fuzzy_state`, preview expert fuzzy scores:
+
+```bash
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{plan_id}/artifacts/fuzzy_state_scores.csv/preview?limit=5"
+```
+
+Fetch a structured result summary:
+
+```bash
+curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/results/summary
+```
+
+Artifact previews are bounded inspection views. The execution response and
+artifact list remain the reproducibility sources for full artifact names, URIs,
+hashes, and byte sizes.
+
 ## Interpretation Limits
 
 This local flow canonicalizes observations, builds a long monthly panel, and

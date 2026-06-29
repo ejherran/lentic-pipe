@@ -18,7 +18,7 @@ _TAGS = [
     },
     {
         "name": "Runs",
-        "description": "Synchronous dry-run planning for registered dataset workflows.",
+        "description": "Run planning, safe local execution, artifacts, and result summaries.",
     },
 ]
 

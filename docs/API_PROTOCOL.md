@@ -78,7 +78,7 @@ The intended public surface is:
 | `/experiments` | Reproducible workspace metadata. | Synchronous |
 | `/datasets` | Upload, register, validate, and inspect external datasets. | Mixed |
 | `/runs` | Plan, launch, and inspect processing/modeling jobs. | Mixed |
-| `/artifacts` | Query reports, manifests, and generated files. | Synchronous |
+| `/runs/.../artifacts` | Query run-scoped reports, manifests, and generated files. | Synchronous |
 | `/predictions` | Optional point/batch inference on eligible surfaces. | Mixed |
 | `/simulations` | Counterfactual or rollout jobs when preconditions hold. | Asynchronous |
 
@@ -94,7 +94,8 @@ records. The first safe executor is exposed through
 `GET /runs/plans/{plan_id}/execution` for `canonical_observations`,
 `monthly_panel`, and deterministic expert `fuzzy_state` scoring. Experiment
 storage, asynchronous job orchestration, model execution, prediction, and
-simulation routers are added in later phases.
+simulation routers are added in later phases. Generated local artifacts can be
+listed, previewed, and summarized through run-scoped artifact/result endpoints.
 
 ## Dry-Run Planning
 
@@ -153,6 +154,29 @@ Temporal/model workflows remain deliberately non-executable in this layer.
 PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and counterfactual planning must remain
 planned-only until their adapters, artifact dependencies, and diagnostics are
 wired and reviewed.
+
+## Artifact And Result Access
+
+Completed local executions expose generated outputs through run-scoped
+endpoints:
+
+```http
+GET /runs/plans/{plan_id}/artifacts
+GET /runs/plans/{plan_id}/artifacts/{artifact_name}/preview
+GET /runs/plans/{plan_id}/results/summary
+```
+
+The artifact list is derived from the persisted execution record and includes
+artifact names, relative URIs, bytes, and SHA-256 hashes. The preview endpoint
+only reads artifacts already declared by the execution response, and only for
+bounded text-safe formats: CSV, JSON, JSONL, Markdown, plain text, or logs. CSV
+and JSONL previews return rows and columns; JSON previews return the parsed
+payload; text previews return the first bounded lines.
+
+The result summary endpoint reports structured summaries for known local
+outputs, currently canonical observations, monthly panels, and expert fuzzy
+state scores. It is a convenience view over generated artifacts, not a new
+scientific computation.
 
 ## Pipeline Eligibility
 

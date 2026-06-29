@@ -72,3 +72,6 @@ def test_openapi_is_available(app) -> None:
     assert "/runs/plans/{plan_id}" in payload["paths"]
     assert "/runs/plans/{plan_id}/execute" in payload["paths"]
     assert "/runs/plans/{plan_id}/execution" in payload["paths"]
+    assert "/runs/plans/{plan_id}/artifacts" in payload["paths"]
+    assert "/runs/plans/{plan_id}/artifacts/{artifact_name}/preview" in payload["paths"]
+    assert "/runs/plans/{plan_id}/results/summary" in payload["paths"]
