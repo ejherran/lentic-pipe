@@ -237,6 +237,10 @@ worker resolves the experiment-owned SQL row to its `scientific_dataset_id`,
 verifies it belongs to the run's experiment, dispatches through
 `job_adapter_interface_v1`, and fails with an explicit error if the row is
 metadata-only, missing, or targets a workflow without a registered adapter.
+`pipe_grud` is registered only as `pipe_grud_reference_workflow_v0` with
+`parameters.execution_mode="artifact_reference"`; this validates and reports the
+reviewed adaptive PIPE-GRU-D artifacts and does not perform dataset-specific
+external inference.
 Direct `dataset_id` configs are retained as a compatibility path for local
 reproducibility checks.
 

@@ -295,15 +295,36 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
 The first wired run adapter is `local_scientific_workflow_v0` under
 `job_adapter_interface_v1`. It executes the same deterministic planner/executor
 used by `POST /runs/plans/{plan_id}/execute` for `canonical_observations`,
-`monthly_panel`, and `fuzzy_state`. Inspect executable job adapters with:
+`monthly_panel`, and `fuzzy_state`. The first heavy adapter is
+`pipe_grud_reference_workflow_v0`; use it only for the reviewed artifact-backed
+reference mode:
+
+```json
+{
+  "name": "pipe-grud-reference",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_grud",
+    "parameters": {
+      "execution_mode": "artifact_reference"
+    }
+  }
+}
+```
+
+This mode writes a run report and manifest that reference the reviewed
+adaptive PIPE-GRU-D artifacts. It does not run dataset-specific PIPE-GRU-D
+inference for the submitted external dataset. Inspect executable job adapters
+with:
 
 ```bash
 curl -sS http://127.0.0.1:8000/version
 ```
 
-Model training, temporal rollouts, Neural ODE, MIFAL-ED/T2, and full
-counterfactual planning remain explicit placeholders until their reviewed
-adapters are connected.
+Dataset-specific PIPE-GRU-D inference, model training, temporal rollouts,
+Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain explicit
+placeholders until their reviewed adapters are connected.
 
 ## Inspect Artifacts And Results
 

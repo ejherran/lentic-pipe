@@ -136,9 +136,12 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     ),
     PipelineInfo(
         name="pipe_grud",
-        status="planned",
-        description="Run PIPE-GRU-D compatible scoring, rollout, and alert workflows.",
-        notes=("Requires a compatible temporal panel and model artifacts.",),
+        status="artifact_reference_adapter",
+        description="Validate and report reviewed PIPE-GRU-D reference artifacts through the job system.",
+        notes=(
+            "Requires parameters.execution_mode='artifact_reference'.",
+            "Dataset-specific PIPE-GRU-D inference is not wired yet.",
+        ),
     ),
     PipelineInfo(
         name="pipe_neural_ode",

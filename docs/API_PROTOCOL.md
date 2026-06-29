@@ -159,8 +159,12 @@ scientific adapter interface. The current interface is
 `job_adapter_interface_v1`, exposed by `/version` under `job_adapters`. The
 first registered adapter is `local_scientific_workflow_v0`, which executes
 `canonical_observations`, `monthly_panel`, and deterministic expert
-`fuzzy_state` by reusing the reviewed planner/executor path. It persists the
-plan, execution, artifact list, result summary, and row-count metrics in
+`fuzzy_state` by reusing the reviewed planner/executor path. The first heavy
+adapter is `pipe_grud_reference_workflow_v0`, which supports `pipe_grud` only
+with `parameters.execution_mode="artifact_reference"`; it validates and reports
+the reviewed adaptive PIPE-GRU-D artifact profile, but does not run
+dataset-specific inference for external submissions. Adapters persist the plan,
+execution, artifact list, result summary, and row-count metrics in
 `Run.results`. Direct `dataset_id` configs remain supported only as a
 compatibility path for local checks. Without a usable dataset/workflow pair, the
 job system still works but returns an explicit placeholder result. Workflows
@@ -338,9 +342,9 @@ available or unavailable for a dataset.
 Eligibility is not the same as executable adapter availability. `/version`
 reports currently registered job adapters and their executable workflows. As of
 `job_adapter_interface_v1`, executable job workflows are
-`canonical_observations`, `monthly_panel`, and `fuzzy_state`; PIPE-GRU-D,
-Neural ODE, MIFAL-ED/T2, and counterfactual planning remain planned until their
-job adapters are reviewed and connected.
+`canonical_observations`, `monthly_panel`, `fuzzy_state`, and `pipe_grud` in
+artifact-reference mode. Neural ODE, MIFAL-ED/T2, and counterfactual planning
+remain planned until their job adapters are reviewed and connected.
 
 ## Status Semantics
 

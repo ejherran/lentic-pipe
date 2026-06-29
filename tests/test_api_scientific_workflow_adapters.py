@@ -7,6 +7,7 @@ from src.api.schemas.dataset import DatasetObservation, DatasetValidationRequest
 from src.api.services.dataset_repository import register_dataset_request
 from src.api.services.scientific_workflow_adapters import (
     ADAPTER_INTERFACE_VERSION,
+    ScientificWorkflowAdapterError,
     UnsupportedScientificWorkflowError,
     adapter_for_workflow,
     executable_scientific_workflows,
@@ -40,23 +41,60 @@ def _dataset_request() -> DatasetValidationRequest:
     )
 
 
+def _pipe_grud_dataset_request() -> DatasetValidationRequest:
+    return DatasetValidationRequest(
+        dataset_name="PIPE Reference Lake",
+        requested_workflow="pipe_grud",
+        observations=[
+            DatasetObservation(
+                source_id="pipe-reference",
+                site_id="lake-a",
+                observed_at="2024-01-15",
+                variable="TP_ugL",
+                value=35.0,
+                unit="ug/L",
+            ),
+            DatasetObservation(
+                source_id="pipe-reference",
+                site_id="lake-a",
+                observed_at="2024-02-15",
+                variable="TP_ugL",
+                value=33.0,
+                unit="ug/L",
+            ),
+            DatasetObservation(
+                source_id="pipe-reference",
+                site_id="lake-a",
+                observed_at="2024-03-15",
+                variable="TP_ugL",
+                value=31.0,
+                unit="ug/L",
+            ),
+        ],
+    )
+
+
 def test_scientific_adapter_registry_exposes_safe_executable_workflows() -> None:
     adapters = registered_scientific_workflow_adapters()
 
-    assert [adapter.adapter_id for adapter in adapters] == ["local_scientific_workflow_v0"]
+    assert [adapter.adapter_id for adapter in adapters] == [
+        "local_scientific_workflow_v0",
+        "pipe_grud_reference_workflow_v0",
+    ]
     assert executable_scientific_workflows() == frozenset(
-        {"canonical_observations", "monthly_panel", "fuzzy_state"}
+        {"canonical_observations", "monthly_panel", "fuzzy_state", "pipe_grud"}
     )
     assert adapter_for_workflow("monthly_panel").interface_version == ADAPTER_INTERFACE_VERSION
+    assert adapter_for_workflow("pipe_grud").adapter_id == "pipe_grud_reference_workflow_v0"
 
 
 def test_missing_heavy_workflow_adapter_fails_with_clear_error() -> None:
     with pytest.raises(UnsupportedScientificWorkflowError, match="No job-backed adapter"):
         run_scientific_workflow_job(
-            ModelType.pipe_grud,
+            ModelType.pipe_neural_ode,
             {
                 "dataset_id": "ds_1234567890abcdef",
-                "workflow": "pipe_grud",
+                "workflow": "pipe_neural_ode",
             },
         )
 
@@ -84,3 +122,45 @@ def test_local_deterministic_adapter_runs_registered_monthly_panel(
         "canonical_observations": 2,
         "monthly_panel": 2,
     }
+
+
+def test_pipe_grud_reference_adapter_requires_explicit_artifact_mode(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_dataset_request())
+
+    with pytest.raises(ScientificWorkflowAdapterError, match="artifact-backed only"):
+        run_scientific_workflow_job(
+            ModelType.pipe_grud,
+            {
+                "dataset_id": dataset.dataset_id,
+                "workflow": "pipe_grud",
+            },
+        )
+
+
+def test_pipe_grud_reference_adapter_writes_manifest_and_report(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {"execution_mode": "artifact_reference"},
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_grud_reference_workflow_v0"
+    assert result["workflow"] == "pipe_grud"
+    assert result["execution"]["row_counts"]["reference_test_rollout_rows"] > 0
+    assert result["summary"]["summaries"]["pipe_grud_reference"]["execution_mode"] == "artifact_reference"
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert artifact_names == {"pipe_grud_run_report.md", "pipe_grud_run_manifest.json"}
