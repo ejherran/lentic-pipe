@@ -5,7 +5,7 @@ from datetime import datetime, timezone
 from typing import Any, Literal, cast
 
 from fastapi import APIRouter, HTTPException, Query, status
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 from sqlalchemy import asc, desc, func, select, update
 from sqlalchemy.engine import CursorResult
 
@@ -13,16 +13,33 @@ from src.api.core.dependencies import CurrentUser, DBDep, require_experiment_rol
 from src.api.core.openapi import HTTP_401, HTTP_403, HTTP_404, HTTP_422
 from src.api.core.permissions import is_admin
 from src.api.core.request_id import get_request_id
+from src.api.errors import ApiErrorResponse, ApiProblem, ErrorCode
 from src.api.models.experiment import CollaboratorRole, ExperimentCollaborator
 from src.api.models.run import ModelType, Run, RunStatus
 from src.api.schemas.common import CancelledResponse, Page
+from src.api.schemas.prediction import RunAlertResponse, RunPredictionResponse
 from src.api.schemas.run import (
+    RunArtifactListResponse,
+    RunArtifactPreviewResponse,
     RunCompareRequest,
     RunCompareResponse,
     RunCreateRequest,
+    RunResultSummaryResponse,
     RunResponse,
     RunResultsResponse,
 )
+from src.api.services.run_artifacts import (
+    RunArtifactError,
+    list_run_artifacts,
+    preview_run_artifact,
+    summarize_run_results,
+)
+from src.api.services.run_predictions import (
+    RunPredictionError,
+    list_run_alerts,
+    list_run_predictions,
+)
+from src.api.services.run_repository import RunExecutionNotFoundError
 from src.api.tasks.training import train_model_task
 
 _RUN_SORT_FIELDS: dict[str, Any] = {
@@ -36,6 +53,24 @@ router = APIRouter(tags=["Runs"])
 
 EditorDep = require_experiment_role(CollaboratorRole.editor)
 ViewerDep = require_experiment_role(CollaboratorRole.viewer)
+
+
+class RunScientificOutputError(Exception):
+    """Expected failure while resolving scientific output for a persisted Run."""
+
+    def __init__(
+        self,
+        code: ErrorCode,
+        message: str,
+        *,
+        details: dict[str, object] | None = None,
+        http_status: int = 409,
+    ) -> None:
+        super().__init__(message)
+        self.code = code
+        self.message = message
+        self.details = details or {}
+        self.http_status = http_status
 
 
 async def _assert_run_access(run: Run, current_user, db: DBDep) -> None:
@@ -259,6 +294,144 @@ async def get_run_results(run_id: uuid.UUID, current_user: CurrentUser, db: DBDe
     return run
 
 
+@router.get(
+    "/runs/{run_id}/artifacts",
+    response_model=RunArtifactListResponse,
+    summary="List scientific run artifacts",
+    description=(
+        "List generated scientific workflow artifacts for an async run that was "
+        "executed through a registered job-backed scientific adapter. This is a "
+        "run-id convenience wrapper over the underlying plan-scoped artifact view."
+    ),
+    responses={**HTTP_401, **HTTP_403, **HTTP_404, 409: {"model": ApiErrorResponse}},
+)
+async def list_scientific_run_artifacts(
+    run_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBDep,
+) -> RunArtifactListResponse | JSONResponse:
+    try:
+        plan_id = await _scientific_plan_id_for_run(run_id, current_user, db)
+        return list_run_artifacts(plan_id)
+    except RunScientificOutputError as error:
+        return _run_scientific_output_error_response(error)
+    except RunExecutionNotFoundError:
+        return _run_scientific_output_error_response(_missing_scientific_execution(run_id))
+
+
+@router.get(
+    "/runs/{run_id}/artifacts/{artifact_name}/preview",
+    response_model=RunArtifactPreviewResponse,
+    summary="Preview a scientific run artifact",
+    description=(
+        "Preview a bounded number of rows or lines from a generated scientific "
+        "workflow artifact for an async run. Only text-safe artifact formats are "
+        "previewable."
+    ),
+    responses={
+        **HTTP_401,
+        **HTTP_403,
+        **HTTP_404,
+        400: {"model": ApiErrorResponse},
+        409: {"model": ApiErrorResponse},
+    },
+)
+async def preview_scientific_run_artifact(
+    run_id: uuid.UUID,
+    artifact_name: str,
+    current_user: CurrentUser,
+    db: DBDep,
+    limit: int = Query(default=20, ge=1, le=100),
+) -> RunArtifactPreviewResponse | JSONResponse:
+    try:
+        plan_id = await _scientific_plan_id_for_run(run_id, current_user, db)
+        return preview_run_artifact(plan_id, artifact_name, limit=limit)
+    except RunScientificOutputError as error:
+        return _run_scientific_output_error_response(error)
+    except RunExecutionNotFoundError:
+        return _run_scientific_output_error_response(_missing_scientific_execution(run_id))
+    except RunArtifactError as error:
+        return _artifact_error_response(error)
+
+
+@router.get(
+    "/runs/{run_id}/results/summary",
+    response_model=RunResultSummaryResponse,
+    summary="Summarize scientific run results",
+    description=(
+        "Return structured summaries for generated scientific workflow artifacts "
+        "attached to an async run."
+    ),
+    responses={**HTTP_401, **HTTP_403, **HTTP_404, 409: {"model": ApiErrorResponse}},
+)
+async def summarize_scientific_run_results(
+    run_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBDep,
+) -> RunResultSummaryResponse | JSONResponse:
+    try:
+        plan_id = await _scientific_plan_id_for_run(run_id, current_user, db)
+        return summarize_run_results(plan_id)
+    except RunScientificOutputError as error:
+        return _run_scientific_output_error_response(error)
+    except RunExecutionNotFoundError:
+        return _run_scientific_output_error_response(_missing_scientific_execution(run_id))
+
+
+@router.get(
+    "/runs/{run_id}/predictions",
+    response_model=RunPredictionResponse,
+    summary="List scientific run predictions",
+    description=(
+        "Return prediction or state-score records generated by a job-backed "
+        "scientific workflow run."
+    ),
+    responses={**HTTP_401, **HTTP_403, **HTTP_404, 409: {"model": ApiErrorResponse}},
+)
+async def list_scientific_run_predictions(
+    run_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBDep,
+    limit: int = Query(default=100, ge=1, le=1000),
+) -> RunPredictionResponse | JSONResponse:
+    try:
+        plan_id = await _scientific_plan_id_for_run(run_id, current_user, db)
+        return list_run_predictions(plan_id, limit=limit)
+    except RunScientificOutputError as error:
+        return _run_scientific_output_error_response(error)
+    except RunExecutionNotFoundError:
+        return _run_scientific_output_error_response(_missing_scientific_execution(run_id))
+    except RunPredictionError as error:
+        return _prediction_error_response(error)
+
+
+@router.get(
+    "/runs/{run_id}/alerts",
+    response_model=RunAlertResponse,
+    summary="List scientific run alerts",
+    description=(
+        "Return alert records generated by a job-backed scientific workflow run."
+    ),
+    responses={**HTTP_401, **HTTP_403, **HTTP_404, 409: {"model": ApiErrorResponse}},
+)
+async def list_scientific_run_alerts(
+    run_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBDep,
+    limit: int = Query(default=100, ge=1, le=1000),
+    only_alerts: bool = Query(default=False),
+) -> RunAlertResponse | JSONResponse:
+    try:
+        plan_id = await _scientific_plan_id_for_run(run_id, current_user, db)
+        return list_run_alerts(plan_id, limit=limit, only_alerts=only_alerts)
+    except RunScientificOutputError as error:
+        return _run_scientific_output_error_response(error)
+    except RunExecutionNotFoundError:
+        return _run_scientific_output_error_response(_missing_scientific_execution(run_id))
+    except RunPredictionError as error:
+        return _prediction_error_response(error)
+
+
 @router.post(
     "/experiments/{experiment_id}/runs/compare",
     response_model=RunCompareResponse,
@@ -381,3 +554,99 @@ def _extract_metrics(results: dict | None) -> dict[str, float | None]:
             for metric, value in horizon_metrics.items():
                 flat[f"{horizon}.{metric}"] = value
     return flat
+
+
+async def _scientific_plan_id_for_run(
+    run_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DBDep,
+) -> str:
+    run = await db.get(Run, run_id)
+    if not run:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Run not found")
+    await _assert_run_access(run, current_user, db)
+    return _plan_id_from_results(run)
+
+
+def _plan_id_from_results(run: Run) -> str:
+    if run.status != RunStatus.completed:
+        raise RunScientificOutputError(
+            ErrorCode.dependency_not_ready,
+            "Run has not completed a scientific workflow execution yet.",
+            details={"run_id": str(run.id), "run_status": run.status.value},
+            http_status=424,
+        )
+    results = run.results
+    if not isinstance(results, dict):
+        raise _unsupported_scientific_output(run)
+    plan = results.get("plan")
+    if isinstance(plan, dict) and plan.get("plan_id"):
+        return str(plan["plan_id"])
+    execution = results.get("execution")
+    if isinstance(execution, dict) and execution.get("plan_id"):
+        return str(execution["plan_id"])
+    raise _unsupported_scientific_output(run)
+
+
+def _unsupported_scientific_output(run: Run) -> RunScientificOutputError:
+    return RunScientificOutputError(
+        ErrorCode.unsupported_pipeline_for_dataset,
+        "Run results do not include a job-backed scientific workflow plan.",
+        details={
+            "run_id": str(run.id),
+            "run_status": run.status.value,
+            "model_type": run.model_type.value,
+            "expected_result_keys": ["plan.plan_id", "execution.plan_id"],
+        },
+    )
+
+
+def _missing_scientific_execution(run_id: uuid.UUID) -> RunScientificOutputError:
+    return RunScientificOutputError(
+        ErrorCode.dependency_not_ready,
+        "Run results reference a scientific plan whose execution artifacts are not available.",
+        details={"run_id": str(run_id)},
+        http_status=424,
+    )
+
+
+def _run_scientific_output_error_response(error: RunScientificOutputError) -> JSONResponse:
+    response = ApiErrorResponse(
+        error=ApiProblem(
+            code=error.code,
+            message=error.message,
+            details=error.details,
+        )
+    )
+    return JSONResponse(
+        status_code=error.http_status,
+        content=response.model_dump(mode="json"),
+    )
+
+
+def _artifact_error_response(error: RunArtifactError) -> JSONResponse:
+    response = ApiErrorResponse(
+        error=ApiProblem(
+            code=error.code,
+            message=error.message,
+            details=error.details,
+        )
+    )
+    return JSONResponse(
+        status_code=error.http_status,
+        content=response.model_dump(mode="json"),
+    )
+
+
+def _prediction_error_response(error: RunPredictionError) -> JSONResponse:
+    response = ApiErrorResponse(
+        error=ApiProblem(
+            code=error.code,
+            message=error.message,
+            details=error.details,
+        )
+    )
+    return JSONResponse(
+        status_code=error.http_status,
+        content=response.model_dump(mode="json"),
+    )

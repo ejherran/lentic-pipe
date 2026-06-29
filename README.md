@@ -331,7 +331,8 @@ exports, or credential JSON files.
   cancellation, metrics, and Alembic migrations. The existing scientific API
   work is preserved as a workflow layer for dataset validation, experiment-owned
   scientific dataset registration, planning, safe local execution, artifact
-  previews, current-state alerts, and minimal counterfactual recomputation.
+  previews, run-id prediction/alert views, current-state alerts, and minimal
+  counterfactual recomputation.
   Async runs should prefer `config.experiment_dataset_id` so the worker can
   resolve a validated dataset owned by the same experiment. Registered
   job-backed adapters are reported by `/version`; the initial adapter interface

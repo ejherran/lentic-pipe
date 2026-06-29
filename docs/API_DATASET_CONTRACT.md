@@ -187,6 +187,16 @@ GET /runs/plans/{plan_id}/alerts
 POST /runs/plans/{plan_id}/simulations/counterfactual
 ```
 
+Experiment-scoped async scientific runs expose common output views by `run_id`:
+
+```http
+GET /runs/{run_id}/artifacts
+GET /runs/{run_id}/artifacts/{artifact_name}/preview
+GET /runs/{run_id}/results/summary
+GET /runs/{run_id}/predictions
+GET /runs/{run_id}/alerts
+```
+
 The planner references the saved dataset manifest by `dataset_id`, reuses the
 validation summary for workflow eligibility, and reports whether the requested
 workflow is `ready`, `not_eligible`, or `blocked`. This is a planning boundary:

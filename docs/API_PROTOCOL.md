@@ -191,6 +191,22 @@ job system still works but returns an explicit placeholder result. Workflows
 without a registered adapter fail with a clear error instead of silently
 executing partial scientific logic.
 
+For job-backed scientific runs, clients should prefer the run-id output views:
+
+```http
+GET /runs/{run_id}/artifacts
+GET /runs/{run_id}/artifacts/{artifact_name}/preview
+GET /runs/{run_id}/results/summary
+GET /runs/{run_id}/predictions
+GET /runs/{run_id}/alerts
+```
+
+These endpoints enforce normal run access permissions, resolve the internal
+`plan_id` from `Run.results`, and reuse the same artifact, summary, prediction,
+and alert readers as the plan-scoped compatibility endpoints. They fail with a
+clear error if a run has not completed or if its results do not come from a
+job-backed scientific workflow.
+
 Simulation jobs use the prototype simulation lifecycle:
 
 ```http
@@ -290,6 +306,14 @@ GET /runs/plans/{plan_id}/artifacts/{artifact_name}/preview
 GET /runs/plans/{plan_id}/results/summary
 ```
 
+Experiment-scoped async scientific runs expose equivalent views by `run_id`:
+
+```http
+GET /runs/{run_id}/artifacts
+GET /runs/{run_id}/artifacts/{artifact_name}/preview
+GET /runs/{run_id}/results/summary
+```
+
 The artifact list is derived from the persisted execution record and includes
 artifact names, relative URIs, bytes, and SHA-256 hashes. The preview endpoint
 only reads artifacts already declared by the execution response, and only for
@@ -310,6 +334,13 @@ surface:
 ```http
 GET /runs/plans/{plan_id}/predictions
 GET /runs/plans/{plan_id}/alerts
+```
+
+Async scientific runs expose equivalent views by `run_id`:
+
+```http
+GET /runs/{run_id}/predictions
+GET /runs/{run_id}/alerts
 ```
 
 For `fuzzy_state`, predictions are current-month expert fuzzy state scores

@@ -295,6 +295,24 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
   http://127.0.0.1:8000/runs/{run_id}/results
 ```
 
+For scientific workflow jobs, the API stores the internal workflow `plan_id` in
+`Run.results`, but clients do not need to extract it for common inspection
+views. Use the run-id endpoints:
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/artifacts
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/results/summary
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/predictions
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/alerts
+```
+
 The first wired run adapter is `local_scientific_workflow_v0` under
 `job_adapter_interface_v1`. It executes the same deterministic planner/executor
 used by `POST /runs/plans/{plan_id}/execute` for `canonical_observations`,
@@ -470,7 +488,7 @@ explicit placeholders until their reviewed adapters are connected.
 
 ## Inspect Artifacts And Results
 
-List generated artifacts:
+List generated artifacts for a compatibility `plan_id`:
 
 ```bash
 curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/artifacts
@@ -494,6 +512,19 @@ Fetch a structured result summary:
 
 ```bash
 curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/results/summary
+```
+
+For experiment-scoped jobs, prefer the equivalent `run_id` endpoints:
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/artifacts
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://127.0.0.1:8000/runs/{run_id}/artifacts/fuzzy_state_scores.csv/preview?limit=5"
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/results/summary
 ```
 
 Artifact previews are bounded inspection views. The execution response and
@@ -532,6 +563,16 @@ curl -sS \
 
 curl -sS \
   "http://127.0.0.1:8000/runs/plans/{pipe_grud_plan_id}/alerts?limit=20"
+```
+
+For experiment-scoped jobs, use the same queries by `run_id`:
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://127.0.0.1:8000/runs/{run_id}/predictions?limit=20"
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  "http://127.0.0.1:8000/runs/{run_id}/alerts?limit=20"
 ```
 
 The prediction surface returns `irc_alert` as `model_probability` and `bloom_h`
