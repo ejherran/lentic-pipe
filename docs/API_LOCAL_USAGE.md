@@ -16,9 +16,8 @@ Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
 counterfactual planning are not executed by the local synchronous executor yet.
 PIPE-GRU-D is available through experiment-scoped jobs for preflight
 diagnostics, external expert sequence artifact builds, adaptive ANFIS surface
-builds, diagnostic expert-surface rollouts, and reviewed artifact-reference
-reporting. Calibrated reference-profile temporal inference remains pending until
-adaptive-surface inference and alert policy application are reviewed.
+builds, diagnostic expert-surface rollouts, calibrated adaptive
+reference-profile inference, and reviewed artifact-reference reporting.
 
 ## Install
 
@@ -405,6 +404,41 @@ PIPE-GRU-D model, and writes `pipe_grud_external_rollouts.csv` / `.parquet`,
 calibrators or 2B policy thresholds because the input surface is expert-fuzzy,
 not adaptive WQP-focused.
 
+Use `infer_reference_profile` for the calibrated adaptive PIPE-GRU-D reference
+path:
+
+```json
+{
+  "name": "pipe-grud-reference-profile-inference",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_grud",
+    "parameters": {
+      "execution_mode": "infer_reference_profile",
+      "rollout_horizon": 3,
+      "deterministic": true,
+      "policy_name": "closest_pr"
+    }
+  }
+}
+```
+
+This mode builds the adaptive ANFIS surface, loads the reviewed adaptive
+WQP-focused PIPE-GRU-D model, runs recursive rollouts, applies rollout bloom
+calibrators, applies the selected 2B policy thresholds, and writes
+`pipe_grud_reference_rollouts.csv` / `.parquet`,
+`pipe_grud_reference_rollout_summary.csv`,
+`pipe_grud_reference_policy_summary.csv`,
+`pipe_grud_reference_alerts.csv` / `.parquet`,
+`pipe_grud_reference_top_alerts.csv`,
+`pipe_grud_reference_recent_top_alerts.csv`,
+`pipe_grud_reference_inference_report.md`, and
+`pipe_grud_reference_inference_manifest.json`. Manifests include blockers,
+warnings, threshold/calibrator coverage, artifact hashes, and interpretation
+limits. The output is a model-derived early-warning indicator, not an official
+advisory or a guarantee of skill for a new water body.
+
 Use artifact-reference mode only to validate and report the reviewed adaptive
 PIPE-GRU-D artifacts:
 
@@ -431,9 +465,8 @@ with:
 curl -sS http://127.0.0.1:8000/version
 ```
 
-Dataset-specific calibrated PIPE-GRU-D reference inference, model training,
-Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain explicit
-placeholders until their reviewed adapters are connected.
+Model training, Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain
+explicit placeholders until their reviewed adapters are connected.
 
 ## Inspect Artifacts And Results
 
@@ -490,8 +523,21 @@ curl -sS \
   "http://127.0.0.1:8000/runs/plans/{plan_id}/alerts?only_alerts=true"
 ```
 
-These endpoints currently expose `horizon_months = 0` expert fuzzy state
-scores. They do not run model inference, temporal forecasts, or official alert
+For `pipe_grud` runs produced by `infer_reference_profile`, the same endpoints
+return temporal model outputs from the completed run artifacts:
+
+```bash
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{pipe_grud_plan_id}/predictions?limit=20"
+
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{pipe_grud_plan_id}/alerts?limit=20"
+```
+
+The prediction surface returns `irc_alert` as `model_probability` and `bloom_h`
+as `calibrated_probability`. The alert surface returns per-record thresholds
+from the selected 2B policy. These endpoints read generated artifacts; they do
+not silently run inference on demand, and the results are not official alert
 issuance.
 
 ## Run A Minimal Counterfactual Simulation

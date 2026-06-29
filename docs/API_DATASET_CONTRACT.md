@@ -225,6 +225,14 @@ fuzzy state scores and thresholded current-state indicators. They do not emit
 temporal forecasts, official advisories, or model-calibrated early-warning
 alerts.
 
+For completed `pipe_grud` runs with
+`parameters.execution_mode="infer_reference_profile"`, prediction and alert
+endpoints read the generated adaptive reference-profile rollout artifacts.
+`/predictions` exposes `irc_alert` as `model_probability` and `bloom_h` as
+`calibrated_probability`. `/alerts` exposes horizon- and event-specific 2B
+policy decisions from `pipe_grud_reference_alerts.csv`; the per-record
+threshold is authoritative.
+
 The minimal counterfactual simulation endpoint is also limited to completed
 `fuzzy_state` runs. It applies declared current-state variable changes to the
 generated wide panel, recomputes expert fuzzy scores, and returns score/alert
@@ -237,7 +245,7 @@ worker resolves the experiment-owned SQL row to its `scientific_dataset_id`,
 verifies it belongs to the run's experiment, dispatches through
 `job_adapter_interface_v1`, and fails with an explicit error if the row is
 metadata-only, missing, or targets a workflow without a registered adapter.
-`pipe_grud` is registered as `pipe_grud_reference_workflow_v0` with five explicit
+`pipe_grud` is registered as `pipe_grud_reference_workflow_v0` with six explicit
 execution modes. `parameters.execution_mode="preflight"` writes
 `pipe_grud_preflight_report.md` and `pipe_grud_preflight_manifest.json` with
 dataset coverage, signal-variable availability, contiguous monthly history,
@@ -257,9 +265,14 @@ profile when readiness is true, but it does not apply calibrated alert policy.
 sequence artifacts and runs diagnostic PIPE-GRU-D rollouts over the expert-fuzzy
 surface, writing rollout rows, summaries, top-alert previews, a report, and a
 manifest. It does not apply reference bloom calibrators or 2B policy thresholds.
+`parameters.execution_mode="infer_reference_profile"` builds the adaptive
+surface, loads the reviewed adaptive WQP-focused PIPE-GRU-D model, runs
+recursive rollouts, applies rollout bloom calibrators, applies the selected 2B
+policy thresholds, and writes reference rollout rows, alert rows, summaries, a
+report, and a manifest. It reports external-domain warnings because skill is
+not guaranteed for a new water body.
 `parameters.execution_mode="artifact_reference"` validates and reports the
-reviewed adaptive PIPE-GRU-D artifacts. No mode performs dataset-specific
-calibrated reference-profile inference yet.
+reviewed adaptive PIPE-GRU-D artifacts.
 Direct `dataset_id` configs are retained as a compatibility path for local
 reproducibility checks.
 

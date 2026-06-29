@@ -136,15 +136,16 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     ),
     PipelineInfo(
         name="pipe_grud",
-        status="adaptive_surface_reference_adapter",
-        description="Diagnose external PIPE-GRU-D readiness, build expert or adaptive external PIPE sequence artifacts, run explicit expert-surface rollouts, and report reviewed reference artifacts.",
+        status="calibrated_reference_inference_adapter",
+        description="Diagnose external PIPE-GRU-D readiness, build expert or adaptive external PIPE sequence artifacts, run diagnostic expert-surface rollouts, and run calibrated adaptive reference-profile inference.",
         notes=(
             "Use parameters.execution_mode='preflight' for external dataset diagnostics.",
             "Use parameters.execution_mode='build_sequences' to build expert-fuzzy external PIPE state and sequence artifacts.",
             "Use parameters.execution_mode='build_adaptive_surface' to build adaptive ANFIS external PIPE state and sequence artifacts.",
             "Use parameters.execution_mode='infer_expert_surface' for diagnostic PIPE-GRU-D rollouts over that expert surface.",
+            "Use parameters.execution_mode='infer_reference_profile' to apply the adaptive reference transform, frozen PIPE-GRU-D model, rollout bloom calibrators, and selected 2B policy thresholds.",
             "Use parameters.execution_mode='artifact_reference' to validate the reviewed adaptive reference profile.",
-            "Dataset-specific calibrated reference inference remains disabled until adaptive-surface inference and alert policy application are reviewed.",
+            "External dataset skill is not guaranteed; manifests and reports include readiness, blockers, warnings, and interpretation limits.",
         ),
     ),
     PipelineInfo(

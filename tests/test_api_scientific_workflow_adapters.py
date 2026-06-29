@@ -341,6 +341,58 @@ def test_pipe_grud_expert_surface_inference_adapter_writes_diagnostic_rollouts(
     } <= artifact_names
 
 
+def test_pipe_grud_reference_profile_inference_adapter_writes_calibrated_rollouts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("torch")
+    pytest.importorskip("joblib")
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {
+                "execution_mode": "infer_reference_profile",
+                "rollout_horizon": 2,
+                "max_origins": 1,
+                "deterministic": True,
+                "policy_name": "closest_pr",
+            },
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_grud_reference_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["selected_origins"] == 1
+    assert row_counts["rollout_rows"] == 2
+    assert row_counts["alert_rows"] == 4
+    summary = result["summary"]["summaries"]["pipe_grud_reference_profile_inference"]
+    assert summary["execution_mode"] == "infer_reference_profile"
+    assert summary["outcome"] == "completed_reference_profile"
+    assert summary["policy_name"] == "closest_pr"
+    assert summary["readiness"]["reference_model_loaded"] is True
+    assert summary["readiness"]["reference_bloom_calibrators_applied"] is True
+    assert summary["readiness"]["policy_thresholds_applied"] is True
+    assert summary["readiness"]["ready_for_reference_inference"] is True
+    assert summary["blockers"] == []
+    warning_codes = {warning["code"] for warning in summary["warnings"]}
+    assert "external_domain_not_validated" in warning_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "pipe_adaptive_surface_manifest.json",
+        "pipe_grud_reference_rollouts.parquet",
+        "pipe_grud_reference_alerts.csv",
+        "pipe_grud_reference_policy_summary.csv",
+        "pipe_grud_reference_inference_report.md",
+        "pipe_grud_reference_inference_manifest.json",
+    } <= artifact_names
+
+
 def test_pipe_grud_reference_adapter_writes_manifest_and_report(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,

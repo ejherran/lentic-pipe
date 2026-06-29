@@ -2,8 +2,13 @@ import asyncio
 from pathlib import Path
 
 from httpx import ASGITransport, AsyncClient
+import pytest
 
 from src.api.main import create_app
+from src.api.models.run import ModelType
+from src.api.schemas.dataset import DatasetObservation, DatasetValidationRequest
+from src.api.services.dataset_repository import register_dataset_request
+from src.api.services.scientific_workflow_adapters import run_scientific_workflow_job
 
 
 def _fuzzy_payload() -> dict[str, object]:
@@ -61,6 +66,46 @@ def _minimal_payload() -> dict[str, object]:
             }
         ],
     }
+
+
+def _pipe_grud_sequence_dataset_request() -> DatasetValidationRequest:
+    observations: list[DatasetObservation] = []
+    for month in range(1, 14):
+        observed_at = f"2024-{month:02d}-15" if month <= 12 else "2025-01-15"
+        values = {
+            "TP_ugL": 25.0 + month,
+            "TN_ugL": 600.0 + month * 8.0,
+            "DO_mgL": 7.5 - month * 0.03,
+            "pH": 7.2,
+            "temperature_C": 18.0 + month * 0.2,
+            "secchi_depth_m": 1.2,
+            "chlorophyll_a_ugL": 12.0 + month * 0.5,
+        }
+        units = {
+            "TP_ugL": "ug/L",
+            "TN_ugL": "ug/L",
+            "DO_mgL": "mg/L",
+            "pH": "dimensionless",
+            "temperature_C": "deg C",
+            "secchi_depth_m": "m",
+            "chlorophyll_a_ugL": "ug/L",
+        }
+        for variable, value in values.items():
+            observations.append(
+                DatasetObservation(
+                    source_id="pipe-sequence",
+                    site_id="lake-a",
+                    observed_at=observed_at,
+                    variable=variable,
+                    value=value,
+                    unit=units[variable],
+                )
+            )
+    return DatasetValidationRequest(
+        dataset_name="PIPE Sequence Lake",
+        requested_workflow="pipe_grud",
+        observations=observations,
+    )
 
 
 def test_api_exposes_current_state_predictions_and_alerts(
@@ -124,6 +169,72 @@ def test_api_exposes_current_state_predictions_and_alerts(
     only_alerts = responses["only_alerts"]["payload"]["alerts"]
     assert len(only_alerts) == 1
     assert only_alerts[0]["year_month"] == "2024-02"
+
+
+def test_api_exposes_pipe_grud_reference_predictions_and_alerts(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    pytest.importorskip("torch")
+    pytest.importorskip("joblib")
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {
+                "execution_mode": "infer_reference_profile",
+                "rollout_horizon": 2,
+                "max_origins": 1,
+                "deterministic": True,
+                "policy_name": "closest_pr",
+            },
+        },
+    )
+    plan_id = result["plan"]["plan_id"]
+
+    async def request() -> dict[str, dict]:
+        app = create_app()
+        async with AsyncClient(
+            transport=ASGITransport(app=app),
+            base_url="http://testserver",
+        ) as client:
+            predictions = await client.get(
+                f"/runs/plans/{plan_id}/predictions",
+                params={"limit": 4},
+            )
+            alerts = await client.get(
+                f"/runs/plans/{plan_id}/alerts",
+                params={"limit": 4},
+            )
+            return {
+                "predictions": {"status_code": predictions.status_code, "payload": predictions.json()},
+                "alerts": {"status_code": alerts.status_code, "payload": alerts.json()},
+            }
+
+    responses = asyncio.run(request())
+
+    predictions = responses["predictions"]["payload"]
+    assert responses["predictions"]["status_code"] == 200
+    assert predictions["prediction_surface"] == "pipe_grud_adaptive_reference_rollout"
+    assert len(predictions["predictions"]) == 4
+    assert {record["target"] for record in predictions["predictions"]} == {"irc_alert", "bloom_h"}
+    assert {record["horizon_months"] for record in predictions["predictions"]} == {1, 2}
+    score_kind_by_target = {record["target"]: record["score_kind"] for record in predictions["predictions"]}
+    assert score_kind_by_target == {
+        "irc_alert": "model_probability",
+        "bloom_h": "calibrated_probability",
+    }
+
+    alerts = responses["alerts"]["payload"]
+    assert responses["alerts"]["status_code"] == 200
+    assert alerts["alert_surface"] == "pipe_grud_adaptive_reference_policy_2b"
+    assert alerts["policy_version"] == "closest_pr"
+    assert len(alerts["alerts"]) == 4
+    assert {record["target_event"] for record in alerts["alerts"]} == {"irc_alert", "bloom_h"}
+    assert all(record["threshold"] >= 0.0 for record in alerts["alerts"])
 
 
 def test_api_rejects_predictions_when_surface_is_unavailable(

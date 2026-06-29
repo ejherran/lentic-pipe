@@ -161,7 +161,7 @@ first registered adapter is `local_scientific_workflow_v0`, which executes
 `canonical_observations`, `monthly_panel`, and deterministic expert
 `fuzzy_state` by reusing the reviewed planner/executor path. The first heavy
 adapter is `pipe_grud_reference_workflow_v0`, which supports `pipe_grud` with
-five explicit modes: `parameters.execution_mode="preflight"` diagnoses whether
+six explicit modes: `parameters.execution_mode="preflight"` diagnoses whether
 an uploaded external dataset has the minimum temporal coverage, signal
 variables, planner readiness, and sequence-surface prerequisites for future
 PIPE-GRU-D inference; `parameters.execution_mode="build_sequences"` builds
@@ -171,13 +171,18 @@ schema, plus eligible inference origins;
 adaptive ANFIS transform and builds schema-compatible adaptive PIPE state and
 sequence artifacts;
 `parameters.execution_mode="infer_expert_surface"` runs diagnostic PIPE-GRU-D
-rollouts over that expert-fuzzy surface; `parameters.execution_mode="artifact_reference"`
-validates and reports the reviewed adaptive PIPE-GRU-D artifact profile.
+rollouts over that expert-fuzzy surface;
+`parameters.execution_mode="infer_reference_profile"` applies the reviewed
+adaptive transform, frozen adaptive WQP-focused PIPE-GRU-D model, rollout bloom
+calibrators, and selected 2B policy thresholds to the submitted dataset; and
+`parameters.execution_mode="artifact_reference"` validates and reports the
+reviewed adaptive PIPE-GRU-D artifact profile.
 `build_sequences` and `infer_expert_surface` do not match the adaptive
 WQP-focused reference surface. `build_adaptive_surface` is mechanically
 compatible with the reviewed adaptive profile but does not apply reference bloom
-calibrators or 2B policy thresholds; calibrated reference-profile inference
-remains pending.
+calibrators or 2B policy thresholds. `infer_reference_profile` is the calibrated
+reference-profile inference path; it still reports external-domain warnings
+because predictive skill on a new water body is not guaranteed.
 Adapters persist the plan,
 execution, artifact list, result summary, and row-count metrics in
 `Run.results`. Direct `dataset_id` configs remain supported only as a
@@ -267,8 +272,9 @@ persisted execution response.
 
 Temporal/model workflows remain deliberately non-executable in the synchronous
 local executor. PIPE-GRU-D is reachable through the asynchronous job adapter for
-preflight diagnostics, external sequence artifact builds, diagnostic
-expert-surface rollouts, and reviewed artifact-reference reporting only.
+preflight diagnostics, external sequence artifact builds, adaptive-surface
+builds, diagnostic expert-surface rollouts, calibrated adaptive
+reference-profile inference, and reviewed artifact-reference reporting.
 Neural ODE, MIFAL-ED/T2, and
 counterfactual planning must remain planned-only until their adapters, artifact
 dependencies, and diagnostics are wired and reviewed.
@@ -315,8 +321,18 @@ Alerts are thresholded current-state risk indicators derived from the same
 expert fuzzy score and the frozen threshold recorded in
 `fuzzy_state_manifest.json` / `reports/anfis/fuzzy_manifest.json`. They are not
 official advisories and they are not PIPE-GRU-D or Neural ODE early-warning
-alerts. Temporal early-warning alert endpoints remain future work until the
-model adapters and diagnostics are wired.
+alerts.
+
+Completed `pipe_grud` runs produced with
+`parameters.execution_mode="infer_reference_profile"` expose temporal rollout
+records through the same query endpoints. `/predictions` returns two target
+surfaces per rollout horizon when available: `irc_alert` with
+`score_kind="model_probability"` from the rollout alert probability, and
+`bloom_h` with `score_kind="calibrated_probability"` from the reviewed rollout
+bloom calibrator. `/alerts` returns horizon- and event-specific 2B policy
+threshold decisions from `pipe_grud_reference_alerts.csv`; the per-record
+threshold is authoritative. These outputs are model-derived early-warning
+indicators, not official advisories or causal field evidence.
 
 ## Minimal Counterfactual Simulation
 
@@ -362,7 +378,7 @@ reports currently registered job adapters and their executable workflows. As of
 `job_adapter_interface_v1`, executable job workflows are
 `canonical_observations`, `monthly_panel`, `fuzzy_state`, and `pipe_grud` in
 preflight/sequence-build/adaptive-surface/expert-surface-inference/
-artifact-reference modes.
+reference-profile-inference/artifact-reference modes.
 Neural ODE, MIFAL-ED/T2, and
 counterfactual planning remain planned until their job adapters are reviewed and
 connected.

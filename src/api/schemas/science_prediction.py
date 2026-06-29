@@ -9,7 +9,7 @@ from pydantic import BaseModel, Field
 from src.api.schemas.dataset import WorkflowName
 
 PredictionSurfaceStatus = Literal["available"]
-PredictionScoreKind = Literal["expert_score", "calibrated_probability"]
+PredictionScoreKind = Literal["expert_score", "model_probability", "calibrated_probability"]
 AlertSeverity = Literal["low", "watch", "alert"]
 
 

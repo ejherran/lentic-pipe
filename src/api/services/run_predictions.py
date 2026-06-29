@@ -21,6 +21,9 @@ from src.api.services.run_repository import read_run_execution, run_plan_dir
 _FUZZY_STATE_SCORES = "fuzzy_state_scores.csv"
 _FUZZY_STATE_MANIFEST = "fuzzy_state_manifest.json"
 _FUZZY_ROOT_MANIFEST = Path("reports/anfis/fuzzy_manifest.json")
+_PIPE_GRUD_REFERENCE_ROLLOUTS = "pipe_grud_reference_rollouts.csv"
+_PIPE_GRUD_REFERENCE_ALERTS = "pipe_grud_reference_alerts.csv"
+_PIPE_GRUD_REFERENCE_MANIFEST = "pipe_grud_reference_inference_manifest.json"
 _PREDICTION_LIMITS = [
     "These records are current-month expert fuzzy state scores, not temporal forecasts.",
     "The score is an expert IRC state-risk score, not a calibrated probability.",
@@ -30,6 +33,16 @@ _ALERT_LIMITS = [
     "These records are thresholded current-state risk indicators, not official public advisories.",
     "The alert flag is derived from expert fuzzy IRC state score and a frozen threshold.",
     "Temporal early-warning alerts require PIPE-GRU-D or Neural ODE workflow adapters.",
+]
+_PIPE_GRUD_REFERENCE_PREDICTION_LIMITS = [
+    "These records are model-derived temporal rollout indicators from the adaptive PIPE-GRU-D reference profile.",
+    "Predictive skill and field transferability are not guaranteed for a new water body.",
+    "The 2B alert policy is a selected operating profile, not causal field evidence.",
+]
+_PIPE_GRUD_REFERENCE_ALERT_LIMITS = [
+    "These alerts are thresholded model-derived early-warning indicators, not official public advisories.",
+    "Thresholds are horizon- and event-specific; the per-record threshold is authoritative.",
+    "Predictive skill and field transferability are not guaranteed for a new water body.",
 ]
 
 
@@ -56,6 +69,20 @@ def list_run_predictions(plan_id: str, *, limit: int) -> RunPredictionResponse:
 
     execution = read_run_execution(plan_id)
     run_dir = run_plan_dir(execution.plan_id)
+    if (run_dir / _PIPE_GRUD_REFERENCE_ROLLOUTS).exists():
+        rows = _read_csv_rows(run_dir / _PIPE_GRUD_REFERENCE_ROLLOUTS)
+        manifest = _read_pipe_grud_reference_manifest(run_dir)
+        records = _reference_prediction_records(rows, execution.workflow, manifest)[:limit]
+        return RunPredictionResponse(
+            plan_id=execution.plan_id,
+            execution_id=execution.execution_id,
+            dataset_id=execution.dataset_id,
+            workflow=execution.workflow,
+            status="available",
+            prediction_surface="pipe_grud_adaptive_reference_rollout",
+            predictions=records,
+            interpretation_limits=_PIPE_GRUD_REFERENCE_PREDICTION_LIMITS,
+        )
     rows = _read_fuzzy_score_rows(run_dir, workflow=execution.workflow)
     manifest = _read_fuzzy_manifest(run_dir)
     records = [_prediction_record(row, execution.workflow, manifest) for row in rows]
@@ -77,6 +104,32 @@ def list_run_alerts(plan_id: str, *, limit: int, only_alerts: bool) -> RunAlertR
 
     execution = read_run_execution(plan_id)
     run_dir = run_plan_dir(execution.plan_id)
+    if (run_dir / _PIPE_GRUD_REFERENCE_ALERTS).exists():
+        rows = _read_csv_rows(run_dir / _PIPE_GRUD_REFERENCE_ALERTS)
+        manifest = _read_pipe_grud_reference_manifest(run_dir)
+        records = [
+            record
+            for record in (_reference_alert_record(row, execution.workflow) for row in rows)
+            if record is not None
+        ]
+        records = sorted(records, key=lambda record: (-int(record.is_alert), -record.score, record.rank))
+        ranked_records = [
+            record.model_copy(update={"rank": rank})
+            for rank, record in enumerate(records, start=1)
+            if not only_alerts or record.is_alert
+        ][:limit]
+        return RunAlertResponse(
+            plan_id=execution.plan_id,
+            execution_id=execution.execution_id,
+            dataset_id=execution.dataset_id,
+            workflow=execution.workflow,
+            status="available",
+            alert_surface="pipe_grud_adaptive_reference_policy_2b",
+            policy_version=str(manifest.get("policy_name", "closest_pr")),
+            threshold=_first_threshold(ranked_records),
+            alerts=ranked_records,
+            interpretation_limits=_PIPE_GRUD_REFERENCE_ALERT_LIMITS,
+        )
     rows = _read_fuzzy_score_rows(run_dir, workflow=execution.workflow)
     manifest = _read_fuzzy_manifest(run_dir)
     threshold = _manifest_threshold(manifest)
@@ -122,6 +175,11 @@ def _read_fuzzy_score_rows(run_dir: Path, *, workflow: str) -> list[dict[str, st
         return list(csv.DictReader(handle))
 
 
+def _read_csv_rows(path: Path) -> list[dict[str, str]]:
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
 def _read_fuzzy_manifest(run_dir: Path) -> dict[str, object]:
     path = run_dir / _FUZZY_STATE_MANIFEST
     if path.exists():
@@ -132,6 +190,18 @@ def _read_fuzzy_manifest(run_dir: Path) -> dict[str, object]:
         ErrorCode.dependency_not_ready,
         "Fuzzy manifest is required to interpret prediction and alert surfaces.",
         details={"required_artifact": _FUZZY_STATE_MANIFEST},
+        http_status=424,
+    )
+
+
+def _read_pipe_grud_reference_manifest(run_dir: Path) -> dict[str, object]:
+    path = run_dir / _PIPE_GRUD_REFERENCE_MANIFEST
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    raise RunPredictionError(
+        ErrorCode.dependency_not_ready,
+        "PIPE-GRU-D reference inference manifest is required to interpret prediction and alert surfaces.",
+        details={"required_artifact": _PIPE_GRUD_REFERENCE_MANIFEST},
         http_status=424,
     )
 
@@ -158,6 +228,56 @@ def _prediction_record(
         components=_prediction_components(row),
         interpretation="Current-month expert fuzzy composite risk score.",
     )
+
+
+def _reference_prediction_records(
+    rows: list[dict[str, str]],
+    workflow: WorkflowName,
+    manifest: dict[str, object],
+) -> list[RunPredictionRecord]:
+    records: list[RunPredictionRecord] = []
+    model_family = str(manifest.get("inference_version", "external_pipe_grud_reference_profile_inference_v0"))
+    for row in rows:
+        horizon = _int_or_none(row.get("rollout_horizon_months"))
+        if horizon is None:
+            continue
+        irc_score = _float_or_none(row.get("alert_probability_irc"))
+        if irc_score is not None:
+            records.append(
+                RunPredictionRecord(
+                    source_id=str(row.get("source_id", "")),
+                    site_id=str(row.get("site_id", "")),
+                    year_month=str(row.get("forecast_year_month", "")),
+                    horizon_months=horizon,
+                    target="irc_alert",
+                    score_name="alert_probability_irc",
+                    score=irc_score,
+                    score_kind="model_probability",
+                    model_family=model_family,
+                    workflow=workflow,
+                    components=_reference_prediction_components(row),
+                    interpretation="PIPE-GRU-D rollout probability of crossing the IRC alert threshold.",
+                )
+            )
+        bloom_score = _float_or_none(row.get("rollout_probability_bloom_calibrated"))
+        if bloom_score is not None:
+            records.append(
+                RunPredictionRecord(
+                    source_id=str(row.get("source_id", "")),
+                    site_id=str(row.get("site_id", "")),
+                    year_month=str(row.get("forecast_year_month", "")),
+                    horizon_months=horizon,
+                    target="bloom_h",
+                    score_name="rollout_probability_bloom_calibrated",
+                    score=bloom_score,
+                    score_kind="calibrated_probability",
+                    model_family=model_family,
+                    workflow=workflow,
+                    components=_reference_prediction_components(row),
+                    interpretation="Rollout-calibrated bloom probability from the adaptive PIPE-GRU-D reference profile.",
+                )
+            )
+    return records
 
 
 def _alert_record(
@@ -188,6 +308,34 @@ def _alert_record(
     )
 
 
+def _reference_alert_record(
+    row: dict[str, str],
+    workflow: WorkflowName,
+) -> RunAlertRecord | None:
+    score = _float_or_none(row.get("score"))
+    threshold = _float_or_none(row.get("threshold"))
+    horizon = _int_or_none(row.get("rollout_horizon_months"))
+    if score is None or threshold is None or horizon is None:
+        return None
+    rank = _int_or_none(row.get("rank")) or 1
+    return RunAlertRecord(
+        source_id=str(row.get("source_id", "")),
+        site_id=str(row.get("site_id", "")),
+        year_month=str(row.get("forecast_year_month", "")),
+        horizon_months=horizon,
+        target_event=str(row.get("target_event", "")),
+        score_name=str(row.get("score_name", "")),
+        score=score,
+        threshold=threshold,
+        is_alert=_boolish(row.get("is_alert")),
+        severity=cast(AlertSeverity, row.get("severity") or _severity(score, threshold)),
+        rank=rank,
+        policy_version=str(row.get("policy_name", "")) or str(row.get("policy_version", "")),
+        workflow=workflow,
+        interpretation=str(row.get("interpretation", "PIPE-GRU-D reference profile alert.")),
+    )
+
+
 def _prediction_components(row: dict[str, str]) -> dict[str, object]:
     components: dict[str, object] = {}
     for column in ("yN", "yF", "yT", "irc1_no_chla", "risk_chla_current"):
@@ -203,6 +351,35 @@ def _prediction_components(row: dict[str, str]) -> dict[str, object]:
         value = row.get(column)
         if value not in {None, ""}:
             components[column] = str(value)
+    return components
+
+
+def _reference_prediction_components(row: dict[str, str]) -> dict[str, object]:
+    components: dict[str, object] = {}
+    for column in (
+        "origin_year_month",
+        "origin_irc1_rollout_basis",
+        "irc_mean",
+        "irc_p05",
+        "irc_p50",
+        "irc_p95",
+        "rollout_alert_probability_threshold_h",
+        "rollout_bloom_probability_threshold_h",
+        "probability_bloom_mean",
+    ):
+        value = _float_or_none(row.get(column))
+        if value is not None:
+            components[column] = value
+        elif row.get(column) not in {None, ""}:
+            components[column] = str(row[column])
+    for column in (
+        "rollout_predicted_irc_alert_h",
+        "rollout_predicted_bloom_h",
+        "reference_any_alert_h",
+        "deterministic",
+    ):
+        if row.get(column) not in {None, ""}:
+            components[column] = _boolish(row.get(column))
     return components
 
 
@@ -228,8 +405,27 @@ def _severity(score: float, threshold: float) -> AlertSeverity:
     return "low"
 
 
+def _first_threshold(records: list[RunAlertRecord]) -> float:
+    if records:
+        return records[0].threshold
+    return 0.0
+
+
 def _float_or_none(value: object) -> float | None:
     try:
         return float(cast(Any, value))
     except (TypeError, ValueError):
         return None
+
+
+def _int_or_none(value: object) -> int | None:
+    try:
+        return int(float(cast(Any, value)))
+    except (TypeError, ValueError):
+        return None
+
+
+def _boolish(value: object) -> bool:
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in {"1", "true", "t", "yes", "y"}

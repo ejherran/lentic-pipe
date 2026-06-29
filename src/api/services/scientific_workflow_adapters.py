@@ -28,6 +28,10 @@ from src.api.services.pipe_grud_external_adaptive_surface import (
     run_external_pipe_adaptive_surface_build,
 )
 from src.api.services.pipe_grud_external_inference import run_external_pipe_grud_expert_surface_inference
+from src.api.services.pipe_grud_external_reference_inference import (
+    reference_inference_artifacts_available,
+    run_external_pipe_grud_reference_profile_inference,
+)
 from src.api.services.pipe_grud_external_sequences import build_external_pipe_sequence_artifacts
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import run_plan_dir, save_run_execution, save_run_plan
@@ -38,7 +42,14 @@ ADAPTER_INTERFACE_VERSION = "job_adapter_interface_v1"
 _KNOWN_WORKFLOWS = frozenset(str(name) for name in get_args(WorkflowName))
 _PIPE_GRUD_REFERENCE_PROFILE = "adaptive_wqp_focused"
 _PIPE_GRUD_EXECUTION_MODES = frozenset(
-    {"preflight", "build_sequences", "build_adaptive_surface", "infer_expert_surface", "artifact_reference"}
+    {
+        "preflight",
+        "build_sequences",
+        "build_adaptive_surface",
+        "infer_expert_surface",
+        "infer_reference_profile",
+        "artifact_reference",
+    }
 )
 _PIPE_GRUD_SIGNAL_VARIABLES = frozenset({"chlorophyll_a_ugL", "TP_ugL", "TN_ugL"})
 _PIPE_GRUD_REQUIRED_HISTORY_MONTHS = 12
@@ -189,7 +200,9 @@ class PipeGrudReferenceWorkflowAdapter:
                 "parameters.execution_mode='build_adaptive_surface' for adaptive ANFIS "
                 "state/sequence artifacts, "
                 "parameters.execution_mode='infer_expert_surface' for explicit diagnostic "
-                "expert-surface rollouts, or parameters.execution_mode='artifact_reference' "
+                "expert-surface rollouts, parameters.execution_mode='infer_reference_profile' "
+                "for calibrated adaptive reference-profile inference, or "
+                "parameters.execution_mode='artifact_reference' "
                 "to validate the reviewed adaptive reference profile."
             )
         if execution_mode in {"preflight", "build_sequences"}:
@@ -217,6 +230,14 @@ class PipeGrudReferenceWorkflowAdapter:
                     + ", ".join(sorted(missing))
                 )
             return
+        if execution_mode == "infer_reference_profile":
+            available, missing = reference_inference_artifacts_available()
+            if not available:
+                raise ScientificWorkflowAdapterError(
+                    "PIPE-GRU-D reference inference artifacts are not available: "
+                    + ", ".join(sorted(missing))
+                )
+            return
         missing = [
             name for name, path in _PIPE_GRUD_REFERENCE_ARTIFACTS.items() if not _artifact_available(path)
         ]
@@ -237,6 +258,7 @@ class PipeGrudReferenceWorkflowAdapter:
             "build_sequences",
             "build_adaptive_surface",
             "infer_expert_surface",
+            "infer_reference_profile",
         } and not plan.executable:
             blocker_messages = [issue.message for issue in plan.blockers]
             raise ScientificWorkflowAdapterError(
@@ -254,6 +276,8 @@ class PipeGrudReferenceWorkflowAdapter:
             return self._execute_adaptive_surface_build(job, plan)
         if _pipe_grud_execution_mode(job) == "infer_expert_surface":
             return self._execute_expert_surface_inference(job, plan)
+        if _pipe_grud_execution_mode(job) == "infer_reference_profile":
+            return self._execute_reference_profile_inference(job, plan)
 
         workspace = api_workspace()
         run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
@@ -317,6 +341,46 @@ class PipeGrudReferenceWorkflowAdapter:
         started_at = _now_utc()
         execution_id = _execution_id(plan.plan_id, self.adapter_id)
         result = run_external_pipe_grud_expert_surface_inference(
+            dataset_id=job.dataset_id,
+            plan=plan,
+            run_dir=run_dir,
+            workspace=workspace,
+            execution_id=execution_id,
+            adapter_id=self.adapter_id,
+            adapter_interface_version=self.interface_version,
+            started_at=started_at,
+            parameters=job.parameters,
+        )
+        completed_at = _now_utc()
+        artifacts = [
+            _run_artifact(workspace, path, name=path.name, role="manifest" if path.suffix == ".json" else "output")
+            for path in result.output_paths
+        ]
+        execution = RunExecutionResponse(
+            execution_id=execution_id,
+            plan_id=plan.plan_id,
+            dataset_id=job.dataset_id,
+            workflow=job.workflow,
+            status="completed",
+            started_at=started_at,
+            completed_at=completed_at,
+            row_counts=result.row_counts,
+            warnings=plan.warnings,
+            artifacts=artifacts,
+        )
+        return save_run_execution(execution, workspace=workspace)
+
+    def _execute_reference_profile_inference(
+        self,
+        job: ScientificWorkflowJob,
+        plan: RunPlanResponse,
+    ) -> RunExecutionResponse:
+        workspace = api_workspace()
+        run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        started_at = _now_utc()
+        execution_id = _execution_id(plan.plan_id, self.adapter_id)
+        result = run_external_pipe_grud_reference_profile_inference(
             dataset_id=job.dataset_id,
             plan=plan,
             run_dir=run_dir,
@@ -486,6 +550,7 @@ class PipeGrudReferenceWorkflowAdapter:
     ) -> RunResultSummaryResponse:
         summaries: dict[str, object] = {}
         preflight_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_preflight_manifest.json"
+        reference_inference_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_reference_inference_manifest.json"
         adaptive_surface_manifest_path = run_plan_dir(plan.plan_id) / "pipe_adaptive_surface_manifest.json"
         inference_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_external_inference_manifest.json"
         sequence_manifest_path = run_plan_dir(plan.plan_id) / "pipe_sequence_build_manifest.json"
@@ -501,6 +566,22 @@ class PipeGrudReferenceWorkflowAdapter:
                 "blockers": manifest.get("blockers", []),
                 "warnings": manifest.get("warnings", []),
                 "next_actions": manifest.get("next_actions", []),
+            }
+        elif reference_inference_manifest_path.exists():
+            manifest = json.loads(reference_inference_manifest_path.read_text(encoding="utf-8"))
+            summaries["pipe_grud_reference_profile_inference"] = {
+                "adapter": manifest.get("adapter"),
+                "execution_mode": manifest.get("execution_mode"),
+                "inference_version": manifest.get("inference_version"),
+                "surface_contract": manifest.get("surface_contract"),
+                "reference_profile": manifest.get("reference_profile"),
+                "policy_name": manifest.get("policy_name"),
+                "outcome": manifest.get("outcome"),
+                "readiness": manifest.get("readiness", {}),
+                "blockers": manifest.get("blockers", []),
+                "warnings": manifest.get("warnings", []),
+                "threshold_coverage": manifest.get("threshold_coverage", {}),
+                "calibrator_coverage": manifest.get("calibrator_coverage", {}),
             }
         elif adaptive_surface_manifest_path.exists():
             manifest = json.loads(adaptive_surface_manifest_path.read_text(encoding="utf-8"))
