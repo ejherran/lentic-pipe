@@ -164,11 +164,25 @@ simulation, or scientific artifact generation. The dry-run plan itself is
 persisted as a reproducibility record under the API workspace and can be
 retrieved by `plan_id`.
 
-The initial executor supports only `canonical_observations` and
-`monthly_panel`. It converts supported units into canonical units, writes
-canonical rows, and builds a long monthly panel using median aggregation. Model
-workflows are intentionally refused by the synchronous executor until their
-scientific adapters are integrated.
+The initial executor supports `canonical_observations`, `monthly_panel`, and
+deterministic expert `fuzzy_state` scoring. It converts supported units into
+canonical units, writes canonical rows, builds a long monthly panel using
+median aggregation, and for `fuzzy_state` builds the wide expert fuzzy input
+surface expected by `src.fuzzy.expert.build_expert_state` using the frozen IRC
+weights declared in `reports/anfis/fuzzy_manifest.json`.
+
+`fuzzy_state` emits:
+
+| Artifact | Meaning |
+|---|---|
+| `monthly_panel_wide.csv` | Source/site/month panel with `mean_*` columns and derived `TN_TP_ratio` / `risk_chla` when possible. |
+| `fuzzy_state_scores.csv` | Expert fuzzy state outputs including `yN`, `yF`, `yT`, `irc1`, uncertainty/evidence columns, labels, and trophic memberships. |
+| `fuzzy_state_trace.csv` | Component-level fuzzy membership and trace columns for audit. |
+| `fuzzy_state_manifest.json` | Local reproducibility manifest for the expert fuzzy scoring step. |
+
+This layer is expert fuzzy scoring only. Adaptive ANFIS retraining, PIPE-GRU-D,
+Neural ODE, MIFAL-ED/T2, and counterfactual planning are intentionally refused
+by the synchronous executor until their scientific adapters are integrated.
 
 ## Privacy And Provenance
 

@@ -7,8 +7,9 @@ workflows:
 
 - `canonical_observations`
 - `monthly_panel`
+- `fuzzy_state`
 
-Model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, fuzzy state, and
+Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
 counterfactual planning are not executed by the local synchronous executor yet.
 They are reported as planned, blocked, or unsupported until their adapters are
 integrated and reviewed.
@@ -167,6 +168,15 @@ $LENTIC_API_WORKSPACE/runs/{plan_id}/execution_manifest.json
 $LENTIC_API_WORKSPACE/runs/{plan_id}/execution.json
 ```
 
+For `fuzzy_state`, the executor also writes:
+
+```text
+$LENTIC_API_WORKSPACE/runs/{plan_id}/monthly_panel_wide.csv
+$LENTIC_API_WORKSPACE/runs/{plan_id}/fuzzy_state_scores.csv
+$LENTIC_API_WORKSPACE/runs/{plan_id}/fuzzy_state_trace.csv
+$LENTIC_API_WORKSPACE/runs/{plan_id}/fuzzy_state_manifest.json
+```
+
 Fetch the persisted execution response:
 
 ```bash
@@ -175,8 +185,10 @@ curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/execution
 
 ## Interpretation Limits
 
-This local flow only canonicalizes observations and builds a long monthly panel.
-It does not run alerts, forecasts, Neural ODE, MIFAL-ED/T2, or counterfactual
-planning. A successful monthly panel execution means the input data were
-converted and aggregated according to the current API contract; it is not a
-model result or environmental decision recommendation.
+This local flow canonicalizes observations, builds a long monthly panel, and
+can compute deterministic expert fuzzy state scores. It does not run alerts,
+forecasts, adaptive ANFIS retraining, Neural ODE, MIFAL-ED/T2, or
+counterfactual planning. A successful `fuzzy_state` execution means the input
+data were converted, aggregated, and scored by the current expert fuzzy rules
+and frozen IRC weights in `reports/anfis/fuzzy_manifest.json`; it is not a
+temporal model result or environmental decision recommendation.

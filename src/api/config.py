@@ -37,21 +37,30 @@ class ApiMetadata(TypedDict):
 PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     PipelineInfo(
         name="dataset_validation",
-        status="contract",
+        status="available",
         description="Validate external dataset schema, units, dates, ranges, and coverage.",
-        notes=("First workflow to implement after the API scaffold.",),
+        notes=("Side-effect-free validation is available through POST /datasets/validate.",),
     ),
     PipelineInfo(
         name="canonical_observations",
-        status="planned",
+        status="local_executor",
         description="Convert supported external observations into canonical long observations.",
-        notes=("Requires the dataset validation contract.",),
+        notes=("Available through the safe synchronous local executor.",),
     ),
     PipelineInfo(
         name="monthly_panel",
-        status="planned",
+        status="local_executor",
         description="Aggregate canonical observations into source/site/month panels.",
-        notes=("Reports workflow eligibility by variable and temporal coverage.",),
+        notes=("Available through the safe synchronous local executor.",),
+    ),
+    PipelineInfo(
+        name="fuzzy_state",
+        status="local_executor",
+        description="Compute deterministic expert fuzzy ecological state scores from an eligible monthly panel.",
+        notes=(
+            "Uses the reviewed src.fuzzy.expert state construction path.",
+            "This is expert fuzzy scoring, not adaptive ANFIS retraining.",
+        ),
     ),
     PipelineInfo(
         name="pipe_grud",
@@ -86,7 +95,7 @@ def api_metadata() -> ApiMetadata:
     return {
         "api_version": API_VERSION,
         "project": "lentic-pipe",
-        "stage": "contract_scaffold",
+        "stage": "local_workflow_api",
         "supported_horizons": ["h1", "h2", "h3"],
         "dataset_contract": "docs/API_DATASET_CONTRACT.md",
         "error_contract": "docs/API_ERRORS.md",

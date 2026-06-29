@@ -40,11 +40,12 @@ def test_version_exposes_contracts_and_workflows(app) -> None:
 
     assert status_code == 200
     assert payload["project"] == "lentic-pipe"
-    assert payload["stage"] == "contract_scaffold"
+    assert payload["stage"] == "local_workflow_api"
     assert payload["supported_horizons"] == ["h1", "h2", "h3"]
     assert payload["documents"]["dataset_contract"] == "docs/API_DATASET_CONTRACT.md"
-    workflow_names = {workflow["name"] for workflow in payload["workflows"]}
-    assert {"dataset_validation", "pipe_grud", "counterfactual_planning"} <= workflow_names
+    workflows = {workflow["name"]: workflow for workflow in payload["workflows"]}
+    assert {"dataset_validation", "fuzzy_state", "pipe_grud", "counterfactual_planning"} <= set(workflows)
+    assert workflows["fuzzy_state"]["status"] == "local_executor"
 
 
 def test_error_catalog_endpoint(app) -> None:

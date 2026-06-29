@@ -47,6 +47,34 @@ def test_plan_run_request_reports_ready_monthly_panel(tmp_path: Path, monkeypatc
     assert any(artifact.name == "monthly_panel.csv" for artifact in response.required_artifacts)
 
 
+def test_plan_run_request_reports_ready_fuzzy_state_outputs(tmp_path: Path, monkeypatch) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(
+        DatasetValidationRequest(
+            dataset_name="Lake Alpha",
+            observations=_observations(months=1),
+        )
+    )
+
+    response = plan_run_request(
+        RunPlanRequest(dataset_id=dataset.dataset_id, workflow="fuzzy_state")
+    )
+
+    assert response.status == "ready"
+    assert response.executable is True
+    output_names = {
+        artifact.name
+        for artifact in response.required_artifacts
+        if artifact.role == "output"
+    }
+    assert {
+        "monthly_panel_wide.csv",
+        "fuzzy_state_scores.csv",
+        "fuzzy_state_trace.csv",
+        "fuzzy_state_manifest.json",
+    }.issubset(output_names)
+
+
 def test_save_run_plan_writes_reproducibility_record(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(

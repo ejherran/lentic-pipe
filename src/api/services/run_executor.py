@@ -6,9 +6,12 @@ import csv
 from datetime import UTC, datetime
 import hashlib
 import json
+import math
 from pathlib import Path
 from statistics import median
-from typing import Any
+from typing import Any, cast
+
+import pandas as pd
 
 from src.api.config import api_workspace
 from src.api.errors import ErrorCode
@@ -26,8 +29,10 @@ from src.api.services.run_repository import (
     run_plan_dir,
     save_run_execution,
 )
+from src.fuzzy.expert import build_expert_state
 
-_EXECUTABLE_WORKFLOWS = {"canonical_observations", "monthly_panel"}
+_EXECUTABLE_WORKFLOWS = {"canonical_observations", "monthly_panel", "fuzzy_state"}
+_FUZZY_MANIFEST_PATH = Path("reports/anfis/fuzzy_manifest.json")
 
 
 class RunExecutionError(Exception):
@@ -74,7 +79,7 @@ def execute_run_plan(plan_id: str) -> RunExecutionResponse:
     output_paths = [canonical_jsonl, canonical_csv]
     row_counts = {"canonical_observations": len(canonical_rows)}
 
-    if plan.workflow == "monthly_panel":
+    if plan.workflow in {"monthly_panel", "fuzzy_state"}:
         panel_rows = _monthly_panel_rows(canonical_rows, variables)
         if not panel_rows:
             raise RunExecutionError(
@@ -86,6 +91,51 @@ def execute_run_plan(plan_id: str) -> RunExecutionResponse:
         _write_csv(monthly_panel_csv, panel_rows, _PANEL_FIELDS)
         output_paths.append(monthly_panel_csv)
         row_counts["monthly_panel"] = len(panel_rows)
+
+    if plan.workflow == "fuzzy_state":
+        wide_panel = _wide_panel_frame(panel_rows, canonical_rows)
+        if wide_panel.empty:
+            raise RunExecutionError(
+                ErrorCode.no_valid_monthly_panel,
+                "Canonical observations could not produce fuzzy state input rows.",
+                details={"plan_id": plan.plan_id, "dataset_id": plan.dataset_id},
+            )
+        irc_weights = _load_fuzzy_irc_weights()
+        state, trace = build_expert_state(wide_panel, irc_weights=irc_weights)
+        monthly_panel_wide_csv = run_dir / "monthly_panel_wide.csv"
+        fuzzy_state_csv = run_dir / "fuzzy_state_scores.csv"
+        fuzzy_trace_csv = run_dir / "fuzzy_state_trace.csv"
+        fuzzy_manifest_path = run_dir / "fuzzy_state_manifest.json"
+        _write_dataframe_csv(monthly_panel_wide_csv, wide_panel)
+        _write_dataframe_csv(fuzzy_state_csv, state)
+        _write_dataframe_csv(fuzzy_trace_csv, trace)
+        fuzzy_manifest_payload = {
+            "plan_id": plan.plan_id,
+            "dataset_id": plan.dataset_id,
+            "workflow": plan.workflow,
+            "state_version": "expert_fuzzy_state_v0",
+            "scoring_function": "src.fuzzy.expert.build_expert_state",
+            "weights_source": _FUZZY_MANIFEST_PATH.as_posix(),
+            "irc_weights": irc_weights,
+            "row_counts": {
+                "monthly_panel_wide": int(len(wide_panel)),
+                "fuzzy_state": int(len(state)),
+                "fuzzy_trace": int(len(trace)),
+            },
+            "notes": [
+                "This executor computes deterministic expert fuzzy state scores.",
+                "It does not retrain adaptive ANFIS or run temporal alert models.",
+            ],
+        }
+        _write_json(fuzzy_manifest_path, fuzzy_manifest_payload)
+        output_paths.extend([monthly_panel_wide_csv, fuzzy_state_csv, fuzzy_trace_csv, fuzzy_manifest_path])
+        row_counts.update(
+            {
+                "monthly_panel_wide": int(len(wide_panel)),
+                "fuzzy_state": int(len(state)),
+                "fuzzy_trace": int(len(trace)),
+            }
+        )
 
     completed_at = _now_utc()
     execution_id = _execution_id(plan.plan_id)
@@ -174,6 +224,46 @@ _PANEL_FIELDS = [
     "aggregation",
 ]
 
+_FUZZY_PANEL_COLUMNS = [
+    "source_id",
+    "site_id",
+    "site_id_source",
+    "site_name",
+    "year_month",
+    "mean_TP_ugL",
+    "mean_TN_ugL",
+    "TN_TP_ratio",
+    "mean_DO_mgL",
+    "mean_pH",
+    "mean_turbidity_NTU",
+    "mean_secchi_depth_m",
+    "mean_temperature_C",
+    "mean_chlorophyll_a_ugL",
+    "risk_chla",
+    "qc_ok_rate_TP_ugL",
+    "qc_ok_rate_TN_ugL",
+    "qc_ok_rate_DO_mgL",
+    "qc_ok_rate_pH",
+    "qc_ok_rate_turbidity_NTU",
+    "qc_ok_rate_secchi_depth_m",
+    "qc_ok_rate_temperature_C",
+    "qc_ok_rate_chlorophyll_a_ugL",
+]
+
+_FUZZY_MEAN_COLUMN_BY_VARIABLE = {
+    "TP_ugL": "mean_TP_ugL",
+    "TN_ugL": "mean_TN_ugL",
+    "DO_mgL": "mean_DO_mgL",
+    "pH": "mean_pH",
+    "turbidity_NTU": "mean_turbidity_NTU",
+    "secchi_depth_m": "mean_secchi_depth_m",
+    "temperature_C": "mean_temperature_C",
+    "chlorophyll_a_ugL": "mean_chlorophyll_a_ugL",
+}
+
+_QC_GOOD_FLAGS = {"1", "accepted", "good", "ok", "pass", "passed", "true", "valid", "y", "yes"}
+_QC_BAD_FLAGS = {"0", "bad", "fail", "failed", "false", "invalid", "n", "no", "reject", "rejected", "suspect"}
+
 
 def _canonical_rows(observations: list[Any], variables: dict[str, CanonicalVariable]) -> list[dict[str, object]]:
     rows: list[dict[str, object]] = []
@@ -255,6 +345,137 @@ def _monthly_panel_rows(
     return panel_rows
 
 
+def _wide_panel_frame(
+    panel_rows: list[dict[str, object]],
+    canonical_rows: list[dict[str, object]],
+) -> pd.DataFrame:
+    records: dict[tuple[str, str, str], dict[str, object]] = {}
+    for row in panel_rows:
+        variable = str(row["variable"])
+        mean_column = _FUZZY_MEAN_COLUMN_BY_VARIABLE.get(variable)
+        if mean_column is None:
+            continue
+        key = (str(row["source_id"]), str(row["site_id"]), str(row["year_month"]))
+        record = records.setdefault(
+            key,
+            {
+                "source_id": key[0],
+                "site_id": key[1],
+                "site_id_source": key[1],
+                "site_name": key[1],
+                "year_month": key[2],
+            },
+        )
+        value = _optional_float(row.get("value"))
+        if value is None:
+            continue
+        record[mean_column] = value
+
+    qc_scores: dict[tuple[str, str, str, str], list[float]] = {}
+    for row in canonical_rows:
+        score = _qc_score(row.get("qc_flag"))
+        if score is None:
+            continue
+        variable = str(row["variable"])
+        if variable not in _FUZZY_MEAN_COLUMN_BY_VARIABLE:
+            continue
+        key = (
+            str(row["source_id"]),
+            str(row["site_id"]),
+            str(row["year_month"]),
+            variable,
+        )
+        qc_scores.setdefault(key, []).append(score)
+
+    for source_id, site_id, year_month, variable in sorted(qc_scores):
+        record = records.get((source_id, site_id, year_month))
+        if record is None:
+            continue
+        values = qc_scores[(source_id, site_id, year_month, variable)]
+        record[f"qc_ok_rate_{variable}"] = sum(values) / len(values)
+
+    for record in records.values():
+        tp = _optional_float(record.get("mean_TP_ugL"))
+        tn = _optional_float(record.get("mean_TN_ugL"))
+        if tp is not None and tp > 0.0 and tn is not None:
+            record["TN_TP_ratio"] = tn / tp
+        chla = _optional_float(record.get("mean_chlorophyll_a_ugL"))
+        if chla is not None:
+            record["risk_chla"] = _chlorophyll_risk(chla)
+
+    frame = pd.DataFrame(list(records.values()))
+    if frame.empty:
+        return frame
+    for column in _FUZZY_PANEL_COLUMNS:
+        if column not in frame.columns:
+            frame[column] = pd.NA
+    return frame[_FUZZY_PANEL_COLUMNS].sort_values(["source_id", "site_id", "year_month"]).reset_index(drop=True)
+
+
+def _optional_float(value: object) -> float | None:
+    if value is None or value is pd.NA:
+        return None
+    try:
+        number = float(cast(Any, value))
+    except (TypeError, ValueError):
+        return None
+    if math.isnan(number) or math.isinf(number):
+        return None
+    return number
+
+
+def _chlorophyll_risk(chla_ugl: float) -> float:
+    low = math.log(5.0 + 0.1)
+    high = math.log(30.0 + 0.1)
+    value = (math.log(max(chla_ugl, 0.0) + 0.1) - low) / (high - low)
+    return min(1.0, max(0.0, value))
+
+
+def _qc_score(raw_flag: object) -> float | None:
+    if raw_flag is None:
+        return None
+    normalized = str(raw_flag).strip().lower()
+    if not normalized:
+        return None
+    if normalized in _QC_GOOD_FLAGS:
+        return 1.0
+    if normalized in _QC_BAD_FLAGS:
+        return 0.0
+    return None
+
+
+def _load_fuzzy_irc_weights() -> dict[str, float]:
+    if not _FUZZY_MANIFEST_PATH.exists():
+        raise RunExecutionError(
+            ErrorCode.dependency_not_ready,
+            "Expert fuzzy manifest is required for reproducible fuzzy state scoring.",
+            details={"required_artifact": _FUZZY_MANIFEST_PATH.as_posix()},
+        )
+    try:
+        payload = json.loads(_FUZZY_MANIFEST_PATH.read_text(encoding="utf-8"))
+        raw_weights = payload["irc_weights"]
+    except (json.JSONDecodeError, KeyError, TypeError) as exc:
+        raise RunExecutionError(
+            ErrorCode.pipeline_execution_failed,
+            "Expert fuzzy manifest does not contain valid IRC weights.",
+            details={"required_artifact": _FUZZY_MANIFEST_PATH.as_posix()},
+            http_status=500,
+        ) from exc
+
+    weights: dict[str, float] = {}
+    for name in ("alpha", "beta", "gamma"):
+        value = _optional_float(raw_weights.get(name))
+        if value is None or value <= 0.0:
+            raise RunExecutionError(
+                ErrorCode.pipeline_execution_failed,
+                "Expert fuzzy manifest contains invalid IRC weights.",
+                details={"required_artifact": _FUZZY_MANIFEST_PATH.as_posix(), "weight": name},
+                http_status=500,
+            )
+        weights[name] = value
+    return weights
+
+
 def _convert_value(value: float, rule: str) -> float:
     if rule in {"identity", "identity_approximate"}:
         return value
@@ -286,6 +507,10 @@ def _write_csv(path: Path, rows: list[dict[str, object]], fieldnames: list[str])
         writer.writeheader()
         for row in rows:
             writer.writerow({field: "" if row.get(field) is None else row.get(field) for field in fieldnames})
+
+
+def _write_dataframe_csv(path: Path, frame: pd.DataFrame) -> None:
+    frame.to_csv(path, index=False)
 
 
 def _write_json(path: Path, payload: dict[str, Any]) -> None:

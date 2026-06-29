@@ -43,7 +43,14 @@ _COMMON_DEPENDENCIES = (
 _WORKFLOW_DEPENDENCIES: dict[str, tuple[ArtifactSpec, ...]] = {
     "canonical_observations": _COMMON_DEPENDENCIES,
     "monthly_panel": _COMMON_DEPENDENCIES,
-    "fuzzy_state": _COMMON_DEPENDENCIES,
+    "fuzzy_state": _COMMON_DEPENDENCIES
+    + (
+        ArtifactSpec(
+            "expert_fuzzy_manifest",
+            "dependency",
+            "reports/anfis/fuzzy_manifest.json",
+        ),
+    ),
     "pipe_grud": _COMMON_DEPENDENCIES
     + (
         ArtifactSpec(
@@ -120,10 +127,14 @@ _WORKFLOW_OUTPUTS: dict[str, tuple[str, ...]] = {
         "execution_manifest.json",
     ),
     "fuzzy_state": (
-        "canonical_observations.parquet",
-        "monthly_panel.parquet",
-        "fuzzy_state_scores.parquet",
+        "canonical_observations.jsonl",
+        "canonical_observations.csv",
+        "monthly_panel.csv",
+        "monthly_panel_wide.csv",
+        "fuzzy_state_scores.csv",
+        "fuzzy_state_trace.csv",
         "fuzzy_state_manifest.json",
+        "execution_manifest.json",
     ),
     "pipe_grud": (
         "canonical_observations.parquet",

@@ -91,9 +91,10 @@ It also exposes `POST /runs/plan`, a synchronous dry-run planner for registered
 datasets, and `GET /runs/plans/{plan_id}` for retrieving persisted plan
 records. The first safe executor is exposed through
 `POST /runs/plans/{plan_id}/execute` and
-`GET /runs/plans/{plan_id}/execution` for `canonical_observations` and
-`monthly_panel` only. Experiment storage, asynchronous job orchestration,
-model execution, prediction, and simulation routers are added in later phases.
+`GET /runs/plans/{plan_id}/execution` for `canonical_observations`,
+`monthly_panel`, and deterministic expert `fuzzy_state` scoring. Experiment
+storage, asynchronous job orchestration, model execution, prediction, and
+simulation routers are added in later phases.
 
 ## Dry-Run Planning
 
@@ -124,26 +125,34 @@ invalid dataset records, or dependency gaps.
 `POST /runs/plans/{plan_id}/execute` executes only plans whose workflow is:
 
 - `canonical_observations`;
-- `monthly_panel`.
+- `monthly_panel`;
+- `fuzzy_state`.
 
 The executor reads the persisted dataset payload, applies declared unit
 conversions from `configs/variables.yaml`, writes canonical long-form rows, and
 for `monthly_panel` aggregates valid observations by source/site/month/variable
-with the declared median aggregation. It writes lightweight local artifacts:
+with the declared median aggregation. For `fuzzy_state`, it pivots the monthly
+panel into the reviewed wide panel shape, computes derived `TN_TP_ratio` and
+current chlorophyll-a risk when possible, then calls
+`src.fuzzy.expert.build_expert_state` with frozen IRC weights from
+`reports/anfis/fuzzy_manifest.json`. This is deterministic expert fuzzy state
+scoring; it does not retrain adaptive ANFIS and it does not run temporal alert
+models. It writes lightweight local artifacts:
 
 | Workflow | Outputs |
 |---|---|
 | `canonical_observations` | `canonical_observations.jsonl`, `canonical_observations.csv`, `execution_manifest.json` |
 | `monthly_panel` | canonical outputs plus `monthly_panel.csv` |
+| `fuzzy_state` | canonical and monthly outputs plus `monthly_panel_wide.csv`, `fuzzy_state_scores.csv`, `fuzzy_state_trace.csv`, `fuzzy_state_manifest.json` |
 
 Execution artifacts are stored under `outputs/api/runs/{plan_id}` or
 `LENTIC_API_WORKSPACE`. `GET /runs/plans/{plan_id}/execution` retrieves the
 persisted execution response.
 
-Model workflows remain deliberately non-executable in this layer. PIPE-GRU-D,
-Neural ODE, MIFAL-ED/T2, and counterfactual planning must remain planned-only
-until their adapters, artifact dependencies, and diagnostics are wired and
-reviewed.
+Temporal/model workflows remain deliberately non-executable in this layer.
+PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and counterfactual planning must remain
+planned-only until their adapters, artifact dependencies, and diagnostics are
+wired and reviewed.
 
 ## Pipeline Eligibility
 
