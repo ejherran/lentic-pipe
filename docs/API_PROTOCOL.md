@@ -7,6 +7,22 @@ sufficient for every model.
 
 For the current local command workflow, see `docs/API_LOCAL_USAGE.md`.
 
+## Architecture Baseline
+
+The public API now uses the former `private/api` prototype as its architectural
+baseline. That platform provides the non-scientific surface required for real
+use: JWT authentication, refresh-token rotation, API keys, users, system roles,
+experiment collaborators, audit logging, request IDs, timeout middleware,
+PostgreSQL/Alembic persistence, Redis/Taskiq workers, job status transitions,
+result storage, cancellation, CSV exports, queue metrics, and Prometheus
+metrics.
+
+The scientific code added in this repository is an extension of that platform,
+not a replacement. Dataset validation, deterministic planning, safe local
+execution, artifact previews, current-state fuzzy alerts, and minimal
+counterfactual recomputation are exposed as scientific workflow services and as
+initial adapters behind the job system.
+
 ## Purpose
 
 The API must let a user submit data for a lake, lagoon, reservoir, or other
@@ -83,20 +99,86 @@ The intended public surface is:
 | `/runs/.../alerts` | Query run-scoped alert views derived from available surfaces. | Synchronous |
 | `/runs/.../simulations` | Run-scoped bounded simulations when preconditions hold. | Synchronous |
 
-The first public integration implements the system endpoints, the contracts, a
-deterministic `POST /datasets/validate` endpoint for long-form observations,
-and local file-backed dataset registration through `POST /datasets` and
-`GET /datasets/{dataset_id}`. Registered datasets create a payload,
-validation result, and manifest under the API workspace with SHA-256 hashes.
-It also exposes `POST /runs/plan`, a synchronous dry-run planner for registered
-datasets, and `GET /runs/plans/{plan_id}` for retrieving persisted plan
-records. The first safe executor is exposed through
+The current public integration preserves the production shell from the prototype
+and adds a deterministic `POST /datasets/validate` endpoint for long-form
+observations plus local file-backed dataset registration through
+`POST /datasets` and `GET /datasets/{dataset_id}`. Registered datasets create a
+payload, validation result, and manifest under the API workspace with SHA-256
+hashes. It also exposes `POST /runs/plan`, a synchronous dry-run planner for
+registered datasets, and `GET /runs/plans/{plan_id}` for retrieving persisted
+plan records. The first safe executor is exposed through
 `POST /runs/plans/{plan_id}/execute` and
 `GET /runs/plans/{plan_id}/execution` for `canonical_observations`,
 `monthly_panel`, and deterministic expert `fuzzy_state` scoring. Experiment
-storage, asynchronous job orchestration, model execution, prediction, and
-simulation routers are added in later phases. Generated local artifacts can be
+storage, asynchronous job orchestration, prediction records, and simulation
+records are provided by the prototype base. Generated local artifacts can be
 listed, previewed, and summarized through run-scoped artifact/result endpoints.
+
+The top-level `/datasets` and `/runs/plan` endpoints are currently retained as
+a compatibility surface for reproducible local workflows. The target production
+shape is experiment-scoped: datasets are owned by experiments, and heavy
+scientific execution runs through `/experiments/{experiment_id}/runs` and the
+Taskiq worker.
+
+## Async Job Architecture
+
+Experiment-scoped runs use the prototype lifecycle:
+
+```http
+POST /experiments/{experiment_id}/runs
+GET /experiments/{experiment_id}/runs
+GET /runs/{run_id}
+GET /runs/{run_id}/results
+POST /runs/{run_id}/cancel
+POST /experiments/{experiment_id}/runs/cancel-all
+```
+
+Runs are persisted in SQL with `pending`, `running`, `completed`, `failed`, and
+`cancelled` states. `POST /experiments/{experiment_id}/runs` returns
+`202 Accepted` and a `task_id`; the Taskiq worker transitions the run and writes
+results or an explicit error message.
+
+The first scientific adapter is configured through `Run.config`:
+
+```json
+{
+  "dataset_id": "ds_...",
+  "workflow": "canonical_observations",
+  "parameters": {}
+}
+```
+
+When `dataset_id` and `workflow` are present, the worker calls the deterministic
+scientific planner and safe executor, then persists the plan, execution,
+artifact list, result summary, and row-count metrics in `Run.results`. Without
+that pair, the job system still works but returns an explicit placeholder
+result for not-yet-wired model families.
+
+Simulation jobs use the prototype simulation lifecycle:
+
+```http
+POST /simulations
+GET /simulations
+GET /simulations/{simulation_id}
+POST /simulations/{simulation_id}/cancel
+POST /simulations/cancel-all
+```
+
+The first wired simulation scenario is:
+
+```json
+{
+  "type": "current_state_counterfactual",
+  "plan_id": "plan_...",
+  "interventions": [
+    {"variable": "TP_ugL", "operation": "scale", "value": 0.8}
+  ]
+}
+```
+
+That scenario executes the minimal expert-fuzzy current-state counterfactual
+adapter behind the asynchronous simulation job. Temporal rollout simulations
+remain placeholders until PIPE-GRU-D or Neural ODE adapters are connected.
 
 ## Dry-Run Planning
 

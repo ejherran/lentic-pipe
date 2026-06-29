@@ -1,9 +1,11 @@
 # API Local Usage
 
-This guide shows the current reproducible local API workflow. The API surface is
-still intentionally small: it validates external long-form observations,
-registers a dataset, plans a workflow, and executes only the initial safe
-workflows:
+This guide shows the current reproducible local API workflow. The API now uses
+the former prototype platform as its base: authentication, users, experiments,
+collaborators, API keys, SQL persistence, Taskiq/Redis jobs, cancellation, and
+metrics are part of the public `src/api` tree. The scientific layer currently
+validates external long-form observations, registers a dataset, plans a
+workflow, and executes only the initial safe workflows:
 
 - `canonical_observations`
 - `monthly_panel`
@@ -21,6 +23,20 @@ Install the API dependency group:
 ```bash
 poetry install --with api
 ```
+
+For the full production-like shell, start PostgreSQL and Redis with the checked
+in Compose file and configure `.env` from `.env.example`:
+
+```bash
+cp .env.example .env
+docker compose up -d
+poetry run alembic upgrade head
+```
+
+For lightweight local scientific endpoint tests, no external infrastructure is
+required; the default development settings do not run strict readiness checks.
+Set `STRICT_READINESS_CHECKS=true` when deployment probes must verify DB and
+Redis connectivity.
 
 The API writes local reproducibility artifacts under `outputs/api` by default.
 For a disposable local run, set an explicit workspace:
@@ -40,6 +56,15 @@ OpenAPI is available at:
 ```text
 http://127.0.0.1:8000/docs
 http://127.0.0.1:8000/openapi.json
+```
+
+To run asynchronous jobs, start a worker in a second terminal:
+
+```bash
+poetry run taskiq worker \
+  src.api.tasks.broker:broker \
+  src.api.tasks.training \
+  src.api.tasks.simulation
 ```
 
 ## Minimal Dataset Payload
@@ -182,6 +207,53 @@ Fetch the persisted execution response:
 ```bash
 curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/execution
 ```
+
+## Execute Through The Job System
+
+The compatibility endpoints above are useful for local reproducibility checks.
+The production architecture should submit heavy work through experiment-scoped
+jobs. After registering or logging in a user and creating an experiment, launch
+a run with a scientific workflow config:
+
+```json
+{
+  "name": "lake-alpha-canonical",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "dataset_id": "{dataset_id}",
+    "workflow": "canonical_observations",
+    "parameters": {}
+  }
+}
+```
+
+Submit it:
+
+```bash
+curl -sS \
+  -X POST \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @/tmp/lentic-run-job.json \
+  http://127.0.0.1:8000/experiments/{experiment_id}/runs
+```
+
+The API returns `202 Accepted` with `status: pending` and a Taskiq `task_id`.
+The worker transitions the run through `running` to `completed` or `failed`.
+Fetch status and results with:
+
+```bash
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}
+
+curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
+  http://127.0.0.1:8000/runs/{run_id}/results
+```
+
+The first wired run adapter executes the same deterministic planner/executor
+used by `POST /runs/plans/{plan_id}/execute`. Model training, temporal
+rollouts, Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain
+explicit placeholders until their reviewed adapters are connected.
 
 ## Inspect Artifacts And Results
 

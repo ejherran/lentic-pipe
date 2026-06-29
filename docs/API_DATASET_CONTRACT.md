@@ -98,9 +98,9 @@ A dataset validation request returns one of:
 | `invalid` | Dataset violates schema, unit, date, or numeric constraints. |
 | `not_eligible` | Dataset is valid but insufficient for the requested workflow. |
 
-## Initial Endpoints
+## Dataset Endpoints
 
-The initial API scaffold exposes side-effect-free validation:
+The scientific dataset layer exposes side-effect-free validation:
 
 ```http
 POST /datasets/validate
@@ -144,8 +144,11 @@ under the configured API workspace:
 
 The `dataset_id` is derived from a SHA-256 hash of the normalized payload, so
 submitting the same payload is idempotent. This local file-backed repository is
-the first storage layer; later phases can replace it with Postgres/object
-storage while preserving the public response semantics.
+the first scientific artifact store. The API platform also includes
+experiment-scoped dataset metadata in SQL through
+`POST /experiments/{experiment_id}/datasets`. Later phases should connect
+uploaded payload storage to that experiment model while preserving the
+validation and manifest response semantics.
 
 Registered datasets can be passed to the dry-run planner:
 
@@ -205,6 +208,11 @@ The minimal counterfactual simulation endpoint is also limited to completed
 generated wide panel, recomputes expert fuzzy scores, and returns score/alert
 deltas. It is a deterministic sensitivity simulation, not causal evidence or
 temporal intervention planning.
+
+The asynchronous job system can already call the deterministic scientific
+planner/executor when a run config includes `dataset_id` and `workflow`. This
+keeps execution under the prototype's job lifecycle while retaining the local
+compatibility endpoints for reproducible checks.
 
 ## Privacy And Provenance
 

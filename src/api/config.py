@@ -1,4 +1,4 @@
-"""Static API configuration for the initial public scaffold."""
+"""API settings and scientific workflow registry."""
 
 from __future__ import annotations
 
@@ -7,9 +7,72 @@ import os
 from pathlib import Path
 from typing import TypedDict
 
+from pydantic import model_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
 from src.api import API_VERSION
 
 DEFAULT_API_WORKSPACE = Path("outputs/api")
+_INSECURE_DEFAULT_KEY = "insecure-dev-key-change-in-production"
+_INSECURE_DEFAULT_ADMIN_PASSWORD = "changeme"
+
+
+class Settings(BaseSettings):
+    """Runtime settings for the production API shell from the prototype."""
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+    APP_ENV: str = "development"
+    APP_VERSION: str = API_VERSION
+    SECRET_KEY: str = _INSECURE_DEFAULT_KEY
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    DATABASE_URL: str = "sqlite+aiosqlite:///:memory:"
+    REDIS_URL: str = "redis://localhost:6379"
+
+    DB_POOL_SIZE: int = 5
+    DB_MAX_OVERFLOW: int = 10
+    DB_POOL_RECYCLE: int = 1800
+    DB_POOL_TIMEOUT: int = 30
+
+    STARTUP_MAX_RETRIES: int = 5
+    STARTUP_RETRY_DELAY_SECONDS: float = 1.0
+    REQUEST_TIMEOUT_SECONDS: int = 60
+    STRICT_READINESS_CHECKS: bool = False
+    AUDIT_LOG_RETAIN_DAYS: int = 90
+
+    FIRST_ADMIN_EMAIL: str = "admin@example.com"
+    FIRST_ADMIN_USERNAME: str = "admin"
+    FIRST_ADMIN_PASSWORD: str = "changeme"
+
+    LOG_LEVEL: str = "INFO"
+    REGISTRATION_ENABLED: bool = True
+    CORS_ORIGINS: str = ""
+
+    SMTP_HOST: str = ""
+    SMTP_PORT: int = 587
+    SMTP_USERNAME: str = ""
+    SMTP_PASSWORD: str = ""
+    SMTP_FROM: str = "noreply@lentic-api.local"
+    SMTP_USE_TLS: bool = True
+
+    TRUSTED_PROXIES: str = ""
+
+    @model_validator(mode="after")
+    def _enforce_production_secrets(self) -> "Settings":
+        if self.APP_ENV != "production":
+            return self
+        if self.SECRET_KEY == _INSECURE_DEFAULT_KEY:
+            raise ValueError(
+                "SECRET_KEY must be changed from the default value before running in production."
+            )
+        if self.FIRST_ADMIN_PASSWORD == _INSECURE_DEFAULT_ADMIN_PASSWORD:
+            raise ValueError(
+                "FIRST_ADMIN_PASSWORD must be changed from the default value before running in production."
+            )
+        return self
 
 
 @dataclass(frozen=True)
@@ -116,3 +179,6 @@ def api_workspace() -> Path:
     """Return the local API workspace for generated dataset artifacts."""
 
     return Path(os.environ.get("LENTIC_API_WORKSPACE", DEFAULT_API_WORKSPACE.as_posix()))
+
+
+settings = Settings()

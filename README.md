@@ -171,6 +171,9 @@ exports, or credential JSON files.
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md`
+- `docs/API_PROTOCOL.md`
+- `docs/API_DATASET_CONTRACT.md`
+- `docs/API_LOCAL_USAGE.md`
 
 ## Current State
 
@@ -317,6 +320,13 @@ exports, or credential JSON files.
   `src/experiments/calibrate_mifal_observable_alerts.py`, which fits
   per-horizon calibrators and thresholds on validation only. Matched-surface
   diagnostics are handled by `src/experiments/evaluate_mifal_matched_surface.py`;
+- `docs/API_PROTOCOL.md` defines the REST API direction. The public `src/api`
+  tree now uses the full prototype architecture as its base: authentication,
+  users, experiment collaboration, SQL persistence, Taskiq/Redis jobs,
+  cancellation, metrics, and Alembic migrations. The existing scientific API
+  work is preserved as a workflow layer for dataset validation, planning, safe
+  local execution, artifact previews, current-state alerts, and minimal
+  counterfactual recomputation.
   these intersect calibrated MIFAL predictions, and optionally a reference
   backtest surface, before any comparison claim is made. Metric-level `bloom_h`
   comparison against PIPE is handled by
