@@ -150,12 +150,13 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     ),
     PipelineInfo(
         name="pipe_neural_ode",
-        status="reference_preflight_adapter",
-        description="Diagnose external Neural ODE readiness and report reviewed Neural ODE v1 reference artifacts.",
+        status="calibrated_reference_inference_adapter",
+        description="Diagnose external Neural ODE readiness, run calibrated adaptive reference-profile Neural ODE v1 inference, and report reviewed Neural ODE v1 artifacts.",
         notes=(
             "Use parameters.execution_mode='preflight' for external dataset diagnostics.",
+            "Use parameters.execution_mode='infer_reference_profile' to apply the adaptive reference transform, frozen Neural ODE v1 history model, rollout bloom calibrators, and selected 2B policy thresholds.",
             "Use parameters.execution_mode='artifact_reference' to validate the reviewed Neural ODE v1 artifacts.",
-            "Dataset-specific Neural ODE rollout execution is not exposed until the v1 history-window loader is wired into the API.",
+            "External dataset skill is not guaranteed; manifests and reports include readiness, blockers, warnings, and interpretation limits.",
         ),
     ),
     PipelineInfo(
@@ -171,10 +172,11 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     ),
     PipelineInfo(
         name="counterfactual_planning",
-        status="upstream_preflight_reference_adapter",
-        description="Check planning readiness against upstream temporal outputs and report reviewed planning V1 artifacts.",
+        status="upstream_planning_execution_adapter",
+        description="Check planning readiness against upstream temporal outputs, run raw-proxy counterfactual planning V1 scenarios, and report reviewed planning V1 artifacts.",
         notes=(
             "Use parameters.execution_mode='preflight' with parameters.upstream_plan_id to check planning readiness.",
+            "Use parameters.execution_mode='run_scenarios' with parameters.upstream_plan_id to evaluate configured V1 planning scenarios.",
             "Use parameters.execution_mode='artifact_reference' to validate reviewed planning V1 artifacts.",
             "Model-simulated comparison only; not causal field intervention evidence.",
         ),

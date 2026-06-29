@@ -156,6 +156,38 @@ def test_plan_run_request_blocks_counterfactual_without_upstream_surface(
     assert "counterfactual_not_causal" in {warning.code for warning in response.warnings}
 
 
+def test_plan_run_request_accepts_counterfactual_upstream_plan_parameter(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(
+        DatasetValidationRequest(
+            dataset_name="Lake Alpha",
+            observations=_observations(months=3),
+        )
+    )
+
+    response = plan_run_request(
+        RunPlanRequest(
+            dataset_id=dataset.dataset_id,
+            workflow="counterfactual_planning",
+            parameters={"upstream_plan_id": "plan_upstream"},
+        )
+    )
+
+    assert response.status == "ready"
+    assert response.executable is True
+    upstream = [
+        artifact
+        for artifact in response.required_artifacts
+        if artifact.name == "upstream_temporal_alert_surface"
+    ][0]
+    assert upstream.availability == "available"
+    assert upstream.uri == "runs/plan_upstream"
+    assert "counterfactual_not_causal" in {warning.code for warning in response.warnings}
+
+
 def test_plan_run_endpoint_persists_plan_and_handles_missing_resources(
     tmp_path: Path,
     monkeypatch,

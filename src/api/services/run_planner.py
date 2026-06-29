@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 import hashlib
 import json
 from pathlib import Path
+from typing import Any
 
 from src.api.errors import ErrorCode, WarningCode
 from src.api.schemas.dataset import (
@@ -180,11 +181,34 @@ _WORKFLOW_OUTPUTS: dict[str, tuple[str, ...]] = {
         "pipe_grud_run_manifest.json",
     ),
     "pipe_neural_ode": (
-        "canonical_observations.parquet",
-        "monthly_panel.parquet",
-        "state_history_windows.parquet",
-        "pipe_neural_ode_rollout_rows.parquet",
-        "pipe_neural_ode_alerts.parquet",
+        "pipe_monthly_panel.csv",
+        "pipe_monthly_panel_wide.csv",
+        "pipe_adaptive_features.csv",
+        "pipe_adaptive_state_surface.csv",
+        "pipe_adaptive_state_surface.parquet",
+        "pipe_adaptive_sequence_state.csv",
+        "pipe_adaptive_sequence_state.parquet",
+        "pipe_state_surface.csv",
+        "pipe_state_surface.parquet",
+        "pipe_sequences.csv",
+        "pipe_sequences.parquet",
+        "pipe_inference_origins.csv",
+        "pipe_inference_origins.parquet",
+        "pipe_sequence_summary.csv",
+        "pipe_sequence_discarded_summary.csv",
+        "pipe_adaptive_module_coverage.csv",
+        "pipe_adaptive_surface_report.md",
+        "pipe_adaptive_surface_manifest.json",
+        "pipe_neural_ode_reference_rollouts.csv",
+        "pipe_neural_ode_reference_rollouts.parquet",
+        "pipe_neural_ode_reference_rollout_summary.csv",
+        "pipe_neural_ode_reference_policy_summary.csv",
+        "pipe_neural_ode_reference_alerts.csv",
+        "pipe_neural_ode_reference_alerts.parquet",
+        "pipe_neural_ode_reference_top_alerts.csv",
+        "pipe_neural_ode_reference_recent_top_alerts.csv",
+        "pipe_neural_ode_reference_inference_report.md",
+        "pipe_neural_ode_reference_inference_manifest.json",
         "pipe_neural_ode_run_report.md",
         "pipe_neural_ode_run_manifest.json",
     ),
@@ -205,6 +229,8 @@ _WORKFLOW_OUTPUTS: dict[str, tuple[str, ...]] = {
         "counterfactual_summary.csv",
         "counterfactual_pareto.csv",
         "counterfactual_examples.csv",
+        "counterfactual_planning_rows.csv",
+        "counterfactual_panel.csv",
         "counterfactual_report.md",
         "counterfactual_manifest.json",
     ),
@@ -279,7 +305,7 @@ def plan_run_request(request: RunPlanRequest) -> RunPlanResponse:
         )
 
     artifacts = _input_artifacts(dataset)
-    dependency_artifacts, missing_dependencies = _dependency_artifacts(request.workflow)
+    dependency_artifacts, missing_dependencies = _dependency_artifacts(request.workflow, request.parameters)
     artifacts.extend(dependency_artifacts)
     artifacts.extend(_output_artifacts(request.workflow, plan_id))
 
@@ -347,13 +373,27 @@ def _input_artifacts(dataset: DatasetRegistrationResponse) -> list[RunPlanArtifa
     ]
 
 
-def _dependency_artifacts(workflow: WorkflowName) -> tuple[list[RunPlanArtifact], list[str]]:
+def _dependency_artifacts(
+    workflow: WorkflowName,
+    parameters: dict[str, Any] | None = None,
+) -> tuple[list[RunPlanArtifact], list[str]]:
     artifacts: list[RunPlanArtifact] = []
     missing: list[str] = []
+    parameters = parameters or {}
     for spec in _WORKFLOW_DEPENDENCIES.get(workflow, ()):
-        available = _artifact_available(spec.uri)
-        availability = "available" if available else "missing"
+        uri = spec.uri
         reason = spec.reason
+        if workflow == "counterfactual_planning" and spec.name == "upstream_temporal_alert_surface":
+            upstream_plan_id = str(parameters.get("upstream_plan_id", "")).strip()
+            if upstream_plan_id:
+                uri = f"runs/{upstream_plan_id}"
+                available = True
+                reason = "Supplied by parameters.upstream_plan_id; execution validates compatible artifacts."
+            else:
+                available = False
+        else:
+            available = _artifact_available(uri)
+        availability = "available" if available else "missing"
         if not available:
             missing.append(spec.name)
             reason = reason or "Required local workflow dependency is not available."
@@ -361,7 +401,7 @@ def _dependency_artifacts(workflow: WorkflowName) -> tuple[list[RunPlanArtifact]
             RunPlanArtifact(
                 name=spec.name,
                 role=spec.role,
-                uri=spec.uri,
+                uri=uri,
                 required=spec.required,
                 availability=availability,
                 reason=reason,

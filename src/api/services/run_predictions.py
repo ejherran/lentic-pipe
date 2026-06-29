@@ -26,6 +26,9 @@ _FUZZY_ROOT_MANIFEST = Path("reports/anfis/fuzzy_manifest.json")
 _PIPE_GRUD_REFERENCE_ROLLOUTS = "pipe_grud_reference_rollouts.csv"
 _PIPE_GRUD_REFERENCE_ALERTS = "pipe_grud_reference_alerts.csv"
 _PIPE_GRUD_REFERENCE_MANIFEST = "pipe_grud_reference_inference_manifest.json"
+_PIPE_NEURAL_ODE_REFERENCE_ROLLOUTS = "pipe_neural_ode_reference_rollouts.csv"
+_PIPE_NEURAL_ODE_REFERENCE_ALERTS = "pipe_neural_ode_reference_alerts.csv"
+_PIPE_NEURAL_ODE_REFERENCE_MANIFEST = "pipe_neural_ode_reference_inference_manifest.json"
 _MIFAL_SCORES = "mifal_scores.csv"
 _MIFAL_ALERTS = "mifal_alerts.csv"
 _MIFAL_MANIFEST = "mifal_run_manifest.json"
@@ -46,6 +49,16 @@ _PIPE_GRUD_REFERENCE_PREDICTION_LIMITS = [
 ]
 _PIPE_GRUD_REFERENCE_ALERT_LIMITS = [
     "These alerts are thresholded model-derived early-warning indicators, not official public advisories.",
+    "Thresholds are horizon- and event-specific; the per-record threshold is authoritative.",
+    "Predictive skill and field transferability are not guaranteed for a new water body.",
+]
+_PIPE_NEURAL_ODE_REFERENCE_PREDICTION_LIMITS = [
+    "These records are model-derived temporal rollout indicators from the adaptive Neural ODE reference profile.",
+    "Predictive skill and field transferability are not guaranteed for a new water body.",
+    "The 2B alert policy is a selected operating profile, not causal field evidence.",
+]
+_PIPE_NEURAL_ODE_REFERENCE_ALERT_LIMITS = [
+    "These alerts are thresholded Neural ODE early-warning indicators, not official public advisories.",
     "Thresholds are horizon- and event-specific; the per-record threshold is authoritative.",
     "Predictive skill and field transferability are not guaranteed for a new water body.",
 ]
@@ -97,6 +110,20 @@ def list_run_predictions(plan_id: str, *, limit: int) -> RunPredictionResponse:
             prediction_surface="pipe_grud_adaptive_reference_rollout",
             predictions=records,
             interpretation_limits=_PIPE_GRUD_REFERENCE_PREDICTION_LIMITS,
+        )
+    if (run_dir / _PIPE_NEURAL_ODE_REFERENCE_ROLLOUTS).exists():
+        rows = _read_csv_rows(run_dir / _PIPE_NEURAL_ODE_REFERENCE_ROLLOUTS)
+        manifest = _read_pipe_neural_ode_reference_manifest(run_dir)
+        records = _reference_prediction_records(rows, execution.workflow, manifest)[:limit]
+        return RunPredictionResponse(
+            plan_id=execution.plan_id,
+            execution_id=execution.execution_id,
+            dataset_id=execution.dataset_id,
+            workflow=execution.workflow,
+            status="available",
+            prediction_surface="pipe_neural_ode_adaptive_reference_rollout",
+            predictions=records,
+            interpretation_limits=_PIPE_NEURAL_ODE_REFERENCE_PREDICTION_LIMITS,
         )
     if (run_dir / _MIFAL_SCORES).exists():
         rows = _read_csv_rows(run_dir / _MIFAL_SCORES)
@@ -158,6 +185,32 @@ def list_run_alerts(plan_id: str, *, limit: int, only_alerts: bool) -> RunAlertR
             threshold=_first_threshold(ranked_records),
             alerts=ranked_records,
             interpretation_limits=_PIPE_GRUD_REFERENCE_ALERT_LIMITS,
+        )
+    if (run_dir / _PIPE_NEURAL_ODE_REFERENCE_ALERTS).exists():
+        rows = _read_csv_rows(run_dir / _PIPE_NEURAL_ODE_REFERENCE_ALERTS)
+        manifest = _read_pipe_neural_ode_reference_manifest(run_dir)
+        records = [
+            record
+            for record in (_reference_alert_record(row, execution.workflow) for row in rows)
+            if record is not None
+        ]
+        records = sorted(records, key=lambda record: (-int(record.is_alert), -record.score, record.rank))
+        ranked_records = [
+            record.model_copy(update={"rank": rank})
+            for rank, record in enumerate(records, start=1)
+            if not only_alerts or record.is_alert
+        ][:limit]
+        return RunAlertResponse(
+            plan_id=execution.plan_id,
+            execution_id=execution.execution_id,
+            dataset_id=execution.dataset_id,
+            workflow=execution.workflow,
+            status="available",
+            alert_surface="pipe_neural_ode_adaptive_reference_policy_2b",
+            policy_version=str(manifest.get("policy_name", "closest_pr")),
+            threshold=_first_threshold(ranked_records),
+            alerts=ranked_records,
+            interpretation_limits=_PIPE_NEURAL_ODE_REFERENCE_ALERT_LIMITS,
         )
     if (run_dir / _MIFAL_ALERTS).exists():
         rows = _read_csv_rows(run_dir / _MIFAL_ALERTS)
@@ -223,7 +276,7 @@ def _read_fuzzy_score_rows(run_dir: Path, *, workflow: str) -> list[dict[str, st
             details={
                 "workflow": workflow,
                 "required_artifact": _FUZZY_STATE_SCORES,
-                "supported_workflows": ["fuzzy_state", "pipe_grud", "mifal_ed_t2"],
+                "supported_workflows": ["fuzzy_state", "pipe_grud", "pipe_neural_ode", "mifal_ed_t2"],
             },
         )
     with path.open("r", encoding="utf-8", newline="") as handle:
@@ -257,6 +310,18 @@ def _read_pipe_grud_reference_manifest(run_dir: Path) -> dict[str, object]:
         ErrorCode.dependency_not_ready,
         "PIPE-GRU-D reference inference manifest is required to interpret prediction and alert surfaces.",
         details={"required_artifact": _PIPE_GRUD_REFERENCE_MANIFEST},
+        http_status=424,
+    )
+
+
+def _read_pipe_neural_ode_reference_manifest(run_dir: Path) -> dict[str, object]:
+    path = run_dir / _PIPE_NEURAL_ODE_REFERENCE_MANIFEST
+    if path.exists():
+        return json.loads(path.read_text(encoding="utf-8"))
+    raise RunPredictionError(
+        ErrorCode.dependency_not_ready,
+        "Neural ODE reference inference manifest is required to interpret prediction and alert surfaces.",
+        details={"required_artifact": _PIPE_NEURAL_ODE_REFERENCE_MANIFEST},
         http_status=424,
     )
 
@@ -304,6 +369,7 @@ def _reference_prediction_records(
 ) -> list[RunPredictionRecord]:
     records: list[RunPredictionRecord] = []
     model_family = str(manifest.get("inference_version", "external_pipe_grud_reference_profile_inference_v0"))
+    model_label = "Neural ODE" if "neural_ode" in model_family else "PIPE-GRU-D"
     for row in rows:
         horizon = _int_or_none(row.get("rollout_horizon_months"))
         if horizon is None:
@@ -323,7 +389,7 @@ def _reference_prediction_records(
                     model_family=model_family,
                     workflow=workflow,
                     components=_reference_prediction_components(row),
-                    interpretation="PIPE-GRU-D rollout probability of crossing the IRC alert threshold.",
+                    interpretation=f"{model_label} rollout probability of crossing the IRC alert threshold.",
                 )
             )
         bloom_score = _float_or_none(row.get("rollout_probability_bloom_calibrated"))
@@ -341,7 +407,10 @@ def _reference_prediction_records(
                     model_family=model_family,
                     workflow=workflow,
                     components=_reference_prediction_components(row),
-                    interpretation="Rollout-calibrated bloom probability from the adaptive PIPE-GRU-D reference profile.",
+                    interpretation=(
+                        "Rollout-calibrated bloom probability from the adaptive "
+                        f"{model_label} reference profile."
+                    ),
                 )
             )
     return records

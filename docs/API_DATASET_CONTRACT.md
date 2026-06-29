@@ -251,6 +251,14 @@ endpoints read the generated adaptive reference-profile rollout artifacts.
 policy decisions from `pipe_grud_reference_alerts.csv`; the per-record
 threshold is authoritative.
 
+For completed `pipe_neural_ode` runs with
+`parameters.execution_mode="infer_reference_profile"`, prediction and alert
+endpoints read generated Neural ODE reference-profile rollout artifacts.
+`/predictions` exposes `irc_alert` as `model_probability` and `bloom_h` as
+`calibrated_probability`. `/alerts` exposes horizon- and event-specific 2B
+policy decisions from `pipe_neural_ode_reference_alerts.csv`; the per-record
+threshold is authoritative.
+
 For completed `mifal_ed_t2` runs with
 `parameters.execution_mode="run_observable"`, prediction and alert endpoints
 read generated MIFAL observable artifacts. `/predictions` exposes `bloom_h`
@@ -322,17 +330,51 @@ when available, and writes:
 `parameters.execution_mode="artifact_reference"` validates and reports reviewed
 MIFAL observable calibration artifacts.
 
-`pipe_neural_ode` is registered as `pipe_neural_ode_reference_workflow_v0` for
-`preflight` and `artifact_reference` only. The preflight mode diagnoses external
+`pipe_neural_ode` is registered as `pipe_neural_ode_reference_workflow_v0` with
+three modes. `parameters.execution_mode="preflight"` diagnoses external
 temporal coverage and compatible trophic/nutrient signals for the reviewed
-Neural ODE v1 history geometry, but it does not run dataset-specific Neural ODE
-rollouts yet.
+Neural ODE v1 history geometry. `parameters.execution_mode="infer_reference_profile"`
+builds the adaptive surface, loads the reviewed Neural ODE v1 long80 history
+model, runs recursive rollouts, applies rollout bloom calibrators, applies the
+selected 2B policy thresholds, and writes:
+
+| Artifact | Meaning |
+|---|---|
+| `pipe_neural_ode_reference_rollouts.csv` / `.parquet` | Neural ODE temporal rollout records over eligible external origins and requested horizons. |
+| `pipe_neural_ode_reference_rollout_summary.csv` | Horizon-level rollout summary. |
+| `pipe_neural_ode_reference_policy_summary.csv` | 2B policy alert-rate summary by horizon. |
+| `pipe_neural_ode_reference_alerts.csv` / `.parquet` | Thresholded `irc_alert` and `bloom_h` alert records for prediction/alert views. |
+| `pipe_neural_ode_reference_top_alerts.csv` | Top rollout risk preview. |
+| `pipe_neural_ode_reference_recent_top_alerts.csv` | Recent top rollout risk preview. |
+| `pipe_neural_ode_reference_inference_report.md` | Human-readable run report. |
+| `pipe_neural_ode_reference_inference_manifest.json` | Reproducibility manifest with readiness, warnings, calibrator/policy coverage, and hashes. |
+
+`parameters.execution_mode="artifact_reference"` validates and reports reviewed
+Neural ODE v1 artifacts without running dataset-specific inference.
 
 `counterfactual_planning` is registered as
-`counterfactual_planning_workflow_v0` for `preflight` and `artifact_reference`.
-Preflight requires `parameters.upstream_plan_id` pointing to a completed
-compatible temporal alert run for the same dataset. It reports readiness and
-blockers but does not execute planning scenarios yet.
+`counterfactual_planning_workflow_v0` with three modes. Preflight requires
+`parameters.upstream_plan_id` pointing to a completed compatible temporal
+rollout/alert run for the same dataset. It reports readiness and blockers.
+`parameters.execution_mode="run_scenarios"` loads the upstream temporal
+rollouts and monthly panel, builds API-local planning rows, runs the
+counterfactual planning V1 raw-proxy scenario family, and writes:
+
+| Artifact | Meaning |
+|---|---|
+| `counterfactual_planning_rows.csv` | Planning origins/horizons derived from the upstream temporal rollout surface. |
+| `counterfactual_panel.csv` | Monthly panel used for raw-proxy perturbations. |
+| `counterfactual_metrics.csv` | Scenario metrics by source, split, and horizon. |
+| `counterfactual_summary.csv` | Scenario-level objective summary. |
+| `counterfactual_pareto.csv` | Pareto-front scenario subset. |
+| `counterfactual_examples.csv` | Bounded scenario examples for inspection. |
+| `counterfactual_report.md` | Human-readable planning V1 report. |
+| `counterfactual_manifest.json` | Reproducibility manifest with upstream provenance, guardrails, row counts, and hashes. |
+
+Planning output is a model-simulated comparison, not causal field intervention
+evidence or official environmental advice. `parameters.execution_mode="artifact_reference"`
+validates and reports reviewed planning V1 artifacts without executing a
+dataset-specific planning run.
 Direct `dataset_id` configs are retained as a compatibility path for local
 reproducibility checks.
 

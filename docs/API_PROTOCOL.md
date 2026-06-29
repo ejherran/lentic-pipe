@@ -202,14 +202,18 @@ calibrators or 2B policy thresholds. `infer_reference_profile` is the calibrated
 reference-profile inference path; it still reports external-domain warnings
 because predictive skill on a new water body is not guaranteed.
 The registry also exposes `pipe_neural_ode_reference_workflow_v0` for Neural
-ODE v1 `preflight` and `artifact_reference` modes, `mifal_observable_workflow_v0`
-for MIFAL-ED/T2 `preflight`, `run_observable`, and `artifact_reference` modes,
-and `counterfactual_planning_workflow_v0` for planning `preflight` and
-`artifact_reference` modes. MIFAL `run_observable` executes deterministic
-MIFAL-ED/T2 scoring for the submitted dataset and writes calibrated `bloom_h`
-prediction/alert artifacts when reviewed calibrators are available. Neural ODE
-and counterfactual planning are wired as job-backed diagnostics/reference
-adapters only until their dataset-specific execution paths are reviewed.
+ODE v1 `preflight`, `infer_reference_profile`, and `artifact_reference` modes,
+`mifal_observable_workflow_v0` for MIFAL-ED/T2 `preflight`, `run_observable`,
+and `artifact_reference` modes, and `counterfactual_planning_workflow_v0` for
+planning `preflight`, `run_scenarios`, and `artifact_reference` modes. Neural
+ODE `infer_reference_profile` applies the reviewed adaptive transform, frozen
+history Neural ODE v1 model, rollout bloom calibrators, and selected 2B policy
+thresholds. MIFAL `run_observable` executes deterministic MIFAL-ED/T2 scoring
+for the submitted dataset and writes calibrated `bloom_h` prediction/alert
+artifacts when reviewed calibrators are available. Planning `run_scenarios`
+loads a completed compatible temporal upstream run and evaluates the V1
+raw-proxy scenario family. Neural ODE, MIFAL, and planning all report
+external-domain warnings and interpretation limits.
 Adapters persist the plan,
 execution, artifact list, result summary, and row-count metrics in
 `Run.results`. Direct `dataset_id` configs remain supported only as a
@@ -385,16 +389,16 @@ expert fuzzy score and the frozen threshold recorded in
 official advisories and they are not PIPE-GRU-D or Neural ODE early-warning
 alerts.
 
-Completed `pipe_grud` runs produced with
+Completed `pipe_grud` and `pipe_neural_ode` runs produced with
 `parameters.execution_mode="infer_reference_profile"` expose temporal rollout
 records through the same query endpoints. `/predictions` returns two target
 surfaces per rollout horizon when available: `irc_alert` with
 `score_kind="model_probability"` from the rollout alert probability, and
 `bloom_h` with `score_kind="calibrated_probability"` from the reviewed rollout
 bloom calibrator. `/alerts` returns horizon- and event-specific 2B policy
-threshold decisions from `pipe_grud_reference_alerts.csv`; the per-record
-threshold is authoritative. These outputs are model-derived early-warning
-indicators, not official advisories or causal field evidence.
+threshold decisions from the workflow's reference alert artifact; the
+per-record threshold is authoritative. These outputs are model-derived
+early-warning indicators, not official advisories or causal field evidence.
 
 Completed `mifal_ed_t2` runs produced with
 `parameters.execution_mode="run_observable"` expose deterministic observable
@@ -451,8 +455,9 @@ reports currently registered job adapters and their executable workflows. As of
 `pipe_neural_ode`, `mifal_ed_t2`, and `counterfactual_planning`. Not every
 workflow exposes the same execution depth: PIPE-GRU-D includes calibrated
 reference-profile inference; MIFAL includes observable scoring and calibrated
-`bloom_h` alerts; Neural ODE and counterfactual planning currently expose
-preflight/reference modes only.
+`bloom_h` alerts; Neural ODE includes calibrated reference-profile inference;
+counterfactual planning includes V1 scenario execution against a completed
+compatible upstream temporal run.
 
 ## Status Semantics
 

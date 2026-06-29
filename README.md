@@ -338,13 +338,16 @@ exports, or credential JSON files.
   job-backed adapters are reported by `/version`; the initial adapter interface
   executes `canonical_observations`, `monthly_panel`, `fuzzy_state`, PIPE-GRU-D
   preflight/sequence/adaptive-surface/inference modes, Neural ODE
-  preflight/reference modes, MIFAL observable scoring/reference modes, and
-  counterfactual-planning preflight/reference modes. PIPE-GRU-D
+  preflight/calibrated reference-profile inference/reference modes, MIFAL
+  observable scoring/reference modes, and counterfactual-planning
+  preflight/V1 scenario execution/reference modes. PIPE-GRU-D
   `infer_reference_profile` runs calibrated adaptive reference-profile rollouts
-  with bloom calibrators and selected 2B policy thresholds. MIFAL
-  `run_observable` writes observable bloom-risk scores and calibrated `bloom_h`
-  alerts. Neural ODE and planning currently expose job-backed diagnostics and
-  reviewed artifact references, not dataset-specific heavy execution.
+  with bloom calibrators and selected 2B policy thresholds; Neural ODE
+  `infer_reference_profile` does the same with the reviewed history Neural ODE
+  v1 branch. MIFAL `run_observable` writes observable bloom-risk scores and
+  calibrated `bloom_h` alerts. Counterfactual planning `run_scenarios` uses a
+  completed compatible temporal upstream run to evaluate V1 raw-proxy scenario
+  diagnostics; these are not causal intervention claims.
   `GET /workspace/catalog` provides an authenticated metadata-only view of
   visible experiments, registered datasets, runs, and discoverable scientific
   output views so clients do not need to inspect internal workspace paths.

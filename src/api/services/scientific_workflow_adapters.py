@@ -32,11 +32,16 @@ from src.api.services.pipe_grud_external_reference_inference import (
     reference_inference_artifacts_available,
     run_external_pipe_grud_reference_profile_inference,
 )
+from src.api.services.pipe_neural_ode_external_reference_inference import (
+    neural_ode_reference_inference_artifacts_available,
+    run_external_pipe_neural_ode_reference_profile_inference,
+)
 from src.api.services.pipe_grud_external_sequences import build_external_pipe_sequence_artifacts
 from src.api.services.mifal_external import (
     mifal_reference_artifacts_available,
     run_external_mifal_observable,
 )
+from src.api.services.counterfactual_planning_external import run_external_counterfactual_planning_v1
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import (
     RunExecutionNotFoundError,
@@ -89,7 +94,7 @@ _PIPE_GRUD_REFERENCE_ARTIFACTS = {
     "rollout_calibrators": Path("models/pipe_grud/adaptive_wqp_focused/rollout_calibrators"),
 }
 _NEURAL_ODE_REFERENCE_PROFILE = "adaptive_wqp_focused_history_v1_long80"
-_NEURAL_ODE_EXECUTION_MODES = frozenset({"preflight", "artifact_reference"})
+_NEURAL_ODE_EXECUTION_MODES = frozenset({"preflight", "infer_reference_profile", "artifact_reference"})
 _NEURAL_ODE_SIGNAL_VARIABLES = frozenset({"chlorophyll_a_ugL", "TP_ugL", "TN_ugL"})
 _NEURAL_ODE_REQUIRED_HISTORY_MONTHS = 12
 _NEURAL_ODE_REFERENCE_ARTIFACTS = {
@@ -122,7 +127,7 @@ _NEURAL_ODE_REFERENCE_ARTIFACTS = {
     ),
 }
 _MIFAL_EXECUTION_MODES = frozenset({"preflight", "run_observable", "artifact_reference"})
-_PLANNING_EXECUTION_MODES = frozenset({"preflight", "artifact_reference"})
+_PLANNING_EXECUTION_MODES = frozenset({"preflight", "run_scenarios", "artifact_reference"})
 _PLANNING_REFERENCE_ARTIFACTS = {
     "config": Path("configs/counterfactual_planning_v1.yaml"),
     "validation_report": Path("reports/planning/counterfactual_raw_proxy_v1_validation_report.md"),
@@ -141,6 +146,12 @@ _TEMPORAL_ALERT_ARTIFACTS = frozenset(
     {
         "pipe_grud_reference_alerts.csv",
         "pipe_grud_reference_alerts.parquet",
+        "pipe_grud_reference_rollouts.csv",
+        "pipe_grud_reference_rollouts.parquet",
+        "pipe_neural_ode_reference_alerts.csv",
+        "pipe_neural_ode_reference_alerts.parquet",
+        "pipe_neural_ode_reference_rollouts.csv",
+        "pipe_neural_ode_reference_rollouts.parquet",
         "pipe_neural_ode_alerts.parquet",
         "mifal_alerts.csv",
         "mifal_alerts.parquet",
@@ -720,7 +731,7 @@ class PipeGrudReferenceWorkflowAdapter:
 
 
 class PipeNeuralOdeReferenceWorkflowAdapter:
-    """Neural ODE adapter for external preflight and reviewed artifact reporting."""
+    """Neural ODE adapter for external preflight, inference, and reviewed artifact reporting."""
 
     adapter_id = "pipe_neural_ode_reference_workflow_v0"
     interface_version = ADAPTER_INTERFACE_VERSION
@@ -735,11 +746,18 @@ class PipeNeuralOdeReferenceWorkflowAdapter:
         if execution_mode not in _NEURAL_ODE_EXECUTION_MODES:
             raise ScientificWorkflowAdapterError(
                 "Neural ODE adapter v0 requires parameters.execution_mode='preflight' "
-                "for external dataset diagnostics or parameters.execution_mode='artifact_reference' "
-                "to validate the reviewed Neural ODE v1 reference artifacts. "
-                "Dataset-specific Neural ODE rollout execution is not exposed until the v1 "
-                "history-window loader is wired into the API."
+                "for external dataset diagnostics, parameters.execution_mode='infer_reference_profile' "
+                "to run calibrated Neural ODE v1 reference-profile inference, or "
+                "parameters.execution_mode='artifact_reference' to validate the reviewed Neural ODE v1 artifacts."
             )
+        if execution_mode == "infer_reference_profile":
+            available, missing = neural_ode_reference_inference_artifacts_available()
+            if not available:
+                raise ScientificWorkflowAdapterError(
+                    "Neural ODE reference inference artifacts are not available: "
+                    + ", ".join(sorted(missing))
+                )
+            return
         if execution_mode == "artifact_reference":
             missing = [
                 name
@@ -762,7 +780,49 @@ class PipeNeuralOdeReferenceWorkflowAdapter:
     def execute(self, job: ScientificWorkflowJob, plan: RunPlanResponse) -> RunExecutionResponse:
         if _neural_ode_execution_mode(job) == "preflight":
             return self._execute_preflight(job, plan)
+        if _neural_ode_execution_mode(job) == "infer_reference_profile":
+            return self._execute_reference_profile_inference(job, plan)
         return self._execute_reference(job, plan)
+
+    def _execute_reference_profile_inference(
+        self,
+        job: ScientificWorkflowJob,
+        plan: RunPlanResponse,
+    ) -> RunExecutionResponse:
+        workspace = api_workspace()
+        run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        started_at = _now_utc()
+        execution_id = _execution_id(plan.plan_id, self.adapter_id)
+        result = run_external_pipe_neural_ode_reference_profile_inference(
+            dataset_id=job.dataset_id,
+            plan=plan,
+            run_dir=run_dir,
+            workspace=workspace,
+            execution_id=execution_id,
+            adapter_id=self.adapter_id,
+            adapter_interface_version=self.interface_version,
+            started_at=started_at,
+            parameters=job.parameters,
+        )
+        completed_at = _now_utc()
+        artifacts = [
+            _run_artifact(workspace, path, name=path.name, role="manifest" if path.suffix == ".json" else "output")
+            for path in result.output_paths
+        ]
+        execution = RunExecutionResponse(
+            execution_id=execution_id,
+            plan_id=plan.plan_id,
+            dataset_id=job.dataset_id,
+            workflow=job.workflow,
+            status="completed",
+            started_at=started_at,
+            completed_at=completed_at,
+            row_counts=result.row_counts,
+            warnings=plan.warnings,
+            artifacts=artifacts,
+        )
+        return save_run_execution(execution, workspace=workspace)
 
     def _execute_preflight(
         self,
@@ -780,11 +840,11 @@ class PipeNeuralOdeReferenceWorkflowAdapter:
             signal_variables=_NEURAL_ODE_SIGNAL_VARIABLES,
             required_history_months=_NEURAL_ODE_REQUIRED_HISTORY_MONTHS,
             workflow_label="Neural ODE v1",
-            inference_ready=False,
+            inference_ready=True,
             unavailable_surface_code="neural_ode_history_window_loader_not_available",
             unavailable_surface_message=(
-                "Dataset-specific Neural ODE v1 inference requires the reviewed history-window "
-                "loader and latent ODE rollout path; this adapter currently performs diagnostics only."
+                "Preflight does not execute Neural ODE v1 inference; use "
+                "parameters.execution_mode='infer_reference_profile' to build the adaptive surface and run rollouts."
             ),
         )
         row_counts = _generic_preflight_row_counts(diagnostics)
@@ -804,7 +864,7 @@ class PipeNeuralOdeReferenceWorkflowAdapter:
             **diagnostics,
             "limitations": [
                 "Preflight is diagnostic only; it does not execute Neural ODE inference.",
-                "The reviewed Neural ODE v1 path still requires API wiring for external history windows.",
+                "Use execution_mode='infer_reference_profile' for dataset-specific calibrated Neural ODE v1 inference.",
                 "Passing coverage checks does not guarantee field predictive skill for a new water body.",
             ],
         }
@@ -894,10 +954,27 @@ class PipeNeuralOdeReferenceWorkflowAdapter:
         summaries: dict[str, object] = {}
         run_dir = run_plan_dir(plan.plan_id)
         preflight_manifest = run_dir / "pipe_neural_ode_preflight_manifest.json"
+        reference_inference_manifest = run_dir / "pipe_neural_ode_reference_inference_manifest.json"
         reference_manifest = run_dir / "pipe_neural_ode_run_manifest.json"
         if preflight_manifest.exists():
             manifest = json.loads(preflight_manifest.read_text(encoding="utf-8"))
             summaries["pipe_neural_ode_preflight"] = _preflight_summary(manifest)
+        elif reference_inference_manifest.exists():
+            manifest = json.loads(reference_inference_manifest.read_text(encoding="utf-8"))
+            summaries["pipe_neural_ode_reference_profile_inference"] = {
+                "adapter": manifest.get("adapter"),
+                "execution_mode": manifest.get("execution_mode"),
+                "inference_version": manifest.get("inference_version"),
+                "surface_contract": manifest.get("surface_contract"),
+                "reference_profile": manifest.get("reference_profile"),
+                "policy_name": manifest.get("policy_name"),
+                "outcome": manifest.get("outcome"),
+                "readiness": manifest.get("readiness", {}),
+                "blockers": manifest.get("blockers", []),
+                "warnings": manifest.get("warnings", []),
+                "threshold_coverage": manifest.get("threshold_coverage", {}),
+                "calibrator_coverage": manifest.get("calibrator_coverage", {}),
+            }
         elif reference_manifest.exists():
             manifest = json.loads(reference_manifest.read_text(encoding="utf-8"))
             summaries["pipe_neural_ode_reference"] = {
@@ -1175,7 +1252,7 @@ class MifalEdT2WorkflowAdapter:
 
 
 class CounterfactualPlanningWorkflowAdapter:
-    """Counterfactual planning adapter for upstream preflight and reviewed artifact reporting."""
+    """Counterfactual planning adapter for upstream preflight, V1 execution, and artifact reporting."""
 
     adapter_id = "counterfactual_planning_workflow_v0"
     interface_version = ADAPTER_INTERFACE_VERSION
@@ -1190,9 +1267,26 @@ class CounterfactualPlanningWorkflowAdapter:
         if execution_mode not in _PLANNING_EXECUTION_MODES:
             raise ScientificWorkflowAdapterError(
                 "Counterfactual planning adapter v0 requires parameters.execution_mode='preflight' "
-                "to check upstream temporal output readiness or parameters.execution_mode='artifact_reference' "
-                "to validate reviewed planning V1 artifacts."
+                "to check upstream temporal output readiness, parameters.execution_mode='run_scenarios' "
+                "to evaluate planning V1 scenarios against a completed upstream temporal run, or "
+                "parameters.execution_mode='artifact_reference' to validate reviewed planning V1 artifacts."
             )
+        if execution_mode == "run_scenarios":
+            missing = [
+                name
+                for name, path in {"config": _PLANNING_REFERENCE_ARTIFACTS["config"]}.items()
+                if not _artifact_available(path)
+            ]
+            if missing:
+                raise ScientificWorkflowAdapterError(
+                    "Counterfactual planning execution artifacts are not available: "
+                    + ", ".join(sorted(missing))
+                )
+            if not str(job.parameters.get("upstream_plan_id", "")).strip():
+                raise ScientificWorkflowAdapterError(
+                    "Counterfactual planning execution requires parameters.upstream_plan_id."
+                )
+            return
         if execution_mode == "artifact_reference":
             missing = [
                 name
@@ -1216,7 +1310,49 @@ class CounterfactualPlanningWorkflowAdapter:
     def execute(self, job: ScientificWorkflowJob, plan: RunPlanResponse) -> RunExecutionResponse:
         if _planning_execution_mode(job) == "preflight":
             return self._execute_preflight(job, plan)
+        if _planning_execution_mode(job) == "run_scenarios":
+            return self._execute_scenarios(job, plan)
         return self._execute_reference(job, plan)
+
+    def _execute_scenarios(
+        self,
+        job: ScientificWorkflowJob,
+        plan: RunPlanResponse,
+    ) -> RunExecutionResponse:
+        workspace = api_workspace()
+        run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        started_at = _now_utc()
+        execution_id = _execution_id(plan.plan_id, self.adapter_id)
+        result = run_external_counterfactual_planning_v1(
+            dataset_id=job.dataset_id,
+            plan=plan,
+            run_dir=run_dir,
+            workspace=workspace,
+            execution_id=execution_id,
+            adapter_id=self.adapter_id,
+            adapter_interface_version=self.interface_version,
+            started_at=started_at,
+            parameters=job.parameters,
+        )
+        completed_at = _now_utc()
+        artifacts = [
+            _run_artifact(workspace, path, name=path.name, role="manifest" if path.suffix == ".json" else "output")
+            for path in result.output_paths
+        ]
+        execution = RunExecutionResponse(
+            execution_id=execution_id,
+            plan_id=plan.plan_id,
+            dataset_id=job.dataset_id,
+            workflow=job.workflow,
+            status="completed",
+            started_at=started_at,
+            completed_at=completed_at,
+            row_counts=result.row_counts,
+            warnings=plan.warnings,
+            artifacts=artifacts,
+        )
+        return save_run_execution(execution, workspace=workspace)
 
     def _execute_preflight(
         self,
@@ -1340,10 +1476,25 @@ class CounterfactualPlanningWorkflowAdapter:
         summaries: dict[str, object] = {}
         run_dir = run_plan_dir(plan.plan_id)
         preflight_manifest = run_dir / "counterfactual_planning_preflight_manifest.json"
+        scenarios_manifest = run_dir / "counterfactual_manifest.json"
         reference_manifest = run_dir / "counterfactual_planning_reference_manifest.json"
         if preflight_manifest.exists():
             manifest = json.loads(preflight_manifest.read_text(encoding="utf-8"))
             summaries["counterfactual_planning_preflight"] = _preflight_summary(manifest)
+        elif scenarios_manifest.exists():
+            manifest = json.loads(scenarios_manifest.read_text(encoding="utf-8"))
+            summaries["counterfactual_planning_v1"] = {
+                "adapter": manifest.get("adapter"),
+                "execution_mode": manifest.get("execution_mode"),
+                "planning_version": manifest.get("planning_version"),
+                "planning_api_version": manifest.get("planning_api_version"),
+                "outcome": manifest.get("outcome"),
+                "readiness": manifest.get("readiness", {}),
+                "blockers": manifest.get("blockers", []),
+                "warnings": manifest.get("warnings", []),
+                "upstream": manifest.get("upstream", {}),
+                "limitations": manifest.get("limitations", []),
+            }
         elif reference_manifest.exists():
             manifest = json.loads(reference_manifest.read_text(encoding="utf-8"))
             summaries["counterfactual_planning_reference"] = {

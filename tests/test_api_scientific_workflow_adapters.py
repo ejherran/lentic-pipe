@@ -238,15 +238,68 @@ def test_neural_ode_preflight_adapter_writes_dataset_diagnostic(
     assert result["workflow"] == "pipe_neural_ode"
     summary = result["summary"]["summaries"]["pipe_neural_ode_preflight"]
     assert summary["execution_mode"] == "preflight"
-    assert summary["outcome"] == "not_ready"
+    assert summary["outcome"] == "ready_for_inference"
     assert summary["readiness"]["history_candidate"] is True
+    assert summary["readiness"]["inference_adapter_available"] is True
+    assert summary["readiness"]["ready_for_inference"] is True
     blocker_codes = {blocker["code"] for blocker in summary["blockers"]}
-    assert "neural_ode_history_window_loader_not_available" in blocker_codes
+    assert blocker_codes == set()
     artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
     assert artifact_names == {
         "pipe_neural_ode_preflight_report.md",
         "pipe_neural_ode_preflight_manifest.json",
     }
+
+
+def test_neural_ode_reference_profile_inference_adapter_writes_calibrated_rollouts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("torch")
+    pytest.importorskip("torchdiffeq")
+    pytest.importorskip("joblib")
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_neural_ode,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_neural_ode",
+            "parameters": {
+                "execution_mode": "infer_reference_profile",
+                "rollout_horizon": 2,
+                "max_origins": 1,
+                "deterministic": True,
+                "policy_name": "closest_pr",
+            },
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_neural_ode_reference_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["selected_origins"] == 1
+    assert row_counts["rollout_rows"] == 2
+    assert row_counts["alert_rows"] == 4
+    summary = result["summary"]["summaries"]["pipe_neural_ode_reference_profile_inference"]
+    assert summary["execution_mode"] == "infer_reference_profile"
+    assert summary["outcome"] == "completed_reference_profile"
+    assert summary["policy_name"] == "closest_pr"
+    assert summary["readiness"]["reference_model_loaded"] is True
+    assert summary["readiness"]["reference_bloom_calibrators_applied"] is True
+    assert summary["readiness"]["policy_thresholds_applied"] is True
+    assert summary["readiness"]["ready_for_reference_inference"] is True
+    assert summary["blockers"] == []
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "pipe_adaptive_surface_manifest.json",
+        "pipe_neural_ode_reference_rollouts.parquet",
+        "pipe_neural_ode_reference_alerts.csv",
+        "pipe_neural_ode_reference_policy_summary.csv",
+        "pipe_neural_ode_reference_inference_report.md",
+        "pipe_neural_ode_reference_inference_manifest.json",
+    } <= artifact_names
 
 
 def test_mifal_observable_adapter_writes_scores_and_alerts(
@@ -540,6 +593,69 @@ def test_pipe_grud_reference_profile_inference_adapter_writes_calibrated_rollout
         "pipe_grud_reference_policy_summary.csv",
         "pipe_grud_reference_inference_report.md",
         "pipe_grud_reference_inference_manifest.json",
+    } <= artifact_names
+
+
+def test_counterfactual_planning_adapter_runs_v1_scenarios_from_upstream_temporal_run(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    pytest.importorskip("torch")
+    pytest.importorskip("joblib")
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+    upstream = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {
+                "execution_mode": "infer_reference_profile",
+                "rollout_horizon": 2,
+                "max_origins": 1,
+                "deterministic": True,
+                "policy_name": "closest_pr",
+            },
+        },
+    )
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "counterfactual_planning",
+            "parameters": {
+                "execution_mode": "run_scenarios",
+                "upstream_plan_id": upstream["plan"]["plan_id"],
+                "evaluation_splits": ["external"],
+                "examples_per_scenario": 2,
+            },
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "counterfactual_planning_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["planning_rows"] == 2
+    assert row_counts["summary_rows"] > 0
+    assert row_counts["pareto_rows"] > 0
+    summary = result["summary"]["summaries"]["counterfactual_planning_v1"]
+    assert summary["execution_mode"] == "run_scenarios"
+    assert summary["outcome"] == "completed_planning"
+    assert summary["readiness"]["upstream_plan_id"] == upstream["plan"]["plan_id"]
+    assert summary["readiness"]["ready_for_planning"] is True
+    warning_codes = {warning["code"] for warning in summary["warnings"]}
+    assert "counterfactual_not_causal" in warning_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "counterfactual_planning_rows.csv",
+        "counterfactual_panel.csv",
+        "counterfactual_metrics.csv",
+        "counterfactual_summary.csv",
+        "counterfactual_pareto.csv",
+        "counterfactual_examples.csv",
+        "counterfactual_report.md",
+        "counterfactual_manifest.json",
     } <= artifact_names
 
 
