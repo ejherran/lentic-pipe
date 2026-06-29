@@ -144,11 +144,33 @@ under the configured API workspace:
 
 The `dataset_id` is derived from a SHA-256 hash of the normalized payload, so
 submitting the same payload is idempotent. This local file-backed repository is
-the first scientific artifact store. The API platform also includes
-experiment-scoped dataset metadata in SQL through
-`POST /experiments/{experiment_id}/datasets`. Later phases should connect
-uploaded payload storage to that experiment model while preserving the
-validation and manifest response semantics.
+the first scientific artifact store.
+
+The experiment-scoped production path links those artifacts to SQL experiment
+ownership:
+
+```http
+POST /experiments/{experiment_id}/datasets/validate
+POST /experiments/{experiment_id}/datasets/register
+POST /experiments/{experiment_id}/datasets
+GET /experiments/{experiment_id}/datasets
+```
+
+`POST /experiments/{experiment_id}/datasets/register` accepts the scientific
+long-form payload plus optional `description`, `source_id`, and `meta` fields.
+It writes the same file-backed `payload.json`, `validation.json`, and
+`manifest.json`, then creates an experiment-owned dataset row. The response
+contains two identifiers:
+
+| Identifier | Meaning |
+|---|---|
+| `dataset.id` | SQL dataset row owned by the experiment. Use this as `config.experiment_dataset_id` for async jobs. |
+| `scientific_dataset.dataset_id` | Deterministic file-backed dataset manifest id. Kept for compatibility with `/datasets` and `/runs/plan`. |
+
+`POST /experiments/{experiment_id}/datasets` remains available for
+metadata-only references to external catalogues or files. Such rows are not
+eligible for scientific execution until they are linked to a validated
+scientific dataset manifest.
 
 Registered datasets can be passed to the dry-run planner:
 
@@ -210,9 +232,12 @@ deltas. It is a deterministic sensitivity simulation, not causal evidence or
 temporal intervention planning.
 
 The asynchronous job system can already call the deterministic scientific
-planner/executor when a run config includes `dataset_id` and `workflow`. This
-keeps execution under the prototype's job lifecycle while retaining the local
-compatibility endpoints for reproducible checks.
+planner/executor when a run config includes `experiment_dataset_id` and
+`workflow`. The worker resolves the experiment-owned SQL row to its
+`scientific_dataset_id`, verifies it belongs to the run's experiment, and fails
+with an explicit error if the row is metadata-only or missing. Direct
+`dataset_id` configs are retained as a compatibility path for local
+reproducibility checks.
 
 ## Privacy And Provenance
 

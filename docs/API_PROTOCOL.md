@@ -104,7 +104,11 @@ and adds a deterministic `POST /datasets/validate` endpoint for long-form
 observations plus local file-backed dataset registration through
 `POST /datasets` and `GET /datasets/{dataset_id}`. Registered datasets create a
 payload, validation result, and manifest under the API workspace with SHA-256
-hashes. It also exposes `POST /runs/plan`, a synchronous dry-run planner for
+hashes. The production path also exposes
+`POST /experiments/{experiment_id}/datasets/validate` and
+`POST /experiments/{experiment_id}/datasets/register`; registration creates an
+experiment-owned SQL dataset row linked to the deterministic scientific
+manifest. It also exposes `POST /runs/plan`, a synchronous dry-run planner for
 registered datasets, and `GET /runs/plans/{plan_id}` for retrieving persisted
 plan records. The first safe executor is exposed through
 `POST /runs/plans/{plan_id}/execute` and
@@ -116,7 +120,7 @@ listed, previewed, and summarized through run-scoped artifact/result endpoints.
 
 The top-level `/datasets` and `/runs/plan` endpoints are currently retained as
 a compatibility surface for reproducible local workflows. The target production
-shape is experiment-scoped: datasets are owned by experiments, and heavy
+shape is now the recommended path: datasets are owned by experiments, and heavy
 scientific execution runs through `/experiments/{experiment_id}/runs` and the
 Taskiq worker.
 
@@ -142,17 +146,20 @@ The first scientific adapter is configured through `Run.config`:
 
 ```json
 {
-  "dataset_id": "ds_...",
+  "experiment_dataset_id": "0b8f6b6b-2f1c-4f3a-94af-7ad6d5c73ed2",
   "workflow": "canonical_observations",
   "parameters": {}
 }
 ```
 
-When `dataset_id` and `workflow` are present, the worker calls the deterministic
-scientific planner and safe executor, then persists the plan, execution,
-artifact list, result summary, and row-count metrics in `Run.results`. Without
-that pair, the job system still works but returns an explicit placeholder
-result for not-yet-wired model families.
+When `experiment_dataset_id` and `workflow` are present, the worker verifies the
+dataset row belongs to the run's experiment, resolves it to the linked
+scientific `dataset_id`, calls the deterministic scientific planner and safe
+executor, then persists the plan, execution, artifact list, result summary, and
+row-count metrics in `Run.results`. Direct `dataset_id` configs remain
+supported only as a compatibility path for local checks. Without a usable
+dataset/workflow pair, the job system still works but returns an explicit
+placeholder result for not-yet-wired model families.
 
 Simulation jobs use the prototype simulation lifecycle:
 

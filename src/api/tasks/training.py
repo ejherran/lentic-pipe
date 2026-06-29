@@ -6,6 +6,7 @@ from typing import Any, cast
 
 from sqlalchemy import update
 from sqlalchemy.engine import CursorResult
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.api.core.email import send_email
 from src.api.database import AsyncSessionLocal
@@ -14,6 +15,10 @@ from src.api.models.user import User
 from src.api.schemas.dataset import WorkflowName
 from src.api.schemas.run import RunPlanRequest
 from src.api.services.run_artifacts import summarize_run_results
+from src.api.services.experiment_datasets import (
+    config_requests_scientific_workflow,
+    resolve_scientific_dataset_config,
+)
 from src.api.services.run_executor import execute_run_plan
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import save_run_plan
@@ -30,11 +35,22 @@ _SCIENTIFIC_WORKFLOWS = {
 }
 
 
-async def _run_model_or_workflow(model_type: ModelType, config: dict | None) -> dict[str, Any]:
+async def _run_model_or_workflow(
+    model_type: ModelType,
+    config: dict[str, Any] | None,
+    *,
+    experiment_id: uuid.UUID | None = None,
+    db: AsyncSession | None = None,
+) -> dict[str, Any]:
     """Run a configured scientific workflow or return an explicit placeholder."""
 
-    if config and config.get("dataset_id") and (config.get("workflow") or config.get("science_workflow")):
-        return _run_scientific_workflow(config)
+    if config_requests_scientific_workflow(config):
+        resolved_config = await resolve_scientific_dataset_config(
+            config or {},
+            experiment_id=experiment_id,
+            db=db,
+        )
+        return _run_scientific_workflow(resolved_config)
     return {
         "status": "stub",
         "model_type": model_type,
@@ -105,7 +121,12 @@ async def train_model_task(run_id: str, request_id: str = "") -> None:
             return
 
         try:
-            results = await _run_model_or_workflow(run.model_type, run.config)
+            results = await _run_model_or_workflow(
+                run.model_type,
+                run.config,
+                experiment_id=run.experiment_id,
+                db=db,
+            )
             # Re-read from DB — user may have cancelled while the job was running.
             await db.refresh(run)
             if run.status == RunStatus.cancelled:

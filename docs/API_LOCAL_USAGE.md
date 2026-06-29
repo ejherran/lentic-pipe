@@ -208,19 +208,58 @@ Fetch the persisted execution response:
 curl -sS http://127.0.0.1:8000/runs/plans/{plan_id}/execution
 ```
 
+## Register Inside An Experiment
+
+The compatibility `/datasets` flow is useful for local reproducibility. The
+experiment-owned path validates the same payload and also creates a SQL dataset
+row that can be used by async jobs:
+
+```bash
+curl -sS \
+  -H "Authorization: Bearer $ACCESS_TOKEN" \
+  -H "Content-Type: application/json" \
+  --data @/tmp/lentic-dataset.json \
+  http://127.0.0.1:8000/experiments/{experiment_id}/datasets/register
+```
+
+The response contains:
+
+```json
+{
+  "dataset": {
+    "id": "{experiment_dataset_id}",
+    "experiment_id": "{experiment_id}",
+    "file_path": "datasets/{dataset_id}/manifest.json",
+    "meta": {
+      "scientific_dataset_id": "{dataset_id}",
+      "content_sha256": "..."
+    }
+  },
+  "scientific_dataset": {
+    "dataset_id": "{dataset_id}",
+    "artifacts": []
+  }
+}
+```
+
+Use `dataset.id` as `config.experiment_dataset_id` for experiment-scoped jobs.
+Use `scientific_dataset.dataset_id` only for the compatibility `/runs/plan`
+surface.
+
 ## Execute Through The Job System
 
 The compatibility endpoints above are useful for local reproducibility checks.
 The production architecture should submit heavy work through experiment-scoped
-jobs. After registering or logging in a user and creating an experiment, launch
-a run with a scientific workflow config:
+jobs. After registering or logging in a user, creating an experiment, and
+registering the scientific dataset inside it, launch a run with a scientific
+workflow config:
 
 ```json
 {
   "name": "lake-alpha-canonical",
   "model_type": "PIPE_GRUD",
   "config": {
-    "dataset_id": "{dataset_id}",
+    "experiment_dataset_id": "{experiment_dataset_id}",
     "workflow": "canonical_observations",
     "parameters": {}
   }
@@ -240,6 +279,9 @@ curl -sS \
 
 The API returns `202 Accepted` with `status: pending` and a Taskiq `task_id`.
 The worker transitions the run through `running` to `completed` or `failed`.
+If the experiment dataset row is missing, belongs to another experiment, or is
+metadata-only, the run fails with an explicit `error_message` instead of
+silently falling back to another dataset.
 Fetch status and results with:
 
 ```bash

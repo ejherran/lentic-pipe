@@ -320,18 +320,20 @@ exports, or credential JSON files.
   `src/experiments/calibrate_mifal_observable_alerts.py`, which fits
   per-horizon calibrators and thresholds on validation only. Matched-surface
   diagnostics are handled by `src/experiments/evaluate_mifal_matched_surface.py`;
-- `docs/API_PROTOCOL.md` defines the REST API direction. The public `src/api`
-  tree now uses the full prototype architecture as its base: authentication,
-  users, experiment collaboration, SQL persistence, Taskiq/Redis jobs,
-  cancellation, metrics, and Alembic migrations. The existing scientific API
-  work is preserved as a workflow layer for dataset validation, planning, safe
-  local execution, artifact previews, current-state alerts, and minimal
-  counterfactual recomputation.
   these intersect calibrated MIFAL predictions, and optionally a reference
   backtest surface, before any comparison claim is made. Metric-level `bloom_h`
   comparison against PIPE is handled by
   `src/experiments/compare_mifal_pipe_bloom_metrics.py`; MIFAL does not emit the
   PIPE `irc_alert` target.
+- `docs/API_PROTOCOL.md` defines the REST API direction. The public `src/api`
+  tree now uses the full prototype architecture as its base: authentication,
+  users, experiment collaboration, SQL persistence, Taskiq/Redis jobs,
+  cancellation, metrics, and Alembic migrations. The existing scientific API
+  work is preserved as a workflow layer for dataset validation, experiment-owned
+  scientific dataset registration, planning, safe local execution, artifact
+  previews, current-state alerts, and minimal counterfactual recomputation.
+  Async runs should prefer `config.experiment_dataset_id` so the worker can
+  resolve a validated dataset owned by the same experiment.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

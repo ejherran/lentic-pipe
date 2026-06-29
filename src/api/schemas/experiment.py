@@ -1,9 +1,11 @@
 import uuid
 from datetime import datetime
+from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from src.api.models.experiment import CollaboratorRole, ExperimentStatus
+from src.api.schemas.dataset import DatasetRegistrationResponse, DatasetValidationRequest
 
 
 class ExperimentCreateRequest(BaseModel):
@@ -103,3 +105,18 @@ class DatasetResponse(BaseModel):
     meta: dict | None
     created_by: uuid.UUID | None
     created_at: datetime
+
+
+class ExperimentDatasetRegistrationRequest(DatasetValidationRequest):
+    """Register a validated scientific dataset inside an experiment."""
+
+    description: str | None = Field(default=None, max_length=1000)
+    source_id: str | None = Field(default=None, max_length=100)
+    meta: dict[str, Any] | None = None
+
+
+class ExperimentDatasetRegistrationResponse(BaseModel):
+    """Experiment dataset row plus the scientific file-backed registration."""
+
+    dataset: DatasetResponse
+    scientific_dataset: DatasetRegistrationResponse

@@ -25,11 +25,21 @@ from src.api.schemas.experiment import (
     CollaboratorResponse,
     DatasetCreateRequest,
     DatasetResponse,
+    ExperimentDatasetRegistrationRequest,
+    ExperimentDatasetRegistrationResponse,
     ExperimentCreateRequest,
     ExperimentImportRequest,
     ExperimentResponse,
     ExperimentUpdateRequest,
     UpdateCollaboratorRequest,
+)
+from src.api.schemas.dataset import DatasetValidationResponse
+from src.api.services.dataset_repository import register_dataset_request
+from src.api.services.dataset_validation import validate_dataset_request
+from src.api.services.experiment_datasets import (
+    build_scientific_dataset_meta,
+    derive_dataset_source_id,
+    scientific_dataset_manifest_uri,
 )
 
 router = APIRouter(prefix="/experiments", tags=["Experiments"])
@@ -665,6 +675,66 @@ async def transfer_ownership(
 
 
 # ── Datasets ──────────────────────────────────────────────────────────────────
+
+
+@router.post(
+    "/{experiment_id}/datasets/validate",
+    response_model=DatasetValidationResponse,
+    dependencies=[EditorDep],
+    summary="Validate a scientific dataset for an experiment",
+    description=(
+        "Validate long-form external observations against the scientific dataset "
+        "contract without creating SQL rows or workspace artifacts. Requires at "
+        "least `editor` role."
+    ),
+    responses={**HTTP_401, **HTTP_403, **HTTP_404, **HTTP_422},
+)
+async def validate_experiment_dataset(
+    experiment_id: uuid.UUID,
+    body: ExperimentDatasetRegistrationRequest,
+) -> DatasetValidationResponse:
+    return validate_dataset_request(body)
+
+
+@router.post(
+    "/{experiment_id}/datasets/register",
+    response_model=ExperimentDatasetRegistrationResponse,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[EditorDep],
+    summary="Register a scientific dataset",
+    description=(
+        "Validate and persist long-form observations as reproducible workspace "
+        "artifacts, then create an experiment-owned dataset row linked to the "
+        "scientific `dataset_id`. Runs should reference the returned "
+        "`dataset.id` through `config.experiment_dataset_id`."
+    ),
+    responses={**HTTP_401, **HTTP_403, **HTTP_404, **HTTP_422},
+)
+async def register_experiment_scientific_dataset(
+    experiment_id: uuid.UUID,
+    body: ExperimentDatasetRegistrationRequest,
+    current_user: CurrentUser,
+    db: DBDep,
+) -> ExperimentDatasetRegistrationResponse:
+    scientific_dataset = register_dataset_request(body)
+    dataset_name = body.dataset_name or scientific_dataset.dataset_id
+    dataset = Dataset(
+        experiment_id=experiment_id,
+        name=dataset_name,
+        description=body.description,
+        source_id=derive_dataset_source_id(body, explicit_source_id=body.source_id),
+        file_path=scientific_dataset_manifest_uri(scientific_dataset),
+        meta=build_scientific_dataset_meta(scientific_dataset, user_meta=body.meta),
+        created_by=current_user.id,
+    )
+    db.add(dataset)
+    await db.commit()
+    await db.refresh(dataset)
+    return ExperimentDatasetRegistrationResponse(
+        dataset=DatasetResponse.model_validate(dataset),
+        scientific_dataset=scientific_dataset,
+    )
+
 
 @router.post(
     "/{experiment_id}/datasets",

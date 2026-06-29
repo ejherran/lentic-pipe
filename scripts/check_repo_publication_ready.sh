@@ -72,6 +72,8 @@ fi
 secret_paths=()
 while IFS= read -r -d '' path; do
   case "$path" in
+    .env.example)
+      ;;
     .env|.env.*|.dvc/config.local|private/*.json|*.pem|*.key|*service-account*.json|*gcloud*.json)
       secret_paths+=("$path")
       ;;

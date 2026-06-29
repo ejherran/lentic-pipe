@@ -30,8 +30,11 @@ class RunCreateRequest(BaseModel):
 
     @model_validator(mode="after")
     def validate_config_for_model_type(self) -> "RunCreateRequest":
-        if self.config and self.config.get("dataset_id") and (
-            self.config.get("workflow") or self.config.get("science_workflow")
+        dataset_ref_keys = ("dataset_id", "experiment_dataset_id", "dataset_record_id")
+        if (
+            self.config
+            and any(self.config.get(key) for key in dataset_ref_keys)
+            and (self.config.get("workflow") or self.config.get("science_workflow"))
         ):
             return self
         required = _REQUIRED_CONFIG_KEYS.get(self.model_type)
