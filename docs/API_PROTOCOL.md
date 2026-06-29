@@ -154,12 +154,18 @@ The first scientific adapter is configured through `Run.config`:
 
 When `experiment_dataset_id` and `workflow` are present, the worker verifies the
 dataset row belongs to the run's experiment, resolves it to the linked
-scientific `dataset_id`, calls the deterministic scientific planner and safe
-executor, then persists the plan, execution, artifact list, result summary, and
-row-count metrics in `Run.results`. Direct `dataset_id` configs remain
-supported only as a compatibility path for local checks. Without a usable
-dataset/workflow pair, the job system still works but returns an explicit
-placeholder result for not-yet-wired model families.
+scientific `dataset_id`, and dispatches through the registered job-backed
+scientific adapter interface. The current interface is
+`job_adapter_interface_v1`, exposed by `/version` under `job_adapters`. The
+first registered adapter is `local_scientific_workflow_v0`, which executes
+`canonical_observations`, `monthly_panel`, and deterministic expert
+`fuzzy_state` by reusing the reviewed planner/executor path. It persists the
+plan, execution, artifact list, result summary, and row-count metrics in
+`Run.results`. Direct `dataset_id` configs remain supported only as a
+compatibility path for local checks. Without a usable dataset/workflow pair, the
+job system still works but returns an explicit placeholder result. Workflows
+without a registered adapter fail with a clear error instead of silently
+executing partial scientific logic.
 
 Simulation jobs use the prototype simulation lifecycle:
 
@@ -328,6 +334,13 @@ available or unavailable for a dataset.
 | MIFAL-ED/T2 | Observable-minimal variables required by the MIFAL adapter. |
 | Controlled degradation | A completed baseline workflow output to perturb or recompute. |
 | Counterfactual planning | A completed temporal state/alert surface and declared intervention proxies. |
+
+Eligibility is not the same as executable adapter availability. `/version`
+reports currently registered job adapters and their executable workflows. As of
+`job_adapter_interface_v1`, executable job workflows are
+`canonical_observations`, `monthly_panel`, and `fuzzy_state`; PIPE-GRU-D,
+Neural ODE, MIFAL-ED/T2, and counterfactual planning remain planned until their
+job adapters are reviewed and connected.
 
 ## Status Semantics
 

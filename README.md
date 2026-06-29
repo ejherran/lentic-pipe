@@ -333,7 +333,9 @@ exports, or credential JSON files.
   scientific dataset registration, planning, safe local execution, artifact
   previews, current-state alerts, and minimal counterfactual recomputation.
   Async runs should prefer `config.experiment_dataset_id` so the worker can
-  resolve a validated dataset owned by the same experiment.
+  resolve a validated dataset owned by the same experiment. Registered
+  job-backed adapters are reported by `/version`; the initial adapter interface
+  executes `canonical_observations`, `monthly_panel`, and `fuzzy_state`.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing

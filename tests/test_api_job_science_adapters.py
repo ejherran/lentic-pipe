@@ -85,5 +85,6 @@ def test_training_task_adapter_executes_registered_scientific_workflow(
 
     assert result["status"] == "completed"
     assert result["adapter"] == "local_scientific_workflow_v0"
+    assert result["adapter_interface_version"] == "job_adapter_interface_v1"
     assert result["execution"]["workflow"] == "canonical_observations"
     assert result["execution"]["row_counts"]["canonical_observations"] == 2

@@ -292,10 +292,18 @@ curl -sS -H "Authorization: Bearer $ACCESS_TOKEN" \
   http://127.0.0.1:8000/runs/{run_id}/results
 ```
 
-The first wired run adapter executes the same deterministic planner/executor
-used by `POST /runs/plans/{plan_id}/execute`. Model training, temporal
-rollouts, Neural ODE, MIFAL-ED/T2, and full counterfactual planning remain
-explicit placeholders until their reviewed adapters are connected.
+The first wired run adapter is `local_scientific_workflow_v0` under
+`job_adapter_interface_v1`. It executes the same deterministic planner/executor
+used by `POST /runs/plans/{plan_id}/execute` for `canonical_observations`,
+`monthly_panel`, and `fuzzy_state`. Inspect executable job adapters with:
+
+```bash
+curl -sS http://127.0.0.1:8000/version
+```
+
+Model training, temporal rollouts, Neural ODE, MIFAL-ED/T2, and full
+counterfactual planning remain explicit placeholders until their reviewed
+adapters are connected.
 
 ## Inspect Artifacts And Results
 

@@ -12,27 +12,12 @@ from src.api.core.email import send_email
 from src.api.database import AsyncSessionLocal
 from src.api.models.run import ModelType, Run, RunStatus
 from src.api.models.user import User
-from src.api.schemas.dataset import WorkflowName
-from src.api.schemas.run import RunPlanRequest
-from src.api.services.run_artifacts import summarize_run_results
 from src.api.services.experiment_datasets import (
     config_requests_scientific_workflow,
     resolve_scientific_dataset_config,
 )
-from src.api.services.run_executor import execute_run_plan
-from src.api.services.run_planner import plan_run_request
-from src.api.services.run_repository import save_run_plan
+from src.api.services.scientific_workflow_adapters import run_scientific_workflow_job
 from src.api.tasks.broker import broker
-
-_SCIENTIFIC_WORKFLOWS = {
-    "canonical_observations",
-    "monthly_panel",
-    "fuzzy_state",
-    "pipe_grud",
-    "pipe_neural_ode",
-    "mifal_ed_t2",
-    "counterfactual_planning",
-}
 
 
 async def _run_model_or_workflow(
@@ -50,55 +35,20 @@ async def _run_model_or_workflow(
             experiment_id=experiment_id,
             db=db,
         )
-        return _run_scientific_workflow(resolved_config)
+        return run_scientific_workflow_job(model_type, resolved_config)
     return {
         "status": "stub",
-        "model_type": model_type,
+        "model_type": model_type.value,
         "note": (
-            "No dataset_id/workflow pair was supplied. The async job lifecycle is active, "
-            "but this run did not request a wired scientific workflow."
+            "No dataset/workflow pair was supplied. The async job lifecycle is active, "
+            "but this run did not request a registered scientific workflow adapter."
         ),
         "metrics": {
             "horizon_30": {"pr_auc": None, "brier": None, "picp": None},
             "horizon_60": {"pr_auc": None, "brier": None, "picp": None},
             "horizon_90": {"pr_auc": None, "brier": None, "picp": None},
         },
-    }
-
-
-def _run_scientific_workflow(config: dict) -> dict[str, Any]:
-    """Execute the existing deterministic scientific workflow inside a job."""
-
-    workflow = str(config.get("workflow") or config.get("science_workflow"))
-    if workflow not in _SCIENTIFIC_WORKFLOWS:
-        raise ValueError(f"Unsupported scientific workflow: {workflow}")
-    workflow_name = cast(WorkflowName, workflow)
-    parameters = config.get("parameters")
-    plan_request = RunPlanRequest(
-        dataset_id=str(config["dataset_id"]),
-        workflow=workflow_name,
-        parameters=parameters if isinstance(parameters, dict) else {},
-    )
-    plan = save_run_plan(plan_run_request(plan_request))
-    if not plan.executable:
-        blocker_messages = [issue.message for issue in plan.blockers]
-        raise ValueError(
-            "Scientific workflow is not executable for this dataset: "
-            + "; ".join(blocker_messages)
-        )
-    execution = execute_run_plan(plan.plan_id)
-    summary = summarize_run_results(plan.plan_id)
-    return {
-        "status": "completed",
-        "adapter": "local_scientific_workflow_v0",
-        "plan": plan.model_dump(mode="json"),
-        "execution": execution.model_dump(mode="json"),
-        "summary": summary.model_dump(mode="json"),
-        "metrics": {
-            "row_counts": execution.row_counts,
-            "workflow": workflow,
-        },
-    }
+}
 
 
 @broker.task(timeout=300, max_retries=3)

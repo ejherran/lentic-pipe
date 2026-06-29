@@ -53,6 +53,13 @@ def test_version_exposes_contracts_and_workflows(app) -> None:
     } <= set(workflows)
     assert workflows["fuzzy_state"]["status"] == "local_executor"
     assert workflows["current_state_counterfactual"]["status"] == "local_simulation"
+    assert payload["job_adapters"]["interface_version"] == "job_adapter_interface_v1"
+    adapters = {adapter["adapter_id"]: adapter for adapter in payload["job_adapters"]["registered"]}
+    assert adapters["local_scientific_workflow_v0"]["workflows"] == [
+        "canonical_observations",
+        "fuzzy_state",
+        "monthly_panel",
+    ]
 
 
 def test_error_catalog_endpoint(app) -> None:

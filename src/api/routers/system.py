@@ -9,6 +9,10 @@ from src.api.config import PIPELINE_REGISTRY, api_metadata, settings
 from src.api.core.blocklist import get_redis_client
 from src.api.core.dependencies import DBDep
 from src.api.errors import error_catalog, warning_catalog
+from src.api.services.scientific_workflow_adapters import (
+    ADAPTER_INTERFACE_VERSION,
+    registered_scientific_workflow_adapters,
+)
 
 router = APIRouter(tags=["System"])
 
@@ -122,6 +126,17 @@ async def version():
             }
             for workflow in PIPELINE_REGISTRY
         ],
+        "job_adapters": {
+            "interface_version": ADAPTER_INTERFACE_VERSION,
+            "registered": [
+                {
+                    "adapter_id": adapter.adapter_id,
+                    "interface_version": adapter.interface_version,
+                    "workflows": sorted(adapter.supported_workflows),
+                }
+                for adapter in registered_scientific_workflow_adapters()
+            ],
+        },
         "models": {
             "PIPE_GRUD": "planned",
             "PIPE_NEURAL_ODE": "planned",

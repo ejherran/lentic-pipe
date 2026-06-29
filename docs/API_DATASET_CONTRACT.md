@@ -231,12 +231,13 @@ generated wide panel, recomputes expert fuzzy scores, and returns score/alert
 deltas. It is a deterministic sensitivity simulation, not causal evidence or
 temporal intervention planning.
 
-The asynchronous job system can already call the deterministic scientific
-planner/executor when a run config includes `experiment_dataset_id` and
-`workflow`. The worker resolves the experiment-owned SQL row to its
-`scientific_dataset_id`, verifies it belongs to the run's experiment, and fails
-with an explicit error if the row is metadata-only or missing. Direct
-`dataset_id` configs are retained as a compatibility path for local
+The asynchronous job system can already call registered scientific workflow
+adapters when a run config includes `experiment_dataset_id` and `workflow`. The
+worker resolves the experiment-owned SQL row to its `scientific_dataset_id`,
+verifies it belongs to the run's experiment, dispatches through
+`job_adapter_interface_v1`, and fails with an explicit error if the row is
+metadata-only, missing, or targets a workflow without a registered adapter.
+Direct `dataset_id` configs are retained as a compatibility path for local
 reproducibility checks.
 
 ## Privacy And Provenance
