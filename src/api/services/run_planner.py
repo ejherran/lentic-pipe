@@ -94,6 +94,11 @@ _WORKFLOW_DEPENDENCIES: dict[str, tuple[ArtifactSpec, ...]] = {
             "mifal_observable_calibrators",
             "dependency",
             "models/mifal/observable_calibrators/current_chla_pipe_grud_validation",
+            required=False,
+            reason=(
+                "Optional for deterministic MIFAL scoring; calibrated bloom_h "
+                "probabilities and thresholded alerts require these artifacts."
+            ),
         ),
     ),
     "counterfactual_planning": _COMMON_DEPENDENCIES
@@ -394,9 +399,11 @@ def _dependency_artifacts(
         else:
             available = _artifact_available(uri)
         availability = "available" if available else "missing"
-        if not available:
+        if not available and spec.required:
             missing.append(spec.name)
             reason = reason or "Required local workflow dependency is not available."
+        elif not available:
+            reason = reason or "Optional local workflow dependency is not available."
         artifacts.append(
             RunPlanArtifact(
                 name=spec.name,

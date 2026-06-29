@@ -19,8 +19,29 @@ builds, diagnostic expert-surface rollouts, calibrated adaptive
 reference-profile inference, and reviewed artifact-reference reporting.
 MIFAL-ED/T2 is available through experiment-scoped jobs for observable
 preflight, deterministic observable scoring, calibrated `bloom_h` alerts, and
-reviewed artifact-reference reporting. Neural ODE and counterfactual planning
-are currently available as job-backed preflight/reference adapters.
+reviewed artifact-reference reporting. Neural ODE is available through
+experiment-scoped jobs for preflight, calibrated reference-profile inference,
+and reviewed artifact-reference reporting. Counterfactual planning is available
+through preflight, V1 scenario execution from a compatible upstream temporal
+run, and reviewed artifact-reference reporting.
+
+## Lightweight ZIP Versus DVC Artifacts
+
+A source ZIP is expected to contain code, tests, lightweight reports, manifests,
+and DVC pointers. It does not contain private heavy artifacts such as model
+checkpoints, row-level parquet exports, or calibrator directories unless those
+artifacts have been explicitly pulled from DVC. In a ZIP-only checkout, API
+tests and workflows that exercise dataset validation, local planning,
+canonicalization, monthly panels, fuzzy state scoring, and preflight
+diagnostics should be runnable after installing the declared dependencies.
+
+Reference-profile inference for PIPE-GRU-D and Neural ODE requires the
+DVC-managed models, adaptive ANFIS checkpoints, calibrators, and policy
+threshold artifacts. MIFAL observable scoring can run without calibrators, but
+calibrated probabilities and thresholded `bloom_h` alerts require the reviewed
+MIFAL calibration artifacts. Tests that require those heavy artifacts skip with
+an explicit reason when the artifacts are absent; the full reference-inference
+claim should only be made after `dvc pull` or an equivalent artifact restore.
 
 ## Install
 
@@ -527,8 +548,10 @@ This mode writes `canonical_observations.parquet`, `monthly_panel.parquet`,
 alert endpoints expose thresholded `bloom_h` decisions. MIFAL does not emit
 `irc_alert`.
 
-Use `pipe_neural_ode` only for preflight or artifact-reference until the
-dataset-specific v1 history-window runner is wired into the API:
+Use `pipe_neural_ode` for preflight, calibrated reference-profile inference,
+or artifact-reference reporting. Reference-profile inference requires the
+DVC-managed Neural ODE v1 model, adaptive ANFIS artifacts, rollout calibrators,
+and 2B policy thresholds:
 
 ```json
 {
@@ -538,13 +561,17 @@ dataset-specific v1 history-window runner is wired into the API:
     "experiment_dataset_id": "{experiment_dataset_id}",
     "workflow": "pipe_neural_ode",
     "parameters": {
-      "execution_mode": "preflight"
+      "execution_mode": "infer_reference_profile",
+      "rollout_horizon": 3,
+      "policy_name": "closest_pr"
     }
   }
 }
 ```
 
-Use `counterfactual_planning` preflight with an upstream temporal run plan id:
+Use `counterfactual_planning` with an upstream temporal run plan id. Preflight
+checks readiness; `run_scenarios` executes the V1 raw-proxy scenario family
+using the compatible upstream temporal rollout/alert artifacts:
 
 ```json
 {
@@ -554,15 +581,16 @@ Use `counterfactual_planning` preflight with an upstream temporal run plan id:
     "experiment_dataset_id": "{experiment_dataset_id}",
     "workflow": "counterfactual_planning",
     "parameters": {
-      "execution_mode": "preflight",
+      "execution_mode": "run_scenarios",
       "upstream_plan_id": "plan_..."
     }
   }
 }
 ```
 
-Full model training, dataset-specific Neural ODE rollouts, and full
-counterfactual scenario execution remain future adapter work.
+Full model training, hyperparameter sweeps, and thesis-scale model selection
+remain outside the API service. They stay in the reproducible scientific
+experiment layer and require the full data/model workspace.
 
 ## Inspect Artifacts And Results
 

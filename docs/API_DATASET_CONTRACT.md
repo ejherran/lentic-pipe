@@ -212,6 +212,12 @@ simulation, or scientific artifact generation. The dry-run plan itself is
 persisted as a reproducibility record under the API workspace and can be
 retrieved by `plan_id`.
 
+If a dataset is scientifically ineligible and required local dependencies are
+also missing, the top-level plan status is `blocked`; clients should inspect
+the blocker list rather than relying only on the status label. Missing optional
+dependencies are reported in the artifact list with `availability="missing"`
+but do not block execution.
+
 The initial executor supports `canonical_observations`, `monthly_panel`, and
 deterministic expert `fuzzy_state` scoring. It converts supported units into
 canonical units, writes canonical rows, builds a long monthly panel using
@@ -329,6 +335,12 @@ when available, and writes:
 
 `parameters.execution_mode="artifact_reference"` validates and reports reviewed
 MIFAL observable calibration artifacts.
+
+The calibration artifacts are optional for deterministic MIFAL scoring and
+mandatory for calibrated `bloom_h` probabilities and thresholded alert rows.
+In a source ZIP without DVC-managed calibrators, `run_observable` can still
+complete with warnings and uncalibrated score rows; calibrated prediction/alert
+views require restoring those artifacts first.
 
 `pipe_neural_ode` is registered as `pipe_neural_ode_reference_workflow_v0` with
 three modes. `parameters.execution_mode="preflight"` diagnoses external

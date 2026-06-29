@@ -5,6 +5,11 @@ import pytest
 from src.api.models.run import ModelType
 from src.api.schemas.dataset import DatasetObservation, DatasetValidationRequest
 from src.api.services.dataset_repository import register_dataset_request
+from src.api.services.pipe_grud_external_adaptive_surface import adaptive_surface_artifacts_available
+from src.api.services.pipe_grud_external_reference_inference import reference_inference_artifacts_available
+from src.api.services.pipe_neural_ode_external_reference_inference import (
+    neural_ode_reference_inference_artifacts_available,
+)
 from src.api.services.scientific_workflow_adapters import (
     ADAPTER_INTERFACE_VERSION,
     ScientificWorkflowAdapterError,
@@ -13,6 +18,18 @@ from src.api.services.scientific_workflow_adapters import (
     registered_scientific_workflow_adapters,
     run_scientific_workflow_job,
 )
+
+
+def _skip_if_unavailable(label: str, availability: tuple[bool, list[str]]) -> None:
+    available, missing = availability
+    if not available:
+        pytest.skip(f"{label} requires DVC-managed artifacts: {', '.join(sorted(missing))}")
+
+
+def _skip_if_missing_paths(label: str, paths: tuple[Path, ...]) -> None:
+    missing = [path.as_posix() for path in paths if not path.exists()]
+    if missing:
+        pytest.skip(f"{label} requires DVC-managed artifacts: {', '.join(sorted(missing))}")
 
 
 def _dataset_request() -> DatasetValidationRequest:
@@ -258,6 +275,10 @@ def test_neural_ode_reference_profile_inference_adapter_writes_calibrated_rollou
     pytest.importorskip("torch")
     pytest.importorskip("torchdiffeq")
     pytest.importorskip("joblib")
+    _skip_if_unavailable(
+        "Neural ODE reference-profile inference",
+        neural_ode_reference_inference_artifacts_available(),
+    )
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
 
@@ -462,6 +483,7 @@ def test_pipe_grud_adaptive_surface_adapter_writes_reference_ready_sequences(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pytest.importorskip("torch")
+    _skip_if_unavailable("PIPE adaptive surface build", adaptive_surface_artifacts_available())
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
 
@@ -506,6 +528,13 @@ def test_pipe_grud_expert_surface_inference_adapter_writes_diagnostic_rollouts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     pytest.importorskip("torch")
+    _skip_if_missing_paths(
+        "PIPE-GRU-D expert-surface inference",
+        (
+            Path("models/pipe_grud/adaptive_wqp_focused/pipe_grud_model.pt"),
+            Path("reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest.json"),
+        ),
+    )
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
 
@@ -550,6 +579,7 @@ def test_pipe_grud_reference_profile_inference_adapter_writes_calibrated_rollout
 ) -> None:
     pytest.importorskip("torch")
     pytest.importorskip("joblib")
+    _skip_if_unavailable("PIPE-GRU-D reference-profile inference", reference_inference_artifacts_available())
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
 
@@ -602,6 +632,7 @@ def test_counterfactual_planning_adapter_runs_v1_scenarios_from_upstream_tempora
 ) -> None:
     pytest.importorskip("torch")
     pytest.importorskip("joblib")
+    _skip_if_unavailable("counterfactual planning upstream PIPE-GRU-D inference", reference_inference_artifacts_available())
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
     upstream = run_scientific_workflow_job(
@@ -663,6 +694,7 @@ def test_pipe_grud_reference_adapter_writes_manifest_and_report(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    _skip_if_unavailable("PIPE-GRU-D artifact-reference reporting", reference_inference_artifacts_available())
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_dataset_request())
 

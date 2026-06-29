@@ -6,6 +6,7 @@ from httpx import ASGITransport, AsyncClient
 from src.api.main import create_app
 from src.api.schemas.dataset import DatasetObservation, DatasetValidationRequest
 from src.api.schemas.run import RunPlanRequest
+from src.api.services import run_planner as run_planner_module
 from src.api.services.dataset_repository import register_dataset_request
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import read_run_plan, save_run_plan
@@ -75,6 +76,54 @@ def test_plan_run_request_reports_ready_fuzzy_state_outputs(tmp_path: Path, monk
     }.issubset(output_names)
 
 
+def test_plan_run_request_does_not_block_on_optional_mifal_calibrators(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(
+        DatasetValidationRequest(
+            dataset_name="Lake Alpha",
+            observations=_observations(months=1),
+        )
+    )
+    monkeypatch.setattr(
+        run_planner_module,
+        "_WORKFLOW_DEPENDENCIES",
+        {
+            **run_planner_module._WORKFLOW_DEPENDENCIES,
+            "mifal_ed_t2": (
+                run_planner_module.ArtifactSpec(
+                    "variable_config",
+                    "dependency",
+                    "configs/variables.yaml",
+                ),
+                run_planner_module.ArtifactSpec(
+                    "mifal_observable_calibrators",
+                    "dependency",
+                    "models/mifal/does_not_exist",
+                    required=False,
+                ),
+            ),
+        },
+    )
+
+    response = plan_run_request(
+        RunPlanRequest(dataset_id=dataset.dataset_id, workflow="mifal_ed_t2")
+    )
+
+    assert response.status == "ready"
+    assert response.executable is True
+    optional = [
+        artifact
+        for artifact in response.required_artifacts
+        if artifact.name == "mifal_observable_calibrators"
+    ][0]
+    assert optional.required is False
+    assert optional.availability == "missing"
+    assert response.blockers == []
+
+
 def test_save_run_plan_writes_reproducibility_record(tmp_path: Path, monkeypatch) -> None:
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(
@@ -96,7 +145,10 @@ def test_save_run_plan_writes_reproducibility_record(tmp_path: Path, monkeypatch
     assert reloaded.status == "ready"
 
 
-def test_plan_run_request_reports_not_eligible_workflow(tmp_path: Path, monkeypatch) -> None:
+def test_plan_run_request_reports_blocked_when_dataset_and_dependencies_are_missing(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(
         DatasetValidationRequest(
@@ -104,14 +156,35 @@ def test_plan_run_request_reports_not_eligible_workflow(tmp_path: Path, monkeypa
             observations=_observations(months=1),
         )
     )
+    monkeypatch.setattr(
+        run_planner_module,
+        "_WORKFLOW_DEPENDENCIES",
+        {
+            **run_planner_module._WORKFLOW_DEPENDENCIES,
+            "pipe_neural_ode": (
+                run_planner_module.ArtifactSpec(
+                    "variable_config",
+                    "dependency",
+                    "configs/variables.yaml",
+                ),
+                run_planner_module.ArtifactSpec(
+                    "pipe_neural_ode_history_model",
+                    "dependency",
+                    "models/pipe_neural_ode/does_not_exist.pt",
+                ),
+            ),
+        },
+    )
 
     response = plan_run_request(
         RunPlanRequest(dataset_id=dataset.dataset_id, workflow="pipe_neural_ode")
     )
 
-    assert response.status == "not_eligible"
+    assert response.status == "blocked"
     assert response.executable is False
-    assert response.blockers[0].code == "unsupported_pipeline_for_dataset"
+    blocker_codes = {blocker.code for blocker in response.blockers}
+    assert "unsupported_pipeline_for_dataset" in blocker_codes
+    assert "upstream_artifact_missing" in blocker_codes
 
 
 def test_plan_run_request_blocks_invalid_dataset(tmp_path: Path, monkeypatch) -> None:

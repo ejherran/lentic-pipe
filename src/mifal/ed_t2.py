@@ -16,8 +16,6 @@ __version__ = "5.0.0"
 
 Number: TypeAlias = int | float
 Interval: TypeAlias = tuple[float, float]
-ObservationLike: TypeAlias = Number | "Observation" | Mapping[str, Number]
-RawInput: TypeAlias = ObservationLike | Sequence[ObservationLike]
 
 
 def clip01(x: float) -> float:
@@ -76,6 +74,10 @@ class Observation:
     cv: float | None = None
     age_days: float = 0.0
     independence: float = 1.0
+
+
+ObservationLike: TypeAlias = Number | Observation | Mapping[str, Number]
+RawInput: TypeAlias = ObservationLike | Sequence[ObservationLike]
 
 
 @dataclass(frozen=True)

@@ -286,8 +286,25 @@ idempotent because `plan_id` is deterministic.
 `ready` means the dataset passes current eligibility checks and the local
 dependencies known to the planner are available. It does not mean an async
 worker has executed the workflow. `not_eligible` is used for scientific/data
-precondition failures. `blocked` is used for missing upstream artifacts,
-invalid dataset records, or dependency gaps.
+precondition failures when no other hard dependency blocker is present.
+`blocked` is used for missing upstream artifacts, invalid dataset records, or
+dependency gaps. A plan can include both an eligibility blocker and missing
+artifact blockers; in that case the top-level status is `blocked`, while the
+individual blocker list remains the authoritative explanation.
+
+## Artifact Availability
+
+The source tree and lightweight ZIP distributions include code, tests,
+manifests, reports, and DVC pointers. They do not necessarily include
+DVC-managed models, calibrators, checkpoints, or row-level parquet exports.
+Workflows that only validate, plan, canonicalize, build panels, score fuzzy
+state, or run preflight diagnostics can run from a dependency-complete source
+checkout. Reference-profile inference for PIPE-GRU-D and Neural ODE requires
+the reviewed model/checkpoint, adaptive ANFIS, rollout calibrator, and policy
+artifacts to be restored from DVC or an equivalent artifact store. MIFAL
+observable scoring can run without calibration artifacts, but calibrated
+probabilities and thresholded `bloom_h` alerts require the reviewed MIFAL
+calibrators and thresholds.
 
 ## Safe Synchronous Execution
 
@@ -325,10 +342,12 @@ builds, diagnostic expert-surface rollouts, calibrated adaptive
 reference-profile inference, and reviewed artifact-reference reporting.
 MIFAL-ED/T2 is reachable through the asynchronous job adapter for observable
 input preflight, deterministic observable scoring, calibrated `bloom_h` alert
-artifacts, and reviewed artifact-reference reporting. Neural ODE and
-counterfactual planning are reachable through asynchronous preflight and
-artifact-reference adapters; dataset-specific Neural ODE rollouts and full
-planning scenario execution remain future adapter work.
+artifacts when calibration assets are present, and reviewed artifact-reference
+reporting. Neural ODE is reachable through asynchronous preflight, calibrated
+reference-profile inference, and artifact-reference adapters. Counterfactual
+planning is reachable through asynchronous preflight, V1 `run_scenarios`
+execution from a compatible upstream temporal run, and artifact-reference
+adapters.
 
 ## Artifact And Result Access
 

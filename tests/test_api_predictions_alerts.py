@@ -8,7 +8,18 @@ from src.api.main import create_app
 from src.api.models.run import ModelType
 from src.api.schemas.dataset import DatasetObservation, DatasetValidationRequest
 from src.api.services.dataset_repository import register_dataset_request
+from src.api.services.mifal_external import mifal_reference_artifacts_available
+from src.api.services.pipe_grud_external_reference_inference import reference_inference_artifacts_available
+from src.api.services.pipe_neural_ode_external_reference_inference import (
+    neural_ode_reference_inference_artifacts_available,
+)
 from src.api.services.scientific_workflow_adapters import run_scientific_workflow_job
+
+
+def _skip_if_unavailable(label: str, availability: tuple[bool, list[str]]) -> None:
+    available, missing = availability
+    if not available:
+        pytest.skip(f"{label} requires DVC-managed artifacts: {', '.join(sorted(missing))}")
 
 
 def _fuzzy_payload() -> dict[str, object]:
@@ -219,6 +230,7 @@ def test_api_exposes_pipe_grud_reference_predictions_and_alerts(
 ) -> None:
     pytest.importorskip("torch")
     pytest.importorskip("joblib")
+    _skip_if_unavailable("PIPE-GRU-D reference predictions", reference_inference_artifacts_available())
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
     result = run_scientific_workflow_job(
@@ -286,6 +298,10 @@ def test_api_exposes_neural_ode_reference_predictions_and_alerts(
     pytest.importorskip("torch")
     pytest.importorskip("torchdiffeq")
     pytest.importorskip("joblib")
+    _skip_if_unavailable(
+        "Neural ODE reference predictions",
+        neural_ode_reference_inference_artifacts_available(),
+    )
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
     result = run_scientific_workflow_job(
@@ -346,6 +362,10 @@ def test_api_exposes_mifal_predictions_and_alerts(
     tmp_path: Path,
     monkeypatch,
 ) -> None:
+    _skip_if_unavailable(
+        "MIFAL calibrated predictions",
+        mifal_reference_artifacts_available("observable_no_current_chla"),
+    )
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_mifal_dataset_request())
     result = run_scientific_workflow_job(

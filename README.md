@@ -351,6 +351,14 @@ exports, or credential JSON files.
   `GET /workspace/catalog` provides an authenticated metadata-only view of
   visible experiments, registered datasets, runs, and discoverable scientific
   output views so clients do not need to inspect internal workspace paths.
+- A lightweight source ZIP does not include DVC-managed model checkpoints,
+  calibrator directories, or row-level parquet exports. API tests and workflows
+  that only validate, plan, canonicalize, build panels, score fuzzy state, or
+  run preflight diagnostics can run from the source checkout after installing
+  dependencies. Reference-profile inference for PIPE-GRU-D and Neural ODE, and
+  calibrated MIFAL alert views, require restoring the referenced DVC artifacts;
+  artifact-dependent tests skip with an explicit reason when those files are
+  absent.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
