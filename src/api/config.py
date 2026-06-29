@@ -136,11 +136,12 @@ PIPELINE_REGISTRY: tuple[PipelineInfo, ...] = (
     ),
     PipelineInfo(
         name="pipe_grud",
-        status="artifact_reference_adapter",
-        description="Validate and report reviewed PIPE-GRU-D reference artifacts through the job system.",
+        status="preflight_reference_adapter",
+        description="Diagnose external PIPE-GRU-D readiness and report reviewed reference artifacts through the job system.",
         notes=(
-            "Requires parameters.execution_mode='artifact_reference'.",
-            "Dataset-specific PIPE-GRU-D inference is not wired yet.",
+            "Use parameters.execution_mode='preflight' for external dataset diagnostics.",
+            "Use parameters.execution_mode='artifact_reference' to validate the reviewed adaptive reference profile.",
+            "Dataset-specific PIPE-GRU-D inference still requires a compatible sequence-surface adapter.",
         ),
     ),
     PipelineInfo(

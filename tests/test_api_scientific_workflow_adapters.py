@@ -131,7 +131,7 @@ def test_pipe_grud_reference_adapter_requires_explicit_artifact_mode(
     monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
     dataset = register_dataset_request(_pipe_grud_dataset_request())
 
-    with pytest.raises(ScientificWorkflowAdapterError, match="artifact-backed only"):
+    with pytest.raises(ScientificWorkflowAdapterError, match="requires parameters.execution_mode"):
         run_scientific_workflow_job(
             ModelType.pipe_grud,
             {
@@ -139,6 +139,40 @@ def test_pipe_grud_reference_adapter_requires_explicit_artifact_mode(
                 "workflow": "pipe_grud",
             },
         )
+
+
+def test_pipe_grud_preflight_adapter_writes_dataset_diagnostic(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {"execution_mode": "preflight"},
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_grud_reference_workflow_v0"
+    assert result["workflow"] == "pipe_grud"
+    assert result["execution"]["row_counts"]["months"] == 3
+    assert result["execution"]["row_counts"]["max_contiguous_site_months"] == 3
+    summary = result["summary"]["summaries"]["pipe_grud_preflight"]
+    assert summary["execution_mode"] == "preflight"
+    assert summary["outcome"] == "not_ready"
+    assert summary["readiness"]["ready_for_pipe_grud_inference"] is False
+    blocker_codes = {blocker["code"] for blocker in summary["blockers"]}
+    assert {"history_window_too_short", "pipe_state_surface_not_available"} <= blocker_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert artifact_names == {
+        "pipe_grud_preflight_report.md",
+        "pipe_grud_preflight_manifest.json",
+    }
 
 
 def test_pipe_grud_reference_adapter_writes_manifest_and_report(

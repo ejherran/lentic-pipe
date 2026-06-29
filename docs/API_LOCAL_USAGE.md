@@ -5,7 +5,8 @@ the former prototype platform as its base: authentication, users, experiments,
 collaborators, API keys, SQL persistence, Taskiq/Redis jobs, cancellation, and
 metrics are part of the public `src/api` tree. The scientific layer currently
 validates external long-form observations, registers a dataset, plans a
-workflow, and executes only the initial safe workflows:
+workflow, executes the initial safe workflows, and exposes a job-backed
+PIPE-GRU-D diagnostic/reference adapter:
 
 - `canonical_observations`
 - `monthly_panel`
@@ -13,8 +14,10 @@ workflow, and executes only the initial safe workflows:
 
 Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
 counterfactual planning are not executed by the local synchronous executor yet.
-They are reported as planned, blocked, or unsupported until their adapters are
-integrated and reviewed.
+PIPE-GRU-D is available through experiment-scoped jobs for preflight diagnostics
+and reviewed artifact-reference reporting. Dataset-specific temporal inference
+still remains pending until compatible sequence tensors are built for submitted
+external datasets.
 
 ## Install
 
@@ -296,8 +299,31 @@ The first wired run adapter is `local_scientific_workflow_v0` under
 `job_adapter_interface_v1`. It executes the same deterministic planner/executor
 used by `POST /runs/plans/{plan_id}/execute` for `canonical_observations`,
 `monthly_panel`, and `fuzzy_state`. The first heavy adapter is
-`pipe_grud_reference_workflow_v0`; use it only for the reviewed artifact-backed
-reference mode:
+`pipe_grud_reference_workflow_v0`; use `preflight` first to diagnose an
+external dataset before attempting any future PIPE-GRU-D inference:
+
+```json
+{
+  "name": "pipe-grud-preflight",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_grud",
+    "parameters": {
+      "execution_mode": "preflight"
+    }
+  }
+}
+```
+
+This mode writes `pipe_grud_preflight_report.md` and
+`pipe_grud_preflight_manifest.json`. The manifest reports row counts, variables
+present, site-month coverage, maximum contiguous monthly history, planner
+blockers, readiness flags, limitations, and next actions. It completes as a
+diagnostic job even when the dataset is not ready for PIPE-GRU-D inference.
+
+Use artifact-reference mode only to validate and report the reviewed adaptive
+PIPE-GRU-D artifacts:
 
 ```json
 {

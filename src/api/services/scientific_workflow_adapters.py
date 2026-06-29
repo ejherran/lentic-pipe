@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from dataclasses import dataclass
 from datetime import UTC, datetime
 import hashlib
@@ -12,7 +13,7 @@ from typing import Any, Protocol, cast, get_args
 
 from src.api.config import api_workspace
 from src.api.models.run import ModelType
-from src.api.schemas.dataset import WorkflowName
+from src.api.schemas.dataset import DatasetValidationRequest, WorkflowName
 from src.api.schemas.run import (
     RunExecutionResponse,
     RunPlanArtifact,
@@ -24,10 +25,15 @@ from src.api.services.run_artifacts import summarize_run_results
 from src.api.services.run_executor import execute_run_plan
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import run_plan_dir, save_run_execution, save_run_plan
+from src.api.services.dataset_repository import read_dataset_request
+from src.api.services.dataset_validation import parse_observed_year_month
 
 ADAPTER_INTERFACE_VERSION = "job_adapter_interface_v1"
 _KNOWN_WORKFLOWS = frozenset(str(name) for name in get_args(WorkflowName))
 _PIPE_GRUD_REFERENCE_PROFILE = "adaptive_wqp_focused"
+_PIPE_GRUD_EXECUTION_MODES = frozenset({"preflight", "artifact_reference"})
+_PIPE_GRUD_SIGNAL_VARIABLES = frozenset({"chlorophyll_a_ugL", "TP_ugL", "TN_ugL"})
+_PIPE_GRUD_REQUIRED_HISTORY_MONTHS = 12
 _PIPE_GRUD_REFERENCE_ARTIFACTS = {
     "model": Path("models/pipe_grud/adaptive_wqp_focused/pipe_grud_model.pt"),
     "model_manifest": Path("reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest.json"),
@@ -155,7 +161,7 @@ class LocalDeterministicWorkflowAdapter:
 
 
 class PipeGrudReferenceWorkflowAdapter:
-    """Artifact-backed PIPE-GRU-D adapter for the reviewed adaptive reference profile."""
+    """PIPE-GRU-D adapter with external-data preflight and reviewed artifact reference mode."""
 
     adapter_id = "pipe_grud_reference_workflow_v0"
     interface_version = ADAPTER_INTERFACE_VERSION
@@ -166,13 +172,15 @@ class PipeGrudReferenceWorkflowAdapter:
             raise UnsupportedScientificWorkflowError(
                 f"Workflow '{job.workflow}' is not supported by adapter '{self.adapter_id}'."
             )
-        execution_mode = str(job.parameters.get("execution_mode", ""))
-        if execution_mode != "artifact_reference":
+        execution_mode = _pipe_grud_execution_mode(job)
+        if execution_mode not in _PIPE_GRUD_EXECUTION_MODES:
             raise ScientificWorkflowAdapterError(
-                "PIPE-GRU-D adapter v0 is artifact-backed only. Set "
-                "parameters.execution_mode='artifact_reference' to validate the reviewed "
-                "adaptive reference profile. Dataset-specific PIPE inference is not wired yet."
+                "PIPE-GRU-D adapter v0 requires parameters.execution_mode='preflight' for "
+                "external dataset diagnostics or parameters.execution_mode='artifact_reference' "
+                "to validate the reviewed adaptive reference profile."
             )
+        if execution_mode == "preflight":
+            return
         missing = [
             name for name, path in _PIPE_GRUD_REFERENCE_ARTIFACTS.items() if not _artifact_available(path)
         ]
@@ -188,7 +196,7 @@ class PipeGrudReferenceWorkflowAdapter:
             parameters=job.parameters,
         )
         plan = save_run_plan(plan_run_request(plan_request))
-        if not plan.executable:
+        if _pipe_grud_execution_mode(job) != "preflight" and not plan.executable:
             blocker_messages = [issue.message for issue in plan.blockers]
             raise ScientificWorkflowAdapterError(
                 "PIPE-GRU-D workflow is not executable for this dataset: "
@@ -197,6 +205,9 @@ class PipeGrudReferenceWorkflowAdapter:
         return plan
 
     def execute(self, job: ScientificWorkflowJob, plan: RunPlanResponse) -> RunExecutionResponse:
+        if _pipe_grud_execution_mode(job) == "preflight":
+            return self._execute_preflight(job, plan)
+
         workspace = api_workspace()
         run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
         run_dir.mkdir(parents=True, exist_ok=True)
@@ -248,16 +259,81 @@ class PipeGrudReferenceWorkflowAdapter:
         )
         return save_run_execution(execution, workspace=workspace)
 
+    def _execute_preflight(
+        self,
+        job: ScientificWorkflowJob,
+        plan: RunPlanResponse,
+    ) -> RunExecutionResponse:
+        workspace = api_workspace()
+        run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        started_at = _now_utc()
+
+        request = read_dataset_request(job.dataset_id, workspace=workspace)
+        diagnostics = _pipe_grud_external_dataset_preflight(request, plan)
+        row_counts = _pipe_grud_preflight_row_counts(diagnostics)
+        manifest_payload: dict[str, object] = {
+            "execution_id": _execution_id(plan.plan_id, self.adapter_id),
+            "plan_id": plan.plan_id,
+            "dataset_id": job.dataset_id,
+            "workflow": job.workflow,
+            "adapter": self.adapter_id,
+            "adapter_interface_version": self.interface_version,
+            "status": "completed",
+            "execution_mode": "preflight",
+            "reference_profile": _PIPE_GRUD_REFERENCE_PROFILE,
+            "started_at": started_at,
+            "completed_at": _now_utc(),
+            "row_counts": row_counts,
+            **diagnostics,
+        }
+        report_path = run_dir / "pipe_grud_preflight_report.md"
+        manifest_path = run_dir / "pipe_grud_preflight_manifest.json"
+        _write_text(report_path, _pipe_grud_preflight_report(manifest_payload))
+        _write_json(manifest_path, manifest_payload)
+        completed_at = _now_utc()
+
+        artifacts = [
+            _run_artifact(workspace, report_path, name="pipe_grud_preflight_report.md", role="output"),
+            _run_artifact(workspace, manifest_path, name="pipe_grud_preflight_manifest.json", role="manifest"),
+        ]
+        execution = RunExecutionResponse(
+            execution_id=str(manifest_payload["execution_id"]),
+            plan_id=plan.plan_id,
+            dataset_id=job.dataset_id,
+            workflow=job.workflow,
+            status="completed",
+            started_at=started_at,
+            completed_at=completed_at,
+            row_counts=row_counts,
+            warnings=plan.warnings,
+            artifacts=artifacts,
+        )
+        return save_run_execution(execution, workspace=workspace)
+
     def collect_artifacts(
         self,
         job: ScientificWorkflowJob,
         plan: RunPlanResponse,
         execution: RunExecutionResponse,
     ) -> RunResultSummaryResponse:
-        manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_run_manifest.json"
         summaries: dict[str, object] = {}
-        if manifest_path.exists():
-            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        preflight_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_preflight_manifest.json"
+        reference_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_run_manifest.json"
+        if preflight_manifest_path.exists():
+            manifest = json.loads(preflight_manifest_path.read_text(encoding="utf-8"))
+            summaries["pipe_grud_preflight"] = {
+                "adapter": manifest.get("adapter"),
+                "execution_mode": manifest.get("execution_mode"),
+                "reference_profile": manifest.get("reference_profile"),
+                "outcome": manifest.get("outcome"),
+                "readiness": manifest.get("readiness", {}),
+                "blockers": manifest.get("blockers", []),
+                "warnings": manifest.get("warnings", []),
+                "next_actions": manifest.get("next_actions", []),
+            }
+        elif reference_manifest_path.exists():
+            manifest = json.loads(reference_manifest_path.read_text(encoding="utf-8"))
             summaries["pipe_grud_reference"] = {
                 "adapter": manifest.get("adapter"),
                 "execution_mode": manifest.get("execution_mode"),
@@ -367,6 +443,263 @@ def run_scientific_workflow_job(
     }
 
 
+def _pipe_grud_execution_mode(job: ScientificWorkflowJob) -> str:
+    return str(job.parameters.get("execution_mode", "")).strip()
+
+
+def _pipe_grud_external_dataset_preflight(
+    request: DatasetValidationRequest,
+    plan: RunPlanResponse,
+) -> dict[str, object]:
+    history_length = _pipe_grud_reference_history_length()
+    variable_counts: Counter[str] = Counter()
+    site_months: dict[str, set[str]] = {}
+    source_ids: set[str] = set()
+    month_ids: set[str] = set()
+    parseable_rows = 0
+
+    for observation in request.observations:
+        source_ids.add(observation.source_id)
+        year_month = parse_observed_year_month(observation.observed_at)
+        if year_month is None:
+            continue
+        parseable_rows += 1
+        variable_counts[observation.variable] += 1
+        month_ids.add(year_month)
+        site_months.setdefault(observation.site_id, set()).add(year_month)
+
+    site_month_counts = {
+        site_id: len(months) for site_id, months in sorted(site_months.items())
+    }
+    max_contiguous_site_months = max(
+        (_max_contiguous_month_count(months) for months in site_months.values()),
+        default=0,
+    )
+    signal_variables_present = sorted(
+        variable for variable in _PIPE_GRUD_SIGNAL_VARIABLES if variable_counts.get(variable, 0) > 0
+    )
+    has_signal = bool(signal_variables_present)
+    sequence_candidate = (
+        len(month_ids) >= 3
+        and has_signal
+        and max_contiguous_site_months >= history_length
+    )
+    state_surface_available = False
+    ready_for_pipe_grud_inference = (
+        sequence_candidate and state_surface_available and plan.executable
+    )
+
+    blockers: list[dict[str, object]] = []
+    warnings: list[dict[str, object]] = []
+    if parseable_rows == 0:
+        blockers.append(
+            _preflight_issue(
+                "no_parseable_observations",
+                "No observations have a parseable observation month.",
+            )
+        )
+    if len(month_ids) < 3:
+        blockers.append(
+            _preflight_issue(
+                "insufficient_months",
+                "PIPE-GRU-D requires at least three distinct observation months for basic eligibility.",
+                {"months": len(month_ids), "minimum_months": 3},
+            )
+        )
+    if not has_signal:
+        blockers.append(
+            _preflight_issue(
+                "missing_trophic_or_nutrient_signal",
+                "PIPE-GRU-D requires at least one compatible trophic or nutrient signal.",
+                {"required_any": sorted(_PIPE_GRUD_SIGNAL_VARIABLES)},
+            )
+        )
+    if max_contiguous_site_months < history_length:
+        blockers.append(
+            _preflight_issue(
+                "history_window_too_short",
+                "No site has enough contiguous monthly history for the reviewed PIPE-GRU-D window.",
+                {
+                    "max_contiguous_site_months": max_contiguous_site_months,
+                    "required_history_months": history_length,
+                },
+            )
+        )
+    blockers.append(
+        _preflight_issue(
+            "pipe_state_surface_not_available",
+            "Dataset-specific PIPE-GRU-D inference requires adaptive state sequence tensors; "
+            "this adapter currently diagnoses uploaded observations but does not build those tensors.",
+            {
+                "required_surface": f"{_PIPE_GRUD_REFERENCE_PROFILE} PIPE sequence tensors",
+                "adapter_stage": "preflight_only",
+            },
+        )
+    )
+
+    if variable_counts.get("chlorophyll_a_ugL", 0) == 0:
+        warnings.append(
+            _preflight_issue(
+                "chlorophyll_signal_missing",
+                "No chlorophyll-a observations were submitted; nutrient-only runs may be weaker or ineligible for some alert targets.",
+            )
+        )
+    if len(site_months) > 1 and max_contiguous_site_months < history_length:
+        warnings.append(
+            _preflight_issue(
+                "site_coverage_fragmented",
+                "Temporal coverage is split across sites without a long enough contiguous site history.",
+                {"site_month_counts": site_month_counts},
+            )
+        )
+    if plan.blockers:
+        warnings.append(
+            _preflight_issue(
+                "planner_not_ready",
+                "The dry-run planner has blockers; inspect the planner section before attempting inference.",
+                {"blocker_count": len(plan.blockers), "plan_status": str(plan.status)},
+            )
+        )
+
+    return {
+        "outcome": "ready_for_pipe_grud_inference" if ready_for_pipe_grud_inference else "not_ready",
+        "readiness": {
+            "sequence_candidate": sequence_candidate,
+            "state_surface_available": state_surface_available,
+            "planner_executable": plan.executable,
+            "ready_for_pipe_grud_inference": ready_for_pipe_grud_inference,
+            "required_history_months": history_length,
+        },
+        "coverage": {
+            "total_observations": len(request.observations),
+            "parseable_observations": parseable_rows,
+            "sources": len(source_ids),
+            "sites": len(site_months),
+            "months": len(month_ids),
+            "site_months": sum(site_month_counts.values()),
+            "max_contiguous_site_months": max_contiguous_site_months,
+            "site_month_counts": site_month_counts,
+        },
+        "variables": {
+            "counts": dict(sorted(variable_counts.items())),
+            "signal_variables_present": signal_variables_present,
+            "chlorophyll_present": variable_counts.get("chlorophyll_a_ugL", 0) > 0,
+        },
+        "blockers": blockers,
+        "warnings": warnings,
+        "planner": {
+            "plan_id": plan.plan_id,
+            "status": str(plan.status),
+            "executable": plan.executable,
+            "blockers": [issue.model_dump(mode="json") for issue in plan.blockers],
+            "warnings": [issue.model_dump(mode="json") for issue in plan.warnings],
+        },
+        "next_actions": _pipe_grud_preflight_next_actions(
+            sequence_candidate=sequence_candidate,
+            has_signal=has_signal,
+            max_contiguous_site_months=max_contiguous_site_months,
+            history_length=history_length,
+        ),
+        "limitations": [
+            "Preflight is diagnostic only; it does not execute PIPE-GRU-D inference.",
+            "Passing basic coverage checks does not guarantee field predictive skill for a new water body.",
+            "The reviewed PIPE-GRU-D reference profile depends on an adaptive state surface and calibrated alert policy.",
+        ],
+    }
+
+
+def _pipe_grud_preflight_next_actions(
+    *,
+    sequence_candidate: bool,
+    has_signal: bool,
+    max_contiguous_site_months: int,
+    history_length: int,
+) -> list[str]:
+    actions: list[str] = []
+    if not has_signal:
+        actions.append("Add at least one chlorophyll-a, total phosphorus, or total nitrogen signal.")
+    if max_contiguous_site_months < history_length:
+        actions.append(
+            f"Provide at least {history_length} contiguous monthly observations for one site "
+            "before temporal inference."
+        )
+    if sequence_candidate:
+        actions.append(
+            "Build the external adaptive PIPE state-surface adapter for this dataset."
+        )
+    actions.append(
+        "After compatible sequence tensors exist, run the dataset-specific PIPE-GRU-D inference adapter."
+    )
+    return actions
+
+
+def _pipe_grud_preflight_row_counts(diagnostics: Mapping[str, object]) -> dict[str, int]:
+    coverage_obj = diagnostics.get("coverage", {})
+    coverage = cast(Mapping[str, object], coverage_obj) if isinstance(coverage_obj, dict) else {}
+    variables_obj = diagnostics.get("variables", {})
+    variables = cast(Mapping[str, object], variables_obj) if isinstance(variables_obj, dict) else {}
+    counts_obj = variables.get("counts", {})
+    counts = cast(Mapping[str, object], counts_obj) if isinstance(counts_obj, dict) else {}
+    blockers = diagnostics.get("blockers", [])
+    warnings = diagnostics.get("warnings", [])
+    return {
+        "observations": _int_mapping_value(coverage, "total_observations"),
+        "parseable_observations": _int_mapping_value(coverage, "parseable_observations"),
+        "sites": _int_mapping_value(coverage, "sites"),
+        "months": _int_mapping_value(coverage, "months"),
+        "site_months": _int_mapping_value(coverage, "site_months"),
+        "max_contiguous_site_months": _int_mapping_value(coverage, "max_contiguous_site_months"),
+        "variables": len(counts),
+        "blockers": len(blockers) if isinstance(blockers, list) else 0,
+        "warnings": len(warnings) if isinstance(warnings, list) else 0,
+        "generated_reports": 2,
+    }
+
+
+def _pipe_grud_reference_history_length() -> int:
+    manifest = _read_json_if_available(_PIPE_GRUD_REFERENCE_ARTIFACTS["model_manifest"])
+    if manifest is None:
+        return _PIPE_GRUD_REQUIRED_HISTORY_MONTHS
+    config_obj = manifest.get("config", {})
+    config = cast(Mapping[str, object], config_obj) if isinstance(config_obj, dict) else {}
+    history_length = config.get("history_length")
+    if isinstance(history_length, int | float):
+        return int(history_length)
+    return _PIPE_GRUD_REQUIRED_HISTORY_MONTHS
+
+
+def _max_contiguous_month_count(months: set[str]) -> int:
+    if not months:
+        return 0
+    month_numbers = sorted({_month_number(year_month) for year_month in months})
+    longest = 1
+    current = 1
+    for previous, value in zip(month_numbers, month_numbers[1:], strict=False):
+        if value == previous + 1:
+            current += 1
+        else:
+            current = 1
+        longest = max(longest, current)
+    return longest
+
+
+def _month_number(year_month: str) -> int:
+    year, month = year_month.split("-", maxsplit=1)
+    return int(year) * 12 + int(month)
+
+
+def _preflight_issue(
+    code: str,
+    message: str,
+    details: Mapping[str, object] | None = None,
+) -> dict[str, object]:
+    return {
+        "code": code,
+        "message": message,
+        "details": dict(details or {}),
+    }
+
+
 def _pipe_grud_reference_summary() -> dict[str, object]:
     manifests = {
         "model": _read_json_if_available(_PIPE_GRUD_REFERENCE_ARTIFACTS["model_manifest"]),
@@ -465,6 +798,87 @@ def _pipe_grud_reference_report(manifest: Mapping[str, object]) -> str:
             "",
         ]
     )
+
+
+def _pipe_grud_preflight_report(manifest: Mapping[str, object]) -> str:
+    row_counts_obj = manifest.get("row_counts", {})
+    row_counts = cast(Mapping[str, object], row_counts_obj) if isinstance(row_counts_obj, dict) else {}
+    readiness_obj = manifest.get("readiness", {})
+    readiness = cast(Mapping[str, object], readiness_obj) if isinstance(readiness_obj, dict) else {}
+    blockers = _manifest_issue_list(manifest.get("blockers", []))
+    warnings = _manifest_issue_list(manifest.get("warnings", []))
+    next_actions_obj = manifest.get("next_actions", [])
+    next_actions = (
+        [str(item) for item in next_actions_obj]
+        if isinstance(next_actions_obj, list)
+        else []
+    )
+    limitations_obj = manifest.get("limitations", [])
+    limitations = (
+        [str(item) for item in limitations_obj]
+        if isinstance(limitations_obj, list)
+        else []
+    )
+    return "\n".join(
+        [
+            "# PIPE-GRU-D External Dataset Preflight",
+            "",
+            f"- adapter: `{manifest['adapter']}`",
+            f"- interface: `{manifest['adapter_interface_version']}`",
+            f"- execution mode: `{manifest['execution_mode']}`",
+            f"- outcome: `{manifest['outcome']}`",
+            f"- reference profile: `{manifest['reference_profile']}`",
+            f"- dataset id: `{manifest['dataset_id']}`",
+            f"- plan id: `{manifest['plan_id']}`",
+            "",
+            "## Readiness",
+            "",
+            *[f"- {key}: {value}" for key, value in sorted(readiness.items())],
+            "",
+            "## Row Counts",
+            "",
+            *[f"- {key}: {value}" for key, value in sorted(row_counts.items())],
+            "",
+            "## Blockers",
+            "",
+            *(_issue_report_lines(blockers) or ["- none"]),
+            "",
+            "## Warnings",
+            "",
+            *(_issue_report_lines(warnings) or ["- none"]),
+            "",
+            "## Next Actions",
+            "",
+            *[f"- {item}" for item in next_actions],
+            "",
+            "## Limitations",
+            "",
+            *[f"- {item}" for item in limitations],
+            "",
+        ]
+    )
+
+
+def _manifest_issue_list(value: object) -> list[Mapping[str, object]]:
+    if not isinstance(value, list):
+        return []
+    return [
+        cast(Mapping[str, object], item)
+        for item in value
+        if isinstance(item, dict)
+    ]
+
+
+def _issue_report_lines(issues: list[Mapping[str, object]]) -> list[str]:
+    return [
+        f"- {issue.get('code', 'unknown')}: {issue.get('message', '')}"
+        for issue in issues
+    ]
+
+
+def _int_mapping_value(mapping: Mapping[str, object], key: str) -> int:
+    value = mapping.get(key, 0)
+    return int(value) if isinstance(value, int | float) else 0
 
 
 def _read_json_if_available(path: Path) -> dict[str, object] | None:
