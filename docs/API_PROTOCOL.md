@@ -161,12 +161,16 @@ first registered adapter is `local_scientific_workflow_v0`, which executes
 `canonical_observations`, `monthly_panel`, and deterministic expert
 `fuzzy_state` by reusing the reviewed planner/executor path. The first heavy
 adapter is `pipe_grud_reference_workflow_v0`, which supports `pipe_grud` with
-two explicit modes: `parameters.execution_mode="preflight"` diagnoses whether
+three explicit modes: `parameters.execution_mode="preflight"` diagnoses whether
 an uploaded external dataset has the minimum temporal coverage, signal
 variables, planner readiness, and sequence-surface prerequisites for future
-PIPE-GRU-D inference; `parameters.execution_mode="artifact_reference"`
-validates and reports the reviewed adaptive PIPE-GRU-D artifact profile. Neither
-mode runs dataset-specific PIPE-GRU-D inference yet. Adapters persist the plan,
+PIPE-GRU-D inference; `parameters.execution_mode="build_sequences"` builds
+external expert-fuzzy PIPE state and sequence artifacts with the reviewed PIPE
+schema, plus eligible inference origins; `parameters.execution_mode="artifact_reference"`
+validates and reports the reviewed adaptive PIPE-GRU-D artifact profile.
+`build_sequences` is structural and does not match the adaptive WQP-focused
+reference surface yet. No mode runs dataset-specific PIPE-GRU-D inference yet.
+Adapters persist the plan,
 execution, artifact list, result summary, and row-count metrics in
 `Run.results`. Direct `dataset_id` configs remain supported only as a
 compatibility path for local checks. Without a usable dataset/workflow pair, the
@@ -255,9 +259,10 @@ persisted execution response.
 
 Temporal/model workflows remain deliberately non-executable in the synchronous
 local executor. PIPE-GRU-D is reachable through the asynchronous job adapter for
-preflight diagnostics and reviewed artifact-reference reporting only. Neural
-ODE, MIFAL-ED/T2, and counterfactual planning must remain planned-only until
-their adapters, artifact dependencies, and diagnostics are wired and reviewed.
+preflight diagnostics, external sequence artifact builds, and reviewed
+artifact-reference reporting only. Neural ODE, MIFAL-ED/T2, and
+counterfactual planning must remain planned-only until their adapters, artifact
+dependencies, and diagnostics are wired and reviewed.
 
 ## Artifact And Result Access
 
@@ -347,7 +352,7 @@ Eligibility is not the same as executable adapter availability. `/version`
 reports currently registered job adapters and their executable workflows. As of
 `job_adapter_interface_v1`, executable job workflows are
 `canonical_observations`, `monthly_panel`, `fuzzy_state`, and `pipe_grud` in
-preflight/artifact-reference modes. Neural ODE, MIFAL-ED/T2, and
+preflight/sequence-build/artifact-reference modes. Neural ODE, MIFAL-ED/T2, and
 counterfactual planning remain planned until their job adapters are reviewed and
 connected.
 

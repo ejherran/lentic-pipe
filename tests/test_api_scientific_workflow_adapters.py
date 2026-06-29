@@ -74,6 +74,46 @@ def _pipe_grud_dataset_request() -> DatasetValidationRequest:
     )
 
 
+def _pipe_grud_sequence_dataset_request() -> DatasetValidationRequest:
+    observations: list[DatasetObservation] = []
+    for month in range(1, 14):
+        observed_at = f"2024-{month:02d}-15" if month <= 12 else "2025-01-15"
+        values = {
+            "TP_ugL": 25.0 + month,
+            "TN_ugL": 600.0 + month * 8.0,
+            "DO_mgL": 7.5 - month * 0.03,
+            "pH": 7.2,
+            "temperature_C": 18.0 + month * 0.2,
+            "secchi_depth_m": 1.2,
+            "chlorophyll_a_ugL": 12.0 + month * 0.5,
+        }
+        units = {
+            "TP_ugL": "ug/L",
+            "TN_ugL": "ug/L",
+            "DO_mgL": "mg/L",
+            "pH": "dimensionless",
+            "temperature_C": "deg C",
+            "secchi_depth_m": "m",
+            "chlorophyll_a_ugL": "ug/L",
+        }
+        for variable, value in values.items():
+            observations.append(
+                DatasetObservation(
+                    source_id="pipe-sequence",
+                    site_id="lake-a",
+                    observed_at=observed_at,
+                    variable=variable,
+                    value=value,
+                    unit=units[variable],
+                )
+            )
+    return DatasetValidationRequest(
+        dataset_name="PIPE Sequence Lake",
+        requested_workflow="pipe_grud",
+        observations=observations,
+    )
+
+
 def test_scientific_adapter_registry_exposes_safe_executable_workflows() -> None:
     adapters = registered_scientific_workflow_adapters()
 
@@ -173,6 +213,45 @@ def test_pipe_grud_preflight_adapter_writes_dataset_diagnostic(
         "pipe_grud_preflight_report.md",
         "pipe_grud_preflight_manifest.json",
     }
+
+
+def test_pipe_grud_sequence_build_adapter_writes_external_sequence_artifacts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("LENTIC_API_WORKSPACE", str(tmp_path))
+    dataset = register_dataset_request(_pipe_grud_sequence_dataset_request())
+
+    result = run_scientific_workflow_job(
+        ModelType.pipe_grud,
+        {
+            "dataset_id": dataset.dataset_id,
+            "workflow": "pipe_grud",
+            "parameters": {"execution_mode": "build_sequences"},
+        },
+    )
+
+    assert result["status"] == "completed"
+    assert result["adapter"] == "pipe_grud_reference_workflow_v0"
+    row_counts = result["execution"]["row_counts"]
+    assert row_counts["pipe_state_surface"] == 13
+    assert row_counts["kept_sequence_rows"] == 12
+    assert row_counts["inference_candidate_origins"] == 2
+    summary = result["summary"]["summaries"]["pipe_grud_sequence_build"]
+    assert summary["execution_mode"] == "build_sequences"
+    assert summary["outcome"] == "built_with_limitations"
+    assert summary["readiness"]["ready_for_sequence_build"] is True
+    assert summary["readiness"]["ready_for_reference_inference"] is False
+    blocker_codes = {blocker["code"] for blocker in summary["blockers"]}
+    assert "adaptive_reference_surface_not_available" in blocker_codes
+    artifact_names = {artifact["name"] for artifact in result["execution"]["artifacts"]}
+    assert {
+        "pipe_state_surface.parquet",
+        "pipe_sequences.parquet",
+        "pipe_inference_origins.parquet",
+        "pipe_sequence_build_report.md",
+        "pipe_sequence_build_manifest.json",
+    } <= artifact_names
 
 
 def test_pipe_grud_reference_adapter_writes_manifest_and_report(

@@ -14,10 +14,10 @@ PIPE-GRU-D diagnostic/reference adapter:
 
 Temporal/model workflows such as PIPE-GRU-D, Neural ODE, MIFAL-ED/T2, and
 counterfactual planning are not executed by the local synchronous executor yet.
-PIPE-GRU-D is available through experiment-scoped jobs for preflight diagnostics
-and reviewed artifact-reference reporting. Dataset-specific temporal inference
-still remains pending until compatible sequence tensors are built for submitted
-external datasets.
+PIPE-GRU-D is available through experiment-scoped jobs for preflight
+diagnostics, external sequence artifact builds, and reviewed artifact-reference
+reporting. Dataset-specific temporal inference still remains pending until an
+adaptive-compatible external state surface is reviewed.
 
 ## Install
 
@@ -321,6 +321,31 @@ This mode writes `pipe_grud_preflight_report.md` and
 present, site-month coverage, maximum contiguous monthly history, planner
 blockers, readiness flags, limitations, and next actions. It completes as a
 diagnostic job even when the dataset is not ready for PIPE-GRU-D inference.
+
+Then use `build_sequences` to create external PIPE state and sequence artifacts:
+
+```json
+{
+  "name": "pipe-grud-sequences",
+  "model_type": "PIPE_GRUD",
+  "config": {
+    "experiment_dataset_id": "{experiment_dataset_id}",
+    "workflow": "pipe_grud",
+    "parameters": {
+      "execution_mode": "build_sequences"
+    }
+  }
+}
+```
+
+This mode writes `pipe_monthly_panel.csv`, `pipe_monthly_panel_wide.csv`,
+`pipe_state_surface.csv` / `.parquet`, `pipe_sequences.csv` / `.parquet`,
+`pipe_inference_origins.csv` / `.parquet`, sequence summaries,
+`pipe_sequence_build_report.md`, and `pipe_sequence_build_manifest.json`. It
+uses the expert fuzzy state path to create structurally PIPE-compatible
+artifacts. It does not claim that the generated surface matches the reviewed
+adaptive WQP-focused reference profile, and it still does not run model
+inference or calibrated alerts.
 
 Use artifact-reference mode only to validate and report the reviewed adaptive
 PIPE-GRU-D artifacts:

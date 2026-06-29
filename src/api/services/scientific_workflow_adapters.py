@@ -23,6 +23,7 @@ from src.api.schemas.run import (
 )
 from src.api.services.run_artifacts import summarize_run_results
 from src.api.services.run_executor import execute_run_plan
+from src.api.services.pipe_grud_external_sequences import build_external_pipe_sequence_artifacts
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import run_plan_dir, save_run_execution, save_run_plan
 from src.api.services.dataset_repository import read_dataset_request
@@ -31,7 +32,7 @@ from src.api.services.dataset_validation import parse_observed_year_month
 ADAPTER_INTERFACE_VERSION = "job_adapter_interface_v1"
 _KNOWN_WORKFLOWS = frozenset(str(name) for name in get_args(WorkflowName))
 _PIPE_GRUD_REFERENCE_PROFILE = "adaptive_wqp_focused"
-_PIPE_GRUD_EXECUTION_MODES = frozenset({"preflight", "artifact_reference"})
+_PIPE_GRUD_EXECUTION_MODES = frozenset({"preflight", "build_sequences", "artifact_reference"})
 _PIPE_GRUD_SIGNAL_VARIABLES = frozenset({"chlorophyll_a_ugL", "TP_ugL", "TN_ugL"})
 _PIPE_GRUD_REQUIRED_HISTORY_MONTHS = 12
 _PIPE_GRUD_REFERENCE_ARTIFACTS = {
@@ -176,10 +177,12 @@ class PipeGrudReferenceWorkflowAdapter:
         if execution_mode not in _PIPE_GRUD_EXECUTION_MODES:
             raise ScientificWorkflowAdapterError(
                 "PIPE-GRU-D adapter v0 requires parameters.execution_mode='preflight' for "
-                "external dataset diagnostics or parameters.execution_mode='artifact_reference' "
-                "to validate the reviewed adaptive reference profile."
+                "external dataset diagnostics, parameters.execution_mode='build_sequences' "
+                "for external PIPE state/sequence artifacts, or "
+                "parameters.execution_mode='artifact_reference' to validate the reviewed "
+                "adaptive reference profile."
             )
-        if execution_mode == "preflight":
+        if execution_mode in {"preflight", "build_sequences"}:
             return
         missing = [
             name for name, path in _PIPE_GRUD_REFERENCE_ARTIFACTS.items() if not _artifact_available(path)
@@ -196,7 +199,7 @@ class PipeGrudReferenceWorkflowAdapter:
             parameters=job.parameters,
         )
         plan = save_run_plan(plan_run_request(plan_request))
-        if _pipe_grud_execution_mode(job) != "preflight" and not plan.executable:
+        if _pipe_grud_execution_mode(job) not in {"preflight", "build_sequences"} and not plan.executable:
             blocker_messages = [issue.message for issue in plan.blockers]
             raise ScientificWorkflowAdapterError(
                 "PIPE-GRU-D workflow is not executable for this dataset: "
@@ -207,6 +210,8 @@ class PipeGrudReferenceWorkflowAdapter:
     def execute(self, job: ScientificWorkflowJob, plan: RunPlanResponse) -> RunExecutionResponse:
         if _pipe_grud_execution_mode(job) == "preflight":
             return self._execute_preflight(job, plan)
+        if _pipe_grud_execution_mode(job) == "build_sequences":
+            return self._execute_sequence_build(job, plan)
 
         workspace = api_workspace()
         run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
@@ -254,6 +259,46 @@ class PipeGrudReferenceWorkflowAdapter:
             started_at=started_at,
             completed_at=completed_at,
             row_counts=row_counts,
+            warnings=plan.warnings,
+            artifacts=artifacts,
+        )
+        return save_run_execution(execution, workspace=workspace)
+
+    def _execute_sequence_build(
+        self,
+        job: ScientificWorkflowJob,
+        plan: RunPlanResponse,
+    ) -> RunExecutionResponse:
+        workspace = api_workspace()
+        run_dir = run_plan_dir(plan.plan_id, workspace=workspace)
+        run_dir.mkdir(parents=True, exist_ok=True)
+        started_at = _now_utc()
+        execution_id = _execution_id(plan.plan_id, self.adapter_id)
+        result = build_external_pipe_sequence_artifacts(
+            dataset_id=job.dataset_id,
+            plan=plan,
+            run_dir=run_dir,
+            workspace=workspace,
+            execution_id=execution_id,
+            adapter_id=self.adapter_id,
+            adapter_interface_version=self.interface_version,
+            started_at=started_at,
+            parameters=job.parameters,
+        )
+        completed_at = _now_utc()
+        artifacts = [
+            _run_artifact(workspace, path, name=path.name, role="manifest" if path.suffix == ".json" else "output")
+            for path in result.output_paths
+        ]
+        execution = RunExecutionResponse(
+            execution_id=execution_id,
+            plan_id=plan.plan_id,
+            dataset_id=job.dataset_id,
+            workflow=job.workflow,
+            status="completed",
+            started_at=started_at,
+            completed_at=completed_at,
+            row_counts=result.row_counts,
             warnings=plan.warnings,
             artifacts=artifacts,
         )
@@ -319,6 +364,7 @@ class PipeGrudReferenceWorkflowAdapter:
     ) -> RunResultSummaryResponse:
         summaries: dict[str, object] = {}
         preflight_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_preflight_manifest.json"
+        sequence_manifest_path = run_plan_dir(plan.plan_id) / "pipe_sequence_build_manifest.json"
         reference_manifest_path = run_plan_dir(plan.plan_id) / "pipe_grud_run_manifest.json"
         if preflight_manifest_path.exists():
             manifest = json.loads(preflight_manifest_path.read_text(encoding="utf-8"))
@@ -331,6 +377,19 @@ class PipeGrudReferenceWorkflowAdapter:
                 "blockers": manifest.get("blockers", []),
                 "warnings": manifest.get("warnings", []),
                 "next_actions": manifest.get("next_actions", []),
+            }
+        elif sequence_manifest_path.exists():
+            manifest = json.loads(sequence_manifest_path.read_text(encoding="utf-8"))
+            summaries["pipe_grud_sequence_build"] = {
+                "adapter": manifest.get("adapter"),
+                "execution_mode": manifest.get("execution_mode"),
+                "build_version": manifest.get("build_version"),
+                "state_surface_version": manifest.get("state_surface_version"),
+                "reference_profile": manifest.get("reference_profile"),
+                "outcome": manifest.get("outcome"),
+                "readiness": manifest.get("readiness", {}),
+                "blockers": manifest.get("blockers", []),
+                "warnings": manifest.get("warnings", []),
             }
         elif reference_manifest_path.exists():
             manifest = json.loads(reference_manifest_path.read_text(encoding="utf-8"))

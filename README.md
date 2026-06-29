@@ -336,9 +336,10 @@ exports, or credential JSON files.
   resolve a validated dataset owned by the same experiment. Registered
   job-backed adapters are reported by `/version`; the initial adapter interface
   executes `canonical_observations`, `monthly_panel`, `fuzzy_state`, and a
-  PIPE-GRU-D preflight/artifact-reference adapter. PIPE-GRU-D `preflight`
-  diagnoses external dataset readiness and reports missing sequence-surface
-  prerequisites; artifact-reference mode reports the reviewed adaptive profile.
+  PIPE-GRU-D preflight/sequence-build/artifact-reference adapter. PIPE-GRU-D
+  `preflight` diagnoses external dataset readiness, `build_sequences` creates
+  expert-fuzzy external PIPE state/sequence artifacts, and artifact-reference
+  mode reports the reviewed adaptive profile.
 - `scripts/check_repo_publication_ready.sh` must pass before publishing to
   GitHub.
 - `poetry run ty check` and `poetry run pytest` must pass before publishing
