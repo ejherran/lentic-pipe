@@ -79,7 +79,8 @@ The intended public surface is:
 | `/datasets` | Upload, register, validate, and inspect external datasets. | Mixed |
 | `/runs` | Plan, launch, and inspect processing/modeling jobs. | Mixed |
 | `/runs/.../artifacts` | Query run-scoped reports, manifests, and generated files. | Synchronous |
-| `/predictions` | Optional point/batch inference on eligible surfaces. | Mixed |
+| `/runs/.../predictions` | Query run-scoped prediction or state-score surfaces. | Synchronous |
+| `/runs/.../alerts` | Query run-scoped alert views derived from available surfaces. | Synchronous |
 | `/simulations` | Counterfactual or rollout jobs when preconditions hold. | Asynchronous |
 
 The first public integration implements the system endpoints, the contracts, a
@@ -177,6 +178,28 @@ The result summary endpoint reports structured summaries for known local
 outputs, currently canonical observations, monthly panels, and expert fuzzy
 state scores. It is a convenience view over generated artifacts, not a new
 scientific computation.
+
+## Prediction And Alert Access
+
+Completed local `fuzzy_state` executions expose a first prediction/alert query
+surface:
+
+```http
+GET /runs/plans/{plan_id}/predictions
+GET /runs/plans/{plan_id}/alerts
+```
+
+For `fuzzy_state`, predictions are current-month expert fuzzy state scores
+derived from `fuzzy_state_scores.csv`. The current surface emits `irc1` as an
+expert composite state-risk score with `horizon_months = 0`. It is not a
+temporal forecast and it is not a calibrated probability.
+
+Alerts are thresholded current-state risk indicators derived from the same
+expert fuzzy score and the frozen threshold recorded in
+`fuzzy_state_manifest.json` / `reports/anfis/fuzzy_manifest.json`. They are not
+official advisories and they are not PIPE-GRU-D or Neural ODE early-warning
+alerts. Temporal early-warning alert endpoints remain future work until the
+model adapters and diagnostics are wired.
 
 ## Pipeline Eligibility
 

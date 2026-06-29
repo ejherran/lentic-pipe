@@ -100,7 +100,8 @@ def execute_run_plan(plan_id: str) -> RunExecutionResponse:
                 "Canonical observations could not produce fuzzy state input rows.",
                 details={"plan_id": plan.plan_id, "dataset_id": plan.dataset_id},
             )
-        irc_weights = _load_fuzzy_irc_weights()
+        fuzzy_settings = _load_fuzzy_settings()
+        irc_weights = fuzzy_settings["irc_weights"]
         state, trace = build_expert_state(wide_panel, irc_weights=irc_weights)
         monthly_panel_wide_csv = run_dir / "monthly_panel_wide.csv"
         fuzzy_state_csv = run_dir / "fuzzy_state_scores.csv"
@@ -117,6 +118,8 @@ def execute_run_plan(plan_id: str) -> RunExecutionResponse:
             "scoring_function": "src.fuzzy.expert.build_expert_state",
             "weights_source": _FUZZY_MANIFEST_PATH.as_posix(),
             "irc_weights": irc_weights,
+            "alert_threshold": fuzzy_settings["threshold"],
+            "alert_policy_version": "expert_fuzzy_state_v0_threshold",
             "row_counts": {
                 "monthly_panel_wide": int(len(wide_panel)),
                 "fuzzy_state": int(len(state)),
@@ -444,7 +447,7 @@ def _qc_score(raw_flag: object) -> float | None:
     return None
 
 
-def _load_fuzzy_irc_weights() -> dict[str, float]:
+def _load_fuzzy_settings() -> dict[str, Any]:
     if not _FUZZY_MANIFEST_PATH.exists():
         raise RunExecutionError(
             ErrorCode.dependency_not_ready,
@@ -473,7 +476,15 @@ def _load_fuzzy_irc_weights() -> dict[str, float]:
                 http_status=500,
             )
         weights[name] = value
-    return weights
+    threshold = _optional_float(payload.get("threshold"))
+    if threshold is None or threshold < 0.0 or threshold > 1.0:
+        raise RunExecutionError(
+            ErrorCode.pipeline_execution_failed,
+            "Expert fuzzy manifest contains an invalid alert threshold.",
+            details={"required_artifact": _FUZZY_MANIFEST_PATH.as_posix(), "field": "threshold"},
+            http_status=500,
+        )
+    return {"irc_weights": weights, "threshold": threshold}
 
 
 def _convert_value(value: float, rule: str) -> float:

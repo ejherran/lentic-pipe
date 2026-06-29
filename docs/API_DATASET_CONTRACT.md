@@ -157,6 +157,8 @@ GET /runs/plans/{plan_id}/execution
 GET /runs/plans/{plan_id}/artifacts
 GET /runs/plans/{plan_id}/artifacts/{artifact_name}/preview
 GET /runs/plans/{plan_id}/results/summary
+GET /runs/plans/{plan_id}/predictions
+GET /runs/plans/{plan_id}/alerts
 ```
 
 The planner references the saved dataset manifest by `dataset_id`, reuses the
@@ -191,6 +193,11 @@ Generated artifacts can be listed and previewed after execution. Artifact
 previews are intentionally bounded and JSON-safe; they are intended for
 inspection, UI rendering, and reproducibility checks, not as a replacement for
 downloading complete scientific exports.
+
+For `fuzzy_state`, prediction and alert endpoints expose current-month expert
+fuzzy state scores and thresholded current-state indicators. They do not emit
+temporal forecasts, official advisories, or model-calibrated early-warning
+alerts.
 
 ## Privacy And Provenance
 

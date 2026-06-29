@@ -14,6 +14,7 @@ from src.api.schemas.run import (
     RunPlanResponse,
     RunResultSummaryResponse,
 )
+from src.api.schemas.prediction import RunAlertResponse, RunPredictionResponse
 from src.api.services.dataset_repository import DatasetNotFoundError
 from src.api.services.run_artifacts import (
     RunArtifactError,
@@ -22,6 +23,11 @@ from src.api.services.run_artifacts import (
     summarize_run_results,
 )
 from src.api.services.run_executor import RunExecutionError, execute_run_plan
+from src.api.services.run_predictions import (
+    RunPredictionError,
+    list_run_alerts,
+    list_run_predictions,
+)
 from src.api.services.run_planner import plan_run_request
 from src.api.services.run_repository import (
     RunExecutionNotFoundError,
@@ -140,6 +146,45 @@ async def get_plan_result_summary(plan_id: str) -> RunResultSummaryResponse | JS
         return _not_found(plan_id)
 
 
+@router.get(
+    "/plans/{plan_id}/predictions",
+    response_model=RunPredictionResponse,
+    responses={404: {"model": ApiErrorResponse}, 409: {"model": ApiErrorResponse}},
+)
+async def get_plan_predictions(
+    plan_id: str,
+    limit: int = Query(default=100, ge=1, le=1000),
+) -> RunPredictionResponse | JSONResponse:
+    """Return run-scoped prediction/state-score records when available."""
+
+    try:
+        return list_run_predictions(plan_id, limit=limit)
+    except RunExecutionNotFoundError:
+        return _not_found(plan_id)
+    except RunPredictionError as error:
+        return _prediction_error_response(error)
+
+
+@router.get(
+    "/plans/{plan_id}/alerts",
+    response_model=RunAlertResponse,
+    responses={404: {"model": ApiErrorResponse}, 409: {"model": ApiErrorResponse}},
+)
+async def get_plan_alerts(
+    plan_id: str,
+    limit: int = Query(default=100, ge=1, le=1000),
+    only_alerts: bool = Query(default=False),
+) -> RunAlertResponse | JSONResponse:
+    """Return run-scoped alert records when an alert surface is available."""
+
+    try:
+        return list_run_alerts(plan_id, limit=limit, only_alerts=only_alerts)
+    except RunExecutionNotFoundError:
+        return _not_found(plan_id)
+    except RunPredictionError as error:
+        return _prediction_error_response(error)
+
+
 def _not_found(resource_id: str) -> JSONResponse:
     response = ApiErrorResponse(
         error=ApiProblem(
@@ -169,6 +214,20 @@ def _error_response(error: RunExecutionError) -> JSONResponse:
 
 
 def _artifact_error_response(error: RunArtifactError) -> JSONResponse:
+    response = ApiErrorResponse(
+        error=ApiProblem(
+            code=error.code,
+            message=error.message,
+            details=error.details,
+        )
+    )
+    return JSONResponse(
+        status_code=error.http_status,
+        content=response.model_dump(mode="json"),
+    )
+
+
+def _prediction_error_response(error: RunPredictionError) -> JSONResponse:
     response = ApiErrorResponse(
         error=ApiProblem(
             code=error.code,

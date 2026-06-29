@@ -163,6 +163,8 @@ def test_execute_fuzzy_state_writes_expert_state_outputs(
     manifest = json.loads((run_dir / "fuzzy_state_manifest.json").read_text(encoding="utf-8"))
     assert manifest["weights_source"] == "reports/anfis/fuzzy_manifest.json"
     assert manifest["irc_weights"] == {"alpha": 0.5, "beta": 0.5, "gamma": 2.0}
+    assert manifest["alert_threshold"] == 0.5
+    assert manifest["alert_policy_version"] == "expert_fuzzy_state_v0_threshold"
 
     with (run_dir / "fuzzy_state_scores.csv").open("r", encoding="utf-8", newline="") as handle:
         rows = list(csv.DictReader(handle))

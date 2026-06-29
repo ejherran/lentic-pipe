@@ -215,12 +215,40 @@ Artifact previews are bounded inspection views. The execution response and
 artifact list remain the reproducibility sources for full artifact names, URIs,
 hashes, and byte sizes.
 
+## Query Predictions And Alerts
+
+For `fuzzy_state`, query the current expert fuzzy state-score surface:
+
+```bash
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{plan_id}/predictions?limit=20"
+```
+
+Query thresholded current-state risk indicators:
+
+```bash
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{plan_id}/alerts?limit=20"
+```
+
+Return only rows that cross the frozen threshold:
+
+```bash
+curl -sS \
+  "http://127.0.0.1:8000/runs/plans/{plan_id}/alerts?only_alerts=true"
+```
+
+These endpoints currently expose `horizon_months = 0` expert fuzzy state
+scores. They do not run model inference, temporal forecasts, or official alert
+issuance.
+
 ## Interpretation Limits
 
 This local flow canonicalizes observations, builds a long monthly panel, and
-can compute deterministic expert fuzzy state scores. It does not run alerts,
-forecasts, adaptive ANFIS retraining, Neural ODE, MIFAL-ED/T2, or
-counterfactual planning. A successful `fuzzy_state` execution means the input
-data were converted, aggregated, and scored by the current expert fuzzy rules
-and frozen IRC weights in `reports/anfis/fuzzy_manifest.json`; it is not a
-temporal model result or environmental decision recommendation.
+can compute deterministic expert fuzzy state scores and thresholded
+current-state risk indicators. It does not run temporal forecasts, adaptive
+ANFIS retraining, Neural ODE, MIFAL-ED/T2, or counterfactual planning. A
+successful `fuzzy_state` execution means the input data were converted,
+aggregated, and scored by the current expert fuzzy rules and frozen IRC weights
+in `reports/anfis/fuzzy_manifest.json`; it is not a temporal model result or
+environmental decision recommendation.
