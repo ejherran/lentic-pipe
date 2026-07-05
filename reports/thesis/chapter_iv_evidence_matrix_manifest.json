@@ -1,0 +1,36 @@
+{
+  "status": "completed",
+  "generated_at_utc": "2026-07-05T14:04:49.395693+00:00",
+  "report_version": "chapter_iv_evidence_matrix_v0",
+  "row_counts": {
+    "evidence_rows": 19,
+    "columns": 8
+  },
+  "inputs": [
+    {
+      "path": "configs/thesis_evidence_matrix.yaml",
+      "bytes": 11492,
+      "sha256": "71d8ecabaf7bbd7f6930691a0eea61323409d7879aebcae354cf071a49045801",
+      "role": "curated_config"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/thesis/chapter_iv_evidence_matrix.csv",
+      "bytes": 9607,
+      "sha256": "2a2251460651634aac3955e67161ce17271d8f06660609c54661ceda5e764949",
+      "role": "csv_matrix"
+    },
+    {
+      "path": "reports/thesis/chapter_iv_evidence_matrix.md",
+      "bytes": 10365,
+      "sha256": "8caad41fa0b254058d0fa1c880e5ea9b7db05c831d057f99a8798ff6e24ffce9",
+      "role": "markdown_matrix"
+    }
+  ],
+  "script": {
+    "path": "src/reporting/build_thesis_evidence_matrix.py",
+    "bytes": 11415,
+    "sha256": "6270b1e2ea100f90429d82dfe46087ded23c984cd62c15537fb6362f78308c28"
+  }
+}

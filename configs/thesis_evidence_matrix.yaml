@@ -1,0 +1,157 @@
+# Curated evidence matrix for Chapter IV / Appendix J.
+# The script extracts dates and hashes from manifests, but allowed conclusions
+# remain explicit so historical evidence is not upgraded into a final claim by
+# automation.
+entries:
+  - component: Data freeze v0 with NLA
+    dataset_freeze_used: Current data freeze v0 generated after EPA NLA integration.
+    manifest: data/freeze/data_freeze_manifest_v0.json
+    artifact: data/freeze/DATA_FREEZE.md
+    split: not applicable
+    includes_nla: yes
+    allowed_conclusion: Final data-infrastructure evidence for the enriched freeze; supports NLA integration into provenance, canonical observations, panel, targets, splits, and reports, but not downstream model retraining by itself.
+
+  - component: Temporal split v0
+    dataset_freeze_used: Current freeze v0 through monthly target model and temporal split pipeline.
+    manifest: data/splits/split_manifest.json
+    artifact: data/splits/SPLIT_REPORT.md
+    split: train <= 2018-12; validation 2019-01 to 2021-12; test >= 2022-01
+    includes_nla: yes, through freeze-derived candidate rows; no cross-source target transfer
+    allowed_conclusion: Final leakage-controlled split evidence for the current freeze; supports train/validation/test boundaries and row counts used by later freeze-compatible workflows.
+
+  - component: NLA/WQP crosswalk candidate review
+    dataset_freeze_used: Current freeze v0 site registry and source-resolution review.
+    manifest: reports/data/waterbody_crosswalk_candidates_manifest.json
+    artifact: reports/data/waterbody_crosswalk_candidates_report.md
+    split: not applicable
+    includes_nla: yes
+    allowed_conclusion: Final candidate-resolution evidence; NLA/WQP links remain review candidates and must not be used as accepted transfer identities in model claims.
+
+  - component: Baseline model selection
+    dataset_freeze_used: Iteration 1 monthly panel/splits before the NLA-enriched freeze was generated.
+    manifest: reports/baselines/baseline_selection_manifest.json
+    artifact: reports/baselines/baseline_selection_report.md
+    split: train/validation/test; test report only after validation selection
+    includes_nla: no
+    allowed_conclusion: Reproducible evidence from a previous iteration, not a final evaluation of the NLA-enriched freeze.
+
+  - component: Refined fuzzy ensemble
+    dataset_freeze_used: Iteration 1 panel, splits, fuzzy state, and baseline selection before the NLA-enriched freeze was generated.
+    manifest: reports/anfis/refined_fuzzy_manifest.json
+    artifact: reports/anfis/refined_fuzzy_report.md
+    split: train/validation/test; test report only
+    includes_nla: no
+    allowed_conclusion: Reproducible evidence from a previous iteration, not a final evaluation of the NLA-enriched freeze.
+
+  - component: Current model audit and operational scores
+    dataset_freeze_used: Iteration 1 fuzzy and operational score surfaces before the NLA-enriched freeze was generated.
+    manifest: reports/anfis/current_model_audit_manifest.json
+    artifact: reports/anfis/current_model_report.md
+    split: train/validation/test audit surfaces where available
+    includes_nla: no
+    allowed_conclusion: Reproducible architecture and audit evidence from a previous iteration; do not present as final performance on the NLA-enriched freeze.
+
+  - component: Original PIPE-GRU-D one-step model
+    dataset_freeze_used: Iteration 1 PIPE sequence dataset before the NLA-enriched freeze was generated.
+    manifest: reports/pipe_grud/pipe_grud_manifest.json
+    artifact: reports/pipe_grud/pipe_grud_report.md
+    split: train/validation/test
+    includes_nla: no
+    allowed_conclusion: Reproducible previous-iteration performance evidence; use as historical architecture evidence unless explicitly framed as pre-NLA.
+
+  - component: Original PIPE-GRU-D rollout alerts
+    dataset_freeze_used: Iteration 1 PIPE-GRU-D rollout evidence before the NLA-enriched freeze was generated.
+    manifest: reports/pipe_grud/pipe_rollout_backtest_manifest_test.json
+    artifact: reports/pipe_grud/pipe_rollout_backtest_report_test.md
+    split: test
+    includes_nla: no
+    allowed_conclusion: Reproducible previous-iteration rollout evidence; not a final NLA-enriched freeze evaluation.
+
+  - component: Adaptive ANFIS WQP-focused state export
+    dataset_freeze_used: Current freeze-compatible WQP-focused surface after NLA integration; source-scoped policy keeps NLA out of monthly target transfer.
+    manifest: reports/anfis/adaptive_anfis_state_manifest.json
+    artifact: reports/anfis/adaptive_anfis_state_report.md
+    split: train/validation/test
+    includes_nla: yes as freeze/provenance context; operational surface is WQP-focused
+    allowed_conclusion: Final freeze-compatible adaptive fuzzy evidence for the WQP-focused surface; NLA is enrichment/provenance, not direct monthly target transfer.
+
+  - component: Adaptive WQP-focused PIPE-GRU-D one-step model
+    dataset_freeze_used: Current freeze-compatible WQP-focused PIPE sequence after NLA integration.
+    manifest: reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest.json
+    artifact: reports/pipe_grud/adaptive_wqp_focused/pipe_grud_report.md
+    split: train/validation/test
+    includes_nla: yes as freeze/provenance context; sequence is WQP-focused
+    allowed_conclusion: Final freeze-compatible WQP-focused state-forecast evidence; do not claim direct NLA target learning.
+
+  - component: Adaptive WQP-focused PIPE-GRU-D rollout policy 2B
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused rollout/calibration rows.
+    manifest: reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_manifest.json
+    artifact: reports/pipe_grud/adaptive_wqp_focused/pipe_rollout_policy_2b_report.md
+    split: validation calibration and validation/test policy evaluation
+    includes_nla: yes as freeze/provenance context; rollout surface is WQP-focused
+    allowed_conclusion: Final freeze-compatible operational policy evidence for the adaptive WQP-focused surface; closest_pr can be described as the experimental default with preserved comparison policies.
+
+  - component: Neural ODE v1 history long80 one-step model
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused PIPE sequence after NLA integration.
+    manifest: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_manifest.json
+    artifact: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_report.md
+    split: train/validation/test
+    includes_nla: yes as freeze/provenance context; sequence is WQP-focused
+    allowed_conclusion: Final freeze-compatible Neural ODE v1 one-step evidence; valid as temporal comparison and candidate evidence, with no direct NLA target-transfer claim.
+
+  - component: Neural ODE v1 matched-origin rollout policy 2B
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused matched-origin rollout evidence.
+    manifest: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_policy_2b_manifest.json
+    artifact: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_policy_2b_report.md
+    split: validation calibration and validation/test matched-origin policy evaluation
+    includes_nla: yes as freeze/provenance context; matched-origin surface is WQP-focused
+    allowed_conclusion: Final freeze-compatible matched-origin Neural ODE v1 alert evidence; supports comparative temporal conclusions against PIPE-GRU-D under the same matched-origin geometry.
+
+  - component: Neural ODE v2 continuous direct comparison
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused comparison surface.
+    manifest: reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_manifest.json
+    artifact: reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_alert_policy_2b_report.md
+    split: validation calibration and validation/test matched-origin policy evaluation
+    includes_nla: yes as freeze/provenance context; comparison surface is WQP-focused
+    allowed_conclusion: Comparative Neural ODE v2 evidence only; it does not replace the selected v1 candidate or prove a universal continuous-time advantage.
+
+  - component: Controlled degradation WQP-focused core full
+    dataset_freeze_used: Current freeze-derived no-current WQP-focused degradation protocol and PIPE-GRU-D rollout surface.
+    manifest: reports/degradation/controlled_degradation_no_current_chla_wqp_focused_raw_core_full_manifest.json
+    artifact: reports/degradation/controlled_degradation_no_current_chla_wqp_focused_raw_core_full_report.md
+    split: test
+    includes_nla: yes in panel/freeze context; evaluated rollout keys are WQP-focused
+    allowed_conclusion: Final diagnostic robustness evidence for the WQP-focused no-current surface; not evidence that all variables are causally unimportant or that NLA contributes direct targets.
+
+  - component: MIFAL-ED/T2 versus PIPE-GRU-D bloom comparison
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused matched PIPE-GRU-D holdout surface.
+    manifest: reports/mifal/mifal_vs_pipe_grud_bloom_holdout_comparison_manifest.json
+    artifact: reports/mifal/mifal_vs_pipe_grud_bloom_holdout_comparison_report.md
+    split: test/holdout comparison
+    includes_nla: yes as freeze/provenance context; matched comparison is WQP-focused
+    allowed_conclusion: Final comparative MIFAL evidence; supports the negative predictive result versus adaptive PIPE-GRU-D for bloom_h and the diagnostic role under degradation.
+
+  - component: Counterfactual planning v0 state-proxy grid
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused planning rows.
+    manifest: reports/planning/counterfactual_grid_test_crisis_manifest.json
+    artifact: reports/planning/counterfactual_grid_test_crisis_report.md
+    split: test crisis scenario
+    includes_nla: yes as freeze/provenance context; planning rows are WQP-focused
+    allowed_conclusion: Simulation-based planning evidence only; supports scenario ranking under declared proxy assumptions, not causal field effects.
+
+  - component: Counterfactual planning v1 raw-proxy support-aware grid
+    dataset_freeze_used: Current freeze-compatible adaptive WQP-focused planning rows plus raw panel proxies.
+    manifest: reports/planning/counterfactual_raw_proxy_v1_test_manifest.json
+    artifact: reports/planning/counterfactual_raw_proxy_v1_test_report.md
+    split: test normal scenario
+    includes_nla: yes as freeze/provenance context; planning rows are WQP-focused
+    allowed_conclusion: Final conservative planning V1 evidence; supports the conclusion that no_action remains top-ranked under support-aware raw proxies, not causal intervention guidance.
+
+  - component: API/OpenAPI scientific workflow layer
+    dataset_freeze_used: Software interface over external datasets and reference artifacts; not a model retraining experiment.
+    execution_date: 2026-06-29 methodology closure
+    artifact: docs/API_PROTOCOL.md
+    split: not applicable
+    includes_nla: not applicable to API runtime; reference artifacts inherit their own scope
+    allowed_conclusion: Software reproducibility and workflow-interface evidence; do not present as new model performance or universal external-domain validation.
+
