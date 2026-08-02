@@ -1,0 +1,1180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-analysis-plan-v1.1.json",
+  "title": "Closure V1.1 analysis plan",
+  "description": "Schema for the internal Git-locked pseudoprospective Closure V1 analysis plan.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "plan_version",
+    "experimental_matrix",
+    "protocol",
+    "provenance",
+    "time_roles",
+    "holdout",
+    "cohorts",
+    "surfaces",
+    "models",
+    "seeds",
+    "calibration",
+    "hypotheses",
+    "multiplicity",
+    "inference",
+    "failure_policy",
+    "outcome_access",
+    "change_control",
+    "locking"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "closure_analysis_plan_v1_1"
+    },
+    "experiment_id": {
+      "const": "closure_v1"
+    },
+    "plan_version": {
+      "const": "1.1"
+    },
+    "experimental_matrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "config",
+        "status",
+        "role",
+        "legacy_planning_catalog",
+        "legacy_planning_catalog_role",
+        "closure_roles_and_estimands_take_precedence",
+        "deterministic_e6_mask_algorithm_locked",
+        "e8_before_after_recalibration_contract_locked",
+        "complete_e9_objective_locked_in_closure_matrix"
+      ],
+      "properties": {
+        "config": {
+          "const": "configs/closure_v1/experimental_matrix.yaml"
+        },
+        "status": {
+          "const": "ready_to_lock"
+        },
+        "role": {
+          "const": "authoritative_closure_matrix_for_E6_E7_E8_E9"
+        },
+        "legacy_planning_catalog": {
+          "const": "configs/counterfactual_planning_v1.yaml"
+        },
+        "legacy_planning_catalog_role": {
+          "const": "scenario_catalog_provenance_only"
+        },
+        "closure_roles_and_estimands_take_precedence": {
+          "const": true
+        },
+        "deterministic_e6_mask_algorithm_locked": {
+          "const": true
+        },
+        "e8_before_after_recalibration_contract_locked": {
+          "const": true
+        },
+        "complete_e9_objective_locked_in_closure_matrix": {
+          "const": true
+        }
+      }
+    },
+    "protocol": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "gate",
+        "status",
+        "registration_class",
+        "alignment_base_commit",
+        "namespace",
+        "human_plan",
+        "amendment",
+        "machine_schema",
+        "claim_scope",
+        "claim_authorizations"
+      ],
+      "properties": {
+        "gate": {
+          "const": "E0-P"
+        },
+        "status": {
+          "enum": [
+            "ready_to_lock",
+            "locked"
+          ]
+        },
+        "registration_class": {
+          "const": "internal_git_locked_pseudoprospective"
+        },
+        "alignment_base_commit": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "namespace": {
+          "const": "closure_v1"
+        },
+        "human_plan": {
+          "const": "docs/closure_v1/ANALYSIS_PLAN.md"
+        },
+        "amendment": {
+          "const": "docs/closure_v1/PROTOCOL_AMENDMENT_V1_1.md"
+        },
+        "machine_schema": {
+          "const": "configs/closure_v1/analysis_plan.schema.json"
+        },
+        "claim_scope": {
+          "const": "held_out_wqp_monitoring_locations_within_frozen_cohort"
+        },
+        "claim_authorizations": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "internal_locked_evaluation",
+            "pseudoprospective_evaluation",
+            "external_validation",
+            "prospective_field_validation",
+            "unseen_waterbody_transfer",
+            "unrestricted_geographic_generalization",
+            "ecological_causality",
+            "official_environmental_recommendation"
+          ],
+          "properties": {
+            "internal_locked_evaluation": {
+              "const": true
+            },
+            "pseudoprospective_evaluation": {
+              "const": true
+            },
+            "external_validation": {
+              "const": false
+            },
+            "prospective_field_validation": {
+              "const": false
+            },
+            "unseen_waterbody_transfer": {
+              "const": false
+            },
+            "unrestricted_geographic_generalization": {
+              "const": false
+            },
+            "ecological_causality": {
+              "const": false
+            },
+            "official_environmental_recommendation": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "alignment_base_commit",
+        "freeze_id",
+        "source_scope",
+        "same_source_as_development",
+        "post_2021_outcomes_exist_in_repository",
+        "legacy_temporal_test_previously_observed",
+        "legacy_test_role",
+        "historical_freeze_git_state",
+        "historical_freeze_is_rewritten",
+        "accepted_waterbody_crosswalk_exists",
+        "limitations"
+      ],
+      "properties": {
+        "alignment_base_commit": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "freeze_id": {
+          "const": "data_freeze_v0"
+        },
+        "source_scope": {
+          "const": [
+            "wqp"
+          ]
+        },
+        "same_source_as_development": {
+          "const": true
+        },
+        "post_2021_outcomes_exist_in_repository": {
+          "const": true
+        },
+        "legacy_temporal_test_previously_observed": {
+          "const": true
+        },
+        "legacy_test_role": {
+          "const": "descriptive_continuity_only"
+        },
+        "historical_freeze_git_state": {
+          "const": "dirty_at_generation"
+        },
+        "historical_freeze_is_rewritten": {
+          "const": false
+        },
+        "accepted_waterbody_crosswalk_exists": {
+          "const": false
+        },
+        "limitations": {
+          "type": "array",
+          "minItems": 4,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      }
+    },
+    "time_roles": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "calendar_granularity",
+        "boundary_policy",
+        "crossing_rows",
+        "training",
+        "model_selection",
+        "calibration_threshold",
+        "locked_evaluation",
+        "holdout_locations_excluded_from_development_roles"
+      ],
+      "properties": {
+        "calendar_granularity": {
+          "const": "month"
+        },
+        "boundary_policy": {
+          "const": "origin_and_target_must_remain_within_the_same_role"
+        },
+        "crossing_rows": {
+          "const": "excluded_from_role"
+        },
+        "training": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "start_rule",
+            "end",
+            "both_origin_and_target_within_role",
+            "permitted_uses"
+          ],
+          "properties": {
+            "start_rule": {
+              "const": "beginning_of_available_frozen_record"
+            },
+            "end": {
+              "const": "2018-12"
+            },
+            "both_origin_and_target_within_role": {
+              "const": true
+            },
+            "permitted_uses": {
+              "$ref": "#/$defs/nonEmptyUniqueStrings"
+            }
+          }
+        },
+        "model_selection": {
+          "$ref": "#/$defs/boundedDevelopmentRole"
+        },
+        "calibration_threshold": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/boundedDevelopmentRole"
+            },
+            {
+              "properties": {
+                "start": {
+                  "const": "2021-01"
+                },
+                "end": {
+                  "const": "2021-12"
+                }
+              }
+            }
+          ]
+        },
+        "locked_evaluation": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "origin_start",
+            "target_start",
+            "end_rule",
+            "both_origin_and_target_within_role",
+            "permitted_uses"
+          ],
+          "properties": {
+            "origin_start": {
+              "const": "2022-01"
+            },
+            "target_start": {
+              "const": "2022-01"
+            },
+            "end_rule": {
+              "const": "end_of_available_frozen_record"
+            },
+            "both_origin_and_target_within_role": {
+              "const": true
+            },
+            "permitted_uses": {
+              "const": [
+                "one_sealed_evaluation_batch_after_E0_U"
+              ]
+            }
+          }
+        },
+        "holdout_locations_excluded_from_development_roles": {
+          "const": true
+        }
+      }
+    },
+    "holdout": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "holdout_id",
+        "config",
+        "assignment_gate",
+        "unblinding_gate",
+        "information_cutoff",
+        "last_eligible_origin",
+        "source_ids",
+        "unit_type",
+        "group_key",
+        "selection_fraction",
+        "selection_seed",
+        "future_outcomes_used_for_assignment",
+        "replacement_after_assignment",
+        "waterbody_claim_authorized",
+        "external_validation_claim_authorized"
+      ],
+      "properties": {
+        "holdout_id": {
+          "const": "closure_internal_unseen_wqp_locations_v1"
+        },
+        "config": {
+          "const": "configs/closure_v1/location_holdout.yaml"
+        },
+        "assignment_gate": {
+          "const": "E0-C"
+        },
+        "unblinding_gate": {
+          "const": "E0-U"
+        },
+        "information_cutoff": {
+          "const": "2021-12"
+        },
+        "last_eligible_origin": {
+          "const": "2021-09"
+        },
+        "source_ids": {
+          "const": [
+            "wqp"
+          ]
+        },
+        "unit_type": {
+          "const": "wqp_monitoring_location"
+        },
+        "group_key": {
+          "const": [
+            "source_id",
+            "site_id"
+          ]
+        },
+        "selection_fraction": {
+          "const": 0.2
+        },
+        "selection_seed": {
+          "const": 20260802
+        },
+        "future_outcomes_used_for_assignment": {
+          "const": false
+        },
+        "replacement_after_assignment": {
+          "const": false
+        },
+        "waterbody_claim_authorized": {
+          "const": false
+        },
+        "external_validation_claim_authorized": {
+          "const": false
+        }
+      }
+    },
+    "cohorts": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "assignment_is_immutable",
+        "denominators",
+        "denominator_definitions",
+        "availability_denominator",
+        "failure_denominator",
+        "paired_quality_denominator",
+        "individual_unpaired_quality_denominator",
+        "silent_failure_exclusion_allowed"
+      ],
+      "properties": {
+        "assignment_is_immutable": {
+          "const": true
+        },
+        "denominators": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "prefixItems": [
+            {
+              "const": "assigned_units"
+            },
+            {
+              "const": "intent_to_predict_origins"
+            },
+            {
+              "const": "metric_evaluable_origins"
+            },
+            {
+              "const": "shared_success_origins"
+            }
+          ],
+          "items": false
+        },
+        "denominator_definitions": {
+          "type": "object",
+          "required": [
+            "assigned_units",
+            "intent_to_predict_origins",
+            "metric_evaluable_origins",
+            "shared_success_origins"
+          ]
+        },
+        "availability_denominator": {
+          "const": "intent_to_predict_origins"
+        },
+        "failure_denominator": {
+          "const": "intent_to_predict_origins"
+        },
+        "paired_quality_denominator": {
+          "const": "shared_success_origins"
+        },
+        "individual_unpaired_quality_denominator": {
+          "const": "metric_evaluable_origins"
+        },
+        "silent_failure_exclusion_allowed": {
+          "const": false
+        }
+      }
+    },
+    "surfaces": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "primary_config",
+        "secondary_config",
+        "primary",
+        "secondary"
+      ],
+      "properties": {
+        "primary_config": {
+          "const": "configs/closure_v1/surface_primary.yaml"
+        },
+        "secondary_config": {
+          "const": "configs/closure_v1/surface_secondary.yaml"
+        },
+        "primary": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "surface_id",
+            "config",
+            "scientific_role",
+            "observed_chla_at_any_input_lag"
+          ],
+          "properties": {
+            "surface_id": {
+              "const": "closure_v1_wqp_adaptive_no_current_chla"
+            },
+            "config": {
+              "const": "configs/closure_v1/surface_primary.yaml"
+            },
+            "scientific_role": {
+              "const": "strict_early_warning"
+            },
+            "observed_chla_at_any_input_lag": {
+              "const": "forbidden"
+            }
+          }
+        },
+        "secondary": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "surface_id",
+            "config",
+            "scientific_role",
+            "eligible_for_primary_claim"
+          ],
+          "properties": {
+            "surface_id": {
+              "const": "closure_v1_wqp_adaptive_current_chla"
+            },
+            "config": {
+              "const": "configs/closure_v1/surface_secondary.yaml"
+            },
+            "scientific_role": {
+              "const": "monitoring_nowcasting_diagnostic"
+            },
+            "eligible_for_primary_claim": {
+              "const": false
+            }
+          }
+        }
+      }
+    },
+    "models": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "config",
+        "primary_candidate",
+        "required_primary_comparators",
+        "strict_comparator_when_eligible",
+        "historical_pipe_grud_name_is_alias_only",
+        "canonical_grud_claim_authorized"
+      ],
+      "properties": {
+        "config": {
+          "const": "configs/closure_v1/model_benchmark.yaml"
+        },
+        "primary_candidate": {
+          "const": "P1"
+        },
+        "required_primary_comparators": {
+          "const": [
+            "B1",
+            "B2",
+            "P0"
+          ]
+        },
+        "strict_comparator_when_eligible": {
+          "const": "M0"
+        },
+        "historical_pipe_grud_name_is_alias_only": {
+          "const": true
+        },
+        "canonical_grud_claim_authorized": {
+          "const": false
+        }
+      }
+    },
+    "seeds": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "values",
+        "deterministic_technical_seed",
+        "pool_as_independent_replicates"
+      ],
+      "properties": {
+        "values": {
+          "$ref": "#/$defs/fiveSeeds"
+        },
+        "deterministic_technical_seed": {
+          "const": 1729
+        },
+        "pool_as_independent_replicates": {
+          "const": false
+        }
+      }
+    },
+    "calibration": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "method_selection_role",
+        "method_assessment",
+        "bloom_method_candidates",
+        "bloom_method_selection_metric",
+        "bloom_method_tie_tolerance",
+        "bloom_method_secondary_metric",
+        "bloom_method_secondary_metric_bins",
+        "bloom_method_secondary_metric_binning",
+        "bloom_method_simplicity_order",
+        "bloom_method_selection_rule",
+        "selected_method_fit_role",
+        "alert_threshold",
+        "ordinal_cutpoints",
+        "primary_bloom_threshold_ugL",
+        "sensitivity_bloom_thresholds_ugL",
+        "evaluation_refit"
+      ],
+      "properties": {
+        "method_selection_role": {
+          "const": "model_selection"
+        },
+        "bloom_method_candidates": {
+          "const": [
+            "identity",
+            "platt_logistic",
+            "isotonic_regression"
+          ]
+        },
+        "bloom_method_selection_metric": {
+          "const": "brier"
+        },
+        "bloom_method_tie_tolerance": {
+          "const": 0.001
+        },
+        "bloom_method_secondary_metric": {
+          "const": "expected_calibration_error"
+        },
+        "bloom_method_secondary_metric_bins": {
+          "const": 10
+        },
+        "bloom_method_secondary_metric_binning": {
+          "const": "equal_width"
+        },
+        "bloom_method_simplicity_order": {
+          "const": [
+            "identity",
+            "platt_logistic",
+            "isotonic_regression"
+          ]
+        },
+        "bloom_method_selection_rule": {
+          "const": "within_0_001_of_minimum_brier_then_lowest_ECE_then_simplicity_order"
+        },
+        "selected_method_fit_role": {
+          "const": "calibration_threshold"
+        },
+        "alert_threshold": {
+          "type": "object",
+          "required": [
+            "selection_role"
+          ],
+          "properties": {
+            "selection_role": {
+              "const": "calibration_threshold"
+            }
+          }
+        },
+        "ordinal_cutpoints": {
+          "type": "object",
+          "required": [
+            "selection_role"
+          ],
+          "properties": {
+            "selection_role": {
+              "const": "calibration_threshold"
+            }
+          }
+        },
+        "primary_bloom_threshold_ugL": {
+          "const": 30.0
+        },
+        "sensitivity_bloom_thresholds_ugL": {
+          "const": [
+            25.0,
+            30.0,
+            33.0,
+            50.0
+          ]
+        },
+        "evaluation_refit": {
+          "const": "forbidden"
+        }
+      }
+    },
+    "hypotheses": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "central_statement",
+        "primary",
+        "additional_predeclared_families",
+        "competitiveness"
+      ],
+      "properties": {
+        "primary": {
+          "type": "array",
+          "minItems": 5,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": true,
+            "required": [
+              "id",
+              "family",
+              "comparison",
+              "question",
+              "endpoints"
+            ]
+          }
+        },
+        "additional_predeclared_families": {
+          "const": [
+            {
+              "id": "B_matched_degradation",
+              "matrix_reference": "configs/closure_v1/experimental_matrix.yaml",
+              "comparison_rule": "M0_vs_P1_for_exactly_13_matrix_scenarios_3_horizons_2_endpoints"
+            },
+            {
+              "id": "D_planning",
+              "matrix_reference": "configs/closure_v1/experimental_matrix.yaml",
+              "comparison_rule": "each_of_9_actions_vs_no_action_at_cost_1_support_1"
+            },
+            {
+              "id": "E_uncertainty",
+              "matrix_reference": "configs/closure_v1/experimental_matrix.yaml",
+              "comparison_rule": "one_P1_primary_surface_aggregate_0_90_winkler_after_vs_before_test_0_80_0_95_descriptive"
+            }
+          ]
+        }
+      }
+    },
+    "multiplicity": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "method",
+        "family_wise_alpha",
+        "correction_scope",
+        "correction_dimensions_are_family_specific",
+        "family_dimension_rules",
+        "families",
+        "descriptive_metrics_in_confirmatory_family"
+      ],
+      "properties": {
+        "method": {
+          "const": "holm"
+        },
+        "family_wise_alpha": {
+          "const": 0.05
+        },
+        "correction_scope": {
+          "const": "within_family_only"
+        },
+        "correction_dimensions_are_family_specific": {
+          "const": true
+        },
+        "descriptive_metrics_in_confirmatory_family": {
+          "const": false
+        }
+      }
+    },
+    "inference": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "primary_endpoints",
+        "estimands",
+        "paired_cluster_unit",
+        "bootstrap",
+        "confidence_intervals_precede_p_values_in_interpretation"
+      ],
+      "properties": {
+        "estimands": {
+          "const": [
+            "observation_weighted",
+            "location_balanced"
+          ]
+        },
+        "paired_cluster_unit": {
+          "const": "holdout_group_id"
+        },
+        "bootstrap": {
+          "type": "object",
+          "additionalProperties": true,
+          "required": [
+            "method",
+            "final_replicates",
+            "confidence_level",
+            "retain_all_paired_rows_within_sampled_location"
+          ],
+          "properties": {
+            "method": {
+              "const": "paired_hierarchical_location_resampling"
+            },
+            "final_replicates": {
+              "const": 5000
+            },
+            "confidence_level": {
+              "const": 0.95
+            },
+            "retain_all_paired_rows_within_sampled_location": {
+              "const": true
+            }
+          }
+        },
+        "confidence_intervals_precede_p_values_in_interpretation": {
+          "const": true
+        }
+      }
+    },
+    "failure_policy": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "terminal_statuses",
+        "failure_codes",
+        "input_eligibility_precedes_target_access",
+        "failures_remain_in_availability_denominator",
+        "failed_origin_replacement",
+        "failed_location_replacement",
+        "paired_metric_policy",
+        "unresolved_mifal_strict_adapter_policy"
+      ],
+      "properties": {
+        "terminal_statuses": {
+          "minItems": 6,
+          "uniqueItems": true
+        },
+        "failure_codes": {
+          "minItems": 9,
+          "uniqueItems": true
+        },
+        "input_eligibility_precedes_target_access": {
+          "const": true
+        },
+        "failures_remain_in_availability_denominator": {
+          "const": true
+        },
+        "failed_origin_replacement": {
+          "const": "forbidden"
+        },
+        "failed_location_replacement": {
+          "const": "forbidden"
+        }
+      }
+    },
+    "outcome_access": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "current_gate",
+        "holdout_outcomes_accessed",
+        "outcome_access_definition",
+        "semantic_access_scope",
+        "storage_engine_internal_page_decoding_audited_or_claimed",
+        "selector_requests_pre_cutoff_projection_at_parquet_read_api",
+        "post_cutoff_target_rows_materialized_to_selector_logic",
+        "byte_level_read_for_cryptographic_hashing_is_outcome_access",
+        "locker_reads_complete_source_artifact_bytes_for_sha256",
+        "locker_decodes_or_inspects_post_2021_outcome_rows",
+        "evaluation_batches",
+        "explicit_authorization_required",
+        "post_2021_holdout_outcome_status",
+        "pre_E0_U_access",
+        "access_log",
+        "opening_policy",
+        "training_runner_may_emit_evaluation_metrics"
+      ],
+      "properties": {
+        "current_gate": {
+          "const": "E0-P"
+        },
+        "holdout_outcomes_accessed": {
+          "const": false
+        },
+        "outcome_access_definition": {
+          "const": "semantic_decoding_inspection_aggregation_or_use_of_outcome_rows"
+        },
+        "semantic_access_scope": {
+          "const": "rows_and_values_materialized_to_closure_application_logic"
+        },
+        "storage_engine_internal_page_decoding_audited_or_claimed": {
+          "const": false
+        },
+        "selector_requests_pre_cutoff_projection_at_parquet_read_api": {
+          "const": true
+        },
+        "post_cutoff_target_rows_materialized_to_selector_logic": {
+          "const": false
+        },
+        "byte_level_read_for_cryptographic_hashing_is_outcome_access": {
+          "const": false
+        },
+        "locker_reads_complete_source_artifact_bytes_for_sha256": {
+          "const": true
+        },
+        "locker_decodes_or_inspects_post_2021_outcome_rows": {
+          "const": false
+        },
+        "evaluation_batches": {
+          "const": 1
+        },
+        "explicit_authorization_required": {
+          "const": true
+        },
+        "post_2021_holdout_outcome_status": {
+          "const": "sealed_not_opened_for_closure_v1"
+        },
+        "pre_E0_U_access": {
+          "const": "forbidden"
+        },
+        "access_log": {
+          "const": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
+        },
+        "opening_policy": {
+          "const": "one_sealed_batch"
+        },
+        "training_runner_may_emit_evaluation_metrics": {
+          "const": false
+        }
+      }
+    },
+    "change_control": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "preserve_original_outputs",
+        "post_metric_change_loses_locked_label",
+        "ready_to_lock_material_change",
+        "after_lock_before_unblinding",
+        "technical_failure_before_metric_emission",
+        "change_after_metric_emission",
+        "holdout_reassignment_after_lock",
+        "post_unblinding_threshold_or_model_change"
+      ],
+      "properties": {
+        "preserve_original_outputs": {
+          "const": true
+        },
+        "post_metric_change_loses_locked_label": {
+          "const": true
+        },
+        "holdout_reassignment_after_lock": {
+          "const": "forbidden"
+        },
+        "post_unblinding_threshold_or_model_change": {
+          "const": "forbidden_for_locked_claim"
+        }
+      }
+    },
+    "locking": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "lock_gate",
+        "lock_status_after_success",
+        "require_clean_worktree",
+        "require_schema_validation",
+        "require_cross_file_contract_validation",
+        "require_all_protocol_components",
+        "hash_algorithm",
+        "schema_path",
+        "commit_record_location",
+        "lock_manifest",
+        "repository_state",
+        "protocol_components",
+        "component_roles",
+        "source_artifacts",
+        "lock_command_creates_holdout_assignment",
+        "lock_command_reads_complete_source_bytes_for_sha256",
+        "lock_command_semantically_decodes_post_2021_outcomes"
+      ],
+      "properties": {
+        "lock_gate": {
+          "const": "E0-P"
+        },
+        "lock_status_after_success": {
+          "const": "locked"
+        },
+        "require_clean_worktree": {
+          "const": true
+        },
+        "require_schema_validation": {
+          "const": true
+        },
+        "require_cross_file_contract_validation": {
+          "const": true
+        },
+        "require_all_protocol_components": {
+          "const": true
+        },
+        "hash_algorithm": {
+          "const": "sha256"
+        },
+        "schema_path": {
+          "const": "configs/closure_v1/analysis_plan.schema.json"
+        },
+        "commit_record_location": {
+          "const": "external_lock_manifest"
+        },
+        "lock_manifest": {
+          "const": "reports/closure_v1/00_protocol/protocol_lock.json"
+        },
+        "repository_state": {
+          "const": "reports/closure_v1/00_protocol/repository_state.json"
+        },
+        "protocol_components": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "component_roles": {
+          "const": {
+            "configs/closure_v1/experimental_matrix.yaml": "authoritative_closure_matrix",
+            "configs/counterfactual_planning_v1.yaml": "scenario_catalog_provenance_only"
+          }
+        },
+        "source_artifacts": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "$ref": "#/$defs/sourceArtifact"
+          }
+        },
+        "lock_command_creates_holdout_assignment": {
+          "const": false
+        },
+        "lock_command_reads_complete_source_bytes_for_sha256": {
+          "const": true
+        },
+        "lock_command_semantically_decodes_post_2021_outcomes": {
+          "const": false
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "$ref": "#/$defs/explicitTree"
+    }
+  ],
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "nonEmptyUniqueStrings": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "boundedDevelopmentRole": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "start",
+        "end",
+        "both_origin_and_target_within_role",
+        "permitted_uses"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "pattern": "^20[0-9]{2}-(0[1-9]|1[0-2])$"
+        },
+        "end": {
+          "type": "string",
+          "pattern": "^20[0-9]{2}-(0[1-9]|1[0-2])$"
+        },
+        "both_origin_and_target_within_role": {
+          "const": true
+        },
+        "permitted_uses": {
+          "$ref": "#/$defs/nonEmptyUniqueStrings"
+        }
+      }
+    },
+    "fiveSeeds": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "const": 1729
+        },
+        {
+          "const": 20260612
+        },
+        {
+          "const": 20260613
+        },
+        {
+          "const": 20260614
+        },
+        {
+          "const": 314159
+        }
+      ],
+      "items": false
+    },
+    "sourceArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "role"
+      ],
+      "properties": {
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "explicitTree": {
+      "oneOf": [
+        {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/explicitTree"
+          }
+        },
+        {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/explicitTree"
+          }
+        },
+        {
+          "type": "string",
+          "minLength": 1,
+          "not": {
+            "enum": [
+              "auto",
+              "AUTO",
+              "Auto",
+              "null",
+              "NULL",
+              "Null",
+              "tbd",
+              "TBD",
+              "todo",
+              "TODO",
+              "unknown",
+              "UNKNOWN",
+              "placeholder",
+              "PLACEHOLDER"
+            ]
+          }
+        },
+        {
+          "type": "number"
+        },
+        {
+          "type": "boolean"
+        }
+      ]
+    }
+  }
+}

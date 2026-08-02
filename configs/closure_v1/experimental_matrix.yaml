@@ -1,0 +1,715 @@
+schema_version: closure_experimental_matrix_v1_1
+experiment_id: closure_v1
+plan_version: "1.1"
+status: ready_to_lock
+analysis_plan: configs/closure_v1/analysis_plan.yaml
+
+shared_contract:
+  source_ids:
+    - wqp
+  holdout_unit_type: wqp_monitoring_location
+  holdout_group_key:
+    - source_id
+    - site_id
+  horizons_months:
+    - 1
+    - 2
+    - 3
+  strict_no_observed_chla_at_any_input_lag: true
+  exact_common_origin_keys_required: true
+  development_roles_only_for_selection_and_calibration: true
+  locked_evaluation_refit: forbidden
+
+e6_matched_degradation:
+  experiment_id: E6
+  status: required
+  multiplicity_family: B
+  comparison: M0_vs_P1
+  models:
+    - M0
+    - P1
+  horizons_months:
+    - 1
+    - 2
+    - 3
+  confirmatory_endpoints:
+    - pr_auc
+    - brier
+  scenario_count: 13
+  degraded_scenario_count: 12
+  stochastic_seeds:
+    - 1729
+    - 20260612
+    - 20260613
+    - 20260614
+    - 314159
+  deterministic_scenario_technical_seed: 1729
+  replicate_contract:
+    ordered_seed_slots:
+      - 1729
+      - 20260612
+      - 20260613
+      - 20260614
+      - 314159
+    P1_model_seed_by_slot: same_as_ordered_seed_slot
+    M0_model_seed_policy: deterministic_prediction_with_technical_seed_1729_reused_in_all_5_slots
+    stochastic_degradation_seed_by_slot: same_as_ordered_seed_slot
+    stochastic_model_degradation_pairing: one_to_one_by_ordered_seed_slot
+    model_seed_by_degradation_seed_cross_product: forbidden
+    control_and_deterministic_degradation_seed_policy: technical_seed_1729_same_mask_in_all_5_slots
+    exact_row_shared_success_requires_all_slots_for_both_models: true
+    missing_slot_policy: exclude_exact_row_from_family_B_shared_success_and_report_failure_on_intent_to_predict
+    endpoint_aggregation_order:
+      - resample_holdout_group_ids_with_all_exact_rows
+      - compute_each_model_endpoint_separately_within_each_of_5_seed_slots
+      - compute_M0_minus_P1_endpoint_delta_within_seed_slot
+      - average_the_5_seed_slot_deltas_with_equal_weight_within_bootstrap_replicate
+      - derive_one_two_sided_p_value_for_each_scenario_horizon_endpoint
+    seeds_are_inference_units: false
+    p_value_count_formula: 13_scenarios_times_3_horizons_times_2_endpoints
+  model_parameters_frozen: true
+  calibrators_and_thresholds_frozen_from_control: true
+  retraining_under_degradation: forbidden_for_primary_analysis
+  mask_contract:
+    digest_algorithm: sha256
+    digest_payload_serialization: canonical_json_array_utf8
+    digest_payload_json_settings:
+      ensure_ascii: true
+      separators:
+        - comma
+        - colon
+      whitespace: forbidden
+      unicode_normalization_before_serialization: NFC
+    digest_payload_types_in_order:
+      - json_string_literal_closure_v1
+      - json_string_literal_E6
+      - json_string_scenario_id
+      - json_integer_degradation_seed
+      - json_string_source_id
+      - json_string_site_id
+      - json_string_canonical_year_month
+      - json_string_raw_variable
+    mcar_digest_fields_in_order:
+      - closure_v1
+      - E6
+      - scenario_id
+      - degradation_seed_base10
+      - source_id
+      - site_id
+      - year_month_yyyy_mm
+      - raw_variable
+    block_start_digest_fields_in_order:
+      - closure_v1
+      - E6
+      - scenario_id
+      - degradation_seed_base10
+      - source_id
+      - site_id
+      - block_start_year_month_yyyy_mm
+      - raw_variable
+    digest_to_unit_interval:
+      bytes: first_8
+      byte_order: big_endian_unsigned
+      divisor: 18446744073709551616
+      range: half_open_0_1
+    serialization_test_vectors:
+      - rule: mcar
+        canonical_payload: '["closure_v1","E6","mcar_25",1729,"wqp","site-001","2021-01","mean_TP_ugL"]'
+        expected_sha256: df3b08f858cf4b76006eb8eeab4d9819f52901d40783cd8eb4cf354bce9f6714
+      - rule: temporal_block_start
+        canonical_payload: '["closure_v1","E6","block_3m_10",1729,"wqp","site-001","2021-01","mean_TP_ugL"]'
+        expected_sha256: 1c56b8c4b5fd971abb3d2f30312c04ab9b7d8e13f5f73179dded2df2967d532e
+    unique_raw_cell_key:
+      - source_id
+      - site_id
+      - year_month
+      - raw_variable
+    eligible_raw_predictor_columns:
+      - mean_TP_ugL
+      - mean_TN_ugL
+      - mean_DO_mgL
+      - mean_pH
+      - mean_turbidity_NTU
+      - mean_secchi_depth_m
+      - mean_temperature_C
+    existing_missing_cells_enter_mask_denominator: false
+    repeated_appearances_of_a_raw_cell_share_one_mask_value: true
+    mcar_rule:
+      uniform_rule: first_8_digest_bytes_as_uint64_divided_by_2_pow_64
+      mask_if: uniform_strictly_less_than_dropout_fraction
+      exact_fraction_forced: false
+    temporal_block_rule:
+      series_key:
+        - source_id
+        - site_id
+        - raw_variable
+      eligible_cell_count: finite_observed_unique_raw_cells
+      candidate_starts: every_calendar_month_allowing_a_full_block_within_series_span
+      candidate_order: digest_ascending_then_start_month_ascending
+      target_block_count_scope: independently_within_each_series_key
+      target_block_count_formula: max_1_round_half_up_fraction_times_eligible_cells_divided_by_block_length
+      round_half_up_definition: floor_x_plus_0_5_for_nonnegative_x
+      target_block_count_zero_when_no_eligible_cells_or_no_full_block_candidate: true
+      block_interval: start_through_start_plus_length_minus_1_calendar_months
+      overlap_within_series: forbidden
+      overlap_resolution: skip_candidate_and_continue_digest_order
+      stop_rule: target_block_count_selected_or_candidates_exhausted
+      masked_cells: eligible_observed_cells_whose_month_is_inside_selected_blocks
+      partial_boundary_blocks: forbidden
+      exact_fraction_forced: false
+      no_resampling_or_fraction_tuning: true
+    combined_rule:
+      operation: union_named_component_masks_for_same_seed
+      fresh_digest_for_combined_scenario: false
+      deterministic_ablation_applied_after_random_mask_union: true
+    deterministic_ablation_rule:
+      raw_operation: set_declared_raw_predictor_cells_to_missing
+      application_stage: after_random_mask_union_before_model_specific_transforms
+      pre_degradation_derived_values_reused: false
+      derived_lineage_policy: invalidate_every_direct_or_transitive_derived_feature_of_ablated_raw_variables_before_model_specific_imputation
+      listed_derived_variables_are_minimum_required_lineage_audit: true
+      unlisted_dependent_feature_policy: fail_lineage_audit
+      target_columns_affected: false
+      assignment_columns_affected: false
+    realized_fraction_reporting:
+      denominator: eligible_observed_unique_raw_cells
+      required_dimensions:
+        - scenario_id
+        - degradation_seed
+        - raw_variable
+      planned_fraction_and_realized_fraction_both_required: true
+    generated_once_before_model_specific_transforms: true
+    shared_exactly_between_M0_and_P1: true
+    target_columns_masked: false
+    assignment_columns_masked: false
+  scenarios:
+    - scenario_id: control
+      family: control
+      stochastic: false
+      operation: preserve_all_eligible_predictors
+    - scenario_id: mcar_10
+      family: mcar
+      stochastic: true
+      eligible_value_dropout_fraction: 0.10
+    - scenario_id: mcar_25
+      family: mcar
+      stochastic: true
+      eligible_value_dropout_fraction: 0.25
+    - scenario_id: mcar_50
+      family: mcar
+      stochastic: true
+      eligible_value_dropout_fraction: 0.50
+    - scenario_id: block_1m_10
+      family: temporal_block
+      stochastic: true
+      block_length_months: 1
+      approximate_masked_fraction: 0.10
+    - scenario_id: block_3m_10
+      family: temporal_block
+      stochastic: true
+      block_length_months: 3
+      approximate_masked_fraction: 0.10
+    - scenario_id: block_6m_25
+      family: temporal_block
+      stochastic: true
+      block_length_months: 6
+      approximate_masked_fraction: 0.25
+    - scenario_id: ablate_nutrients
+      family: deterministic_ablation
+      stochastic: false
+      operation: set_raw_missing_and_invalidate_derived_lineage
+      raw_variables:
+        - mean_TP_ugL
+        - mean_TN_ugL
+      minimum_derived_variables_invalidated:
+        - TN_TP_ratio
+        - log_TP
+        - log_TN
+    - scenario_id: ablate_physchem
+      family: deterministic_ablation
+      stochastic: false
+      operation: set_raw_missing_and_invalidate_derived_lineage
+      raw_variables:
+        - mean_DO_mgL
+        - mean_pH
+      minimum_derived_variables_invalidated: []
+    - scenario_id: ablate_light
+      family: deterministic_ablation
+      stochastic: false
+      operation: set_raw_missing_and_invalidate_derived_lineage
+      raw_variables:
+        - mean_turbidity_NTU
+        - mean_secchi_depth_m
+      minimum_derived_variables_invalidated: []
+    - scenario_id: ablate_temperature
+      family: deterministic_ablation
+      stochastic: false
+      operation: set_raw_missing_and_invalidate_derived_lineage
+      raw_variables:
+        - mean_temperature_C
+      minimum_derived_variables_invalidated: []
+    - scenario_id: combined_moderate
+      family: combined
+      stochastic: true
+      components:
+        - mcar_25
+        - block_3m_10
+    - scenario_id: combined_severe
+      family: combined
+      stochastic: true
+      components:
+        - mcar_50
+        - block_6m_25
+        - ablate_nutrients
+  family_B_universe:
+    scenario_ids:
+      - control
+      - mcar_10
+      - mcar_25
+      - mcar_50
+      - block_1m_10
+      - block_3m_10
+      - block_6m_25
+      - ablate_nutrients
+      - ablate_physchem
+      - ablate_light
+      - ablate_temperature
+      - combined_moderate
+      - combined_severe
+    horizons_months:
+      - 1
+      - 2
+      - 3
+    endpoints:
+      - pr_auc
+      - brier
+    p_value_universe_size: 78
+    correction_method: holm
+    family_wise_alpha: 0.05
+
+e7_anfis_ablation:
+  experiment_id: E7
+  status: required
+  training_rows_per_module:
+    - 4096
+    - 16384
+    - 65536
+  sampling_strata:
+    - holdout_group_id
+    - temporal_period
+    - expert_anchor_band
+  seeds:
+    - 1729
+    - 20260612
+    - 20260613
+    - 20260614
+    - 314159
+  endpoints:
+    - expert_anchor_fidelity
+    - downstream_pr_auc
+    - downstream_brier
+    - downstream_rmse
+    - downstream_mae
+    - membership_stability
+    - computational_cost
+  resource_failure_policy:
+    experiment_may_be_silently_omitted: false
+    record_limitation_if_not_completed: true
+    saturation_claim_authorized_if_incomplete: false
+    retain_completed_sizes_without_post_hoc_substitution: true
+
+e8_uncertainty:
+  experiment_id: E8
+  status: required
+  nominal_coverage_levels:
+    - 0.80
+    - 0.90
+    - 0.95
+  primary_nominal_coverage: 0.90
+  acceptable_absolute_coverage_error: 0.05
+  report_coverage_and_width_together: true
+  conditional_coverage_required: true
+  continuous_interval_recalibration:
+    method: symmetric_scaled_sigma_split_conformal
+    applies_only_when_finite_mean_and_positive_scale_are_emitted: true
+    unavailable_interval_policy: report_not_available_without_fabricated_interval
+    calibration_role: calibration_threshold
+    calibration_period:
+      start: "2021-01"
+      end: "2021-12"
+    calibration_population: non_holdout_wqp_locations_only
+    calibration_group_key:
+      - model_id
+      - surface_id
+      - endpoint
+      - horizon_months
+      - model_seed
+    pooling_across_groups: forbidden
+    minimum_finite_calibration_rows_per_group: 30
+    insufficient_group_policy: report_not_available_without_fallback_pooling
+    scale_floor: 0.000001
+    nonconformity_score: absolute_y_minus_mu_divided_by_max_sigma_scale_floor
+    finite_sample_quantile:
+      n: finite_calibration_scores_in_exact_group
+      order_index_one_based: min_n_ceil_n_plus_1_times_nominal_coverage
+      interpolation: higher_order_statistic_no_interpolation
+      q_definition: sorted_score_at_one_based_order_index
+    native_before_factors:
+      - nominal_coverage: 0.80
+        central_gaussian_factor: 1.2815515655446004
+      - nominal_coverage: 0.90
+        central_gaussian_factor: 1.6448536269514722
+      - nominal_coverage: 0.95
+        central_gaussian_factor: 1.959963984540054
+    before_interval: mu_plus_or_minus_native_central_gaussian_factor_times_sigma
+    after_interval: mu_plus_or_minus_locked_level_specific_q_times_sigma
+    q_locked_before_E0_U: true
+    q_refit_or_adjustment_in_locked_evaluation: forbidden
+    before_after_evaluated_on_identical_locked_rows: true
+  conditional_coverage:
+    role: diagnostic_not_a_source_of_conditional_q_factors
+    q_is_never_refit_within_conditional_strata: true
+    evaluation_role: locked_evaluation
+    minimum_rows_to_report_numeric_metrics: 30
+    sparse_stratum_policy: retain_counts_and_report_insufficient_support
+    stratum_boundary_fit_population: non_holdout_calibration_threshold_inputs
+    stratum_boundary_fit_period:
+      start: "2021-01"
+      end: "2021-12"
+    required_breakdowns:
+      - breakdown_id: global
+        definition: all_metric_evaluable_rows
+      - breakdown_id: horizon
+        values:
+          - 1
+          - 2
+          - 3
+      - breakdown_id: nutrient_evidence_quartile
+        value: evidence_N_at_origin
+        cutpoints: calibration_population_p25_p50_p75_linear_quantiles
+        tie_policy: retain_fixed_edges_and_empty_bins
+      - breakdown_id: input_missingness_quartile
+        value: missing_fraction_over_7_eligible_raw_predictors_and_12_input_months
+        cutpoints: calibration_population_p25_p50_p75_linear_quantiles
+        tie_policy: retain_fixed_edges_and_empty_bins
+      - breakdown_id: predicted_risk_band
+        value: locked_uncalibrated_predicted_future_risk
+        fixed_left_closed_edges:
+          - 0.00
+          - 0.25
+          - 0.50
+          - 0.75
+          - 1.00
+        final_edge_is_inclusive: true
+      - breakdown_id: location_input_frequency
+        value: eligible_pre_cutoff_input_origins_per_location
+        cutpoint: calibration_population_median_linear_quantile
+        labels:
+          - infrequent_le_median
+          - frequent_gt_median
+      - breakdown_id: location_novelty
+        values:
+          - development_seen
+          - heldout_unseen
+      - breakdown_id: degradation_scenario
+        values:
+          - control
+          - mcar_10
+          - mcar_25
+          - mcar_50
+          - block_1m_10
+          - block_3m_10
+          - block_6m_25
+          - ablate_nutrients
+          - ablate_physchem
+          - ablate_light
+          - ablate_temperature
+          - combined_moderate
+          - combined_severe
+    metrics_per_breakdown:
+      - row_count
+      - location_count
+      - empirical_coverage
+      - absolute_coverage_error
+      - mean_interval_width
+      - median_interval_width
+      - winkler_interval_score
+  confirmatory_family_E:
+    model_id: P1
+    surface_id: closure_v1_wqp_adaptive_no_current_chla
+    endpoints:
+      - yN
+      - yF
+      - yT
+    horizons_months:
+      - 1
+      - 2
+      - 3
+    nominal_coverage_levels:
+      - 0.90
+    comparison: after_recalibration_vs_native_before
+    row_loss: winkler_interval_score_at_0_90
+    paired_delta_direction: after_minus_before
+    primary_estimand: observation_weighted_mean_paired_delta_equal_weight_over_endpoints_and_horizons
+    paired_cluster_unit: holdout_group_id
+    seed_handling: average_paired_row_loss_across_5_locked_seeds_before_ecological_inference
+    required_seed_count_per_paired_row: 5
+    missing_seed_policy: row_not_in_shared_success_family_E_and_failure_reported_on_intent_to_predict_denominator
+    aggregation_order:
+      - compute_paired_winkler_delta_per_seed_and_exact_row
+      - require_all_5_locked_seeds_on_the_exact_row
+      - average_delta_equal_weight_across_seeds_within_row
+      - average_rows_observation_weighted_within_each_endpoint_horizon
+      - average_the_9_endpoint_horizon_cell_means_with_equal_weight
+      - run_paired_location_clustered_inference
+    seeds_are_inference_units: false
+    alternative: less_than_zero
+    p_value_universe_size: 1
+    correction_method: holm
+    family_wise_alpha: 0.05
+    calibration_success_rule: absolute_coverage_error_at_0_90_not_greater_than_0_05
+    descriptive_only_scope:
+      nominal_coverage_levels:
+        - 0.80
+        - 0.95
+      endpoints:
+        - sigma_N
+        - sigma_F
+        - sigma_T
+        - delta_yN
+        - delta_yF
+        - delta_yT
+      models: all_non_P1_models
+      conditional_breakdowns: all_declared_conditional_breakdowns
+  bloom_calibration_reference: configs/closure_v1/analysis_plan.yaml
+
+e9_planning_inference:
+  experiment_id: E9
+  status: required
+  multiplicity_family: D
+  closure_matrix_is_authoritative: true
+  legacy_catalog:
+    path: configs/counterfactual_planning_v1.yaml
+    role: scenario_catalog_provenance_only
+    legacy_selection_split_reused: false
+    legacy_heldout_split_reused: false
+    closure_time_roles_take_precedence: true
+    closure_estimands_take_precedence: true
+  scenario_count: 10
+  baseline_scenario_id: no_action
+  model_contract:
+    model_id: P1
+    surface_id: closure_v1_wqp_adaptive_no_current_chla
+    ordered_model_seeds:
+      - 1729
+      - 20260612
+      - 20260613
+      - 20260614
+      - 314159
+    refit_for_planning: forbidden
+    action_and_no_action_use_same_model_seed: true
+    exact_row_shared_success_requires_all_5_seeds_for_action_and_no_action: true
+    missing_seed_policy: exclude_exact_row_from_family_D_shared_success_and_report_failure_on_intent_to_predict
+    seed_aggregation_order:
+      - compute_action_minus_no_action_objective_delta_per_seed_and_exact_row
+      - require_all_5_seeds_for_action_and_no_action_on_the_exact_row
+      - average_delta_equal_weight_across_seeds_within_row
+      - pool_exact_common_rows_observation_weighted_across_horizons_1_2_3
+      - run_paired_location_clustered_inference
+    seeds_are_inference_units: false
+  objective_contract:
+    objective_id: closure_v1_raw_proxy_net_benefit
+    row_unit:
+      - source_id
+      - site_id
+      - origin_year_month
+      - target_year_month
+      - horizon_months
+      - scenario_id
+    all_actions_evaluated_regardless_of_legacy_cost_budget: true
+    legacy_planning_mode_and_budget_reused: false
+    component_definitions:
+      irc_alert_score: clip_0_1_of_yN_plus_1_minus_yF_plus_yT_divided_by_3
+      bloom_probability_proxy: clip_0_1_of_0_5_times_yT_plus_0_5_times_irc_alert_score
+      uncertainty: arithmetic_mean_of_finite_sigma_N_sigma_F_sigma_T
+      missing_uncertainty_component_policy: row_model_unavailable_no_zero_imputation
+      support_violation: one_if_any_modified_raw_proxy_outside_locked_support_envelope_else_zero
+    reductions_against_no_action:
+      delta_irc: irc_no_action_minus_irc_scenario
+      delta_bloom: bloom_probability_no_action_minus_bloom_probability_scenario
+      delta_uncertainty: uncertainty_scenario_minus_uncertainty_no_action
+    primary_weights:
+      irc_alert_risk_reduction: 0.60
+      bloom_probability_reduction: 0.40
+    base_penalties:
+      lambda_cost: 0.05
+      lambda_uncertainty: 0.10
+      lambda_support: 0.05
+    objective_formula: 0.60_delta_irc_plus_0.40_delta_bloom_minus_0.05_cost_multiplier_relative_cost_minus_0.10_max_0_delta_uncertainty_minus_0.05_support_multiplier_support_violation
+    no_action_objective_exactly_zero: true
+    delta_objective_definition: objective_scenario_minus_objective_no_action
+    confirmatory_cost_multiplier: 1.0
+    confirmatory_support_multiplier: 1.0
+  support_contract:
+    fit_role: training
+    fit_population: non_holdout_wqp_locations
+    site_envelope:
+      minimum_finite_months: 24
+      lower_quantile: 0.05
+      upper_quantile: 0.95
+    source_fallback_envelope:
+      lower_quantile: 0.01
+      upper_quantile: 0.99
+    quantile_interpolation: linear
+    heldout_locations_use_source_fallback: true
+    operation_order:
+      - apply_raw_proxy_operation
+      - clip_to_configs_variables_plausible_range
+      - recompute_declared_derived_predictors
+      - evaluate_modified_raw_proxies_against_support_envelope
+    chla_as_action_lever: forbidden
+  scenarios:
+    - scenario_id: no_action
+      action_type: no_action
+      relative_cost: 0.0
+      operations: []
+    - scenario_id: tp_reduction_10
+      action_type: nutrient_reduction_tp
+      relative_cost: 1.0
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.90
+    - scenario_id: tp_reduction_25
+      action_type: nutrient_reduction_tp
+      relative_cost: 2.5
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.75
+    - scenario_id: tn_reduction_10
+      action_type: nutrient_reduction_tn
+      relative_cost: 0.8
+      operations:
+        - variable: TN_ugL
+          panel_column: mean_TN_ugL
+          operation: multiply
+          value: 0.90
+    - scenario_id: tp_tn_reduction_10
+      action_type: combined_nutrient
+      relative_cost: 2.0
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.90
+        - variable: TN_ugL
+          panel_column: mean_TN_ugL
+          operation: multiply
+          value: 0.90
+    - scenario_id: clarity_mild
+      action_type: clarity_improvement
+      relative_cost: 1.4
+      operations:
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.10
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.90
+    - scenario_id: clarity_strong
+      action_type: clarity_improvement
+      relative_cost: 2.8
+      operations:
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.20
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.80
+    - scenario_id: oxygen_support_05
+      action_type: oxygen_support_proxy
+      relative_cost: 0.6
+      operations:
+        - variable: DO_mgL
+          panel_column: mean_DO_mgL
+          operation: add
+          value: 0.50
+    - scenario_id: nutrient_clarity_mild
+      action_type: combined_nutrient_clarity
+      relative_cost: 2.6
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.90
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.10
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.90
+    - scenario_id: nutrient_clarity_strong
+      action_type: combined_nutrient_clarity
+      relative_cost: 4.0
+      operations:
+        - variable: TP_ugL
+          panel_column: mean_TP_ugL
+          operation: multiply
+          value: 0.75
+        - variable: secchi_depth_m
+          panel_column: mean_secchi_depth_m
+          operation: multiply
+          value: 1.20
+        - variable: turbidity_NTU
+          panel_column: mean_turbidity_NTU
+          operation: multiply
+          value: 0.80
+  confirmatory_family_D:
+    cost_weight_multiplier: 1.0
+    support_penalty_multiplier: 1.0
+    baseline_scenario_id: no_action
+    action_scenario_ids:
+      - tp_reduction_10
+      - tp_reduction_25
+      - tn_reduction_10
+      - tp_tn_reduction_10
+      - clarity_mild
+      - clarity_strong
+      - oxygen_support_05
+      - nutrient_clarity_mild
+      - nutrient_clarity_strong
+    primary_endpoint: delta_objective_vs_no_action
+    primary_action_estimand: observation_weighted_mean_over_exact_common_origins_and_horizons_1_2_3
+    paired_cluster_unit: holdout_group_id
+    alternative: greater_than_zero
+    p_value_universe_size: 9
+    correction_method: holm
+    family_wise_alpha: 0.05
+  descriptive_sensitivity:
+    role: descriptive_only
+    cost_weight_multipliers:
+      - 0.5
+      - 1.0
+      - 2.0
+    support_penalty_multipliers:
+      - 0.5
+      - 1.0
+      - 2.0
+    cartesian_grid_size: 9
+    may_change_confirmatory_family: false
+    may_select_weights_that_make_an_action_positive: false
+
+claim_guardrails:
+  external_validation: false
+  unseen_waterbody_transfer: false
+  causal_intervention_effect: false
+  official_environmental_recommendation: false

@@ -1,0 +1,67 @@
+schema_version: closure_surface_v1_1
+experiment_id: closure_v1
+surface_id: closure_v1_wqp_adaptive_current_chla
+status: ready_to_lock
+scientific_role: monitoring_nowcasting_diagnostic
+
+source_ids:
+  - wqp
+history_length_months: 12
+max_gap_months: 1
+horizons_months:
+  - 1
+  - 2
+  - 3
+complete_horizons_required: true
+
+input_surface: adaptive
+state_path: data/closure_v1/adaptive_state_vector_trainable.parquet
+sequence_path: data/closure_v1/pipe_sequence_adaptive_current_chla.parquet
+common_origin_manifest_path: data/closure_v1/common_origin_manifest.parquet
+holdout_assignment_path: data/closure_v1/closure_holdout_assignment.csv
+
+chlorophyll_contract:
+  observed_chla_in_inputs: permitted
+  future_chla_used_as_target: true
+  feature_lineage_audit_required_before_model_lock: true
+
+split:
+  training_end: "2018-12"
+  model_selection_start: "2019-01"
+  model_selection_end: "2020-12"
+  calibration_threshold_start: "2021-01"
+  calibration_threshold_end: "2021-12"
+  locked_evaluation_origin_start: "2022-01"
+  locked_evaluation_target_start: "2022-01"
+  origin_and_target_must_share_role: true
+  holdout_locations_excluded_from_all_development_roles: true
+
+holdout:
+  unit_type: wqp_monitoring_location
+  group_key:
+    - source_id
+    - site_id
+  waterbody_claim_authorized: false
+  external_validation_claim_authorized: false
+
+claim_policy:
+  eligible_for_primary_early_warning_claim: false
+  eligible_for_information_surface_ablation: true
+  eligible_to_replace_primary_surface: false
+  authorized_interpretation: predictive_information_advantage_of_observed_current_chla
+  unauthorized_interpretations:
+    - strict_early_warning_without_observed_chla
+    - external_validation
+    - unseen_waterbody_transfer
+
+comparison:
+  variant_id: A2
+  primary_counterpart_model_id: P1
+  comparison_role: secondary_information_surface
+  exact_common_keys_required: true
+  key_columns:
+    - source_id
+    - site_id
+    - origin_year_month
+    - target_year_month
+    - horizon_months

@@ -1,0 +1,247 @@
+schema_version: closure_model_benchmark_v1_1
+experiment_id: closure_v1
+status: ready_to_lock
+primary_surface: closure_v1_wqp_adaptive_no_current_chla
+secondary_surface: closure_v1_wqp_adaptive_current_chla
+
+common_contract:
+  source_ids:
+    - wqp
+  history_length_months: 12
+  horizons_months:
+    - 1
+    - 2
+    - 3
+  complete_horizons_required: true
+  exact_common_keys_required: true
+  strict_no_observed_chla_at_any_input_lag: true
+  holdout_locations_excluded_from_all_fit_stages: true
+  model_selection_role: model_selection
+  calibration_threshold_role: calibration_threshold
+  locked_evaluation_refit: forbidden
+
+seeds:
+  - 1729
+  - 20260612
+  - 20260613
+  - 20260614
+  - 314159
+deterministic_technical_seed: 1729
+
+models:
+  B0:
+    name: horizon_prevalence
+    family: probabilistic_baseline
+    role: probability_floor
+    closure_eligibility: eligible
+    fit_role: training
+    fit_scope: non_holdout_locations_only
+    estimation_unit: horizon_months
+    prevalence_definition: mean_training_bloom_h_within_horizon
+    calibration_applied: false
+    evaluation_refit: forbidden
+    feature_inputs: none
+    output: bloom_probability
+
+  B1:
+    name: chla_free_state_persistence
+    family: temporal_baseline
+    role: persistence_floor
+    closure_eligibility: eligible_after_strict_lineage_test
+    fit_role: deterministic
+    input: last_available_chla_free_state_or_risk
+    forbidden_persistence_inputs:
+      - observed_chlorophyll_a
+      - risk_chla
+      - observed_chlorophyll_derived_state
+    fallback_when_no_valid_chla_free_state: model_unavailable
+
+  B2:
+    name: strict_raw_tabular_baseline
+    family: tabular_baseline
+    role: strong_simple_comparator
+    closure_eligibility: eligible_after_feature_allowlist_test
+    fit_role: training
+    selection_role: model_selection
+    candidates:
+      - logistic_sgd
+      - hist_gradient_boosting_classifier
+    selection_rule:
+      primary_metric: brier
+      secondary_metric: pr_auc
+      metric_tolerance: 0.001
+      final_tie_break: logistic_sgd
+    feature_allowlist:
+      - mean_TP_ugL
+      - std_TP_ugL
+      - n_obs_TP_ugL
+      - n_bad_TP_ugL
+      - qc_ok_rate_TP_ugL
+      - mean_TN_ugL
+      - std_TN_ugL
+      - n_obs_TN_ugL
+      - n_bad_TN_ugL
+      - qc_ok_rate_TN_ugL
+      - mean_temperature_C
+      - std_temperature_C
+      - n_obs_temperature_C
+      - n_bad_temperature_C
+      - qc_ok_rate_temperature_C
+      - mean_secchi_depth_m
+      - std_secchi_depth_m
+      - n_obs_secchi_depth_m
+      - n_bad_secchi_depth_m
+      - qc_ok_rate_secchi_depth_m
+      - mean_turbidity_NTU
+      - std_turbidity_NTU
+      - n_obs_turbidity_NTU
+      - n_bad_turbidity_NTU
+      - qc_ok_rate_turbidity_NTU
+      - mean_DO_mgL
+      - std_DO_mgL
+      - n_obs_DO_mgL
+      - n_bad_DO_mgL
+      - qc_ok_rate_DO_mgL
+      - mean_pH
+      - std_pH
+      - n_obs_pH
+      - n_bad_pH
+      - qc_ok_rate_pH
+      - log_TP
+      - log_TN
+      - TN_TP_ratio
+      - season_sin_annual
+      - season_cos_annual
+      - season_sin_semiannual
+      - season_cos_semiannual
+    forbidden_feature_lineage: observed_chlorophyll_at_any_lag_or_derivative
+
+  F0:
+    name: expert_fuzzy_no_current_chla
+    family: fuzzy_state
+    role: nonadaptive_static_state
+    closure_eligibility: eligible_after_strict_lineage_test
+    fit_role: deterministic_expert_rules
+    output_state: irc1_no_chla
+    observed_chla_input: forbidden
+
+  F1:
+    name: adaptive_anfis_no_current_chla
+    family: neuro_fuzzy_state
+    role: adaptive_static_state
+    closure_eligibility: eligible_after_holdout_excluding_refit
+    fit_role: training
+    selection_role: model_selection
+    modules:
+      - ANFIS_N
+      - ANFIS_F
+      - ANFIS_T_no_current_chla
+    output_state: irc1_no_chla_adaptive
+    observed_chla_input: forbidden
+    historical_all_location_checkpoint_role: reference_only
+
+  P0:
+    name: residual_probabilistic_gru_expert_no_current_chla
+    historical_alias: pipe_grud
+    family: residual_probabilistic_gru
+    role: expert_temporal_comparator
+    closure_eligibility: eligible_after_holdout_excluding_refit
+    canonical_grud: false
+    canonical_grud_claim_authorized: false
+    fit_role: training
+    selection_role: model_selection
+    input_surface: no_current_chla
+    input_state: expert
+    architecture:
+      history_length_months: 12
+      input_dimension: 13
+      hidden_dimension: 96
+      recurrent_layers: 1
+      residual_mode: add_last
+      batch_size: 2048
+      maximum_epochs: 20
+      early_stopping_patience_epochs: 5
+      early_stopping_minimum_delta: 0.0
+      selection_profile: balanced
+    rollout_samples_per_origin: 128
+
+  P1:
+    name: residual_probabilistic_gru_adaptive_no_current_chla
+    historical_alias: pipe_grud
+    family: residual_probabilistic_gru
+    role: primary_temporal_candidate
+    closure_eligibility: eligible_after_holdout_excluding_refit
+    canonical_grud: false
+    canonical_grud_claim_authorized: false
+    fit_role: training
+    selection_role: model_selection
+    input_surface: adaptive_no_current_chla
+    input_state: adaptive_anfis
+    architecture:
+      history_length_months: 12
+      input_dimension: 13
+      hidden_dimension: 96
+      recurrent_layers: 1
+      residual_mode: add_last
+      batch_size: 2048
+      maximum_epochs: 20
+      early_stopping_patience_epochs: 5
+      early_stopping_minimum_delta: 0.0
+      selection_profile: balanced
+    rollout_samples_per_origin: 128
+
+  M0:
+    name: mifal_ed_t2_strict_no_chla_memory
+    family: eco_fuzzy_type2
+    role: refutable_parallel_comparator
+    closure_eligibility: blocked_pending_strict_adapter
+    required_adapter_contract:
+      observed_Chl: forbidden
+      observed_Chl_prev: forbidden
+      other_observed_chla_lineage: forbidden
+      exact_common_keys_with_P1: required
+    current_blocker: historical_observable_no_current_chla_adapter_retains_Chl_prev
+    unresolved_at_model_lock_policy: record_model_unavailable_without_replacement
+
+ablations:
+  A0:
+    name: residual_gru_raw_no_chla
+    role: separate_temporal_value_from_fuzzy_state
+    surface: primary
+  A1:
+    name: residual_gru_raw_plus_adaptive_anfis_no_chla
+    role: test_incremental_anfis_information
+    surface: primary
+  A2:
+    name: residual_gru_adaptive_current_chla
+    role: quantify_current_chla_information_advantage
+    surface: secondary
+    eligible_for_primary_claim: false
+
+primary_comparisons:
+  - P1_vs_B1
+  - P1_vs_B2
+  - P1_vs_P0
+conditional_primary_comparison:
+  id: P1_vs_M0
+  condition: M0_passes_strict_adapter_and_lineage_contract_before_model_lock
+  unresolved_condition_policy: report_M0_unavailable_and_do_not_substitute_historical_adapter
+static_comparison: F1_vs_F0
+secondary_surface_comparison: A2_vs_P1
+
+calibration_reference: configs/closure_v1/analysis_plan.yaml
+surface_primary_reference: configs/closure_v1/surface_primary.yaml
+surface_secondary_reference: configs/closure_v1/surface_secondary.yaml
+
+model_lock_requirements:
+  checkpoint_hashes: required
+  preprocessor_hashes: required
+  feature_lineage_audit: required
+  holdout_fit_overlap_count: 0
+  calibrator_hashes: required
+  alert_thresholds: required
+  ordinal_cutpoints: required
+  code_hashes: required
+  seed_records: required
+  sealed_batch_command: required
+  outcome_access_log_state: empty

@@ -177,6 +177,8 @@ exports, or credential JSON files.
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md`
+- `docs/closure_v1/ANALYSIS_PLAN.md`
+- `docs/closure_v1/PROTOCOL_AMENDMENT_V1_1.md`
 - `docs/THESIS_EXPERIMENT_TRACEABILITY.md`
 - `docs/API_PROTOCOL.md`
 - `docs/API_DATASET_CONTRACT.md`
@@ -189,10 +191,14 @@ exports, or credential JSON files.
 - SHA-256 hashes and the data freeze are versioned under `data/catalog/` and
   `data/freeze/`.
 - Heavy artifacts are declared in `configs/dvc_artifacts.yaml`.
-- The thesis-wide `closure_v1` benchmark has not been executed yet. Existing
-  model results remain iteration-specific evidence until a common no-current
-  Chl-a surface, locked unseen-location holdout, and paired evaluation contract
-  are implemented and frozen.
+- The thesis-wide `closure_v1` benchmark has not been executed. Its E0-P
+  analysis contract, authoritative E6-E9 experimental matrix, and cutoff-safe
+  holdout selector are implemented with status `ready_to_lock`; no real
+  holdout assignment or Closure V1 evaluation has been created. Existing model
+  results remain iteration-specific evidence.
+  The primary closure surface excludes observed Chl-a and all of its lineage at
+  every input lag, and the transfer claim is limited to held-out WQP monitoring
+  locations within the frozen cohort.
 - Historical files use the `PIPE/GRU-D` and `pipe_grud` labels. The current
   trainer implements a residual probabilistic GRU over engineered/imputed
   state vectors, without the explicit mask and temporal-decay mechanism of a

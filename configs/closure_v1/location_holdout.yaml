@@ -1,0 +1,231 @@
+schema_version: closure_location_holdout_v1_1
+experiment_id: closure_v1
+holdout_id: closure_internal_unseen_wqp_locations_v1
+status: ready_to_lock
+assignment_gate: E0-C
+evaluation_gate: E0-U
+
+unit:
+  unit_type: wqp_monitoring_location
+  group_key:
+    - source_id
+    - site_id
+  identity_scope: source_native_WQP_monitoring_location
+  source_ids:
+    - wqp
+  source_scoped_site_identity: true
+  accepted_waterbody_crosswalk_required: false
+  accepted_waterbody_crosswalk_exists: false
+  waterbody_claim_authorized: false
+  external_validation_claim_authorized: false
+
+inputs:
+  monthly_panel: data/panel/panel_monthly_v0.parquet
+  monthly_targets: data/targets/monthly_targets_model_v0.parquet
+  target_manifest: data/targets/target_manifest_v0.json
+  split_rows: data/splits/monthly_model_splits_v0.parquet
+  split_manifest: data/splits/split_manifest.json
+  site_resolution_policy_for_claim_audit_only: configs/site_resolution.yaml
+  state_source_policy: raw_panel_or_expert_deterministic_state_only
+  adaptive_anfis_state_for_selection: forbidden
+
+information_boundary:
+  information_cutoff: "2021-12"
+  last_eligible_origin: "2021-09"
+  earliest_locked_evaluation_origin: "2022-01"
+  earliest_locked_evaluation_target: "2022-01"
+  historical_target_rows_must_end_by: "2021-12"
+  post_cutoff_target_values_for_assignment: forbidden
+  post_cutoff_target_availability_for_assignment: forbidden
+  row_projection_required_before_grouping: true
+  parquet_read_api_filter_required: target_year_month_not_after_2021_12
+  post_cutoff_target_rows_materialized_to_selector_logic: false
+  storage_engine_internal_page_decoding_audited_or_claimed: false
+
+selection_projection:
+  permitted_key_columns:
+    - source_id
+    - site_id
+    - year_month
+    - origin_year_month
+    - target_year_month
+    - horizon_months
+  permitted_precursor_columns:
+    - mean_TP_ugL
+    - mean_TN_ugL
+    - mean_temperature_C
+    - mean_secchi_depth_m
+    - mean_turbidity_NTU
+    - mean_DO_mgL
+    - mean_pH
+  permitted_historical_outcome_columns:
+    - bloom_h
+  historical_outcome_condition: target_year_month_not_after_2021_12
+  historical_outcome_deduplication_key:
+    - source_id
+    - site_id
+    - target_year_month
+  forbidden_chla_input_columns:
+    - mean_chlorophyll_a_ugL
+    - std_chlorophyll_a_ugL
+    - n_obs_chlorophyll_a_ugL
+    - n_bad_chlorophyll_a_ugL
+    - qc_ok_rate_chlorophyll_a_ugL
+    - log_chlorophyll_a
+    - risk_chla
+  forbidden_site_registry_fields:
+    - row_count
+    - first_year_month
+    - last_year_month
+    - variable_counts_json
+    - site_name
+    - latitude
+    - longitude
+    - huc
+    - huc8
+    - huc12
+  forbidden_input_paths:
+    - data/interim/site_registry.parquet
+    - data/interim/site_crosswalk_candidates.parquet
+
+eligibility:
+  source_id_equals: wqp
+  history_length_months: 12
+  consecutive_history_required: true
+  max_gap_months: 1
+  complete_horizons_required:
+    - 1
+    - 2
+    - 3
+  minimum_complete_historical_origins: 1
+  last_eligible_origin: "2021-09"
+  all_eligibility_targets_not_after: "2021-12"
+  post_cutoff_outcome_support_required: false
+
+precursor_coverage:
+  monthly_evidence_rules:
+    nutrient:
+      any_finite:
+        - mean_TP_ugL
+        - mean_TN_ugL
+    temperature:
+      any_finite:
+        - mean_temperature_C
+    light_proxy:
+      any_finite:
+        - mean_secchi_depth_m
+        - mean_turbidity_NTU
+    physicochemical:
+      any_finite:
+        - mean_DO_mgL
+        - mean_pH
+  covered_month_rule: nutrient_and_temperature_and_either_light_proxy_or_physicochemical
+  location_coverage_fraction_denominator: distinct_history_months_not_after_2021_12
+  bands:
+    low:
+      lower_inclusive: 0.0
+      upper_exclusive: 0.3333333333333333
+    medium:
+      lower_inclusive: 0.3333333333333333
+      upper_exclusive: 0.6666666666666666
+    high:
+      lower_inclusive: 0.6666666666666666
+      upper_inclusive: 1.0
+
+stratification:
+  columns:
+    - historical_bloom_presence
+    - precursor_coverage_band
+    - series_length_band
+  historical_bloom_presence:
+    bloom_threshold_ug_l: 30.0
+    positive_rule: at_least_one_unique_positive_target_month_not_after_2021_12
+    negative_rule: zero_unique_positive_target_months_not_after_2021_12
+    repeated_horizon_rows_are_deduplicated: true
+  series_length_months:
+    counting_rule: distinct_panel_months_not_after_2021_12
+    short:
+      minimum_inclusive: 12
+      maximum_inclusive: 23
+    medium:
+      minimum_inclusive: 24
+      maximum_inclusive: 59
+    long:
+      minimum_inclusive: 60
+      maximum_rule: no_upper_bound_within_cutoff
+
+sampling:
+  selection_fraction: 0.20
+  seed: 20260802
+  global_target_count_rule: floor_eligible_count_times_fraction
+  global_target_count_capped_at_eligible_count: true
+  stratum_ideal_quota_rule: stratum_eligible_count_times_selection_fraction
+  initial_stratum_quota_rule: floor_of_stratum_ideal_quota
+  remainder_allocation: descending_fractional_remainder_until_global_target_is_met
+  remainder_tie_break: lexicographic_stratum_id
+  within_stratum_rank: sha256_of_seed_source_id_and_site_id
+  canonical_text_encoding: utf_8
+  row_order_independent: true
+  sampling_without_replacement: true
+
+assignment:
+  selected_role: internal_holdout
+  nonselected_role: development
+  all_rows_of_group_share_assignment: true
+  immutable_after_creation: true
+  replacement_for_missing_future_outcome: forbidden
+  replacement_for_model_failure: forbidden
+  post_assignment_rebalancing: forbidden
+  expected_output_columns:
+    - source_id
+    - site_id
+    - holdout_group_id
+    - assignment_role
+    - stratum_id
+    - historical_bloom_presence
+    - precursor_coverage_fraction
+    - precursor_coverage_band
+    - series_length_months
+    - series_length_band
+    - deterministic_rank_sha256
+
+zero_holdout_policy:
+  action: fail_gate
+  minimum_holdout_locations: 1
+  permit_empty_assignment_artifact: false
+
+invariance_tests:
+  assignment_unchanged_after_input_row_reordering: required
+  assignment_unchanged_after_post_cutoff_outcome_values_change: required
+  assignment_unchanged_after_post_cutoff_outcome_rows_are_appended: required
+  every_assignment_input_month_not_after_cutoff: required
+  every_historical_target_month_not_after_cutoff: required
+  no_observed_chla_used_for_coverage: required
+  whole_group_assignment_integrity: required
+
+e2b_complement:
+  status: predeclared
+  role: complementary_grouped_location_evaluation
+  outer_folds: 5
+  group_key:
+    - source_id
+    - site_id
+  activation_depends_on_E2A_result: false
+  may_replace_E2A: false
+
+outputs:
+  expected_output_count: 5
+  assignment: data/closure_v1/closure_holdout_assignment.csv
+  summary_pre_cutoff: reports/closure_v1/00_protocol/holdout_summary_pre_cutoff.csv
+  cohort_flow_preoutcome: reports/closure_v1/00_protocol/cohort_flow_preoutcome.csv
+  leakage_audit: reports/closure_v1/00_protocol/holdout_leakage_audit.json
+  manifest: reports/closure_v1/00_protocol/holdout_manifest.json
+  write_order:
+    - data/closure_v1/closure_holdout_assignment.csv
+    - reports/closure_v1/00_protocol/holdout_summary_pre_cutoff.csv
+    - reports/closure_v1/00_protocol/cohort_flow_preoutcome.csv
+    - reports/closure_v1/00_protocol/holdout_leakage_audit.json
+    - reports/closure_v1/00_protocol/holdout_manifest.json
+  manifest_written_last: true
+  output_contains_post_cutoff_outcome_values: false
+  output_contains_post_cutoff_outcome_availability: false

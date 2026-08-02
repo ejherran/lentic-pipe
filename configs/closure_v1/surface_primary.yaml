@@ -1,0 +1,149 @@
+schema_version: closure_surface_v1_1
+experiment_id: closure_v1
+surface_id: closure_v1_wqp_adaptive_no_current_chla
+status: ready_to_lock
+scientific_role: strict_early_warning_primary
+
+source_ids:
+  - wqp
+history_length_months: 12
+max_gap_months: 1
+horizons_months:
+  - 1
+  - 2
+  - 3
+complete_horizons_required: true
+
+input_surface: adaptive_no_current_chla
+state_path: data/closure_v1/adaptive_state_vector_trainable.parquet
+sequence_path: data/closure_v1/pipe_sequence_adaptive_no_current.parquet
+common_origin_manifest_path: data/closure_v1/common_origin_manifest.parquet
+holdout_assignment_path: data/closure_v1/closure_holdout_assignment.csv
+
+chlorophyll_contract:
+  observed_chla_at_any_input_lag: forbidden
+  current_chla_in_inputs: false
+  lagged_chla_in_inputs: false
+  chla_derived_input_metadata: false
+  future_chla_target_only: true
+  lineage_audit_required_before_model_lock: true
+  differently_named_chla_lineage_is_forbidden: true
+
+future_chla_target_only: true
+forbidden_predictors:
+  - chlorophyll_a_ugL
+  - mean_chlorophyll_a_ugL
+  - std_chlorophyll_a_ugL
+  - n_obs_chlorophyll_a_ugL
+  - n_bad_chlorophyll_a_ugL
+  - qc_ok_rate_chlorophyll_a_ugL
+  - log_chlorophyll_a
+  - risk_chla
+  - Chl
+  - Chl_prev
+  - irc1
+  - irc1_adaptive
+  - x_irc1
+  - yT
+  - sigma_T
+  - delta_yT
+  - yT_adaptive
+  - sigma_T_adaptive
+  - delta_yT_adaptive
+
+forbidden_lineage_patterns:
+  - observed_chlorophyll_value
+  - observed_chlorophyll_transform
+  - observed_chlorophyll_lag_or_persistence
+  - observed_chlorophyll_count_or_qc
+  - observed_chlorophyll_missingness_or_provenance
+  - state_or_score_fitted_with_observed_chlorophyll
+
+permitted_raw_feature_families:
+  nutrients:
+    - TP_ugL
+    - TN_ugL
+  temperature:
+    - temperature_C
+  light:
+    - secchi_depth_m
+    - turbidity_NTU
+  physicochemical:
+    - DO_mgL
+    - pH
+  deterministic_calendar:
+    - month_of_year
+
+permitted_pipe_sequence_channels:
+  state:
+    - x_yN
+    - x_yF
+    - x_yT
+  uncertainty:
+    - x_sigma_N
+    - x_sigma_F
+    - x_sigma_T
+  change:
+    - x_delta_yN
+    - x_delta_yF
+    - x_delta_yT
+  seasonality:
+    - season_sin_annual
+    - season_cos_annual
+    - season_sin_semiannual
+    - season_cos_semiannual
+
+state_lineage_mapping:
+  x_yN: yN_adaptive
+  x_yF: yF_adaptive
+  x_yT: yT_no_chla_adaptive
+  x_sigma_N: sigma_N_adaptive
+  x_sigma_F: sigma_F_adaptive
+  x_sigma_T: sigma_T_no_chla_adaptive
+  x_delta_yN: delta_yN_adaptive
+  x_delta_yF: delta_yF_adaptive
+  x_delta_yT: delta_yT_no_chla_adaptive
+
+sequence_serialization:
+  optional_context_columns_written: false
+  output_allowlist_required: true
+  forbidden_context_columns:
+    - x_irc1
+    - x_irc1_adaptive
+    - x_Chl
+    - x_Chl_prev
+    - x_risk_chla
+
+split:
+  training_end: "2018-12"
+  model_selection_start: "2019-01"
+  model_selection_end: "2020-12"
+  calibration_threshold_start: "2021-01"
+  calibration_threshold_end: "2021-12"
+  locked_evaluation_origin_start: "2022-01"
+  locked_evaluation_target_start: "2022-01"
+  origin_and_target_must_share_role: true
+  holdout_locations_excluded_from_all_development_roles: true
+
+holdout:
+  unit_type: wqp_monitoring_location
+  group_key:
+    - source_id
+    - site_id
+  claim_scope: held_out_wqp_monitoring_locations_within_frozen_cohort
+  waterbody_claim_authorized: false
+  external_validation_claim_authorized: false
+
+targets:
+  future_chla_ugL: primary_continuous_outcome
+  bloom_h: primary_binary_outcome
+  future_risk: continuous_state_outcome
+  future_operational_trophic_state: ordinal_secondary_outcome
+  inputs_from_target_columns: forbidden
+
+primary_comparison_key:
+  - source_id
+  - site_id
+  - origin_year_month
+  - target_year_month
+  - horizon_months
