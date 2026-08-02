@@ -59,6 +59,9 @@ REGENERABLE_IGNORED_PATHS = {
     "data/interim/observations/observations_summary.csv",
 }
 REPORT_ARTIFACT_SUFFIXES = {".csv", ".json", ".md", ".parquet", ".txt"}
+CLOSURE_PROTOCOL_LOCK_PATH = Path("reports/closure_v1/00_protocol/protocol_lock.json")
+CLOSURE_PROTOCOL_LOCK_VERSION = "closure_protocol_lock_v1"
+CLOSURE_PROTOCOL_LOCK_SCRIPT = Path("src/experiments/lock_closure_protocol.py")
 FREEZE_ARTIFACT_PATHS = {
     Path("data/freeze/derived_file_manifest_v0.csv"),
     Path("data/freeze/data_freeze_manifest_v0.json"),
@@ -388,6 +391,8 @@ def is_experiment_manifest_path(path: Path) -> bool:
     text = path.as_posix()
     if path.name.endswith("_promotion_manifest.json"):
         return False
+    if path == CLOSURE_PROTOCOL_LOCK_PATH:
+        return True
     return text.startswith("reports/") and path.suffix == ".json" and "manifest" in path.name
 
 
@@ -415,6 +420,14 @@ def manifest_record_path(record: Any) -> Path | None:
 
 def record_display_path(path: Path) -> str:
     return path.as_posix() if not path.is_absolute() else str(path)
+
+
+def manifest_output_records(payload: Any, manifest_path: Path) -> Any:
+    if not isinstance(payload, dict):
+        return None
+    if manifest_path == CLOSURE_PROTOCOL_LOCK_PATH:
+        return payload.get("generated_lock_companions")
+    return payload.get("outputs")
 
 
 def verify_manifest_file_record(
@@ -518,14 +531,18 @@ def discover_relevant_manifest_paths(staged_paths: set[Path]) -> list[Path]:
             continue
         if not path.parent.exists():
             continue
-        for candidate in path.parent.glob("*manifest*.json"):
+        candidates = set(path.parent.glob("*manifest*.json"))
+        closure_lock_candidate = path.parent / CLOSURE_PROTOCOL_LOCK_PATH.name
+        if closure_lock_candidate == CLOSURE_PROTOCOL_LOCK_PATH and closure_lock_candidate.exists():
+            candidates.add(closure_lock_candidate)
+        for candidate in candidates:
             if not is_experiment_manifest_path(candidate):
                 continue
             try:
                 payload = json.loads(candidate.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
                 continue
-            outputs = payload.get("outputs") if isinstance(payload, dict) else None
+            outputs = manifest_output_records(payload, candidate)
             if not isinstance(outputs, list):
                 continue
             output_paths = {record_path for record in outputs if (record_path := manifest_record_path(record)) is not None}
@@ -585,7 +602,61 @@ def validate_experiment_manifests(
             )
             continue
 
-        if isinstance(payload, dict) and payload.get("status") not in {None, "completed"}:
+        is_closure_protocol_lock = manifest_path == CLOSURE_PROTOCOL_LOCK_PATH
+        if is_closure_protocol_lock:
+            lock_version = payload.get("lock_version") if isinstance(payload, dict) else None
+            status = payload.get("status") if isinstance(payload, dict) else None
+            if lock_version != CLOSURE_PROTOCOL_LOCK_VERSION:
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        (
+                            f"Closure protocol lock version is `{lock_version}`, "
+                            f"expected `{CLOSURE_PROTOCOL_LOCK_VERSION}`."
+                        ),
+                    )
+                )
+            if status != "locked":
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        f"Closure protocol lock status is `{status}`, expected `locked`.",
+                    )
+                )
+            for field in (
+                "future_outcomes_accessed",
+                "lock_command_semantically_decodes_post_2021_outcomes",
+                "holdout_assignment_created",
+            ):
+                value = payload.get(field) if isinstance(payload, dict) else None
+                if value is not False:
+                    findings.append(
+                        ReproducibilityFinding(
+                            "fail",
+                            "manifest",
+                            manifest_path.as_posix(),
+                            f"Closure protocol lock requires `{field}=false`.",
+                        )
+                    )
+            locked_repository = payload.get("locked_repository") if isinstance(payload, dict) else None
+            if (
+                not isinstance(locked_repository, dict)
+                or locked_repository.get("worktree_status") != "clean"
+                or locked_repository.get("dirty_paths") != []
+            ):
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        "Closure protocol lock must record a clean repository with no dirty paths.",
+                    )
+                )
+        elif isinstance(payload, dict) and payload.get("status") not in {None, "completed"}:
             findings.append(
                 ReproducibilityFinding(
                     "fail",
@@ -595,7 +666,7 @@ def validate_experiment_manifests(
                 )
             )
 
-        outputs = payload.get("outputs") if isinstance(payload, dict) else None
+        outputs = manifest_output_records(payload, manifest_path)
         if not isinstance(outputs, list) or not outputs:
             findings.append(
                 ReproducibilityFinding(
@@ -620,7 +691,44 @@ def validate_experiment_manifests(
                 covered_outputs.setdefault(record_path, []).append(manifest_path)
                 checked_outputs += 1
 
-        script = payload.get("script") if isinstance(payload, dict) else None
+        if is_closure_protocol_lock:
+            protocol_components = payload.get("protocol_components") if isinstance(payload, dict) else None
+            source_artifacts = payload.get("source_artifacts") if isinstance(payload, dict) else None
+            lock_scripts = (
+                [
+                    record
+                    for record in protocol_components
+                    if manifest_record_path(record) == CLOSURE_PROTOCOL_LOCK_SCRIPT
+                ]
+                if isinstance(protocol_components, list)
+                else []
+            )
+            if len(lock_scripts) != 1:
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        "Closure protocol lock must contain exactly one generating-script record.",
+                    )
+                )
+            script = lock_scripts[0] if len(lock_scripts) == 1 else None
+            if not isinstance(protocol_components, list) or not isinstance(source_artifacts, list):
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        "Closure protocol lock must contain protocol-components and source-artifacts lists.",
+                    )
+                )
+                inputs: Any = []
+            else:
+                inputs = [*protocol_components, *source_artifacts]
+        else:
+            script = payload.get("script") if isinstance(payload, dict) else None
+            inputs = payload.get("inputs") if isinstance(payload, dict) else None
+
         if isinstance(script, dict):
             verify_manifest_file_record(
                 record=script,
@@ -631,7 +739,7 @@ def validate_experiment_manifests(
                 require_hash=True,
                 force_hash=True,
             )
-        else:
+        elif not is_closure_protocol_lock:
             findings.append(
                 ReproducibilityFinding(
                     "warn",
@@ -641,7 +749,6 @@ def validate_experiment_manifests(
                 )
             )
 
-        inputs = payload.get("inputs") if isinstance(payload, dict) else None
         if isinstance(inputs, list):
             for record in inputs:
                 verify_manifest_file_record(

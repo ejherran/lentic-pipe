@@ -83,6 +83,78 @@ def _manifest_record(path: Path) -> dict[str, object]:
     return {"path": path.as_posix(), "bytes": path.stat().st_size, "sha256": sha256_file(path)}
 
 
+def _closure_protocol_lock_payload(companion: Path, script: Path) -> dict[str, object]:
+    return {
+        "lock_version": "closure_protocol_lock_v1",
+        "status": "locked",
+        "generated_lock_companions": [_manifest_record(companion)],
+        "protocol_components": [_manifest_record(script)],
+        "source_artifacts": [],
+        "locked_repository": {"worktree_status": "clean", "dirty_paths": []},
+        "future_outcomes_accessed": False,
+        "lock_command_semantically_decodes_post_2021_outcomes": False,
+        "holdout_assignment_created": False,
+    }
+
+
+def test_closure_protocol_lock_is_a_strict_experiment_manifest() -> None:
+    path = Path("reports/closure_v1/00_protocol/protocol_lock.json")
+
+    assert is_experiment_manifest_path(path)
+    assert not is_report_artifact_path(path)
+    assert not is_experiment_manifest_path(Path("reports/other/protocol_lock.json"))
+
+
+def test_closure_protocol_lock_validation_checks_seal_and_companion_hashes(
+    tmp_path: Path, monkeypatch
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    companion = Path("reports/closure_v1/00_protocol/environment.json")
+    companion.parent.mkdir(parents=True)
+    companion.write_text('{"python": "3.14"}\n', encoding="utf-8")
+    script = Path("src/experiments/lock_closure_protocol.py")
+    script.parent.mkdir(parents=True)
+    script.write_text("print('lock')\n", encoding="utf-8")
+    lock = Path("reports/closure_v1/00_protocol/protocol_lock.json")
+    payload = _closure_protocol_lock_payload(companion, script)
+    lock.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    findings = validate_experiment_manifests(
+        staged_paths={companion, lock},
+        artifacts=[],
+        max_hash_bytes=1024 * 1024,
+        verify_manifest_inputs=False,
+    )
+
+    assert not has_failing_findings(findings)
+
+    companion.write_text('{"python": "changed"}\n', encoding="utf-8")
+    findings = validate_experiment_manifests(
+        staged_paths={companion, lock},
+        artifacts=[],
+        max_hash_bytes=1024 * 1024,
+        verify_manifest_inputs=False,
+    )
+
+    assert has_failing_findings(findings)
+    assert any("SHA-256 changed" in finding.message for finding in findings)
+
+    companion.write_text('{"python": "3.14"}\n', encoding="utf-8")
+    payload["status"] = "completed"
+    payload["future_outcomes_accessed"] = True
+    lock.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    findings = validate_experiment_manifests(
+        staged_paths={companion, lock},
+        artifacts=[],
+        max_hash_bytes=1024 * 1024,
+        verify_manifest_inputs=False,
+    )
+
+    assert has_failing_findings(findings)
+    assert any("expected `locked`" in finding.message for finding in findings)
+    assert any("future_outcomes_accessed=false" in finding.message for finding in findings)
+
+
 def test_experiment_manifest_validation_checks_output_and_script_hashes(
     tmp_path: Path, monkeypatch
 ) -> None:

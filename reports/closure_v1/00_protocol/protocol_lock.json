@@ -1,0 +1,221 @@
+{
+  "lock_version": "closure_protocol_lock_v1",
+  "status": "locked",
+  "experiment_id": "closure_v1",
+  "plan_version": "1.1",
+  "created_at_utc": "2026-08-02T22:02:14.814612+00:00",
+  "analysis_plan": "configs/closure_v1/analysis_plan.yaml",
+  "analysis_plan_sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a",
+  "alignment_base_commit": "dba134a3f3759cf20651e2b8a08c658c3641d793",
+  "locked_repository": {
+    "head": "ead7d13a83451f7698ef202cbd3e48d60c456e66",
+    "branch": "main",
+    "worktree_status": "clean",
+    "dirty_paths": []
+  },
+  "protocol_components": [
+    {
+      "path": "configs/closure_v1/analysis_plan.schema.json",
+      "role": "protocol_component",
+      "bytes": 31822,
+      "sha256": "7a5d22c9f6a8ba379340626086c40472273b8b003a5575143e21c5f58db4cb52"
+    },
+    {
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "role": "protocol_component",
+      "bytes": 18302,
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "path": "configs/closure_v1/experimental_matrix.yaml",
+      "role": "authoritative_closure_matrix",
+      "bytes": 24374,
+      "sha256": "9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6"
+    },
+    {
+      "path": "configs/closure_v1/location_holdout.yaml",
+      "role": "protocol_component",
+      "bytes": 7392,
+      "sha256": "71adcae5d505e4ccfbfd5d77a102a7c4446c513bd99343f537ad89e8e6e201db"
+    },
+    {
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "role": "protocol_component",
+      "bytes": 7281,
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "path": "configs/closure_v1/surface_primary.yaml",
+      "role": "protocol_component",
+      "bytes": 3660,
+      "sha256": "44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132"
+    },
+    {
+      "path": "configs/closure_v1/surface_secondary.yaml",
+      "role": "protocol_component",
+      "bytes": 1980,
+      "sha256": "255a1c0ae7a91aa876b06114c96aaedac6dc891bad6cfc0726192d0838b5abed"
+    },
+    {
+      "path": "configs/counterfactual_planning_v1.yaml",
+      "role": "scenario_catalog_provenance_only",
+      "bytes": 5359,
+      "sha256": "ee594a4bece416a60e962437aadc826f019b8015433860d18a1b3cd8435d2648"
+    },
+    {
+      "path": "docs/closure_v1/ANALYSIS_PLAN.md",
+      "role": "protocol_component",
+      "bytes": 29304,
+      "sha256": "ad173fee8a129b6327188d79a5b457b948d97b0d2a1c812fe5e0ac1604e0f782"
+    },
+    {
+      "path": "docs/closure_v1/PROTOCOL_AMENDMENT_V1_1.md",
+      "role": "protocol_component",
+      "bytes": 10950,
+      "sha256": "47b5da95ab0cc52e3150eee5ee749f298e7c83bcac4f7cf64a1923584d81cd73"
+    },
+    {
+      "path": "src/experiments/build_closure_holdout.py",
+      "role": "protocol_component",
+      "bytes": 67719,
+      "sha256": "a79c746c2fa0468637744a5c5aa71dacfea8843130edfe6e9104a2d9ea0abd9e"
+    },
+    {
+      "path": "src/experiments/closure_contract.py",
+      "role": "protocol_component",
+      "bytes": 87743,
+      "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+    },
+    {
+      "path": "src/experiments/lock_closure_protocol.py",
+      "role": "protocol_component",
+      "bytes": 15472,
+      "sha256": "e2d85103ce450143cee0243ca2626105973bf682460eb2fb4e0050aae1332d02"
+    }
+  ],
+  "source_artifacts": [
+    {
+      "path": "configs/dvc_artifacts.yaml",
+      "role": "aligned_heavy_artifact_inventory",
+      "bytes": 18841,
+      "sha256": "3304fd61978604ecfba5f99f1a9b3d04e4655f45f97f92954081751346143605"
+    },
+    {
+      "path": "configs/site_resolution.yaml",
+      "role": "evidence_that_no_accepted_waterbody_crosswalk_exists",
+      "bytes": 1613,
+      "sha256": "0eacd5dd65da115adc7aad1ae29c2ac4970e855dfe183da733f238bd5aff4a23"
+    },
+    {
+      "path": "configs/variables.yaml",
+      "role": "canonical_variable_definitions",
+      "bytes": 11088,
+      "sha256": "e945ae0fb7ccb4cd2cb9c742c7177e45a17bb8f96217b971259c0d61ef11cc57"
+    },
+    {
+      "path": "data/freeze/DATA_FREEZE.md",
+      "role": "frozen_data_narrative",
+      "bytes": 6755,
+      "sha256": "2a6ce68c8d4393154364c38c36259de29003931fd9451405957640d485648ff7"
+    },
+    {
+      "path": "data/freeze/data_freeze_manifest_v0.json",
+      "role": "frozen_data_provenance",
+      "bytes": 11201,
+      "sha256": "1acbb38a8a44d31f745b276af2cc9d8248b5cbee681662bb114912fffd097a2d"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "cutoff_safe_input_history_source",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "role": "canonical_leakage_safe_temporal_rows",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9"
+    },
+    {
+      "path": "data/splits/split_manifest.json",
+      "role": "temporal_split_provenance",
+      "bytes": 15444,
+      "sha256": "0b2ebceace30613b14b9a998e1d3123b6af0393b9a7e99767f3e021a9ab7aff5"
+    },
+    {
+      "path": "data/targets/monthly_targets_model_v0.parquet",
+      "role": "historical_stratification_and_later_evaluation_targets",
+      "bytes": 35541493,
+      "sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799"
+    },
+    {
+      "path": "data/targets/target_manifest_v0.json",
+      "role": "canonical_target_provenance_and_threshold_manifest",
+      "bytes": 5955,
+      "sha256": "5c082cf12aa4f9c6350f4e44eb2b41c7f0dc52cb041c3a67c09cd8e286f17ca4"
+    }
+  ],
+  "generated_lock_companions": [
+    {
+      "path": "reports/closure_v1/00_protocol/repository_state.json",
+      "role": "lock_companion",
+      "bytes": 128,
+      "sha256": "196e26d2c32d1e16dca778ed8ff5fb01cd8180cd45bd93d1880db6d1ec561ddb"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/artifact_hashes.csv",
+      "role": "lock_companion",
+      "bytes": 2771,
+      "sha256": "ce0c44d433af295651709fc324648e7816c5b4231918e984415a1a2e75e47315"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/code_hashes.csv",
+      "role": "lock_companion",
+      "bytes": 411,
+      "sha256": "adc979475db49d4a705979496cd2866135643c7d0616a5ba0879b58df562a422"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/dvc_inventory_snapshot.csv",
+      "role": "lock_companion",
+      "bytes": 11075,
+      "sha256": "56062ed300da431c3a01e4418d69b86bf6d97ab82ba0432a749e22ef29e796d4"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/environment.json",
+      "role": "lock_companion",
+      "bytes": 14639,
+      "sha256": "5d347efaac9d815d6fd0da130217c5257d8e4a393ed19239d5405df3500e69f3"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/environment.txt",
+      "role": "lock_companion",
+      "bytes": 5919,
+      "sha256": "964553ca3c05da82f2bc9a7b8900af6664acdb7f42f8a14f47f3f1d3544d8b43"
+    }
+  ],
+  "dvc_pointer_count": 64,
+  "dvc_output_count": 64,
+  "freeze_generation_dirty_state_preserved": true,
+  "future_outcomes_accessed": false,
+  "outcome_access_definition": "semantic_decoding_inspection_aggregation_or_use_of_outcome_rows",
+  "lock_command_reads_complete_source_bytes_for_sha256": true,
+  "lock_command_semantically_decodes_post_2021_outcomes": false,
+  "holdout_assignment_created": false,
+  "authorized_claim": "internal Git-locked pseudoprospective evaluation at held-out WQP monitoring locations",
+  "forbidden_claims": [
+    "external validation",
+    "real prospective validation",
+    "transfer to unseen waterbodies"
+  ],
+  "change_control": {
+    "preserve_original_outputs": true,
+    "post_metric_change_loses_locked_label": true,
+    "ready_to_lock_material_change": "update_all_affected_docs_configs_schema_and_tests",
+    "after_lock_before_unblinding": "create_new_protocol_version_and_lock_manifest",
+    "technical_failure_before_metric_emission": "documented_patch_version_and_complete_rerun",
+    "change_after_metric_emission": "preserve_original_outputs_and_label_new_analysis_exploratory",
+    "original_batch_outputs_are_immutable": true,
+    "holdout_reassignment_after_lock": "forbidden",
+    "post_unblinding_threshold_or_model_change": "forbidden_for_locked_claim"
+  }
+}
