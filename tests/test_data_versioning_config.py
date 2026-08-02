@@ -17,6 +17,12 @@ def test_pyproject_declares_optional_dvc_gs_group() -> None:
     assert group["dependencies"]["dvc"]["extras"] == ["gs"]
 
 
+def test_pytest_defaults_to_the_public_test_tree() -> None:
+    pyproject = tomllib.loads((REPO_ROOT / "pyproject.toml").read_text(encoding="utf-8"))
+
+    assert pyproject["tool"]["pytest"]["ini_options"]["testpaths"] == ["tests"]
+
+
 def test_dvc_setup_script_uses_local_config_for_real_remote() -> None:
     script = (REPO_ROOT / "scripts/setup_dvc_gcs.sh").read_text(encoding="utf-8")
 
@@ -152,6 +158,26 @@ def test_no_current_chla_full_artifacts_are_documented_as_dvc_artifacts() -> Non
         "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet"
         in dvc_artifacts
     )
+
+
+def test_neural_ode_rollout_artifacts_are_documented_as_dvc_artifacts() -> None:
+    dvc_artifacts = (REPO_ROOT / "configs/dvc_artifacts.yaml").read_text(encoding="utf-8")
+
+    expected_paths = [
+        "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_validation.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_matched_grud_validation.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_matched_grud_test.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibrated_backtest_rows.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_validation.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_test.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_calibrated_backtest_rows.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_validation.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_test.parquet",
+        "reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet",
+    ]
+
+    for path in expected_paths:
+        assert path in dvc_artifacts
 
 
 def test_prepare_commit_skips_row_level_smoke_parquets() -> None:

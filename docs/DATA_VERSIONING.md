@@ -74,6 +74,14 @@ flow.
   are kept in Git. Row-level rollout backtest parquet exports are DVC-tracked
   through their `.dvc` pointers. The heavy operational rollout table remains
   DVC-tracked through `data/pipe_grud/pipe_rollout_alerts_v0.parquet.dvc`.
+- Neural ODE v0, v1 long80, and v2 direct row-level rollout/calibrated parquet
+  exports are declared individually in `configs/dvc_artifacts.yaml`. Their
+  lightweight manifests, metrics, and reports remain in Git. A row-level
+  artifact must not be described as remotely restorable until its `.dvc`
+  pointer has been committed and the corresponding object has been pushed.
+- Future `closure_v1` CSV/JSON manifests and cohort assignments remain
+  versionable when small. Parquet predictions, masks, bootstrap distributions,
+  and other heavy closure payloads require explicit DVC pointers.
 - The pre-commit artifact assistant validates staged DVC pointer structure,
   verifies current SHA-256 hashes for experiment manifest outputs within the
   configured size limit, verifies generating-script hashes, and fails when

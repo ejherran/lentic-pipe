@@ -263,6 +263,76 @@ artifacts:
     dvc: true
     github_policy: pointer_only_keep_small_reports_in_git
 
+  - artifact_id: pipe_neural_ode_rollout_backtest_rows_validation_adaptive_wqp_focused_v0
+    path: reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_validation.parquet
+    type: pipe_neural_ode_rollout_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_rollout_backtest_rows_matched_grud_validation_adaptive_wqp_focused_v0
+    path: reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_matched_grud_validation.parquet
+    type: pipe_neural_ode_rollout_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_rollout_backtest_rows_matched_grud_test_adaptive_wqp_focused_v0
+    path: reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_backtest_rows_matched_grud_test.parquet
+    type: pipe_neural_ode_rollout_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_rollout_calibrated_backtest_rows_adaptive_wqp_focused_v0
+    path: reports/pipe_neural_ode/adaptive_wqp_focused/pipe_neural_ode_rollout_calibrated_backtest_rows.parquet
+    type: pipe_neural_ode_rollout_calibrated_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_history_rollout_backtest_rows_matched_grud_validation_adaptive_wqp_focused_v1_long80
+    path: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_validation.parquet
+    type: pipe_neural_ode_history_rollout_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_history_rollout_backtest_rows_matched_grud_test_adaptive_wqp_focused_v1_long80
+    path: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_backtest_rows_matched_grud_test.parquet
+    type: pipe_neural_ode_history_rollout_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_history_rollout_calibrated_backtest_rows_adaptive_wqp_focused_v1_long80
+    path: reports/pipe_neural_ode/adaptive_wqp_focused_history_v1_long80/pipe_neural_ode_history_rollout_calibrated_backtest_rows.parquet
+    type: pipe_neural_ode_history_rollout_calibrated_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_validation_adaptive_wqp_focused_v2
+    path: reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_validation.parquet
+    type: pipe_neural_ode_continuous_direct_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_test_adaptive_wqp_focused_v2
+    path: reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_backtest_rows_matched_grud_test.parquet
+    type: pipe_neural_ode_continuous_direct_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
+  - artifact_id: pipe_neural_ode_continuous_direct_calibrated_backtest_rows_adaptive_wqp_focused_v2
+    path: reports/pipe_neural_ode/adaptive_wqp_focused_continuous_v2_full_direct_h123/pipe_neural_ode_continuous_direct_calibrated_backtest_rows.parquet
+    type: pipe_neural_ode_continuous_direct_calibrated_backtest_rows_adaptive_wqp_focused
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_small_reports_in_git
+
   - artifact_id: mifal_observable_current_chla_smoke_predictions_v0
     path: reports/mifal/mifal_observable_current_chla_smoke_predictions.csv
     type: mifal_row_export
@@ -380,7 +450,7 @@ artifacts:
     type: model_artifacts
     source_id: multi_source
     dvc: true
-    github_policy: pointer_only_for_binary_artifacts_keep_registries_in_git
+    github_policy: pointer_only_for_all_model_artifacts_keep_registries_in_reports
 
   - artifact_id: operational_site_review_summary
     path: reports/anfis/operational_site_review_summary.csv

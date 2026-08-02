@@ -31,16 +31,22 @@ That directory is not versioned.
 
 ## Installation
 
-Minimal development install:
+Core development install (does not include API or modeling extras):
 
 ```bash
 poetry install --with dev
 ```
 
-Full install for data, modeling, and DVC workflows:
+Development install for the complete public test suite:
 
 ```bash
-poetry install --with dev,modeling,sources,data-versioning
+poetry install --with dev,api,modeling
+```
+
+Full install for API, data, modeling, and DVC workflows:
+
+```bash
+poetry install --with dev,api,modeling,sources,data-versioning
 ```
 
 Verify the environment:
@@ -102,7 +108,7 @@ After cloning the repository on an authorized machine:
 ```bash
 git clone <repo>
 cd lentic-pipe
-poetry install --with dev,modeling,sources,data-versioning
+poetry install --with dev,api,modeling,sources,data-versioning
 mkdir -p private
 ```
 
@@ -171,6 +177,7 @@ exports, or credential JSON files.
 - `docs/CONTROLLED_DEGRADATION_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_PROTOCOL.md`
 - `docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md`
+- `docs/THESIS_EXPERIMENT_TRACEABILITY.md`
 - `docs/API_PROTOCOL.md`
 - `docs/API_DATASET_CONTRACT.md`
 - `docs/API_LOCAL_USAGE.md`
@@ -182,6 +189,19 @@ exports, or credential JSON files.
 - SHA-256 hashes and the data freeze are versioned under `data/catalog/` and
   `data/freeze/`.
 - Heavy artifacts are declared in `configs/dvc_artifacts.yaml`.
+- The thesis-wide `closure_v1` benchmark has not been executed yet. Existing
+  model results remain iteration-specific evidence until a common no-current
+  Chl-a surface, locked unseen-location holdout, and paired evaluation contract
+  are implemented and frozen.
+- Historical files use the `PIPE/GRU-D` and `pipe_grud` labels. The current
+  trainer implements a residual probabilistic GRU over engineered/imputed
+  state vectors, without the explicit mask and temporal-decay mechanism of a
+  canonical GRU-D. Final methodological claims must use that narrower
+  description unless the implementation changes.
+- Chapter IV evidence provenance is generated from
+  `configs/thesis_evidence_matrix.yaml` into
+  `reports/thesis/chapter_iv_evidence_matrix.md`; it must be consulted before
+  combining results from different freezes or experimental iterations.
 - Cross-source waterbody matching is handled as an auditable candidate layer via
   `configs/site_resolution.yaml` and `src/data/build_waterbody_crosswalk.py`;
   source-scoped site IDs remain authoritative until a reviewed crosswalk is

@@ -288,14 +288,18 @@ AGENTS.md
 !/data/pipe_grud/**/*.dvc
 !/data/pipe_grud/**/.gitignore
 
+# Thesis-closure outputs: keep small CSV/JSON manifests versionable and route
+# parquet payloads through explicit DVC pointers.
+/data/closure_v1/*.parquet
+/data/closure_v1/**/*.parquet
+!/data/closure_v1/*.parquet.dvc
+!/data/closure_v1/**/*.parquet.dvc
+
 /models/**
 !/models/
 !/models/**/
 !/models/**/*.dvc
-!/models/**/*.json
 !/models/**/.gitignore
-!/models/**/README.md
-!/models/**/model_card.md
 
 /checkpoints/**
 /outputs/**
@@ -308,7 +312,6 @@ AGENTS.md
 /reports/**/*.parquet
 /reports/anfis/operational_site_review_summary.csv
 !/reports/**/*.dvc
-/models
 
 # Temp
 tmp/

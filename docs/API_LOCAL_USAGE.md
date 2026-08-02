@@ -51,6 +51,13 @@ Install the API dependency group:
 poetry install --with api
 ```
 
+Install the scientific modeling and DVC groups as well when running calibrated
+reference-profile inference or restoring its heavy artifacts:
+
+```bash
+poetry install --with api,modeling,data-versioning
+```
+
 For the full production-like shell, start PostgreSQL and Redis with the checked
 in Compose file and configure `.env` from `.env.example`:
 
