@@ -1,0 +1,4 @@
+stage,assignment_role,monitoring_locations,eligible_historical_origins
+eligible_before_assignment,all,441,8903
+deterministic_assignment,development,353,6968
+deterministic_assignment,internal_holdout,88,1935

@@ -1,0 +1,113 @@
+{
+  "manifest_version": "closure_holdout_manifest_v1",
+  "status": "completed",
+  "experiment_id": "closure_v1",
+  "generated_at_utc": "2026-08-02T22:58:15.703654+00:00",
+  "future_outcomes_accessed": false,
+  "unit_type": "wqp_monitoring_location",
+  "group_key": [
+    "source_id",
+    "site_id"
+  ],
+  "waterbody_claim_authorized": false,
+  "holdout_config": {
+    "path": "configs/closure_v1/location_holdout.yaml",
+    "bytes": 7392,
+    "sha256": "71adcae5d505e4ccfbfd5d77a102a7c4446c513bd99343f537ad89e8e6e201db"
+  },
+  "source_inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "cutoff_safe_input_history_source",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62",
+      "hash_source": "protocol_lock"
+    },
+    {
+      "path": "data/targets/monthly_targets_model_v0.parquet",
+      "role": "historical_stratification_and_later_evaluation_targets",
+      "bytes": 35541493,
+      "sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799",
+      "hash_source": "protocol_lock"
+    },
+    {
+      "path": "data/targets/target_manifest_v0.json",
+      "role": "canonical_target_provenance_and_threshold_manifest",
+      "bytes": 5955,
+      "sha256": "5c082cf12aa4f9c6350f4e44eb2b41c7f0dc52cb041c3a67c09cd8e286f17ca4",
+      "hash_source": "protocol_lock"
+    }
+  ],
+  "columns_projected": {
+    "precursors": [
+      "source_id",
+      "site_id",
+      "year_month",
+      "mean_TP_ugL",
+      "mean_TN_ugL",
+      "mean_temperature_C",
+      "mean_secchi_depth_m",
+      "mean_turbidity_NTU",
+      "mean_DO_mgL",
+      "mean_pH"
+    ],
+    "historical_outcomes": [
+      "source_id",
+      "site_id",
+      "origin_year_month",
+      "target_year_month",
+      "horizon_months",
+      "bloom_h"
+    ]
+  },
+  "selection": {
+    "source_id": "wqp",
+    "information_cutoff": "2021-12",
+    "latest_eligible_origin": "2021-09",
+    "history_length_months": 12,
+    "horizons_months": [
+      1,
+      2,
+      3
+    ],
+    "bloom_threshold_ug_l": 30.0,
+    "holdout_fraction": 0.2,
+    "selection_seed": 20260802,
+    "allocation": "floor_total_then_stratum_fraction_largest_remainder",
+    "ranking": "sha256",
+    "sampling_with_replacement": false
+  },
+  "counts": {
+    "eligible_origins": 8903,
+    "eligible_locations": 441,
+    "holdout_locations": 88,
+    "development_locations": 353
+  },
+  "protocol_lock": {
+    "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+    "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6",
+    "locked_repository_head": "ead7d13a83451f7698ef202cbd3e48d60c456e66"
+  },
+  "outputs": [
+    {
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "bytes": 89635,
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/holdout_summary_pre_cutoff.csv",
+      "bytes": 999,
+      "sha256": "b276bddad5653dccc4cc90e70321437dbc84c8c70227f92c3612bbdbdc056128"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/cohort_flow_preoutcome.csv",
+      "bytes": 207,
+      "sha256": "3c894ec824829a02cb40327c942c8bd303c432d2861be248b74bba03af61028e"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/holdout_leakage_audit.json",
+      "bytes": 930,
+      "sha256": "7810cfe98490cd2e2a4ab375d784990cc72c09d9563d90ff7f717018a937915f"
+    }
+  ]
+}

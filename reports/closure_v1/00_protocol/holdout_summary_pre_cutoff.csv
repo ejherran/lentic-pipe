@@ -1,0 +1,14 @@
+stratum_id,eligible_locations,exact_quota,base_quota,quota_remainder,holdout_quota,selected_locations
+bloom=0|coverage=high|length=long,46,9.200000000000001,9,0.20000000000000107,9,9
+bloom=0|coverage=high|length=medium,25,5.0,5,0.0,5,5
+bloom=0|coverage=high|length=short,11,2.2,2,0.20000000000000018,2,2
+bloom=0|coverage=low|length=long,2,0.4,0,0.4,0,0
+bloom=0|coverage=medium|length=long,17,3.4000000000000004,3,0.40000000000000036,3,3
+bloom=0|coverage=medium|length=medium,19,3.8000000000000003,3,0.8000000000000003,4,4
+bloom=1|coverage=high|length=long,211,42.2,42,0.20000000000000284,42,42
+bloom=1|coverage=high|length=medium,68,13.600000000000001,13,0.6000000000000014,14,14
+bloom=1|coverage=high|length=short,10,2.0,2,0.0,2,2
+bloom=1|coverage=low|length=long,9,1.8,1,0.8,2,2
+bloom=1|coverage=low|length=medium,1,0.2,0,0.2,0,0
+bloom=1|coverage=medium|length=long,19,3.8000000000000003,3,0.8000000000000003,4,4
+bloom=1|coverage=medium|length=medium,3,0.6000000000000001,0,0.6000000000000001,1,1

@@ -1,0 +1,24 @@
+{
+  "audit_version": "closure_holdout_leakage_audit_v1",
+  "status": "passed",
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "information_cutoff": "2021-12",
+  "latest_eligible_origin": "2021-09",
+  "historical_bloom_scope": "all_unique_wqp_target_months_not_after_cutoff",
+  "maximum_eligible_target_month": "2021-12",
+  "eligible_locations": 441,
+  "selected_internal_holdout_locations": 88,
+  "expected_internal_holdout_locations": 88,
+  "checks": {
+    "precursor_months_not_after_cutoff": true,
+    "historical_target_months_not_after_cutoff": true,
+    "eligibility_targets_not_after_cutoff": true,
+    "eligible_origins_not_after_locked_last_origin": true,
+    "precursor_projection_has_no_chla_or_derived_alias": true,
+    "one_assignment_per_source_site": true,
+    "assignment_roles_are_locked": true,
+    "selected_count_matches_floor_target": true,
+    "nonzero_internal_holdout": true
+  }
+}
