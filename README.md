@@ -191,11 +191,14 @@ exports, or credential JSON files.
 - SHA-256 hashes and the data freeze are versioned under `data/catalog/` and
   `data/freeze/`.
 - Heavy artifacts are declared in `configs/dvc_artifacts.yaml`.
-- The thesis-wide `closure_v1` benchmark has not been executed. Its E0-P
-  analysis contract, authoritative E6-E9 experimental matrix, and cutoff-safe
-  holdout selector are implemented with status `ready_to_lock`; no real
-  holdout assignment or Closure V1 evaluation has been created. Existing model
-  results remain iteration-specific evidence.
+- The thesis-wide `closure_v1` benchmark has not been evaluated. E0-P was
+  published in `ead7d13`, its external protocol lock in `31230a2`, and the
+  cutoff-safe E0-C assignment in `0c283af`. The immutable assignment contains
+  441 WQP monitoring locations: 88 internal holdout locations and 353
+  development locations, with 8,903 pre-cutoff eligible origins. E0-D
+  development is next; E0-U remains sealed, and no post-2021 holdout outcome
+  has been opened for Closure V1. Existing model results remain
+  iteration-specific evidence.
   The primary closure surface excludes observed Chl-a and all of its lineage at
   every input lag, and the transfer claim is limited to held-out WQP monitoring
   locations within the frozen cohort.
