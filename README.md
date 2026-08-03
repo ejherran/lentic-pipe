@@ -207,9 +207,20 @@ exports, or credential JSON files.
   deterministic ANFIS sampling, five paired seeds, and the P0/P1 fit profile.
   The guarded common-origin artifact is now materialized and strictly
   validated: 29,196 horizon rows over 9,732 origins and 353 development
-  locations. Its completion manifest and explicit DVC pointer bind the frozen
-  sources and implementation dependencies. The strict model adapters and
-  external E0-DL lock do not exist yet, so fitting is not authorized.
+  locations. Commit `c0554bd` publishes its completion manifest and explicit
+  DVC pointer, binds the frozen sources and implementation dependencies, and
+  has a matching remotely pushed object. The current pre-fit source slice
+  implements the strict expert/ANFIS, sequence, temporal-fit, rollout, and
+  E0-DL lock adapters, and predeclares the 23 planned Closure Parquets without
+  creating data or pointers. It separates the training-only ANFIS join and
+  quality gate from full-development state materialization, fixes Torch to a
+  single-thread CPU policy, and rejects reuse of completed or partial Closure
+  bundles. This implementation must be published as the clean `H0` gate; the
+  deterministic expert-state bundle and external lock remain separate gated
+  publications. The later lock semantically audits only the outcome-free
+  expert state, binds a credential-free canonical Git-origin identity, and
+  requires two already-up-to-date targeted DVC pushes. Fitting is not
+  authorized.
   Fit-generated heavy artifacts can be registered only after materialization
   and must be registered before E0-M. E0-U remains sealed, and no post-2021
   holdout outcome has been opened for Closure V1.

@@ -11,6 +11,7 @@
     "contract_role",
     "authority",
     "development_scope",
+    "cpu_execution_policy",
     "seeds",
     "anfis",
     "primary_autoregressive_state",
@@ -68,6 +69,15 @@
         "locked_evaluation_start": "2022-01",
         "post_2021_materialization_in_e0_d": "forbidden",
         "holdout_fit_overlap_required": 0
+      }
+    },
+    "cpu_execution_policy": {
+      "const": {
+        "device": "cpu",
+        "torch_num_threads": 1,
+        "torch_num_interop_threads": 1,
+        "blas_thread_environment_control": "not_locked_by_e0_dl_v1",
+        "bitwise_reproducibility_claim": "forbidden_across_processes_or_blas_backends"
       }
     },
     "seeds": {
@@ -357,6 +367,41 @@
           "target_yN", "target_yF", "target_yT", "target_sigma_N", "target_sigma_F",
           "target_sigma_T", "target_delta_yN", "target_delta_yF", "target_delta_yT"
         ],
+        "sequence_table": {
+          "schema_version": "closure_pipe_sequence_v1",
+          "row_unit": "one_row_per_common_origin",
+          "expected_intent_rows": 9732,
+          "expected_intent_rows_by_role": {
+            "training": 8352,
+            "model_selection": 1061,
+            "calibration_threshold": 319
+          },
+          "identity_columns": [
+            "source_id", "site_id", "common_origin_id", "origin_year_month",
+            "target_year_month", "time_role", "sequence_status", "failure_reason"
+          ],
+          "input_columns_source": "primary_autoregressive_state.input_columns",
+          "input_physical_type": "fixed_size_list_float32_length_12",
+          "input_history_order": "oldest_calendar_month_to_origin_month",
+          "target_columns_source": "primary_autoregressive_state.target_columns",
+          "target_physical_type": "float32_scalar",
+          "target_month": "origin_plus_one_calendar_month",
+          "status_values": [
+            "success", "input_history_unavailable", "autoregressive_target_unavailable",
+            "model_slot_unavailable"
+          ],
+          "success_tensor_policy": "all_13_input_lists_and_9_targets_finite",
+          "failure_tensor_policy": "retain_identity_status_reason_and_nullable_tensors",
+          "retention_policy": "retain_all_intent_origins_without_availability_filtering",
+          "history_context_role_policy": "may_precede_endpoint_role_and_never_contributes_loss",
+          "endpoint_role_policy": "origin_and_target_must_share_locked_role",
+          "canonical_row_order": [
+            "source_id_utf8_ascending", "site_id_utf8_ascending",
+            "origin_year_month_ascending", "target_year_month_ascending"
+          ],
+          "forbidden_columns": ["split", "dataset_split", "x_irc1", "x_irc1_adaptive"],
+          "observed_chla_columns_or_lineage": "forbidden"
+        },
         "seasonality": {
           "calendar_month_indexing": "one_based_1_to_12",
           "phase_formula": "r=2*pi*(calendar_month-1)/12",
@@ -476,8 +521,8 @@
           "torch_deterministic_algorithms": true,
           "cudnn_benchmark": false,
           "cudnn_deterministic": true,
-          "cublas_workspace_config_if_cuda": ":4096:8",
-          "device_policy": "explicit_device_recorded_and_locked_by_e0_dl",
+          "cublas_workspace_config_if_cuda": "not_applicable_cpu_only_e0_dl_v1",
+          "device_policy": "cpu_only_locked_by_e0_dl_v1",
           "automatic_device_selection": "forbidden",
           "cross_device_numerical_equivalence_claim": "forbidden",
           "p0_p1_initialization": "common_seed_same_architecture",
@@ -488,7 +533,19 @@
             "num_workers": 0,
             "drop_last": false,
             "evaluation_shuffle": false,
-            "batch_order_sha256_in_manifest": "required"
+            "batch_order_sha256_in_manifest": "required",
+            "batch_order_digest": {
+              "algorithm": "sha256",
+              "canonical_key_columns": [
+                "source_id", "site_id", "origin_year_month", "target_year_month"
+              ],
+              "canonical_order_before_shuffle": "utf8_source_site_then_origin_target_ascending",
+              "epoch_permutation": "torch_randperm_cpu_generator_seeded_base_seed_plus_one_based_epoch",
+              "batch_record": "compact_json_array_epoch_batch_index_and_ordered_key_arrays",
+              "json_serialization": "utf8_ensure_ascii_false_compact_separators",
+              "record_framing": "one_lf_byte_after_each_batch_record",
+              "includes_final_partial_batch": true
+            }
           }
         },
         "common_architecture": {
@@ -579,7 +636,14 @@
           "provisional_blend_recomputed_each_epoch": true,
           "best_checkpoint_stores_unblended_model_state": true,
           "final_blend_after_restore": "recompute_once_on_model_selection_and_persist",
-          "final_blend_replaces_provisional": true
+          "final_blend_replaces_provisional": true,
+          "artifact_lifecycle": {
+            "checkpoint_payload": "unblended_raw_best_model_state",
+            "provisional_blend_persisted_in_checkpoint": false,
+            "final_model_payload": "restored_raw_best_model_state_plus_final_blend_metadata",
+            "final_blend_recomputed_after_restore_exactly_once": true,
+            "checkpoint_and_final_model_hashes_required": true
+          }
         },
         "output_blend": {
           "per_target": true,
@@ -669,7 +733,46 @@
             "gamma_yT_no_chla": 1.0
           },
           "partial_horizons": "forbidden",
-          "target_to_next_input_mapping_required": true
+          "target_to_next_input_mapping_required": true,
+          "output_table": {
+            "schema_version": "closure_pipe_rollout_v1",
+            "row_unit": "one_row_per_evaluation_unit_model_seed",
+            "expected_rows_per_model_seed": 29196,
+            "identity_columns": [
+              "evaluation_unit_id", "common_origin_id", "model_id", "base_seed",
+              "source_id", "site_id", "origin_year_month", "target_year_month",
+              "horizon_months", "time_role", "prediction_status", "failure_reason",
+              "origin_seed_hex", "predraw_sha256"
+            ],
+            "prediction_status_values": [
+              "success", "sequence_unavailable", "model_unavailable", "rollout_failed"
+            ],
+            "state_sample_columns": [
+              "sample_yN", "sample_yF", "sample_yT", "sample_sigma_N", "sample_sigma_F",
+              "sample_sigma_T", "sample_delta_yN", "sample_delta_yF", "sample_delta_yT"
+            ],
+            "state_sample_physical_type": "fixed_size_list_float32_length_128",
+            "irc_sample_column": "irc_samples",
+            "irc_sample_physical_type": "fixed_size_list_float64_length_128",
+            "raw_bloom_score_column": "raw_bloom_score",
+            "raw_bloom_score_physical_type": "float64",
+            "failure_sample_policy": "retain_row_with_null_sample_lists_and_raw_score",
+            "denominator_policy": "retain_all_29196_intent_rows_without_target_or_success_filtering",
+            "shared_success_policy": "derive_later_from_paired_p0_p1_intersection",
+            "canonical_row_order": [
+              "source_id_utf8_ascending", "site_id_utf8_ascending",
+              "origin_year_month_ascending", "horizon_months_ascending"
+            ]
+          },
+          "calibration_raw_score": {
+            "column": "raw_bloom_score",
+            "formula": "arithmetic_mean_of_128_trajectory_irc_values",
+            "trajectory_irc_formula": "clip_0_1_of_yN_plus_1_minus_yF_plus_yT_divided_by_3",
+            "calculation_dtype": "float64_from_float32_state_samples",
+            "threshold_dependent": false,
+            "model_selection_use": "choose_identity_platt_or_isotonic",
+            "calibration_threshold_use": "refit_selected_method_and_select_f2_threshold"
+          }
         },
         "development_output_policy": {
           "permitted_roles": ["training", "model_selection", "calibration_threshold"],
@@ -803,7 +906,7 @@
       "const": {
         "gate": "E0-DL",
         "runtime_config_status_remains": "ready_to_lock",
-        "contract_publication_state": "pending_adapters_common_origin_and_locker",
+        "contract_publication_state": "common_origin_published_adapters_ready_pending_expert_state_and_e0_dl",
         "lock_version": "closure_development_runtime_lock_v1",
         "lock_manifest_path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
         "lock_schema_path": "configs/closure_v1/development_runtime_lock.schema.json",
@@ -814,21 +917,80 @@
         "require_strict_adapters_and_tests": true,
         "require_full_type_check": true,
         "require_restored_development_source_hashes": true,
-        "lock_generation_reads_modeling_rows": false,
+        "lock_generation_semantically_audits_expert_state_rows": true,
+        "lock_generation_reads_scientific_outcome_rows": false,
         "lock_generation_reads_post_2021_outcomes": false,
+        "canonical_origin_identity": {
+          "remote_name": "origin",
+          "algorithm": "git_remote_host_path_v1_sha256_utf8",
+          "expected_identity_sha256": "475fdf8ad6839d3d291010ff999b4e4c0f8604a0e8d8a09fcebe5ccb843d1905",
+          "require_fetch_push_identity_match": true
+        },
+        "dvc_remote_name": "gcsremote",
+        "dvc_remote_verification_method": "two_targeted_idempotent_pushes_v1",
         "external_lock_bundle_committed_before_fit": true,
         "locked_head_must_be_ancestor_of_execution_head": true,
         "required_component_roles": [
           "closure_development_guard", "common_origin_builder", "runtime_contract_validator",
           "strict_expert_state_adapter", "strict_anfis_state_adapter", "strict_sequence_adapter",
-          "strict_temporal_fit_adapter", "strict_rollout_kernel", "runtime_locker",
+          "strict_temporal_fit_adapter", "strict_rollout_kernel", "runtime_lock_validator",
+          "runtime_locker", "runtime_lock_schema", "dvc_ownership_overlay",
+          "prepublication_artifact_validator", "test_session_determinism",
           "relevant_tests", "pyproject", "poetry_lock"
         ],
+        "required_component_paths": {
+          "closure_development_guard": "src/experiments/closure_development_guard.py",
+          "common_origin_builder": "src/experiments/build_common_origin_manifest.py",
+          "runtime_contract_validator": "src/experiments/closure_runtime_contract.py",
+          "strict_expert_state_adapter": "src/experiments/build_closure_expert_state.py",
+          "strict_anfis_state_adapter": "src/experiments/fit_closure_anfis_state.py",
+          "strict_sequence_adapter": "src/experiments/build_closure_pipe_sequences.py",
+          "strict_temporal_fit_adapter": "src/experiments/train_closure_pipe.py",
+          "strict_rollout_kernel": "src/experiments/rollout_closure_pipe.py",
+          "runtime_lock_validator": "src/experiments/closure_development_runtime_lock.py",
+          "runtime_locker": "src/experiments/lock_closure_development_runtime.py",
+          "runtime_lock_schema": "configs/closure_v1/development_runtime_lock.schema.json",
+          "dvc_ownership_overlay": "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+          "prepublication_artifact_validator": "src/data/prepare_commit_artifacts.py",
+          "test_session_determinism": "tests/conftest.py",
+          "relevant_tests": [
+            "tests/test_closure_runtime_contract.py",
+            "tests/test_build_closure_expert_state.py",
+            "tests/test_fit_closure_anfis_state.py",
+            "tests/test_build_closure_pipe_sequences.py",
+            "tests/test_train_closure_pipe.py",
+            "tests/test_rollout_closure_pipe.py",
+            "tests/test_closure_development_runtime_lock.py",
+            "tests/test_lock_closure_development_runtime.py",
+            "tests/test_prepare_commit_artifacts.py",
+            "tests/test_data_versioning_config.py",
+            "tests/test_dvc_add_from_manifest.py"
+          ],
+          "pyproject": "pyproject.toml",
+          "poetry_lock": "poetry.lock"
+        },
         "required_parent_hashes": [
           "protocol_lock", "holdout_assignment", "holdout_manifest", "common_origin",
           "common_origin_completion_manifest", "runtime_config", "runtime_schema",
-          "expert_state", "planned_artifact_paths", "runtime_transitive_source_dependencies"
+          "expert_state", "expert_state_manifest", "expert_state_lineage_audit",
+          "expert_state_dvc_pointer", "restored_panel", "restored_expert_anchor",
+          "planned_artifact_paths", "runtime_transitive_source_dependencies"
         ],
+        "required_parent_paths": {
+          "protocol_lock": "reports/closure_v1/00_protocol/protocol_lock.json",
+          "holdout_assignment": "data/closure_v1/closure_holdout_assignment.csv",
+          "holdout_manifest": "reports/closure_v1/00_protocol/holdout_manifest.json",
+          "common_origin": "data/closure_v1/common_origin_manifest.parquet",
+          "common_origin_completion_manifest": "reports/closure_v1/01_surface/common_origin_manifest.json",
+          "runtime_config": "configs/closure_v1/development_runtime.yaml",
+          "runtime_schema": "configs/closure_v1/development_runtime.schema.json",
+          "expert_state": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+          "expert_state_manifest": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+          "expert_state_lineage_audit": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+          "expert_state_dvc_pointer": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc",
+          "restored_panel": "data/panel/panel_monthly_v0.parquet",
+          "restored_expert_anchor": "data/fuzzy/state_vector_v0.parquet"
+        },
         "runtime_dependency_hash_policy": "recursive_repository_local_import_closure",
         "external_lock_records_each_dependency_path_sha256": true,
         "required_legacy_dependency_paths": [
@@ -871,8 +1033,11 @@
           "retained_target_unavailable_rows", "no_optional_context_columns",
           "no_post_2021_materialization", "rollout_rng_origin_seed_records",
           "rollout_predraw_golden_vector", "rollout_recursive_golden_vector",
-          "canonical_window_order", "checkpoint_blend_lifecycle",
-          "signed_delta_clip_preserved", "expanded_artifact_path_digest",
+          "canonical_window_order", "sequence_physical_schema", "batch_order_digest",
+          "checkpoint_blend_lifecycle", "checkpoint_artifact_lifecycle",
+          "signed_delta_clip_preserved", "rollout_physical_schema",
+          "rollout_intent_denominator_conservation", "calibration_raw_score_definition",
+          "expanded_artifact_path_digest",
           "prelock_materialized_heavy_dvc_status", "postfit_dvc_registration_policy"
         ],
         "retain_failed_seed_slots": true

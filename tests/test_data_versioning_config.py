@@ -164,7 +164,84 @@ def test_no_current_chla_full_artifacts_are_documented_as_dvc_artifacts() -> Non
     )
 
 
-def test_closure_v1_common_origin_manifest_is_declared_as_an_explicit_dvc_artifact() -> None:
+def _expected_closure_v1_post_lock_artifacts() -> dict[str, dict[str, object]]:
+    seeds = (1729, 20260612, 20260613, 20260614, 314159)
+    expected: dict[str, dict[str, object]] = {
+        "closure_v1_common_origin_manifest": {
+            "artifact_id": "closure_v1_common_origin_manifest",
+            "path": "data/closure_v1/common_origin_manifest.parquet",
+            "type": "closure_common_origin_manifest",
+            "source_id": "wqp",
+            "dvc": True,
+            "github_policy": "pointer_only_keep_completion_manifest_in_git",
+        },
+        "closure_v1_expert_no_current_state": {
+            "artifact_id": "closure_v1_expert_no_current_state",
+            "path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+            "type": "closure_expert_no_current_state",
+            "source_id": "wqp",
+            "dvc": True,
+            "github_policy": (
+                "pointer_only_keep_completion_manifest_and_lineage_audit_in_git"
+            ),
+        },
+        "closure_v1_p0_expert_sequence": {
+            "artifact_id": "closure_v1_p0_expert_sequence",
+            "path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet",
+            "type": "closure_pipe_sequence",
+            "source_id": "wqp",
+            "model_id": "P0",
+            "dvc": True,
+            "github_policy": "pointer_only_keep_manifest_and_summary_in_git",
+        },
+    }
+    for seed in seeds:
+        anfis_id = f"closure_v1_anfis_state_seed_{seed}"
+        expected[anfis_id] = {
+            "artifact_id": anfis_id,
+            "path": (
+                f"data/closure_v1/development/anfis/seed_{seed}/"
+                "adaptive_no_current_state.parquet"
+            ),
+            "type": "closure_anfis_state",
+            "source_id": "wqp",
+            "model_id": "F1",
+            "base_seed": seed,
+            "dvc": True,
+            "github_policy": (
+                "pointer_only_keep_seed_manifest_and_lineage_evidence_in_git"
+            ),
+        }
+        sequence_id = f"closure_v1_p1_sequence_seed_{seed}"
+        expected[sequence_id] = {
+            "artifact_id": sequence_id,
+            "path": f"data/closure_v1/development/sequences/P1/seed_{seed}.parquet",
+            "type": "closure_pipe_sequence",
+            "source_id": "wqp",
+            "model_id": "P1",
+            "base_seed": seed,
+            "dvc": True,
+            "github_policy": "pointer_only_keep_manifest_and_summary_in_git",
+        }
+        for model_id in ("P0", "P1"):
+            rollout_id = f"closure_v1_{model_id.lower()}_rollout_seed_{seed}"
+            expected[rollout_id] = {
+                "artifact_id": rollout_id,
+                "path": (
+                    f"data/closure_v1/development/rollouts/{model_id}/"
+                    f"seed_{seed}.parquet"
+                ),
+                "type": "closure_pipe_rollout",
+                "source_id": "wqp",
+                "model_id": model_id,
+                "base_seed": seed,
+                "dvc": True,
+                "github_policy": "pointer_only_keep_rollout_manifest_in_git",
+            }
+    return expected
+
+
+def test_closure_v1_post_lock_overlay_declares_exactly_23_planned_parquets() -> None:
     base_path = REPO_ROOT / "configs/dvc_artifacts.yaml"
     protocol_lock = json.loads(
         (REPO_ROOT / "reports/closure_v1/00_protocol/protocol_lock.json").read_text(
@@ -184,24 +261,14 @@ def test_closure_v1_common_origin_manifest_is_declared_as_an_explicit_dvc_artifa
             encoding="utf-8"
         )
     )
-    matches = [
-        artifact
-        for artifact in payload["artifacts"]
-        if artifact.get("artifact_id") == "closure_v1_common_origin_manifest"
-    ]
+    matches = {artifact["artifact_id"]: artifact for artifact in payload["artifacts"]}
 
-    assert matches == [
-        {
-            "artifact_id": "closure_v1_common_origin_manifest",
-            "path": "data/closure_v1/common_origin_manifest.parquet",
-            "type": "closure_common_origin_manifest",
-            "source_id": "wqp",
-            "dvc": True,
-            "github_policy": "pointer_only_keep_completion_manifest_in_git",
-        }
-    ]
+    assert matches == _expected_closure_v1_post_lock_artifacts()
+    assert len(payload["artifacts"]) == 23
+    assert len({artifact["path"] for artifact in payload["artifacts"]}) == 23
     assert payload["inventory_id"] == "closure_v1_post_protocol_lock"
-    assert is_heavy_ignored_path("data/closure_v1/common_origin_manifest.parquet")
+    for artifact in payload["artifacts"]:
+        assert is_heavy_ignored_path(artifact["path"])
 
 
 def test_neural_ode_rollout_artifacts_are_documented_as_dvc_artifacts() -> None:

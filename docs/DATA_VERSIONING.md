@@ -89,9 +89,22 @@ flow.
   declarations extend it through
   `configs/closure_v1/dvc_artifacts_post_lock.yaml`. Both DVC preparation
   entry points validate the overlay's path, byte count, and SHA-256 anchor to
-  the protocol-locked base before merging the inventories. Declaration and a
-  completion manifest alone do not make an artifact published or remotely
-  restorable: its pointer must be committed and its matching object pushed.
+  the protocol-locked base before merging the inventories. The overlay
+  predeclares all 23 planned Closure Parquets: common-origin, expert state,
+  expert and adaptive sequences, five adaptive ANFIS states, and paired P0/P1
+  rollouts for the five fixed seeds. Their lightweight manifests, summaries,
+  and lineage records remain in Git. A declaration never authorizes a fake
+  pointer for an absent output. A materialized artifact is published or
+  remotely restorable only after its pointer is committed and its matching
+  object is pushed. Before E0-DL is written, its fixed external verifier binds
+  the common-origin and expert-state pointer identities to the selected DVC
+  remote fingerprint and runs the same targeted push twice. Both attempts
+  must report that everything is already up to date; an upload on either
+  attempt prevents lock creation and requires a reviewed rerun.
+- Closure expert, ANFIS-state, sequence, and rollout bundles are one-shot. An
+  existing payload, completion manifest, temporary file, or explicit `.dvc`
+  pointer is retained as evidence and blocks regeneration until it is reviewed
+  and explicitly removed under the applicable gate.
 - The pre-commit artifact assistant validates staged DVC pointer structure,
   verifies current SHA-256 hashes for experiment manifest outputs within the
   configured size limit, verifies generating-script hashes, and fails when

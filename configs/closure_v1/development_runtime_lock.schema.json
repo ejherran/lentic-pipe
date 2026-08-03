@@ -1,0 +1,731 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-lock-v1.json",
+  "title": "Closure V1 E0-DL development runtime lock",
+  "type": "object",
+  "required": [
+    "lock_version",
+    "status",
+    "gate",
+    "experiment_id",
+    "created_at_utc",
+    "locked_repository",
+    "canonical_origin",
+    "locked_parent_publication",
+    "runtime_contract",
+    "components",
+    "runtime_dependencies",
+    "parents",
+    "restored_development_sources",
+    "common_origin",
+    "expert_state",
+    "planned_artifacts",
+    "environment",
+    "dvc_remote_verification",
+    "verification",
+    "audits",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "lock_version": {
+      "const": "closure_development_runtime_lock_v1"
+    },
+    "status": {
+      "const": "locked"
+    },
+    "gate": {
+      "const": "E0-DL"
+    },
+    "experiment_id": {
+      "const": "closure_v1"
+    },
+    "created_at_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\s]+$"
+    },
+    "locked_repository": {
+      "$ref": "#/$defs/cleanRepository"
+    },
+    "canonical_origin": {
+      "$ref": "#/$defs/canonicalOrigin"
+    },
+    "locked_parent_publication": {
+      "$ref": "#/$defs/lockedParentPublication"
+    },
+    "runtime_contract": {
+      "type": "object",
+      "required": ["config", "schema", "status"],
+      "properties": {
+        "config": {
+          "$ref": "#/$defs/fileRecord"
+        },
+        "schema": {
+          "$ref": "#/$defs/fileRecord"
+        },
+        "status": {
+          "const": "ready_to_lock"
+        }
+      },
+      "additionalProperties": false
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/fileRecord"
+      }
+    },
+    "runtime_dependencies": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/fileRecord"
+      }
+    },
+    "parents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/fileRecord"
+      }
+    },
+    "restored_development_sources": {
+      "type": "array",
+      "minItems": 2,
+      "maxItems": 2,
+      "items": {
+        "$ref": "#/$defs/opaqueFileRecord"
+      }
+    },
+    "common_origin": {
+      "$ref": "#/$defs/materializedDvcArtifact"
+    },
+    "expert_state": {
+      "$ref": "#/$defs/materializedExpertDvcArtifact"
+    },
+    "planned_artifacts": {
+      "type": "object",
+      "required": ["count", "sha256", "records"],
+      "properties": {
+        "count": {
+          "const": 201
+        },
+        "sha256": {
+          "const": "833fe57a573db135357a596949728fd0b6a436997ece0ba2c5555b815a42672c"
+        },
+        "records": {
+          "type": "array",
+          "minItems": 201,
+          "maxItems": 201,
+          "items": {
+            "$ref": "#/$defs/plannedArtifactRecord"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "python_version",
+        "python_implementation",
+        "python_executable_name",
+        "platform",
+        "machine",
+        "device",
+        "cublas_workspace_config",
+        "cpu_execution_policy",
+        "packages"
+      ],
+      "properties": {
+        "python_version": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "python_implementation": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "python_executable_name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "platform": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "machine": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "device": {
+          "const": "cpu"
+        },
+        "cublas_workspace_config": {
+          "const": null
+        },
+        "cpu_execution_policy": {
+          "$ref": "#/$defs/cpuExecutionPolicy"
+        },
+        "packages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "required": ["name", "version"],
+            "properties": {
+              "name": {
+                "$ref": "#/$defs/nonEmptyString"
+              },
+              "version": {
+                "$ref": "#/$defs/nonEmptyString"
+              }
+            },
+            "additionalProperties": false
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvc_remote_verification": {
+      "$ref": "#/$defs/dvcRemoteVerification"
+    },
+    "verification": {
+      "type": "object",
+      "required": ["full_type_check", "focused_tests"],
+      "properties": {
+        "full_type_check": {
+          "$ref": "#/$defs/commandEvidence"
+        },
+        "focused_tests": {
+          "$ref": "#/$defs/commandEvidence"
+        }
+      },
+      "additionalProperties": false
+    },
+    "audits": {
+      "type": "object",
+      "required": [
+        "common_origin_validated",
+        "expert_state_validated",
+        "expert_state_semantic_audit_verified",
+        "zero_holdout_overlap",
+        "no_post_2021_materialization",
+        "restored_source_hashes_verified",
+        "component_hashes_verified",
+        "recursive_dependency_hashes_verified",
+        "planned_artifact_paths_verified",
+        "prelock_dvc_ownership_verified",
+        "dvc_remote_verified_at_lock",
+        "canonical_origin_identity_verified",
+        "locked_parent_published_at_lock",
+        "environment_locked"
+      ],
+      "properties": {
+        "common_origin_validated": {"const": true},
+        "expert_state_validated": {"const": true},
+        "expert_state_semantic_audit_verified": {"const": true},
+        "zero_holdout_overlap": {"const": true},
+        "no_post_2021_materialization": {"const": true},
+        "restored_source_hashes_verified": {"const": true},
+        "component_hashes_verified": {"const": true},
+        "recursive_dependency_hashes_verified": {"const": true},
+        "planned_artifact_paths_verified": {"const": true},
+        "prelock_dvc_ownership_verified": {"const": true},
+        "dvc_remote_verified_at_lock": {"const": true},
+        "canonical_origin_identity_verified": {"const": true},
+        "locked_parent_published_at_lock": {"const": true},
+        "environment_locked": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "authorizations": {
+      "type": "object",
+      "required": [
+        "development_fit_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized"
+      ],
+      "properties": {
+        "development_fit_authorized": {"const": true},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "seals": {
+      "type": "object",
+      "required": [
+        "future_outcomes_accessed",
+        "post_2021_outcome_semantic_decode",
+        "lock_generation_semantically_audits_expert_state_rows",
+        "lock_generation_reads_scientific_outcome_rows",
+        "lock_generation_reads_post_2021_outcomes",
+        "does_not_replace_e0_m_model_lock",
+        "external_lock_bundle_committed_before_fit"
+      ],
+      "properties": {
+        "future_outcomes_accessed": {"const": false},
+        "post_2021_outcome_semantic_decode": {"const": false},
+        "lock_generation_semantically_audits_expert_state_rows": {"const": true},
+        "lock_generation_reads_scientific_outcome_rows": {"const": false},
+        "lock_generation_reads_post_2021_outcomes": {"const": false},
+        "does_not_replace_e0_m_model_lock": {"const": true},
+        "external_lock_bundle_committed_before_fit": {"const": true}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "repositoryPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "fileRecord": {
+      "type": "object",
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "opaqueFileRecord": {
+      "type": "object",
+      "required": ["path", "role", "bytes", "sha256", "semantic_decode"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "semantic_decode": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "cleanRepository": {
+      "type": "object",
+      "required": ["head", "branch", "worktree_status", "dirty_paths"],
+      "properties": {
+        "head": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "branch": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "worktree_status": {
+          "const": "clean"
+        },
+        "dirty_paths": {
+          "const": []
+        }
+      },
+      "additionalProperties": false
+    },
+    "cpuExecutionPolicy": {
+      "type": "object",
+      "required": [
+        "device",
+        "torch_num_threads",
+        "torch_num_interop_threads",
+        "blas_thread_environment_control",
+        "bitwise_reproducibility_claim",
+        "torch_num_threads_observed",
+        "torch_num_interop_threads_observed"
+      ],
+      "properties": {
+        "device": {"const": "cpu"},
+        "torch_num_threads": {"const": 1},
+        "torch_num_interop_threads": {"const": 1},
+        "blas_thread_environment_control": {"const": "not_locked_by_e0_dl_v1"},
+        "bitwise_reproducibility_claim": {
+          "const": "forbidden_across_processes_or_blas_backends"
+        },
+        "torch_num_threads_observed": {"const": 1},
+        "torch_num_interop_threads_observed": {"const": 1}
+      },
+      "additionalProperties": false
+    },
+    "canonicalOrigin": {
+      "type": "object",
+      "required": [
+        "remote_name",
+        "identity_algorithm",
+        "identity_sha256",
+        "fetch_url_count",
+        "push_url_count",
+        "fetch_push_identity_equal"
+      ],
+      "properties": {
+        "remote_name": {"const": "origin"},
+        "identity_algorithm": {"const": "git_remote_host_path_v1_sha256_utf8"},
+        "identity_sha256": {
+          "const": "475fdf8ad6839d3d291010ff999b4e4c0f8604a0e8d8a09fcebe5ccb843d1905"
+        },
+        "fetch_url_count": {"type": "integer"},
+        "push_url_count": {"type": "integer"},
+        "fetch_push_identity_equal": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "lockedParentPublication": {
+      "type": "object",
+      "required": [
+        "head",
+        "tracking_ref",
+        "tracking_oid",
+        "local_tracking_verified",
+        "remote_ref",
+        "remote_oid",
+        "remote_verified"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/gitCommit"},
+        "tracking_ref": {"const": "origin/main"},
+        "tracking_oid": {"$ref": "#/$defs/gitCommit"},
+        "local_tracking_verified": {"const": true},
+        "remote_ref": {"const": "refs/heads/main"},
+        "remote_oid": {"$ref": "#/$defs/gitCommit"},
+        "remote_verified": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "dvcPointer": {
+      "type": "object",
+      "required": [
+        "pointer_path",
+        "pointer_bytes",
+        "pointer_sha256",
+        "owner_strategy",
+        "hash_name",
+        "hash_value",
+        "size",
+        "pointer_metadata_verified",
+        "payload_verified_at_lock"
+      ],
+      "properties": {
+        "pointer_path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "pointer_bytes": {
+          "type": "integer"
+        },
+        "pointer_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "owner_strategy": {
+          "const": "explicit_pointer"
+        },
+        "hash_name": {
+          "const": "md5"
+        },
+        "hash_value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "pointer_metadata_verified": {
+          "const": true
+        },
+        "payload_verified_at_lock": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "materializedDvcArtifact": {
+      "type": "object",
+      "required": ["artifact", "completion_records", "dvc"],
+      "properties": {
+        "artifact": {
+          "$ref": "#/$defs/fileRecord"
+        },
+        "completion_records": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/fileRecord"
+          }
+        },
+        "dvc": {
+          "$ref": "#/$defs/dvcPointer"
+        }
+      },
+      "additionalProperties": false
+    },
+    "materializedExpertDvcArtifact": {
+      "type": "object",
+      "required": ["artifact", "completion_records", "dvc", "semantic_audit"],
+      "properties": {
+        "artifact": {"$ref": "#/$defs/fileRecord"},
+        "completion_records": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "dvc": {"$ref": "#/$defs/dvcPointer"},
+        "semantic_audit": {"$ref": "#/$defs/expertSemanticAudit"}
+      },
+      "additionalProperties": false
+    },
+    "expertSemanticAudit": {
+      "type": "object",
+      "required": [
+        "audit_version",
+        "schema_allowlist_verified",
+        "exact_development_locations_verified",
+        "zero_holdout_overlap",
+        "zero_unknown_assignment_overlap",
+        "locked_time_roles_verified",
+        "unit_interval_values_verified",
+        "signed_deltas_verified",
+        "exact_month_delta_recomputation_verified",
+        "no_post_2021_materialization",
+        "future_outcomes_accessed",
+        "rows",
+        "locations",
+        "minimum_year_month",
+        "maximum_year_month",
+        "role_counts",
+        "delta_previous_month_missing_count",
+        "source_projection",
+        "output_allowlist"
+      ],
+      "properties": {
+        "audit_version": {"const": "closure_expert_no_current_state_semantic_audit_v1"},
+        "schema_allowlist_verified": {"const": true},
+        "exact_development_locations_verified": {"const": true},
+        "zero_holdout_overlap": {"const": true},
+        "zero_unknown_assignment_overlap": {"const": true},
+        "locked_time_roles_verified": {"const": true},
+        "unit_interval_values_verified": {"const": true},
+        "signed_deltas_verified": {"const": true},
+        "exact_month_delta_recomputation_verified": {"const": true},
+        "no_post_2021_materialization": {"const": true},
+        "future_outcomes_accessed": {"const": false},
+        "rows": {"type": "integer"},
+        "locations": {"const": 353},
+        "minimum_year_month": {"type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"},
+        "maximum_year_month": {"type": "string", "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])$"},
+        "role_counts": {
+          "type": "object",
+          "required": ["training", "model_selection", "calibration_threshold"],
+          "properties": {
+            "training": {"type": "integer"},
+            "model_selection": {"type": "integer"},
+            "calibration_threshold": {"type": "integer"}
+          },
+          "additionalProperties": false
+        },
+        "delta_previous_month_missing_count": {"type": "integer"},
+        "source_projection": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/nonEmptyString"}
+        },
+        "output_allowlist": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/nonEmptyString"}
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvcRemoteVerification": {
+      "type": "object",
+      "required": [
+        "method",
+        "command",
+        "environment",
+        "remote_name",
+        "remote_url_sha256",
+        "targets",
+        "attempts",
+        "dvc_remote_verified_at_lock"
+      ],
+      "properties": {
+        "method": {"const": "two_targeted_idempotent_pushes_v1"},
+        "command": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/nonEmptyString"}
+        },
+        "environment": {
+          "const": {"LC_ALL": "C", "LANG": "C", "DVC_NO_ANALYTICS": "1"}
+        },
+        "remote_name": {"const": "gcsremote"},
+        "remote_url_sha256": {"$ref": "#/$defs/sha256"},
+        "targets": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/dvcRemoteTarget"}
+        },
+        "attempts": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/dvcPushAttempt"}
+        },
+        "dvc_remote_verified_at_lock": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "dvcRemoteTarget": {
+      "type": "object",
+      "required": [
+        "artifact_role",
+        "pointer_path",
+        "pointer_sha256",
+        "hash_name",
+        "hash_value",
+        "size"
+      ],
+      "properties": {
+        "artifact_role": {"enum": ["common_origin", "expert_state"]},
+        "pointer_path": {"$ref": "#/$defs/repositoryPath"},
+        "pointer_sha256": {"$ref": "#/$defs/sha256"},
+        "hash_name": {"const": "md5"},
+        "hash_value": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+        "size": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "dvcPushAttempt": {
+      "type": "object",
+      "required": [
+        "attempt",
+        "exit_code",
+        "stdout_sha256",
+        "stderr_sha256",
+        "normalized_result"
+      ],
+      "properties": {
+        "attempt": {"type": "integer"},
+        "exit_code": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "normalized_result": {"const": "everything_up_to_date"}
+      },
+      "additionalProperties": false
+    },
+    "plannedArtifactRecord": {
+      "type": "object",
+      "required": [
+        "path",
+        "artifact_class",
+        "materialized_at_lock",
+        "owner_strategy",
+        "owner_path",
+        "bytes",
+        "sha256",
+        "pointer_verified"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/repositoryPath"
+        },
+        "artifact_class": {
+          "enum": ["heavy", "lightweight"]
+        },
+        "materialized_at_lock": {
+          "type": "boolean"
+        },
+        "owner_strategy": {
+          "enum": [
+            "explicit_pointer",
+            "models_dvc_monolithic_parent",
+            "git_when_materialized"
+          ]
+        },
+        "owner_path": {
+          "oneOf": [
+            {"$ref": "#/$defs/repositoryPath"},
+            {"type": "null"}
+          ]
+        },
+        "bytes": {
+          "oneOf": [
+            {"type": "integer"},
+            {"type": "null"}
+          ]
+        },
+        "sha256": {
+          "oneOf": [
+            {"$ref": "#/$defs/sha256"},
+            {"type": "null"}
+          ]
+        },
+        "pointer_verified": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": false
+    },
+    "commandEvidence": {
+      "type": "object",
+      "required": [
+        "command",
+        "exit_code",
+        "stdout_sha256",
+        "stderr_sha256",
+        "passed"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "exit_code": {
+          "const": 0
+        },
+        "stdout_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderr_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "passed": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

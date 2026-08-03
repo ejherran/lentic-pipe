@@ -175,6 +175,225 @@ SEASON_COLUMNS = (
 )
 EXPECTED_INPUT_COLUMNS = tuple(f"x_{column}" for column in CANONICAL_STATE_CHANNELS) + SEASON_COLUMNS
 EXPECTED_TARGET_COLUMNS = tuple(f"target_{column}" for column in CANONICAL_STATE_CHANNELS)
+EXPECTED_SEQUENCE_TABLE: dict[str, Any] = {
+    "schema_version": "closure_pipe_sequence_v1",
+    "row_unit": "one_row_per_common_origin",
+    "expected_intent_rows": 9732,
+    "expected_intent_rows_by_role": {
+        "training": 8352,
+        "model_selection": 1061,
+        "calibration_threshold": 319,
+    },
+    "identity_columns": [
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "origin_year_month",
+        "target_year_month",
+        "time_role",
+        "sequence_status",
+        "failure_reason",
+    ],
+    "input_columns_source": "primary_autoregressive_state.input_columns",
+    "input_physical_type": "fixed_size_list_float32_length_12",
+    "input_history_order": "oldest_calendar_month_to_origin_month",
+    "target_columns_source": "primary_autoregressive_state.target_columns",
+    "target_physical_type": "float32_scalar",
+    "target_month": "origin_plus_one_calendar_month",
+    "status_values": [
+        "success",
+        "input_history_unavailable",
+        "autoregressive_target_unavailable",
+        "model_slot_unavailable",
+    ],
+    "success_tensor_policy": "all_13_input_lists_and_9_targets_finite",
+    "failure_tensor_policy": "retain_identity_status_reason_and_nullable_tensors",
+    "retention_policy": "retain_all_intent_origins_without_availability_filtering",
+    "history_context_role_policy": "may_precede_endpoint_role_and_never_contributes_loss",
+    "endpoint_role_policy": "origin_and_target_must_share_locked_role",
+    "canonical_row_order": [
+        "source_id_utf8_ascending",
+        "site_id_utf8_ascending",
+        "origin_year_month_ascending",
+        "target_year_month_ascending",
+    ],
+    "forbidden_columns": ["split", "dataset_split", "x_irc1", "x_irc1_adaptive"],
+    "observed_chla_columns_or_lineage": "forbidden",
+}
+EXPECTED_BATCH_ORDER_DIGEST: dict[str, Any] = {
+    "algorithm": "sha256",
+    "canonical_key_columns": [
+        "source_id",
+        "site_id",
+        "origin_year_month",
+        "target_year_month",
+    ],
+    "canonical_order_before_shuffle": "utf8_source_site_then_origin_target_ascending",
+    "epoch_permutation": "torch_randperm_cpu_generator_seeded_base_seed_plus_one_based_epoch",
+    "batch_record": "compact_json_array_epoch_batch_index_and_ordered_key_arrays",
+    "json_serialization": "utf8_ensure_ascii_false_compact_separators",
+    "record_framing": "one_lf_byte_after_each_batch_record",
+    "includes_final_partial_batch": True,
+}
+EXPECTED_TRAINING_DEVICE_POLICY = {
+    "cublas_workspace_config_if_cuda": "not_applicable_cpu_only_e0_dl_v1",
+    "device_policy": "cpu_only_locked_by_e0_dl_v1",
+    "automatic_device_selection": "forbidden",
+    "cross_device_numerical_equivalence_claim": "forbidden",
+}
+EXPECTED_CHECKPOINT_ARTIFACT_LIFECYCLE: dict[str, Any] = {
+    "checkpoint_payload": "unblended_raw_best_model_state",
+    "provisional_blend_persisted_in_checkpoint": False,
+    "final_model_payload": "restored_raw_best_model_state_plus_final_blend_metadata",
+    "final_blend_recomputed_after_restore_exactly_once": True,
+    "checkpoint_and_final_model_hashes_required": True,
+}
+EXPECTED_ROLLOUT_OUTPUT_TABLE: dict[str, Any] = {
+    "schema_version": "closure_pipe_rollout_v1",
+    "row_unit": "one_row_per_evaluation_unit_model_seed",
+    "expected_rows_per_model_seed": 29196,
+    "identity_columns": [
+        "evaluation_unit_id",
+        "common_origin_id",
+        "model_id",
+        "base_seed",
+        "source_id",
+        "site_id",
+        "origin_year_month",
+        "target_year_month",
+        "horizon_months",
+        "time_role",
+        "prediction_status",
+        "failure_reason",
+        "origin_seed_hex",
+        "predraw_sha256",
+    ],
+    "prediction_status_values": [
+        "success",
+        "sequence_unavailable",
+        "model_unavailable",
+        "rollout_failed",
+    ],
+    "state_sample_columns": [f"sample_{channel}" for channel in CANONICAL_STATE_CHANNELS],
+    "state_sample_physical_type": "fixed_size_list_float32_length_128",
+    "irc_sample_column": "irc_samples",
+    "irc_sample_physical_type": "fixed_size_list_float64_length_128",
+    "raw_bloom_score_column": "raw_bloom_score",
+    "raw_bloom_score_physical_type": "float64",
+    "failure_sample_policy": "retain_row_with_null_sample_lists_and_raw_score",
+    "denominator_policy": "retain_all_29196_intent_rows_without_target_or_success_filtering",
+    "shared_success_policy": "derive_later_from_paired_p0_p1_intersection",
+    "canonical_row_order": [
+        "source_id_utf8_ascending",
+        "site_id_utf8_ascending",
+        "origin_year_month_ascending",
+        "horizon_months_ascending",
+    ],
+}
+EXPECTED_CALIBRATION_RAW_SCORE: dict[str, Any] = {
+    "column": "raw_bloom_score",
+    "formula": "arithmetic_mean_of_128_trajectory_irc_values",
+    "trajectory_irc_formula": "clip_0_1_of_yN_plus_1_minus_yF_plus_yT_divided_by_3",
+    "calculation_dtype": "float64_from_float32_state_samples",
+    "threshold_dependent": False,
+    "model_selection_use": "choose_identity_platt_or_isotonic",
+    "calibration_threshold_use": "refit_selected_method_and_select_f2_threshold",
+}
+EXPECTED_RUNTIME_COMPONENT_PATHS: dict[str, Any] = {
+    "closure_development_guard": "src/experiments/closure_development_guard.py",
+    "common_origin_builder": "src/experiments/build_common_origin_manifest.py",
+    "runtime_contract_validator": "src/experiments/closure_runtime_contract.py",
+    "strict_expert_state_adapter": "src/experiments/build_closure_expert_state.py",
+    "strict_anfis_state_adapter": "src/experiments/fit_closure_anfis_state.py",
+    "strict_sequence_adapter": "src/experiments/build_closure_pipe_sequences.py",
+    "strict_temporal_fit_adapter": "src/experiments/train_closure_pipe.py",
+    "strict_rollout_kernel": "src/experiments/rollout_closure_pipe.py",
+    "runtime_lock_validator": "src/experiments/closure_development_runtime_lock.py",
+    "runtime_locker": "src/experiments/lock_closure_development_runtime.py",
+    "runtime_lock_schema": "configs/closure_v1/development_runtime_lock.schema.json",
+    "dvc_ownership_overlay": "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+    "prepublication_artifact_validator": "src/data/prepare_commit_artifacts.py",
+    "test_session_determinism": "tests/conftest.py",
+    "relevant_tests": [
+        "tests/test_closure_runtime_contract.py",
+        "tests/test_build_closure_expert_state.py",
+        "tests/test_fit_closure_anfis_state.py",
+        "tests/test_build_closure_pipe_sequences.py",
+        "tests/test_train_closure_pipe.py",
+        "tests/test_rollout_closure_pipe.py",
+        "tests/test_closure_development_runtime_lock.py",
+        "tests/test_lock_closure_development_runtime.py",
+        "tests/test_prepare_commit_artifacts.py",
+        "tests/test_data_versioning_config.py",
+        "tests/test_dvc_add_from_manifest.py",
+    ],
+    "pyproject": "pyproject.toml",
+    "poetry_lock": "poetry.lock",
+}
+EXPECTED_RUNTIME_PARENT_PATHS: dict[str, str] = {
+    "protocol_lock": "reports/closure_v1/00_protocol/protocol_lock.json",
+    "holdout_assignment": "data/closure_v1/closure_holdout_assignment.csv",
+    "holdout_manifest": "reports/closure_v1/00_protocol/holdout_manifest.json",
+    "common_origin": "data/closure_v1/common_origin_manifest.parquet",
+    "common_origin_completion_manifest": "reports/closure_v1/01_surface/common_origin_manifest.json",
+    "runtime_config": "configs/closure_v1/development_runtime.yaml",
+    "runtime_schema": "configs/closure_v1/development_runtime.schema.json",
+    "expert_state": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+    "expert_state_manifest": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+    "expert_state_lineage_audit": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+    "expert_state_dvc_pointer": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc",
+    "restored_panel": "data/panel/panel_monthly_v0.parquet",
+    "restored_expert_anchor": "data/fuzzy/state_vector_v0.parquet",
+}
+EXPECTED_RUNTIME_COMPONENT_ROLES = tuple(EXPECTED_RUNTIME_COMPONENT_PATHS)
+EXPECTED_RUNTIME_PARENT_HASH_ROLES = (
+    "protocol_lock",
+    "holdout_assignment",
+    "holdout_manifest",
+    "common_origin",
+    "common_origin_completion_manifest",
+    "runtime_config",
+    "runtime_schema",
+    "expert_state",
+    "expert_state_manifest",
+    "expert_state_lineage_audit",
+    "expert_state_dvc_pointer",
+    "restored_panel",
+    "restored_expert_anchor",
+    "planned_artifact_paths",
+    "runtime_transitive_source_dependencies",
+)
+EXPECTED_RUNTIME_LEGACY_DEPENDENCY_PATHS = (
+    "src/fuzzy/expert.py",
+    "src/fuzzy/adaptive_anfis.py",
+    "src/pandas_utils.py",
+    "src/experiments/run_adaptive_anfis_real_smoke.py",
+    "src/experiments/build_pipe_sequences.py",
+    "src/experiments/train_pipe_grud.py",
+    "src/experiments/rollout_pipe_grud.py",
+)
+EXPECTED_RUNTIME_AUTHORIZATION = {
+    "development_fit_authorized": True,
+    "evaluation_authorized": False,
+    "e0_u_authorized": False,
+}
+EXPECTED_CPU_EXECUTION_POLICY = {
+    "device": "cpu",
+    "torch_num_threads": 1,
+    "torch_num_interop_threads": 1,
+    "blas_thread_environment_control": "not_locked_by_e0_dl_v1",
+    "bitwise_reproducibility_claim": (
+        "forbidden_across_processes_or_blas_backends"
+    ),
+}
+EXPECTED_RUNTIME_CANONICAL_ORIGIN_IDENTITY = {
+    "remote_name": "origin",
+    "algorithm": "git_remote_host_path_v1_sha256_utf8",
+    "expected_identity_sha256": (
+        "475fdf8ad6839d3d291010ff999b4e4c0f8604a0e8d8a09fcebe5ccb843d1905"
+    ),
+    "require_fetch_push_identity_match": True,
+}
 EXPECTED_P0_STATE_MAPPING = {
     "yN": "yN",
     "yF": "yF",
@@ -664,6 +883,41 @@ def _require_typed_equal(observed: Any, expected: Any, *, context: str) -> None:
 
 def _require_exact_mapping(observed: Mapping[str, Any], expected: Mapping[str, Any], *, context: str) -> None:
     _require_equal(dict(observed), dict(expected), context=context)
+
+
+def configure_torch_cpu_execution_policy(
+    runtime: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Apply and verify the closed single-thread Torch CPU policy."""
+    policy = _mapping(runtime, "cpu_execution_policy", context="development_runtime")
+    _require_exact_mapping(
+        policy,
+        EXPECTED_CPU_EXECUTION_POLICY,
+        context="CPU execution policy",
+    )
+    from src.fuzzy.adaptive_anfis import _require_torch  # noqa: PLC0415
+
+    torch = _require_torch()
+    if int(torch.get_num_threads()) != 1:
+        torch.set_num_threads(1)
+    if int(torch.get_num_interop_threads()) != 1:
+        try:
+            torch.set_num_interop_threads(1)
+        except RuntimeError as exc:
+            raise ClosureRuntimeContractError(
+                "Torch inter-op threads cannot be locked after parallel work started"
+            ) from exc
+    observed = {
+        **dict(policy),
+        "torch_num_threads_observed": int(torch.get_num_threads()),
+        "torch_num_interop_threads_observed": int(torch.get_num_interop_threads()),
+    }
+    if (
+        observed["torch_num_threads_observed"] != 1
+        or observed["torch_num_interop_threads_observed"] != 1
+    ):
+        raise ClosureRuntimeContractError("Torch CPU thread policy was not applied exactly")
+    return observed
 
 
 def validate_autoregressive_state_mapping(model_id: str, mapping: Mapping[str, Any]) -> dict[str, str]:
@@ -1945,6 +2199,11 @@ def _cross_validate_locked_contract(
     _require_equal(tuple(state["target_columns"]), EXPECTED_TARGET_COLUMNS, context="runtime target columns")
     _require_equal(state["optional_context_columns"], [], context="runtime optional context columns")
     _require_exact_mapping(
+        _mapping(state, "sequence_table", context="primary_autoregressive_state"),
+        EXPECTED_SEQUENCE_TABLE,
+        context="Closure sequence physical schema",
+    )
+    _require_exact_mapping(
         _mapping(state, "seasonality", context="primary_autoregressive_state"),
         EXPECTED_SEASONALITY,
         context="Closure seasonality",
@@ -2113,6 +2372,41 @@ def _cross_validate_locked_contract(
         EXPECTED_LOCKED_PIPE_ARCHITECTURE["early_stopping_patience_epochs"],
         context="Closure temporal early stopping patience",
     )
+    training_randomness = _mapping(
+        temporal,
+        "training_randomness",
+        context="development_runtime.temporal_models",
+    )
+    dataloader = _mapping(
+        training_randomness,
+        "dataloader",
+        context="temporal_models.training_randomness",
+    )
+    for field, expected in EXPECTED_TRAINING_DEVICE_POLICY.items():
+        _require_equal(
+            training_randomness[field],
+            expected,
+            context=f"Closure training device policy.{field}",
+        )
+    _require_exact_mapping(
+        _mapping(dataloader, "batch_order_digest", context="temporal_models.dataloader"),
+        EXPECTED_BATCH_ORDER_DIGEST,
+        context="Closure epoch batch-order digest",
+    )
+    checkpoint_selection = _mapping(
+        temporal,
+        "checkpoint_selection",
+        context="development_runtime.temporal_models",
+    )
+    _require_exact_mapping(
+        _mapping(
+            checkpoint_selection,
+            "artifact_lifecycle",
+            context="temporal_models.checkpoint_selection",
+        ),
+        EXPECTED_CHECKPOINT_ARTIFACT_LIFECYCLE,
+        context="Closure checkpoint artifact lifecycle",
+    )
     rollout = _mapping(temporal, "rollout", context="development_runtime.temporal_models")
     _require_equal(
         rollout["samples_per_origin"],
@@ -2133,6 +2427,16 @@ def _cross_validate_locked_contract(
         _mapping(rollout, "kernel", context="temporal_models.rollout"),
         EXPECTED_ROLLOUT_KERNEL,
         context="Closure rollout kernel",
+    )
+    _require_exact_mapping(
+        _mapping(rollout, "output_table", context="temporal_models.rollout"),
+        EXPECTED_ROLLOUT_OUTPUT_TABLE,
+        context="Closure rollout physical schema",
+    )
+    _require_exact_mapping(
+        _mapping(rollout, "calibration_raw_score", context="temporal_models.rollout"),
+        EXPECTED_CALIBRATION_RAW_SCORE,
+        context="Closure calibration raw score",
     )
     golden_predraw = cast(Mapping[str, Any], EXPECTED_ROLLOUT_RNG["golden_predraw"])
     observed_predraw_sha256 = rollout_predraw_sha256(
@@ -2200,6 +2504,78 @@ def _cross_validate_locked_contract(
         rendered_paths_sha256,
         EXPECTED_PLANNED_ARTIFACT_PATHS_SHA256,
         context="planned runtime artifact path digest",
+    )
+
+    implementation_lock = _mapping(
+        runtime,
+        "implementation_lock",
+        context="development_runtime",
+    )
+    _require_equal(
+        implementation_lock["contract_publication_state"],
+        "common_origin_published_adapters_ready_pending_expert_state_and_e0_dl",
+        context="implementation lock publication state",
+    )
+    _require_equal(
+        tuple(implementation_lock["required_component_roles"]),
+        EXPECTED_RUNTIME_COMPONENT_ROLES,
+        context="implementation lock component roles",
+    )
+    _require_exact_mapping(
+        _mapping(
+            implementation_lock,
+            "required_component_paths",
+            context="development_runtime.implementation_lock",
+        ),
+        EXPECTED_RUNTIME_COMPONENT_PATHS,
+        context="implementation lock component paths",
+    )
+    _require_equal(
+        tuple(implementation_lock["required_parent_hashes"]),
+        EXPECTED_RUNTIME_PARENT_HASH_ROLES,
+        context="implementation lock parent hash roles",
+    )
+    _require_exact_mapping(
+        _mapping(
+            implementation_lock,
+            "required_parent_paths",
+            context="development_runtime.implementation_lock",
+        ),
+        EXPECTED_RUNTIME_PARENT_PATHS,
+        context="implementation lock parent paths",
+    )
+    _require_equal(
+        tuple(implementation_lock["required_legacy_dependency_paths"]),
+        EXPECTED_RUNTIME_LEGACY_DEPENDENCY_PATHS,
+        context="implementation lock legacy dependency paths",
+    )
+    _require_exact_mapping(
+        _mapping(
+            implementation_lock,
+            "required_authorization_fields",
+            context="development_runtime.implementation_lock",
+        ),
+        EXPECTED_RUNTIME_AUTHORIZATION,
+        context="implementation lock authorization",
+    )
+    _require_exact_mapping(
+        _mapping(
+            implementation_lock,
+            "canonical_origin_identity",
+            context="development_runtime.implementation_lock",
+        ),
+        EXPECTED_RUNTIME_CANONICAL_ORIGIN_IDENTITY,
+        context="implementation lock canonical origin identity",
+    )
+    _require_equal(
+        implementation_lock["dvc_remote_name"],
+        "gcsremote",
+        context="implementation lock DVC remote name",
+    )
+    _require_equal(
+        implementation_lock["dvc_remote_verification_method"],
+        "two_targeted_idempotent_pushes_v1",
+        context="implementation lock DVC verification method",
     )
 
     outcomes = _mapping(runtime, "scientific_outcomes", context="development_runtime")
@@ -2331,6 +2707,27 @@ def load_and_validate_development_runtime(
     implementation_lock = _mapping(runtime, "implementation_lock", context="development_runtime")
     implementation_lock_path = resolve_repo_path(str(implementation_lock["lock_manifest_path"]))
     authority = _mapping(runtime, "authority", context="development_runtime")
+    implementation_lock_present = implementation_lock_path.is_file()
+    implementation_lock_summary: dict[str, Any] | None = None
+    if implementation_lock_present:
+        # Local import avoids a cycle: the external-lock validator imports this
+        # module lazily only when it expands the closed artifact path plan.
+        from src.experiments.closure_development_runtime_lock import (
+            load_and_validate_development_runtime_lock,
+        )
+
+        _, implementation_lock_summary = load_and_validate_development_runtime_lock(
+            Path(str(implementation_lock["lock_manifest_path"])),
+            Path(str(implementation_lock["lock_schema_path"])),
+            runtime_config=Path(config_path),
+            runtime_schema=Path(schema_path),
+            require_published=validate_repository,
+            require_physical_artifacts=False,
+        )
+    fit_authorized = bool(
+        implementation_lock_summary is not None
+        and implementation_lock_summary.get("fit_authorized") is True
+    )
     summary.update(
         {
             "config_path": repository_relative(config_resolved),
@@ -2338,8 +2735,10 @@ def load_and_validate_development_runtime(
             "schema_path": repository_relative(schema_resolved),
             "schema_sha256": _sha256_file(schema_resolved),
             "status": runtime["status"],
-            "implementation_lock_present": implementation_lock_path.is_file(),
-            "fit_authorized": False,
+            "implementation_lock_present": implementation_lock_present,
+            "implementation_lock_validated": implementation_lock_summary is not None,
+            "implementation_lock_summary": implementation_lock_summary,
+            "fit_authorized": fit_authorized,
             "future_outcomes_accessed": bool(authority["future_outcomes_accessed"]),
             "historical_outcome_manifest_semantic_decode": False,
         }

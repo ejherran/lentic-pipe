@@ -23,6 +23,11 @@ The machine-readable authority is:
 - `configs/closure_v1/development_runtime.schema.json`; and
 - `src/experiments/closure_runtime_contract.py`.
 
+The separate one-time E0-DL authority is defined by
+`configs/closure_v1/development_runtime_lock.schema.json`, validated by
+`src/experiments/closure_development_runtime_lock.py`, and generated only by
+`src/experiments/lock_closure_development_runtime.py`.
+
 The schema is closed: a changed epoch count, training size, sampling algorithm,
 module, seed, mapping, role, architecture, output policy, or outcome-access
 flag requires a new schema and explicit review. The validator also recomputes
@@ -53,7 +58,10 @@ The protocol-locked base DVC inventory remains byte-for-byte unchanged.
 Post-lock Closure artifacts are declared in the anchored
 `configs/closure_v1/dvc_artifacts_post_lock.yaml` overlay. The precommit
 assistant must validate the completion manifest whenever either it or the
-common-origin DVC pointer changes.
+common-origin DVC pointer changes. The completion bundle, explicit pointer,
+and remotely pushed object were published together in `c0554bd`; the runtime
+gate recomputes their identities and does not infer publication from a local
+Parquet alone.
 
 ## Why The Historical Mapping Is Denied
 
@@ -157,12 +165,17 @@ year_month)` plus exactly eight raw fields: TP, TN, TN:TP ratio, dissolved
 oxygen, pH, turbidity, Secchi depth, and temperature. The expert-anchor
 projection reads only the same exact key and `yN`, `yF`, and `yT_no_chla`.
 
-Both projected key sets must be non-null and unique, and both are constrained
-by the WQP/development/training-through-2018-12 guard before joining. Duplicate
-keys fail. The filtered frames are joined with `inner` semantics and
-`one_to_one` validation. The join audit persists the panel-row, anchor-row,
-matched, panel-only, and anchor-only counts and deterministic identities and
-digests for each key set. It must verify both conservation equations:
+Both projected key sets must be non-null and unique. One physical scan per
+source is reused to construct two explicitly separate scopes. For
+`training_candidates`, each source is first constrained by the
+WQP/development/training-through-2018-12 guard and only then joined; these are
+the only rows eligible for ranking, fitting, and the module quality gate. For
+`full_development`, the same safe projections are joined across the three
+development roles through 2021-12 solely to materialize predictions and the
+adaptive state. Duplicate keys fail. Each scope uses `inner` semantics and
+`one_to_one` validation. Its audit persists the panel-row, anchor-row, matched,
+panel-only, and anchor-only counts and deterministic identities and digests
+for each key set. Each scope must verify both conservation equations:
 
 ```text
 panel_rows = matched_rows + panel_only_rows
@@ -200,6 +213,15 @@ use of 4,096 as a maximum. The production sampler exposes no row-count
 override; the two-row selection exists only inside the fixed golden-vector
 helper.
 
+The persisted training curve records the loss evaluated immediately before
+each epoch update. After the sixtieth update, the final checkpoint loss and
+output standard deviation are recomputed on exactly the locked, rank-ordered
+4,096-row training sample. That post-update standard deviation is the only
+quantity used by the minimum-spread quality gate. Predictions and spread over
+the full 2018--2021 development surface are materialization diagnostics and
+cannot change pass/fail status, so the 2021 calibration role cannot leak into
+module selection.
+
 F0 and F1 use the same fixed IRC weights `1/1/1`. Historical weights selected
 with all locations are not inherited by the Closure V1 primary fit.
 
@@ -233,6 +255,15 @@ and manifests. P0 shares its deterministic expert state and sequence, while
 retaining separately seeded temporal models/checkpoints for every paired slot.
 A failed slot remains in the failure denominator; it is never silently
 replaced.
+
+Every state/model completion manifest uses the closed top-level
+`status=completed` dialect together with an explicit `slot_status` and
+`fit_status`. Missing, incomplete, contradictory, or physically inconsistent
+manifests are contract errors; they are not translated into scientific
+unavailability. A slot is unavailable only when a completed manifest records
+one of the fixed failure modes, retains its denominator, and proves that no
+replacement or stale consumable artifact was used. Unexpected implementation,
+Torch, schema, or I/O failures propagate without writing a completion marker.
 
 ## Strict Autoregressive State
 
@@ -283,6 +314,17 @@ context columns.
 The temporal model fits adjacent one-month transitions. Horizons 1--3 are
 produced by recursive rollout over the same no-current state semantics.
 
+The physical sequence table contains exactly one row for each of the 9,732
+intent origins: 8,352 training, 1,061 model-selection, and 319
+calibration/threshold origins. Each of the 13 inputs is a fixed-size float32
+list of length 12, ordered from the oldest calendar month through the origin;
+each of the nine adjacent-month autoregressive targets is one nullable float32
+scalar. The table retains unavailable origins with a closed status and failure
+reason instead of changing a denominator. Success requires every input list
+and target scalar to be finite. Identity, role, canonical ordering, no-current
+lineage, and the prohibition on split, IRC-context, and observed-Chl-a columns
+are part of the schema rather than conventions left to a trainer.
+
 ## Fixed P0/P1 Temporal Profile
 
 P0 and P1 differ only in their state source: P0 reads the deterministic expert
@@ -311,13 +353,19 @@ seed before model construction. Training creates a new Torch generator per
 one-based epoch with seed `base_seed + epoch` and uses it to permute the
 canonical training indices. It uses zero workers and does not drop the final
 batch. The complete model-selection set remains in canonical order with no
-shuffle. The ordered batch-index digest for every epoch is persisted.
+shuffle. The ordered batch-index digest for every epoch is persisted as
+LF-framed compact UTF-8 JSON records containing the one-based epoch, batch
+index, and ordered identity-key arrays, including the final partial batch.
 
-Deterministic Torch/cuDNN settings are mandatory. Automatic device choice is
-forbidden: E0-DL records and locks the explicit device, environment, and, for
-CUDA, `CUBLAS_WORKSPACE_CONFIG=:4096:8`. No cross-device
-numerical-equivalence claim is made. Training loss is computed from the raw
-residual-model `mu`, before any output blend with persistence.
+Deterministic Torch settings are mandatory. Automatic device choice is
+forbidden, and E0-DL v1 fixes the complete ANFIS/P0/P1 development runtime to
+CPU with one intra-op and one inter-op Torch thread. BLAS environment variables
+are not locked by v1, so no bitwise-equivalence claim is made across processes,
+BLAS backends, or devices. This matches the primary ANFIS implementation and
+prevents a nominally valid CUDA lock that cannot execute the full paired
+pipeline. CUDA would require a separately reviewed runtime-contract version.
+Training loss is computed from the raw residual-model `mu`, before any output
+blend with persistence.
 
 At the end of every epoch, the fixed nine-value blend grid is recomputed
 independently for each target over all canonical model-selection windows. No
@@ -325,7 +373,10 @@ blend weight is carried from a prior epoch, and neither training nor
 calibration rows may fit it. The current epoch's selected weights produce the
 blended model-selection predictions used for that epoch's checkpoint
 objective. Checkpoint selection is half RMSE and half MAE relative to the
-persistence all-target mean, with scale floor `1e-12`. Per-target blend
+persistence baseline: for each of the nine targets it computes
+`0.5*(RMSE_model/RMSE_persistence) + 0.5*(MAE_model/MAE_persistence)`, with
+each persistence scale floored at
+`1e-12`, and then takes the unweighted mean across targets. Per-target blend
 selection is half MAE divided by the minimum-grid MAE and half RMSE divided by
 the minimum-grid RMSE, also with floor `1e-12` and the declared tie-break.
 
@@ -336,6 +387,13 @@ checkpoint is restored, then the nine-value grid is recomputed once over the
 complete canonical model-selection set to produce the final locked per-target
 blend weights. The historical trainer does not implement this exact cycle and
 therefore cannot be invoked directly.
+
+The checkpoint payload is the unblended raw best model state; provisional
+epoch blend weights are evidence only and are never embedded in that
+checkpoint. The final model artifact contains the restored raw state plus the
+single recomputed final blend metadata. Both checkpoint and final-model hashes
+are mandatory, which makes accidental double blending or restoration of a
+provisionally blended payload detectable.
 
 Rollout uses horizons 1--3, 128 diagonal-Gaussian samples per origin, and batch
 512. Each origin reinitializes NumPy `PCG64` from the first 128 SHA-256 bits of
@@ -368,6 +426,18 @@ two-horizon scalar fixture supplies `mu`, `logvar`, persistence, blend weights,
 and epsilon values. Its two exact float32 recycled states lock the cast point
 and recursive use of the preceding state. Closure IRC weights are `1/1/1`;
 historical rollout weights `0.5/0.5/2.0` are not inherited.
+
+For each model and seed, rollout retains exactly 29,196 rows: one for every
+locked horizon-level evaluation unit, including failures. A successful row
+stores nine fixed-size float32 sample lists of length 128, a float64 IRC list
+of length 128, the origin-seed and predraw digests, and a float64 raw bloom
+score. Failure rows retain identity/status/reason with null samples. The raw
+score is the arithmetic mean of the 128 per-trajectory IRC values
+`clip((yN + (1-yF) + yT)/3, 0, 1)` and is independent of any threshold; the
+model-selection role chooses identity, Platt, or isotonic calibration, and the
+calibration/threshold role refits the selected method and chooses the F2
+threshold. Paired P0/P1 shared-success sets are derived later from the
+intersection and never by filtering either rollout at write time.
 
 ## Scientific Outcomes Stay Separate
 
@@ -407,10 +477,28 @@ bytes; the target policy needed here is duplicated in the closed runtime.
 
 ## Manifest And Lock Requirements
 
-Every dependent artifact must record hashes for the runtime config, schema and
-external E0-DL lock, plus the protocol lock, assignment, common-origin
-manifest, inputs, code, and outputs.
+Every fit-generated dependent artifact must record hashes for the runtime
+config, schema, and external E0-DL lock, plus the protocol lock, assignment,
+common-origin manifest, inputs, code, and outputs. The pre-lock deterministic
+expert bundle instead records the same upstream authorities and an explicit
+`fit_authorized=false`; it cannot cite a lock that does not exist yet.
 The common-origin completion manifest is hashed separately from its Parquet.
+The deterministic expert-state completion manifest has an exact dialect: it
+binds the generating script, restored expert anchor, assignment, every local
+implementation dependency, runtime/schema identities, P0 mapping, raw source
+projection, output allowlist, lineage audit, and Parquet. The later H bundle
+adds the explicit DVC pointer; E0-DL cross-binds that pointer to the completion
+records and payload bytes. E0-DL reopens only that outcome-free expert Parquet
+to verify the closed schema, all 353 development locations, locked calendar
+roles, value ranges, exact-month deltas, zero retained/unknown overlap, and the
+2021-12 ceiling. It never substitutes self-attested manifest booleans for this
+audit.
+Expert, ANFIS-seed, sequence, temporal-model, and rollout completion bundles
+are one-shot. Before their own modeling-row or model I/O, their adapters reject
+any existing final output, completion manifest, temporary file, or applicable
+explicit DVC pointer. A failed or interrupted bundle therefore requires review
+and an explicitly authorized cleanup; no adapter silently resumes, replaces,
+or deletes prior evidence.
 Sequence manifests must also record the exact input, target, and target-to-next-
 input mappings. All manifests must attest, as applicable:
 
@@ -456,13 +544,27 @@ records the resolved owner or pointer and the artifact content hash. This
 post-fit registration does not authorize evaluation or unseal E0-U.
 
 The pre-fit implementation gate is `E0-DL`. The runtime YAML remains
-`ready_to_lock` to avoid a circular hash. Once the common-origin artifact,
-strict adapters, tests, and locker exist in a clean commit `H`, an external
-`development_runtime_lock.json` must record `H`, every parent/config/code/test
-hash, expanded seed paths, zero-overlap/no-future audits, and authorization of
-development fit only. That lock bundle is reviewed and committed in a clean
-descendant `L`. Fit is allowed only when `H` remains an ancestor and all hashes
-match. Evaluation and E0-U stay false.
+`ready_to_lock` to avoid a circular hash. The publication sequence is
+deliberately split. First, the strict adapters, tests, validator, and locker
+are published in a clean code commit `H0`. Second, after explicit
+authorization, the deterministic expert-state builder is run without fitting;
+its Parquet, manifest, lineage audit, DVC pointer, and remote object are
+published in clean commit `H`. Only then may an external
+`development_runtime_lock.json` record `H`, every parent/config/code/test hash,
+the recursive repository-local import closure, expanded seed paths,
+zero-overlap/no-future audits, and authorization of development fit only. That
+lock also records only a credential-free SHA-256 identity for the canonical
+Git `origin`, after requiring every configured fetch and push URL to normalize
+to the locked host/path. Its DVC evidence cross-binds the common-origin and
+expert-state pointer path, pointer hash, payload MD5, and payload size to a
+fingerprint of the selected remote configuration. Lock creation runs the same
+targeted DVC push twice and succeeds only when both attempts report that
+everything was already up to date. If either attempt uploads an object, no
+lock is written and the gate must be rerun after review. The lock bundle is
+then reviewed and committed in a clean descendant `L`. Fit is allowed only
+when `H` remains an ancestor, the lock is tracked and published on the
+canonical remote, the DVC evidence remains bound to the current remote, and
+every physical hash still matches. Evaluation and E0-U stay false.
 
 Before generating E0-DL, the full repository type check must pass and the
 restored panel/expert-state development sources must match their locked hashes.
@@ -473,13 +575,16 @@ least the expert fuzzy functions, adaptive ANFIS core, feature transforms,
 sequence builder, temporal trainer, rollout core, and their local dependencies;
 an adapter filename alone is not sufficient provenance.
 
-The real common-origin Parquet and completion manifest now exist and pass the
-strict runtime gate: 29,196 horizon rows represent 9,732 origins from all 353
-development locations, with no holdout overlap or post-2021 row. The DVC
-pointer, completion manifest, and matching remote object must all be published
-before this artifact is treated as remotely restorable or consumed by E0-DL.
-The strict model adapters, locker, and external E0-DL lock do not yet exist, so
-the validator still returns `fit_authorized=false`. E0-DL does not replace
+The published common-origin Parquet and completion manifest pass the strict
+runtime gate: 29,196 horizon rows represent 9,732 origins from all 353
+development locations, with no holdout overlap or post-2021 row. Commit
+`c0554bd` binds the completion manifest and explicit DVC pointer, and its
+matching object was pushed and verified idempotently. The current source slice
+supplies the strict expert/ANFIS, sequence, temporal-fit, rollout, E0-DL, and
+prepublication adapters and predeclares all 23 planned Closure Parquets; it
+does not create those future data files or pointers. Until this slice is
+published as clean `H0`, and the later expert-state and external-lock gates are
+completed, the validator returns `fit_authorized=false`. E0-DL does not replace
 E0-M: checkpoints, calibrators, thresholds, ordinal cutpoints, hypotheses, and
 the sealed batch command still require the later model lock before E0-U.
 
@@ -507,8 +612,38 @@ That mode hashes only the restored panel and expert-state development sources,
 without decoding rows. It still does not touch the outcome Parquet or target
 manifest. The full type check is additionally mandatory before E0-DL.
 
-The next gates are to complete publication provenance for the guarded
-common-origin artifact, implement the strict expert/ANFIS state, sequence,
-temporal-fit, rollout, and lock adapters, and then generate E0-DL from a clean
-commit. Historical direct ANFIS, sequence, trainer, and rollout commands remain
-denied for Closure V1.
+After the deterministic expert-state bundle is published and the repository is
+clean, the outcome-free E0-DL preflight is:
+
+```bash
+poetry run python src/experiments/lock_closure_development_runtime.py \
+  --device cpu \
+  --check-only
+```
+
+This preflight semantically reads the deterministic expert-state rows and
+their pre-2022 assignment geometry; it does not read scientific outcome rows,
+the target Parquet, or post-2021 outcomes. The separately authorized real gate
+is:
+
+```bash
+poetry run python src/experiments/lock_closure_development_runtime.py \
+  --device cpu \
+  --execute-lock \
+  --verify-dvc-remote-by-idempotent-push
+```
+
+The real mode runs the fixed full type check and focused test suite, performs
+the two exact targeted DVC pushes, re-collects all physical state to detect
+changes during verification, and writes the single manifest atomically only
+after every check passes. It is a separately authorized heavy/external gate.
+The precommit assistant recognizes the exact E0-DL path as an authoritative
+manifest and performs strict pre-publication validation; the runtime fit guard
+still rejects it until the lock bytes are committed in a descendant of the
+recorded clean parent and independently verified on the canonical remote.
+
+The next gates are to publish this implementation as clean `H0`; materialize
+and publish only the deterministic expert-state bundle after separate
+authorization as `H`; and then generate and publish E0-DL from that clean
+parent as `L`. Historical direct ANFIS, sequence, trainer, and rollout commands
+remain denied for Closure V1.

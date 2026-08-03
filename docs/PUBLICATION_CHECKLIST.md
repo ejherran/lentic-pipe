@@ -27,8 +27,19 @@ Run this checklist before pushing to GitHub.
 15. DVC pointers are committed after `dvc add`; data blobs are not committed.
     Closure V1 artifacts created after E0-P are declared in the anchored
     `configs/closure_v1/dvc_artifacts_post_lock.yaml` overlay; the sealed base
-    inventory and the E0-P DVC snapshot are never regenerated. Before an
-    artifact is described as published or remotely restorable, its matching
-    object has been pushed and the push verified.
+    inventory and the E0-P DVC snapshot are never regenerated. The overlay
+    predeclares exactly 23 Closure Parquet paths; never create a pointer for an
+    output that has not been materialized. Verify each materialized pointer
+    independently. Before an artifact is described as published or remotely
+    restorable, its matching object has been pushed and the push verified.
+    For E0-DL, require the fixed two-attempt targeted verification for the
+    common-origin and expert-state pointers; both attempts must already be up
+    to date, and the lock must contain only credential-free remote
+    fingerprints and output hashes.
 16. The private GCS bucket has public access prevention enabled before sharing
     DVC pull instructions.
+17. Closure V1 gate order remains `H0 -> H -> L`: publish the clean adapter
+    source before building expert state, publish the one-shot expert bundle
+    and its remotely verified pointer before E0-DL, and publish E0-DL before
+    any fit. Existing final, temporary, or explicit-pointer evidence must stop
+    a rerun for review; it is never overwritten as an implicit resume.

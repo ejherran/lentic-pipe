@@ -12,6 +12,10 @@ from src.data.prepare_commit_artifacts import (
     CLOSURE_COMMON_ORIGIN_REPRODUCTION_COMMAND,
     CLOSURE_COMMON_ORIGIN_SOURCE_PATHS,
     CLOSURE_COMMON_ORIGIN_SOURCE_ROLES,
+    CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH,
+    CLOSURE_DEVELOPMENT_RUNTIME_LOCK_SCHEMA,
+    CLOSURE_EXPERT_STATE_MANIFEST_PATH,
+    CLOSURE_EXPERT_STATE_OUTPUT_PATH,
     CommandResult,
     DEFAULT_DVC_MANIFEST,
     DvcArtifact,
@@ -28,27 +32,79 @@ from src.data.prepare_commit_artifacts import (
     sha256_file,
     unmanaged_ignored_heavy_paths,
     validate_experiment_manifests,
+    validate_closure_expert_state_manifest,
     validate_freeze_freshness,
 )
 
 
-def test_default_dvc_inventory_loads_post_lock_closure_overlay() -> None:
-    artifacts = load_configured_dvc_artifacts(DEFAULT_DVC_MANIFEST)
-    matches = [
-        artifact
-        for artifact in artifacts
-        if artifact.artifact_id == "closure_v1_common_origin_manifest"
-    ]
-
-    assert matches == [
-        DvcArtifact(
+def _expected_closure_dvc_artifacts() -> dict[str, DvcArtifact]:
+    seeds = (1729, 20260612, 20260613, 20260614, 314159)
+    expected = {
+        "closure_v1_common_origin_manifest": DvcArtifact(
             "closure_v1_common_origin_manifest",
             Path("data/closure_v1/common_origin_manifest.parquet"),
             "closure_common_origin_manifest",
             "wqp",
             True,
+        ),
+        "closure_v1_expert_no_current_state": DvcArtifact(
+            "closure_v1_expert_no_current_state",
+            Path("data/closure_v1/development/expert/expert_no_current_state.parquet"),
+            "closure_expert_no_current_state",
+            "wqp",
+            True,
+        ),
+        "closure_v1_p0_expert_sequence": DvcArtifact(
+            "closure_v1_p0_expert_sequence",
+            Path("data/closure_v1/development/sequences/P0/expert_no_current.parquet"),
+            "closure_pipe_sequence",
+            "wqp",
+            True,
+        ),
+    }
+    for seed in seeds:
+        expected[f"closure_v1_anfis_state_seed_{seed}"] = DvcArtifact(
+            f"closure_v1_anfis_state_seed_{seed}",
+            Path(
+                f"data/closure_v1/development/anfis/seed_{seed}/"
+                "adaptive_no_current_state.parquet"
+            ),
+            "closure_anfis_state",
+            "wqp",
+            True,
         )
-    ]
+        expected[f"closure_v1_p1_sequence_seed_{seed}"] = DvcArtifact(
+            f"closure_v1_p1_sequence_seed_{seed}",
+            Path(f"data/closure_v1/development/sequences/P1/seed_{seed}.parquet"),
+            "closure_pipe_sequence",
+            "wqp",
+            True,
+        )
+        for model_id in ("P0", "P1"):
+            artifact_id = f"closure_v1_{model_id.lower()}_rollout_seed_{seed}"
+            expected[artifact_id] = DvcArtifact(
+                artifact_id,
+                Path(
+                    f"data/closure_v1/development/rollouts/{model_id}/"
+                    f"seed_{seed}.parquet"
+                ),
+                "closure_pipe_rollout",
+                "wqp",
+                True,
+            )
+    return expected
+
+
+def test_default_dvc_inventory_loads_all_planned_post_lock_closure_parquets() -> None:
+    artifacts = load_configured_dvc_artifacts(DEFAULT_DVC_MANIFEST)
+    matches = {
+        artifact.artifact_id: artifact
+        for artifact in artifacts
+        if artifact.artifact_id.startswith("closure_v1_")
+    }
+
+    assert matches == _expected_closure_dvc_artifacts()
+    assert len(matches) == 23
 
 
 def test_declared_artifacts_missing_pointers_selects_existing_declared_targets(tmp_path: Path) -> None:
@@ -229,6 +285,87 @@ def test_closure_protocol_lock_is_a_strict_experiment_manifest() -> None:
     assert is_experiment_manifest_path(path)
     assert not is_report_artifact_path(path)
     assert not is_experiment_manifest_path(Path("reports/other/protocol_lock.json"))
+
+
+def test_closure_development_runtime_lock_is_an_exact_authoritative_manifest() -> None:
+    path = CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH
+
+    assert is_experiment_manifest_path(path)
+    assert not is_report_artifact_path(path)
+    assert not is_experiment_manifest_path(
+        Path("reports/other/development_runtime_lock.json")
+    )
+
+
+def test_closure_development_runtime_lock_uses_strict_prepublication_validator(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    lock = CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH
+    lock.parent.mkdir(parents=True)
+    lock.write_text("{}\n", encoding="utf-8")
+
+    def valid_loader(
+        lock_path: Path,
+        lock_schema: Path,
+        *,
+        require_published: bool,
+        require_physical_artifacts: bool,
+    ) -> tuple[dict[str, object], dict[str, object]]:
+        assert lock_path == lock
+        assert lock_schema == CLOSURE_DEVELOPMENT_RUNTIME_LOCK_SCHEMA
+        assert require_published is False
+        assert require_physical_artifacts is True
+        return {}, {
+            "lock_version": "closure_development_runtime_lock_v1",
+            "status": "locked",
+            "publication_verified": False,
+            "physical_artifacts_verified": True,
+            "canonical_origin_identity_verified": True,
+            "dvc_remote_verified_at_lock": True,
+            "dvc_remote_verified": True,
+            "locked_parent_published_at_lock": True,
+            "payload_development_fit_authorized": True,
+            "development_fit_authorized": False,
+            "evaluation_authorized": False,
+            "e0_u_authorized": False,
+            "fit_authorized": False,
+            "future_outcomes_accessed": False,
+        }
+
+    monkeypatch.setattr(
+        "src.experiments.closure_development_runtime_lock."
+        "load_and_validate_development_runtime_lock",
+        valid_loader,
+    )
+    findings = validate_experiment_manifests(
+        staged_paths={lock},
+        artifacts=[],
+        max_hash_bytes=0,
+        verify_manifest_inputs=False,
+    )
+
+    assert not has_failing_findings(findings)
+    assert not any(finding.level == "warn" for finding in findings)
+
+    def invalid_loader(*_: object, **__: object) -> tuple[dict[str, object], dict[str, object]]:
+        raise ValueError("sealed hash drift")
+
+    monkeypatch.setattr(
+        "src.experiments.closure_development_runtime_lock."
+        "load_and_validate_development_runtime_lock",
+        invalid_loader,
+    )
+    findings = validate_experiment_manifests(
+        staged_paths={lock},
+        artifacts=[],
+        max_hash_bytes=0,
+        verify_manifest_inputs=False,
+    )
+
+    assert has_failing_findings(findings)
+    assert any("sealed hash drift" in finding.message for finding in findings)
 
 
 def test_closure_protocol_lock_validation_checks_seal_and_companion_hashes(
@@ -471,6 +608,59 @@ def test_common_origin_pointer_always_discovers_completion_manifest(
     pointer.write_text("outs:\n- md5: abc\n  path: common_origin_manifest.parquet\n", encoding="utf-8")
 
     assert discover_relevant_manifest_paths({pointer}) == [manifest]
+
+
+def test_expert_state_pointer_always_discovers_completion_manifest(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest = CLOSURE_EXPERT_STATE_MANIFEST_PATH
+    manifest.parent.mkdir(parents=True)
+    manifest.write_text("{}\n", encoding="utf-8")
+    pointer = dvc_pointer_path(CLOSURE_EXPERT_STATE_OUTPUT_PATH)
+    pointer.parent.mkdir(parents=True)
+    pointer.write_text(
+        "outs:\n- md5: abc\n  path: expert_no_current_state.parquet\n",
+        encoding="utf-8",
+    )
+
+    assert discover_relevant_manifest_paths({pointer}) == [manifest]
+
+
+def test_exact_expert_manifest_runs_strict_bundle_and_semantic_validator(
+    monkeypatch,
+) -> None:
+    calls: list[bool] = []
+
+    def valid(runtime: object, *, require_physical_artifact: bool) -> dict[str, object]:
+        del runtime
+        calls.append(require_physical_artifact)
+        return {
+            "completion_records": [
+                {"path": CLOSURE_EXPERT_STATE_MANIFEST_PATH.as_posix()}
+            ]
+        }
+
+    monkeypatch.setattr(
+        "src.experiments.closure_development_runtime_lock.expert_state_lock_record",
+        valid,
+    )
+    findings = validate_closure_expert_state_manifest(
+        CLOSURE_EXPERT_STATE_MANIFEST_PATH
+    )
+    assert calls == [True]
+    assert not has_failing_findings(findings)
+
+    monkeypatch.setattr(
+        "src.experiments.closure_development_runtime_lock.expert_state_lock_record",
+        lambda *args, **kwargs: (_ for _ in ()).throw(ValueError("semantic drift")),
+    )
+    findings = validate_closure_expert_state_manifest(
+        CLOSURE_EXPERT_STATE_MANIFEST_PATH
+    )
+    assert has_failing_findings(findings)
+    assert any("semantic drift" in finding.message for finding in findings)
 
 
 def test_closure_common_origin_manifest_requires_exact_generating_script(

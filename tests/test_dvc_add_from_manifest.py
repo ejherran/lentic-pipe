@@ -12,14 +12,45 @@ from src.data.dvc_add_from_manifest import (
 )
 
 
-def test_default_dvc_add_inventory_includes_closure_post_lock_overlay() -> None:
+def _expected_closure_dvc_paths() -> dict[str, Path]:
+    seeds = (1729, 20260612, 20260613, 20260614, 314159)
+    expected = {
+        "closure_v1_common_origin_manifest": Path(
+            "data/closure_v1/common_origin_manifest.parquet"
+        ),
+        "closure_v1_expert_no_current_state": Path(
+            "data/closure_v1/development/expert/expert_no_current_state.parquet"
+        ),
+        "closure_v1_p0_expert_sequence": Path(
+            "data/closure_v1/development/sequences/P0/expert_no_current.parquet"
+        ),
+    }
+    for seed in seeds:
+        expected[f"closure_v1_anfis_state_seed_{seed}"] = Path(
+            f"data/closure_v1/development/anfis/seed_{seed}/"
+            "adaptive_no_current_state.parquet"
+        )
+        expected[f"closure_v1_p1_sequence_seed_{seed}"] = Path(
+            f"data/closure_v1/development/sequences/P1/seed_{seed}.parquet"
+        )
+        for model_id in ("P0", "P1"):
+            expected[f"closure_v1_{model_id.lower()}_rollout_seed_{seed}"] = Path(
+                f"data/closure_v1/development/rollouts/{model_id}/seed_{seed}.parquet"
+            )
+    return expected
+
+
+def test_default_dvc_add_inventory_includes_all_planned_closure_parquets() -> None:
     artifacts = load_configured_artifacts(DEFAULT_MANIFEST)
 
-    assert any(
-        artifact.artifact_id == "closure_v1_common_origin_manifest"
-        and artifact.path == Path("data/closure_v1/common_origin_manifest.parquet")
+    closure_artifacts = {
+        artifact.artifact_id: artifact.path
         for artifact in artifacts
-    )
+        if artifact.artifact_id.startswith("closure_v1_")
+    }
+
+    assert closure_artifacts == _expected_closure_dvc_paths()
+    assert len(closure_artifacts) == 23
 
 
 def test_dvc_manifest_loader_builds_commands_for_existing_paths(tmp_path: Path) -> None:

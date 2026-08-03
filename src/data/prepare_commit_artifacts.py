@@ -10,6 +10,7 @@ import os
 import shlex
 import subprocess
 import sys
+from collections.abc import Mapping
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -66,6 +67,13 @@ REPORT_ARTIFACT_SUFFIXES = {".csv", ".json", ".md", ".parquet", ".txt"}
 CLOSURE_PROTOCOL_LOCK_PATH = Path("reports/closure_v1/00_protocol/protocol_lock.json")
 CLOSURE_PROTOCOL_LOCK_VERSION = "closure_protocol_lock_v1"
 CLOSURE_PROTOCOL_LOCK_SCRIPT = Path("src/experiments/lock_closure_protocol.py")
+CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH = Path(
+    "reports/closure_v1/00_protocol/development_runtime_lock.json"
+)
+CLOSURE_DEVELOPMENT_RUNTIME_LOCK_SCHEMA = Path(
+    "configs/closure_v1/development_runtime_lock.schema.json"
+)
+CLOSURE_DEVELOPMENT_RUNTIME_LOCK_VERSION = "closure_development_runtime_lock_v1"
 CLOSURE_COMMON_ORIGIN_MANIFEST_PATH = Path(
     "reports/closure_v1/01_surface/common_origin_manifest.json"
 )
@@ -75,6 +83,12 @@ CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT = Path(
 )
 CLOSURE_COMMON_ORIGIN_OUTPUT_PATH = Path(
     "data/closure_v1/common_origin_manifest.parquet"
+)
+CLOSURE_EXPERT_STATE_MANIFEST_PATH = Path(
+    "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json"
+)
+CLOSURE_EXPERT_STATE_OUTPUT_PATH = Path(
+    "data/closure_v1/development/expert/expert_no_current_state.parquet"
 )
 CLOSURE_COMMON_ORIGIN_CODE_PATHS = (
     CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT,
@@ -519,7 +533,7 @@ def is_experiment_manifest_path(path: Path) -> bool:
     text = path.as_posix()
     if path.name.endswith("_promotion_manifest.json"):
         return False
-    if path == CLOSURE_PROTOCOL_LOCK_PATH:
+    if path in {CLOSURE_PROTOCOL_LOCK_PATH, CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH}:
         return True
     if path.name == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH.name:
         return path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH
@@ -560,6 +574,113 @@ def manifest_output_records(payload: Any, manifest_path: Path) -> Any:
     if manifest_path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH:
         return [payload.get("output")]
     return payload.get("outputs")
+
+
+def validate_closure_development_runtime_lock_manifest(
+    manifest_path: Path,
+) -> list[ReproducibilityFinding]:
+    """Validate staged E0-DL physically without claiming it is published yet."""
+    from src.experiments.closure_development_runtime_lock import (
+        load_and_validate_development_runtime_lock,
+    )
+
+    try:
+        _, summary = load_and_validate_development_runtime_lock(
+            manifest_path,
+            CLOSURE_DEVELOPMENT_RUNTIME_LOCK_SCHEMA,
+            require_published=False,
+            require_physical_artifacts=True,
+        )
+    except Exception as exc:
+        return [
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"Closure E0-DL validation failed: {exc}",
+            )
+        ]
+
+    expected = {
+        "lock_version": CLOSURE_DEVELOPMENT_RUNTIME_LOCK_VERSION,
+        "status": "locked",
+        "publication_verified": False,
+        "physical_artifacts_verified": True,
+        "canonical_origin_identity_verified": True,
+        "dvc_remote_verified_at_lock": True,
+        "dvc_remote_verified": True,
+        "locked_parent_published_at_lock": True,
+        "payload_development_fit_authorized": True,
+        "development_fit_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "fit_authorized": False,
+        "future_outcomes_accessed": False,
+    }
+    drift = {
+        key: {"observed": summary.get(key), "expected": value}
+        for key, value in expected.items()
+        if summary.get(key) != value
+    }
+    if drift:
+        return [
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"Closure E0-DL authorization summary drifted: {drift}.",
+            )
+        ]
+    return [
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            manifest_path.as_posix(),
+            "Closure E0-DL schema, hashes, ancestry, DVC ownership, and seals passed pre-publication validation.",
+        )
+    ]
+
+
+def validate_closure_expert_state_manifest(
+    manifest_path: Path,
+) -> list[ReproducibilityFinding]:
+    """Run the exact, outcome-free expert bundle and Parquet semantic audit."""
+    from src.experiments.closure_contract import load_yaml_mapping
+    from src.experiments.closure_development_runtime_lock import (
+        expert_state_lock_record,
+    )
+    from src.experiments.closure_runtime_contract import DEFAULT_RUNTIME_CONFIG
+
+    try:
+        runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
+        record = expert_state_lock_record(runtime, require_physical_artifact=True)
+        completion_paths = {
+            item.get("path")
+            for item in record["completion_records"]
+            if isinstance(item, Mapping)
+        }
+        if manifest_path.as_posix() not in completion_paths:
+            raise ValueError("exact expert-state manifest path is absent from the bundle")
+    except Exception as exc:
+        return [
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"Closure expert-state validation failed: {exc}",
+            )
+        ]
+    return [
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            manifest_path.as_posix(),
+            (
+                "Closure expert-state provenance, explicit DVC pointer, lineage, "
+                "and outcome-free Parquet semantic audit passed."
+            ),
+        )
+    ]
 
 
 def verify_manifest_file_record(
@@ -660,6 +781,8 @@ def discover_relevant_manifest_paths(staged_paths: set[Path]) -> list[Path]:
     manifest_paths = {path for path in staged_paths if is_experiment_manifest_path(path)}
     if dvc_pointer_path(CLOSURE_COMMON_ORIGIN_OUTPUT_PATH) in staged_paths:
         manifest_paths.add(CLOSURE_COMMON_ORIGIN_MANIFEST_PATH)
+    if dvc_pointer_path(CLOSURE_EXPERT_STATE_OUTPUT_PATH) in staged_paths:
+        manifest_paths.add(CLOSURE_EXPERT_STATE_MANIFEST_PATH)
     for path in staged_paths:
         if not is_report_artifact_path(path):
             continue
@@ -737,9 +860,22 @@ def validate_experiment_manifests(
             continue
 
         is_closure_protocol_lock = manifest_path == CLOSURE_PROTOCOL_LOCK_PATH
+        is_closure_development_runtime_lock = (
+            manifest_path == CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH
+        )
         is_closure_common_origin_manifest = (
             manifest_path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH
         )
+        is_closure_expert_state_manifest = (
+            manifest_path == CLOSURE_EXPERT_STATE_MANIFEST_PATH
+        )
+        if is_closure_development_runtime_lock:
+            findings.extend(
+                validate_closure_development_runtime_lock_manifest(manifest_path)
+            )
+            continue
+        if is_closure_expert_state_manifest:
+            findings.extend(validate_closure_expert_state_manifest(manifest_path))
         if is_closure_protocol_lock:
             lock_version = payload.get("lock_version") if isinstance(payload, dict) else None
             status = payload.get("status") if isinstance(payload, dict) else None
@@ -949,7 +1085,10 @@ def validate_experiment_manifests(
                 findings=findings,
                 max_hash_bytes=max_hash_bytes,
                 require_hash=True,
-                force_hash=is_closure_common_origin_manifest,
+                force_hash=(
+                    is_closure_common_origin_manifest
+                    or is_closure_expert_state_manifest
+                ),
             )
             if record_path is not None:
                 covered_outputs.setdefault(record_path, []).append(manifest_path)
@@ -1128,6 +1267,18 @@ def validate_experiment_manifests(
                     )
                 )
             script = generating_scripts[0] if len(generating_scripts) == 1 else None
+        elif is_closure_expert_state_manifest:
+            script = payload.get("script") if isinstance(payload, dict) else None
+            expert_inputs = payload.get("inputs") if isinstance(payload, dict) else None
+            expert_dependencies = (
+                payload.get("dependencies") if isinstance(payload, dict) else None
+            )
+            inputs = (
+                [*expert_inputs, *expert_dependencies]
+                if isinstance(expert_inputs, list)
+                and isinstance(expert_dependencies, list)
+                else None
+            )
         else:
             script = payload.get("script") if isinstance(payload, dict) else None
             inputs = payload.get("inputs") if isinstance(payload, dict) else None
@@ -1161,9 +1312,14 @@ def validate_experiment_manifests(
                     findings=findings,
                     max_hash_bytes=max_hash_bytes,
                     require_hash=(
-                        verify_manifest_inputs or is_closure_common_origin_manifest
+                        verify_manifest_inputs
+                        or is_closure_common_origin_manifest
+                        or is_closure_expert_state_manifest
                     ),
-                    force_hash=is_closure_common_origin_manifest,
+                    force_hash=(
+                        is_closure_common_origin_manifest
+                        or is_closure_expert_state_manifest
+                    ),
                 )
         elif inputs is None:
             findings.append(

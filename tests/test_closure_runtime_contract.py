@@ -7,6 +7,7 @@ from typing import Any, cast
 
 import numpy as np
 import pytest
+import yaml
 
 import src.experiments.closure_runtime_contract as runtime_contract
 from src.experiments.build_pipe_sequences import (
@@ -25,6 +26,10 @@ from src.experiments.closure_runtime_contract import (
     EXPECTED_ANFIS_PANEL_COLUMNS,
     EXPECTED_ANFIS_SAMPLING,
     EXPECTED_ANFIS_UNCERTAINTY_PROXY,
+    EXPECTED_BATCH_ORDER_DIGEST,
+    EXPECTED_CALIBRATION_RAW_SCORE,
+    EXPECTED_CHECKPOINT_ARTIFACT_LIFECYCLE,
+    EXPECTED_CPU_EXECUTION_POLICY,
     EXPECTED_INPUT_COLUMNS,
     EXPECTED_MODULE_OFFSETS,
     EXPECTED_P0_STATE_MAPPING,
@@ -33,10 +38,19 @@ from src.experiments.closure_runtime_contract import (
     EXPECTED_ROLLOUT_RNG,
     EXPECTED_ROLLOUT_KERNEL,
     EXPECTED_ROLLOUT_STATE_CLIP,
+    EXPECTED_ROLLOUT_OUTPUT_TABLE,
+    EXPECTED_RUNTIME_AUTHORIZATION,
+    EXPECTED_RUNTIME_COMPONENT_PATHS,
+    EXPECTED_RUNTIME_COMPONENT_ROLES,
+    EXPECTED_RUNTIME_LEGACY_DEPENDENCY_PATHS,
+    EXPECTED_RUNTIME_PARENT_HASH_ROLES,
+    EXPECTED_RUNTIME_PARENT_PATHS,
     EXPECTED_SEASONALITY,
     EXPECTED_SEEDS,
+    EXPECTED_SEQUENCE_TABLE,
     EXPECTED_TARGET_TO_NEXT_INPUT_MAPPING,
     EXPECTED_TEMPORAL_ARCHITECTURE,
+    EXPECTED_TRAINING_DEVICE_POLICY,
     EXPECTED_TARGET_COLUMNS,
     ClosureRuntimeContractError,
     anfis_uncertainty_golden_vector,
@@ -49,6 +63,7 @@ from src.experiments.closure_runtime_contract import (
     anfis_hash_rank_sample,
     closure_seasonality,
     closure_state_deltas,
+    configure_torch_cpu_execution_policy,
     load_and_validate_development_runtime,
     render_runtime_artifact_paths,
     rollout_origin_seed,
@@ -82,6 +97,43 @@ def _set_nested(payload: MutableMapping[str, Any], path: Sequence[str | int], va
     current[path[-1]] = value
 
 
+def _assert_yaml_node_has_unique_mapping_keys(
+    node: yaml.nodes.Node,
+    *,
+    path: str = "$",
+) -> None:
+    if isinstance(node, yaml.nodes.MappingNode):
+        seen: set[str] = set()
+        for key_node, value_node in node.value:
+            assert isinstance(key_node, yaml.nodes.ScalarNode), f"non-scalar YAML key at {path}"
+            key = key_node.value
+            assert key not in seen, f"duplicate YAML key {key!r} at {path}"
+            seen.add(key)
+            _assert_yaml_node_has_unique_mapping_keys(value_node, path=f"{path}.{key}")
+    elif isinstance(node, yaml.nodes.SequenceNode):
+        for index, child in enumerate(node.value):
+            _assert_yaml_node_has_unique_mapping_keys(child, path=f"{path}[{index}]")
+
+
+def test_runtime_authority_yaml_has_no_duplicate_mapping_keys() -> None:
+    document = yaml.compose(DEFAULT_RUNTIME_CONFIG.read_text(encoding="utf-8"))
+    assert document is not None
+    _assert_yaml_node_has_unique_mapping_keys(document)
+
+
+def test_cpu_execution_policy_is_single_thread_and_claim_limited() -> None:
+    observed = configure_torch_cpu_execution_policy(_runtime())
+
+    assert {
+        key: observed[key] for key in EXPECTED_CPU_EXECUTION_POLICY
+    } == EXPECTED_CPU_EXECUTION_POLICY
+    assert observed["torch_num_threads_observed"] == 1
+    assert observed["torch_num_interop_threads_observed"] == 1
+    assert observed["bitwise_reproducibility_claim"] == (
+        "forbidden_across_processes_or_blas_backends"
+    )
+
+
 def test_public_runtime_contract_cross_validates_locked_protocol_without_fit() -> None:
     runtime, summary = load_and_validate_development_runtime()
 
@@ -106,7 +158,10 @@ def test_public_runtime_contract_cross_validates_locked_protocol_without_fit() -
     ).is_file()
     assert summary["common_origin_intent_origins"] == 9732
     assert summary["common_origin_rows"] == 29196
-    assert summary["implementation_lock_present"] is Path(lock["lock_manifest_path"]).is_file()
+    lock_present = Path(lock["lock_manifest_path"]).is_file()
+    assert summary["implementation_lock_present"] is lock_present
+    assert summary["implementation_lock_validated"] is lock_present
+    assert (summary["implementation_lock_summary"] is not None) is lock_present
     assert summary["fit_authorized"] is False
     assert summary["future_outcomes_accessed"] is False
     assert summary["historical_outcome_manifest_semantic_decode"] is False
@@ -951,7 +1006,9 @@ def test_external_runtime_lock_is_required_but_not_yet_authorization() -> None:
     lock = _runtime()["implementation_lock"]
 
     assert lock["gate"] == "E0-DL"
-    assert lock["contract_publication_state"] == "pending_adapters_common_origin_and_locker"
+    assert lock["contract_publication_state"] == (
+        "common_origin_published_adapters_ready_pending_expert_state_and_e0_dl"
+    )
     assert lock["external_lock_bundle_committed_before_fit"] is True
     assert lock["require_full_type_check"] is True
     assert lock["require_restored_development_source_hashes"] is True
@@ -961,12 +1018,35 @@ def test_external_runtime_lock_is_required_but_not_yet_authorization() -> None:
     assert lock["external_lock_records_each_dependency_path_sha256"] is True
     assert "src/experiments/train_pipe_grud.py" in lock["required_legacy_dependency_paths"]
     assert "src/experiments/rollout_pipe_grud.py" in lock["required_legacy_dependency_paths"]
-    assert lock["required_authorization_fields"] == {
-        "development_fit_authorized": True,
-        "evaluation_authorized": False,
-        "e0_u_authorized": False,
-    }
+    assert tuple(lock["required_component_roles"]) == EXPECTED_RUNTIME_COMPONENT_ROLES
+    assert lock["required_component_paths"] == EXPECTED_RUNTIME_COMPONENT_PATHS
+    assert tuple(lock["required_parent_hashes"]) == EXPECTED_RUNTIME_PARENT_HASH_ROLES
+    assert lock["required_parent_paths"] == EXPECTED_RUNTIME_PARENT_PATHS
+    assert tuple(lock["required_legacy_dependency_paths"]) == (
+        EXPECTED_RUNTIME_LEGACY_DEPENDENCY_PATHS
+    )
+    assert lock["required_authorization_fields"] == EXPECTED_RUNTIME_AUTHORIZATION
     assert lock["does_not_replace_e0_m_model_lock"] is True
+
+
+def test_runtime_closes_physical_sequence_training_and_rollout_contracts() -> None:
+    runtime = _runtime()
+    state = runtime["primary_autoregressive_state"]
+    temporal = runtime["temporal_models"]
+
+    assert state["sequence_table"] == EXPECTED_SEQUENCE_TABLE
+    assert temporal["training_randomness"]["dataloader"]["batch_order_digest"] == (
+        EXPECTED_BATCH_ORDER_DIGEST
+    )
+    for field, expected in EXPECTED_TRAINING_DEVICE_POLICY.items():
+        assert temporal["training_randomness"][field] == expected
+    assert temporal["checkpoint_selection"]["artifact_lifecycle"] == (
+        EXPECTED_CHECKPOINT_ARTIFACT_LIFECYCLE
+    )
+    assert temporal["rollout"]["output_table"] == EXPECTED_ROLLOUT_OUTPUT_TABLE
+    assert temporal["rollout"]["calibration_raw_score"] == (
+        EXPECTED_CALIBRATION_RAW_SCORE
+    )
 
 
 def test_delta_contract_requires_exact_previous_calendar_month() -> None:

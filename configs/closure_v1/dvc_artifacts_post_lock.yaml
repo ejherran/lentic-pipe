@@ -18,3 +18,198 @@ artifacts:
     source_id: wqp
     dvc: true
     github_policy: pointer_only_keep_completion_manifest_in_git
+
+  - artifact_id: closure_v1_expert_no_current_state
+    path: data/closure_v1/development/expert/expert_no_current_state.parquet
+    type: closure_expert_no_current_state
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_completion_manifest_and_lineage_audit_in_git
+
+  - artifact_id: closure_v1_p0_expert_sequence
+    path: data/closure_v1/development/sequences/P0/expert_no_current.parquet
+    type: closure_pipe_sequence
+    source_id: wqp
+    model_id: P0
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_summary_in_git
+
+  - artifact_id: closure_v1_anfis_state_seed_1729
+    path: data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet
+    type: closure_anfis_state
+    source_id: wqp
+    model_id: F1
+    base_seed: 1729
+    dvc: true
+    github_policy: pointer_only_keep_seed_manifest_and_lineage_evidence_in_git
+
+  - artifact_id: closure_v1_anfis_state_seed_20260612
+    path: data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet
+    type: closure_anfis_state
+    source_id: wqp
+    model_id: F1
+    base_seed: 20260612
+    dvc: true
+    github_policy: pointer_only_keep_seed_manifest_and_lineage_evidence_in_git
+
+  - artifact_id: closure_v1_anfis_state_seed_20260613
+    path: data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet
+    type: closure_anfis_state
+    source_id: wqp
+    model_id: F1
+    base_seed: 20260613
+    dvc: true
+    github_policy: pointer_only_keep_seed_manifest_and_lineage_evidence_in_git
+
+  - artifact_id: closure_v1_anfis_state_seed_20260614
+    path: data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet
+    type: closure_anfis_state
+    source_id: wqp
+    model_id: F1
+    base_seed: 20260614
+    dvc: true
+    github_policy: pointer_only_keep_seed_manifest_and_lineage_evidence_in_git
+
+  - artifact_id: closure_v1_anfis_state_seed_314159
+    path: data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet
+    type: closure_anfis_state
+    source_id: wqp
+    model_id: F1
+    base_seed: 314159
+    dvc: true
+    github_policy: pointer_only_keep_seed_manifest_and_lineage_evidence_in_git
+
+  - artifact_id: closure_v1_p1_sequence_seed_1729
+    path: data/closure_v1/development/sequences/P1/seed_1729.parquet
+    type: closure_pipe_sequence
+    source_id: wqp
+    model_id: P1
+    base_seed: 1729
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_summary_in_git
+
+  - artifact_id: closure_v1_p1_sequence_seed_20260612
+    path: data/closure_v1/development/sequences/P1/seed_20260612.parquet
+    type: closure_pipe_sequence
+    source_id: wqp
+    model_id: P1
+    base_seed: 20260612
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_summary_in_git
+
+  - artifact_id: closure_v1_p1_sequence_seed_20260613
+    path: data/closure_v1/development/sequences/P1/seed_20260613.parquet
+    type: closure_pipe_sequence
+    source_id: wqp
+    model_id: P1
+    base_seed: 20260613
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_summary_in_git
+
+  - artifact_id: closure_v1_p1_sequence_seed_20260614
+    path: data/closure_v1/development/sequences/P1/seed_20260614.parquet
+    type: closure_pipe_sequence
+    source_id: wqp
+    model_id: P1
+    base_seed: 20260614
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_summary_in_git
+
+  - artifact_id: closure_v1_p1_sequence_seed_314159
+    path: data/closure_v1/development/sequences/P1/seed_314159.parquet
+    type: closure_pipe_sequence
+    source_id: wqp
+    model_id: P1
+    base_seed: 314159
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_summary_in_git
+
+  - artifact_id: closure_v1_p0_rollout_seed_1729
+    path: data/closure_v1/development/rollouts/P0/seed_1729.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P0
+    base_seed: 1729
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p0_rollout_seed_20260612
+    path: data/closure_v1/development/rollouts/P0/seed_20260612.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P0
+    base_seed: 20260612
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p0_rollout_seed_20260613
+    path: data/closure_v1/development/rollouts/P0/seed_20260613.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P0
+    base_seed: 20260613
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p0_rollout_seed_20260614
+    path: data/closure_v1/development/rollouts/P0/seed_20260614.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P0
+    base_seed: 20260614
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p0_rollout_seed_314159
+    path: data/closure_v1/development/rollouts/P0/seed_314159.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P0
+    base_seed: 314159
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p1_rollout_seed_1729
+    path: data/closure_v1/development/rollouts/P1/seed_1729.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P1
+    base_seed: 1729
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p1_rollout_seed_20260612
+    path: data/closure_v1/development/rollouts/P1/seed_20260612.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P1
+    base_seed: 20260612
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p1_rollout_seed_20260613
+    path: data/closure_v1/development/rollouts/P1/seed_20260613.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P1
+    base_seed: 20260613
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p1_rollout_seed_20260614
+    path: data/closure_v1/development/rollouts/P1/seed_20260614.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P1
+    base_seed: 20260614
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
+
+  - artifact_id: closure_v1_p1_rollout_seed_314159
+    path: data/closure_v1/development/rollouts/P1/seed_314159.parquet
+    type: closure_pipe_rollout
+    source_id: wqp
+    model_id: P1
+    base_seed: 314159
+    dvc: true
+    github_policy: pointer_only_keep_rollout_manifest_in_git
