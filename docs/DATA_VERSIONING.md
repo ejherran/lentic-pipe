@@ -24,7 +24,9 @@ pipe_grud_rollout_backtest_v0
 The repository is prepared for DVC-backed data governance:
 
 - heavy data and model artifacts are ignored by Git
-- the DVC inventory is declared in `configs/dvc_artifacts.yaml`
+- the immutable E0-P DVC inventory is declared in
+  `configs/dvc_artifacts.yaml`, with post-lock additions declared only in
+  anchored overlays
 - DVC is initialized
 - committed `.dvc` pointer files describe the heavy artifacts
 - the real GCS remote and credential path live only in `.dvc/config.local`
@@ -41,7 +43,8 @@ machine-specific credential paths.
    changed.
 4. Rebuild the site registry and cross-source candidate layer before rebuilding
    panels when source coverage changes.
-5. Add or refresh declared artifacts from `configs/dvc_artifacts.yaml`.
+5. Add or refresh artifacts declared in the immutable base inventory and its
+   anchored post-lock overlays.
 6. Run `scripts/prepare_commit_artifacts.sh`.
 7. Commit only code, configs, docs, manifests, reports, and `.dvc` pointers.
 
@@ -79,9 +82,16 @@ flow.
   lightweight manifests, metrics, and reports remain in Git. A row-level
   artifact must not be described as remotely restorable until its `.dvc`
   pointer has been committed and the corresponding object has been pushed.
-- Future `closure_v1` CSV/JSON manifests and cohort assignments remain
+- Closure V1 CSV/JSON manifests and cohort assignments remain
   versionable when small. Parquet predictions, masks, bootstrap distributions,
-  and other heavy closure payloads require explicit DVC pointers.
+  and other heavy closure payloads require explicit DVC pointers. The E0-P
+  inventory in `configs/dvc_artifacts.yaml` is immutable; post-lock Closure
+  declarations extend it through
+  `configs/closure_v1/dvc_artifacts_post_lock.yaml`. Both DVC preparation
+  entry points validate the overlay's path, byte count, and SHA-256 anchor to
+  the protocol-locked base before merging the inventories. Declaration and a
+  completion manifest alone do not make an artifact published or remotely
+  restorable: its pointer must be committed and its matching object pushed.
 - The pre-commit artifact assistant validates staged DVC pointer structure,
   verifies current SHA-256 hashes for experiment manifest outputs within the
   configured size limit, verifies generating-script hashes, and fails when

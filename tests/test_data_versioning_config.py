@@ -1,7 +1,11 @@
 from __future__ import annotations
 
+import hashlib
+import json
 import tomllib
 from pathlib import Path
+
+import yaml
 
 from src.data.prepare_commit_artifacts import is_heavy_ignored_path
 
@@ -158,6 +162,46 @@ def test_no_current_chla_full_artifacts_are_documented_as_dvc_artifacts() -> Non
         "reports/pipe_grud/no_current_chla_wqp_focused/pipe_rollout_calibrated_backtest_rows.parquet"
         in dvc_artifacts
     )
+
+
+def test_closure_v1_common_origin_manifest_is_declared_as_an_explicit_dvc_artifact() -> None:
+    base_path = REPO_ROOT / "configs/dvc_artifacts.yaml"
+    protocol_lock = json.loads(
+        (REPO_ROOT / "reports/closure_v1/00_protocol/protocol_lock.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    locked_base = next(
+        record
+        for record in protocol_lock["source_artifacts"]
+        if record["path"] == "configs/dvc_artifacts.yaml"
+    )
+    assert base_path.stat().st_size == locked_base["bytes"]
+    assert hashlib.sha256(base_path.read_bytes()).hexdigest() == locked_base["sha256"]
+
+    payload = yaml.safe_load(
+        (REPO_ROOT / "configs/closure_v1/dvc_artifacts_post_lock.yaml").read_text(
+            encoding="utf-8"
+        )
+    )
+    matches = [
+        artifact
+        for artifact in payload["artifacts"]
+        if artifact.get("artifact_id") == "closure_v1_common_origin_manifest"
+    ]
+
+    assert matches == [
+        {
+            "artifact_id": "closure_v1_common_origin_manifest",
+            "path": "data/closure_v1/common_origin_manifest.parquet",
+            "type": "closure_common_origin_manifest",
+            "source_id": "wqp",
+            "dvc": True,
+            "github_policy": "pointer_only_keep_completion_manifest_in_git",
+        }
+    ]
+    assert payload["inventory_id"] == "closure_v1_post_protocol_lock"
+    assert is_heavy_ignored_path("data/closure_v1/common_origin_manifest.parquet")
 
 
 def test_neural_ode_rollout_artifacts_are_documented_as_dvc_artifacts() -> None:

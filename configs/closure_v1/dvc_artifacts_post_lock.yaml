@@ -1,0 +1,20 @@
+schema_version: 1
+inventory_id: closure_v1_post_protocol_lock
+description: >
+  Derived Closure V1 heavy-artifact declarations created after the immutable
+  E0-P inventory snapshot. This overlay extends, and never rewrites, the
+  protocol-locked configs/dvc_artifacts.yaml inventory.
+
+sealed_base_inventory:
+  path: configs/dvc_artifacts.yaml
+  bytes: 18841
+  sha256: 3304fd61978604ecfba5f99f1a9b3d04e4655f45f97f92954081751346143605
+  authority: reports/closure_v1/00_protocol/protocol_lock.json
+
+artifacts:
+  - artifact_id: closure_v1_common_origin_manifest
+    path: data/closure_v1/common_origin_manifest.parquet
+    type: closure_common_origin_manifest
+    source_id: wqp
+    dvc: true
+    github_policy: pointer_only_keep_completion_manifest_in_git

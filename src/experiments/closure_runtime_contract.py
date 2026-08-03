@@ -16,6 +16,7 @@ import hashlib
 import json
 import math
 import re
+import subprocess
 import sys
 import unicodedata
 from collections.abc import Mapping, Sequence, Set as AbstractSet
@@ -37,15 +38,117 @@ from src.experiments.closure_contract import (
     resolve_repo_path,
     validate_json_schema,
 )
-from src.experiments.closure_development_guard import load_development_gate
+from src.experiments.closure_development_guard import DevelopmentGate, load_development_gate
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RUNTIME_CONFIG = Path("configs/closure_v1/development_runtime.yaml")
 DEFAULT_RUNTIME_SCHEMA = Path("configs/closure_v1/development_runtime.schema.json")
 DEFAULT_PROTOCOL_LOCK = Path("reports/closure_v1/00_protocol/protocol_lock.json")
+DEFAULT_COMMON_ORIGIN = Path("data/closure_v1/common_origin_manifest.parquet")
+DEFAULT_COMMON_ORIGIN_COMPLETION = Path(
+    "reports/closure_v1/01_surface/common_origin_manifest.json"
+)
 
 RUNTIME_SCHEMA_VERSION = "closure_development_runtime_v1"
+COMMON_ORIGIN_MANIFEST_VERSION = "closure_common_origin_manifest_v1"
+EXPECTED_COMMON_ORIGIN_COUNTS: dict[str, Any] = {
+    "rows": 29196,
+    "intent_origins": 9732,
+    "sites": 353,
+    "target_evaluable_rows": 24242,
+    "complete_targets_evaluable_origins": 6814,
+    "intent_origins_by_role": {
+        "training": 8352,
+        "model_selection": 1061,
+        "calibration_threshold": 319,
+    },
+}
+EXPECTED_COMMON_ORIGIN_CODE_PATHS = (
+    "src/experiments/build_common_origin_manifest.py",
+    "src/experiments/build_closure_holdout.py",
+    "src/experiments/closure_contract.py",
+    "src/experiments/closure_development_guard.py",
+    "src/pandas_utils.py",
+)
+EXPECTED_COMMON_ORIGIN_CONFIG_PATHS = (
+    "configs/closure_v1/analysis_plan.yaml",
+    "configs/closure_v1/analysis_plan.schema.json",
+    "configs/closure_v1/surface_primary.yaml",
+    "configs/closure_v1/surface_secondary.yaml",
+    "configs/closure_v1/location_holdout.yaml",
+    "configs/closure_v1/model_benchmark.yaml",
+    "configs/closure_v1/experimental_matrix.yaml",
+    "configs/counterfactual_planning_v1.yaml",
+)
+EXPECTED_COMMON_ORIGIN_SOURCE_PATHS = (
+    "data/panel/panel_monthly_v0.parquet",
+    "data/splits/monthly_model_splits_v0.parquet",
+    "data/targets/monthly_targets_model_v0.parquet",
+    "data/targets/target_manifest_v0.json",
+    "data/splits/split_manifest.json",
+)
+EXPECTED_COMMON_ORIGIN_PANEL_PROJECTION = (
+    "source_id",
+    "site_id",
+    "year_month",
+    "mean_TP_ugL",
+    "mean_TN_ugL",
+    "mean_temperature_C",
+    "mean_secchi_depth_m",
+    "mean_turbidity_NTU",
+    "mean_DO_mgL",
+    "mean_pH",
+)
+EXPECTED_COMMON_ORIGIN_TARGET_PROJECTION = (
+    "source_id",
+    "site_id",
+    "origin_year_month",
+    "target_year_month",
+    "horizon_months",
+)
+EXPECTED_COMMON_ORIGIN_SCANS: dict[str, dict[str, Any]] = {
+    "panel": {
+        "materialized_rows": 42110,
+        "returned_rows": 42110,
+        "boundary_crossing_rows": 0,
+        "role_counts": {
+            "training": 36639,
+            "model_selection": 3739,
+            "calibration_threshold": 1732,
+        },
+    },
+    "target_keys": {
+        "materialized_rows": 81863,
+        "returned_rows": 81397,
+        "boundary_crossing_rows": 466,
+        "role_counts": {
+            "training": 71239,
+            "model_selection": 6997,
+            "calibration_threshold": 3161,
+        },
+    },
+}
+EXPECTED_COMMON_ORIGIN_ROLE_HORIZON_AVAILABILITY: list[dict[str, Any]] = [
+    {"time_role": "calibration_threshold", "horizon_months": 1, "target_evaluable": False, "rows": 46},
+    {"time_role": "calibration_threshold", "horizon_months": 1, "target_evaluable": True, "rows": 273},
+    {"time_role": "calibration_threshold", "horizon_months": 2, "target_evaluable": False, "rows": 58},
+    {"time_role": "calibration_threshold", "horizon_months": 2, "target_evaluable": True, "rows": 261},
+    {"time_role": "calibration_threshold", "horizon_months": 3, "target_evaluable": False, "rows": 71},
+    {"time_role": "calibration_threshold", "horizon_months": 3, "target_evaluable": True, "rows": 248},
+    {"time_role": "model_selection", "horizon_months": 1, "target_evaluable": False, "rows": 250},
+    {"time_role": "model_selection", "horizon_months": 1, "target_evaluable": True, "rows": 811},
+    {"time_role": "model_selection", "horizon_months": 2, "target_evaluable": False, "rows": 249},
+    {"time_role": "model_selection", "horizon_months": 2, "target_evaluable": True, "rows": 812},
+    {"time_role": "model_selection", "horizon_months": 3, "target_evaluable": False, "rows": 241},
+    {"time_role": "model_selection", "horizon_months": 3, "target_evaluable": True, "rows": 820},
+    {"time_role": "training", "horizon_months": 1, "target_evaluable": False, "rows": 1213},
+    {"time_role": "training", "horizon_months": 1, "target_evaluable": True, "rows": 7139},
+    {"time_role": "training", "horizon_months": 2, "target_evaluable": False, "rows": 1336},
+    {"time_role": "training", "horizon_months": 2, "target_evaluable": True, "rows": 7016},
+    {"time_role": "training", "horizon_months": 3, "target_evaluable": False, "rows": 1490},
+    {"time_role": "training", "horizon_months": 3, "target_evaluable": True, "rows": 6862},
+]
 EXPECTED_SEEDS = (1729, 20260612, 20260613, 20260614, 314159)
 EXPECTED_PRIMARY_MODULES = ("ANFIS-N", "ANFIS-F", "ANFIS-T-no-current")
 EXPECTED_MODULE_OFFSETS = {
@@ -1298,6 +1401,365 @@ def _validate_protocol_component_hashes(protocol_lock: Mapping[str, Any]) -> int
     return len(components)
 
 
+def _manifest_records_by_path(
+    payload: Mapping[str, Any],
+    key: str,
+    *,
+    expected_paths: Sequence[str],
+    context: str,
+) -> dict[str, Mapping[str, Any]]:
+    records = _sequence(payload, key, context=context)
+    by_path: dict[str, Mapping[str, Any]] = {}
+    for index, raw_record in enumerate(records):
+        if not isinstance(raw_record, Mapping):
+            raise ClosureRuntimeContractError(f"{context}.{key}[{index}] must be a mapping")
+        logical_path = raw_record.get("path")
+        if not isinstance(logical_path, str):
+            raise ClosureRuntimeContractError(f"{context}.{key}[{index}] lacks a path")
+        if logical_path in by_path:
+            raise ClosureRuntimeContractError(f"Duplicate {context}.{key} path: {logical_path}")
+        by_path[logical_path] = raw_record
+    _require_equal(tuple(by_path), tuple(expected_paths), context=f"{context}.{key} paths")
+    return by_path
+
+
+def _validate_physical_manifest_record(
+    record: Mapping[str, Any],
+    *,
+    logical_path: str,
+    physical_path: Path | None = None,
+    require_present: bool = True,
+) -> dict[str, Any]:
+    _require_equal(record.get("path"), logical_path, context=f"file record path for {logical_path}")
+    expected_bytes = record.get("bytes")
+    expected_sha256 = record.get("sha256")
+    if type(expected_bytes) is not int or expected_bytes < 0:
+        raise ClosureRuntimeContractError(f"File record for {logical_path} has invalid bytes")
+    if not isinstance(expected_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", expected_sha256) is None:
+        raise ClosureRuntimeContractError(f"File record for {logical_path} has invalid SHA-256")
+    path = physical_path if physical_path is not None else resolve_repo_path(logical_path)
+    if not path.is_file():
+        if require_present:
+            raise ClosureRuntimeContractError(f"Missing common-origin dependency: {logical_path}")
+        return {
+            "path": logical_path,
+            "bytes": expected_bytes,
+            "sha256": expected_sha256,
+            "present": False,
+        }
+    _require_equal(path.stat().st_size, expected_bytes, context=f"{logical_path} bytes")
+    _require_equal(_sha256_file(path), expected_sha256, context=f"{logical_path} SHA-256")
+    return {
+        "path": logical_path,
+        "bytes": expected_bytes,
+        "sha256": expected_sha256,
+        "present": True,
+    }
+
+
+def _validate_common_origin_completion(
+    *,
+    common_origin_path: Path,
+    completion_path: Path,
+    gate: DevelopmentGate,
+    protocol_lock: Mapping[str, Any],
+    validate_repository: bool,
+) -> dict[str, Any]:
+    output_present = common_origin_path.is_file()
+    completion_present = completion_path.is_file()
+    if output_present and not completion_present:
+        raise ClosureRuntimeContractError(
+            "The common-origin Parquet exists without its completion manifest"
+        )
+    if not completion_present:
+        return {
+            "common_origin_materialized": False,
+            "common_origin_completion_manifest_present": False,
+            "common_origin_completion_validated": False,
+            "common_origin_output_verified": False,
+        }
+
+    payload = load_json_mapping(completion_path)
+    context = "common_origin_completion"
+    _require_equal(
+        payload.get("manifest_version"),
+        COMMON_ORIGIN_MANIFEST_VERSION,
+        context="common-origin manifest version",
+    )
+    _require_equal(payload.get("status"), "completed", context="common-origin status")
+    _require_equal(payload.get("experiment_id"), "closure_v1", context="common-origin experiment")
+    _require_equal(
+        payload.get("surface_id"),
+        "closure_v1_wqp_adaptive_no_current_chla",
+        context="common-origin surface",
+    )
+    sealed_fields = {
+        "future_outcomes_accessed": False,
+        "target_values_projected": [],
+        "target_parquet_semantically_opened": False,
+        "post_cutoff_target_rows_materialized": 0,
+        "target_availability_used_for_origin_selection": False,
+        "availability_join": "left_after_intent_freeze",
+    }
+    for field, expected in sealed_fields.items():
+        _require_typed_equal(payload.get(field), expected, context=f"common-origin {field}")
+
+    execution = _mapping(payload, "execution", context=context)
+    repository = _mapping(execution, "repository", context=f"{context}.execution")
+    base_head = repository.get("base_head")
+    if not isinstance(base_head, str) or re.fullmatch(
+        r"(?:[0-9a-f]{40}|[0-9a-f]{64})", base_head
+    ) is None:
+        raise ClosureRuntimeContractError("common_origin_completion.execution.repository.base_head is invalid")
+    _require_typed_equal(
+        repository.get("base_head_is_complete_source_identity"),
+        False,
+        context="common-origin base HEAD identity scope",
+    )
+    tracked_status = repository.get("tracked_worktree_status")
+    tracked_status_lines = repository.get("tracked_status_lines")
+    if tracked_status not in {"clean", "dirty"}:
+        raise ClosureRuntimeContractError("Common-origin tracked worktree status is invalid")
+    if not isinstance(tracked_status_lines, list) or not all(
+        isinstance(line, str) and line for line in tracked_status_lines
+    ):
+        raise ClosureRuntimeContractError("Common-origin tracked status lines are invalid")
+    _require_equal(
+        tracked_status,
+        "dirty" if tracked_status_lines else "clean",
+        context="common-origin tracked worktree status",
+    )
+    _require_equal(
+        execution.get("source_tree_identity"),
+        "code_config_parent_sha256_records",
+        context="common-origin source tree identity",
+    )
+    if validate_repository:
+        ancestry = subprocess.run(
+            ["git", "merge-base", "--is-ancestor", base_head, "HEAD"],
+            cwd=PROJECT_ROOT,
+            check=False,
+            capture_output=True,
+            text=True,
+        )
+        if ancestry.returncode != 0:
+            raise ClosureRuntimeContractError(
+                "Common-origin execution base HEAD is not an ancestor of the current HEAD"
+            )
+    _require_typed_equal(
+        execution.get("future_outcomes_semantically_decoded"),
+        False,
+        context="common-origin execution semantic outcome decode",
+    )
+    _require_equal(
+        execution.get("reproduction_command"),
+        [
+            "poetry",
+            "run",
+            "python",
+            EXPECTED_COMMON_ORIGIN_CODE_PATHS[0],
+            "--panel",
+            EXPECTED_COMMON_ORIGIN_SOURCE_PATHS[0],
+            "--splits",
+            EXPECTED_COMMON_ORIGIN_SOURCE_PATHS[1],
+            "--output",
+            DEFAULT_COMMON_ORIGIN.as_posix(),
+            "--manifest",
+            DEFAULT_COMMON_ORIGIN_COMPLETION.as_posix(),
+        ],
+        context="common-origin reproduction command",
+    )
+
+    assignment = _mapping(payload, "assignment", context=context)
+    assignment_path = repository_relative(gate.assignment_path)
+    _require_equal(assignment.get("path"), assignment_path, context="common-origin assignment path")
+    _require_equal(
+        assignment.get("sha256"), gate.assignment_sha256, context="common-origin assignment SHA-256"
+    )
+    _require_equal(
+        assignment.get("bytes"), gate.assignment_path.stat().st_size, context="common-origin assignment bytes"
+    )
+    for key, expected in {
+        **gate.expected_counts,
+        "holdout_fit_overlap_count": 0,
+    }.items():
+        _require_equal(assignment.get(key), expected, context=f"common-origin assignment {key}")
+
+    projections = _mapping(payload, "projections", context=context)
+    _require_typed_equal(
+        dict(projections),
+        {
+            "panel": list(EXPECTED_COMMON_ORIGIN_PANEL_PROJECTION),
+            "target_keys": list(EXPECTED_COMMON_ORIGIN_TARGET_PROJECTION),
+            "panel_predicate": (
+                "source_id=wqp AND exact development site_id AND year_month<=2021-12"
+            ),
+            "target_key_predicate": (
+                "source_id=wqp AND exact development site_id AND "
+                "origin_year_month<=2021-12 AND target_year_month<=2021-12"
+            ),
+        },
+        context="common-origin projections",
+    )
+    scans = _mapping(payload, "scans", context=context)
+    _require_typed_equal(
+        dict(scans),
+        EXPECTED_COMMON_ORIGIN_SCANS,
+        context="common-origin scans",
+    )
+    for scan_name, expected_scan in EXPECTED_COMMON_ORIGIN_SCANS.items():
+        _require_equal(
+            expected_scan["materialized_rows"],
+            expected_scan["returned_rows"] + expected_scan["boundary_crossing_rows"],
+            context=f"common-origin {scan_name} scan conservation",
+        )
+        _require_equal(
+            sum(expected_scan["role_counts"].values()),
+            expected_scan["returned_rows"],
+            context=f"common-origin {scan_name} role conservation",
+        )
+
+    counts = _mapping(payload, "counts", context=context)
+    for key, expected in EXPECTED_COMMON_ORIGIN_COUNTS.items():
+        _require_typed_equal(counts.get(key), expected, context=f"common-origin counts.{key}")
+    _require_typed_equal(
+        counts.get("by_role_horizon_target_evaluable"),
+        EXPECTED_COMMON_ORIGIN_ROLE_HORIZON_AVAILABILITY,
+        context="common-origin counts.by_role_horizon_target_evaluable",
+    )
+    availability_rows = EXPECTED_COMMON_ORIGIN_ROLE_HORIZON_AVAILABILITY
+    _require_equal(
+        sum(int(record["rows"]) for record in availability_rows),
+        EXPECTED_COMMON_ORIGIN_COUNTS["rows"],
+        context="common-origin availability row conservation",
+    )
+    _require_equal(
+        sum(int(record["rows"]) for record in availability_rows if record["target_evaluable"]),
+        EXPECTED_COMMON_ORIGIN_COUNTS["target_evaluable_rows"],
+        context="common-origin target-evaluable row conservation",
+    )
+    for role, expected_origins in EXPECTED_COMMON_ORIGIN_COUNTS["intent_origins_by_role"].items():
+        for horizon in (1, 2, 3):
+            role_horizon_rows = sum(
+                int(record["rows"])
+                for record in availability_rows
+                if record["time_role"] == role and record["horizon_months"] == horizon
+            )
+            _require_equal(
+                role_horizon_rows,
+                expected_origins,
+                context=f"common-origin {role} h{horizon} row conservation",
+            )
+    intent_audit = _mapping(payload, "intent_origin_audit", context=context)
+    expected_intent_audit = {
+        "monthly_status_rows": 42110,
+        "input_eligible_month_rows": 34589,
+        "history_candidate_origins": 10081,
+        "retained_intent_origins": 9732,
+        "excluded_role_crossing_origins": 238,
+        "excluded_locked_evaluation_origins": 111,
+    }
+    _require_exact_mapping(intent_audit, expected_intent_audit, context="common-origin intent audit")
+    invariants = _mapping(payload, "invariants", context=context)
+    _require_exact_mapping(
+        invariants,
+        {
+            "holdout_overlap_count": 0,
+            "unknown_assignment_count": 0,
+            "post_2021_materialized_count": 0,
+            "chlorophyll_columns_projected": 0,
+            "duplicate_exact_keys": 0,
+            "rows_per_origin": 3,
+            "target_arithmetic_exact": True,
+            "one_role_per_origin": True,
+            "history_length_months": 12,
+            "horizons_months": [1, 2, 3],
+        },
+        context="common-origin invariants",
+    )
+
+    source_records = _manifest_records_by_path(
+        payload,
+        "source_inputs",
+        expected_paths=EXPECTED_COMMON_ORIGIN_SOURCE_PATHS,
+        context=context,
+    )
+    for logical_path, record in source_records.items():
+        source_bytes = record.get("bytes")
+        source_sha256 = record.get("sha256")
+        if type(source_bytes) is not int or source_bytes < 0:
+            raise ClosureRuntimeContractError(
+                f"Common-origin source {logical_path} has invalid bytes"
+            )
+        if not isinstance(source_sha256, str) or re.fullmatch(r"[0-9a-f]{64}", source_sha256) is None:
+            raise ClosureRuntimeContractError(
+                f"Common-origin source {logical_path} has invalid SHA-256"
+            )
+        if record.get("hash_source") != "protocol_lock":
+            raise ClosureRuntimeContractError(
+                f"Common-origin source {logical_path} is not anchored to the protocol lock"
+            )
+        locked = _locked_source_artifact(
+            protocol_lock,
+            logical_path=logical_path,
+            expected_sha256=source_sha256,
+        )
+        _require_equal(source_bytes, locked.get("bytes"), context=f"{logical_path} locked bytes")
+        _require_equal(record.get("role"), locked.get("role"), context=f"{logical_path} locked role")
+
+    for section, expected_paths in (
+        ("code", EXPECTED_COMMON_ORIGIN_CODE_PATHS),
+        ("configs", EXPECTED_COMMON_ORIGIN_CONFIG_PATHS),
+    ):
+        records = _manifest_records_by_path(
+            payload,
+            section,
+            expected_paths=expected_paths,
+            context=context,
+        )
+        for logical_path, record in records.items():
+            _validate_physical_manifest_record(record, logical_path=logical_path)
+
+    parent_records = _sequence(payload, "parent_artifacts", context=context)
+    expected_parents = (
+        ("protocol_lock", gate.protocol_lock_path, gate.protocol_lock_sha256),
+        ("holdout_manifest", gate.holdout_manifest_path, gate.holdout_manifest_sha256),
+        ("holdout_assignment", gate.assignment_path, gate.assignment_sha256),
+    )
+    if len(parent_records) != len(expected_parents):
+        raise ClosureRuntimeContractError("Common-origin completion must list exactly three parent artifacts")
+    for index, (raw_record, (role, path, expected_sha256)) in enumerate(
+        zip(parent_records, expected_parents, strict=True)
+    ):
+        if not isinstance(raw_record, Mapping):
+            raise ClosureRuntimeContractError(f"common-origin parent_artifacts[{index}] must be a mapping")
+        _require_equal(raw_record.get("role"), role, context=f"common-origin parent role {index}")
+        observed = _validate_physical_manifest_record(
+            raw_record,
+            logical_path=repository_relative(path),
+            physical_path=path,
+        )
+        _require_equal(observed["sha256"], expected_sha256, context=f"common-origin parent {role} SHA-256")
+
+    output_record = _mapping(payload, "output", context=context)
+    output_audit = _validate_physical_manifest_record(
+        output_record,
+        logical_path=DEFAULT_COMMON_ORIGIN.as_posix(),
+        physical_path=common_origin_path,
+        require_present=False,
+    )
+    return {
+        "common_origin_materialized": bool(output_audit["present"]),
+        "common_origin_completion_manifest_present": True,
+        "common_origin_completion_validated": True,
+        "common_origin_output_verified": bool(output_audit["present"]),
+        "common_origin_output_sha256": output_audit["sha256"],
+        "common_origin_completion_sha256": _sha256_file(completion_path),
+        "common_origin_intent_origins": EXPECTED_COMMON_ORIGIN_COUNTS["intent_origins"],
+        "common_origin_rows": EXPECTED_COMMON_ORIGIN_COUNTS["rows"],
+    }
+
+
 def _validate_promoted_anfis_reference(runtime: Mapping[str, Any]) -> dict[str, Any]:
     anfis = _mapping(runtime, "anfis", context="development_runtime")
     reference_path = resolve_repo_path(str(anfis["configuration_reference"]))
@@ -1772,6 +2234,13 @@ def _cross_validate_locked_contract(
     common_origin_completion_path = resolve_repo_path(
         str(authority["common_origin_completion_manifest_path"])
     )
+    common_origin_summary = _validate_common_origin_completion(
+        common_origin_path=common_origin_path,
+        completion_path=common_origin_completion_path,
+        gate=gate,
+        protocol_lock=protocol_lock,
+        validate_repository=validate_repository,
+    )
     return {
         "protocol_component_count": component_count,
         "locked_repository_head": gate.locked_repository_head,
@@ -1785,8 +2254,7 @@ def _cross_validate_locked_contract(
         "promoted_anfis_reference": promoted_reference,
         "promoted_pipe_reference": promoted_pipe_reference,
         "target_artifact_records": target_artifact_records,
-        "common_origin_materialized": common_origin_path.is_file(),
-        "common_origin_completion_manifest_present": common_origin_completion_path.is_file(),
+        **common_origin_summary,
         "restored_development_sources_verified": require_restored_development_sources,
         "restored_development_source_paths_verified": (
             [source_projection["panel_path"], source_projection["expert_anchor_path"]]

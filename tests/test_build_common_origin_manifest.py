@@ -7,6 +7,8 @@ import pytest
 
 from src.experiments.build_closure_holdout import PRECURSOR_READ_COLUMNS
 from src.experiments.build_common_origin_manifest import (
+    COMMON_ORIGIN_CODE_DEPENDENCIES,
+    COMMON_ORIGIN_CONFIG_DEPENDENCIES,
     FULL_KEY_COLUMNS,
     HORIZONS_MONTHS,
     MODEL_IDS,
@@ -34,6 +36,26 @@ EXPECTED_MODEL_STATUSES = {
     "P1": "eligible_after_holdout_excluding_refit",
     "M0": "blocked_pending_strict_adapter",
 }
+
+
+def test_common_origin_manifest_closes_direct_repository_dependencies() -> None:
+    assert tuple(path.as_posix() for path in COMMON_ORIGIN_CODE_DEPENDENCIES) == (
+        "src/experiments/build_common_origin_manifest.py",
+        "src/experiments/build_closure_holdout.py",
+        "src/experiments/closure_contract.py",
+        "src/experiments/closure_development_guard.py",
+        "src/pandas_utils.py",
+    )
+    assert tuple(path.as_posix() for path in COMMON_ORIGIN_CONFIG_DEPENDENCIES) == (
+        "configs/closure_v1/analysis_plan.yaml",
+        "configs/closure_v1/analysis_plan.schema.json",
+        "configs/closure_v1/surface_primary.yaml",
+        "configs/closure_v1/surface_secondary.yaml",
+        "configs/closure_v1/location_holdout.yaml",
+        "configs/closure_v1/model_benchmark.yaml",
+        "configs/closure_v1/experimental_matrix.yaml",
+        "configs/counterfactual_planning_v1.yaml",
+    )
 
 
 @pytest.fixture(scope="module")

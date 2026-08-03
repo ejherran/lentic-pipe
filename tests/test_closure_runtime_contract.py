@@ -62,6 +62,9 @@ from src.experiments.closure_runtime_contract import (
 
 
 PROTOCOL_LOCK_PATH = Path("reports/closure_v1/00_protocol/protocol_lock.json")
+COMMON_ORIGIN_COMPLETION_PATH = Path(
+    "reports/closure_v1/01_surface/common_origin_manifest.json"
+)
 
 
 def _runtime() -> dict[str, Any]:
@@ -97,6 +100,12 @@ def test_public_runtime_contract_cross_validates_locked_protocol_without_fit() -
     assert summary["common_origin_completion_manifest_present"] is Path(
         authority["common_origin_completion_manifest_path"]
     ).is_file()
+    assert summary["common_origin_completion_validated"] is True
+    assert summary["common_origin_output_verified"] is Path(
+        authority["common_origin_manifest_path"]
+    ).is_file()
+    assert summary["common_origin_intent_origins"] == 9732
+    assert summary["common_origin_rows"] == 29196
     assert summary["implementation_lock_present"] is Path(lock["lock_manifest_path"]).is_file()
     assert summary["fit_authorized"] is False
     assert summary["future_outcomes_accessed"] is False
@@ -109,6 +118,94 @@ def test_public_runtime_contract_cross_validates_locked_protocol_without_fit() -
     ]["sha256"]
     assert summary["config_path"] == DEFAULT_RUNTIME_CONFIG.as_posix()
     assert summary["schema_path"] == DEFAULT_RUNTIME_SCHEMA.as_posix()
+
+
+@pytest.mark.parametrize(
+    ("path", "invalid_value", "error"),
+    [
+        (("future_outcomes_accessed",), True, "future_outcomes_accessed"),
+        (("counts", "rows"), 29195, "counts.rows"),
+        (("execution", "future_outcomes_semantically_decoded"), True, "semantic outcome decode"),
+        (("projections", "panel", 0), "mean_chlorophyll_a_ugL", "projections"),
+        (("scans", "target_keys", "returned_rows"), 81396, "scans"),
+        (
+            ("counts", "by_role_horizon_target_evaluable", 0, "rows"),
+            45,
+            "by_role_horizon_target_evaluable",
+        ),
+    ],
+)
+def test_runtime_rejects_common_origin_completion_drift(
+    monkeypatch: pytest.MonkeyPatch,
+    path: tuple[str | int, ...],
+    invalid_value: Any,
+    error: str,
+) -> None:
+    completion = load_json_mapping(COMMON_ORIGIN_COMPLETION_PATH)
+    _set_nested(completion, path, invalid_value)
+    real_loader = runtime_contract.load_json_mapping
+
+    def load_with_mutated_completion(requested: str | Path) -> dict[str, Any]:
+        if Path(requested).resolve() == COMMON_ORIGIN_COMPLETION_PATH.resolve():
+            return copy.deepcopy(completion)
+        return real_loader(requested)
+
+    monkeypatch.setattr(runtime_contract, "load_json_mapping", load_with_mutated_completion)
+
+    with pytest.raises(ClosureRuntimeContractError, match=error):
+        load_and_validate_development_runtime()
+
+
+def test_common_origin_completion_validates_when_dvc_payload_is_not_restored(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    completion_payload = load_json_mapping(COMMON_ORIGIN_COMPLETION_PATH)
+    copied_completion = tmp_path / "common_origin_manifest.json"
+    copied_completion.write_text(
+        COMMON_ORIGIN_COMPLETION_PATH.read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    missing_output = tmp_path / "common_origin_manifest.parquet"
+    real_loader = runtime_contract.load_json_mapping
+
+    def load_copied_completion(requested: str | Path) -> dict[str, Any]:
+        if Path(requested) == copied_completion:
+            return copy.deepcopy(completion_payload)
+        return real_loader(requested)
+
+    monkeypatch.setattr(runtime_contract, "load_json_mapping", load_copied_completion)
+    gate = runtime_contract.load_development_gate(validate_repository=False)
+    protocol_lock = load_json_mapping(PROTOCOL_LOCK_PATH)
+
+    summary = runtime_contract._validate_common_origin_completion(
+        common_origin_path=missing_output,
+        completion_path=copied_completion,
+        gate=gate,
+        protocol_lock=protocol_lock,
+        validate_repository=False,
+    )
+
+    assert summary["common_origin_materialized"] is False
+    assert summary["common_origin_completion_manifest_present"] is True
+    assert summary["common_origin_completion_validated"] is True
+    assert summary["common_origin_output_verified"] is False
+
+
+def test_common_origin_output_without_completion_fails_closed(tmp_path: Path) -> None:
+    output = tmp_path / "common_origin_manifest.parquet"
+    output.write_bytes(b"not-a-valid-bundle")
+    gate = runtime_contract.load_development_gate(validate_repository=False)
+    protocol_lock = load_json_mapping(PROTOCOL_LOCK_PATH)
+
+    with pytest.raises(ClosureRuntimeContractError, match="without its completion manifest"):
+        runtime_contract._validate_common_origin_completion(
+            common_origin_path=output,
+            completion_path=tmp_path / "missing.json",
+            gate=gate,
+            protocol_lock=protocol_lock,
+            validate_repository=False,
+        )
 
 
 def test_runtime_schema_is_closed_draft_2020_12() -> None:

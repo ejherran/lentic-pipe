@@ -22,8 +22,13 @@ Run this checklist before pushing to GitHub.
 12. `.dvc/config.local`, `.env`, and credential JSON files are not tracked.
 13. `configs/sources.yaml` records acquisition route, filters, license, access
    policy, and redistribution policy for each `source_id`.
-14. `configs/dvc_artifacts.yaml` lists every heavy artifact that is needed to
-   reproduce current results.
+14. The immutable `configs/dvc_artifacts.yaml` base plus its anchored overlays
+    list every heavy artifact that is needed to reproduce current results.
 15. DVC pointers are committed after `dvc add`; data blobs are not committed.
+    Closure V1 artifacts created after E0-P are declared in the anchored
+    `configs/closure_v1/dvc_artifacts_post_lock.yaml` overlay; the sealed base
+    inventory and the E0-P DVC snapshot are never regenerated. Before an
+    artifact is described as published or remotely restorable, its matching
+    object has been pushed and the push verified.
 16. The private GCS bucket has public access prevention enabled before sharing
     DVC pull instructions.

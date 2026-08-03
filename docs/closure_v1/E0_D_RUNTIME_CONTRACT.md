@@ -30,6 +30,31 @@ every sealed protocol-component hash and cross-checks the E0-C assignment,
 locked analysis plan, primary surface, model benchmark, locked target metadata,
 and the exact historical ANFIS and PIPE reference-manifest hashes.
 
+## Common-Origin Completion Gate
+
+The common-origin table is a separate, outcome-independent E0-D artifact. Its
+completion manifest must bind exactly one Parquet output to the five locked
+source records, five repository-local code dependencies, eight transitively
+read Closure configuration files, and three E0-P/E0-C parent artifacts. The
+manifest records the base Git HEAD and tracked worktree state honestly; the
+file-record SHA-256 values, rather than a dirty base HEAD, identify the source
+tree used for materialization.
+
+Runtime validation requires the exact no-current-Chl-a panel projection, the
+five target key columns only, the cutoff predicates, scan conservation,
+role/horizon availability counts, 353 development locations, zero holdout
+overlap, and no row after 2021-12. Every recorded code, configuration, parent,
+and restored output hash is recomputed. A source-only clone may validate the
+committed completion manifest while reporting the DVC payload as absent; any
+fit gate must additionally require both `common_origin_materialized=true` and
+`common_origin_output_verified=true`.
+
+The protocol-locked base DVC inventory remains byte-for-byte unchanged.
+Post-lock Closure artifacts are declared in the anchored
+`configs/closure_v1/dvc_artifacts_post_lock.yaml` overlay. The precommit
+assistant must validate the completion manifest whenever either it or the
+common-origin DVC pointer changes.
+
 ## Why The Historical Mapping Is Denied
 
 The historical `adaptive_no_current_chla` sequence mode changes the thermal
@@ -448,12 +473,15 @@ least the expert fuzzy functions, adaptive ANFIS core, feature transforms,
 sequence builder, temporal trainer, rollout core, and their local dependencies;
 an adapter filename alone is not sufficient provenance.
 
-At this proposal stage the real common-origin Parquet/completion manifest,
-strict adapters, locker, and external E0-DL lock do not yet exist. The current
-validator therefore returns `common_origin_materialized=false` and
-`fit_authorized=false`. E0-DL does not replace E0-M: checkpoints, calibrators,
-thresholds, ordinal cutpoints, hypotheses, and the sealed batch command still
-require the later model lock before E0-U.
+The real common-origin Parquet and completion manifest now exist and pass the
+strict runtime gate: 29,196 horizon rows represent 9,732 origins from all 353
+development locations, with no holdout overlap or post-2021 row. The DVC
+pointer, completion manifest, and matching remote object must all be published
+before this artifact is treated as remotely restorable or consumed by E0-DL.
+The strict model adapters, locker, and external E0-DL lock do not yet exist, so
+the validator still returns `fit_authorized=false`. E0-DL does not replace
+E0-M: checkpoints, calibrators, thresholds, ordinal cutpoints, hypotheses, and
+the sealed batch command still require the later model lock before E0-U.
 
 ## Validation
 
@@ -479,7 +507,8 @@ That mode hashes only the restored panel and expert-state development sources,
 without decoding rows. It still does not touch the outcome Parquet or target
 manifest. The full type check is additionally mandatory before E0-DL.
 
-The next gates are to materialize the guarded common-origin artifact, implement
-the strict expert/ANFIS state, sequence, temporal-fit, rollout, and lock
-adapters, and then generate E0-DL from a clean commit. Historical direct ANFIS,
-sequence, trainer, and rollout commands remain denied for Closure V1.
+The next gates are to complete publication provenance for the guarded
+common-origin artifact, implement the strict expert/ANFIS state, sequence,
+temporal-fit, rollout, and lock adapters, and then generate E0-DL from a clean
+commit. Historical direct ANFIS, sequence, trainer, and rollout commands remain
+denied for Closure V1.

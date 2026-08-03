@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import subprocess
 import sys
 from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
@@ -55,6 +56,24 @@ DEFAULT_MODEL_BENCHMARK = Path("configs/closure_v1/model_benchmark.yaml")
 DEFAULT_LOCATION_HOLDOUT = Path("configs/closure_v1/location_holdout.yaml")
 DEFAULT_OUTPUT = Path("data/closure_v1/common_origin_manifest.parquet")
 DEFAULT_MANIFEST = Path("reports/closure_v1/01_surface/common_origin_manifest.json")
+
+COMMON_ORIGIN_CODE_DEPENDENCIES = (
+    Path("src/experiments/build_common_origin_manifest.py"),
+    Path("src/experiments/build_closure_holdout.py"),
+    Path("src/experiments/closure_contract.py"),
+    Path("src/experiments/closure_development_guard.py"),
+    Path("src/pandas_utils.py"),
+)
+COMMON_ORIGIN_CONFIG_DEPENDENCIES = (
+    DEFAULT_ANALYSIS_PLAN,
+    Path("configs/closure_v1/analysis_plan.schema.json"),
+    DEFAULT_PRIMARY_SURFACE,
+    Path("configs/closure_v1/surface_secondary.yaml"),
+    DEFAULT_LOCATION_HOLDOUT,
+    DEFAULT_MODEL_BENCHMARK,
+    Path("configs/closure_v1/experimental_matrix.yaml"),
+    Path("configs/counterfactual_planning_v1.yaml"),
+)
 
 SURFACE_ID = "closure_v1_wqp_adaptive_no_current_chla"
 HISTORY_LENGTH_MONTHS = 12
@@ -104,6 +123,63 @@ def _file_record(path: Path) -> dict[str, Any]:
         "bytes": path.stat().st_size,
         "sha256": _sha256_file(path),
     }
+
+
+def _verified_file_record(
+    path: Path,
+    *,
+    expected_sha256: str,
+    role: str,
+) -> dict[str, Any]:
+    record = _file_record(path)
+    if record["sha256"] != expected_sha256:
+        raise DevelopmentGuardError(f"{role} changed during common-origin construction")
+    return {**record, "role": role}
+
+
+def _git_head() -> str:
+    result = subprocess.run(
+        ["git", "rev-parse", "HEAD"],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _git_execution_state() -> dict[str, Any]:
+    status = subprocess.run(
+        ["git", "status", "--short", "--untracked-files=no"],
+        cwd=PROJECT_ROOT,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    status_lines = [line for line in status.stdout.splitlines() if line]
+    return {
+        "base_head": _git_head(),
+        "base_head_is_complete_source_identity": False,
+        "tracked_worktree_status": "dirty" if status_lines else "clean",
+        "tracked_status_lines": status_lines,
+    }
+
+
+def _reproduction_command(args: argparse.Namespace) -> list[str]:
+    return [
+        "poetry",
+        "run",
+        "python",
+        COMMON_ORIGIN_CODE_DEPENDENCIES[0].as_posix(),
+        "--panel",
+        repository_relative(args.panel),
+        "--splits",
+        repository_relative(args.splits),
+        "--output",
+        repository_relative(args.output),
+        "--manifest",
+        repository_relative(args.manifest),
+    ]
 
 
 def _write_json_atomic(payload: Mapping[str, Any], path: Path) -> None:
@@ -582,6 +658,11 @@ def _manifest_payload(
     panel_scan_audit: DevelopmentScanAudit,
     target_key_scan_audit: DevelopmentScanAudit,
     source_records: Sequence[Mapping[str, Any]],
+    parent_records: Sequence[Mapping[str, Any]],
+    code_records: Sequence[Mapping[str, Any]],
+    config_records: Sequence[Mapping[str, Any]],
+    repository_state: Mapping[str, Any],
+    reproduction_command: Sequence[str],
 ) -> dict[str, Any]:
     origin_rows = frame[ORIGIN_KEY_COLUMNS].drop_duplicates()
     role_origin_counts = (
@@ -598,6 +679,12 @@ def _manifest_payload(
         "experiment_id": "closure_v1",
         "surface_id": SURFACE_ID,
         "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+        "execution": {
+            "repository": dict(repository_state),
+            "source_tree_identity": "code_config_parent_sha256_records",
+            "reproduction_command": list(reproduction_command),
+            "future_outcomes_semantically_decoded": False,
+        },
         "future_outcomes_accessed": False,
         "target_values_projected": [],
         "target_parquet_semantically_opened": False,
@@ -606,6 +693,7 @@ def _manifest_payload(
         "availability_join": "left_after_intent_freeze",
         "assignment": {
             "path": repository_relative(gate.assignment_path),
+            "bytes": gate.assignment_path.stat().st_size,
             "sha256": gate.assignment_sha256,
             **gate.expected_counts,
             "holdout_fit_overlap_count": 0,
@@ -648,17 +736,9 @@ def _manifest_payload(
             "horizons_months": list(HORIZONS_MONTHS),
         },
         "source_inputs": list(source_records),
-        "code": [
-            _file_record(Path(__file__)),
-            _file_record(PROJECT_ROOT / "src/experiments/closure_development_guard.py"),
-            _file_record(PROJECT_ROOT / "src/experiments/build_closure_holdout.py"),
-        ],
-        "configs": [
-            _file_record(PROJECT_ROOT / DEFAULT_ANALYSIS_PLAN),
-            _file_record(PROJECT_ROOT / DEFAULT_PRIMARY_SURFACE),
-            _file_record(PROJECT_ROOT / DEFAULT_MODEL_BENCHMARK),
-            _file_record(PROJECT_ROOT / DEFAULT_LOCATION_HOLDOUT),
-        ],
+        "parent_artifacts": list(parent_records),
+        "code": list(code_records),
+        "configs": list(config_records),
         "output": _file_record(output),
     }
 
@@ -677,6 +757,7 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     gate = load_development_gate()
+    repository_state_before = _git_execution_state()
     protocol_lock = load_json_mapping(gate.protocol_lock_path)
     source_paths = [
         args.panel,
@@ -687,6 +768,29 @@ def main() -> None:
     ]
     source_paths = [PROJECT_ROOT / path if not path.is_absolute() else path for path in source_paths]
     source_records_before = [_locked_source_record(protocol_lock, path.resolve()) for path in source_paths]
+    code_records_before = [
+        _file_record(PROJECT_ROOT / path) for path in COMMON_ORIGIN_CODE_DEPENDENCIES
+    ]
+    config_records_before = [
+        _file_record(PROJECT_ROOT / path) for path in COMMON_ORIGIN_CONFIG_DEPENDENCIES
+    ]
+    parent_records_before = [
+        _verified_file_record(
+            gate.protocol_lock_path,
+            expected_sha256=gate.protocol_lock_sha256,
+            role="protocol_lock",
+        ),
+        _verified_file_record(
+            gate.holdout_manifest_path,
+            expected_sha256=gate.holdout_manifest_sha256,
+            role="holdout_manifest",
+        ),
+        _verified_file_record(
+            gate.assignment_path,
+            expected_sha256=gate.assignment_sha256,
+            role="holdout_assignment",
+        ),
+    ]
 
     panel_rows, panel_scan_audit = scan_development_rows(
         args.panel,
@@ -710,6 +814,38 @@ def main() -> None:
     source_records_after = [_locked_source_record(protocol_lock, path.resolve()) for path in source_paths]
     if source_records_before != source_records_after:
         raise DevelopmentGuardError("A locked source artifact changed during common-origin construction")
+    parent_records_after = [
+        _verified_file_record(
+            gate.protocol_lock_path,
+            expected_sha256=gate.protocol_lock_sha256,
+            role="protocol_lock",
+        ),
+        _verified_file_record(
+            gate.holdout_manifest_path,
+            expected_sha256=gate.holdout_manifest_sha256,
+            role="holdout_manifest",
+        ),
+        _verified_file_record(
+            gate.assignment_path,
+            expected_sha256=gate.assignment_sha256,
+            role="holdout_assignment",
+        ),
+    ]
+    if parent_records_before != parent_records_after:
+        raise DevelopmentGuardError("A parent gate artifact changed during common-origin construction")
+    code_records_after = [
+        _file_record(PROJECT_ROOT / path) for path in COMMON_ORIGIN_CODE_DEPENDENCIES
+    ]
+    config_records_after = [
+        _file_record(PROJECT_ROOT / path) for path in COMMON_ORIGIN_CONFIG_DEPENDENCIES
+    ]
+    if code_records_before != code_records_after:
+        raise DevelopmentGuardError("A code dependency changed during common-origin construction")
+    if config_records_before != config_records_after:
+        raise DevelopmentGuardError("A configuration dependency changed during common-origin construction")
+    repository_state_after = _git_execution_state()
+    if repository_state_before != repository_state_after:
+        raise DevelopmentGuardError("Repository state changed during common-origin construction")
 
     output = args.output.resolve() if args.output.is_absolute() else (PROJECT_ROOT / args.output).resolve()
     manifest = args.manifest.resolve() if args.manifest.is_absolute() else (PROJECT_ROOT / args.manifest).resolve()
@@ -722,6 +858,11 @@ def main() -> None:
         panel_scan_audit=panel_scan_audit,
         target_key_scan_audit=target_key_scan_audit,
         source_records=source_records_after,
+        parent_records=parent_records_after,
+        code_records=code_records_after,
+        config_records=config_records_after,
+        repository_state=repository_state_after,
+        reproduction_command=_reproduction_command(args),
     )
     _write_json_atomic(payload, manifest)
     print(

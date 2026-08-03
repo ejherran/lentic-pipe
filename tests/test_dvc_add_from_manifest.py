@@ -3,11 +3,23 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.data.dvc_add_from_manifest import (
+    DEFAULT_MANIFEST,
     dvc_add_commands,
     dvc_environment,
     load_artifacts,
+    load_configured_artifacts,
     resolve_dvc_bin,
 )
+
+
+def test_default_dvc_add_inventory_includes_closure_post_lock_overlay() -> None:
+    artifacts = load_configured_artifacts(DEFAULT_MANIFEST)
+
+    assert any(
+        artifact.artifact_id == "closure_v1_common_origin_manifest"
+        and artifact.path == Path("data/closure_v1/common_origin_manifest.parquet")
+        for artifact in artifacts
+    )
 
 
 def test_dvc_manifest_loader_builds_commands_for_existing_paths(tmp_path: Path) -> None:

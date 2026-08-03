@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import csv
 import copy
 import subprocess
 from collections.abc import MutableMapping, Sequence
@@ -396,11 +397,21 @@ def test_experimental_matrix_rejects_ablation_operation_drift(
         )
 
 
-def test_dvc_inventory_reads_all_64_tracked_pointers_without_remote_access() -> None:
+def test_dvc_inventory_preserves_protocol_snapshot_and_adds_common_origin_after_promotion() -> None:
     rows = dvc_inventory()
     pointer_paths = {str(row["pointer_path"]) for row in rows}
+    snapshot_path = Path("reports/closure_v1/00_protocol/dvc_inventory_snapshot.csv")
+    with snapshot_path.open(encoding="utf-8", newline="") as handle:
+        snapshot_rows = list(csv.DictReader(handle))
+    snapshot_pointer_paths = {row["pointer_path"] for row in snapshot_rows}
+    common_origin_pointer = Path("data/closure_v1/common_origin_manifest.parquet.dvc")
+    promoted_pointer_paths = {common_origin_pointer.as_posix()} if common_origin_pointer.exists() else set()
 
-    assert len(pointer_paths) == 64
+    assert len(snapshot_rows) == 64
+    assert len(snapshot_pointer_paths) == 64
+    assert snapshot_pointer_paths.issubset(pointer_paths)
+    assert pointer_paths == snapshot_pointer_paths | promoted_pointer_paths
+    assert len(pointer_paths) == 64 + len(promoted_pointer_paths)
     assert all(row["hash_name"] and row["hash_value"] for row in rows)
 
 

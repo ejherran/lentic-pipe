@@ -192,7 +192,10 @@ exports, or credential JSON files.
   WQP, AquaMatch Chl-a, and EPA NLA.
 - SHA-256 hashes and the data freeze are versioned under `data/catalog/` and
   `data/freeze/`.
-- Heavy artifacts are declared in `configs/dvc_artifacts.yaml`.
+- Heavy artifacts are declared in the immutable E0-P inventory
+  `configs/dvc_artifacts.yaml` and, for post-lock Closure V1 additions, in
+  anchored overlays such as
+  `configs/closure_v1/dvc_artifacts_post_lock.yaml`.
 - The thesis-wide `closure_v1` benchmark has not been evaluated. E0-P was
   published in `ead7d13`, its external protocol lock in `31230a2`, and the
   cutoff-safe E0-C assignment in `0c283af`. The immutable assignment contains
@@ -202,11 +205,14 @@ exports, or credential JSON files.
   `502c955`. A derived ANFIS/PIPE runtime-contract candidate has status
   `ready_to_lock`; it fixes the no-current autoregressive lineage,
   deterministic ANFIS sampling, five paired seeds, and the P0/P1 fit profile.
-  The common-origin artifact, strict adapters, and external E0-DL lock do not
-  exist yet, so fitting is not authorized. Pre-E0-DL checks can lock planned
-  DVC ownership, but fit-generated heavy artifacts can be registered only
-  after materialization and must be registered before E0-M. E0-U remains
-  sealed, and no post-2021 holdout outcome has been opened for Closure V1.
+  The guarded common-origin artifact is now materialized and strictly
+  validated: 29,196 horizon rows over 9,732 origins and 353 development
+  locations. Its completion manifest and explicit DVC pointer bind the frozen
+  sources and implementation dependencies. The strict model adapters and
+  external E0-DL lock do not exist yet, so fitting is not authorized.
+  Fit-generated heavy artifacts can be registered only after materialization
+  and must be registered before E0-M. E0-U remains sealed, and no post-2021
+  holdout outcome has been opened for Closure V1.
   Existing model results remain iteration-specific evidence.
   The primary closure surface excludes observed Chl-a and all of its lineage at
   every input lag, and the transfer claim is limited to held-out WQP monitoring

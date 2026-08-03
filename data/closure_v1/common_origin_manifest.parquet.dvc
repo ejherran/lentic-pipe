@@ -1,0 +1,5 @@
+outs:
+- md5: 9e8f21edfc4026ffd8747b3eb1a9774d
+  size: 2763097
+  hash: md5
+  path: common_origin_manifest.parquet

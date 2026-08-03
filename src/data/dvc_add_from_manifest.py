@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Run or preview `dvc add` commands from configs/dvc_artifacts.yaml."""
+"""Run or preview `dvc add` commands from the base and post-lock inventories."""
 
 from __future__ import annotations
 
@@ -13,6 +13,14 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.data.prepare_commit_artifacts import (
+    DEFAULT_CLOSURE_DVC_MANIFEST,
+    validate_closure_dvc_overlay_anchor,
+)
 
 
 DEFAULT_MANIFEST = Path("configs/dvc_artifacts.yaml")
@@ -48,6 +56,26 @@ def load_artifacts(manifest_path: Path) -> list[DvcArtifact]:
                 dvc=bool(raw_artifact.get("dvc", False)),
             )
         )
+    return artifacts
+
+
+def load_configured_artifacts(manifest_path: Path) -> list[DvcArtifact]:
+    """Load the immutable base plus the Closure post-lock overlay by default."""
+    manifest_paths = [manifest_path]
+    if manifest_path.resolve() == DEFAULT_MANIFEST.resolve():
+        validate_closure_dvc_overlay_anchor()
+        manifest_paths.append(DEFAULT_CLOSURE_DVC_MANIFEST)
+    artifacts = [
+        artifact
+        for configured_path in manifest_paths
+        for artifact in load_artifacts(configured_path)
+    ]
+    artifact_ids = [artifact.artifact_id for artifact in artifacts]
+    artifact_paths = [artifact.path for artifact in artifacts]
+    if len(artifact_ids) != len(set(artifact_ids)):
+        raise ValueError("DVC artifact inventories contain duplicate artifact_id values")
+    if len(artifact_paths) != len(set(artifact_paths)):
+        raise ValueError("DVC artifact inventories contain duplicate paths")
     return artifacts
 
 
@@ -105,7 +133,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> int:
     args = parse_args()
-    artifacts = load_artifacts(args.manifest)
+    artifacts = load_configured_artifacts(args.manifest)
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
     commands, missing = dvc_add_commands(artifacts, include_missing=False, dvc_bin=dvc_bin)
 

@@ -13,12 +13,15 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import yaml
 
 
 DEFAULT_DVC_MANIFEST = Path("configs/dvc_artifacts.yaml")
+DEFAULT_CLOSURE_DVC_MANIFEST = Path(
+    "configs/closure_v1/dvc_artifacts_post_lock.yaml"
+)
 DEFAULT_REPORT_DIR = Path("tmp")
 DEFAULT_DVC_BIN = Path(".venv/bin/dvc")
 DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
@@ -35,6 +38,7 @@ HEAVY_PREFIXES = (
     "data/diagnostics/",
     "data/fuzzy/",
     "data/pipe_grud/",
+    "data/closure_v1/",
     "models/",
     "checkpoints/",
     "outputs/",
@@ -62,6 +66,66 @@ REPORT_ARTIFACT_SUFFIXES = {".csv", ".json", ".md", ".parquet", ".txt"}
 CLOSURE_PROTOCOL_LOCK_PATH = Path("reports/closure_v1/00_protocol/protocol_lock.json")
 CLOSURE_PROTOCOL_LOCK_VERSION = "closure_protocol_lock_v1"
 CLOSURE_PROTOCOL_LOCK_SCRIPT = Path("src/experiments/lock_closure_protocol.py")
+CLOSURE_COMMON_ORIGIN_MANIFEST_PATH = Path(
+    "reports/closure_v1/01_surface/common_origin_manifest.json"
+)
+CLOSURE_COMMON_ORIGIN_MANIFEST_VERSION = "closure_common_origin_manifest_v1"
+CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT = Path(
+    "src/experiments/build_common_origin_manifest.py"
+)
+CLOSURE_COMMON_ORIGIN_OUTPUT_PATH = Path(
+    "data/closure_v1/common_origin_manifest.parquet"
+)
+CLOSURE_COMMON_ORIGIN_CODE_PATHS = (
+    CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT,
+    Path("src/experiments/build_closure_holdout.py"),
+    Path("src/experiments/closure_contract.py"),
+    Path("src/experiments/closure_development_guard.py"),
+    Path("src/pandas_utils.py"),
+)
+CLOSURE_COMMON_ORIGIN_CONFIG_PATHS = (
+    Path("configs/closure_v1/analysis_plan.yaml"),
+    Path("configs/closure_v1/analysis_plan.schema.json"),
+    Path("configs/closure_v1/surface_primary.yaml"),
+    Path("configs/closure_v1/surface_secondary.yaml"),
+    Path("configs/closure_v1/location_holdout.yaml"),
+    Path("configs/closure_v1/model_benchmark.yaml"),
+    Path("configs/closure_v1/experimental_matrix.yaml"),
+    Path("configs/counterfactual_planning_v1.yaml"),
+)
+CLOSURE_COMMON_ORIGIN_SOURCE_PATHS = (
+    Path("data/panel/panel_monthly_v0.parquet"),
+    Path("data/splits/monthly_model_splits_v0.parquet"),
+    Path("data/targets/monthly_targets_model_v0.parquet"),
+    Path("data/targets/target_manifest_v0.json"),
+    Path("data/splits/split_manifest.json"),
+)
+CLOSURE_COMMON_ORIGIN_SOURCE_ROLES = (
+    "cutoff_safe_input_history_source",
+    "canonical_leakage_safe_temporal_rows",
+    "historical_stratification_and_later_evaluation_targets",
+    "canonical_target_provenance_and_threshold_manifest",
+    "temporal_split_provenance",
+)
+CLOSURE_COMMON_ORIGIN_PARENT_PATHS_AND_ROLES = (
+    (Path("reports/closure_v1/00_protocol/protocol_lock.json"), "protocol_lock"),
+    (Path("reports/closure_v1/00_protocol/holdout_manifest.json"), "holdout_manifest"),
+    (Path("data/closure_v1/closure_holdout_assignment.csv"), "holdout_assignment"),
+)
+CLOSURE_COMMON_ORIGIN_REPRODUCTION_COMMAND = [
+    "poetry",
+    "run",
+    "python",
+    CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT.as_posix(),
+    "--panel",
+    CLOSURE_COMMON_ORIGIN_SOURCE_PATHS[0].as_posix(),
+    "--splits",
+    CLOSURE_COMMON_ORIGIN_SOURCE_PATHS[1].as_posix(),
+    "--output",
+    CLOSURE_COMMON_ORIGIN_OUTPUT_PATH.as_posix(),
+    "--manifest",
+    CLOSURE_COMMON_ORIGIN_MANIFEST_PATH.as_posix(),
+]
 FREEZE_ARTIFACT_PATHS = {
     Path("data/freeze/derived_file_manifest_v0.csv"),
     Path("data/freeze/data_freeze_manifest_v0.json"),
@@ -220,6 +284,70 @@ def load_dvc_artifacts(manifest_path: Path) -> list[DvcArtifact]:
                 dvc=bool(raw_artifact.get("dvc", False)),
             )
         )
+    return artifacts
+
+
+def validate_closure_dvc_overlay_anchor(
+    overlay_path: Path = DEFAULT_CLOSURE_DVC_MANIFEST,
+) -> None:
+    """Require the post-lock overlay to extend the exact E0-P base inventory."""
+    with overlay_path.open("r", encoding="utf-8") as handle:
+        overlay = yaml.safe_load(handle)
+    anchor = overlay.get("sealed_base_inventory") if isinstance(overlay, dict) else None
+    if not isinstance(anchor, dict):
+        raise ValueError(f"{overlay_path} must declare sealed_base_inventory")
+    expected_anchor = {
+        "path": DEFAULT_DVC_MANIFEST.as_posix(),
+        "bytes": 18841,
+        "sha256": "3304fd61978604ecfba5f99f1a9b3d04e4655f45f97f92954081751346143605",
+        "authority": CLOSURE_PROTOCOL_LOCK_PATH.as_posix(),
+    }
+    if anchor != expected_anchor:
+        raise ValueError(f"{overlay_path} sealed_base_inventory differs from E0-P")
+
+    protocol_lock = json.loads(CLOSURE_PROTOCOL_LOCK_PATH.read_text(encoding="utf-8"))
+    source_records = protocol_lock.get("source_artifacts") if isinstance(protocol_lock, dict) else None
+    matching_records = (
+        [
+            record
+            for record in source_records
+            if isinstance(record, dict) and record.get("path") == DEFAULT_DVC_MANIFEST.as_posix()
+        ]
+        if isinstance(source_records, list)
+        else []
+    )
+    if len(matching_records) != 1:
+        raise ValueError("Closure protocol lock must contain the sealed base DVC inventory")
+    locked_record = matching_records[0]
+    if (
+        locked_record.get("bytes") != anchor["bytes"]
+        or locked_record.get("sha256") != anchor["sha256"]
+    ):
+        raise ValueError("Closure DVC overlay anchor differs from the protocol-lock source record")
+    if (
+        DEFAULT_DVC_MANIFEST.stat().st_size != anchor["bytes"]
+        or sha256_file(DEFAULT_DVC_MANIFEST) != anchor["sha256"]
+    ):
+        raise ValueError("Protocol-locked base DVC inventory changed")
+
+
+def load_configured_dvc_artifacts(manifest_path: Path) -> list[DvcArtifact]:
+    """Load the sealed base inventory plus its derived Closure V1 overlay."""
+    manifest_paths = [manifest_path]
+    if manifest_path.resolve() == DEFAULT_DVC_MANIFEST.resolve():
+        validate_closure_dvc_overlay_anchor()
+        manifest_paths.append(DEFAULT_CLOSURE_DVC_MANIFEST)
+    artifacts = [
+        artifact
+        for configured_path in manifest_paths
+        for artifact in load_dvc_artifacts(configured_path)
+    ]
+    artifact_ids = [artifact.artifact_id for artifact in artifacts]
+    artifact_paths = [artifact.path for artifact in artifacts]
+    if len(artifact_ids) != len(set(artifact_ids)):
+        raise ValueError("DVC artifact inventories contain duplicate artifact_id values")
+    if len(artifact_paths) != len(set(artifact_paths)):
+        raise ValueError("DVC artifact inventories contain duplicate paths")
     return artifacts
 
 
@@ -393,6 +521,8 @@ def is_experiment_manifest_path(path: Path) -> bool:
         return False
     if path == CLOSURE_PROTOCOL_LOCK_PATH:
         return True
+    if path.name == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH.name:
+        return path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH
     return text.startswith("reports/") and path.suffix == ".json" and "manifest" in path.name
 
 
@@ -427,6 +557,8 @@ def manifest_output_records(payload: Any, manifest_path: Path) -> Any:
         return None
     if manifest_path == CLOSURE_PROTOCOL_LOCK_PATH:
         return payload.get("generated_lock_companions")
+    if manifest_path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH:
+        return [payload.get("output")]
     return payload.get("outputs")
 
 
@@ -526,6 +658,8 @@ def verify_manifest_file_record(
 
 def discover_relevant_manifest_paths(staged_paths: set[Path]) -> list[Path]:
     manifest_paths = {path for path in staged_paths if is_experiment_manifest_path(path)}
+    if dvc_pointer_path(CLOSURE_COMMON_ORIGIN_OUTPUT_PATH) in staged_paths:
+        manifest_paths.add(CLOSURE_COMMON_ORIGIN_MANIFEST_PATH)
     for path in staged_paths:
         if not is_report_artifact_path(path):
             continue
@@ -603,6 +737,9 @@ def validate_experiment_manifests(
             continue
 
         is_closure_protocol_lock = manifest_path == CLOSURE_PROTOCOL_LOCK_PATH
+        is_closure_common_origin_manifest = (
+            manifest_path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH
+        )
         if is_closure_protocol_lock:
             lock_version = payload.get("lock_version") if isinstance(payload, dict) else None
             status = payload.get("status") if isinstance(payload, dict) else None
@@ -656,6 +793,117 @@ def validate_experiment_manifests(
                         "Closure protocol lock must record a clean repository with no dirty paths.",
                     )
                 )
+        elif is_closure_common_origin_manifest:
+            if not isinstance(payload, dict):
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        "Closure common-origin manifest must contain a JSON object.",
+                    )
+                )
+            else:
+                manifest_version = payload.get("manifest_version")
+                if manifest_version != CLOSURE_COMMON_ORIGIN_MANIFEST_VERSION:
+                    findings.append(
+                        ReproducibilityFinding(
+                            "fail",
+                            "manifest",
+                            manifest_path.as_posix(),
+                            (
+                                f"Closure common-origin manifest version is `{manifest_version}`, "
+                                f"expected `{CLOSURE_COMMON_ORIGIN_MANIFEST_VERSION}`."
+                            ),
+                        )
+                    )
+                for field, expected in (
+                    ("status", "completed"),
+                    ("experiment_id", "closure_v1"),
+                    ("surface_id", "closure_v1_wqp_adaptive_no_current_chla"),
+                    ("future_outcomes_accessed", False),
+                    ("target_values_projected", []),
+                    ("target_parquet_semantically_opened", False),
+                    ("post_cutoff_target_rows_materialized", 0),
+                    ("target_availability_used_for_origin_selection", False),
+                    ("availability_join", "left_after_intent_freeze"),
+                ):
+                    value = payload.get(field)
+                    matches = value == expected
+                    if expected is False:
+                        matches = value is False
+                    elif field == "post_cutoff_target_rows_materialized":
+                        matches = type(value) is int and value == 0
+                    if not matches:
+                        findings.append(
+                            ReproducibilityFinding(
+                                "fail",
+                                "manifest",
+                                manifest_path.as_posix(),
+                                (
+                                    "Closure common-origin manifest requires "
+                                    f"`{field}={json.dumps(expected)}`."
+                                ),
+                            )
+                        )
+                execution = payload.get("execution")
+                repository = execution.get("repository") if isinstance(execution, dict) else None
+                base_head = repository.get("base_head") if isinstance(repository, dict) else None
+                status = (
+                    repository.get("tracked_worktree_status")
+                    if isinstance(repository, dict)
+                    else None
+                )
+                status_lines = (
+                    repository.get("tracked_status_lines")
+                    if isinstance(repository, dict)
+                    else None
+                )
+                valid_head = (
+                    isinstance(base_head, str)
+                    and len(base_head) in {40, 64}
+                    and set(base_head).issubset(set("0123456789abcdef"))
+                )
+                valid_status = (
+                    status in {"clean", "dirty"}
+                    and isinstance(status_lines, list)
+                    and all(isinstance(line, str) and line for line in status_lines)
+                    and status == ("dirty" if status_lines else "clean")
+                )
+                if (
+                    not isinstance(execution, dict)
+                    or set(execution)
+                    != {
+                        "repository",
+                        "source_tree_identity",
+                        "reproduction_command",
+                        "future_outcomes_semantically_decoded",
+                    }
+                    or not isinstance(repository, dict)
+                    or set(repository)
+                    != {
+                        "base_head",
+                        "base_head_is_complete_source_identity",
+                        "tracked_worktree_status",
+                        "tracked_status_lines",
+                    }
+                    or not valid_head
+                    or repository.get("base_head_is_complete_source_identity") is not False
+                    or not valid_status
+                    or execution.get("source_tree_identity")
+                    != "code_config_parent_sha256_records"
+                    or execution.get("future_outcomes_semantically_decoded") is not False
+                    or execution.get("reproduction_command")
+                    != CLOSURE_COMMON_ORIGIN_REPRODUCTION_COMMAND
+                ):
+                    findings.append(
+                        ReproducibilityFinding(
+                            "fail",
+                            "manifest",
+                            manifest_path.as_posix(),
+                            "Closure common-origin manifest has an invalid sealed execution record.",
+                        )
+                    )
         elif isinstance(payload, dict) and payload.get("status") not in {None, "completed"}:
             findings.append(
                 ReproducibilityFinding(
@@ -678,6 +926,21 @@ def validate_experiment_manifests(
             )
             continue
 
+        if is_closure_common_origin_manifest:
+            output_paths = tuple(manifest_record_path(record) for record in outputs)
+            if output_paths != (CLOSURE_COMMON_ORIGIN_OUTPUT_PATH,):
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        (
+                            "Closure common-origin manifest must contain exactly the output "
+                            f"`{CLOSURE_COMMON_ORIGIN_OUTPUT_PATH}`."
+                        ),
+                    )
+                )
+
         for record in outputs:
             record_path = verify_manifest_file_record(
                 record=record,
@@ -686,6 +949,7 @@ def validate_experiment_manifests(
                 findings=findings,
                 max_hash_bytes=max_hash_bytes,
                 require_hash=True,
+                force_hash=is_closure_common_origin_manifest,
             )
             if record_path is not None:
                 covered_outputs.setdefault(record_path, []).append(manifest_path)
@@ -725,6 +989,145 @@ def validate_experiment_manifests(
                 inputs: Any = []
             else:
                 inputs = [*protocol_components, *source_artifacts]
+        elif is_closure_common_origin_manifest:
+            code = payload.get("code") if isinstance(payload, dict) else None
+            configs = payload.get("configs") if isinstance(payload, dict) else None
+            source_inputs = payload.get("source_inputs") if isinstance(payload, dict) else None
+            parent_artifacts = payload.get("parent_artifacts") if isinstance(payload, dict) else None
+            common_origin_sections = (
+                ("code", code, CLOSURE_COMMON_ORIGIN_CODE_PATHS),
+                ("configs", configs, CLOSURE_COMMON_ORIGIN_CONFIG_PATHS),
+                ("source_inputs", source_inputs, CLOSURE_COMMON_ORIGIN_SOURCE_PATHS),
+                (
+                    "parent_artifacts",
+                    parent_artifacts,
+                    tuple(path for path, _ in CLOSURE_COMMON_ORIGIN_PARENT_PATHS_AND_ROLES),
+                ),
+            )
+            inputs = []
+            for section_name, records, expected_paths in common_origin_sections:
+                if not isinstance(records, list) or not records:
+                    findings.append(
+                        ReproducibilityFinding(
+                            "fail",
+                            "manifest",
+                            manifest_path.as_posix(),
+                            (
+                                "Closure common-origin manifest must contain a non-empty "
+                                f"`{section_name}` list."
+                            ),
+                        )
+                    )
+                    continue
+                observed_paths = tuple(manifest_record_path(record) for record in records)
+                if observed_paths != expected_paths:
+                    findings.append(
+                        ReproducibilityFinding(
+                            "fail",
+                            "manifest",
+                            manifest_path.as_posix(),
+                            (
+                                f"Closure common-origin `{section_name}` paths must equal "
+                                f"{[path.as_posix() for path in expected_paths]}."
+                            ),
+                        )
+                    )
+                inputs.extend(records)
+
+            if isinstance(source_inputs, list):
+                for raw_record, expected_role in zip(
+                    source_inputs,
+                    CLOSURE_COMMON_ORIGIN_SOURCE_ROLES,
+                    strict=False,
+                ):
+                    record = cast(dict[str, Any], raw_record) if isinstance(raw_record, dict) else None
+                    if (
+                        record is None
+                        or record.get("role") != expected_role
+                        or record.get("hash_source") != "protocol_lock"
+                    ):
+                        findings.append(
+                            ReproducibilityFinding(
+                                "fail",
+                                "manifest",
+                                manifest_path.as_posix(),
+                                "Closure common-origin source roles/hash_source are invalid.",
+                            )
+                        )
+                        break
+
+            if isinstance(parent_artifacts, list):
+                for raw_record, (_, expected_role) in zip(
+                    parent_artifacts,
+                    CLOSURE_COMMON_ORIGIN_PARENT_PATHS_AND_ROLES,
+                    strict=False,
+                ):
+                    record = cast(dict[str, Any], raw_record) if isinstance(raw_record, dict) else None
+                    if record is None or record.get("role") != expected_role:
+                        findings.append(
+                            ReproducibilityFinding(
+                                "fail",
+                                "manifest",
+                                manifest_path.as_posix(),
+                                "Closure common-origin parent roles are invalid.",
+                            )
+                        )
+                        break
+
+            assignment = payload.get("assignment") if isinstance(payload, dict) else None
+            assignment_parent = (
+                parent_artifacts[2]
+                if isinstance(parent_artifacts, list) and len(parent_artifacts) == 3
+                else None
+            )
+            if (
+                not isinstance(assignment, dict)
+                or assignment.get("path")
+                != CLOSURE_COMMON_ORIGIN_PARENT_PATHS_AND_ROLES[2][0].as_posix()
+                or type(assignment.get("bytes")) is not int
+                or assignment.get("bytes", -1) < 0
+                or not isinstance(assignment.get("sha256"), str)
+                or assignment.get("eligible_locations") != 441
+                or assignment.get("development_locations") != 353
+                or assignment.get("holdout_locations") != 88
+                or assignment.get("holdout_fit_overlap_count") != 0
+                or not isinstance(assignment_parent, dict)
+                or assignment_parent.get("bytes") != assignment.get("bytes")
+                or assignment_parent.get("sha256") != assignment.get("sha256")
+            ):
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        "Closure common-origin assignment provenance is invalid.",
+                    )
+                )
+
+            generating_scripts = (
+                [
+                    record
+                    for record in code
+                    if manifest_record_path(record)
+                    == CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT
+                ]
+                if isinstance(code, list)
+                else []
+            )
+            if len(generating_scripts) != 1:
+                findings.append(
+                    ReproducibilityFinding(
+                        "fail",
+                        "manifest",
+                        manifest_path.as_posix(),
+                        (
+                            "Closure common-origin manifest must contain exactly one "
+                            "generating-script record for "
+                            f"`{CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT}`."
+                        ),
+                    )
+                )
+            script = generating_scripts[0] if len(generating_scripts) == 1 else None
         else:
             script = payload.get("script") if isinstance(payload, dict) else None
             inputs = payload.get("inputs") if isinstance(payload, dict) else None
@@ -739,7 +1142,7 @@ def validate_experiment_manifests(
                 require_hash=True,
                 force_hash=True,
             )
-        elif not is_closure_protocol_lock:
+        elif not is_closure_protocol_lock and not is_closure_common_origin_manifest:
             findings.append(
                 ReproducibilityFinding(
                     "warn",
@@ -757,7 +1160,10 @@ def validate_experiment_manifests(
                     section="input",
                     findings=findings,
                     max_hash_bytes=max_hash_bytes,
-                    require_hash=verify_manifest_inputs,
+                    require_hash=(
+                        verify_manifest_inputs or is_closure_common_origin_manifest
+                    ),
+                    force_hash=is_closure_common_origin_manifest,
                 )
         elif inputs is None:
             findings.append(
@@ -1205,7 +1611,7 @@ def main() -> int:
     ensure_repo_root()
     report_path = args.report or default_report_path()
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
-    artifacts = load_dvc_artifacts(args.manifest)
+    artifacts = load_configured_dvc_artifacts(args.manifest)
 
     git_status_before = versionable_changes()
     dvc_status_before = dvc_status_json(dvc_bin)

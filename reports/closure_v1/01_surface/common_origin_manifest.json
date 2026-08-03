@@ -1,0 +1,382 @@
+{
+  "manifest_version": "closure_common_origin_manifest_v1",
+  "status": "completed",
+  "experiment_id": "closure_v1",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "generated_at_utc": "2026-08-03T17:25:17.726563+00:00",
+  "execution": {
+    "repository": {
+      "base_head": "f7ea39966aaecf024085a8b1260022c91c98f36f",
+      "base_head_is_complete_source_identity": false,
+      "tracked_worktree_status": "dirty",
+      "tracked_status_lines": [
+        " M docs/DATA_VERSIONING.md",
+        " M docs/PUBLICATION_CHECKLIST.md",
+        " M docs/closure_v1/E0_D_RUNTIME_CONTRACT.md",
+        " M src/data/dvc_add_from_manifest.py",
+        " M src/data/prepare_commit_artifacts.py",
+        " M src/experiments/build_common_origin_manifest.py",
+        " M src/experiments/closure_runtime_contract.py",
+        " M tests/test_build_common_origin_manifest.py",
+        " M tests/test_closure_contract.py",
+        " M tests/test_closure_runtime_contract.py",
+        " M tests/test_data_versioning_config.py",
+        " M tests/test_dvc_add_from_manifest.py",
+        " M tests/test_prepare_commit_artifacts.py"
+      ]
+    },
+    "source_tree_identity": "code_config_parent_sha256_records",
+    "reproduction_command": [
+      "poetry",
+      "run",
+      "python",
+      "src/experiments/build_common_origin_manifest.py",
+      "--panel",
+      "data/panel/panel_monthly_v0.parquet",
+      "--splits",
+      "data/splits/monthly_model_splits_v0.parquet",
+      "--output",
+      "data/closure_v1/common_origin_manifest.parquet",
+      "--manifest",
+      "reports/closure_v1/01_surface/common_origin_manifest.json"
+    ],
+    "future_outcomes_semantically_decoded": false
+  },
+  "future_outcomes_accessed": false,
+  "target_values_projected": [],
+  "target_parquet_semantically_opened": false,
+  "post_cutoff_target_rows_materialized": 0,
+  "target_availability_used_for_origin_selection": false,
+  "availability_join": "left_after_intent_freeze",
+  "assignment": {
+    "path": "data/closure_v1/closure_holdout_assignment.csv",
+    "bytes": 89635,
+    "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef",
+    "eligible_locations": 441,
+    "development_locations": 353,
+    "holdout_locations": 88,
+    "holdout_fit_overlap_count": 0
+  },
+  "projections": {
+    "panel": [
+      "source_id",
+      "site_id",
+      "year_month",
+      "mean_TP_ugL",
+      "mean_TN_ugL",
+      "mean_temperature_C",
+      "mean_secchi_depth_m",
+      "mean_turbidity_NTU",
+      "mean_DO_mgL",
+      "mean_pH"
+    ],
+    "target_keys": [
+      "source_id",
+      "site_id",
+      "origin_year_month",
+      "target_year_month",
+      "horizon_months"
+    ],
+    "panel_predicate": "source_id=wqp AND exact development site_id AND year_month<=2021-12",
+    "target_key_predicate": "source_id=wqp AND exact development site_id AND origin_year_month<=2021-12 AND target_year_month<=2021-12"
+  },
+  "scans": {
+    "panel": {
+      "materialized_rows": 42110,
+      "returned_rows": 42110,
+      "boundary_crossing_rows": 0,
+      "role_counts": {
+        "training": 36639,
+        "model_selection": 3739,
+        "calibration_threshold": 1732
+      }
+    },
+    "target_keys": {
+      "materialized_rows": 81863,
+      "returned_rows": 81397,
+      "boundary_crossing_rows": 466,
+      "role_counts": {
+        "training": 71239,
+        "model_selection": 6997,
+        "calibration_threshold": 3161
+      }
+    }
+  },
+  "intent_origin_audit": {
+    "monthly_status_rows": 42110,
+    "input_eligible_month_rows": 34589,
+    "history_candidate_origins": 10081,
+    "retained_intent_origins": 9732,
+    "excluded_role_crossing_origins": 238,
+    "excluded_locked_evaluation_origins": 111
+  },
+  "counts": {
+    "rows": 29196,
+    "intent_origins": 9732,
+    "sites": 353,
+    "target_evaluable_rows": 24242,
+    "complete_targets_evaluable_origins": 6814,
+    "intent_origins_by_role": {
+      "training": 8352,
+      "model_selection": 1061,
+      "calibration_threshold": 319
+    },
+    "by_role_horizon_target_evaluable": [
+      {
+        "time_role": "calibration_threshold",
+        "horizon_months": 1,
+        "target_evaluable": false,
+        "rows": 46
+      },
+      {
+        "time_role": "calibration_threshold",
+        "horizon_months": 1,
+        "target_evaluable": true,
+        "rows": 273
+      },
+      {
+        "time_role": "calibration_threshold",
+        "horizon_months": 2,
+        "target_evaluable": false,
+        "rows": 58
+      },
+      {
+        "time_role": "calibration_threshold",
+        "horizon_months": 2,
+        "target_evaluable": true,
+        "rows": 261
+      },
+      {
+        "time_role": "calibration_threshold",
+        "horizon_months": 3,
+        "target_evaluable": false,
+        "rows": 71
+      },
+      {
+        "time_role": "calibration_threshold",
+        "horizon_months": 3,
+        "target_evaluable": true,
+        "rows": 248
+      },
+      {
+        "time_role": "model_selection",
+        "horizon_months": 1,
+        "target_evaluable": false,
+        "rows": 250
+      },
+      {
+        "time_role": "model_selection",
+        "horizon_months": 1,
+        "target_evaluable": true,
+        "rows": 811
+      },
+      {
+        "time_role": "model_selection",
+        "horizon_months": 2,
+        "target_evaluable": false,
+        "rows": 249
+      },
+      {
+        "time_role": "model_selection",
+        "horizon_months": 2,
+        "target_evaluable": true,
+        "rows": 812
+      },
+      {
+        "time_role": "model_selection",
+        "horizon_months": 3,
+        "target_evaluable": false,
+        "rows": 241
+      },
+      {
+        "time_role": "model_selection",
+        "horizon_months": 3,
+        "target_evaluable": true,
+        "rows": 820
+      },
+      {
+        "time_role": "training",
+        "horizon_months": 1,
+        "target_evaluable": false,
+        "rows": 1213
+      },
+      {
+        "time_role": "training",
+        "horizon_months": 1,
+        "target_evaluable": true,
+        "rows": 7139
+      },
+      {
+        "time_role": "training",
+        "horizon_months": 2,
+        "target_evaluable": false,
+        "rows": 1336
+      },
+      {
+        "time_role": "training",
+        "horizon_months": 2,
+        "target_evaluable": true,
+        "rows": 7016
+      },
+      {
+        "time_role": "training",
+        "horizon_months": 3,
+        "target_evaluable": false,
+        "rows": 1490
+      },
+      {
+        "time_role": "training",
+        "horizon_months": 3,
+        "target_evaluable": true,
+        "rows": 6862
+      }
+    ]
+  },
+  "invariants": {
+    "holdout_overlap_count": 0,
+    "unknown_assignment_count": 0,
+    "post_2021_materialized_count": 0,
+    "chlorophyll_columns_projected": 0,
+    "duplicate_exact_keys": 0,
+    "rows_per_origin": 3,
+    "target_arithmetic_exact": true,
+    "one_role_per_origin": true,
+    "history_length_months": 12,
+    "horizons_months": [
+      1,
+      2,
+      3
+    ]
+  },
+  "source_inputs": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62",
+      "role": "cutoff_safe_input_history_source",
+      "hash_source": "protocol_lock"
+    },
+    {
+      "path": "data/splits/monthly_model_splits_v0.parquet",
+      "bytes": 35945898,
+      "sha256": "a3eaee4026b02d4ca5732bcf6e6078d7ee980d0bc0eeafed027a13f9db7999a9",
+      "role": "canonical_leakage_safe_temporal_rows",
+      "hash_source": "protocol_lock"
+    },
+    {
+      "path": "data/targets/monthly_targets_model_v0.parquet",
+      "bytes": 35541493,
+      "sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799",
+      "role": "historical_stratification_and_later_evaluation_targets",
+      "hash_source": "protocol_lock"
+    },
+    {
+      "path": "data/targets/target_manifest_v0.json",
+      "bytes": 5955,
+      "sha256": "5c082cf12aa4f9c6350f4e44eb2b41c7f0dc52cb041c3a67c09cd8e286f17ca4",
+      "role": "canonical_target_provenance_and_threshold_manifest",
+      "hash_source": "protocol_lock"
+    },
+    {
+      "path": "data/splits/split_manifest.json",
+      "bytes": 15444,
+      "sha256": "0b2ebceace30613b14b9a998e1d3123b6af0393b9a7e99767f3e021a9ab7aff5",
+      "role": "temporal_split_provenance",
+      "hash_source": "protocol_lock"
+    }
+  ],
+  "parent_artifacts": [
+    {
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "bytes": 8279,
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6",
+      "role": "protocol_lock"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "bytes": 3440,
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1",
+      "role": "holdout_manifest"
+    },
+    {
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "bytes": 89635,
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef",
+      "role": "holdout_assignment"
+    }
+  ],
+  "code": [
+    {
+      "path": "src/experiments/build_common_origin_manifest.py",
+      "bytes": 36987,
+      "sha256": "691d9c9951c37881e17280609b099551b7f87ccb60a126ef977073878cc281d0"
+    },
+    {
+      "path": "src/experiments/build_closure_holdout.py",
+      "bytes": 67719,
+      "sha256": "a79c746c2fa0468637744a5c5aa71dacfea8843130edfe6e9104a2d9ea0abd9e"
+    },
+    {
+      "path": "src/experiments/closure_contract.py",
+      "bytes": 87743,
+      "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+    },
+    {
+      "path": "src/experiments/closure_development_guard.py",
+      "bytes": 30856,
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "path": "src/pandas_utils.py",
+      "bytes": 1587,
+      "sha256": "4e9af7af5a8276fc83236047d27e7bcefa61a66e036ce4bc688078d7beebc685"
+    }
+  ],
+  "configs": [
+    {
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "bytes": 18302,
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "path": "configs/closure_v1/analysis_plan.schema.json",
+      "bytes": 31822,
+      "sha256": "7a5d22c9f6a8ba379340626086c40472273b8b003a5575143e21c5f58db4cb52"
+    },
+    {
+      "path": "configs/closure_v1/surface_primary.yaml",
+      "bytes": 3660,
+      "sha256": "44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132"
+    },
+    {
+      "path": "configs/closure_v1/surface_secondary.yaml",
+      "bytes": 1980,
+      "sha256": "255a1c0ae7a91aa876b06114c96aaedac6dc891bad6cfc0726192d0838b5abed"
+    },
+    {
+      "path": "configs/closure_v1/location_holdout.yaml",
+      "bytes": 7392,
+      "sha256": "71adcae5d505e4ccfbfd5d77a102a7c4446c513bd99343f537ad89e8e6e201db"
+    },
+    {
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "bytes": 7281,
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "path": "configs/closure_v1/experimental_matrix.yaml",
+      "bytes": 24374,
+      "sha256": "9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6"
+    },
+    {
+      "path": "configs/counterfactual_planning_v1.yaml",
+      "bytes": 5359,
+      "sha256": "ee594a4bece416a60e962437aadc826f019b8015433860d18a1b3cd8435d2648"
+    }
+  ],
+  "output": {
+    "path": "data/closure_v1/common_origin_manifest.parquet",
+    "bytes": 2763097,
+    "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+  }
+}
