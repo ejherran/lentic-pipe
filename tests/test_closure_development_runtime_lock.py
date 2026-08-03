@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import copy
+import json
 from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
@@ -1406,6 +1407,19 @@ def test_lock_lineage_validator_accepts_exact_builder_payload() -> None:
     payload, runtime = _lineage_payload_and_runtime()
 
     runtime_lock._validate_expert_lineage_payload(payload, runtime=runtime)
+
+
+def test_lock_lineage_validator_accepts_builder_payload_after_sorted_json_roundtrip() -> None:
+    payload, runtime = _lineage_payload_and_runtime()
+    serialized = json.dumps(payload, sort_keys=True)
+    restored = json.loads(serialized)
+
+    assert tuple(restored["role_counts"]) == (
+        "calibration_threshold",
+        "model_selection",
+        "training",
+    )
+    runtime_lock._validate_expert_lineage_payload(restored, runtime=runtime)
 
 
 @pytest.mark.parametrize(

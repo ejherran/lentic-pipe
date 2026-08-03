@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast
 
+from src.data import prepare_commit_artifacts as precommit_artifacts
 from src.data.prepare_commit_artifacts import (
     CLOSURE_COMMON_ORIGIN_CODE_PATHS,
     CLOSURE_COMMON_ORIGIN_CONFIG_PATHS,
@@ -35,6 +36,21 @@ from src.data.prepare_commit_artifacts import (
     validate_closure_expert_state_manifest,
     validate_freeze_freshness,
 )
+
+
+def test_direct_entrypoint_bootstrap_makes_project_root_importable(
+    monkeypatch,
+) -> None:
+    filtered_path = [
+        entry
+        for entry in precommit_artifacts.sys.path
+        if Path(entry or ".").resolve() != precommit_artifacts.PROJECT_ROOT
+    ]
+    monkeypatch.setattr(precommit_artifacts.sys, "path", filtered_path)
+
+    precommit_artifacts._ensure_project_root_importable()
+
+    assert precommit_artifacts.sys.path[0] == str(precommit_artifacts.PROJECT_ROOT)
 
 
 def _expected_closure_dvc_artifacts() -> dict[str, DvcArtifact]:

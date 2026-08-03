@@ -19,6 +19,19 @@ from typing import Any, cast
 import yaml
 
 
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+
+
+def _ensure_project_root_importable() -> None:
+    """Make absolute ``src.*`` imports work for the direct script entrypoint."""
+    project_root = str(PROJECT_ROOT)
+    if project_root not in sys.path:
+        sys.path.insert(0, project_root)
+
+
+_ensure_project_root_importable()
+
+
 DEFAULT_DVC_MANIFEST = Path("configs/dvc_artifacts.yaml")
 DEFAULT_CLOSURE_DVC_MANIFEST = Path(
     "configs/closure_v1/dvc_artifacts_post_lock.yaml"

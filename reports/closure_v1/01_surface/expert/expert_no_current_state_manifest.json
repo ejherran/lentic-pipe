@@ -1,0 +1,212 @@
+{
+  "artifact_role": "deterministic_expert_state_pre_e0_dl",
+  "completion_marker_written_last": true,
+  "counts": {
+    "delta_previous_month_missing": 8041,
+    "locations": 353,
+    "rows": 42110
+  },
+  "dependencies": [
+    {
+      "bytes": 46105,
+      "path": "configs/closure_v1/development_runtime.yaml",
+      "role": "development_runtime_config",
+      "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d"
+    },
+    {
+      "bytes": 55502,
+      "path": "configs/closure_v1/development_runtime.schema.json",
+      "role": "development_runtime_schema",
+      "sha256": "1abb28734ab3dc4ef2cdc68ce13876741ee42b4b5a8de35aadb332e95aee9709"
+    },
+    {
+      "bytes": 106555794,
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "role": "restored_expert_anchor_source",
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "holdout_assignment",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "bytes": 3440,
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "role": "holdout_manifest",
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+    },
+    {
+      "bytes": 8279,
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "role": "protocol_lock",
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+    },
+    {
+      "bytes": 2763097,
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "role": "common_origin",
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "bytes": 11524,
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "role": "common_origin_completion_manifest",
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "bytes": 28645,
+      "path": "src/experiments/build_closure_expert_state.py",
+      "role": "strict_expert_state_adapter",
+      "sha256": "9a48ee45de0709fe871ae0d5bebad5e73117564dbd111a54bdd871b1336cae4a"
+    },
+    {
+      "bytes": 113626,
+      "path": "src/experiments/closure_runtime_contract.py",
+      "role": "runtime_contract_validator",
+      "sha256": "4639e003e482682aef0da69816e71f8c9d77a38fc3fb4965fd416f0569ce3432"
+    },
+    {
+      "bytes": 30856,
+      "path": "src/experiments/closure_development_guard.py",
+      "role": "closure_development_guard",
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "bytes": 87743,
+      "path": "src/experiments/closure_contract.py",
+      "role": "closure_contract",
+      "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+    },
+    {
+      "bytes": 67719,
+      "path": "src/experiments/build_closure_holdout.py",
+      "role": "holdout_assignment_builder",
+      "sha256": "a79c746c2fa0468637744a5c5aa71dacfea8843130edfe6e9104a2d9ea0abd9e"
+    },
+    {
+      "bytes": 1587,
+      "path": "src/pandas_utils.py",
+      "role": "pandas_utils",
+      "sha256": "4e9af7af5a8276fc83236047d27e7bcefa61a66e036ce4bc688078d7beebc685"
+    }
+  ],
+  "e0_u_authorized": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "generated_at_utc": "2026-08-03T21:01:09.051228+00:00",
+  "inputs": [
+    {
+      "bytes": 106555794,
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "role": "locked_expert_anchor",
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "holdout_assignment",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    }
+  ],
+  "manifest_version": "closure_expert_no_current_state_manifest_v1",
+  "model_id": "P0",
+  "output_allowlist": [
+    "source_id",
+    "site_id",
+    "year_month",
+    "time_role",
+    "yN",
+    "yF",
+    "yT_no_chla",
+    "sigma_N",
+    "sigma_F",
+    "sigma_T_no_chla",
+    "delta_yN",
+    "delta_yF",
+    "delta_yT_no_chla",
+    "delta_previous_month_missing"
+  ],
+  "outputs": [
+    {
+      "bytes": 1201722,
+      "path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+      "role": "expert_no_current_state",
+      "sha256": "3034d1cfff880c1f3dbe84502e2c54c332e2458b3f3ba3c83b1db105a1b3fe25"
+    },
+    {
+      "bytes": 1830,
+      "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+      "role": "lineage_audit",
+      "sha256": "99fb2a10bd0ace7e4b8f86210981d7af23a2685be565416e91655c70aeecd4df"
+    }
+  ],
+  "post_2021_outcomes_materialized": false,
+  "runtime": {
+    "config_path": "configs/closure_v1/development_runtime.yaml",
+    "config_sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d",
+    "fit_authorized": false,
+    "schema_path": "configs/closure_v1/development_runtime.schema.json",
+    "schema_sha256": "1abb28734ab3dc4ef2cdc68ce13876741ee42b4b5a8de35aadb332e95aee9709"
+  },
+  "script": {
+    "bytes": 28645,
+    "path": "src/experiments/build_closure_expert_state.py",
+    "role": "generating_script",
+    "sha256": "9a48ee45de0709fe871ae0d5bebad5e73117564dbd111a54bdd871b1336cae4a"
+  },
+  "source_projection": [
+    "source_id",
+    "site_id",
+    "year_month",
+    "yN",
+    "yF",
+    "yT_no_chla",
+    "sigma_N",
+    "sigma_F",
+    "sigma_T_no_chla"
+  ],
+  "source_repository": {
+    "branch": "main",
+    "canonical_origin": {
+      "fetch_push_identity_equal": true,
+      "fetch_url_count": 1,
+      "identity_algorithm": "git_remote_host_path_v1_sha256_utf8",
+      "identity_sha256": "475fdf8ad6839d3d291010ff999b4e4c0f8604a0e8d8a09fcebe5ccb843d1905",
+      "push_url_count": 1,
+      "remote_name": "origin"
+    },
+    "head": "ce83b8a23ca46ebf4e42ed3218c97c71d496d360",
+    "publication": {
+      "head": "ce83b8a23ca46ebf4e42ed3218c97c71d496d360",
+      "local_tracking_verified": true,
+      "remote_oid": "ce83b8a23ca46ebf4e42ed3218c97c71d496d360",
+      "remote_ref": "refs/heads/main",
+      "remote_verified": true,
+      "tracking_oid": "ce83b8a23ca46ebf4e42ed3218c97c71d496d360",
+      "tracking_ref": "origin/main"
+    },
+    "worktree_status_at_start": "clean"
+  },
+  "state_mapping": {
+    "delta_yF": "delta_yF",
+    "delta_yN": "delta_yN",
+    "delta_yT": "delta_yT_no_chla",
+    "sigma_F": "sigma_F",
+    "sigma_N": "sigma_N",
+    "sigma_T": "sigma_T_no_chla",
+    "yF": "yF",
+    "yN": "yN",
+    "yT": "yT_no_chla"
+  },
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "time_roles": [
+    "training",
+    "model_selection",
+    "calibration_threshold"
+  ],
+  "zero_holdout_overlap": true
+}

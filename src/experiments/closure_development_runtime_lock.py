@@ -1595,7 +1595,7 @@ def _validate_expert_lineage_payload(
         or not isinstance(rows, int)
         or rows < 353
         or not isinstance(role_counts, Mapping)
-        or tuple(role_counts) != ("training", "model_selection", "calibration_threshold")
+        or set(role_counts) != {"training", "model_selection", "calibration_threshold"}
         or any(isinstance(value, bool) or not isinstance(value, int) or value < 0 for value in role_counts.values())
         or sum(cast(int, value) for value in role_counts.values()) != rows
     ):

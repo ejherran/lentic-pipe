@@ -1,0 +1,72 @@
+{
+  "audit_version": "closure_expert_no_current_state_lineage_v1",
+  "checks": {
+    "exact_raw_projection": true,
+    "exact_state_mapping": true,
+    "locked_development_key_membership": true,
+    "no_current_chla_state_allowlist": true,
+    "no_optional_context_columns": true,
+    "no_post_2021_materialization": true,
+    "one_month_delta_geometry": true,
+    "zero_holdout_overlap": true,
+    "zero_unknown_assignment_overlap": true
+  },
+  "delta_geometry": "current_minus_exact_previous_calendar_month",
+  "delta_previous_month_missing_count": 8041,
+  "e0_u_authorized": false,
+  "experiment_id": "closure_v1",
+  "full_current_chla_sibling_columns": false,
+  "future_outcomes_accessed": false,
+  "locations": 353,
+  "maximum_year_month": "2021-12",
+  "minimum_year_month": "1970-10",
+  "optional_context_columns": [],
+  "output_allowlist": [
+    "source_id",
+    "site_id",
+    "year_month",
+    "time_role",
+    "yN",
+    "yF",
+    "yT_no_chla",
+    "sigma_N",
+    "sigma_F",
+    "sigma_T_no_chla",
+    "delta_yN",
+    "delta_yF",
+    "delta_yT_no_chla",
+    "delta_previous_month_missing"
+  ],
+  "post_2021_outcomes_materialized": false,
+  "role_counts": {
+    "calibration_threshold": 1732,
+    "model_selection": 3739,
+    "training": 36639
+  },
+  "rows": 42110,
+  "scan": {
+    "boundary_crossing_rows": 0,
+    "materialized_rows": 42110,
+    "returned_rows": 42110,
+    "role_counts": {
+      "calibration_threshold": 1732,
+      "model_selection": 3739,
+      "training": 36639
+    }
+  },
+  "source_projection": [
+    "source_id",
+    "site_id",
+    "year_month",
+    "yN",
+    "yF",
+    "yT_no_chla",
+    "sigma_N",
+    "sigma_F",
+    "sigma_T_no_chla"
+  ],
+  "status": "passed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "zero_holdout_overlap": true,
+  "zero_unknown_assignment_overlap": true
+}
