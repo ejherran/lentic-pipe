@@ -179,6 +179,8 @@ exports, or credential JSON files.
 - `docs/COUNTERFACTUAL_PLANNING_SYNTHESIS.md`
 - `docs/closure_v1/ANALYSIS_PLAN.md`
 - `docs/closure_v1/PROTOCOL_AMENDMENT_V1_1.md`
+- `docs/closure_v1/E0_D_DEVELOPMENT_GUARD.md`
+- `docs/closure_v1/E0_D_RUNTIME_CONTRACT.md`
 - `docs/THESIS_EXPERIMENT_TRACEABILITY.md`
 - `docs/API_PROTOCOL.md`
 - `docs/API_DATASET_CONTRACT.md`
@@ -195,10 +197,17 @@ exports, or credential JSON files.
   published in `ead7d13`, its external protocol lock in `31230a2`, and the
   cutoff-safe E0-C assignment in `0c283af`. The immutable assignment contains
   441 WQP monitoring locations: 88 internal holdout locations and 353
-  development locations, with 8,903 pre-cutoff eligible origins. E0-D
-  development is next; E0-U remains sealed, and no post-2021 holdout outcome
-  has been opened for Closure V1. Existing model results remain
-  iteration-specific evidence.
+  development locations, with 8,903 pre-cutoff eligible origins. E0-D's
+  assignment/runtime guard and common-origin builder were published in
+  `502c955`. A derived ANFIS/PIPE runtime-contract candidate has status
+  `ready_to_lock`; it fixes the no-current autoregressive lineage,
+  deterministic ANFIS sampling, five paired seeds, and the P0/P1 fit profile.
+  The common-origin artifact, strict adapters, and external E0-DL lock do not
+  exist yet, so fitting is not authorized. Pre-E0-DL checks can lock planned
+  DVC ownership, but fit-generated heavy artifacts can be registered only
+  after materialization and must be registered before E0-M. E0-U remains
+  sealed, and no post-2021 holdout outcome has been opened for Closure V1.
+  Existing model results remain iteration-specific evidence.
   The primary closure surface excludes observed Chl-a and all of its lineage at
   every input lag, and the transfer claim is limited to held-out WQP monitoring
   locations within the frozen cohort.

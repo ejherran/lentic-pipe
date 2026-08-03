@@ -1,0 +1,892 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-v1.json",
+  "title": "Closure V1 E0-D development runtime contract",
+  "description": "Closed schema for the derived, pre-fit ANFIS and PIPE runtime decisions.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "status",
+    "contract_role",
+    "authority",
+    "development_scope",
+    "seeds",
+    "anfis",
+    "primary_autoregressive_state",
+    "temporal_models",
+    "scientific_outcomes",
+    "artifacts",
+    "implementation_lock",
+    "manifest_requirements",
+    "legacy_denials"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_development_runtime_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "status": {"const": "ready_to_lock"},
+    "contract_role": {"const": "derived_e0_d_implementation_contract"},
+    "authority": {
+      "const": {
+        "protocol_lock_path": "reports/closure_v1/00_protocol/protocol_lock.json",
+        "protocol_lock_sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6",
+        "holdout_assignment_path": "data/closure_v1/closure_holdout_assignment.csv",
+        "holdout_assignment_sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef",
+        "holdout_manifest_path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+        "holdout_manifest_sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1",
+        "common_origin_manifest_path": "data/closure_v1/common_origin_manifest.parquet",
+        "common_origin_completion_manifest_path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+        "analysis_plan_path": "configs/closure_v1/analysis_plan.yaml",
+        "primary_surface_path": "configs/closure_v1/surface_primary.yaml",
+        "model_benchmark_path": "configs/closure_v1/model_benchmark.yaml",
+        "locked_protocol_amended": false,
+        "lineage_interpretation": {
+          "protocol_version": "1.1",
+          "change_class": "implementation_clarification",
+          "sealed_component_mutation": false,
+          "scientific_endpoint_change": false,
+          "rationale": "no_current_state_targets_must_recycle_into_no_current_inputs"
+        },
+        "runtime_contract_must_be_committed_before_fit": true,
+        "runtime_lock_required_before_fit": true,
+        "future_outcomes_accessed": false,
+        "e0_u_authorized": false
+      }
+    },
+    "development_scope": {
+      "const": {
+        "source_ids": ["wqp"],
+        "assignment_role": "development",
+        "fit_role": "training",
+        "fit_target_end": "2018-12",
+        "model_selection_role": "model_selection",
+        "model_selection_start": "2019-01",
+        "model_selection_end": "2020-12",
+        "calibration_threshold_role": "calibration_threshold",
+        "calibration_threshold_start": "2021-01",
+        "calibration_threshold_end": "2021-12",
+        "locked_evaluation_start": "2022-01",
+        "post_2021_materialization_in_e0_d": "forbidden",
+        "holdout_fit_overlap_required": 0
+      }
+    },
+    "seeds": {
+      "const": {
+        "pairing_policy": "one_to_one_by_ordered_slot",
+        "cross_product_policy": "forbidden",
+        "best_seed_selection": "forbidden",
+        "missing_slot_policy": "retain_failure_and_exclude_shared_success_row",
+        "ordered_slots": [
+          {"slot": 1, "base_seed": 1729, "anfis_base_seed": 1729, "p0_model_seed": 1729, "p1_model_seed": 1729},
+          {"slot": 2, "base_seed": 20260612, "anfis_base_seed": 20260612, "p0_model_seed": 20260612, "p1_model_seed": 20260612},
+          {"slot": 3, "base_seed": 20260613, "anfis_base_seed": 20260613, "p0_model_seed": 20260613, "p1_model_seed": 20260613},
+          {"slot": 4, "base_seed": 20260614, "anfis_base_seed": 20260614, "p0_model_seed": 20260614, "p1_model_seed": 20260614},
+          {"slot": 5, "base_seed": 314159, "anfis_base_seed": 314159, "p0_model_seed": 314159, "p1_model_seed": 314159}
+        ]
+      }
+    },
+    "anfis": {
+      "const": {
+        "configuration_policy": "fixed_promoted_wqp_profile_without_search",
+        "configuration_reference": "reports/anfis/adaptive_anfis_state_manifest.json",
+        "configuration_reference_sha256": "84644b764d921d4becfbb216e46e33707337fd22d72cf02064b707804953710d",
+        "historical_checkpoint_role": "reference_only",
+        "primary_modules": ["ANFIS-N", "ANFIS-F", "ANFIS-T-no-current"],
+        "primary_module_features": {
+          "ANFIS-N": ["tp_pressure", "tn_pressure", "ratio_imbalance_pressure"],
+          "ANFIS-F": ["do_good", "ph_good", "turbidity_good", "secchi_good"],
+          "ANFIS-T-no-current": ["temp_favorable"]
+        },
+        "primary_module_targets": {
+          "ANFIS-N": "yN",
+          "ANFIS-F": "yF",
+          "ANFIS-T-no-current": "yT_no_chla"
+        },
+        "forbidden_primary_modules": ["ANFIS-T"],
+        "module_seed_offsets": {"ANFIS-N": 101, "ANFIS-F": 202, "ANFIS-T-no-current": 404},
+        "secondary_current_chla_seed_offset_reserved": 303,
+        "sampling_seed_equals_optimization_seed": true,
+        "seed_set_before_model_construction": true,
+        "execution_randomness": {
+          "seed_source": "module_seed",
+          "python_random_seed": "module_seed",
+          "numpy_legacy_random_seed": "module_seed",
+          "torch_manual_seed": "module_seed",
+          "torch_cuda_manual_seed_all_if_available": "module_seed",
+          "torch_deterministic_algorithms": true,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": true,
+          "device": "cpu",
+          "optimization_batch_order": "full_batch_hash_rank_order"
+        },
+        "fixed_configuration": {
+          "train_rows_per_module": 4096,
+          "memberships_per_input": 3,
+          "center_constraint": "unit",
+          "epochs": 60,
+          "learning_rate": 0.03,
+          "min_width": 0.03,
+          "min_gap": 0.0001,
+          "grad_clip": 1.0,
+          "optimizer": "AdamW",
+          "weight_decay": 0.0,
+          "loss": "full_batch_anchor_mse",
+          "output_activation": "sigmoid",
+          "feature_imputation_value": 0.5,
+          "feature_clip": [0.0, 1.0],
+          "max_train_missing_fraction": 0.5,
+          "min_output_standard_deviation": 0.0001,
+          "predict_batch_rows": 32768
+        },
+        "model_initialization": {
+          "initial_width": 0.25,
+          "unit_center_margin": 0.05,
+          "consequent_weight": 0.0,
+          "consequent_bias": 0.0,
+          "normalized_firing_strength_floor": 0.000000000001
+        },
+        "uncertainty_proxy": {
+          "base": 0.10,
+          "normalized_rule_entropy_weight": 0.45,
+          "missing_fraction_weight": 0.35,
+          "clip": [0.0, 1.0],
+          "normalized_firing_strength_formula": "firing/max(sum_firing,1e-12)",
+          "firing_input": "unnormalized_model_rule_firing_strengths",
+          "model_firing_dtype": "float32",
+          "firing_cast_before_sum": "quantize_float32_then_cast_float64",
+          "firing_input_range": [0.0, 1.0],
+          "firing_sum_floor": 0.000000000001,
+          "all_zero_firing_policy": "zero_entropy",
+          "strict_adapter_uncertainty_api": "module_aware_exact_rule_count",
+          "entropy_formula": "-sum(p*ln(clip(p,1e-12,1)))",
+          "entropy_probability_clip": [0.000000000001, 1.0],
+          "entropy_normalization": "divide_by_ln_rule_count_when_rule_count_gt_1",
+          "single_rule_entropy": 0.0,
+          "missing_fraction_formula": "missing_module_features_before_imputation/module_feature_count",
+          "calculation_dtype_after_model_firing": "float64",
+          "rule_count_by_module": {"ANFIS-N": 27, "ANFIS-F": 81, "ANFIS-T-no-current": 3},
+          "golden_vectors": [
+            {"firing_strengths": [0.25, 0.25], "rule_count": 2, "missing_fraction": 0.5, "sigma": 0.725},
+            {"firing_strengths": [1.0], "rule_count": 1, "missing_fraction": 0.25, "sigma": 0.1875},
+            {"firing_strengths": [0.0, 0.0], "rule_count": 2, "missing_fraction": 0.0, "sigma": 0.1}
+          ]
+        },
+        "sampling": {
+          "key_columns": ["source_id", "site_id", "year_month"],
+          "algorithm": "sha256_rank_json_v1",
+          "strict_adapter_sampler_api": "anfis_hash_rank_sample_without_size_override",
+          "module_seed_formula": "base_seed_plus_module_offset",
+          "candidate_pipeline_order": [
+            "raw_projection_at_parquet_read",
+            "development_assignment_and_training_role_filter_on_both_inputs",
+            "expert_anchor_inner_join_one_to_one",
+            "allowed_derived_feature_construction",
+            "finite_non_null_module_anchor_filter",
+            "per_module_feature_missingness_filter",
+            "sha256_rank"
+          ],
+          "candidate_eligibility": {
+            "source_id": "wqp",
+            "assignment_role": "development",
+            "time_role": "training",
+            "latest_year_month": "2018-12",
+            "module_anchor": "finite_unit_interval",
+            "maximum_module_feature_missing_fraction": 0.5,
+            "missingness_denominator": "exact_module_feature_count"
+          },
+          "development_membership_source": "closure_development_guard.development_keys",
+          "development_membership_rechecked_in_sampler": true,
+          "string_normalization": "require_unicode_nfc_without_rewrite",
+          "year_month_normalization": "strict_yyyy_mm",
+          "json_serialization": "utf8_ensure_ascii_false_compact_separators",
+          "digest_record_framing": "one_lf_byte_after_each_json_record",
+          "rank_payload": "compact_json_array_module_seed_source_id_site_id_year_month",
+          "rank_digest": "sha256_utf8",
+          "rank_order": [
+            "rank_sha256_ascending",
+            "source_id_utf8_ascending",
+            "site_id_utf8_ascending",
+            "year_month_ascending"
+          ],
+          "selected_rows": 4096,
+          "replacement": false,
+          "duplicate_key_policy": "fail",
+          "selection_uses_outcomes": false,
+          "insufficient_rows_policy": "model_unavailable_without_replacement",
+          "candidate_universe_order": "compact_json_utf8_bytes_ascending",
+          "candidate_universe_digest": "sha256_lf_delimited_compact_json_keys",
+          "selected_key_order": "rank_order",
+          "selected_keys_digest": "sha256_lf_delimited_compact_json_keys",
+          "persisted_sample_columns": [
+            "source_id", "site_id", "year_month", "module", "module_seed", "rank_sha256"
+          ],
+          "persisted_manifest_fields": [
+            "input_rows", "excluded_nonfinite_target_rows", "excluded_missingness_rows",
+            "eligible_universe_rows", "eligible_universe_sha256", "selected_rows",
+            "selected_keys_sha256", "module", "base_seed", "module_seed"
+          ]
+        },
+        "source_projection": {
+          "projection_at_parquet_read_required": true,
+          "strict_projection_column_set_validation": "required_before_parquet_read",
+          "generic_full_feature_builder_use": "forbidden",
+          "panel_path": "data/panel/panel_monthly_v0.parquet",
+          "expert_anchor_path": "data/fuzzy/state_vector_v0.parquet",
+          "expert_anchor_sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6",
+          "restored_development_source_hash_verification": "optional_validator_flag_and_required_e0_dl",
+          "panel_columns": [
+            "source_id", "site_id", "year_month", "mean_TP_ugL", "mean_TN_ugL",
+            "TN_TP_ratio", "mean_DO_mgL", "mean_pH", "mean_turbidity_NTU",
+            "mean_secchi_depth_m", "mean_temperature_C"
+          ],
+          "expert_anchor_columns": [
+            "source_id", "site_id", "year_month", "yN", "yF", "yT_no_chla"
+          ],
+          "panel_anchor_join": {
+            "key_columns": ["source_id", "site_id", "year_month"],
+            "left_frame": "expert_anchor",
+            "join_type": "inner",
+            "relationship": "one_to_one",
+            "duplicate_key_policy": "fail_on_either_input",
+            "unmatched_anchor_policy": "exclude_and_count",
+            "unmatched_panel_policy": "exclude_and_count",
+            "output_order": "source_id_utf8_site_id_utf8_year_month_ascending",
+            "manifest_alignment_counts": "required",
+            "key_digest_serialization": "sha256_lf_delimited_compact_json_keys",
+            "manifest_fields": [
+              "filtered_anchor_rows", "filtered_panel_rows", "matched_rows",
+              "unmatched_anchor_rows", "unmatched_panel_rows", "anchor_keys_sha256",
+              "panel_keys_sha256", "matched_keys_sha256", "unmatched_anchor_keys_sha256",
+              "unmatched_panel_keys_sha256"
+            ],
+            "conservation_equations": [
+              "filtered_anchor_rows=matched_rows+unmatched_anchor_rows",
+              "filtered_panel_rows=matched_rows+unmatched_panel_rows"
+            ]
+          },
+          "derived_feature_lineage": {
+            "tp_pressure": ["mean_TP_ugL"],
+            "tn_pressure": ["mean_TN_ugL"],
+            "ratio_imbalance_pressure": ["TN_TP_ratio"],
+            "do_good": ["mean_DO_mgL"],
+            "ph_good": ["mean_pH"],
+            "turbidity_good": ["mean_turbidity_NTU"],
+            "secchi_good": ["mean_secchi_depth_m"],
+            "temp_favorable": ["mean_temperature_C"]
+          },
+          "derived_feature_transformations": {
+            "numeric_policy": "coerce_invalid_or_nonfinite_to_missing",
+            "output_dtype": "float64",
+            "output_clip": [0.0, 1.0],
+            "tp_pressure": {
+              "operation": "log_ramp_up", "source": "mean_TP_ugL", "low": 10.0,
+              "high": 100.0, "epsilon": 0.1, "negative_input": "missing"
+            },
+            "tn_pressure": {
+              "operation": "log_ramp_up", "source": "mean_TN_ugL", "low": 300.0,
+              "high": 1500.0, "epsilon": 0.1, "negative_input": "missing"
+            },
+            "ratio_imbalance_pressure": {
+              "operation": "max",
+              "source": "TN_TP_ratio",
+              "components": [
+                {"operation": "ramp_down", "low": 8.0, "high": 16.0},
+                {"operation": "ramp_up", "low": 50.0, "high": 100.0}
+              ]
+            },
+            "do_good": {
+              "operation": "trapezoid", "source": "mean_DO_mgL",
+              "a": 5.0, "b": 7.0, "c": 12.0, "d": 15.0
+            },
+            "ph_good": {
+              "operation": "trapezoid", "source": "mean_pH",
+              "a": 6.5, "b": 7.0, "c": 8.6, "d": 9.5
+            },
+            "turbidity_good": {
+              "operation": "ramp_down", "source": "mean_turbidity_NTU", "low": 5.0, "high": 50.0
+            },
+            "secchi_good": {
+              "operation": "ramp_up", "source": "mean_secchi_depth_m", "low": 0.5, "high": 3.0
+            },
+            "temp_favorable": {
+              "operation": "trapezoid", "source": "mean_temperature_C",
+              "a": 15.0, "b": 22.0, "c": 30.0, "d": 35.0
+            }
+          },
+          "forbidden_exact_columns": [
+            "chlorophyll_a_ugL", "mean_chlorophyll_a_ugL", "std_chlorophyll_a_ugL",
+            "n_obs_chlorophyll_a_ugL", "n_bad_chlorophyll_a_ugL",
+            "qc_ok_rate_chlorophyll_a_ugL", "log_chlorophyll_a", "risk_chla", "Chl",
+            "Chl_prev", "irc1", "irc1_adaptive", "x_irc1", "yT", "sigma_T", "delta_yT",
+            "yT_adaptive", "sigma_T_adaptive", "delta_yT_adaptive"
+          ],
+          "forbidden_lineage_patterns": [
+            "observed_chlorophyll_value", "observed_chlorophyll_transform",
+            "observed_chlorophyll_lag_or_persistence", "observed_chlorophyll_count_or_qc",
+            "observed_chlorophyll_missingness_or_provenance",
+            "state_or_score_fitted_with_observed_chlorophyll"
+          ]
+        },
+        "irc_weights": {
+          "alpha_yN": 1.0,
+          "beta_one_minus_yF": 1.0,
+          "gamma_yT_no_chla": 1.0,
+          "selection_policy": "fixed_equal_weights_without_search"
+        },
+        "e7_training_size_sensitivity": {
+          "values": [4096, 16384, 65536],
+          "primary_model_selection_use": "forbidden",
+          "status": "blocked_pending_sampling_strata_contract"
+        }
+      }
+    },
+    "primary_autoregressive_state": {
+      "const": {
+        "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+        "history_length_months": 12,
+        "transition_fit_horizon_months": 1,
+        "rollout_horizons_months": [1, 2, 3],
+        "target_to_next_input_semantics": "identical_no_current_state_channel",
+        "optional_context_columns": [],
+        "input_columns": [
+          "x_yN", "x_yF", "x_yT", "x_sigma_N", "x_sigma_F", "x_sigma_T",
+          "x_delta_yN", "x_delta_yF", "x_delta_yT", "season_sin_annual",
+          "season_cos_annual", "season_sin_semiannual", "season_cos_semiannual"
+        ],
+        "target_columns": [
+          "target_yN", "target_yF", "target_yT", "target_sigma_N", "target_sigma_F",
+          "target_sigma_T", "target_delta_yN", "target_delta_yF", "target_delta_yT"
+        ],
+        "seasonality": {
+          "calendar_month_indexing": "one_based_1_to_12",
+          "phase_formula": "r=2*pi*(calendar_month-1)/12",
+          "season_sin_annual": "sin(r)",
+          "season_cos_annual": "cos(r)",
+          "season_sin_semiannual": "sin(2*r)",
+          "season_cos_semiannual": "cos(2*r)",
+          "calculation_precision": "float64",
+          "model_cast": "float32_after_calculation"
+        },
+        "model_state_mappings": {
+          "P0": {
+            "input_state_mapping": {
+              "yN": "yN", "yF": "yF", "yT": "yT_no_chla", "sigma_N": "sigma_N",
+              "sigma_F": "sigma_F", "sigma_T": "sigma_T_no_chla", "delta_yN": "delta_yN",
+              "delta_yF": "delta_yF", "delta_yT": "delta_yT_no_chla"
+            },
+            "target_state_mapping": {
+              "yN": "yN", "yF": "yF", "yT": "yT_no_chla", "sigma_N": "sigma_N",
+              "sigma_F": "sigma_F", "sigma_T": "sigma_T_no_chla", "delta_yN": "delta_yN",
+              "delta_yF": "delta_yF", "delta_yT": "delta_yT_no_chla"
+            },
+            "target_to_next_input_mapping": {
+              "target_yN": "x_yN", "target_yF": "x_yF", "target_yT": "x_yT",
+              "target_sigma_N": "x_sigma_N", "target_sigma_F": "x_sigma_F",
+              "target_sigma_T": "x_sigma_T", "target_delta_yN": "x_delta_yN",
+              "target_delta_yF": "x_delta_yF", "target_delta_yT": "x_delta_yT"
+            }
+          },
+          "P1": {
+            "input_state_mapping": {
+              "yN": "yN_adaptive", "yF": "yF_adaptive", "yT": "yT_no_chla_adaptive",
+              "sigma_N": "sigma_N_adaptive", "sigma_F": "sigma_F_adaptive",
+              "sigma_T": "sigma_T_no_chla_adaptive", "delta_yN": "delta_yN_adaptive",
+              "delta_yF": "delta_yF_adaptive", "delta_yT": "delta_yT_no_chla_adaptive"
+            },
+            "target_state_mapping": {
+              "yN": "yN_adaptive", "yF": "yF_adaptive", "yT": "yT_no_chla_adaptive",
+              "sigma_N": "sigma_N_adaptive", "sigma_F": "sigma_F_adaptive",
+              "sigma_T": "sigma_T_no_chla_adaptive", "delta_yN": "delta_yN_adaptive",
+              "delta_yF": "delta_yF_adaptive", "delta_yT": "delta_yT_no_chla_adaptive"
+            },
+            "target_to_next_input_mapping": {
+              "target_yN": "x_yN", "target_yF": "x_yF", "target_yT": "x_yT",
+              "target_sigma_N": "x_sigma_N", "target_sigma_F": "x_sigma_F",
+              "target_sigma_T": "x_sigma_T", "target_delta_yN": "x_delta_yN",
+              "target_delta_yF": "x_delta_yF", "target_delta_yT": "x_delta_yT"
+            }
+          }
+        },
+        "target_mapping_policy": {
+          "input_and_target_use_same_mapping": true,
+          "target_month_source": "exact_mapped_state_at_t_plus_1",
+          "target_columns_reused_as_next_rollout_input": true,
+          "full_chla_state_as_autoregressive_target": "forbidden",
+          "legacy_full_target_mapping": "forbidden"
+        },
+        "delta_policy": {
+          "operation": "current_minus_previous_calendar_month",
+          "exact_previous_calendar_month_required": true,
+          "previous_available_row_substitution": "forbidden",
+          "missing_exact_previous_calendar_month": "zero_all_three_deltas_and_set_audit_flag",
+          "audit_flag_column": "delta_previous_month_missing",
+          "audit_flag_model_tensor_use": "forbidden",
+          "audit_flag_manifest_count": "required",
+          "interior_history_gap_policy": "exclude_origin_via_common_origin_contract",
+          "precomputed_full_chla_delta": "forbidden"
+        },
+        "state_export": {
+          "scope": "development_locations_only",
+          "included_roles": ["training", "model_selection", "calibration_threshold"],
+          "latest_state_month": "2021-12",
+          "row_policy": "all_eligible_development_site_months",
+          "bounded_export": "forbidden",
+          "time_role_column": "time_role",
+          "time_role_values": ["training", "model_selection", "calibration_threshold"],
+          "time_role_source": "locked_pair_role_resolver",
+          "assignment_role_serialized": false,
+          "p0_source_path": "data/fuzzy/state_vector_v0.parquet",
+          "p0_source_projection_columns": [
+            "source_id", "site_id", "year_month", "yN", "yF", "yT_no_chla",
+            "sigma_N", "sigma_F", "sigma_T_no_chla"
+          ],
+          "p0_output_columns": [
+            "source_id", "site_id", "year_month", "time_role", "yN", "yF",
+            "yT_no_chla", "sigma_N", "sigma_F", "sigma_T_no_chla", "delta_yN",
+            "delta_yF", "delta_yT_no_chla", "delta_previous_month_missing"
+          ],
+          "p1_output_columns": [
+            "source_id", "site_id", "year_month", "time_role", "yN_adaptive",
+            "yF_adaptive", "yT_no_chla_adaptive", "sigma_N_adaptive", "sigma_F_adaptive",
+            "sigma_T_no_chla_adaptive", "delta_yN_adaptive", "delta_yF_adaptive",
+            "delta_yT_no_chla_adaptive", "delta_previous_month_missing"
+          ],
+          "full_current_chla_sibling_columns": "forbidden",
+          "irc_context_columns": "forbidden"
+        },
+        "forbidden_state_sources": [
+          "yT", "sigma_T", "delta_yT", "yT_adaptive", "sigma_T_adaptive",
+          "delta_yT_adaptive", "irc1", "irc1_adaptive", "risk_chla", "Chl", "Chl_prev"
+        ]
+      }
+    },
+    "temporal_models": {
+      "const": {
+        "configuration_policy": "fixed_closure_profile_without_search",
+        "configuration_reference": "reports/pipe_grud/adaptive_wqp_focused/pipe_grud_manifest.json",
+        "configuration_reference_sha256": "01f2cf62811ba450c0639c922a5f9faa2a92d9100f8589307d386441bf4b88ca",
+        "historical_checkpoint_role": "reference_only",
+        "training_randomness": {
+          "seed_source": "paired_model_seed",
+          "seed_before_model_construction": true,
+          "python_random_seed": "base_seed",
+          "numpy_legacy_random_seed": "base_seed",
+          "torch_manual_seed": "base_seed",
+          "torch_cuda_manual_seed_all_if_available": "base_seed",
+          "torch_deterministic_algorithms": true,
+          "cudnn_benchmark": false,
+          "cudnn_deterministic": true,
+          "cublas_workspace_config_if_cuda": ":4096:8",
+          "device_policy": "explicit_device_recorded_and_locked_by_e0_dl",
+          "automatic_device_selection": "forbidden",
+          "cross_device_numerical_equivalence_claim": "forbidden",
+          "p0_p1_initialization": "common_seed_same_architecture",
+          "dataloader": {
+            "shuffle_training": true,
+            "epoch_seed_formula": "base_seed_plus_one_based_epoch",
+            "generator_scope": "new_torch_generator_per_epoch",
+            "num_workers": 0,
+            "drop_last": false,
+            "evaluation_shuffle": false,
+            "batch_order_sha256_in_manifest": "required"
+          }
+        },
+        "common_architecture": {
+          "family": "residual_probabilistic_gru",
+          "canonical_grud": false,
+          "history_length_months": 12,
+          "input_dimension": 13,
+          "target_dimension": 9,
+          "hidden_dimension": 96,
+          "recurrent_layers": 1,
+          "dropout": 0.0,
+          "batch_first": true,
+          "residual_mode": "add_last"
+        },
+        "model_inputs": {
+          "P0": {"input_surface": "no_current_chla", "input_state": "expert"},
+          "P1": {
+            "input_surface": "adaptive_no_current_chla",
+            "input_state": "adaptive_anfis_same_seed_slot"
+          }
+        },
+        "preprocessing": {
+          "policy": "identity_fixed_no_fit",
+          "dtype": "float32",
+          "input_order_from_primary_autoregressive_state": true,
+          "target_order_from_primary_autoregressive_state": true,
+          "nonfinite_input_policy": "fail",
+          "nonfinite_target_policy": "fail",
+          "data_dependent_scaling": "forbidden"
+        },
+        "optimization": {
+          "optimizer": "AdamW",
+          "learning_rate": 0.001,
+          "weight_decay": 0.00001,
+          "gradient_clip_norm": 1.0,
+          "batch_size": 2048,
+          "maximum_epochs": 20,
+          "early_stopping_patience_epochs": 5,
+          "early_stopping_minimum_delta": 0.0,
+          "restore_best_checkpoint": true,
+          "best_epoch_tie_break": "earliest_epoch",
+          "resume": "forbidden"
+        },
+        "loss": {
+          "distribution": "diagonal_gaussian",
+          "gaussian_nll_weight": 1.0,
+          "mse_weight": 1.0,
+          "gaussian_nll_formula": "0.5*(clipped_log_variance+squared_error/exp(clipped_log_variance))",
+          "gaussian_normalizing_constant": "omitted",
+          "target_weight_application": "elementwise_before_reduction",
+          "mse_formula": "squared_error",
+          "reduction": "arithmetic_mean_over_all_rows_and_nine_targets",
+          "total_formula": "gaussian_nll_plus_mse_weight_times_weighted_mse",
+          "training_mu_use": "unblended_model_mu",
+          "log_variance_clip": [-10.0, 2.0],
+          "target_weights": {
+            "yN": 2.0, "yF": 1.0, "yT": 2.5, "sigma_N": 0.5, "sigma_F": 0.5,
+            "sigma_T": 0.5, "delta_yN": 1.5, "delta_yF": 1.5, "delta_yT": 1.5
+          }
+        },
+        "windows": {
+          "use_all_training_windows": true,
+          "use_all_model_selection_windows": true,
+          "row_truncation": "forbidden",
+          "origin_and_target_must_share_role": true,
+          "history_context_may_precede_endpoint_role": true,
+          "history_context_rows_contribute_loss": false,
+          "window_run_must_not_break_only_for_context_role_boundary": true,
+          "test_or_locked_evaluation_window_materialization": "forbidden",
+          "canonical_window_order": [
+            "source_id_utf8_ascending", "site_id_utf8_ascending",
+            "origin_year_month_ascending", "target_year_month_ascending"
+          ],
+          "canonical_order_applied_before_shuffle": true
+        },
+        "checkpoint_selection": {
+          "role": "model_selection",
+          "metric": "balanced",
+          "uses_output_blend": true,
+          "formula": "half_relative_rmse_plus_half_relative_mae_vs_persistence",
+          "target_aggregation": "unweighted_mean_across_nine_targets",
+          "persistence_scale_floor": 0.000000000001,
+          "epoch_cycle": [
+            "train_on_unblended_loss", "fit_provisional_blend_on_model_selection",
+            "evaluate_blended_model_selection_metrics", "compare_checkpoint_objective"
+          ],
+          "strict_improvement_operator": "less_than",
+          "provisional_blend_recomputed_each_epoch": true,
+          "best_checkpoint_stores_unblended_model_state": true,
+          "final_blend_after_restore": "recompute_once_on_model_selection_and_persist",
+          "final_blend_replaces_provisional": true
+        },
+        "output_blend": {
+          "per_target": true,
+          "grid": [0.0, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0],
+          "selection_metric": "balanced",
+          "balanced_formula": "half_mae_over_min_grid_mae_plus_half_rmse_over_min_grid_rmse",
+          "grid_scale_floor": 0.000000000001,
+          "reduction": "per_target_over_all_model_selection_rows",
+          "tie_break": ["objective", "mae", "rmse", "lower_blend_weight"]
+        },
+        "rollout": {
+          "horizons_months": [1, 2, 3],
+          "samples_per_origin": 128,
+          "batch_size": 512,
+          "stochastic_distribution": "diagonal_gaussian",
+          "rng": {
+            "algorithm": "numpy.random.PCG64",
+            "generator_initialization": "numpy.random.Generator(numpy.random.PCG64(origin_seed))",
+            "environment_version_locked_by_e0_dl": true,
+            "origin_seed_payload": "compact_json_array_closure_v1_base_seed_source_id_site_id_origin_year_month",
+            "origin_seed_digest": "sha256_utf8_first_128_bits_big_endian",
+            "model_id_in_origin_seed_payload": false,
+            "common_random_numbers": "shared_between_p0_p1_within_seed_slot",
+            "generator_scope": "reinitialize_once_per_origin",
+            "standard_normal_predraw_shape": [3, 128, 9],
+            "draw_dtype": "float64",
+            "draw_order": "horizon_major_sample_major_state_channel_order",
+            "origin_processing_order": "source_id_utf8_site_id_utf8_origin_year_month_ascending",
+            "batch_order_invariant": true,
+            "origin_seed_records_required": true,
+            "predraw_serialization": "little_endian_float64_c_order",
+            "golden_predraw": {
+              "base_seed": 1729,
+              "source_id": "wqp",
+              "site_id": "A",
+              "origin_year_month": "2020-01",
+              "sha256": "2ca072ae692d490fe43974edd9bb87fc71ddc57140d8bc0779fa13df75028a20"
+            }
+          },
+          "state_clip_by_channel": {
+            "yN": [0.0, 1.0],
+            "yF": [0.0, 1.0],
+            "yT": [0.0, 1.0],
+            "sigma_N": [0.0, 1.0],
+            "sigma_F": [0.0, 1.0],
+            "sigma_T": [0.0, 1.0],
+            "delta_yN": [-1.0, 1.0],
+            "delta_yF": [-1.0, 1.0],
+            "delta_yT": [-1.0, 1.0]
+          },
+          "kernel": {
+            "output_blend_formula": "mu_blend=persistence+w*(mu-persistence)",
+            "log_variance_clip": [-10.0, 2.0],
+            "standard_deviation_formula": "sigma=exp(0.5*clipped_log_variance)",
+            "stochastic_state_formula": "sampled_state=mu_blend+sigma*epsilon",
+            "epsilon_indexing": "predraw[horizon_index,sample_index,state_channel_index]",
+            "state_clip_stage": "per_channel_after_sampling_before_recycling",
+            "trajectory_recycling": "each_sample_path_independently",
+            "aggregate_or_mean_state_recycling": "forbidden",
+            "seasonality_update": "target_calendar_month_after_state_clip",
+            "window_update": "drop_oldest_then_append_sampled_state_plus_target_seasonality",
+            "horizon_step_months": 1,
+            "model_input_dtype": "float32",
+            "model_output_dtype": "float32",
+            "model_outputs_and_persistence_cast_before_arithmetic": "quantize_float32_then_cast_float64",
+            "epsilon_dtype": "float64",
+            "blend_variance_sampling_dtype": "float64_after_casting_model_outputs_and_persistence",
+            "clip_dtype": "float64",
+            "recycled_state_cast": "float32_after_clip_before_window_append",
+            "seasonality_cast": "float64_calculation_then_float32_before_window_append",
+            "next_model_window_dtype": "float32",
+            "recursive_golden_vector": {
+              "channel": "yN",
+              "initial_persistence": 0.2,
+              "mu": [0.6, 0.4],
+              "log_variance": [-2.0, -1.0],
+              "blend_weight": [0.5, 0.5],
+              "epsilon": [0.1, -0.2],
+              "recycled_float32_states": [
+                0.4367879629135132, 0.2970878481864929
+              ]
+            }
+          },
+          "irc_weights": {
+            "alpha_yN": 1.0,
+            "beta_one_minus_yF": 1.0,
+            "gamma_yT_no_chla": 1.0
+          },
+          "partial_horizons": "forbidden",
+          "target_to_next_input_mapping_required": true
+        },
+        "development_output_policy": {
+          "permitted_roles": ["training", "model_selection", "calibration_threshold"],
+          "test_metrics": "forbidden",
+          "locked_evaluation_predictions": "forbidden",
+          "holdout_predictions": "forbidden"
+        }
+      }
+    },
+    "scientific_outcomes": {
+      "const": {
+        "target_artifact_path": "data/targets/monthly_targets_model_v0.parquet",
+        "target_artifact_sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799",
+        "target_manifest_path": "data/targets/target_manifest_v0.json",
+        "target_manifest_sha256": "5c082cf12aa4f9c6350f4e44eb2b41c7f0dc52cb041c3a67c09cd8e286f17ca4",
+        "historical_manifest_semantic_decode_in_e0_d": "forbidden",
+        "join_stage": "after_autoregressive_sequence_is_frozen",
+        "exact_join_key": ["source_id", "site_id", "origin_year_month", "target_year_month", "horizon_months"],
+        "source_columns": {
+          "future_chla_ugL": "future_chlorophyll_a_ugL",
+          "bloom_h": "bloom_h",
+          "future_risk": "target_risk_chla_h",
+          "future_operational_trophic_state": "target_trophic_state_h"
+        },
+        "source_lineage": {
+          "future_chla_ugL": "exact_future_month_mean_chlorophyll_a",
+          "bloom_h": "future_chla_strictly_greater_than_30_ugL",
+          "future_risk": "clipped_log_transform_of_future_chla_5_to_30_ugL",
+          "future_operational_trophic_state": "four_class_future_chla_proxy_2_6_7_3_56_ugL"
+        },
+        "frozen_target_policy": {
+          "horizons_months": [1, 2, 3],
+          "bloom_threshold_chla_ugL": 30.0,
+          "risk_policy": {"epsilon": 0.1, "low_chla_ugL": 5.0, "bloom_chla_ugL": 30.0},
+          "trophic_state_proxy": {
+            "oligotrophic_max": 2.6,
+            "mesotrophic_max": 7.3,
+            "eutrophic_max": 56.0
+          }
+        },
+        "independence_claim_between_outcomes": "forbidden",
+        "join_policy": {
+          "left_frame": "common_origin_intent_to_predict",
+          "join_type": "left",
+          "relationship": "one_to_one",
+          "duplicate_target_key_policy": "fail",
+          "unmatched_origin_policy": "retain_with_target_unavailable",
+          "target_month_geometry": "target_year_month_equals_origin_plus_horizon",
+          "inner_join_row_drop": "forbidden",
+          "manifest_required": true
+        },
+        "autoregressive_tensor_use": "forbidden",
+        "predictor_use": "forbidden",
+        "development_access_end": "2021-12",
+        "post_2021_access_before_e0_u": "forbidden",
+        "target_qc_or_count_columns_as_predictors": "forbidden",
+        "trophic_references": {
+          "e4a_future_chla_proxy_v0": "available_target_only",
+          "e4b_tsi_tp": "pending_separate_contract",
+          "e4b_tsi_sd": "pending_separate_contract",
+          "e4b_tsi_non_chla": "pending_separate_contract",
+          "e4b_tsi_all": "pending_separate_contract",
+          "e4c_nla_trophic_state": "pending_separate_cross_sectional_contract"
+        }
+      }
+    },
+    "artifacts": {
+      "const": {
+        "logical_path_resolution": {
+          "locked_adaptive_state_path": "data/closure_v1/adaptive_state_vector_trainable.parquet",
+          "concrete_adaptive_state_template": "data/closure_v1/development/anfis/seed_{base_seed}/adaptive_no_current_state.parquet",
+          "locked_adaptive_sequence_path": "data/closure_v1/pipe_sequence_adaptive_no_current.parquet",
+          "concrete_adaptive_sequence_template": "data/closure_v1/development/sequences/P1/seed_{base_seed}.parquet",
+          "resolution_records_required_in_external_lock": true
+        },
+        "stochastic_output_per_seed_namespace_required": true,
+        "deterministic_expert_artifacts_may_be_shared": true,
+        "shared_stochastic_output_path_across_seeds": "forbidden",
+        "expanded_path_order": "utf8_ascending",
+        "expanded_path_digest": "sha256_lf_delimited_utf8_paths",
+        "planned_concrete_path_count": 201,
+        "planned_concrete_paths_sha256": "833fe57a573db135357a596949728fd0b6a436997ece0ba2c5555b815a42672c",
+        "allowed_output_roots": ["data/closure_v1", "models/closure_v1", "reports/closure_v1"],
+        "canonical_path_policy": "normalized_repository_relative_without_symlink_escape",
+        "external_lock_persists_expanded_path_records": true,
+        "heavy_artifact_suffixes": [".parquet", ".pt"],
+        "dvc_ownership_plan": {
+          "data/closure_v1": "explicit_pointer_per_materialized_parquet",
+          "models/closure_v1": "models.dvc_monolithic_parent",
+          "reports/closure_v1": "explicit_pointer_per_materialized_parquet"
+        },
+        "pre_e0_dl_heavy_path_policy": "planned_paths_and_dvc_ownership_only",
+        "pre_e0_dl_materialized_heavy_dvc_verification": "required_for_existing_artifacts_only",
+        "unmaterialized_dvc_pointer_creation": "forbidden",
+        "post_fit_heavy_dvc_registration": "required_before_artifact_commit_and_e0_m",
+        "expert_state_path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+        "expert_state_manifest_path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+        "expert_state_lineage_audit_path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+        "expert_sequence_path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet",
+        "expert_sequence_manifest_path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+        "expert_sequence_summary_path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+        "anfis_state_template": "data/closure_v1/development/anfis/seed_{base_seed}/adaptive_no_current_state.parquet",
+        "anfis_model_template": "models/closure_v1/anfis/seed_{base_seed}/{module}.pt",
+        "anfis_sample_keys_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/{module}_sample_keys.csv",
+        "anfis_metrics_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/module_metrics.csv",
+        "anfis_training_curve_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/training_curve.csv",
+        "anfis_memberships_initial_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/memberships_initial.csv",
+        "anfis_memberships_final_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/memberships_final.csv",
+        "anfis_report_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/report.md",
+        "anfis_manifest_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/manifest.json",
+        "anfis_lineage_audit_template": "reports/closure_v1/01_surface/anfis/seed_{base_seed}/lineage_audit.json",
+        "adaptive_sequence_template": "data/closure_v1/development/sequences/P1/seed_{base_seed}.parquet",
+        "adaptive_sequence_manifest_template": "reports/closure_v1/01_surface/sequences/P1/seed_{base_seed}_manifest.json",
+        "adaptive_sequence_summary_template": "reports/closure_v1/01_surface/sequences/P1/seed_{base_seed}_summary.csv",
+        "pipe_model_template": "models/closure_v1/pipe/{model_id}/seed_{base_seed}.pt",
+        "pipe_checkpoint_template": "models/closure_v1/pipe/{model_id}/seed_{base_seed}.checkpoint.pt",
+        "pipe_preprocessor_contract_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_preprocessor.json",
+        "pipe_metrics_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_metrics.csv",
+        "pipe_training_curve_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_training_curve.csv",
+        "pipe_blend_weights_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_blend_weights.csv",
+        "pipe_blend_search_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_blend_search.csv",
+        "pipe_report_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_report.md",
+        "pipe_model_manifest_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_manifest.json",
+        "pipe_rollout_template": "data/closure_v1/development/rollouts/{model_id}/seed_{base_seed}.parquet",
+        "pipe_rollout_manifest_template": "reports/closure_v1/02_models/{model_id}/seed_{base_seed}_rollout_manifest.json",
+        "manifest_last": true,
+        "heavy_parquet_and_model_policy": "dvc"
+      }
+    },
+    "implementation_lock": {
+      "const": {
+        "gate": "E0-DL",
+        "runtime_config_status_remains": "ready_to_lock",
+        "contract_publication_state": "pending_adapters_common_origin_and_locker",
+        "lock_version": "closure_development_runtime_lock_v1",
+        "lock_manifest_path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+        "lock_schema_path": "configs/closure_v1/development_runtime_lock.schema.json",
+        "locker_path": "src/experiments/lock_closure_development_runtime.py",
+        "transition": "external_manifest_ready_to_lock_to_locked",
+        "require_clean_committed_head": true,
+        "require_common_origin_materialized": true,
+        "require_strict_adapters_and_tests": true,
+        "require_full_type_check": true,
+        "require_restored_development_source_hashes": true,
+        "lock_generation_reads_modeling_rows": false,
+        "lock_generation_reads_post_2021_outcomes": false,
+        "external_lock_bundle_committed_before_fit": true,
+        "locked_head_must_be_ancestor_of_execution_head": true,
+        "required_component_roles": [
+          "closure_development_guard", "common_origin_builder", "runtime_contract_validator",
+          "strict_expert_state_adapter", "strict_anfis_state_adapter", "strict_sequence_adapter",
+          "strict_temporal_fit_adapter", "strict_rollout_kernel", "runtime_locker",
+          "relevant_tests", "pyproject", "poetry_lock"
+        ],
+        "required_parent_hashes": [
+          "protocol_lock", "holdout_assignment", "holdout_manifest", "common_origin",
+          "common_origin_completion_manifest", "runtime_config", "runtime_schema",
+          "expert_state", "planned_artifact_paths", "runtime_transitive_source_dependencies"
+        ],
+        "runtime_dependency_hash_policy": "recursive_repository_local_import_closure",
+        "external_lock_records_each_dependency_path_sha256": true,
+        "required_legacy_dependency_paths": [
+          "src/fuzzy/expert.py",
+          "src/fuzzy/adaptive_anfis.py",
+          "src/pandas_utils.py",
+          "src/experiments/run_adaptive_anfis_real_smoke.py",
+          "src/experiments/build_pipe_sequences.py",
+          "src/experiments/train_pipe_grud.py",
+          "src/experiments/rollout_pipe_grud.py"
+        ],
+        "required_authorization_fields": {
+          "development_fit_authorized": true,
+          "evaluation_authorized": false,
+          "e0_u_authorized": false
+        },
+        "does_not_replace_e0_m_model_lock": true
+      }
+    },
+    "manifest_requirements": {
+      "const": {
+        "required_hashes": [
+          "development_runtime_config", "development_runtime_schema", "development_runtime_lock",
+          "protocol_lock",
+          "holdout_assignment", "common_origin_manifest", "common_origin_completion_manifest",
+          "input_artifacts", "source_code", "outputs"
+        ],
+        "required_mappings": [
+          "input_state_mapping", "target_state_mapping", "target_to_next_input_mapping"
+        ],
+        "required_audits": [
+          "zero_holdout_overlap", "exact_seed_slot", "exact_module_substream",
+          "exact_feature_lineage", "derived_feature_value_golden_vector",
+          "anfis_uncertainty_golden_vector",
+          "exact_state_mapping", "exact_common_keys",
+          "one_month_delta_geometry", "delta_previous_month_missing_count", "exact_raw_projection",
+          "panel_anchor_join_cardinality_and_conservation",
+          "locked_development_key_membership", "candidate_pipeline_order", "hash_rank_golden_vector",
+          "no_current_chla_state_allowlist", "target_join_cardinality",
+          "retained_target_unavailable_rows", "no_optional_context_columns",
+          "no_post_2021_materialization", "rollout_rng_origin_seed_records",
+          "rollout_predraw_golden_vector", "rollout_recursive_golden_vector",
+          "canonical_window_order", "checkpoint_blend_lifecycle",
+          "signed_delta_clip_preserved", "expanded_artifact_path_digest",
+          "prelock_materialized_heavy_dvc_status", "postfit_dvc_registration_policy"
+        ],
+        "retain_failed_seed_slots": true
+      }
+    },
+    "legacy_denials": {
+      "const": {
+        "build_adaptive_anfis_state_direct": "forbidden",
+        "build_pipe_sequences_legacy_mapping": "forbidden",
+        "train_pipe_grud_legacy_split_loop": "forbidden",
+        "rollout_with_full_chla_state_recycling": "forbidden",
+        "test_or_holdout_output_from_development_runner": "forbidden"
+      }
+    }
+  },
+  "additionalProperties": false
+}
