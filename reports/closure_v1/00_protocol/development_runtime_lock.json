@@ -1,0 +1,2745 @@
+{
+  "lock_version": "closure_development_runtime_lock_v1",
+  "status": "locked",
+  "gate": "E0-DL",
+  "experiment_id": "closure_v1",
+  "created_at_utc": "2026-08-03T21:35:50.995113+00:00",
+  "locked_repository": {
+    "head": "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3",
+    "branch": "main",
+    "worktree_status": "clean",
+    "dirty_paths": []
+  },
+  "canonical_origin": {
+    "remote_name": "origin",
+    "identity_algorithm": "git_remote_host_path_v1_sha256_utf8",
+    "identity_sha256": "475fdf8ad6839d3d291010ff999b4e4c0f8604a0e8d8a09fcebe5ccb843d1905",
+    "fetch_url_count": 1,
+    "push_url_count": 1,
+    "fetch_push_identity_equal": true
+  },
+  "locked_parent_publication": {
+    "head": "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3",
+    "tracking_ref": "origin/main",
+    "tracking_oid": "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3",
+    "local_tracking_verified": true,
+    "remote_ref": "refs/heads/main",
+    "remote_oid": "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3",
+    "remote_verified": true
+  },
+  "runtime_contract": {
+    "config": {
+      "path": "configs/closure_v1/development_runtime.yaml",
+      "role": "development_runtime_config",
+      "bytes": 46105,
+      "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d"
+    },
+    "schema": {
+      "path": "configs/closure_v1/development_runtime.schema.json",
+      "role": "development_runtime_schema",
+      "bytes": 55502,
+      "sha256": "1abb28734ab3dc4ef2cdc68ce13876741ee42b4b5a8de35aadb332e95aee9709"
+    },
+    "status": "ready_to_lock"
+  },
+  "components": [
+    {
+      "path": "configs/closure_v1/development_runtime_lock.schema.json",
+      "role": "runtime_lock_schema",
+      "bytes": 20606,
+      "sha256": "5314f5d15a4e516d1a0500a7ca5a69cb412ac4827f42973f26a8ec45fcd63204"
+    },
+    {
+      "path": "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+      "role": "dvc_ownership_overlay",
+      "bytes": 7305,
+      "sha256": "912fbdf38d1ec4cebd92dfe01e6cd760031c2c55cba3147df4707b025974ff5a"
+    },
+    {
+      "path": "poetry.lock",
+      "role": "poetry_lock",
+      "bytes": 497461,
+      "sha256": "eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4"
+    },
+    {
+      "path": "pyproject.toml",
+      "role": "pyproject",
+      "bytes": 1699,
+      "sha256": "ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22"
+    },
+    {
+      "path": "src/data/prepare_commit_artifacts.py",
+      "role": "prepublication_artifact_validator",
+      "bytes": 73927,
+      "sha256": "a0f689f870d230475d11362bdf8ed52ab2337aa3307af1c8cd25b7a9a0d64141"
+    },
+    {
+      "path": "src/experiments/build_closure_expert_state.py",
+      "role": "strict_expert_state_adapter",
+      "bytes": 28645,
+      "sha256": "9a48ee45de0709fe871ae0d5bebad5e73117564dbd111a54bdd871b1336cae4a"
+    },
+    {
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "strict_sequence_adapter",
+      "bytes": 93507,
+      "sha256": "7902ad48c824fe73e045aeec16a740b03ff0fade60769d08f80de4bd26aff4a4"
+    },
+    {
+      "path": "src/experiments/build_common_origin_manifest.py",
+      "role": "common_origin_builder",
+      "bytes": 36987,
+      "sha256": "691d9c9951c37881e17280609b099551b7f87ccb60a126ef977073878cc281d0"
+    },
+    {
+      "path": "src/experiments/closure_development_guard.py",
+      "role": "closure_development_guard",
+      "bytes": 30856,
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_lock.py",
+      "role": "runtime_lock_validator",
+      "bytes": 121036,
+      "sha256": "024b942d32db1dc65500fac9ff9b56be9e983307ce6427dbb4f7fac966e78000"
+    },
+    {
+      "path": "src/experiments/closure_runtime_contract.py",
+      "role": "runtime_contract_validator",
+      "bytes": 113626,
+      "sha256": "4639e003e482682aef0da69816e71f8c9d77a38fc3fb4965fd416f0569ce3432"
+    },
+    {
+      "path": "src/experiments/fit_closure_anfis_state.py",
+      "role": "strict_anfis_state_adapter",
+      "bytes": 59865,
+      "sha256": "8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2"
+    },
+    {
+      "path": "src/experiments/lock_closure_development_runtime.py",
+      "role": "runtime_locker",
+      "bytes": 8082,
+      "sha256": "c750b04a3089af437e84fcea285bcf1915918b1715a99da983058ec7c0381c57"
+    },
+    {
+      "path": "src/experiments/rollout_closure_pipe.py",
+      "role": "strict_rollout_kernel",
+      "bytes": 60941,
+      "sha256": "13c174cc4f9d5596546be68ae7e10950a07a82331368d9f23e2d07961643161d"
+    },
+    {
+      "path": "src/experiments/train_closure_pipe.py",
+      "role": "strict_temporal_fit_adapter",
+      "bytes": 65390,
+      "sha256": "d96df5a1898d91890bdfeccd698a6afee915c75ee5eb80d245a33541059e15d5"
+    },
+    {
+      "path": "tests/conftest.py",
+      "role": "test_session_determinism",
+      "bytes": 436,
+      "sha256": "009e7072f3d1daea69608089ed4ced0f43daf3c02e7faaa477e63551ac4db784"
+    },
+    {
+      "path": "tests/test_build_closure_expert_state.py",
+      "role": "relevant_tests",
+      "bytes": 15559,
+      "sha256": "f19e9dffc5bf0126331030427a220146e0b8af2dacee4c7abf0bf6061a17267e"
+    },
+    {
+      "path": "tests/test_build_closure_pipe_sequences.py",
+      "role": "relevant_tests",
+      "bytes": 45956,
+      "sha256": "a2e7a820d1546c0aee1a2e684aeb198edb697eec59b26f0a0b9391866b33d640"
+    },
+    {
+      "path": "tests/test_closure_development_runtime_lock.py",
+      "role": "relevant_tests",
+      "bytes": 55797,
+      "sha256": "af10fa53f31b196e77122d840ecd4bcc159f4998ff30ab0a9335092902b06a1a"
+    },
+    {
+      "path": "tests/test_closure_runtime_contract.py",
+      "role": "relevant_tests",
+      "bytes": 53884,
+      "sha256": "a9d88d3f452547e834edaf4b40c37fef8c254519fdfd8df71af3fb7e4eb91cc5"
+    },
+    {
+      "path": "tests/test_data_versioning_config.py",
+      "role": "relevant_tests",
+      "bytes": 16163,
+      "sha256": "b440829ea7a674855ce81ad2ca4d2ae13582e25709c9208d94ca882677428dc8"
+    },
+    {
+      "path": "tests/test_dvc_add_from_manifest.py",
+      "role": "relevant_tests",
+      "bytes": 3323,
+      "sha256": "3411a993a963c5cd4a263e1d641cf7cd6ad38af9e8749084add548111284788d"
+    },
+    {
+      "path": "tests/test_fit_closure_anfis_state.py",
+      "role": "relevant_tests",
+      "bytes": 37021,
+      "sha256": "1022b4a1915e787fc92dae011d4d04a0a53f4dae784e64bdc442a9f906f212b6"
+    },
+    {
+      "path": "tests/test_lock_closure_development_runtime.py",
+      "role": "relevant_tests",
+      "bytes": 12065,
+      "sha256": "e46f25ac682221ba7bbf3726b37f2cfc43eb09e636c2833657d1dba85e7c7284"
+    },
+    {
+      "path": "tests/test_prepare_commit_artifacts.py",
+      "role": "relevant_tests",
+      "bytes": 33484,
+      "sha256": "2ea9d10d16f14488c4ec1865dbc8a74f1c05289fd87b5052d5db53004b67ee8b"
+    },
+    {
+      "path": "tests/test_rollout_closure_pipe.py",
+      "role": "relevant_tests",
+      "bytes": 32640,
+      "sha256": "de9b1b96f514bfb829a12380ddb6923d63c1585909273578f4b29763a5489fe5"
+    },
+    {
+      "path": "tests/test_train_closure_pipe.py",
+      "role": "relevant_tests",
+      "bytes": 30315,
+      "sha256": "c2426ca9321479525a05d80695e49718ef1d60ab355b3dfec49ed3e78ec53194"
+    }
+  ],
+  "runtime_dependencies": [
+    {
+      "path": "src/__init__.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 34,
+      "sha256": "580b36dfeb9cdba3bcc5a3bbe94a60aa170a40512874dc58bb510e60f3be71c6"
+    },
+    {
+      "path": "src/data/prepare_commit_artifacts.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 73927,
+      "sha256": "a0f689f870d230475d11362bdf8ed52ab2337aa3307af1c8cd25b7a9a0d64141"
+    },
+    {
+      "path": "src/experiments/__init__.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 61,
+      "sha256": "dfec3a945384692c654b2a80b17e6e6a41732493d476cddb69a67aa45209d886"
+    },
+    {
+      "path": "src/experiments/build_closure_expert_state.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 28645,
+      "sha256": "9a48ee45de0709fe871ae0d5bebad5e73117564dbd111a54bdd871b1336cae4a"
+    },
+    {
+      "path": "src/experiments/build_closure_holdout.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 67719,
+      "sha256": "a79c746c2fa0468637744a5c5aa71dacfea8843130edfe6e9104a2d9ea0abd9e"
+    },
+    {
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 93507,
+      "sha256": "7902ad48c824fe73e045aeec16a740b03ff0fade60769d08f80de4bd26aff4a4"
+    },
+    {
+      "path": "src/experiments/build_common_origin_manifest.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 36987,
+      "sha256": "691d9c9951c37881e17280609b099551b7f87ccb60a126ef977073878cc281d0"
+    },
+    {
+      "path": "src/experiments/build_pipe_sequences.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 27658,
+      "sha256": "05fd7b401fc20555ad94c3b2f9cec4939330b70edae5ac0857f3536328f9bc27"
+    },
+    {
+      "path": "src/experiments/closure_contract.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 87743,
+      "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+    },
+    {
+      "path": "src/experiments/closure_development_guard.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 30856,
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_lock.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 121036,
+      "sha256": "024b942d32db1dc65500fac9ff9b56be9e983307ce6427dbb4f7fac966e78000"
+    },
+    {
+      "path": "src/experiments/closure_runtime_contract.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 113626,
+      "sha256": "4639e003e482682aef0da69816e71f8c9d77a38fc3fb4965fd416f0569ce3432"
+    },
+    {
+      "path": "src/experiments/fit_closure_anfis_state.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 59865,
+      "sha256": "8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2"
+    },
+    {
+      "path": "src/experiments/lock_closure_development_runtime.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 8082,
+      "sha256": "c750b04a3089af437e84fcea285bcf1915918b1715a99da983058ec7c0381c57"
+    },
+    {
+      "path": "src/experiments/rollout_closure_pipe.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 60941,
+      "sha256": "13c174cc4f9d5596546be68ae7e10950a07a82331368d9f23e2d07961643161d"
+    },
+    {
+      "path": "src/experiments/rollout_pipe_grud.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 32980,
+      "sha256": "5ea2eddb6528b8d91be243e03cd600207161e46ea0663690912a2aadfa342c64"
+    },
+    {
+      "path": "src/experiments/run_adaptive_anfis_real_smoke.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 33258,
+      "sha256": "ebfbe2693ef2303ee164d5f8e7dbe0404ea7a08672ad5a24788df5800232ff3c"
+    },
+    {
+      "path": "src/experiments/train_closure_pipe.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 65390,
+      "sha256": "d96df5a1898d91890bdfeccd698a6afee915c75ee5eb80d245a33541059e15d5"
+    },
+    {
+      "path": "src/experiments/train_pipe_grud.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 51360,
+      "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+    },
+    {
+      "path": "src/fuzzy/__init__.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 49,
+      "sha256": "61f6887fb877b9d795d508ce9c81b5a6d43285d33b4c237c6bba788315bf8124"
+    },
+    {
+      "path": "src/fuzzy/adaptive_anfis.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 9927,
+      "sha256": "704cf96c0f531865ef03be8c7ce7bb35e7c04b2d488a81bc2d77aa4b9b6830c0"
+    },
+    {
+      "path": "src/fuzzy/expert.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 19087,
+      "sha256": "a851e46380d1b0cb14c06386873fb55d50712dfbf23293d58ffc69e158623246"
+    },
+    {
+      "path": "src/pandas_utils.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 1587,
+      "sha256": "4e9af7af5a8276fc83236047d27e7bcefa61a66e036ce4bc688078d7beebc685"
+    },
+    {
+      "path": "tests/conftest.py",
+      "role": "runtime_transitive_dependency",
+      "bytes": 436,
+      "sha256": "009e7072f3d1daea69608089ed4ced0f43daf3c02e7faaa477e63551ac4db784"
+    }
+  ],
+  "parents": [
+    {
+      "path": "configs/closure_v1/development_runtime.schema.json",
+      "role": "runtime_schema",
+      "bytes": 55502,
+      "sha256": "1abb28734ab3dc4ef2cdc68ce13876741ee42b4b5a8de35aadb332e95aee9709"
+    },
+    {
+      "path": "configs/closure_v1/development_runtime.yaml",
+      "role": "runtime_config",
+      "bytes": 46105,
+      "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d"
+    },
+    {
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "holdout_assignment",
+      "bytes": 89635,
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "role": "common_origin",
+      "bytes": 2763097,
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+      "role": "expert_state",
+      "bytes": 1201722,
+      "sha256": "3034d1cfff880c1f3dbe84502e2c54c332e2458b3f3ba3c83b1db105a1b3fe25"
+    },
+    {
+      "path": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc",
+      "role": "expert_state_dvc_pointer",
+      "bytes": 114,
+      "sha256": "98f8a395ed097518ecf8cedf0388947f528260100044886c0cf2eeff81bb1d34"
+    },
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "role": "restored_expert_anchor",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "restored_panel",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "role": "holdout_manifest",
+      "bytes": 3440,
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "role": "protocol_lock",
+      "bytes": 8279,
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "role": "common_origin_completion_manifest",
+      "bytes": 11524,
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+      "role": "expert_state_lineage_audit",
+      "bytes": 1830,
+      "sha256": "99fb2a10bd0ace7e4b8f86210981d7af23a2685be565416e91655c70aeecd4df"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+      "role": "expert_state_manifest",
+      "bytes": 6898,
+      "sha256": "e0e12d41358e9e2fe1d0be98725f237254b2ed889860c714ed524fda250670c1"
+    }
+  ],
+  "restored_development_sources": [
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "restored_monthly_panel_source",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62",
+      "semantic_decode": false
+    },
+    {
+      "path": "data/fuzzy/state_vector_v0.parquet",
+      "role": "restored_expert_anchor_source",
+      "bytes": 106555794,
+      "sha256": "81ba2af85fe949c683fdc50a044d0d882ee0f6fa6d68eb36619de1be800649a6",
+      "semantic_decode": false
+    }
+  ],
+  "common_origin": {
+    "artifact": {
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "bytes": 2763097,
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0",
+      "role": "common_origin"
+    },
+    "completion_records": [
+      {
+        "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+        "role": "common_origin_completion_manifest",
+        "bytes": 11524,
+        "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+      }
+    ],
+    "dvc": {
+      "pointer_path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "pointer_bytes": 113,
+      "pointer_sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3",
+      "owner_strategy": "explicit_pointer",
+      "hash_name": "md5",
+      "hash_value": "9e8f21edfc4026ffd8747b3eb1a9774d",
+      "size": 2763097,
+      "pointer_metadata_verified": true,
+      "payload_verified_at_lock": true
+    }
+  },
+  "expert_state": {
+    "artifact": {
+      "bytes": 1201722,
+      "path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+      "role": "expert_state",
+      "sha256": "3034d1cfff880c1f3dbe84502e2c54c332e2458b3f3ba3c83b1db105a1b3fe25"
+    },
+    "completion_records": [
+      {
+        "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+        "role": "expert_state_completion_manifest",
+        "bytes": 6898,
+        "sha256": "e0e12d41358e9e2fe1d0be98725f237254b2ed889860c714ed524fda250670c1"
+      },
+      {
+        "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+        "role": "expert_state_lineage_audit",
+        "bytes": 1830,
+        "sha256": "99fb2a10bd0ace7e4b8f86210981d7af23a2685be565416e91655c70aeecd4df"
+      }
+    ],
+    "dvc": {
+      "pointer_path": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc",
+      "pointer_bytes": 114,
+      "pointer_sha256": "98f8a395ed097518ecf8cedf0388947f528260100044886c0cf2eeff81bb1d34",
+      "owner_strategy": "explicit_pointer",
+      "hash_name": "md5",
+      "hash_value": "3c6889defd45978ce6b89260e18d450c",
+      "size": 1201722,
+      "pointer_metadata_verified": true,
+      "payload_verified_at_lock": true
+    },
+    "semantic_audit": {
+      "audit_version": "closure_expert_no_current_state_semantic_audit_v1",
+      "schema_allowlist_verified": true,
+      "exact_development_locations_verified": true,
+      "zero_holdout_overlap": true,
+      "zero_unknown_assignment_overlap": true,
+      "locked_time_roles_verified": true,
+      "unit_interval_values_verified": true,
+      "signed_deltas_verified": true,
+      "exact_month_delta_recomputation_verified": true,
+      "no_post_2021_materialization": true,
+      "future_outcomes_accessed": false,
+      "rows": 42110,
+      "locations": 353,
+      "minimum_year_month": "1970-10",
+      "maximum_year_month": "2021-12",
+      "role_counts": {
+        "calibration_threshold": 1732,
+        "model_selection": 3739,
+        "training": 36639
+      },
+      "delta_previous_month_missing_count": 8041,
+      "source_projection": [
+        "source_id",
+        "site_id",
+        "year_month",
+        "yN",
+        "yF",
+        "yT_no_chla",
+        "sigma_N",
+        "sigma_F",
+        "sigma_T_no_chla"
+      ],
+      "output_allowlist": [
+        "source_id",
+        "site_id",
+        "year_month",
+        "time_role",
+        "yN",
+        "yF",
+        "yT_no_chla",
+        "sigma_N",
+        "sigma_F",
+        "sigma_T_no_chla",
+        "delta_yN",
+        "delta_yF",
+        "delta_yT_no_chla",
+        "delta_previous_month_missing"
+      ]
+    }
+  },
+  "planned_artifacts": {
+    "count": 201,
+    "sha256": "833fe57a573db135357a596949728fd0b6a436997ece0ba2c5555b815a42672c",
+    "records": [
+      {
+        "path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": true,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc",
+        "bytes": 1201722,
+        "sha256": "3034d1cfff880c1f3dbe84502e2c54c332e2458b3f3ba3c83b1db105a1b3fe25",
+        "pointer_verified": true
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P0/seed_1729.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P0/seed_1729.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P0/seed_20260612.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P0/seed_20260612.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P0/seed_20260613.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P0/seed_20260613.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P0/seed_20260614.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P0/seed_20260614.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P0/seed_314159.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P0/seed_314159.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P1/seed_1729.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P1/seed_1729.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P1/seed_20260612.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P1/seed_20260612.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P1/seed_20260613.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P1/seed_20260613.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P1/seed_20260614.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P1/seed_20260614.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/rollouts/P1/seed_314159.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/rollouts/P1/seed_314159.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/sequences/P1/seed_1729.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/sequences/P1/seed_20260612.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/sequences/P1/seed_20260612.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/sequences/P1/seed_20260613.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/sequences/P1/seed_20260614.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/sequences/P1/seed_20260614.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "data/closure_v1/development/sequences/P1/seed_314159.parquet",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "explicit_pointer",
+        "owner_path": "data/closure_v1/development/sequences/P1/seed_314159.parquet.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_1729/anfis_f.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_1729/anfis_n.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_1729/anfis_t_no_current.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260612/anfis_f.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260612/anfis_n.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260612/anfis_t_no_current.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260613/anfis_f.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260613/anfis_n.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260613/anfis_t_no_current.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260614/anfis_f.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260614/anfis_n.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_20260614/anfis_t_no_current.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_314159/anfis_f.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_314159/anfis_n.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/anfis/seed_314159/anfis_t_no_current.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_1729.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_1729.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_20260612.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_20260612.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_20260613.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_20260613.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_20260614.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_20260614.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_314159.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P0/seed_314159.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_1729.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_1729.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_20260612.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_20260612.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_20260613.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_20260613.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_20260614.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_20260614.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_314159.checkpoint.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "models/closure_v1/pipe/P1/seed_314159.pt",
+        "artifact_class": "heavy",
+        "materialized_at_lock": false,
+        "owner_strategy": "models_dvc_monolithic_parent",
+        "owner_path": "models.dvc",
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/anfis_f_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/anfis_n_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/anfis_t_no_current_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/lineage_audit.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/memberships_final.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/memberships_initial.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/module_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_f_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_n_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_t_no_current_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/lineage_audit.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/memberships_final.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/memberships_initial.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/module_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260612/training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/anfis_f_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/anfis_n_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/anfis_t_no_current_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/lineage_audit.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/memberships_final.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/memberships_initial.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/module_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260613/training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/anfis_f_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/anfis_n_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/anfis_t_no_current_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/lineage_audit.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/memberships_final.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/memberships_initial.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/module_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_20260614/training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/anfis_f_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/anfis_n_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/anfis_t_no_current_sample_keys.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/lineage_audit.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/memberships_final.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/memberships_initial.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/module_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/anfis/seed_314159/training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": true,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json",
+        "bytes": 1830,
+        "sha256": "99fb2a10bd0ace7e4b8f86210981d7af23a2685be565416e91655c70aeecd4df",
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": true,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+        "bytes": 6898,
+        "sha256": "e0e12d41358e9e2fe1d0be98725f237254b2ed889860c714ed524fda250670c1",
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260612_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260612_summary.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260613_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260613_summary.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260614_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260614_summary.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_314159_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_314159_summary.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_1729_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P0/seed_314159_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_1729_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260612_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260613_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_20260614_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_blend_search.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_blend_weights.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_metrics.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_preprocessor.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_report.md",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_rollout_manifest.json",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      },
+      {
+        "path": "reports/closure_v1/02_models/P1/seed_314159_training_curve.csv",
+        "artifact_class": "lightweight",
+        "materialized_at_lock": false,
+        "owner_strategy": "git_when_materialized",
+        "owner_path": null,
+        "bytes": null,
+        "sha256": null,
+        "pointer_verified": false
+      }
+    ]
+  },
+  "environment": {
+    "python_version": "3.14.6",
+    "python_implementation": "CPython",
+    "python_executable_name": "python",
+    "platform": "Linux-7.1.5-arch1-2-x86_64-with-glibc2.44",
+    "machine": "x86_64",
+    "device": "cpu",
+    "cublas_workspace_config": null,
+    "cpu_execution_policy": {
+      "device": "cpu",
+      "torch_num_threads": 1,
+      "torch_num_interop_threads": 1,
+      "blas_thread_environment_control": "not_locked_by_e0_dl_v1",
+      "bitwise_reproducibility_claim": "forbidden_across_processes_or_blas_backends",
+      "torch_num_threads_observed": 1,
+      "torch_num_interop_threads_observed": 1
+    },
+    "packages": [
+      {
+        "name": "numpy",
+        "version": "2.4.5"
+      },
+      {
+        "name": "pandas",
+        "version": "3.0.3"
+      },
+      {
+        "name": "pyarrow",
+        "version": "24.0.0"
+      },
+      {
+        "name": "PyYAML",
+        "version": "6.0.3"
+      },
+      {
+        "name": "scikit-learn",
+        "version": "1.8.0"
+      },
+      {
+        "name": "torch",
+        "version": "2.12.0"
+      }
+    ]
+  },
+  "dvc_remote_verification": {
+    "method": "two_targeted_idempotent_pushes_v1",
+    "command": [
+      "poetry",
+      "run",
+      "dvc",
+      "push",
+      "-j",
+      "1",
+      "-r",
+      "gcsremote",
+      "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc"
+    ],
+    "environment": {
+      "LC_ALL": "C",
+      "LANG": "C",
+      "DVC_NO_ANALYTICS": "1"
+    },
+    "remote_name": "gcsremote",
+    "remote_url_sha256": "85df04c945d923fcc1dd4371cde73f897d6f1232d107d8dcdc105ce16dd9dc88",
+    "targets": [
+      {
+        "artifact_role": "common_origin",
+        "pointer_path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+        "pointer_sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3",
+        "hash_name": "md5",
+        "hash_value": "9e8f21edfc4026ffd8747b3eb1a9774d",
+        "size": 2763097
+      },
+      {
+        "artifact_role": "expert_state",
+        "pointer_path": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc",
+        "pointer_sha256": "98f8a395ed097518ecf8cedf0388947f528260100044886c0cf2eeff81bb1d34",
+        "hash_name": "md5",
+        "hash_value": "3c6889defd45978ce6b89260e18d450c",
+        "size": 1201722
+      }
+    ],
+    "attempts": [
+      {
+        "attempt": 1,
+        "exit_code": 0,
+        "stdout_sha256": "b59769a01123d983b15b2043cfabde0156c0fa381e7da5ed394c4b0d72bd41f3",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "normalized_result": "everything_up_to_date"
+      },
+      {
+        "attempt": 2,
+        "exit_code": 0,
+        "stdout_sha256": "b59769a01123d983b15b2043cfabde0156c0fa381e7da5ed394c4b0d72bd41f3",
+        "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "normalized_result": "everything_up_to_date"
+      }
+    ],
+    "dvc_remote_verified_at_lock": true
+  },
+  "verification": {
+    "full_type_check": {
+      "command": [
+        "poetry",
+        "run",
+        "ty",
+        "check"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    },
+    "focused_tests": {
+      "command": [
+        "poetry",
+        "run",
+        "pytest",
+        "tests/test_closure_runtime_contract.py",
+        "tests/test_build_closure_expert_state.py",
+        "tests/test_fit_closure_anfis_state.py",
+        "tests/test_build_closure_pipe_sequences.py",
+        "tests/test_train_closure_pipe.py",
+        "tests/test_rollout_closure_pipe.py",
+        "tests/test_closure_development_runtime_lock.py",
+        "tests/test_lock_closure_development_runtime.py",
+        "tests/test_prepare_commit_artifacts.py",
+        "tests/test_data_versioning_config.py",
+        "tests/test_dvc_add_from_manifest.py",
+        "-q"
+      ],
+      "exit_code": 0,
+      "stdout_sha256": "62307ec1edb0e1ae255c479de7551680f88262530509a38f85606f91ae058dc5",
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "passed": true
+    }
+  },
+  "audits": {
+    "common_origin_validated": true,
+    "expert_state_validated": true,
+    "expert_state_semantic_audit_verified": true,
+    "zero_holdout_overlap": true,
+    "no_post_2021_materialization": true,
+    "restored_source_hashes_verified": true,
+    "component_hashes_verified": true,
+    "recursive_dependency_hashes_verified": true,
+    "planned_artifact_paths_verified": true,
+    "prelock_dvc_ownership_verified": true,
+    "dvc_remote_verified_at_lock": true,
+    "canonical_origin_identity_verified": true,
+    "locked_parent_published_at_lock": true,
+    "environment_locked": true
+  },
+  "authorizations": {
+    "development_fit_authorized": true,
+    "evaluation_authorized": false,
+    "e0_u_authorized": false
+  },
+  "seals": {
+    "future_outcomes_accessed": false,
+    "post_2021_outcome_semantic_decode": false,
+    "lock_generation_semantically_audits_expert_state_rows": true,
+    "lock_generation_reads_scientific_outcome_rows": false,
+    "lock_generation_reads_post_2021_outcomes": false,
+    "does_not_replace_e0_m_model_lock": true,
+    "external_lock_bundle_committed_before_fit": true
+  }
+}
