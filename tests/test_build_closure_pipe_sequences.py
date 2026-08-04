@@ -16,6 +16,7 @@ import pyarrow.parquet as pq
 import pytest
 
 from src.experiments.build_closure_pipe_sequences import (
+    ANFIS_MODULE_ARTIFACT_TOKENS,
     ANFIS_MODULES,
     ANFIS_REQUIRED_SOURCE_PATHS,
     DEFAULT_RUNTIME_CONFIG,
@@ -229,7 +230,7 @@ def _anfis_provenance(
             "device": "cpu",
             "locked_repository_head": "a" * 40,
             "execution_head": "a" * 40,
-            "published_ref": "refs/remotes/origin/main",
+            "published_ref": "origin/main",
             "published_head": "a" * 40,
             "remote_main_oid": "a" * 40,
             "locked_head_is_ancestor": True,
@@ -354,9 +355,10 @@ def _anfis_outputs(
         records.append({**_file_record(state_path), "role": "adaptive_no_current_state"})
     sampling = cast(dict[str, dict[str, Any]], scientific["sampling"])
     for module in ANFIS_MODULES:
+        artifact_token = ANFIS_MODULE_ARTIFACT_TOKENS[module]
         if fitted:
-            add(f"models/{module}.pt", "anfis_checkpoint", module)
-        sample_path = tmp_path / f"reports/{module}_sample.csv"
+            add(f"models/{artifact_token}.pt", "anfis_checkpoint", module)
+        sample_path = tmp_path / f"reports/{artifact_token}_sample.csv"
         sample_path.parent.mkdir(parents=True, exist_ok=True)
         audit = sampling[module]
         _sample_frame(
@@ -525,7 +527,10 @@ def _anfis_scientific_fields(
                 },
                 "planned_unmaterialized_heavy_outputs": [
                     "state.parquet",
-                    *(f"models/{module}.pt" for module in ANFIS_MODULES),
+                    *(
+                        f"models/{ANFIS_MODULE_ARTIFACT_TOKENS[module]}.pt"
+                        for module in ANFIS_MODULES
+                    ),
                 ],
             }
         )
@@ -708,7 +713,29 @@ def test_state_slot_manifest_requires_exact_available_physical_link(
         base_seed=1729,
         state_path=state_path,
     ) == (True, "", False)
-    sample_path = tmp_path / "reports/ANFIS-N_sample.csv"
+    producer_manifest_bytes = (
+        json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n"
+    ).encode("utf-8")
+    round_tripped_payload = json.loads(producer_manifest_bytes)
+    assert list(round_tripped_payload["module_metrics"][0]) != pd.read_csv(
+        tmp_path / "reports/metrics.csv"
+    ).columns.tolist()
+    assert validate_state_slot_manifest(
+        round_tripped_payload,
+        model_id="P1",
+        base_seed=1729,
+        state_path=state_path,
+    ) == (True, "", False)
+    wrong_ref = copy.deepcopy(round_tripped_payload)
+    wrong_ref["authorization"]["published_ref"] = "refs/remotes/origin/main"
+    with pytest.raises(ValueError, match="published_ref drifted"):
+        validate_state_slot_manifest(
+            wrong_ref,
+            model_id="P1",
+            base_seed=1729,
+            state_path=state_path,
+        )
+    sample_path = tmp_path / "reports/anfis_n_sample.csv"
     sample = pd.read_csv(sample_path, dtype={"site_id": "string"})
     sample.loc[0, "site_id"] = "000123"
     rank_payload = json.dumps(
@@ -1021,7 +1048,7 @@ def test_state_slot_manifest_rejects_scientific_dialect_mutations(
     elif mutation == "join_scopes":
         mutated["panel_anchor_joins"].pop("training_candidates")
     elif mutation == "path_redirect":
-        redirected = tmp_path / "redirected/ANFIS-N.pt"
+        redirected = tmp_path / "redirected/anfis_n.pt"
         redirected.parent.mkdir(parents=True)
         redirected.write_bytes(b"redirected")
         replacement = {
@@ -1037,7 +1064,7 @@ def test_state_slot_manifest_rejects_scientific_dialect_mutations(
             for record in mutated["outputs"]
         ]
     elif mutation == "sample_csv":
-        sample_path = tmp_path / "reports/ANFIS-N_sample.csv"
+        sample_path = tmp_path / "reports/anfis_n_sample.csv"
         sample = pd.read_csv(sample_path)
         sample.loc[0, "rank_sha256"] = "f" * 64
         sample.to_csv(sample_path, index=False)
@@ -1045,7 +1072,7 @@ def test_state_slot_manifest_rejects_scientific_dialect_mutations(
             if record.get("role") == "sample_keys" and record.get("module") == "ANFIS-N":
                 record.update(_file_record(sample_path))
     elif mutation == "duplicate_sample_key":
-        sample_path = tmp_path / "reports/ANFIS-N_sample.csv"
+        sample_path = tmp_path / "reports/anfis_n_sample.csv"
         sample = pd.read_csv(sample_path, dtype={"source_id": "string", "site_id": "string"})
         for field in ("source_id", "site_id", "year_month"):
             sample.loc[1, field] = sample.loc[0, field]
@@ -1065,7 +1092,7 @@ def test_state_slot_manifest_rejects_scientific_dialect_mutations(
             if record.get("role") == "sample_keys" and record.get("module") == "ANFIS-N":
                 record.update(_file_record(sample_path))
     elif mutation == "sample_seed_nonintegral":
-        sample_path = tmp_path / "reports/ANFIS-N_sample.csv"
+        sample_path = tmp_path / "reports/anfis_n_sample.csv"
         sample = pd.read_csv(sample_path, dtype=str)
         sample.loc[0, "module_seed"] = "1830.5"
         sample.to_csv(sample_path, index=False)
@@ -1073,7 +1100,7 @@ def test_state_slot_manifest_rejects_scientific_dialect_mutations(
             if record.get("role") == "sample_keys" and record.get("module") == "ANFIS-N":
                 record.update(_file_record(sample_path))
     elif mutation == "sample_scope":
-        sample_path = tmp_path / "reports/ANFIS-N_sample.csv"
+        sample_path = tmp_path / "reports/anfis_n_sample.csv"
         sample = pd.read_csv(sample_path, dtype=str)
         sample.loc[0, "source_id"] = " wqp"
         sample.to_csv(sample_path, index=False)

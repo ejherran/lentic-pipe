@@ -702,6 +702,47 @@ def _output_record_for_path(
 
 
 ANFIS_MODULES = ("ANFIS-N", "ANFIS-F", "ANFIS-T-no-current")
+ANFIS_MODULE_ARTIFACT_TOKENS = {
+    "ANFIS-N": "anfis_n",
+    "ANFIS-F": "anfis_f",
+    "ANFIS-T-no-current": "anfis_t_no_current",
+}
+ANFIS_FITTED_MODULE_METRIC_COLUMNS = (
+    "module",
+    "status",
+    "base_seed",
+    "module_seed",
+    "train_rows",
+    "prediction_rows",
+    "input_dimension",
+    "rule_count",
+    "epochs",
+    "curve_initial_pre_update_loss",
+    "curve_last_pre_update_loss",
+    "minimum_curve_pre_update_loss",
+    "final_checkpoint_loss",
+    "quality_gate_output_standard_deviation",
+    "quality_gate_output_scope",
+    "materialized_surface_output_standard_deviation",
+    "maximum_parameter_delta",
+    "centers_ordered",
+    "centers_in_unit_interval",
+)
+ANFIS_UNAVAILABLE_MODULE_METRIC_COLUMNS = (
+    "module",
+    "status",
+    "failure_reason",
+    "base_seed",
+    "module_seed",
+    "input_rows",
+    "excluded_nonfinite_target_rows",
+    "excluded_missingness_rows",
+    "eligible_universe_rows",
+    "selected_rows",
+    "required_rows",
+    "replacement_used",
+    "fit_attempted",
+)
 ANFIS_REQUIRED_SOURCE_PATHS = (
     "src/experiments/fit_closure_anfis_state.py",
     "src/experiments/build_closure_expert_state.py",
@@ -795,6 +836,7 @@ def _physical_manifest_record(
     record: Mapping[str, Any],
     *,
     context: str,
+    historical_records: Mapping[str, Mapping[str, Any]] | None = None,
 ) -> dict[str, Any]:
     raw_path = record.get("path")
     if not isinstance(raw_path, str) or not raw_path:
@@ -807,6 +849,17 @@ def _physical_manifest_record(
         physical.resolve().relative_to(PROJECT_ROOT.resolve())
     except ValueError as exc:
         raise ClosurePipeSequenceError(f"{context} path escapes the repository") from exc
+    historical = (historical_records or {}).get(str(record.get("role", "")))
+    if historical is not None:
+        if historical.get("path") != raw_path or dict(record) != dict(historical):
+            raise ClosurePipeSequenceError(
+                f"{context} historical record differs from the closed E0-DLP exception"
+            )
+        return {
+            "path": historical["path"],
+            "bytes": historical["bytes"],
+            "sha256": historical["sha256"],
+        }
     if not physical.is_file():
         raise ClosurePipeSequenceError(f"{context} file is missing: {raw_path}")
     expected = _file_record(physical)
@@ -818,13 +871,69 @@ def _physical_manifest_record(
     return expected
 
 
-def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
+def _historical_anfis_consumer_context(
+    payload: Mapping[str, Any],
+) -> Mapping[str, Any] | None:
+    from src.experiments.closure_development_runtime_patch import (  # noqa: PLC0415
+        DevelopmentRuntimePatchError,
+        require_adopted_seed_1729_consumer_context,
+    )
+
+    try:
+        context = require_adopted_seed_1729_consumer_context(payload)
+    except DevelopmentRuntimePatchError as exc:
+        raise ClosurePipeSequenceError(
+            "ANFIS historical dependency lacks valid published E0-DLP authority"
+        ) from exc
+    if context is None:
+        return None
+    records = context.get("historical_source_records")
+    if not isinstance(records, Mapping) or set(records) != {
+        "generating_script",
+        "strict_anfis_state_adapter",
+        "runtime_lock_validator",
+    }:
+        raise ClosurePipeSequenceError(
+            "E0-DLP historical dependency context drifted"
+        )
+    if context.get("historical_uppercase_artifact_paths") is not True:
+        raise ClosurePipeSequenceError("E0-DLP historical artifact-path context drifted")
+    return context
+
+
+def _expected_anfis_source_record(
+    path: str,
+    role: str,
+    historical_records: Mapping[str, Mapping[str, Any]],
+) -> dict[str, Any]:
+    historical = historical_records.get(role)
+    if historical is not None:
+        expected = dict(historical)
+        if expected.get("role") != role or expected.get("path") != path:
+            raise ClosurePipeSequenceError(
+                f"E0-DLP historical ANFIS role {role!r} drifted"
+            )
+        return expected
+    return {**_file_record(PROJECT_ROOT / path), "role": role}
+
+
+def _validate_anfis_provenance(
+    payload: Mapping[str, Any],
+) -> tuple[Mapping[str, Any], Mapping[str, Any] | None]:
     if payload.get("development_fit_authorized") is not True:
         raise ClosurePipeSequenceError("ANFIS manifest lacks development-fit authorization")
-    expected_script = {
-        **_file_record(PROJECT_ROOT / ANFIS_REQUIRED_SOURCE_PATHS[0]),
-        "role": "generating_script",
-    }
+    historical_context = _historical_anfis_consumer_context(payload)
+    historical_records = cast(
+        Mapping[str, Mapping[str, Any]],
+        historical_context.get("historical_source_records", {})
+        if historical_context is not None
+        else {},
+    )
+    expected_script = _expected_anfis_source_record(
+        ANFIS_REQUIRED_SOURCE_PATHS[0],
+        "generating_script",
+        historical_records,
+    )
     if payload.get("script") != expected_script:
         raise ClosurePipeSequenceError("ANFIS manifest script differs from the current fitter")
     dependencies = payload.get("dependencies")
@@ -846,7 +955,11 @@ def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
             "role",
         }:
             raise ClosurePipeSequenceError("ANFIS dependency record dialect drifted")
-        physical = _physical_manifest_record(record, context="ANFIS dependency")
+        physical = _physical_manifest_record(
+            record,
+            context="ANFIS dependency",
+            historical_records=historical_records,
+        )
         path = str(physical["path"])
         if path in dependency_records:
             raise ClosurePipeSequenceError("ANFIS dependency paths must be unique")
@@ -863,17 +976,23 @@ def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
             "role",
         }:
             raise ClosurePipeSequenceError("ANFIS input record dialect drifted")
-        physical = _physical_manifest_record(record, context="ANFIS input")
+        physical = _physical_manifest_record(
+            record,
+            context="ANFIS input",
+            historical_records=historical_records,
+        )
         path = str(physical["path"])
         if path in input_records:
             raise ClosurePipeSequenceError("ANFIS input paths must be unique")
         input_records[path] = record
     script_path = str(expected_script["path"])
     fitter_dependency = dependency_records.get(script_path)
-    if fitter_dependency != {
-        **_file_record(PROJECT_ROOT / ANFIS_REQUIRED_SOURCE_PATHS[0]),
-        "role": "strict_anfis_state_adapter",
-    }:
+    expected_fitter_dependency = _expected_anfis_source_record(
+        ANFIS_REQUIRED_SOURCE_PATHS[0],
+        "strict_anfis_state_adapter",
+        historical_records,
+    )
+    if fitter_dependency != expected_fitter_dependency:
         raise ClosurePipeSequenceError("ANFIS dependencies omit the exact fitter script")
     if set(input_records) != set(dependency_records).difference({script_path}):
         raise ClosurePipeSequenceError("ANFIS inputs differ from dependencies minus script")
@@ -884,7 +1003,11 @@ def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     if len(records_by_role) != len(ANFIS_DEPENDENCY_ROLES):
         raise ClosurePipeSequenceError("ANFIS dependency roles must be unique")
     for role, path in ANFIS_SOURCE_ROLE_PATHS.items():
-        expected_record = {**_file_record(PROJECT_ROOT / path), "role": role}
+        expected_record = _expected_anfis_source_record(
+            path,
+            role,
+            historical_records,
+        )
         if records_by_role.get(role) != expected_record:
             raise ClosurePipeSequenceError(f"ANFIS source dependency role {role!r} drifted")
 
@@ -932,7 +1055,11 @@ def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         **ANFIS_SOURCE_ROLE_PATHS,
     }
     for role, path in expected_role_paths.items():
-        expected_record = {**_file_record(PROJECT_ROOT / path), "role": role}
+        expected_record = _expected_anfis_source_record(
+            path,
+            role,
+            historical_records,
+        )
         if records_by_role.get(role) != expected_record:
             raise ClosurePipeSequenceError(f"ANFIS dependency role/path {role!r} drifted")
 
@@ -999,11 +1126,7 @@ def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     if authorization.get("lock_version") != "closure_development_runtime_lock_v1":
         raise ClosurePipeSequenceError("ANFIS authorization lock_version drifted")
     published_ref = authorization.get("published_ref")
-    if (
-        not isinstance(published_ref, str)
-        or not published_ref.startswith("refs/remotes/")
-        or published_ref != published_ref.strip()
-    ):
+    if published_ref != "origin/main":
         raise ClosurePipeSequenceError("ANFIS authorization published_ref drifted")
     for field in ("component_count", "planned_artifact_path_count"):
         value = authorization.get(field)
@@ -1026,7 +1149,7 @@ def _validate_anfis_provenance(payload: Mapping[str, Any]) -> Mapping[str, Any]:
         or input_records[lock_path].get("sha256") != authorization.get("lock_sha256")
     ):
         raise ClosurePipeSequenceError("ANFIS authorization lock provenance drifted")
-    return runtime_payload
+    return runtime_payload, historical_context
 
 
 def _is_sha256_text(value: Any) -> bool:
@@ -1507,6 +1630,7 @@ def _expected_anfis_slot_paths(
     runtime: Mapping[str, Any],
     *,
     base_seed: int,
+    historical_uppercase_artifact_paths: bool = False,
 ) -> dict[str, Any]:
     paths: dict[str, Any] = {
         field: _format_anfis_artifact_path(runtime, field, base_seed=base_seed)
@@ -1525,7 +1649,11 @@ def _expected_anfis_slot_paths(
             runtime,
             "anfis_model_template",
             base_seed=base_seed,
-            module=module,
+            module=(
+                module
+                if historical_uppercase_artifact_paths
+                else ANFIS_MODULE_ARTIFACT_TOKENS[module]
+            ),
         )
         for module in ANFIS_MODULES
     }
@@ -1534,7 +1662,11 @@ def _expected_anfis_slot_paths(
             runtime,
             "anfis_sample_keys_template",
             base_seed=base_seed,
-            module=module,
+            module=(
+                module
+                if historical_uppercase_artifact_paths
+                else ANFIS_MODULE_ARTIFACT_TOKENS[module]
+            ),
         )
         for module in ANFIS_MODULES
     }
@@ -1669,8 +1801,12 @@ def _validate_anfis_csv_evidence(
     metrics = cast(Sequence[Mapping[str, Any]], payload["module_metrics"])
     metrics_path = PROJECT_ROOT / str(paths["anfis_metrics_template"])
     frame = pd.read_csv(metrics_path)
-    expected_columns = list(metrics[0])
-    if frame.columns.tolist() != expected_columns or len(frame) != len(ANFIS_MODULES):
+    metric_columns = (
+        ANFIS_FITTED_MODULE_METRIC_COLUMNS
+        if payload.get("fit_attempted") is True
+        else ANFIS_UNAVAILABLE_MODULE_METRIC_COLUMNS
+    )
+    if frame.columns.tolist() != list(metric_columns) or len(frame) != len(ANFIS_MODULES):
         raise ClosurePipeSequenceError("ANFIS module-metrics CSV schema/count drifted")
     records = frame.to_dict(orient="records")
     for observed, expected, module in zip(records, metrics, ANFIS_MODULES, strict=True):
@@ -1690,8 +1826,13 @@ def _validate_anfis_outputs(
     base_seed: int,
     state_path: Path,
     fitted_outputs_expected: bool,
+    historical_uppercase_artifact_paths: bool = False,
 ) -> None:
-    slot_paths = _expected_anfis_slot_paths(runtime, base_seed=base_seed)
+    slot_paths = _expected_anfis_slot_paths(
+        runtime,
+        base_seed=base_seed,
+        historical_uppercase_artifact_paths=historical_uppercase_artifact_paths,
+    )
     if _repo_path(state_path) != slot_paths["anfis_state_template"]:
         raise ClosurePipeSequenceError("ANFIS state path differs from its runtime template")
     raw_outputs = payload.get("outputs")
@@ -1840,7 +1981,8 @@ def validate_state_slot_manifest(
     for field, expected in expected_identity.items():
         if not _typed_scalar_equal(payload.get(field), expected):
             raise ClosurePipeSequenceError(f"ANFIS state manifest field {field!r} drifted")
-    runtime = _validate_anfis_provenance(payload)
+    runtime, historical_context = _validate_anfis_provenance(payload)
+    historical_uppercase_artifact_paths = historical_context is not None
     slot_status = payload.get("slot_status")
     if slot_status == "available":
         expected_available = {
@@ -1873,6 +2015,7 @@ def validate_state_slot_manifest(
             base_seed=base_seed,
             state_path=state_path,
             fitted_outputs_expected=True,
+            historical_uppercase_artifact_paths=historical_uppercase_artifact_paths,
         )
         return True, "", False
     if slot_status != "model_unavailable":
@@ -1929,6 +2072,7 @@ def validate_state_slot_manifest(
             base_seed=base_seed,
             state_path=state_path,
             fitted_outputs_expected=True,
+            historical_uppercase_artifact_paths=historical_uppercase_artifact_paths,
         )
     else:
         heavy = [
@@ -1950,6 +2094,7 @@ def validate_state_slot_manifest(
             base_seed=base_seed,
             state_path=state_path,
             fitted_outputs_expected=False,
+            historical_uppercase_artifact_paths=historical_uppercase_artifact_paths,
         )
     return False, str(payload["failure_reason"]), diagnostic_state_declared
 

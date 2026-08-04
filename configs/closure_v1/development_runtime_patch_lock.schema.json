@@ -1,0 +1,2337 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-patch-lock-v1.json",
+  "title": "Closure V1 E0-DLP development runtime patch lock",
+  "type": "object",
+  "required": [
+    "lock_version",
+    "status",
+    "gate",
+    "experiment_id",
+    "patch_id",
+    "created_at_utc",
+    "base_e0_dl",
+    "patch_repository",
+    "patch_parent_publication",
+    "publication_sequence",
+    "base_component_drift",
+    "patch_components",
+    "patch_lock_artifact",
+    "git_diff",
+    "compatibility_corrections",
+    "adopted_seed_bundle",
+    "environment",
+    "dvc_remote_verification",
+    "verification",
+    "audits",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "lock_version": {
+      "const": "closure_development_runtime_patch_lock_v1"
+    },
+    "status": {
+      "const": "locked"
+    },
+    "gate": {
+      "const": "E0-DLP"
+    },
+    "experiment_id": {
+      "const": "closure_v1"
+    },
+    "patch_id": {
+      "const": "development_runtime_compatibility_patch_1"
+    },
+    "created_at_utc": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[^\\s]+$"
+    },
+    "base_e0_dl": {
+      "$ref": "#/$defs/baseE0Dl"
+    },
+    "patch_repository": {
+      "$ref": "#/$defs/cleanRepository"
+    },
+    "patch_parent_publication": {
+      "$ref": "#/$defs/patchParentPublication"
+    },
+    "publication_sequence": {
+      "$ref": "#/$defs/publicationSequence"
+    },
+    "base_component_drift": {
+      "$ref": "#/$defs/baseComponentDrift"
+    },
+    "patch_components": {
+      "$ref": "#/$defs/patchComponents"
+    },
+    "patch_lock_artifact": {
+      "$ref": "#/$defs/patchLockArtifact"
+    },
+    "git_diff": {
+      "$ref": "#/$defs/gitDiff"
+    },
+    "compatibility_corrections": {
+      "$ref": "#/$defs/compatibilityCorrections"
+    },
+    "adopted_seed_bundle": {
+      "$ref": "#/$defs/adoptedSeedBundle"
+    },
+    "environment": {
+      "$ref": "#/$defs/environment"
+    },
+    "dvc_remote_verification": {
+      "$ref": "#/$defs/dvcRemoteVerification"
+    },
+    "verification": {
+      "$ref": "#/$defs/verification"
+    },
+    "audits": {
+      "$ref": "#/$defs/audits"
+    },
+    "authorizations": {
+      "$ref": "#/$defs/authorizations"
+    },
+    "seals": {
+      "$ref": "#/$defs/seals"
+    }
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "nonEmptyString": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "fileRecord": {
+      "type": "object",
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "bundleOutputRecord": {
+      "type": "object",
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "module": {
+          "enum": ["ANFIS-N", "ANFIS-F", "ANFIS-T-no-current"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "frozenStateRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet"
+            },
+            "role": {
+              "const": "adaptive_no_current_state"
+            },
+            "bytes": {
+              "const": 1215081
+            },
+            "sha256": {
+              "const": "c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69"
+            }
+          }
+        }
+      ]
+    },
+    "frozenAnfisNCheckpointRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "required": ["module"],
+          "properties": {
+            "path": {
+              "const": "models/closure_v1/anfis/seed_1729/ANFIS-N.pt"
+            },
+            "role": {
+              "const": "anfis_checkpoint"
+            },
+            "bytes": {
+              "const": 5050
+            },
+            "sha256": {
+              "const": "cbf3ec20445b0cdb0b4915bb3b5fcff3a293688cdf605fb1d4300728341b61d6"
+            },
+            "module": {
+              "const": "ANFIS-N"
+            }
+          }
+        }
+      ]
+    },
+    "frozenAnfisFCheckpointRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "required": ["module"],
+          "properties": {
+            "path": {
+              "const": "models/closure_v1/anfis/seed_1729/ANFIS-F.pt"
+            },
+            "role": {
+              "const": "anfis_checkpoint"
+            },
+            "bytes": {
+              "const": 8250
+            },
+            "sha256": {
+              "const": "741d3ab0b9980c1f4c61447b1d9150bdd24ba649ab7c7057181c7c825c7bcfc6"
+            },
+            "module": {
+              "const": "ANFIS-F"
+            }
+          }
+        }
+      ]
+    },
+    "frozenAnfisTCheckpointRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "required": ["module"],
+          "properties": {
+            "path": {
+              "const": "models/closure_v1/anfis/seed_1729/ANFIS-T-no-current.pt"
+            },
+            "role": {
+              "const": "anfis_checkpoint"
+            },
+            "bytes": {
+              "const": 4147
+            },
+            "sha256": {
+              "const": "45064d6b3bffe102a4d4d6689f0bc0709791cd5df5b328323f96e7c3b507e6a8"
+            },
+            "module": {
+              "const": "ANFIS-T-no-current"
+            }
+          }
+        }
+      ]
+    },
+    "frozenAnfisNSampleRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "required": ["module"],
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-N_sample_keys.csv"
+            },
+            "role": {
+              "const": "sample_keys"
+            },
+            "bytes": {
+              "const": 463207
+            },
+            "sha256": {
+              "const": "754a8b8c29bdd40145f859983da64f3287ae8c527a413e0b9e8d68bb83a92b8c"
+            },
+            "module": {
+              "const": "ANFIS-N"
+            }
+          }
+        }
+      ]
+    },
+    "frozenAnfisFSampleRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "required": ["module"],
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-F_sample_keys.csv"
+            },
+            "role": {
+              "const": "sample_keys"
+            },
+            "bytes": {
+              "const": 458422
+            },
+            "sha256": {
+              "const": "f15beef010139fcb8c5ef5f729d41e3de0a67492c87982f0f8a8a0838375ac72"
+            },
+            "module": {
+              "const": "ANFIS-F"
+            }
+          }
+        }
+      ]
+    },
+    "frozenAnfisTSampleRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "required": ["module"],
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-T-no-current_sample_keys.csv"
+            },
+            "role": {
+              "const": "sample_keys"
+            },
+            "bytes": {
+              "const": 503037
+            },
+            "sha256": {
+              "const": "5b31f6b032df20b3e5a5a1d5fa2ba4b0beeeb174284ff5229b30bfe570a91114"
+            },
+            "module": {
+              "const": "ANFIS-T-no-current"
+            }
+          }
+        }
+      ]
+    },
+    "frozenMetricsRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/module_metrics.csv"
+            },
+            "role": {
+              "const": "module_metrics"
+            },
+            "bytes": {
+              "const": 1104
+            },
+            "sha256": {
+              "const": "85ae8a11f52edf9c9cf927595782a64eff74ab76f1b58f4324095bd9ef274e22"
+            }
+          }
+        }
+      ]
+    },
+    "frozenTrainingCurveRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/training_curve.csv"
+            },
+            "role": {
+              "const": "training_curve"
+            },
+            "bytes": {
+              "const": 7673
+            },
+            "sha256": {
+              "const": "bace68b15b08ce460d124f113961e827d4e415863933192a2b23c632fb372af8"
+            }
+          }
+        }
+      ]
+    },
+    "frozenMembershipsInitialRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/memberships_initial.csv"
+            },
+            "role": {
+              "const": "memberships_initial"
+            },
+            "bytes": {
+              "const": 1293
+            },
+            "sha256": {
+              "const": "cf49de8f2aa49679baeaad9d856acc6384c76f9f31d6e4fff3436f8ec6c46467"
+            }
+          }
+        }
+      ]
+    },
+    "frozenMembershipsFinalRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/memberships_final.csv"
+            },
+            "role": {
+              "const": "memberships_final"
+            },
+            "bytes": {
+              "const": 1719
+            },
+            "sha256": {
+              "const": "f6d0fbcf7f04743a59a804162fb252f429e2bfe2bc4272bf27924490c7aff1bd"
+            }
+          }
+        }
+      ]
+    },
+    "frozenReportRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/report.md"
+            },
+            "role": {
+              "const": "report"
+            },
+            "bytes": {
+              "const": 444
+            },
+            "sha256": {
+              "const": "feb6e21a63d73cdf1312159ab0fdde7bd46b8fa1eb8e4cf9d32c9e487822aeae"
+            }
+          }
+        }
+      ]
+    },
+    "frozenLineageAuditRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/bundleOutputRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/anfis/seed_1729/lineage_audit.json"
+            },
+            "role": {
+              "const": "lineage_audit"
+            },
+            "bytes": {
+              "const": 2863
+            },
+            "sha256": {
+              "const": "f54c8a5cdc15de8b31dd8337fda3ac1025ef500c7ad935811a643e4216e8a894"
+            }
+          }
+        }
+      ]
+    },
+    "baseGitRecord": {
+      "type": "object",
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "semantic_decode": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "baseE0Dl": {
+      "type": "object",
+      "required": [
+        "lock",
+        "schema",
+        "lock_commit",
+        "locked_repository_head",
+        "lock_version",
+        "status",
+        "git_at_h_record_count",
+        "git_at_h_records_sha256",
+        "git_at_h_records",
+        "base_lock_unchanged"
+      ],
+      "properties": {
+        "lock": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/fileRecord"
+            },
+            {
+              "properties": {
+                "path": {
+                  "const": "reports/closure_v1/00_protocol/development_runtime_lock.json"
+                },
+                "role": {
+                  "const": "base_development_runtime_lock"
+                },
+                "bytes": {
+                  "const": 95285
+                },
+                "sha256": {
+                  "const": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+                }
+              }
+            }
+          ]
+        },
+        "schema": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/fileRecord"
+            },
+            {
+              "properties": {
+                "path": {
+                  "const": "configs/closure_v1/development_runtime_lock.schema.json"
+                },
+                "role": {
+                  "const": "base_development_runtime_lock_schema"
+                },
+                "bytes": {
+                  "const": 20606
+                },
+                "sha256": {
+                  "const": "5314f5d15a4e516d1a0500a7ca5a69cb412ac4827f42973f26a8ec45fcd63204"
+                }
+              }
+            }
+          ]
+        },
+        "lock_commit": {
+          "const": "e7becdd5553decc92bbcf0af4cede7425ed12546"
+        },
+        "locked_repository_head": {
+          "const": "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3"
+        },
+        "lock_version": {
+          "const": "closure_development_runtime_lock_v1"
+        },
+        "status": {
+          "const": "locked"
+        },
+        "git_at_h_record_count": {
+          "type": "integer"
+        },
+        "git_at_h_records_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "git_at_h_records": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/baseGitRecord"
+          }
+        },
+        "base_lock_unchanged": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "cleanRepository": {
+      "type": "object",
+      "required": [
+        "head",
+        "branch",
+        "worktree_status",
+        "dirty_paths",
+        "records_verified_at_execution_head"
+      ],
+      "properties": {
+        "head": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "branch": {
+          "const": "main"
+        },
+        "worktree_status": {
+          "const": "clean"
+        },
+        "dirty_paths": {
+          "type": "array",
+          "maxItems": 0
+        },
+        "records_verified_at_execution_head": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "patchParentPublication": {
+      "type": "object",
+      "required": [
+        "tracking_ref",
+        "tracking_oid",
+        "remote_ref",
+        "remote_oid",
+        "published_head",
+        "execution_head",
+        "published_head_is_ancestor_of_execution",
+        "local_tracking_verified",
+        "remote_verified"
+      ],
+      "properties": {
+        "tracking_ref": {
+          "const": "origin/main"
+        },
+        "tracking_oid": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "remote_ref": {
+          "const": "refs/heads/main"
+        },
+        "remote_oid": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "published_head": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "execution_head": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "published_head_is_ancestor_of_execution": {
+          "const": true
+        },
+        "local_tracking_verified": {
+          "const": true
+        },
+        "remote_verified": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "driftRecord": {
+      "type": "object",
+      "required": [
+        "path",
+        "base_bytes",
+        "base_sha256",
+        "patch_bytes",
+        "patch_sha256"
+      ],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "base_bytes": {
+          "type": "integer"
+        },
+        "base_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "patch_bytes": {
+          "type": "integer"
+        },
+        "patch_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "baseComponentDrift": {
+      "type": "object",
+      "required": [
+        "count",
+        "allowlist",
+        "observed_paths",
+        "records",
+        "records_sha256",
+        "only_allowlisted_base_components_changed"
+      ],
+      "properties": {
+        "count": {
+          "const": 6
+        },
+        "allowlist": {
+          "$ref": "#/$defs/baseDriftPaths"
+        },
+        "observed_paths": {
+          "$ref": "#/$defs/baseDriftPaths"
+        },
+        "records": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "prefixItems": [
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/driftRecord"
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "src/experiments/build_closure_pipe_sequences.py"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/driftRecord"
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "src/experiments/closure_development_runtime_lock.py"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/driftRecord"
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "src/experiments/fit_closure_anfis_state.py"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/driftRecord"
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "tests/test_build_closure_pipe_sequences.py"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/driftRecord"
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "tests/test_closure_development_runtime_lock.py"
+                    }
+                  }
+                }
+              ]
+            },
+            {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/driftRecord"
+                },
+                {
+                  "properties": {
+                    "path": {
+                      "const": "tests/test_fit_closure_anfis_state.py"
+                    }
+                  }
+                }
+              ]
+            }
+          ],
+          "items": false
+        },
+        "records_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "only_allowlisted_base_components_changed": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "baseDriftPaths": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "prefixItems": [
+        {
+          "const": "src/experiments/build_closure_pipe_sequences.py"
+        },
+        {
+          "const": "src/experiments/closure_development_runtime_lock.py"
+        },
+        {
+          "const": "src/experiments/fit_closure_anfis_state.py"
+        },
+        {
+          "const": "tests/test_build_closure_pipe_sequences.py"
+        },
+        {
+          "const": "tests/test_closure_development_runtime_lock.py"
+        },
+        {
+          "const": "tests/test_fit_closure_anfis_state.py"
+        }
+      ],
+      "items": false
+    },
+    "patchComponents": {
+      "type": "object",
+      "required": ["count", "paths", "paths_sha256", "records", "records_sha256"],
+      "properties": {
+        "count": {
+          "const": 5
+        },
+        "paths": {
+          "$ref": "#/$defs/patchComponentPaths"
+        },
+        "paths_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "records": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/patchSchemaRecord"
+            },
+            {
+              "$ref": "#/$defs/patchDocRecord"
+            },
+            {
+              "$ref": "#/$defs/patchValidatorRecord"
+            },
+            {
+              "$ref": "#/$defs/patchLockerRecord"
+            },
+            {
+              "$ref": "#/$defs/patchTestRecord"
+            }
+          ],
+          "items": false
+        },
+        "records_sha256": {
+          "$ref": "#/$defs/sha256"
+        }
+      },
+      "additionalProperties": false
+    },
+    "patchComponentPaths": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {
+          "const": "configs/closure_v1/development_runtime_patch_lock.schema.json"
+        },
+        {
+          "const": "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md"
+        },
+        {
+          "const": "src/experiments/closure_development_runtime_patch.py"
+        },
+        {
+          "const": "src/experiments/lock_closure_development_runtime_patch.py"
+        },
+        {
+          "const": "tests/test_closure_development_runtime_patch.py"
+        }
+      ],
+      "items": false
+    },
+    "patchSchemaRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/fileRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "configs/closure_v1/development_runtime_patch_lock.schema.json"
+            },
+            "role": {
+              "const": "development_runtime_patch_lock_schema"
+            }
+          }
+        }
+      ]
+    },
+    "patchDocRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/fileRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md"
+            },
+            "role": {
+              "const": "development_runtime_patch_protocol"
+            }
+          }
+        }
+      ]
+    },
+    "patchValidatorRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/fileRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "src/experiments/closure_development_runtime_patch.py"
+            },
+            "role": {
+              "const": "development_runtime_patch_validator"
+            }
+          }
+        }
+      ]
+    },
+    "patchLockerRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/fileRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "src/experiments/lock_closure_development_runtime_patch.py"
+            },
+            "role": {
+              "const": "development_runtime_patch_locker"
+            }
+          }
+        }
+      ]
+    },
+    "patchTestRecord": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/fileRecord"
+        },
+        {
+          "properties": {
+            "path": {
+              "const": "tests/test_closure_development_runtime_patch.py"
+            },
+            "role": {
+              "const": "development_runtime_patch_tests"
+            }
+          }
+        }
+      ]
+    },
+    "patchLockArtifact": {
+      "type": "object",
+      "required": ["count", "path", "role", "self_hash_policy"],
+      "properties": {
+        "count": {
+          "const": 1
+        },
+        "path": {
+          "const": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json"
+        },
+        "role": {
+          "const": "external_development_runtime_patch_lock"
+        },
+        "self_hash_policy": {
+          "const": "verified_from_committed_and_published_bytes"
+        }
+      },
+      "additionalProperties": false
+    },
+    "gitDiffEntry": {
+      "type": "object",
+      "required": ["status", "path"],
+      "properties": {
+        "status": {
+          "enum": ["A", "M"]
+        },
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "gitDiff": {
+      "type": "object",
+      "required": [
+        "base_commit",
+        "patch_head",
+        "entries",
+        "paths",
+        "paths_sha256",
+        "only_allowed_additions_and_modifications"
+      ],
+      "properties": {
+        "base_commit": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "patch_head": {
+          "$ref": "#/$defs/gitCommit"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/gitDiffEntry"
+          }
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "paths_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "only_allowed_additions_and_modifications": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "publicationSequence": {
+      "type": "object",
+      "required": [
+        "base_commit",
+        "adoption_head",
+        "patch_head",
+        "adoption_is_direct_first_parent_of_patch",
+        "base_is_ancestor_of_adoption",
+        "adoption_is_ancestor_of_patch",
+        "base_to_adoption",
+        "adoption_to_patch",
+        "base_to_patch"
+      ],
+      "properties": {
+        "base_commit": {"$ref": "#/$defs/gitCommit"},
+        "adoption_head": {"$ref": "#/$defs/gitCommit"},
+        "patch_head": {"$ref": "#/$defs/gitCommit"},
+        "adoption_is_direct_first_parent_of_patch": {"const": true},
+        "base_is_ancestor_of_adoption": {"const": true},
+        "adoption_is_ancestor_of_patch": {"const": true},
+        "base_to_adoption": {"$ref": "#/$defs/gitDiff"},
+        "adoption_to_patch": {"$ref": "#/$defs/gitDiff"},
+        "base_to_patch": {"$ref": "#/$defs/gitDiff"}
+      },
+      "additionalProperties": false
+    },
+    "compatibilityCorrections": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "prefixItems": [
+        {
+          "$ref": "#/$defs/publishedRefCorrection"
+        },
+        {
+          "$ref": "#/$defs/moduleMetricsColumnsCorrection"
+        },
+        {
+          "$ref": "#/$defs/anfisArtifactPathCorrection"
+        }
+      ],
+      "items": false
+    },
+    "publishedRefCorrection": {
+      "type": "object",
+      "required": [
+        "issue_id",
+        "producer_path",
+        "consumer_path",
+        "field",
+        "accepted_value",
+        "rejected_synthetic_fixture_value",
+        "scope",
+        "adopted_base_seed",
+        "scientific_runtime_contract_changed",
+        "sampling_changed",
+        "model_parameters_changed",
+        "state_mapping_changed",
+        "outcome_access_changed"
+      ],
+      "properties": {
+        "issue_id": {
+          "const": "published_ref_compatibility_patch_1"
+        },
+        "producer_path": {
+          "const": "src/experiments/closure_development_runtime_lock.py"
+        },
+        "consumer_path": {
+          "const": "src/experiments/build_closure_pipe_sequences.py"
+        },
+        "field": {
+          "const": "authorization.published_ref"
+        },
+        "accepted_value": {
+          "const": "origin/main"
+        },
+        "rejected_synthetic_fixture_value": {
+          "const": "refs/remotes/origin/main"
+        },
+        "scope": {
+          "const": "validation_compatibility_only"
+        },
+        "adopted_base_seed": {
+          "const": 1729
+        },
+        "scientific_runtime_contract_changed": {
+          "const": false
+        },
+        "sampling_changed": {
+          "const": false
+        },
+        "model_parameters_changed": {
+          "const": false
+        },
+        "state_mapping_changed": {
+          "const": false
+        },
+        "outcome_access_changed": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "moduleMetricsColumnsCorrection": {
+      "type": "object",
+      "required": [
+        "issue_id",
+        "producer_path",
+        "consumer_path",
+        "field",
+        "accepted_basis",
+        "rejected_basis",
+        "fitted_columns",
+        "unavailable_columns",
+        "scope",
+        "adopted_base_seed",
+        "scientific_runtime_contract_changed",
+        "sampling_changed",
+        "model_parameters_changed",
+        "state_mapping_changed",
+        "outcome_access_changed"
+      ],
+      "properties": {
+        "issue_id": {
+          "const": "module_metrics_column_order_compatibility_patch_1"
+        },
+        "producer_path": {
+          "const": "src/experiments/fit_closure_anfis_state.py"
+        },
+        "consumer_path": {
+          "const": "src/experiments/build_closure_pipe_sequences.py"
+        },
+        "field": {
+          "const": "outputs.module_metrics.column_order"
+        },
+        "accepted_basis": {
+          "const": "closed_producer_csv_dialect"
+        },
+        "rejected_basis": {
+          "const": "json_object_insertion_order_after_sorted_serialization"
+        },
+        "fitted_columns": {
+          "type": "array",
+          "minItems": 19,
+          "maxItems": 19,
+          "prefixItems": [
+            {"const": "module"},
+            {"const": "status"},
+            {"const": "base_seed"},
+            {"const": "module_seed"},
+            {"const": "train_rows"},
+            {"const": "prediction_rows"},
+            {"const": "input_dimension"},
+            {"const": "rule_count"},
+            {"const": "epochs"},
+            {"const": "curve_initial_pre_update_loss"},
+            {"const": "curve_last_pre_update_loss"},
+            {"const": "minimum_curve_pre_update_loss"},
+            {"const": "final_checkpoint_loss"},
+            {"const": "quality_gate_output_standard_deviation"},
+            {"const": "quality_gate_output_scope"},
+            {"const": "materialized_surface_output_standard_deviation"},
+            {"const": "maximum_parameter_delta"},
+            {"const": "centers_ordered"},
+            {"const": "centers_in_unit_interval"}
+          ],
+          "items": false
+        },
+        "unavailable_columns": {
+          "type": "array",
+          "minItems": 13,
+          "maxItems": 13,
+          "prefixItems": [
+            {"const": "module"},
+            {"const": "status"},
+            {"const": "failure_reason"},
+            {"const": "base_seed"},
+            {"const": "module_seed"},
+            {"const": "input_rows"},
+            {"const": "excluded_nonfinite_target_rows"},
+            {"const": "excluded_missingness_rows"},
+            {"const": "eligible_universe_rows"},
+            {"const": "selected_rows"},
+            {"const": "required_rows"},
+            {"const": "replacement_used"},
+            {"const": "fit_attempted"}
+          ],
+          "items": false
+        },
+        "scope": {
+          "const": "validation_compatibility_only"
+        },
+        "adopted_base_seed": {
+          "const": 1729
+        },
+        "scientific_runtime_contract_changed": {
+          "const": false
+        },
+        "sampling_changed": {
+          "const": false
+        },
+        "model_parameters_changed": {
+          "const": false
+        },
+        "state_mapping_changed": {
+          "const": false
+        },
+        "outcome_access_changed": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "anfisArtifactPathCorrection": {
+      "type": "object",
+      "required": [
+        "issue_id",
+        "producer_path",
+        "consumer_path",
+        "inventory_path",
+        "field",
+        "accepted_basis",
+        "historical_basis",
+        "future_module_tokens",
+        "historical_uppercase_paths_restricted_to_seed",
+        "scope",
+        "adopted_base_seed",
+        "scientific_runtime_contract_changed",
+        "sampling_changed",
+        "model_parameters_changed",
+        "state_mapping_changed",
+        "outcome_access_changed"
+      ],
+      "properties": {
+        "issue_id": {
+          "const": "anfis_artifact_path_compatibility_patch_1"
+        },
+        "producer_path": {
+          "const": "src/experiments/fit_closure_anfis_state.py"
+        },
+        "consumer_path": {
+          "const": "src/experiments/build_closure_pipe_sequences.py"
+        },
+        "inventory_path": {
+          "const": "src/experiments/closure_runtime_contract.py"
+        },
+        "field": {
+          "const": "artifacts.anfis_module_path_token"
+        },
+        "accepted_basis": {
+          "const": "locked_runtime_artifact_token"
+        },
+        "historical_basis": {
+          "const": "module_display_name_interpolation"
+        },
+        "future_module_tokens": {
+          "type": "object",
+          "required": ["ANFIS-N", "ANFIS-F", "ANFIS-T-no-current"],
+          "properties": {
+            "ANFIS-N": {"const": "anfis_n"},
+            "ANFIS-F": {"const": "anfis_f"},
+            "ANFIS-T-no-current": {"const": "anfis_t_no_current"}
+          },
+          "additionalProperties": false
+        },
+        "historical_uppercase_paths_restricted_to_seed": {
+          "const": 1729
+        },
+        "scope": {
+          "const": "validation_compatibility_only"
+        },
+        "adopted_base_seed": {
+          "const": 1729
+        },
+        "scientific_runtime_contract_changed": {
+          "const": false
+        },
+        "sampling_changed": {
+          "const": false
+        },
+        "model_parameters_changed": {
+          "const": false
+        },
+        "state_mapping_changed": {
+          "const": false
+        },
+        "outcome_access_changed": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "stateAudit": {
+      "type": "object",
+      "required": [
+        "rows",
+        "locations",
+        "minimum_year_month",
+        "maximum_year_month",
+        "role_counts",
+        "delta_previous_month_missing_count",
+        "output_allowlist",
+        "zero_holdout_overlap",
+        "zero_unknown_assignment_overlap",
+        "no_post_2021_materialization",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "rows": {
+          "const": 42110
+        },
+        "locations": {
+          "const": 353
+        },
+        "minimum_year_month": {
+          "const": "2000-01"
+        },
+        "maximum_year_month": {
+          "const": "2021-12"
+        },
+        "role_counts": {
+          "type": "object",
+          "required": ["training", "model_selection", "calibration_threshold"],
+          "properties": {
+            "training": {"const": 36639},
+            "model_selection": {"const": 3739},
+            "calibration_threshold": {"const": 1732}
+          },
+          "additionalProperties": false
+        },
+        "delta_previous_month_missing_count": {
+          "const": 8041
+        },
+        "output_allowlist": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "prefixItems": [
+            {"const": "source_id"},
+            {"const": "site_id"},
+            {"const": "year_month"},
+            {"const": "time_role"},
+            {"const": "yN_adaptive"},
+            {"const": "yF_adaptive"},
+            {"const": "yT_no_chla_adaptive"},
+            {"const": "sigma_N_adaptive"},
+            {"const": "sigma_F_adaptive"},
+            {"const": "sigma_T_no_chla_adaptive"},
+            {"const": "delta_yN_adaptive"},
+            {"const": "delta_yF_adaptive"},
+            {"const": "delta_yT_no_chla_adaptive"},
+            {"const": "delta_previous_month_missing"}
+          ],
+          "items": false
+        },
+        "zero_holdout_overlap": {
+          "const": true
+        },
+        "zero_unknown_assignment_overlap": {
+          "const": true
+        },
+        "no_post_2021_materialization": {
+          "const": true
+        },
+        "future_outcomes_accessed": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvcTreeEntry": {
+      "type": "object",
+      "required": ["md5", "relpath"],
+      "properties": {
+        "md5": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        },
+        "relpath": {
+          "$ref": "#/$defs/nonEmptyString"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvcAdoptionDeltaRecord": {
+      "type": "object",
+      "required": ["path", "bytes", "sha256", "md5"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "md5": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvcOwnerRecord": {
+      "type": "object",
+      "required": ["path", "role", "bytes", "sha256", "owner_strategy"],
+      "properties": {
+        "path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "role": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "bytes": {
+          "type": "integer"
+        },
+        "sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "owner_strategy": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "hash_name": {
+          "const": "md5"
+        },
+        "hash_value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}(\\.dir)?$"
+        },
+        "size": {
+          "type": "integer"
+        },
+        "nfiles": {
+          "type": "integer"
+        },
+        "payload_verified": {
+          "const": true
+        },
+        "owned_path": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "checkpoint_paths": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/nonEmptyString"
+          }
+        },
+        "tree_bytes": {
+          "type": "integer"
+        },
+        "tree_cache_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tree_entry_count": {
+          "type": "integer"
+        },
+        "tree_entries_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "tree_entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/dvcTreeEntry"
+          }
+        },
+        "base_owner_hash_value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}\\.dir$"
+        },
+        "base_owner_size": {
+          "type": "integer"
+        },
+        "base_owner_nfiles": {
+          "type": "integer"
+        },
+        "base_tree_cache_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "base_tree_entries_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "adoption_delta_count": {
+          "type": "integer"
+        },
+        "adoption_delta_records": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {
+            "$ref": "#/$defs/dvcAdoptionDeltaRecord"
+          }
+        },
+        "adoption_delta_records_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "base_tree_preserved_exactly": {
+          "const": true
+        },
+        "adoption_delta_exactly_seed_checkpoints": {
+          "const": true
+        },
+        "directory_payload_verified": {
+          "const": true
+        },
+        "checkpoint_membership_verified": {
+          "const": true
+        },
+        "pointer_metadata_verified": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "adoptedSeedBundle": {
+      "type": "object",
+      "required": [
+        "base_seed",
+        "status",
+        "manifest",
+        "state",
+        "checkpoints",
+        "lightweight_outputs",
+        "bundle_record_count",
+        "physical_final_count",
+        "completion_manifest_written_last_observed_at_adoption",
+        "temporary_or_partial_file_count",
+        "bundle_records_sha256",
+        "state_audit",
+        "dvc",
+        "original_authorization",
+        "original_manifest_mutated",
+        "original_seed_rematerialized",
+        "future_outcomes_accessed",
+        "evaluation_authorized",
+        "e0_u_authorized"
+      ],
+      "properties": {
+        "base_seed": {
+          "const": 1729
+        },
+        "status": {
+          "const": "adopted_prepatch_artifact_without_rematerialization"
+        },
+        "manifest": {
+          "allOf": [
+            {
+              "$ref": "#/$defs/fileRecord"
+            },
+            {
+              "properties": {
+                "path": {
+                  "const": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json"
+                },
+                "role": {
+                  "const": "seed_1729_completion_manifest"
+                },
+                "bytes": {
+                  "const": 20768
+                },
+                "sha256": {
+                  "const": "b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82"
+                }
+              }
+            }
+          ]
+        },
+        "state": {
+          "$ref": "#/$defs/frozenStateRecord"
+        },
+        "checkpoints": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/frozenAnfisNCheckpointRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenAnfisFCheckpointRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenAnfisTCheckpointRecord"
+            }
+          ],
+          "items": false
+        },
+        "lightweight_outputs": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "prefixItems": [
+            {
+              "$ref": "#/$defs/frozenAnfisNSampleRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenAnfisFSampleRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenAnfisTSampleRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenMetricsRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenTrainingCurveRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenMembershipsInitialRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenMembershipsFinalRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenReportRecord"
+            },
+            {
+              "$ref": "#/$defs/frozenLineageAuditRecord"
+            }
+          ],
+          "items": false
+        },
+        "bundle_record_count": {
+          "const": 13
+        },
+        "physical_final_count": {
+          "const": 14
+        },
+        "completion_manifest_written_last_observed_at_adoption": {
+          "const": true
+        },
+        "temporary_or_partial_file_count": {
+          "const": 0
+        },
+        "bundle_records_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "state_audit": {
+          "$ref": "#/$defs/stateAudit"
+        },
+        "dvc": {
+          "type": "object",
+          "required": ["state_pointer", "models_owner", "registered"],
+          "properties": {
+            "state_pointer": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/dvcOwnerRecord"
+                },
+                {
+                  "required": [
+                    "hash_name",
+                    "hash_value",
+                    "size",
+                    "payload_verified"
+                  ],
+                  "properties": {
+                    "path": {
+                      "const": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc"
+                    },
+                    "role": {
+                      "const": "adaptive_state_dvc_pointer"
+                    },
+                    "owner_strategy": {
+                      "const": "explicit_pointer"
+                    },
+                    "hash_name": {
+                      "const": "md5"
+                    },
+                    "hash_value": {
+                      "const": "183bc5e98b1d5fa5084300ded6476712"
+                    },
+                    "size": {
+                      "const": 1215081
+                    },
+                    "payload_verified": {
+                      "const": true
+                    }
+                  },
+                  "allOf": [
+                    {"not": {"required": ["nfiles"]}},
+                    {"not": {"required": ["owned_path"]}},
+                    {"not": {"required": ["checkpoint_paths"]}},
+                    {"not": {"required": ["tree_bytes"]}},
+                    {"not": {"required": ["tree_cache_sha256"]}},
+                    {"not": {"required": ["tree_entry_count"]}},
+                    {"not": {"required": ["tree_entries_sha256"]}},
+                    {"not": {"required": ["tree_entries"]}},
+                    {"not": {"required": ["base_owner_hash_value"]}},
+                    {"not": {"required": ["base_owner_size"]}},
+                    {"not": {"required": ["base_owner_nfiles"]}},
+                    {"not": {"required": ["base_tree_cache_sha256"]}},
+                    {"not": {"required": ["base_tree_entries_sha256"]}},
+                    {"not": {"required": ["adoption_delta_count"]}},
+                    {"not": {"required": ["adoption_delta_records"]}},
+                    {"not": {"required": ["adoption_delta_records_sha256"]}},
+                    {"not": {"required": ["base_tree_preserved_exactly"]}},
+                    {"not": {"required": ["adoption_delta_exactly_seed_checkpoints"]}},
+                    {"not": {"required": ["directory_payload_verified"]}},
+                    {"not": {"required": ["checkpoint_membership_verified"]}},
+                    {"not": {"required": ["pointer_metadata_verified"]}}
+                  ]
+                }
+              ]
+            },
+            "models_owner": {
+              "allOf": [
+                {
+                  "$ref": "#/$defs/dvcOwnerRecord"
+                },
+                {
+                  "required": [
+                    "hash_name",
+                    "hash_value",
+                    "size",
+                    "nfiles",
+                    "owned_path",
+                    "checkpoint_paths",
+                    "tree_bytes",
+                    "tree_cache_sha256",
+                    "tree_entry_count",
+                    "tree_entries_sha256",
+                    "tree_entries",
+                    "base_owner_hash_value",
+                    "base_owner_size",
+                    "base_owner_nfiles",
+                    "base_tree_cache_sha256",
+                    "base_tree_entries_sha256",
+                    "adoption_delta_count",
+                    "adoption_delta_records",
+                    "adoption_delta_records_sha256",
+                    "base_tree_preserved_exactly",
+                    "adoption_delta_exactly_seed_checkpoints",
+                    "directory_payload_verified",
+                    "checkpoint_membership_verified",
+                    "pointer_metadata_verified"
+                  ],
+                  "properties": {
+                    "path": {
+                      "const": "models.dvc"
+                    },
+                    "role": {
+                      "const": "anfis_models_dvc_owner"
+                    },
+                    "owner_strategy": {
+                      "const": "monolithic_parent"
+                    },
+                    "owned_path": {
+                      "const": "models"
+                    },
+                    "hash_value": {
+                      "pattern": "^[0-9a-f]{32}\\.dir$"
+                    },
+                    "size": {
+                      "const": 115709141
+                    },
+                    "nfiles": {
+                      "const": 176
+                    },
+                    "tree_entry_count": {
+                      "const": 176
+                    },
+                    "tree_entries": {
+                      "type": "array",
+                      "minItems": 176,
+                      "maxItems": 176,
+                      "items": {
+                        "$ref": "#/$defs/dvcTreeEntry"
+                      }
+                    },
+                    "checkpoint_paths": {
+                      "type": "array",
+                      "minItems": 3,
+                      "maxItems": 3,
+                      "prefixItems": [
+                        {"const": "models/closure_v1/anfis/seed_1729/ANFIS-N.pt"},
+                        {"const": "models/closure_v1/anfis/seed_1729/ANFIS-F.pt"},
+                        {"const": "models/closure_v1/anfis/seed_1729/ANFIS-T-no-current.pt"}
+                      ],
+                      "items": false
+                    },
+                    "base_owner_hash_value": {
+                      "const": "458e4ebf186f91dba8608f951b998483.dir"
+                    },
+                    "base_owner_size": {
+                      "const": 115691694
+                    },
+                    "base_owner_nfiles": {
+                      "const": 173
+                    },
+                    "base_tree_cache_sha256": {
+                      "const": "cf642de4acbf4b42a33415774a0603a30f5b8abe52553c073a5bf5139ebc6569"
+                    },
+                    "adoption_delta_count": {
+                      "const": 3
+                    }
+                  },
+                  "not": {
+                    "required": ["payload_verified"]
+                  }
+                }
+              ]
+            },
+            "registered": {
+              "const": true
+            }
+          },
+          "additionalProperties": false
+        },
+        "original_authorization": {
+          "type": "object",
+          "required": [
+            "lock_path",
+            "lock_sha256",
+            "execution_head",
+            "published_ref",
+            "published_head",
+            "remote_main_oid"
+          ],
+          "properties": {
+            "lock_path": {
+              "const": "reports/closure_v1/00_protocol/development_runtime_lock.json"
+            },
+            "lock_sha256": {
+              "$ref": "#/$defs/sha256"
+            },
+            "execution_head": {
+              "$ref": "#/$defs/gitCommit"
+            },
+            "published_ref": {
+              "const": "origin/main"
+            },
+            "published_head": {
+              "$ref": "#/$defs/gitCommit"
+            },
+            "remote_main_oid": {
+              "$ref": "#/$defs/gitCommit"
+            }
+          },
+          "additionalProperties": false
+        },
+        "original_manifest_mutated": {
+          "const": false
+        },
+        "original_seed_rematerialized": {
+          "const": false
+        },
+        "future_outcomes_accessed": {
+          "const": false
+        },
+        "evaluation_authorized": {
+          "const": false
+        },
+        "e0_u_authorized": {
+          "const": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "environment": {
+      "type": "object",
+      "required": [
+        "python_version",
+        "python_implementation",
+        "python_executable_name",
+        "platform",
+        "machine",
+        "device",
+        "cublas_workspace_config",
+        "cpu_execution_policy",
+        "packages"
+      ],
+      "properties": {
+        "python_version": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "python_implementation": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "python_executable_name": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "platform": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "machine": {
+          "$ref": "#/$defs/nonEmptyString"
+        },
+        "device": {
+          "const": "cpu"
+        },
+        "cublas_workspace_config": {
+          "const": null
+        },
+        "cpu_execution_policy": {
+          "type": "object"
+        },
+        "packages": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvcAttempt": {
+      "type": "object",
+      "required": [
+        "attempt",
+        "exit_code",
+        "stdout_sha256",
+        "stderr_sha256",
+        "normalized_result"
+      ],
+      "properties": {
+        "attempt": {
+          "enum": [1, 2]
+        },
+        "exit_code": {
+          "const": 0
+        },
+        "stdout_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderr_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "normalized_result": {
+          "const": "everything_up_to_date"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dvcStateTarget": {
+      "type": "object",
+      "required": [
+        "artifact_role",
+        "pointer_path",
+        "pointer_sha256",
+        "hash_name",
+        "hash_value",
+        "size"
+      ],
+      "properties": {
+        "artifact_role": {"const": "adaptive_state"},
+        "pointer_path": {
+          "const": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc"
+        },
+        "pointer_sha256": {"$ref": "#/$defs/sha256"},
+        "hash_name": {"const": "md5"},
+        "hash_value": {
+          "const": "183bc5e98b1d5fa5084300ded6476712"
+        },
+        "size": {"const": 1215081}
+      },
+      "additionalProperties": false
+    },
+    "dvcModelsTarget": {
+      "type": "object",
+      "required": [
+        "artifact_role",
+        "pointer_path",
+        "pointer_sha256",
+        "hash_name",
+        "hash_value",
+        "size",
+        "nfiles",
+        "tree_cache_sha256",
+        "tree_entries_sha256"
+      ],
+      "properties": {
+        "artifact_role": {"const": "anfis_models"},
+        "pointer_path": {"const": "models.dvc"},
+        "pointer_sha256": {"$ref": "#/$defs/sha256"},
+        "hash_name": {"const": "md5"},
+        "hash_value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}\\.dir$"
+        },
+        "size": {"const": 115709141},
+        "nfiles": {"const": 176},
+        "tree_cache_sha256": {"$ref": "#/$defs/sha256"},
+        "tree_entries_sha256": {"$ref": "#/$defs/sha256"}
+      },
+      "additionalProperties": false
+    },
+    "dvcRemoteVerification": {
+      "type": "object",
+      "required": [
+        "method",
+        "command",
+        "environment",
+        "remote_name",
+        "remote_url_sha256",
+        "targets",
+        "attempts",
+        "dvc_remote_verified_at_patch"
+      ],
+      "properties": {
+        "method": {
+          "const": "two_targeted_idempotent_pushes_v1"
+        },
+        "command": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "prefixItems": [
+            {"const": ".venv/bin/dvc"},
+            {"const": "push"},
+            {"const": "-j"},
+            {"const": "1"},
+            {"const": "-r"},
+            {"const": "gcsremote"},
+            {
+              "const": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc"
+            },
+            {"const": "models.dvc"}
+          ],
+          "items": false
+        },
+        "environment": {
+          "type": "object",
+          "required": ["LC_ALL", "LANG", "DVC_NO_ANALYTICS"],
+          "properties": {
+            "LC_ALL": {"const": "C"},
+            "LANG": {"const": "C"},
+            "DVC_NO_ANALYTICS": {"const": "1"}
+          },
+          "additionalProperties": false
+        },
+        "remote_name": {
+          "const": "gcsremote"
+        },
+        "remote_url_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "targets": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {"$ref": "#/$defs/dvcStateTarget"},
+            {"$ref": "#/$defs/dvcModelsTarget"}
+          ],
+          "items": false
+        },
+        "attempts": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {
+              "allOf": [
+                {"$ref": "#/$defs/dvcAttempt"},
+                {"properties": {"attempt": {"const": 1}}}
+              ]
+            },
+            {
+              "allOf": [
+                {"$ref": "#/$defs/dvcAttempt"},
+                {"properties": {"attempt": {"const": 2}}}
+              ]
+            }
+          ],
+          "items": false
+        },
+        "dvc_remote_verified_at_patch": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "commandEvidence": {
+      "type": "object",
+      "required": [
+        "command",
+        "exit_code",
+        "stdout_sha256",
+        "stderr_sha256",
+        "passed"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "prefixItems": [
+            {"const": ".venv/bin/ty"},
+            {"const": "check"}
+          ],
+          "items": false
+        },
+        "exit_code": {
+          "const": 0
+        },
+        "stdout_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderr_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "passed": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "pytestCommandEvidence": {
+      "type": "object",
+      "required": [
+        "command",
+        "environment",
+        "test_count",
+        "exit_code",
+        "stdout_sha256",
+        "stderr_sha256",
+        "passed"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "prefixItems": [
+            {"const": ".venv/bin/pytest"},
+            {"const": "tests/test_closure_development_runtime_patch.py"},
+            {"const": "tests/test_build_closure_pipe_sequences.py"},
+            {"const": "tests/test_closure_development_runtime_lock.py"},
+            {"const": "tests/test_fit_closure_anfis_state.py"},
+            {"const": "-q"}
+          ],
+          "items": false
+        },
+        "environment": {
+          "type": "object",
+          "required": [
+            "PYTEST_ADDOPTS",
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
+            "PYTEST_PLUGINS",
+            "PY_COLORS"
+          ],
+          "properties": {
+            "PYTEST_ADDOPTS": {"const": ""},
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD": {"const": "1"},
+            "PYTEST_PLUGINS": {"const": ""},
+            "PY_COLORS": {"const": "0"}
+          },
+          "additionalProperties": false
+        },
+        "test_count": {
+          "const": 231
+        },
+        "exit_code": {
+          "const": 0
+        },
+        "stdout_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "stderr_sha256": {
+          "$ref": "#/$defs/sha256"
+        },
+        "passed": {
+          "const": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "verification": {
+      "type": "object",
+      "required": ["full_type_check", "focused_tests"],
+      "properties": {
+        "full_type_check": {
+          "$ref": "#/$defs/commandEvidence"
+        },
+        "focused_tests": {
+          "$ref": "#/$defs/pytestCommandEvidence"
+        }
+      },
+      "additionalProperties": false
+    },
+    "audits": {
+      "type": "object",
+      "required": [
+        "base_lock_preserved",
+        "base_records_verified_at_locked_h",
+        "base_physical_authority_verified",
+        "base_lock_publication_verified",
+        "patch_parent_published",
+        "ancestry_verified",
+        "published_head_is_ancestor_of_execution",
+        "diff_allowlist_verified",
+        "exact_base_component_drift_verified",
+        "patch_components_verified",
+        "three_runtime_compatibility_corrections_verified",
+        "patch_records_verified_at_execution_head",
+        "patch_lock_artifact_verified",
+        "seed_1729_bundle_verified",
+        "seed_1729_preserved_without_rematerialization",
+        "dvc_ownership_verified",
+        "dvc_remote_verified_at_patch",
+        "zero_holdout_overlap",
+        "zero_unknown_assignment_overlap",
+        "no_post_2021_materialization",
+        "environment_locked",
+        "legacy_summary_shape_verified"
+      ],
+      "properties": {
+        "base_lock_preserved": {"const": true},
+        "base_records_verified_at_locked_h": {"const": true},
+        "base_physical_authority_verified": {"const": true},
+        "base_lock_publication_verified": {"const": true},
+        "patch_parent_published": {"const": true},
+        "ancestry_verified": {"const": true},
+        "published_head_is_ancestor_of_execution": {"const": true},
+        "diff_allowlist_verified": {"const": true},
+        "exact_base_component_drift_verified": {"const": true},
+        "patch_components_verified": {"const": true},
+        "three_runtime_compatibility_corrections_verified": {"const": true},
+        "patch_records_verified_at_execution_head": {"const": true},
+        "patch_lock_artifact_verified": {"const": true},
+        "seed_1729_bundle_verified": {"const": true},
+        "seed_1729_preserved_without_rematerialization": {"const": true},
+        "dvc_ownership_verified": {"const": true},
+        "dvc_remote_verified_at_patch": {"const": true},
+        "zero_holdout_overlap": {"const": true},
+        "zero_unknown_assignment_overlap": {"const": true},
+        "no_post_2021_materialization": {"const": true},
+        "environment_locked": {"const": true},
+        "legacy_summary_shape_verified": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "authorizations": {
+      "type": "object",
+      "required": [
+        "development_fit_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized"
+      ],
+      "properties": {
+        "development_fit_authorized": {"const": true},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "seals": {
+      "type": "object",
+      "required": [
+        "future_outcomes_accessed",
+        "post_2021_outcome_semantic_decode",
+        "lock_generation_reads_scientific_outcome_rows",
+        "lock_generation_reads_post_2021_outcomes",
+        "scientific_runtime_contract_changed",
+        "base_e0_dl_replaced",
+        "original_seed_manifest_mutated",
+        "original_seed_rematerialized",
+        "does_not_replace_e0_m_model_lock"
+      ],
+      "properties": {
+        "future_outcomes_accessed": {"const": false},
+        "post_2021_outcome_semantic_decode": {"const": false},
+        "lock_generation_reads_scientific_outcome_rows": {"const": false},
+        "lock_generation_reads_post_2021_outcomes": {"const": false},
+        "scientific_runtime_contract_changed": {"const": false},
+        "base_e0_dl_replaced": {"const": false},
+        "original_seed_manifest_mutated": {"const": false},
+        "original_seed_rematerialized": {"const": false},
+        "does_not_replace_e0_m_model_lock": {"const": true}
+      },
+      "additionalProperties": false
+    }
+  }
+}

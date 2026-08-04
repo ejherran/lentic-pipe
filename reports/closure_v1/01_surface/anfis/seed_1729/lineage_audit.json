@@ -1,0 +1,84 @@
+{
+  "audit_version": "closure_anfis_seed_lineage_v1",
+  "base_seed": 1729,
+  "delta_previous_month_missing_count": 8041,
+  "e0_u_authorized": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "failed_slot_replaced": false,
+  "forbidden_primary_module_materialized": false,
+  "future_outcomes_accessed": false,
+  "maximum_year_month": "2021-12",
+  "modules": [
+    "ANFIS-N",
+    "ANFIS-F",
+    "ANFIS-T-no-current"
+  ],
+  "panel_anchor_joins": {
+    "full_development": {
+      "anchor_keys_sha256": "daa7e89adc9af926710a8033119e9c943147f32f30ed68abb28b8208fc2d4381",
+      "filtered_anchor_rows": 42110,
+      "filtered_panel_rows": 42110,
+      "matched_keys_sha256": "daa7e89adc9af926710a8033119e9c943147f32f30ed68abb28b8208fc2d4381",
+      "matched_rows": 42110,
+      "panel_keys_sha256": "daa7e89adc9af926710a8033119e9c943147f32f30ed68abb28b8208fc2d4381",
+      "unmatched_anchor_keys_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unmatched_anchor_rows": 0,
+      "unmatched_panel_keys_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unmatched_panel_rows": 0
+    },
+    "training_candidates": {
+      "anchor_keys_sha256": "c5adaf7f7da8ddea3feb0c01c62cee34619d8844d5bd4cb2833dc40037470ecc",
+      "filtered_anchor_rows": 36639,
+      "filtered_panel_rows": 36639,
+      "matched_keys_sha256": "c5adaf7f7da8ddea3feb0c01c62cee34619d8844d5bd4cb2833dc40037470ecc",
+      "matched_rows": 36639,
+      "panel_keys_sha256": "c5adaf7f7da8ddea3feb0c01c62cee34619d8844d5bd4cb2833dc40037470ecc",
+      "unmatched_anchor_keys_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unmatched_anchor_rows": 0,
+      "unmatched_panel_keys_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "unmatched_panel_rows": 0
+    }
+  },
+  "source_scans": {
+    "expert_anchor": {
+      "boundary_crossing_rows": 0,
+      "materialized_rows": 42110,
+      "returned_rows": 42110,
+      "role_counts": {
+        "calibration_threshold": 1732,
+        "model_selection": 3739,
+        "training": 36639
+      }
+    },
+    "panel": {
+      "boundary_crossing_rows": 0,
+      "materialized_rows": 42110,
+      "returned_rows": 42110,
+      "role_counts": {
+        "calibration_threshold": 1732,
+        "model_selection": 3739,
+        "training": 36639
+      }
+    }
+  },
+  "state_artifact_emitted": true,
+  "state_output_columns": [
+    "source_id",
+    "site_id",
+    "year_month",
+    "time_role",
+    "yN_adaptive",
+    "yF_adaptive",
+    "yT_no_chla_adaptive",
+    "sigma_N_adaptive",
+    "sigma_F_adaptive",
+    "sigma_T_no_chla_adaptive",
+    "delta_yN_adaptive",
+    "delta_yF_adaptive",
+    "delta_yT_no_chla_adaptive",
+    "delta_previous_month_missing"
+  ],
+  "status": "passed",
+  "zero_holdout_overlap": true
+}

@@ -1,0 +1,391 @@
+# Closure V1 E0-D Runtime Patch 1
+
+Status: closed implementation contract, effective only after P-DLP
+publication, identified as `E0-DLP`. It is a
+consumer-dialect correction layered on the published E0-DL lock. It is not a
+protocol amendment, does not replace E0-DL or E0-M, and does not authorize
+evaluation, E0-U, holdout access, or post-2021 outcome access.
+
+## Purpose And Incident Classification
+
+The first ANFIS slot, base seed `1729`, completed successfully under the
+published E0-DL authority. Its producer wrote all final files atomically and
+wrote the completion manifest last. A later strict sequence-consumer check
+rejected that already completed bundle for three representational reasons:
+
+1. the producer persisted the canonical publication reference
+   `origin/main`, while the consumer required the different spelling
+   `refs/remotes/origin/main`; and
+2. the producer wrote `module_metrics.csv` in its fixed CSV schema order, but
+   the consumer reconstructed the expected order from the first metrics
+   object after a `sort_keys=True` JSON round trip. That round trip sorts JSON
+   object keys and therefore cannot define CSV column order; and
+3. the historical fitter interpolated module display names such as `ANFIS-N`
+   into checkpoint and sample-key artifact paths, while the E0-DL planned-path
+   inventory uses the closed tokens `anfis_n`, `anfis_f`, and
+   `anfis_t_no_current`.
+
+None of these conditions changes a value, row, sample, fitted parameter, quality
+gate, state column, checkpoint payload, or scientific decision. The producer dialect
+is internally consistent: `origin/main` is the exact publication value emitted
+by the runtime authorization summary, and the CSV header is the exact fitted
+metrics schema emitted by the producer. The uppercase ANFIS artifact paths are
+preserved only as the frozen historical seed-`1729` dialect; all future ANFIS
+slots use the locked lowercase tokens in both producer and consumer. This is
+therefore a runtime-compatibility incident, not a failed fit and not evidence
+that the seed bundle is invalid.
+
+The correction is deliberately narrow. The consumer must require the exact
+producer value `origin/main`, must reject the alternative spelling, and must
+validate the CSV against closed dialect-specific column tuples instead of JSON
+object insertion order. It must accept uppercase ANFIS artifact paths only for the
+exact frozen seed-`1729` manifest under the published E0-DLP authority, and it
+must require locked lowercase path tokens for every future slot. No permissive
+alias, column-set comparison, reordering, normalization, or best-effort
+conversion is allowed.
+
+## Immutable Authorities And Frozen Evidence
+
+The base E0-DL authority remains immutable:
+
+| Record | Immutable value |
+|---|---|
+| E0-DL publication commit `L` | `e7becdd5553decc92bbcf0af4cede7425ed12546` |
+| E0-DL locked repository head `H` | `4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3` |
+| E0-DL path | `reports/closure_v1/00_protocol/development_runtime_lock.json` |
+| E0-DL SHA-256 | `5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81` |
+| E0-DL lock version | `closure_development_runtime_lock_v1` |
+| Planned heavy/light paths | `201` |
+| Planned-path digest | `833fe57a573db135357a596949728fd0b6a436997ece0ba2c5555b815a42672c` |
+
+E0-DLP must validate the original E0-DL component records against the Git
+objects at the locked head, rather than pretending that the six allowlisted
+current files still have their old bytes. It must then validate the current
+bytes separately as the patch. The base JSON, its schema, its recorded hashes,
+and its authorization claims must not be edited or regenerated.
+
+The completed seed `1729` bundle is also immutable. Its frozen anchors are:
+
+| Record | Bytes | SHA-256 |
+|---|---:|---|
+| `reports/closure_v1/01_surface/anfis/seed_1729/manifest.json` | 20,768 | `b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82` |
+| `data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet` | 1,215,081 | `c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69` |
+| `reports/closure_v1/01_surface/anfis/seed_1729/lineage_audit.json` | 2,863 | `f54c8a5cdc15de8b31dd8337fda3ac1025ef500c7ad935811a643e4216e8a894` |
+
+The manifest binds the following thirteen outputs. E0-DLP must adopt exactly
+these physical records and no substitutes:
+
+| Role/path | Bytes | SHA-256 |
+|---|---:|---|
+| Adaptive state Parquet | 1,215,081 | `c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69` |
+| `ANFIS-N.pt` | 5,050 | `cbf3ec20445b0cdb0b4915bb3b5fcff3a293688cdf605fb1d4300728341b61d6` |
+| `ANFIS-N_sample_keys.csv` | 463,207 | `754a8b8c29bdd40145f859983da64f3287ae8c527a413e0b9e8d68bb83a92b8c` |
+| `ANFIS-F.pt` | 8,250 | `741d3ab0b9980c1f4c61447b1d9150bdd24ba649ab7c7057181c7c825c7bcfc6` |
+| `ANFIS-F_sample_keys.csv` | 458,422 | `f15beef010139fcb8c5ef5f729d41e3de0a67492c87982f0f8a8a0838375ac72` |
+| `ANFIS-T-no-current.pt` | 4,147 | `45064d6b3bffe102a4d4d6689f0bc0709791cd5df5b328323f96e7c3b507e6a8` |
+| `ANFIS-T-no-current_sample_keys.csv` | 503,037 | `5b31f6b032df20b3e5a5a1d5fa2ba4b0beeeb174284ff5229b30bfe570a91114` |
+| `module_metrics.csv` | 1,104 | `85ae8a11f52edf9c9cf927595782a64eff74ab76f1b58f4324095bd9ef274e22` |
+| `training_curve.csv` | 7,673 | `bace68b15b08ce460d124f113961e827d4e415863933192a2b23c632fb372af8` |
+| `memberships_initial.csv` | 1,293 | `cf49de8f2aa49679baeaad9d856acc6384c76f9f31d6e4fff3436f8ec6c46467` |
+| `memberships_final.csv` | 1,719 | `f6d0fbcf7f04743a59a804162fb252f429e2bfe2bc4272bf27924490c7aff1bd` |
+| `report.md` | 444 | `feb6e21a63d73cdf1312159ab0fdde7bd46b8fa1eb8e4cf9d32c9e487822aeae` |
+| `lineage_audit.json` | 2,863 | `f54c8a5cdc15de8b31dd8337fda3ac1025ef500c7ad935811a643e4216e8a894` |
+
+The manifest itself is the fourteenth physical final and the completion
+marker. The complete bundle audit must prove `13` manifest output records,
+`14` physical finals, matching sizes and SHA-256 values, no temporary files,
+and no replacement or stale output.
+
+## One-Shot Preservation And Adoption
+
+Seed `1729` must not be fitted again. Its Parquet, checkpoints, CSV files,
+lineage audit, report, timestamps, and completion manifest must not be edited,
+rewritten, normalized, copied over, or replaced. In particular, the JSON must
+not be reordered to satisfy the consumer, and the metrics CSV must not be
+reordered to imitate sorted JSON keys.
+
+E0-DLP adopts the bundle as evidence generated while the unmodified E0-DL
+authority was effective. Adoption is not retroactive production under the
+patch and must not relabel the manifest's producer provenance. The manifest
+continues to name execution head `e7becdd5553decc92bbcf0af4cede7425ed12546`,
+publication ref `origin/main`, and the original E0-DL SHA-256. E0-DLP records
+that immutable provenance plus the complete bundle identity in its own audit.
+
+The legacy authorization-summary shape remains unchanged for compatibility
+with the already sealed manifest dialect. The authoritative provenance chain
+is external and conjunctive:
+
+```text
+E0-DL at L + E0-DLP at P-DLP
+```
+
+The later E0-M model lock must cite and verify both lock files. It must not
+infer E0-DLP adoption merely from successful consumer validation.
+
+## Central Overlay Design
+
+E0-DLP is a central overlay, not a wrapper command. The central sequence
+adapter owns the strict ANFIS-manifest validation used by sequence generation;
+the training and rollout paths import that validation through their existing
+dependency chain. Correcting the shared validator therefore preserves the
+canonical commands and avoids a second family of wrappers or manifests.
+
+The runtime authorization validator is made overlay-aware so that it can:
+
+1. load and validate the immutable base E0-DL lock;
+2. verify every base component against its Git bytes at the base locked head;
+3. detect whether any base component differs in the current published tree;
+4. require E0-DLP whenever a difference is present;
+5. require that the complete difference is exactly the closed allowlist below;
+6. validate the E0-DLP schema, ancestry, publication, file hashes, incident
+   assertions, seed adoption, and seals; and
+7. return the existing authorization-summary dialect only after the base and
+   patch predicates both pass.
+
+There is no fallback from a diverged base component to base-only authorization.
+If any allowlisted file differs from E0-DL and the patch lock is missing,
+untracked, unpublished, stale, or invalid, effective fit authorization is
+false before modeling-row or model I/O. If no base component differs, the
+original E0-DL validation remains sufficient.
+
+## Exact Closed Allowlist
+
+The only E0-DL-recorded paths permitted to differ are:
+
+```text
+src/experiments/build_closure_pipe_sequences.py
+src/experiments/closure_development_runtime_lock.py
+src/experiments/fit_closure_anfis_state.py
+tests/test_build_closure_pipe_sequences.py
+tests/test_closure_development_runtime_lock.py
+tests/test_fit_closure_anfis_state.py
+```
+
+The only new patch components, introduced in A-DLP and unchanged in H-DLP,
+are:
+
+```text
+configs/closure_v1/development_runtime_patch_lock.schema.json
+src/experiments/closure_development_runtime_patch.py
+src/experiments/lock_closure_development_runtime_patch.py
+tests/test_closure_development_runtime_patch.py
+docs/closure_v1/E0_D_RUNTIME_PATCH_1.md
+```
+
+The only new P-DLP artifacts are:
+
+```text
+reports/closure_v1/00_protocol/development_runtime_patch_lock.json
+reports/closure_v1/00_protocol/development_runtime_patch_lock_manifest.json
+```
+
+The patch lock must store the path, byte size, SHA-256, base-record SHA-256
+where applicable, and role for every path in those closed sets. It must also
+store an ordered digest of each set so that omission, addition, aliasing,
+renaming, traversal, symlink escape, duplicate paths, or case drift fails.
+
+No other base component or runtime dependency may drift. The only fitter
+change is display-name-to-token path rendering; the planned paths and payload
+schemas do not change. In particular, this patch forbids changes to the
+protocol lock, E0-DL JSON or schema, runtime YAML or schema, experiment matrix,
+primary/secondary surface configs, model benchmark, seed schedule, mapping,
+trainer, rollout implementation, planned-path inventory, DVC ownership model,
+target metadata, assignment, common-origin bundle, expert-state bundle, or
+restored sources. The patch must not expand its own allowlist after
+publication.
+
+## Publication Gates
+
+### A-DLP: Frozen-Artifact Adoption And Patch Preparation
+
+The generic publication assistant verifies every staged seed-manifest input
+against the current filesystem, including the historical runtime validator.
+To preserve that valid check, A-DLP is published while the runtime-validator
+and fitter bytes are still unchanged. It contains exactly `19` paths relative
+to `L`: the immutable seed manifest and nine lightweight outputs, the explicit
+state pointer, the updated `models.dvc`, the sequence-consumer correction and
+its regression, and the five new patch components. The historical fitter,
+runtime validator, and their tests remain byte-identical to `L` in A-DLP.
+The separately authorized DVC operation and two identical targeted pushes,
+invoked through the fixed repository executable `.venv/bin/dvc`, must complete
+before A-DLP. A-DLP does not authorize another fit or consumer run:
+the sequence-builder drift makes the original E0-DL gate fail closed.
+
+### H-DLP: Patch Implementation
+
+H-DLP is a direct non-merge child of A-DLP. It changes exactly four paths: the
+runtime validator and its test, plus the fitter path-token renderer and its
+test. Across `L..H-DLP`, the complete diff therefore contains exactly `23`
+paths: six allowlisted modifications, five new components, and twelve
+immutable seed/DVC adoption records. Before publication it must pass:
+
+- the closed patch schema and validator tests;
+- regressions for the exact `origin/main` reference and rejection of
+  `refs/remotes/origin/main`;
+- a sorted-JSON round-trip regression proving that fitted CSV order is
+  independent of JSON key order;
+- a regression proving that future fitted and unavailable slots use the
+  locked lowercase artifact tokens while the exact frozen seed `1729` retains
+  its uppercase historical paths;
+- exact fitted and unavailable metrics-column dialect tests;
+- mutation tests for every path, hash, ancestry, publication, seed-adoption,
+  and seal predicate;
+- sequence, training, and rollout import-chain regressions;
+- the full repository type check and the required focal test suite; and
+- the repository precommit/publication assistant with no unexplained warning
+  or failure.
+
+H-DLP must then be committed and published as a clean descendant of `L`, with
+the live remote branch resolving to the same commit. The frozen seed bundle is
+not rewritten or smuggled into H-DLP. From the moment H-DLP changes a base
+component until P-DLP is published, all affected fit, sequence, training, and
+rollout entry points must fail closed.
+
+### P-DLP: External Patch Lock
+
+Only after H-DLP is clean and published may the external locker generate
+`development_runtime_patch_lock.json` and its lightweight publication
+manifest. The locker is one-shot and outcome-blind. It must refuse either
+existing final, either temporary path (including broken symlinks), any
+non-regular output, or any non-default input/output path, and must not modify
+E0-DL or any seed file. `--check-only` performs no type check, test, DVC push,
+or write. `--execute-lock` reserves both output paths with exclusive
+no-follow guards for the entire gate, runs the fixed full type check, the
+fixed `231`-test focal suite in a sanitized pytest environment, and two exact
+already-up-to-date targeted DVC pushes through `.venv/bin/ty`,
+`.venv/bin/pytest`, and `.venv/bin/dvc`, respectively, then proves that the
+prelock state did not change. It publishes the authoritative lock first and the
+non-authoritative generic-precommit companion last using atomic no-clobber
+links. On failure it removes only output inodes created by that invocation.
+
+P-DLP must bind:
+
+- the exact E0-DL path, version, SHA-256, locked head, and publication commit;
+- H-DLP's exact commit, ancestry from `L`, canonical origin identity, live
+  publication reference, and clean tracked state;
+- the complete closed path sets and their current Git/physical hashes;
+- the three exact runtime-compatibility corrections and their regression
+  evidence;
+- all fourteen frozen seed `1729` file records and the manifest-written-last
+  assertion;
+- the unchanged scientific anchors and authorization boundaries; and
+- every seal in the next section.
+
+The generated pair must be reviewed and committed as one direct, non-merge
+child of H-DLP. That P-DLP commit contains exactly two additions—the lock and
+its companion—and no modification or unrelated file. Both must be regular
+files, no descendant commit may touch either path, and their bytes must remain
+identical in P-DLP, current HEAD, local `origin/main`, and the live remote.
+Effective patched development-fit authorization becomes true only after that
+publication. It never authorizes evaluation, E0-U, or holdout access, and it
+does not itself execute another fit, sequence build, training run, rollout, or
+DVC action; those operations still require their existing command-specific
+gate and explicit approval.
+
+## Scientific Invariants
+
+The incident patch changes no scientific or experimental decision. The
+following seed `1729` facts remain exact:
+
+- base seed `1729`; module substreams `1830`, `1931`, and `2133` for
+  `ANFIS-N`, `ANFIS-F`, and `ANFIS-T-no-current`;
+- SHA-256 ranking without replacement and exactly `4,096` selected keys per
+  module;
+- `60` full-batch epochs, the fixed optimizer/profile, CPU execution, and one
+  intra-op plus one inter-op Torch thread;
+- all three post-update training-sample spread gates passed;
+- `42,110` adaptive-state rows across exactly `353` development monitoring
+  locations, with `8,041` exact-previous-month gaps;
+- time roles through `2021-12` only, with zero holdout overlap;
+- the primary no-current-Chl-a feature, state, target, and recycling mappings;
+- fixed level/uncertainty range `[0,1]`, signed-delta range `[-1,1]`, and the
+  exact state output schema;
+- no seed replacement, no best-seed selection, and no denominator change; and
+- the existing sequence geometry, temporal model, rollout kernel, calibration
+  rules, thresholds, and four analysis denominators.
+
+The selected-key digests remain:
+
+| Module | Eligible-universe SHA-256 | Selected-keys SHA-256 |
+|---|---|---|
+| `ANFIS-N` | `5e8ad0e8912e4f3546929dd30099ad9f3fc65414bba56156a753ea6427fb3d98` | `c1c4ed2dd189cbaa38f2ba94023f230aa229697b5893e18e385d8af38d5fe2f0` |
+| `ANFIS-F` | `fc55fb5b058e1da5500a8c01889719e45e8e64b39d3ad0a430ed9522d065d438` | `1286f1be330889bddc9583e8c72a966fb6e184fec95515919c0adb22365c0a85` |
+| `ANFIS-T-no-current` | `347b245348afa267327167159b68fe449cf669318fa6601c59e3109cd16c1655` | `1526fab41d004dbabcbbf79081805e6b00a4f467c0f212fd35b9c097824b6d83` |
+
+Changing any item in this section is outside E0-DLP and requires a separately
+reviewed protocol/runtime amendment.
+
+## Seals And Authorization Boundaries
+
+E0-DLP must preserve and independently assert the following closed state:
+
+```text
+development_fit_authorized=true only after E0-DL and E0-DLP both validate
+evaluation_authorized=false
+e0_u_authorized=false
+future_outcomes_accessed=false
+post_2021_outcome_semantic_decode=false
+lock_generation_reads_scientific_outcome_rows=false
+lock_generation_reads_post_2021_outcomes=false
+zero_holdout_overlap=true
+no_post_2021_materialization=true
+does_not_replace_e0_m_model_lock=true
+```
+
+Patch generation may hash all frozen files and semantically audit only the
+already frozen through-2021 derived adaptive-state Parquet, sample-key CSVs,
+and safe checkpoint metadata. It must not read the source panel, targets,
+test/holdout outcome rows, or post-2021 outcomes. It must not inspect
+post-cutoff outcome availability, missingness, counts, QC, or summaries. It
+must preserve the canonical origin identity and must contain no remote URL,
+credential, token, bucket name, local configuration, or secret.
+
+The base seal `external_lock_bundle_committed_before_fit=true` remains a true
+historical assertion about E0-DL at `L`. E0-DLP must record the later chronology
+honestly: the frozen seed `1729` producer bundle was completed under `L` before
+the consumer incident was discovered; H-DLP and P-DLP are published after that
+bundle and before any affected consumer or subsequent fit is allowed to run.
+The patch must never recast P-DLP as a pre-fit authority for the already
+completed seed.
+
+## DVC Adoption Before H-DLP
+
+A separately authorized DVC-adoption gate must register the existing bytes
+before A-DLP is committed. This keeps A-DLP/H-DLP clean, published, and
+independently reconstructable before the external P-DLP lock is generated. The adoption gate
+must not invoke the fitter or alter any frozen seed file:
+
+- the adaptive-state Parquet receives its explicit `.parquet.dvc` pointer;
+- the three checkpoints remain owned through the monolithic `models.dvc`; and
+- the small JSON, CSV, and Markdown evidence may be committed to Git.
+
+DVC adoption is administrative. The resulting pointer/owner records must bind
+the same artifact SHA-256 values, payload MD5 values, and byte sizes, and the
+targeted remote push must be followed by an identical idempotent push. A
+changed payload hash, missing record, unexpected owner, or extra artifact
+invalidates adoption. The explicit state pointer freezes payload MD5
+`183bc5e98b1d5fa5084300ded6476712`. The H-DLP `models.dvc` owner must be the
+`173`-file base tree plus exactly the three uppercase historical seed-`1729`
+checkpoints: `176` files and `115,709,141` bytes. P-DLP embeds the canonical
+tree entries and reconstructs both the base and adoption directory-object
+MD5/SHA-256 identities, so later validation does not depend on retaining an
+obsolete historical `.dir` cache object.
+
+A-DLP must include the explicit state pointer, the updated monolithic
+`models.dvc`, and the ten small JSON/CSV/Markdown seed records. P-DLP then
+seals those published records without rewriting them. After P-DLP,
+`models.dvc` may evolve only additively: every one of the `176` locked entries
+must remain path/MD5-exact, and every extra path must belong to the E0-DL
+planned model inventory. The physical `models/` tree and current DVC cache
+must exactly match the committed pointer, and an evolved pointer must be
+published unchanged on `origin/main` before the next strict runner. In the
+operational workflow, each independent fit is therefore followed by DVC
+registration, targeted push, commit, and Git push before the next fit. The
+runtime gate proves local ownership and Git publication of later additions;
+their final remote completeness remains an explicit per-fit workflow duty and
+is cross-bound by E0-M. E0-M must verify the final owner and cite both E0-DL
+and E0-DLP.
+
+This document authorizes neither that DVC operation nor any downstream
+experiment. It only defines the evidence and ordering required to preserve the
+one-shot seed while closing the consumer-dialect gap.
