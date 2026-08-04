@@ -33,6 +33,7 @@ SHA_B = "b" * 64
 HEAD_B = "d" * 40
 ADOPTION_HEAD = runtime_patch.EXPECTED_ADOPTION_HEAD
 ACTIVATION_HEAD = runtime_patch.EXPECTED_ACTIVATION_HEAD
+EVIDENCE_REPAIR_HEAD = runtime_patch.EXPECTED_EVIDENCE_REPAIR_HEAD
 BASE_LOCK_COMMIT = "e7becdd5553decc92bbcf0af4cede7425ed12546"
 BASE_LOCKED_HEAD = "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3"
 BASE_LOCK_SHA256 = "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
@@ -375,7 +376,7 @@ def _payload() -> dict[str, Any]:
         "only_allowed_additions_and_modifications": True,
     }
     return {
-        "lock_version": "closure_development_runtime_patch_lock_v1_1",
+        "lock_version": "closure_development_runtime_patch_lock_v1_2",
         "status": "locked",
         "gate": "E0-DLP",
         "experiment_id": "closure_v1",
@@ -425,12 +426,15 @@ def _payload() -> dict[str, Any]:
             "base_commit": BASE_LOCK_COMMIT,
             "adoption_head": ADOPTION_HEAD,
             "activation_head": ACTIVATION_HEAD,
+            "evidence_repair_head": EVIDENCE_REPAIR_HEAD,
             "patch_head": HEAD_B,
             "adoption_is_direct_first_parent_of_activation": True,
-            "activation_is_direct_first_parent_of_patch": True,
+            "activation_is_direct_first_parent_of_evidence_repair": True,
+            "evidence_repair_is_direct_first_parent_of_patch": True,
             "base_is_ancestor_of_adoption": True,
             "adoption_is_ancestor_of_activation": True,
-            "activation_is_ancestor_of_patch": True,
+            "activation_is_ancestor_of_evidence_repair": True,
+            "evidence_repair_is_ancestor_of_patch": True,
             "base_to_adoption": {
                 "base_commit": BASE_LOCK_COMMIT,
                 "patch_head": ADOPTION_HEAD,
@@ -463,9 +467,9 @@ def _payload() -> dict[str, Any]:
                 "paths_sha256": _path_digest(activation_paths),
                 "only_allowed_additions_and_modifications": True,
             },
-            "activation_to_patch": {
+            "activation_to_evidence_repair": {
                 "base_commit": ACTIVATION_HEAD,
-                "patch_head": HEAD_B,
+                "patch_head": EVIDENCE_REPAIR_HEAD,
                 "entries": [
                     {"status": "M", "path": path}
                     for path in runtime_patch.PATCH_REPAIR_PATHS
@@ -473,6 +477,19 @@ def _payload() -> dict[str, Any]:
                 "paths": list(runtime_patch.PATCH_REPAIR_PATHS),
                 "paths_sha256": _path_digest(
                     list(runtime_patch.PATCH_REPAIR_PATHS)
+                ),
+                "only_allowed_additions_and_modifications": True,
+            },
+            "evidence_repair_to_patch": {
+                "base_commit": EVIDENCE_REPAIR_HEAD,
+                "patch_head": HEAD_B,
+                "entries": [
+                    {"status": "M", "path": path}
+                    for path in runtime_patch.PATCH_GUARD_HARNESS_PATHS
+                ],
+                "paths": list(runtime_patch.PATCH_GUARD_HARNESS_PATHS),
+                "paths_sha256": _path_digest(
+                    list(runtime_patch.PATCH_GUARD_HARNESS_PATHS)
                 ),
                 "only_allowed_additions_and_modifications": True,
             },
@@ -523,6 +540,9 @@ def _payload() -> dict[str, Any]:
         },
         "git_diff": aggregate_diff,
         "implementation_erratum": dict(runtime_patch.PATCH_IMPLEMENTATION_ERRATUM),
+        "verification_harness_erratum": dict(
+            runtime_patch.PATCH_VERIFICATION_HARNESS_ERRATUM
+        ),
         "compatibility_corrections": [
             {
                 "issue_id": "published_ref_compatibility_patch_1",
@@ -788,6 +808,7 @@ def _payload() -> dict[str, Any]:
             "patch_lock_artifact_verified": True,
             "seed_1729_bundle_verified": True,
             "content_addressed_completion_order_evidence_verified": True,
+            "nested_guard_regression_namespace_isolation_verified": True,
             "seed_1729_preserved_without_rematerialization": True,
             "dvc_ownership_verified": True,
             "dvc_remote_verified_at_patch": True,
@@ -1046,7 +1067,7 @@ def test_patch_lock_semantics_reject_derived_dvc_or_state_drift(
             SHA_B
         )
     elif mutation == "publication_diff":
-        mutated["publication_sequence"]["activation_to_patch"]["entries"][0][
+        mutated["publication_sequence"]["evidence_repair_to_patch"]["entries"][0][
             "status"
         ] = "A"
     else:  # pragma: no cover - parametrization is closed above
@@ -1192,6 +1213,7 @@ def test_publication_path_cardinalities_are_closed() -> None:
     assert len(runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST) == 19
     assert len(runtime_patch.PATCH_ACTIVATION_PATHS) == 4
     assert len(runtime_patch.PATCH_REPAIR_PATHS) == 4
+    assert len(runtime_patch.PATCH_GUARD_HARNESS_PATHS) == 4
     assert len(runtime_patch.PATCH_PARENT_DIFF_ALLOWLIST) == 23
     assert set(runtime_patch.PATCH_ACTIVATION_PATHS).isdisjoint(
         runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST
@@ -1201,6 +1223,9 @@ def test_publication_path_cardinalities_are_closed() -> None:
     )
     assert set(runtime_patch.PATCH_REPAIR_PATHS).issubset(
         runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST
+    )
+    assert set(runtime_patch.PATCH_GUARD_HARNESS_PATHS) == set(
+        runtime_patch.PATCH_REPAIR_PATHS
     )
 
 
@@ -1508,18 +1533,59 @@ def test_output_guard_is_exclusive_and_removes_only_its_inode(
     assert not os.path.lexists(path)
 
 
-def test_output_guards_do_not_change_real_git_status() -> None:
-    before = subprocess.run(
-        ["git", "status", "--porcelain", "--untracked-files=all"],
-        cwd=patch_locker.PROJECT_ROOT,
-        check=True,
-        capture_output=True,
-    ).stdout
-    guards = patch_locker._acquire_output_guards(
-        patch_locker.DEFAULT_PATCH_LOCK_PATH,
-        patch_locker.DEFAULT_PATCH_LOCK_MANIFEST_PATH,
-    )
+def test_output_guards_do_not_change_real_git_status(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    namespace = hashlib.sha256(tmp_path.resolve().as_posix().encode("utf-8")).hexdigest()[
+        :16
+    ]
+    repository_tmp = patch_locker.PROJECT_ROOT / "tmp"
+    repository_tmp.mkdir(exist_ok=True)
+    output_directory = repository_tmp / f"closure_v1_e0_dlp_pytest_outputs_{namespace}"
+    guard_directory = repository_tmp / f"closure_v1_e0_dlp_pytest_guards_{namespace}"
+    output_directory.mkdir()
+    output = output_directory / "lock.json"
+    manifest = output_directory / "manifest.json"
+    production_guard_directory = patch_locker.OUTPUT_GUARD_DIRECTORY
+
+    def entry_identities(directory: Path) -> dict[str, tuple[int, int, int]]:
+        if not directory.is_dir():
+            return {}
+        identities: dict[str, tuple[int, int, int]] = {}
+        for path in directory.iterdir():
+            metadata = path.lstat()
+            identities[path.name] = (
+                metadata.st_dev,
+                metadata.st_ino,
+                metadata.st_mode,
+            )
+        return identities
+
+    production_entries_before = entry_identities(production_guard_directory)
+    assert guard_directory != production_guard_directory
+    assert guard_directory.parent == repository_tmp
+    monkeypatch.setattr(patch_locker, "OUTPUT_GUARD_DIRECTORY", guard_directory)
+
+    def closed_output(_path: Path, expected: Path) -> Path:
+        if expected == patch_locker.DEFAULT_PATCH_LOCK_PATH:
+            return output
+        if expected == patch_locker.DEFAULT_PATCH_LOCK_MANIFEST_PATH:
+            return manifest
+        raise AssertionError(expected)
+
+    monkeypatch.setattr(patch_locker, "_closed_output_path", closed_output)
+    guards: tuple[Any, ...] = ()
     try:
+        before = subprocess.run(
+            ["git", "status", "--porcelain", "--untracked-files=all"],
+            cwd=patch_locker.PROJECT_ROOT,
+            check=True,
+            capture_output=True,
+        ).stdout
+        guards = patch_locker._acquire_output_guards(
+            patch_locker.DEFAULT_PATCH_LOCK_PATH,
+            patch_locker.DEFAULT_PATCH_LOCK_MANIFEST_PATH,
+        )
         after = subprocess.run(
             ["git", "status", "--porcelain", "--untracked-files=all"],
             cwd=patch_locker.PROJECT_ROOT,
@@ -1531,9 +1597,18 @@ def test_output_guards_do_not_change_real_git_status() -> None:
             guard.owned.path.is_relative_to(patch_locker.PROJECT_ROOT / "tmp")
             for guard in guards
         )
+        assert all(
+            not guard.owned.path.is_relative_to(production_guard_directory)
+            for guard in guards
+        )
     finally:
         for guard in reversed(guards):
             patch_locker._release_output_guard(guard)
+        if guard_directory.exists():
+            guard_directory.rmdir()
+        output_directory.rmdir()
+    production_entries_after = entry_identities(production_guard_directory)
+    assert production_entries_after == production_entries_before
 
 
 def test_output_guard_directory_is_created_in_a_fresh_clone_shape(

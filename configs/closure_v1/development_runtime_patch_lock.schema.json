@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-patch-lock-v1-1.json",
-  "title": "Closure V1 E0-DLP development runtime patch lock v1.1 portable-evidence amendment",
+  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-patch-lock-v1-2.json",
+  "title": "Closure V1 E0-DLP development runtime patch lock v1.2 guard-harness amendment",
   "type": "object",
   "required": [
     "lock_version",
@@ -19,6 +19,7 @@
     "patch_lock_artifact",
     "git_diff",
     "implementation_erratum",
+    "verification_harness_erratum",
     "compatibility_corrections",
     "adopted_seed_bundle",
     "environment",
@@ -30,7 +31,7 @@
   ],
   "properties": {
     "lock_version": {
-      "const": "closure_development_runtime_patch_lock_v1_1"
+      "const": "closure_development_runtime_patch_lock_v1_2"
     },
     "status": {
       "const": "locked"
@@ -74,6 +75,9 @@
     },
     "implementation_erratum": {
       "$ref": "#/$defs/implementationErratum"
+    },
+    "verification_harness_erratum": {
+      "$ref": "#/$defs/verificationHarnessErratum"
     },
     "compatibility_corrections": {
       "$ref": "#/$defs/compatibilityCorrections"
@@ -1068,15 +1072,19 @@
         "base_commit",
         "adoption_head",
         "activation_head",
+        "evidence_repair_head",
         "patch_head",
         "adoption_is_direct_first_parent_of_activation",
-        "activation_is_direct_first_parent_of_patch",
+        "activation_is_direct_first_parent_of_evidence_repair",
+        "evidence_repair_is_direct_first_parent_of_patch",
         "base_is_ancestor_of_adoption",
         "adoption_is_ancestor_of_activation",
-        "activation_is_ancestor_of_patch",
+        "activation_is_ancestor_of_evidence_repair",
+        "evidence_repair_is_ancestor_of_patch",
         "base_to_adoption",
         "adoption_to_activation",
-        "activation_to_patch",
+        "activation_to_evidence_repair",
+        "evidence_repair_to_patch",
         "base_to_patch"
       ],
       "properties": {
@@ -1089,15 +1097,21 @@
         "activation_head": {
           "const": "350c6b61c497384f5db7fee99e731c02d521e33d"
         },
+        "evidence_repair_head": {
+          "const": "65f169bf3357a9a3b9aaee19883d33b5fb0278d0"
+        },
         "patch_head": {"$ref": "#/$defs/gitCommit"},
         "adoption_is_direct_first_parent_of_activation": {"const": true},
-        "activation_is_direct_first_parent_of_patch": {"const": true},
+        "activation_is_direct_first_parent_of_evidence_repair": {"const": true},
+        "evidence_repair_is_direct_first_parent_of_patch": {"const": true},
         "base_is_ancestor_of_adoption": {"const": true},
         "adoption_is_ancestor_of_activation": {"const": true},
-        "activation_is_ancestor_of_patch": {"const": true},
+        "activation_is_ancestor_of_evidence_repair": {"const": true},
+        "evidence_repair_is_ancestor_of_patch": {"const": true},
         "base_to_adoption": {"$ref": "#/$defs/gitDiff"},
         "adoption_to_activation": {"$ref": "#/$defs/gitDiff"},
-        "activation_to_patch": {"$ref": "#/$defs/gitDiff"},
+        "activation_to_evidence_repair": {"$ref": "#/$defs/gitDiff"},
+        "evidence_repair_to_patch": {"$ref": "#/$defs/gitDiff"},
         "base_to_patch": {"$ref": "#/$defs/gitDiff"}
       },
       "additionalProperties": false
@@ -1136,6 +1150,58 @@
         "filesystem_mtime_used": {"const": false},
         "erratum_changes_seed_artifact_bytes": {"const": false},
         "erratum_changes_seed_artifact_timestamps": {"const": false},
+        "git_history_rewritten": {"const": false},
+        "scientific_runtime_contract_changed": {"const": false},
+        "outcome_access_changed": {"const": false}
+      },
+      "additionalProperties": false
+    },
+    "verificationHarnessErratum": {
+      "type": "object",
+      "required": [
+        "erratum_id",
+        "classification",
+        "trigger",
+        "replacement",
+        "production_guard_directory",
+        "production_guards_held_for_entire_gate",
+        "production_guard_semantics_changed",
+        "locker_source_changed",
+        "locker_execution_order_changed",
+        "fixed_focused_test_command_changed",
+        "focused_test_count",
+        "p_dlp_output_addition_count",
+        "failed_attempt_outputs_written",
+        "failed_attempt_dvc_push_reached",
+        "git_history_rewritten",
+        "scientific_runtime_contract_changed",
+        "outcome_access_changed"
+      ],
+      "properties": {
+        "erratum_id": {
+          "const": "nested_guard_regression_namespace_collision_1"
+        },
+        "classification": {
+          "const": "verification_harness_isolation_correction_only"
+        },
+        "trigger": {
+          "const": "fixed_focused_pytest_reacquired_live_outer_output_guard_paths"
+        },
+        "replacement": {
+          "const": "nested_guard_regression_uses_unique_ignored_repo_tmp_namespace"
+        },
+        "production_guard_directory": {
+          "const": "tmp/closure_v1_e0_dlp_locker"
+        },
+        "production_guards_held_for_entire_gate": {"const": true},
+        "production_guard_semantics_changed": {"const": false},
+        "locker_source_changed": {"const": false},
+        "locker_execution_order_changed": {"const": false},
+        "fixed_focused_test_command_changed": {"const": false},
+        "focused_test_count": {"const": 231},
+        "p_dlp_output_addition_count": {"const": 2},
+        "failed_attempt_outputs_written": {"const": false},
+        "failed_attempt_dvc_push_reached": {"const": false},
         "git_history_rewritten": {"const": false},
         "scientific_runtime_contract_changed": {"const": false},
         "outcome_access_changed": {"const": false}
@@ -2418,6 +2484,7 @@
         "patch_lock_artifact_verified",
         "seed_1729_bundle_verified",
         "content_addressed_completion_order_evidence_verified",
+        "nested_guard_regression_namespace_isolation_verified",
         "seed_1729_preserved_without_rematerialization",
         "dvc_ownership_verified",
         "dvc_remote_verified_at_patch",
@@ -2443,6 +2510,7 @@
         "patch_lock_artifact_verified": {"const": true},
         "seed_1729_bundle_verified": {"const": true},
         "content_addressed_completion_order_evidence_verified": {"const": true},
+        "nested_guard_regression_namespace_isolation_verified": {"const": true},
         "seed_1729_preserved_without_rematerialization": {"const": true},
         "dvc_ownership_verified": {"const": true},
         "dvc_remote_verified_at_patch": {"const": true},

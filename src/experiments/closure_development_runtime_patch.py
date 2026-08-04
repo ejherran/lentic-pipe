@@ -75,7 +75,7 @@ from src.experiments.closure_runtime_contract import closure_state_deltas
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-PATCH_LOCK_VERSION = "closure_development_runtime_patch_lock_v1_1"
+PATCH_LOCK_VERSION = "closure_development_runtime_patch_lock_v1_2"
 DEFAULT_PATCH_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/development_runtime_patch_lock.json"
 )
@@ -94,6 +94,7 @@ EXPECTED_BASE_LOCK_COMMIT = "e7becdd5553decc92bbcf0af4cede7425ed12546"
 EXPECTED_BASE_LOCKED_HEAD = "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3"
 EXPECTED_ADOPTION_HEAD = "e8fa8b8e8ca26e3457bd073934c158c1d8ee15bf"
 EXPECTED_ACTIVATION_HEAD = "350c6b61c497384f5db7fee99e731c02d521e33d"
+EXPECTED_EVIDENCE_REPAIR_HEAD = "65f169bf3357a9a3b9aaee19883d33b5fb0278d0"
 EXPECTED_BASE_LOCK_BYTES = 95_285
 EXPECTED_BASE_LOCK_SHA256 = (
     "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
@@ -162,6 +163,12 @@ PATCH_ACTIVATION_PATHS = (
     "tests/test_fit_closure_anfis_state.py",
 )
 PATCH_REPAIR_PATHS = (
+    "configs/closure_v1/development_runtime_patch_lock.schema.json",
+    "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
+    "src/experiments/closure_development_runtime_patch.py",
+    "tests/test_closure_development_runtime_patch.py",
+)
+PATCH_GUARD_HARNESS_PATHS = (
     "configs/closure_v1/development_runtime_patch_lock.schema.json",
     "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
     "src/experiments/closure_development_runtime_patch.py",
@@ -409,6 +416,7 @@ PATCH_AUDITS = {
     "three_runtime_compatibility_corrections_verified": True,
     "seed_1729_bundle_verified": True,
     "content_addressed_completion_order_evidence_verified": True,
+    "nested_guard_regression_namespace_isolation_verified": True,
     "seed_1729_preserved_without_rematerialization": True,
     "dvc_ownership_verified": True,
     "dvc_remote_verified_at_patch": True,
@@ -429,6 +437,25 @@ PATCH_IMPLEMENTATION_ERRATUM = {
     "filesystem_mtime_used": False,
     "erratum_changes_seed_artifact_bytes": False,
     "erratum_changes_seed_artifact_timestamps": False,
+    "git_history_rewritten": False,
+    "scientific_runtime_contract_changed": False,
+    "outcome_access_changed": False,
+}
+PATCH_VERIFICATION_HARNESS_ERRATUM = {
+    "erratum_id": "nested_guard_regression_namespace_collision_1",
+    "classification": "verification_harness_isolation_correction_only",
+    "trigger": "fixed_focused_pytest_reacquired_live_outer_output_guard_paths",
+    "replacement": "nested_guard_regression_uses_unique_ignored_repo_tmp_namespace",
+    "production_guard_directory": "tmp/closure_v1_e0_dlp_locker",
+    "production_guards_held_for_entire_gate": True,
+    "production_guard_semantics_changed": False,
+    "locker_source_changed": False,
+    "locker_execution_order_changed": False,
+    "fixed_focused_test_command_changed": False,
+    "focused_test_count": PATCH_FOCUSED_TEST_COUNT,
+    "p_dlp_output_addition_count": 2,
+    "failed_attempt_outputs_written": False,
+    "failed_attempt_dvc_push_reached": False,
     "git_history_rewritten": False,
     "scientific_runtime_contract_changed": False,
     "outcome_access_changed": False,
@@ -1260,13 +1287,27 @@ def _publication_sequence(base_commit: str, patch_head: str) -> dict[str, Any]:
     if (
         len(patch_parents) != 2
         or patch_parents[0] != patch_head
-        or patch_parents[1] != EXPECTED_ACTIVATION_HEAD
+        or patch_parents[1] != EXPECTED_EVIDENCE_REPAIR_HEAD
     ):
         raise DevelopmentRuntimePatchError(
-            "R-DLP must be a direct non-merge child of the sealed H-DLP commit"
+            "G-DLP must be a direct non-merge child of the sealed R-DLP commit"
+        )
+    evidence_repair_head = _require_commit(
+        patch_parents[1], context="R-DLP evidence-repair head"
+    )
+    evidence_repair_parents = _git(
+        "rev-list", "--parents", "-n", "1", evidence_repair_head
+    ).split()
+    if (
+        len(evidence_repair_parents) != 2
+        or evidence_repair_parents[0] != evidence_repair_head
+        or evidence_repair_parents[1] != EXPECTED_ACTIVATION_HEAD
+    ):
+        raise DevelopmentRuntimePatchError(
+            "R-DLP must remain a direct non-merge child of the sealed H-DLP commit"
         )
     activation_head = _require_commit(
-        patch_parents[1], context="H-DLP activation head"
+        evidence_repair_parents[1], context="H-DLP activation head"
     )
     activation_parents = _git(
         "rev-list", "--parents", "-n", "1", activation_head
@@ -1295,7 +1336,8 @@ def _publication_sequence(base_commit: str, patch_head: str) -> dict[str, Any]:
         )
     _require_ancestor(base_commit, adoption_head)
     _require_ancestor(adoption_head, activation_head)
-    _require_ancestor(activation_head, patch_head)
+    _require_ancestor(activation_head, evidence_repair_head)
+    _require_ancestor(evidence_repair_head, patch_head)
     adoption_modified = frozenset(
         {
             "src/experiments/build_closure_pipe_sequences.py",
@@ -1317,24 +1359,34 @@ def _publication_sequence(base_commit: str, patch_head: str) -> dict[str, Any]:
     )
     repair_diff = _git_diff_exact(
         activation_head,
-        patch_head,
+        evidence_repair_head,
         expected_paths=PATCH_REPAIR_PATHS,
         expected_modified_paths=frozenset(PATCH_REPAIR_PATHS),
+    )
+    guard_harness_diff = _git_diff_exact(
+        evidence_repair_head,
+        patch_head,
+        expected_paths=PATCH_GUARD_HARNESS_PATHS,
+        expected_modified_paths=frozenset(PATCH_GUARD_HARNESS_PATHS),
     )
     aggregate_diff = _git_diff(base_commit, patch_head)
     return {
         "base_commit": base_commit,
         "adoption_head": adoption_head,
         "activation_head": activation_head,
+        "evidence_repair_head": evidence_repair_head,
         "patch_head": patch_head,
         "adoption_is_direct_first_parent_of_activation": True,
-        "activation_is_direct_first_parent_of_patch": True,
+        "activation_is_direct_first_parent_of_evidence_repair": True,
+        "evidence_repair_is_direct_first_parent_of_patch": True,
         "base_is_ancestor_of_adoption": True,
         "adoption_is_ancestor_of_activation": True,
-        "activation_is_ancestor_of_patch": True,
+        "activation_is_ancestor_of_evidence_repair": True,
+        "evidence_repair_is_ancestor_of_patch": True,
         "base_to_adoption": adoption_diff,
         "adoption_to_activation": activation_diff,
-        "activation_to_patch": repair_diff,
+        "activation_to_evidence_repair": repair_diff,
+        "evidence_repair_to_patch": guard_harness_diff,
         "base_to_patch": aggregate_diff,
     }
 
@@ -2701,6 +2753,7 @@ def build_development_runtime_patch_lock_payload(
         "patch_lock_artifact": patch_lock_artifact_record(),
         "git_diff": prelock["git_diff"],
         "implementation_erratum": dict(PATCH_IMPLEMENTATION_ERRATUM),
+        "verification_harness_erratum": dict(PATCH_VERIFICATION_HARNESS_ERRATUM),
         "compatibility_corrections": prelock["compatibility_corrections"],
         "adopted_seed_bundle": prelock["adopted_seed_bundle"],
         "environment": prelock["environment"],
@@ -2873,16 +2926,21 @@ def _validate_publication_sequence_payload(payload: Mapping[str, Any]) -> None:
     sequence = cast(Mapping[str, Any], payload["publication_sequence"])
     adoption_head = str(sequence.get("adoption_head", ""))
     activation_head = str(sequence.get("activation_head", ""))
+    evidence_repair_head = str(sequence.get("evidence_repair_head", ""))
     if (
         sequence.get("base_commit") != EXPECTED_BASE_LOCK_COMMIT
         or adoption_head != EXPECTED_ADOPTION_HEAD
         or activation_head != EXPECTED_ACTIVATION_HEAD
+        or evidence_repair_head != EXPECTED_EVIDENCE_REPAIR_HEAD
         or sequence.get("patch_head") != patch_head
         or sequence.get("adoption_is_direct_first_parent_of_activation") is not True
-        or sequence.get("activation_is_direct_first_parent_of_patch") is not True
+        or sequence.get("activation_is_direct_first_parent_of_evidence_repair")
+        is not True
+        or sequence.get("evidence_repair_is_direct_first_parent_of_patch") is not True
         or sequence.get("base_is_ancestor_of_adoption") is not True
         or sequence.get("adoption_is_ancestor_of_activation") is not True
-        or sequence.get("activation_is_ancestor_of_patch") is not True
+        or sequence.get("activation_is_ancestor_of_evidence_repair") is not True
+        or sequence.get("evidence_repair_is_ancestor_of_patch") is not True
     ):
         raise DevelopmentRuntimePatchError("E0-DLP publication chronology drifted")
     _validate_git_diff_payload(
@@ -2906,11 +2964,18 @@ def _validate_publication_sequence_payload(payload: Mapping[str, Any]) -> None:
         modified_paths=frozenset(PATCH_ACTIVATION_PATHS),
     )
     _validate_git_diff_payload(
-        cast(Mapping[str, Any], sequence["activation_to_patch"]),
+        cast(Mapping[str, Any], sequence["activation_to_evidence_repair"]),
         base_commit=activation_head,
-        patch_head=patch_head,
+        patch_head=evidence_repair_head,
         paths=PATCH_REPAIR_PATHS,
         modified_paths=frozenset(PATCH_REPAIR_PATHS),
+    )
+    _validate_git_diff_payload(
+        cast(Mapping[str, Any], sequence["evidence_repair_to_patch"]),
+        base_commit=evidence_repair_head,
+        patch_head=patch_head,
+        paths=PATCH_GUARD_HARNESS_PATHS,
+        modified_paths=frozenset(PATCH_GUARD_HARNESS_PATHS),
     )
     _validate_git_diff_payload(
         cast(Mapping[str, Any], sequence["base_to_patch"]),
@@ -2942,6 +3007,13 @@ def validate_development_runtime_patch_lock_payload(
         raise DevelopmentRuntimePatchError("E0-DLP audit seals drifted")
     if payload.get("implementation_erratum") != PATCH_IMPLEMENTATION_ERRATUM:
         raise DevelopmentRuntimePatchError("E0-DLP implementation erratum drifted")
+    if (
+        payload.get("verification_harness_erratum")
+        != PATCH_VERIFICATION_HARNESS_ERRATUM
+    ):
+        raise DevelopmentRuntimePatchError(
+            "E0-DLP verification-harness erratum drifted"
+        )
     if payload.get("compatibility_corrections") != compatibility_correction_records():
         raise DevelopmentRuntimePatchError("E0-DLP compatibility corrections drifted")
     if payload.get("patch_lock_artifact") != patch_lock_artifact_record():
@@ -3443,7 +3515,7 @@ def _validate_patch_publication_bundle(
     ancestry = _git("rev-list", "--parents", "-n", "1", lock_commit).split()
     if ancestry != [lock_commit, patch_head]:
         raise DevelopmentRuntimePatchError(
-            "P-DLP must be a direct non-merge child of R-DLP"
+            "P-DLP must be a direct non-merge child of G-DLP"
         )
     expected_publication_paths = tuple(sorted((lock_path, companion_path)))
     _git_diff_exact(
@@ -3773,7 +3845,9 @@ def load_and_validate_development_runtime_patch_lock(
         raise DevelopmentRuntimePatchError("E0-DLP patch component records changed")
     publication_sequence = _publication_sequence(str(base["lock_commit"]), patch_head)
     if payload.get("publication_sequence") != publication_sequence:
-        raise DevelopmentRuntimePatchError("E0-DLP A/H/R publication sequence changed")
+        raise DevelopmentRuntimePatchError(
+            "E0-DLP A/H/R/G publication sequence changed"
+        )
     if payload.get("git_diff") != publication_sequence["base_to_patch"]:
         raise DevelopmentRuntimePatchError("E0-DLP Git diff changed")
     runtime = cast(Mapping[str, Any], base_physical["runtime"])

@@ -1,11 +1,12 @@
 # Closure V1 E0-D Runtime Patch 1
 
-Status: closed implementation contract v1.1, effective only after P-DLP
+Status: closed implementation contract v1.2, effective only after P-DLP
 publication, identified as `E0-DLP`. It is a consumer-dialect correction plus
-the append-only R-DLP portable-evidence erratum layered on the published E0-DL
-lock. The erratum is not a fourth runtime-compatibility correction. This
-contract does not replace E0-DL or E0-M and does not authorize evaluation,
-E0-U, holdout access, or post-2021 outcome access.
+the append-only R-DLP portable-evidence erratum and G-DLP guard-harness
+isolation erratum layered on the published E0-DL lock. Neither erratum is a
+fourth runtime-compatibility correction. This contract does not replace E0-DL
+or E0-M and does not authorize evaluation, E0-U, holdout access, or post-2021
+outcome access.
 
 ## Purpose And Incident Classification
 
@@ -55,6 +56,17 @@ a fresh clone nor scientific evidence. R-DLP removes that predicate and
 replaces it with the Git-locked producer control flow plus the frozen
 content-addressed bundle. This changes no runtime decision, seed artifact,
 timestamp, DVC object, scientific result, or outcome-access boundary.
+
+After R-DLP was published, P-DLP check-only passed. The first real P-DLP gate
+then exposed a verification-harness collision: the production locker correctly
+held both output guards while executing the fixed focal suite, but
+`test_output_guards_do_not_change_real_git_status` tried to acquire those same
+default guard paths from the nested pytest process. The suite failed before
+DVC verification and before either output was written; the outer locker
+released its own guards and left a clean tree. G-DLP isolates only that test's
+ignored `tmp/` namespace. It does not make production guards reentrant, release
+them early, reorder the locker, skip a test, or change the fixed 231-test
+command.
 
 ## Immutable Authorities And Frozen Evidence
 
@@ -217,6 +229,11 @@ tests/test_closure_development_runtime_patch.py
 R-DLP is therefore four modifications relative to H-DLP while the aggregate
 `L..R-DLP` inventory remains the same `23` unique paths.
 
+G-DLP modifies exactly those same four already introduced paths. It changes no
+locker source and adds no path. G-DLP is therefore four modifications relative
+to R-DLP while the aggregate `L..G-DLP` inventory remains the same `23` unique
+paths.
+
 The only new P-DLP artifacts are:
 
 ```text
@@ -297,7 +314,7 @@ topology, and the exact `19 + 4 + 4` publication sequence. Since the four R-DLP
 paths were introduced in A-DLP, the aggregate `L..R-DLP` diff remains exactly
 the same 23-path A/M inventory.
 
-The v1.1 lock records an explicit implementation erratum classified as
+The v1.1 contract introduced an explicit implementation erratum classified as
 `reproducibility_evidence_correction_only`. It supersedes only
 `workspace_filesystem_mtime_order_v1` and requires
 `filesystem_mtime_used=false`. The replacement evidence verifies the exact
@@ -311,11 +328,37 @@ R-DLP adds no fourth runtime correction, changes no authorization or seal, and
 does not run a fit, DVC operation, sequence builder, training job, rollout, or
 outcome read. It must retain the exact `231`-test focal suite, pass the full
 type check and repository publication assistant, and be published cleanly
-before P-DLP check-only or generation is retried.
+before G-DLP is prepared.
+
+### G-DLP: Nested Guard-Harness Isolation
+
+G-DLP is a direct non-merge child of R-DLP commit
+`65f169bf3357a9a3b9aaee19883d33b5fb0278d0`. It modifies exactly the same four
+contract paths as R-DLP and preserves the complete direct-parent sequence
+`L -> A-DLP -> H-DLP -> R-DLP -> G-DLP`. The segment cardinalities are
+`19 + 4 + 4 + 4`; because R-DLP and G-DLP modify the same paths introduced in
+A-DLP, the aggregate `L..G-DLP` inventory remains exactly 23 paths.
+
+The v1.2 lock records
+`nested_guard_regression_namespace_collision_1` as a
+`verification_harness_isolation_correction_only` erratum. The existing test
+uses a unique digest-derived output and guard namespace directly under the
+ignored repository `tmp/` root, verifies the real Git status before and during
+guard ownership, confirms that any live production-guard entries are
+unchanged, releases only its own inodes, and removes its empty namespaces. The
+digest is not persisted and exposes no local path.
+
+Production continues to use `tmp/closure_v1_e0_dlp_locker`; both production
+guards remain exclusive and held for the entire gate. G-DLP does not modify
+the locker source or execution order, does not change the fixed focal command
+or its exact `231` count, and does not skip or weaken any guard regression. The
+failed pre-G attempt wrote no outputs and did not reach DVC. G-DLP changes no
+scientific contract, artifact, DVC owner, authorization, seal, or outcome
+access.
 
 ### P-DLP: External Patch Lock
 
-Only after R-DLP is clean and published may the external locker generate
+Only after G-DLP is clean and published may the external locker generate
 `development_runtime_patch_lock.json` and its lightweight publication
 manifest. The locker is one-shot and outcome-blind. It must refuse either
 existing final, either temporary path (including broken symlinks), any
@@ -333,19 +376,20 @@ links. On failure it removes only output inodes created by that invocation.
 P-DLP must bind:
 
 - the exact E0-DL path, version, SHA-256, locked head, and publication commit;
-- A-DLP, H-DLP, and R-DLP's exact direct-parent topology from `L`, R-DLP's
-  canonical origin identity, live publication reference, and clean tracked
-  state;
+- A-DLP, H-DLP, R-DLP, and G-DLP's exact direct-parent topology from `L`,
+  G-DLP's canonical origin identity, live publication reference, and clean
+  tracked state;
 - the complete closed path sets and their current Git/physical hashes;
 - the three exact runtime-compatibility corrections and their regression
   evidence;
 - all fourteen frozen seed `1729` file records and the portable
   content-addressed completion-order evidence;
+- both implementation errata and the preserved production-guard semantics;
 - the unchanged scientific anchors and authorization boundaries; and
 - every seal in the next section.
 
 The generated pair must be reviewed and committed as one direct, non-merge
-child of R-DLP. That P-DLP commit contains exactly two additions—the lock and
+child of G-DLP. That P-DLP commit contains exactly two additions—the lock and
 its companion—and no modification or unrelated file. Both must be regular
 files, no descendant commit may touch either path, and their bytes must remain
 identical in P-DLP, current HEAD, local `origin/main`, and the live remote.
@@ -416,9 +460,9 @@ credential, token, bucket name, local configuration, or secret.
 The base seal `external_lock_bundle_committed_before_fit=true` remains a true
 historical assertion about E0-DL at `L`. E0-DLP must record the later chronology
 honestly: the frozen seed `1729` producer bundle was completed under `L` before
-the consumer incident was discovered; H-DLP, R-DLP, and P-DLP are published
-after that bundle and before any affected consumer or subsequent fit is allowed
-to run.
+the consumer incident was discovered; H-DLP, R-DLP, G-DLP, and P-DLP are
+published after that bundle and before any affected consumer or subsequent fit
+is allowed to run.
 The patch must never recast P-DLP as a pre-fit authority for the already
 completed seed.
 
