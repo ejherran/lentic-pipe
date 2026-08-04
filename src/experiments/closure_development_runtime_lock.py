@@ -2593,6 +2593,29 @@ def load_and_validate_development_runtime_lock(
     manifests, DVC pointers, and the snapshot recorded at locked H.  It never
     turns the payload's authorization declaration into effective fit authority.
     """
+    default_paths = (
+        (lock_path, DEFAULT_LOCK_PATH),
+        (lock_schema, DEFAULT_LOCK_SCHEMA),
+        (runtime_config, DEFAULT_RUNTIME_CONFIG),
+        (runtime_schema, DEFAULT_RUNTIME_SCHEMA),
+    )
+    if all(
+        _resolve_repo_path(observed) == _resolve_repo_path(expected)
+        for observed, expected in default_paths
+    ):
+        from src.experiments.closure_development_runtime_patch import (  # noqa: PLC0415
+            load_and_validate_development_runtime_patch_lock,
+        )
+
+        return load_and_validate_development_runtime_patch_lock(
+            base_lock_path=lock_path,
+            base_lock_schema=lock_schema,
+            runtime_config=runtime_config,
+            runtime_schema=runtime_schema,
+            device=device,
+            require_published=require_published,
+            require_physical_artifacts=require_physical_artifacts,
+        )
     if not _resolve_repo_path(lock_path).is_file():
         raise DevelopmentRuntimeLockError(f"E0-DL lock is absent: {_canonical_repo_path(lock_path)}")
     payload = load_json_mapping(lock_path)

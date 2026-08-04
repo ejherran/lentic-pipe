@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 from src.experiments import closure_development_runtime_lock as runtime_lock
+from src.experiments import closure_development_runtime_patch as runtime_patch
 from src.experiments.closure_contract import load_json_mapping
 from src.experiments.closure_development_runtime_lock import (
     DEFAULT_LOCK_SCHEMA,
@@ -495,35 +496,43 @@ def test_lock_validator_rejects_duplicate_or_unsorted_planned_paths() -> None:
         )
 
 
-def test_required_fit_gate_fails_closed_while_external_lock_is_absent(
-    tmp_path: Path,
+def test_required_fit_gate_fails_closed_while_external_patch_lock_is_absent(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    missing = tmp_path / "absent_runtime_lock.json"
-    monkeypatch.setattr(runtime_lock, "_resolve_repo_path", lambda _: missing)
-    monkeypatch.setattr(
-        runtime_lock,
-        "_canonical_repo_path",
-        lambda _: "reports/closure_v1/00_protocol/absent_runtime_lock.json",
-    )
-    monkeypatch.setattr(
-        runtime_lock,
-        "load_yaml_mapping",
-        lambda _: {
-            "implementation_lock": {
-                "lock_manifest_path": "reports/closure_v1/00_protocol/absent_runtime_lock.json",
-                "lock_schema_path": "configs/closure_v1/development_runtime_lock.schema.json",
-            }
-        },
-    )
+    runtime = {
+        "implementation_lock": {
+            "lock_manifest_path": runtime_lock.DEFAULT_LOCK_PATH.as_posix(),
+            "lock_schema_path": runtime_lock.DEFAULT_LOCK_SCHEMA.as_posix(),
+        }
+    }
+    monkeypatch.setattr(runtime_lock, "load_yaml_mapping", lambda _: runtime)
     monkeypatch.setattr(
         runtime_lock,
         "configure_torch_cpu_execution_policy",
         lambda runtime: {},
     )
+    calls: list[dict[str, Any]] = []
 
-    with pytest.raises(DevelopmentRuntimeLockError, match="lock is absent"):
+    def absent_patch(
+        *args: Any,
+        **kwargs: Any,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        assert args == ()
+        calls.append(kwargs)
+        raise runtime_patch.DevelopmentRuntimePatchError("E0-DLP lock is absent")
+
+    monkeypatch.setattr(
+        runtime_patch,
+        "load_and_validate_development_runtime_patch_lock",
+        absent_patch,
+    )
+
+    with pytest.raises(
+        runtime_patch.DevelopmentRuntimePatchError,
+        match="lock is absent",
+    ):
         require_development_fit_authorized()
+    assert len(calls) == 1
 
 
 def test_required_fit_gate_returns_only_validated_development_authorization(
@@ -550,6 +559,8 @@ def test_required_fit_gate_returns_only_validated_development_authorization(
         "development_fit_authorized": True,
         "evaluation_authorized": False,
         "e0_u_authorized": False,
+        "future_outcomes_accessed": False,
+        "published_ref": "origin/main",
     }
     monkeypatch.setattr(runtime_lock, "load_yaml_mapping", lambda _: runtime)
     monkeypatch.setattr(
@@ -557,13 +568,34 @@ def test_required_fit_gate_returns_only_validated_development_authorization(
         "configure_torch_cpu_execution_policy",
         lambda runtime: {},
     )
+    calls: list[dict[str, Any]] = []
+
+    def load_patch(
+        *args: Any,
+        **kwargs: Any,
+    ) -> tuple[dict[str, Any], dict[str, Any]]:
+        assert args == ()
+        calls.append(kwargs)
+        return {}, expected
+
     monkeypatch.setattr(
-        runtime_lock,
-        "load_and_validate_development_runtime_lock",
-        lambda *args, **kwargs: ({}, expected),
+        runtime_patch,
+        "load_and_validate_development_runtime_patch_lock",
+        load_patch,
     )
 
     assert require_development_fit_authorized(device="cpu") == expected
+    assert calls == [
+        {
+            "base_lock_path": runtime_lock.DEFAULT_LOCK_PATH,
+            "base_lock_schema": runtime_lock.DEFAULT_LOCK_SCHEMA,
+            "runtime_config": runtime_lock.DEFAULT_RUNTIME_CONFIG,
+            "runtime_schema": runtime_lock.DEFAULT_RUNTIME_SCHEMA,
+            "device": "cpu",
+            "require_published": True,
+            "require_physical_artifacts": True,
+        }
+    ]
 
 
 def test_required_fit_gate_rejects_validator_summary_that_opens_evaluation(
@@ -598,8 +630,8 @@ def test_required_fit_gate_rejects_validator_summary_that_opens_evaluation(
         lambda runtime: {},
     )
     monkeypatch.setattr(
-        runtime_lock,
-        "load_and_validate_development_runtime_lock",
+        runtime_patch,
+        "load_and_validate_development_runtime_patch_lock",
         lambda *args, **kwargs: ({}, summary),
     )
 

@@ -290,6 +290,13 @@ def test_slot_sampling_preflights_all_modules_before_any_fit() -> None:
 
 
 def test_only_primary_no_current_modules_are_registered() -> None:
+    artifact_tokens = anfis_adapter.ANFIS_MODULE_ARTIFACT_TOKENS
+    assert artifact_tokens == {
+        "ANFIS-N": "anfis_n",
+        "ANFIS-F": "anfis_f",
+        "ANFIS-T-no-current": "anfis_t_no_current",
+    }
+    assert tuple(artifact_tokens) == anfis_adapter.PRIMARY_MODULES
     for module in anfis_adapter.PRIMARY_MODULES:
         features, target = anfis_adapter._module_contract(_runtime(), module)
         assert features
@@ -297,6 +304,37 @@ def test_only_primary_no_current_modules_are_registered() -> None:
 
     with pytest.raises(ClosureRuntimeContractError, match="Unregistered primary"):
         anfis_adapter._module_contract(_runtime(), "ANFIS-T")
+
+    paths = anfis_adapter._slot_paths(_runtime(), 20260612)
+    model_paths = {
+        module: path.relative_to(anfis_adapter.PROJECT_ROOT).as_posix()
+        for module, path in paths["models"].items()
+    }
+    sample_paths = {
+        module: path.relative_to(anfis_adapter.PROJECT_ROOT).as_posix()
+        for module, path in paths["samples"].items()
+    }
+    assert model_paths == {
+        "ANFIS-N": "models/closure_v1/anfis/seed_20260612/anfis_n.pt",
+        "ANFIS-F": "models/closure_v1/anfis/seed_20260612/anfis_f.pt",
+        "ANFIS-T-no-current": (
+            "models/closure_v1/anfis/seed_20260612/anfis_t_no_current.pt"
+        ),
+    }
+    assert sample_paths == {
+        "ANFIS-N": (
+            "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_n_sample_keys.csv"
+        ),
+        "ANFIS-F": (
+            "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_f_sample_keys.csv"
+        ),
+        "ANFIS-T-no-current": (
+            "reports/closure_v1/01_surface/anfis/seed_20260612/"
+            "anfis_t_no_current_sample_keys.csv"
+        ),
+    }
+    rendered_module_paths = (*model_paths.values(), *sample_paths.values())
+    assert not any("ANFIS-" in path for path in rendered_module_paths)
 
 
 def test_prediction_uncertainty_uses_raw_module_firing_and_missingness() -> None:

@@ -78,6 +78,11 @@ MANIFEST_VERSION = "closure_anfis_seed_manifest_v1"
 LINEAGE_AUDIT_VERSION = "closure_anfis_seed_lineage_v1"
 KEY_COLUMNS = ("source_id", "site_id", "year_month")
 PRIMARY_MODULES = ("ANFIS-N", "ANFIS-F", "ANFIS-T-no-current")
+ANFIS_MODULE_ARTIFACT_TOKENS = {
+    "ANFIS-N": "anfis_n",
+    "ANFIS-F": "anfis_f",
+    "ANFIS-T-no-current": "anfis_t_no_current",
+}
 MODULE_OUTPUTS: dict[str, tuple[str, str]] = {
     "ANFIS-N": ("yN_adaptive", "sigma_N_adaptive"),
     "ANFIS-F": ("yF_adaptive", "sigma_F_adaptive"),
@@ -913,7 +918,7 @@ def _slot_paths(runtime: Mapping[str, Any], base_seed: int) -> dict[str, Any]:
         module: resolve_repo_path(
             str(artifacts["anfis_model_template"]).format(
                 base_seed=base_seed,
-                module=module,
+                module=ANFIS_MODULE_ARTIFACT_TOKENS[module],
             )
         )
         for module in PRIMARY_MODULES
@@ -922,7 +927,7 @@ def _slot_paths(runtime: Mapping[str, Any], base_seed: int) -> dict[str, Any]:
         module: resolve_repo_path(
             str(artifacts["anfis_sample_keys_template"]).format(
                 base_seed=base_seed,
-                module=module,
+                module=ANFIS_MODULE_ARTIFACT_TOKENS[module],
             )
         )
         for module in PRIMARY_MODULES
