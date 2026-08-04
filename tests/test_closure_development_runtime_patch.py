@@ -34,6 +34,7 @@ HEAD_B = "d" * 40
 ADOPTION_HEAD = runtime_patch.EXPECTED_ADOPTION_HEAD
 ACTIVATION_HEAD = runtime_patch.EXPECTED_ACTIVATION_HEAD
 EVIDENCE_REPAIR_HEAD = runtime_patch.EXPECTED_EVIDENCE_REPAIR_HEAD
+GUARD_HARNESS_HEAD = runtime_patch.EXPECTED_GUARD_HARNESS_HEAD
 BASE_LOCK_COMMIT = "e7becdd5553decc92bbcf0af4cede7425ed12546"
 BASE_LOCKED_HEAD = "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3"
 BASE_LOCK_SHA256 = "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
@@ -376,7 +377,7 @@ def _payload() -> dict[str, Any]:
         "only_allowed_additions_and_modifications": True,
     }
     return {
-        "lock_version": "closure_development_runtime_patch_lock_v1_2",
+        "lock_version": "closure_development_runtime_patch_lock_v1_3",
         "status": "locked",
         "gate": "E0-DLP",
         "experiment_id": "closure_v1",
@@ -427,14 +428,17 @@ def _payload() -> dict[str, Any]:
             "adoption_head": ADOPTION_HEAD,
             "activation_head": ACTIVATION_HEAD,
             "evidence_repair_head": EVIDENCE_REPAIR_HEAD,
+            "guard_harness_head": GUARD_HARNESS_HEAD,
             "patch_head": HEAD_B,
             "adoption_is_direct_first_parent_of_activation": True,
             "activation_is_direct_first_parent_of_evidence_repair": True,
-            "evidence_repair_is_direct_first_parent_of_patch": True,
+            "evidence_repair_is_direct_first_parent_of_guard_harness": True,
+            "guard_harness_is_direct_first_parent_of_patch": True,
             "base_is_ancestor_of_adoption": True,
             "adoption_is_ancestor_of_activation": True,
             "activation_is_ancestor_of_evidence_repair": True,
-            "evidence_repair_is_ancestor_of_patch": True,
+            "evidence_repair_is_ancestor_of_guard_harness": True,
+            "guard_harness_is_ancestor_of_patch": True,
             "base_to_adoption": {
                 "base_commit": BASE_LOCK_COMMIT,
                 "patch_head": ADOPTION_HEAD,
@@ -480,9 +484,9 @@ def _payload() -> dict[str, Any]:
                 ),
                 "only_allowed_additions_and_modifications": True,
             },
-            "evidence_repair_to_patch": {
+            "evidence_repair_to_guard_harness": {
                 "base_commit": EVIDENCE_REPAIR_HEAD,
-                "patch_head": HEAD_B,
+                "patch_head": GUARD_HARNESS_HEAD,
                 "entries": [
                     {"status": "M", "path": path}
                     for path in runtime_patch.PATCH_GUARD_HARNESS_PATHS
@@ -490,6 +494,19 @@ def _payload() -> dict[str, Any]:
                 "paths": list(runtime_patch.PATCH_GUARD_HARNESS_PATHS),
                 "paths_sha256": _path_digest(
                     list(runtime_patch.PATCH_GUARD_HARNESS_PATHS)
+                ),
+                "only_allowed_additions_and_modifications": True,
+            },
+            "guard_harness_to_patch": {
+                "base_commit": GUARD_HARNESS_HEAD,
+                "patch_head": HEAD_B,
+                "entries": [
+                    {"status": "M", "path": path}
+                    for path in runtime_patch.PATCH_TEMPORAL_ANCHOR_PATHS
+                ],
+                "paths": list(runtime_patch.PATCH_TEMPORAL_ANCHOR_PATHS),
+                "paths_sha256": _path_digest(
+                    list(runtime_patch.PATCH_TEMPORAL_ANCHOR_PATHS)
                 ),
                 "only_allowed_additions_and_modifications": True,
             },
@@ -543,6 +560,7 @@ def _payload() -> dict[str, Any]:
         "verification_harness_erratum": dict(
             runtime_patch.PATCH_VERIFICATION_HARNESS_ERRATUM
         ),
+        "state_audit_erratum": dict(runtime_patch.PATCH_STATE_AUDIT_ERRATUM),
         "compatibility_corrections": [
             {
                 "issue_id": "published_ref_compatibility_patch_1",
@@ -619,7 +637,7 @@ def _payload() -> dict[str, Any]:
             "state_audit": {
                 "rows": 42_110,
                 "locations": 353,
-                "minimum_year_month": "2000-01",
+                "minimum_year_month": "1970-10",
                 "maximum_year_month": "2021-12",
                 "role_counts": {
                     "training": 36_639,
@@ -809,6 +827,7 @@ def _payload() -> dict[str, Any]:
             "seed_1729_bundle_verified": True,
             "content_addressed_completion_order_evidence_verified": True,
             "nested_guard_regression_namespace_isolation_verified": True,
+            "frozen_seed_state_minimum_month_verified": True,
             "seed_1729_preserved_without_rematerialization": True,
             "dvc_ownership_verified": True,
             "dvc_remote_verified_at_patch": True,
@@ -891,7 +910,50 @@ def test_patch_lock_semantic_validator_accepts_closed_fixture(
         "_validate_base_models_tree_identity",
         lambda _entries: None,
     )
+    base_lock = load_json_mapping(
+        Path("reports/closure_v1/00_protocol/development_runtime_lock.json")
+    )
+    expert_lineage = load_json_mapping(
+        Path(
+            "reports/closure_v1/01_surface/expert/"
+            "expert_no_current_state_lineage_audit.json"
+        )
+    )
+    state_audit = payload["adopted_seed_bundle"]["state_audit"]
+    schema_minimum = schema["$defs"]["stateAudit"]["properties"][
+        "minimum_year_month"
+    ]["const"]
+    base_minimum = base_lock["expert_state"]["semantic_audit"][
+        "minimum_year_month"
+    ]
+    sample_keys = Path(
+        "reports/closure_v1/01_surface/anfis/seed_1729/"
+        "ANFIS-T-no-current_sample_keys.csv"
+    ).read_text(encoding="utf-8")
+    assert (
+        runtime_patch.EXPECTED_SEED_STATE_MINIMUM_YEAR_MONTH
+        == state_audit["minimum_year_month"]
+        == schema_minimum
+        == base_minimum
+        == expert_lineage["minimum_year_month"]
+        == "1970-10"
+    )
+    assert ",1970-10," in sample_keys
+    runtime_patch._validate_seed_state_audit_payload(
+        state_audit,
+        base_snapshot={"payload": base_lock},
+    )
     validate_development_runtime_patch_lock_payload(payload, schema)
+
+    rejected = copy.deepcopy(payload)
+    rejected_audit = rejected["adopted_seed_bundle"]["state_audit"]
+    rejected_audit["minimum_year_month"] = "2000-01"
+    with pytest.raises(DevelopmentRuntimePatchError, match="published anchors"):
+        runtime_patch._validate_seed_state_audit_payload(
+            rejected_audit,
+            base_snapshot={"payload": base_lock},
+        )
+    _assert_rejected(rejected, schema)
 
 
 @pytest.mark.parametrize("index", range(6))
@@ -1067,7 +1129,7 @@ def test_patch_lock_semantics_reject_derived_dvc_or_state_drift(
             SHA_B
         )
     elif mutation == "publication_diff":
-        mutated["publication_sequence"]["evidence_repair_to_patch"]["entries"][0][
+        mutated["publication_sequence"]["guard_harness_to_patch"]["entries"][0][
             "status"
         ] = "A"
     else:  # pragma: no cover - parametrization is closed above
@@ -1214,6 +1276,7 @@ def test_publication_path_cardinalities_are_closed() -> None:
     assert len(runtime_patch.PATCH_ACTIVATION_PATHS) == 4
     assert len(runtime_patch.PATCH_REPAIR_PATHS) == 4
     assert len(runtime_patch.PATCH_GUARD_HARNESS_PATHS) == 4
+    assert len(runtime_patch.PATCH_TEMPORAL_ANCHOR_PATHS) == 4
     assert len(runtime_patch.PATCH_PARENT_DIFF_ALLOWLIST) == 23
     assert set(runtime_patch.PATCH_ACTIVATION_PATHS).isdisjoint(
         runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST
@@ -1226,6 +1289,9 @@ def test_publication_path_cardinalities_are_closed() -> None:
     )
     assert set(runtime_patch.PATCH_GUARD_HARNESS_PATHS) == set(
         runtime_patch.PATCH_REPAIR_PATHS
+    )
+    assert set(runtime_patch.PATCH_TEMPORAL_ANCHOR_PATHS) == set(
+        runtime_patch.PATCH_GUARD_HARNESS_PATHS
     )
 
 

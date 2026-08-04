@@ -1,12 +1,12 @@
 # Closure V1 E0-D Runtime Patch 1
 
-Status: closed implementation contract v1.2, effective only after P-DLP
+Status: closed implementation contract v1.3, effective only after P-DLP
 publication, identified as `E0-DLP`. It is a consumer-dialect correction plus
 the append-only R-DLP portable-evidence erratum and G-DLP guard-harness
-isolation erratum layered on the published E0-DL lock. Neither erratum is a
-fourth runtime-compatibility correction. This contract does not replace E0-DL
-or E0-M and does not authorize evaluation, E0-U, holdout access, or post-2021
-outcome access.
+isolation erratum, followed by the T-DLP frozen-state temporal-anchor erratum,
+layered on the published E0-DL lock. None is a fourth runtime-compatibility
+correction. This contract does not replace E0-DL or E0-M and does not authorize
+evaluation, E0-U, holdout access, or post-2021 outcome access.
 
 ## Purpose And Incident Classification
 
@@ -67,6 +67,26 @@ released its own guards and left a clean tree. G-DLP isolates only that test's
 ignored `tmp/` namespace. It does not make production guards reentrant, release
 them early, reorder the locker, skip a test, or change the fixed 231-test
 command.
+
+After G-DLP was published, its check-only audit passed. The second real
+`--execute-lock` attempt toward P-DLP advanced to final in-memory patch-lock
+schema validation and stopped because the physical seed-state audit reported
+`minimum_year_month=1970-10`, while the v1.2 schema, semantic validator, and
+synthetic fixture incorrectly required `2000-01`. No P-DLP lock or companion
+was written, retained, committed, or published. The rejected in-memory payload
+and raw verification subprocess output were not persisted and are not treated
+as versioned evidence. Under the sealed locker control flow, reaching final
+schema validation implies that the preceding type check, focal suite, DVC
+verifier, and second prelock collection returned; this contract records that
+control-flow implication without reconstructing unpersisted stdout or stderr
+hashes and without claiming a remote upload.
+
+This was not data drift. The published E0-DL lock and expert-state lineage
+already bind `1970-10`, and the frozen ANFIS-T sample-key artifact contains a
+`1970-10` key. T-DLP corrects only the false v1.2 metadata anchor and moves its
+exact validation into the check-only prelock path. It does not filter rows,
+rewrite the state, change DVC ownership, alter the audit algorithm, or change
+any scientific, authorization, or outcome-access boundary.
 
 ## Immutable Authorities And Frozen Evidence
 
@@ -234,6 +254,11 @@ locker source and adds no path. G-DLP is therefore four modifications relative
 to R-DLP while the aggregate `L..G-DLP` inventory remains the same `23` unique
 paths.
 
+T-DLP modifies exactly those same four contract paths once more. It changes no
+locker source and adds no path. T-DLP is therefore four modifications relative
+to G-DLP while the aggregate `L..T-DLP` inventory remains the same `23` unique
+paths.
+
 The only new P-DLP artifacts are:
 
 ```text
@@ -356,9 +381,37 @@ failed pre-G attempt wrote no outputs and did not reach DVC. G-DLP changes no
 scientific contract, artifact, DVC owner, authorization, seal, or outcome
 access.
 
+### T-DLP: Frozen-State Temporal-Anchor Erratum
+
+T-DLP is a direct non-merge child of G-DLP commit
+`5580343cd7d4ecf215f1fb638633106b7aaf0f92`. It modifies exactly the schema,
+protocol document, patch validator, and patch-validator test already modified
+by R-DLP and G-DLP. It preserves the complete direct-parent sequence
+`L -> A-DLP -> H-DLP -> R-DLP -> G-DLP -> T-DLP`. The segment cardinalities
+are `19 + 4 + 4 + 4 + 4`; because every post-H erratum modifies the same four
+paths introduced in A-DLP, the aggregate `L..T-DLP` inventory remains exactly
+23 paths.
+
+The v1.3 lock records `seed_state_minimum_year_month_anchor_drift_1` as a
+`frozen_metadata_anchor_correction_only` erratum. It supersedes only the
+unsupported synthetic value `2000-01` with the authoritative `1970-10` bound.
+The authority is the published E0-DL expert-state semantic audit, its public
+lineage audit, and the frozen ANFIS-T sample-key evidence. The exact physical
+seed-state audit is checked against those anchors during prelock collection,
+so `--check-only` now fails before type checking, pytest, or DVC if they ever
+diverge again. Final payload validation reuses the same closed audit helper.
+
+T-DLP changes neither the physical audit algorithm nor any state byte,
+timestamp, row selection, DVC pointer, DVC owner, locker source, locker order,
+fixed test command, authorization, seal, or outcome boundary. The focal suite
+remains exactly 231 tests. The failed attempt toward P-DLP reached final schema
+validation but persisted no payload, raw subprocess log, lock, or companion.
+Its DVC-verifier return is recorded only as an implication of the sealed locker
+control flow; no remote-upload claim is reconstructed.
+
 ### P-DLP: External Patch Lock
 
-Only after G-DLP is clean and published may the external locker generate
+Only after T-DLP is clean and published may the external locker generate
 `development_runtime_patch_lock.json` and its lightweight publication
 manifest. The locker is one-shot and outcome-blind. It must refuse either
 existing final, either temporary path (including broken symlinks), any
@@ -376,20 +429,20 @@ links. On failure it removes only output inodes created by that invocation.
 P-DLP must bind:
 
 - the exact E0-DL path, version, SHA-256, locked head, and publication commit;
-- A-DLP, H-DLP, R-DLP, and G-DLP's exact direct-parent topology from `L`,
-  G-DLP's canonical origin identity, live publication reference, and clean
+- A-DLP, H-DLP, R-DLP, G-DLP, and T-DLP's exact direct-parent topology from
+  `L`, T-DLP's canonical origin identity, live publication reference, and clean
   tracked state;
 - the complete closed path sets and their current Git/physical hashes;
 - the three exact runtime-compatibility corrections and their regression
   evidence;
 - all fourteen frozen seed `1729` file records and the portable
   content-addressed completion-order evidence;
-- both implementation errata and the preserved production-guard semantics;
+- all three errata and the preserved production-guard semantics;
 - the unchanged scientific anchors and authorization boundaries; and
 - every seal in the next section.
 
 The generated pair must be reviewed and committed as one direct, non-merge
-child of G-DLP. That P-DLP commit contains exactly two additions—the lock and
+child of T-DLP. That P-DLP commit contains exactly two additions—the lock and
 its companion—and no modification or unrelated file. Both must be regular
 files, no descendant commit may touch either path, and their bytes must remain
 identical in P-DLP, current HEAD, local `origin/main`, and the live remote.
@@ -460,9 +513,9 @@ credential, token, bucket name, local configuration, or secret.
 The base seal `external_lock_bundle_committed_before_fit=true` remains a true
 historical assertion about E0-DL at `L`. E0-DLP must record the later chronology
 honestly: the frozen seed `1729` producer bundle was completed under `L` before
-the consumer incident was discovered; H-DLP, R-DLP, G-DLP, and P-DLP are
-published after that bundle and before any affected consumer or subsequent fit
-is allowed to run.
+the consumer incident was discovered; H-DLP, R-DLP, G-DLP, T-DLP, and P-DLP
+are published after that bundle and before any affected consumer or subsequent
+fit is allowed to run.
 The patch must never recast P-DLP as a pre-fit authority for the already
 completed seed.
 
