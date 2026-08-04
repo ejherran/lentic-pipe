@@ -1,0 +1,66 @@
+{
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock.json",
+  "created_at_utc": "2026-08-04T23:28:41.651068Z",
+  "development_fit_authorized": true,
+  "e0_u_authorized": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-DLT",
+  "inputs": [
+    {
+      "bytes": 24976,
+      "path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock.json",
+      "role": "base_development_runtime_sequence_patch_lock",
+      "sha256": "0e04e25c793aeba473cde7a55697172cda379aa55cf3ddb0d1ffce678db3bd61"
+    },
+    {
+      "bytes": 1853,
+      "path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock_manifest.json",
+      "role": "base_development_runtime_sequence_patch_companion",
+      "sha256": "71f6e0a9cf03c2798c730129fe154f879a7ae21279196582c420a01ec4c7b086"
+    },
+    {
+      "bytes": 16685,
+      "path": "configs/closure_v1/development_runtime_temporal_consumer_patch_lock.schema.json",
+      "role": "temporal_consumer_patch_lock_schema",
+      "sha256": "1a2e2b147a7af90d6c4749dcd4b2954e0fdedd2327c43d0705f020e258699185"
+    },
+    {
+      "bytes": 58977,
+      "path": "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
+      "role": "temporal_consumer_patch_validator",
+      "sha256": "6bb6862db5e8f2f709432edd3d2ae1b96be6531152db2ea79407045e5dfe2791"
+    },
+    {
+      "bytes": 108,
+      "path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet.dvc",
+      "role": "published_p0_sequence_dvc_pointer",
+      "sha256": "955ea4612f2fa705d05aac7e325db57ba728ef319536c1184528b8f02a54196a"
+    },
+    {
+      "bytes": 5954,
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+      "role": "published_p0_sequence_manifest",
+      "sha256": "ec5c4a88eeb44c431484bced3053adf4f2824cda3db2a60ab9719f7be2f310fc"
+    }
+  ],
+  "manifest_version": "closure_development_runtime_temporal_consumer_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 37435,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock.json",
+      "role": "external_development_runtime_temporal_consumer_patch_lock",
+      "sha256": "acde72b2de683b452c99799cbe5024a38397386e806e31469a3ada4a9cd9a0e7"
+    }
+  ],
+  "patch_id": "development_runtime_temporal_consumer_atomicity_patch_1",
+  "script": {
+    "bytes": 32664,
+    "path": "src/experiments/lock_closure_development_runtime_temporal_consumer_patch.py",
+    "role": "generating_script",
+    "sha256": "906728e7ef04dfd82e3489f3df5ab4f6d31b3a6b0f7f4a45e6b78ab5c6c6e06d"
+  },
+  "status": "completed"
+}
