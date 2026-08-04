@@ -1,0 +1,48 @@
+{
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock.json",
+  "created_at_utc": "2026-08-04T16:52:09.950637Z",
+  "development_fit_authorized": true,
+  "e0_u_authorized": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-DLS",
+  "inputs": [
+    {
+      "bytes": 92714,
+      "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json",
+      "role": "base_development_runtime_patch_lock",
+      "sha256": "d15a471ca293de0b48e5b52c1b52527640f2bd1ac1233e6b0796c4afa127fac4"
+    },
+    {
+      "bytes": 13416,
+      "path": "configs/closure_v1/development_runtime_sequence_patch_lock.schema.json",
+      "role": "sequence_patch_lock_schema",
+      "sha256": "b78fc7a2576463bbe4491e49c6b24ed59b7f5fa878487392846878f7cc46f721"
+    },
+    {
+      "bytes": 48107,
+      "path": "src/experiments/closure_development_runtime_sequence_patch.py",
+      "role": "sequence_patch_validator",
+      "sha256": "d755b6b1401fb8bf25afdefb4a1b81dff3f9e50dc24bde39ff50a8cce8b92ac7"
+    }
+  ],
+  "manifest_version": "closure_development_runtime_sequence_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 24976,
+      "path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock.json",
+      "role": "external_development_runtime_sequence_patch_lock",
+      "sha256": "0e04e25c793aeba473cde7a55697172cda379aa55cf3ddb0d1ffce678db3bd61"
+    }
+  ],
+  "patch_id": "development_runtime_sequence_serialization_patch_1",
+  "script": {
+    "bytes": 32858,
+    "path": "src/experiments/lock_closure_development_runtime_sequence_patch.py",
+    "role": "generating_script",
+    "sha256": "3b128ac6edd281d0179acbd99573b59c78841cd4d4aa240f79996daa5f64af0c"
+  },
+  "status": "completed"
+}

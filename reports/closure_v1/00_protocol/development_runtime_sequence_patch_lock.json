@@ -1,0 +1,619 @@
+{
+  "authorizations": {
+    "development_fit_authorized": true,
+    "e0_u_authorized": false,
+    "evaluation_authorized": false,
+    "future_outcomes_accessed": false
+  },
+  "base_authority": {
+    "base_e0_dl_unchanged": true,
+    "base_e0_dlp_unchanged": true,
+    "base_repository_head": "45705d620ad529b702624706b07e8a39fc138f72",
+    "e0_dlp_adopted_seed_physical_artifacts_verified": true,
+    "e0_dlp_lock_commit": "9123b5120f9470bba8643c6f4c73b86f85ccec25",
+    "e0_dlp_patch_head": "5bb01e92b9b8c9b099b07b2f2cc5b8b9be359b30",
+    "historical_schema_and_payload_validated": true,
+    "physical_development_authority_verified": true,
+    "preserved_components": {
+      "count": 40,
+      "paths": [
+        "configs/closure_v1/development_runtime.schema.json",
+        "configs/closure_v1/development_runtime.yaml",
+        "configs/closure_v1/development_runtime_lock.schema.json",
+        "configs/closure_v1/development_runtime_patch_lock.schema.json",
+        "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+        "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
+        "poetry.lock",
+        "pyproject.toml",
+        "src/__init__.py",
+        "src/data/prepare_commit_artifacts.py",
+        "src/experiments/__init__.py",
+        "src/experiments/build_closure_expert_state.py",
+        "src/experiments/build_closure_holdout.py",
+        "src/experiments/build_common_origin_manifest.py",
+        "src/experiments/build_pipe_sequences.py",
+        "src/experiments/closure_contract.py",
+        "src/experiments/closure_development_guard.py",
+        "src/experiments/closure_development_runtime_lock.py",
+        "src/experiments/closure_development_runtime_patch.py",
+        "src/experiments/closure_runtime_contract.py",
+        "src/experiments/fit_closure_anfis_state.py",
+        "src/experiments/lock_closure_development_runtime.py",
+        "src/experiments/lock_closure_development_runtime_patch.py",
+        "src/experiments/rollout_pipe_grud.py",
+        "src/experiments/run_adaptive_anfis_real_smoke.py",
+        "src/experiments/train_pipe_grud.py",
+        "src/fuzzy/__init__.py",
+        "src/fuzzy/adaptive_anfis.py",
+        "src/fuzzy/expert.py",
+        "src/pandas_utils.py",
+        "tests/conftest.py",
+        "tests/test_build_closure_expert_state.py",
+        "tests/test_closure_development_runtime_lock.py",
+        "tests/test_closure_development_runtime_patch.py",
+        "tests/test_closure_runtime_contract.py",
+        "tests/test_data_versioning_config.py",
+        "tests/test_dvc_add_from_manifest.py",
+        "tests/test_fit_closure_anfis_state.py",
+        "tests/test_lock_closure_development_runtime.py",
+        "tests/test_prepare_commit_artifacts.py"
+      ],
+      "paths_sha256": "59df505f57176cba4b737404da194bf0d48e58dbf729fa9a9704019fa4316322",
+      "records": [
+        {
+          "bytes": 55502,
+          "path": "configs/closure_v1/development_runtime.schema.json",
+          "role": "preserved_locked_component",
+          "sha256": "1abb28734ab3dc4ef2cdc68ce13876741ee42b4b5a8de35aadb332e95aee9709"
+        },
+        {
+          "bytes": 46105,
+          "path": "configs/closure_v1/development_runtime.yaml",
+          "role": "preserved_locked_component",
+          "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d"
+        },
+        {
+          "bytes": 20606,
+          "path": "configs/closure_v1/development_runtime_lock.schema.json",
+          "role": "preserved_locked_component",
+          "sha256": "5314f5d15a4e516d1a0500a7ca5a69cb412ac4827f42973f26a8ec45fcd63204"
+        },
+        {
+          "bytes": 78141,
+          "path": "configs/closure_v1/development_runtime_patch_lock.schema.json",
+          "role": "preserved_locked_component",
+          "sha256": "652fa86482b585985eb0db260af1e499ddc16a620b8fa8c6f54e87c5c767dbac"
+        },
+        {
+          "bytes": 7305,
+          "path": "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+          "role": "preserved_locked_component",
+          "sha256": "912fbdf38d1ec4cebd92dfe01e6cd760031c2c55cba3147df4707b025974ff5a"
+        },
+        {
+          "bytes": 31120,
+          "path": "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
+          "role": "preserved_locked_component",
+          "sha256": "8b8545ccc9ca99a4820770d3f002a39390343b70acfaab1e2dbff2c7060fce21"
+        },
+        {
+          "bytes": 497461,
+          "path": "poetry.lock",
+          "role": "preserved_locked_component",
+          "sha256": "eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4"
+        },
+        {
+          "bytes": 1699,
+          "path": "pyproject.toml",
+          "role": "preserved_locked_component",
+          "sha256": "ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22"
+        },
+        {
+          "bytes": 34,
+          "path": "src/__init__.py",
+          "role": "preserved_locked_component",
+          "sha256": "580b36dfeb9cdba3bcc5a3bbe94a60aa170a40512874dc58bb510e60f3be71c6"
+        },
+        {
+          "bytes": 73927,
+          "path": "src/data/prepare_commit_artifacts.py",
+          "role": "preserved_locked_component",
+          "sha256": "a0f689f870d230475d11362bdf8ed52ab2337aa3307af1c8cd25b7a9a0d64141"
+        },
+        {
+          "bytes": 61,
+          "path": "src/experiments/__init__.py",
+          "role": "preserved_locked_component",
+          "sha256": "dfec3a945384692c654b2a80b17e6e6a41732493d476cddb69a67aa45209d886"
+        },
+        {
+          "bytes": 28645,
+          "path": "src/experiments/build_closure_expert_state.py",
+          "role": "preserved_locked_component",
+          "sha256": "9a48ee45de0709fe871ae0d5bebad5e73117564dbd111a54bdd871b1336cae4a"
+        },
+        {
+          "bytes": 67719,
+          "path": "src/experiments/build_closure_holdout.py",
+          "role": "preserved_locked_component",
+          "sha256": "a79c746c2fa0468637744a5c5aa71dacfea8843130edfe6e9104a2d9ea0abd9e"
+        },
+        {
+          "bytes": 36987,
+          "path": "src/experiments/build_common_origin_manifest.py",
+          "role": "preserved_locked_component",
+          "sha256": "691d9c9951c37881e17280609b099551b7f87ccb60a126ef977073878cc281d0"
+        },
+        {
+          "bytes": 27658,
+          "path": "src/experiments/build_pipe_sequences.py",
+          "role": "preserved_locked_component",
+          "sha256": "05fd7b401fc20555ad94c3b2f9cec4939330b70edae5ac0857f3536328f9bc27"
+        },
+        {
+          "bytes": 87743,
+          "path": "src/experiments/closure_contract.py",
+          "role": "preserved_locked_component",
+          "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+        },
+        {
+          "bytes": 30856,
+          "path": "src/experiments/closure_development_guard.py",
+          "role": "preserved_locked_component",
+          "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+        },
+        {
+          "bytes": 121930,
+          "path": "src/experiments/closure_development_runtime_lock.py",
+          "role": "preserved_locked_component",
+          "sha256": "b988c1c732afc4416c8ea439d6f54c49a104973fd145121d7966a3cc9be91c9e"
+        },
+        {
+          "bytes": 169757,
+          "path": "src/experiments/closure_development_runtime_patch.py",
+          "role": "preserved_locked_component",
+          "sha256": "9c14e5442b13b9a7f8f9f4a3a87d95f16e582abdda7092576388afe24b32b04d"
+        },
+        {
+          "bytes": 113626,
+          "path": "src/experiments/closure_runtime_contract.py",
+          "role": "preserved_locked_component",
+          "sha256": "4639e003e482682aef0da69816e71f8c9d77a38fc3fb4965fd416f0569ce3432"
+        },
+        {
+          "bytes": 60060,
+          "path": "src/experiments/fit_closure_anfis_state.py",
+          "role": "preserved_locked_component",
+          "sha256": "c186bc8369bc39774f1bb0043208d2db7af633eccc6b8047743fd9dabcb13be2"
+        },
+        {
+          "bytes": 8082,
+          "path": "src/experiments/lock_closure_development_runtime.py",
+          "role": "preserved_locked_component",
+          "sha256": "c750b04a3089af437e84fcea285bcf1915918b1715a99da983058ec7c0381c57"
+        },
+        {
+          "bytes": 33393,
+          "path": "src/experiments/lock_closure_development_runtime_patch.py",
+          "role": "preserved_locked_component",
+          "sha256": "e8718f4ebf3e5b53bfbaa8bb09b51813bd3d377b1385f8ea88f2050eaf434f24"
+        },
+        {
+          "bytes": 32980,
+          "path": "src/experiments/rollout_pipe_grud.py",
+          "role": "preserved_locked_component",
+          "sha256": "5ea2eddb6528b8d91be243e03cd600207161e46ea0663690912a2aadfa342c64"
+        },
+        {
+          "bytes": 33258,
+          "path": "src/experiments/run_adaptive_anfis_real_smoke.py",
+          "role": "preserved_locked_component",
+          "sha256": "ebfbe2693ef2303ee164d5f8e7dbe0404ea7a08672ad5a24788df5800232ff3c"
+        },
+        {
+          "bytes": 51360,
+          "path": "src/experiments/train_pipe_grud.py",
+          "role": "preserved_locked_component",
+          "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+        },
+        {
+          "bytes": 49,
+          "path": "src/fuzzy/__init__.py",
+          "role": "preserved_locked_component",
+          "sha256": "61f6887fb877b9d795d508ce9c81b5a6d43285d33b4c237c6bba788315bf8124"
+        },
+        {
+          "bytes": 9927,
+          "path": "src/fuzzy/adaptive_anfis.py",
+          "role": "preserved_locked_component",
+          "sha256": "704cf96c0f531865ef03be8c7ce7bb35e7c04b2d488a81bc2d77aa4b9b6830c0"
+        },
+        {
+          "bytes": 19087,
+          "path": "src/fuzzy/expert.py",
+          "role": "preserved_locked_component",
+          "sha256": "a851e46380d1b0cb14c06386873fb55d50712dfbf23293d58ffc69e158623246"
+        },
+        {
+          "bytes": 1587,
+          "path": "src/pandas_utils.py",
+          "role": "preserved_locked_component",
+          "sha256": "4e9af7af5a8276fc83236047d27e7bcefa61a66e036ce4bc688078d7beebc685"
+        },
+        {
+          "bytes": 436,
+          "path": "tests/conftest.py",
+          "role": "preserved_locked_component",
+          "sha256": "009e7072f3d1daea69608089ed4ced0f43daf3c02e7faaa477e63551ac4db784"
+        },
+        {
+          "bytes": 15559,
+          "path": "tests/test_build_closure_expert_state.py",
+          "role": "preserved_locked_component",
+          "sha256": "f19e9dffc5bf0126331030427a220146e0b8af2dacee4c7abf0bf6061a17267e"
+        },
+        {
+          "bytes": 56728,
+          "path": "tests/test_closure_development_runtime_lock.py",
+          "role": "preserved_locked_component",
+          "sha256": "8b98986a8bffca7284d546090d5dc3f8c638f785206eec61d22818b45ee6e376"
+        },
+        {
+          "bytes": 90822,
+          "path": "tests/test_closure_development_runtime_patch.py",
+          "role": "preserved_locked_component",
+          "sha256": "9dacf0b83206fe7f7a866c207df5a2455640da11a606984000165c0a019e6961"
+        },
+        {
+          "bytes": 53884,
+          "path": "tests/test_closure_runtime_contract.py",
+          "role": "preserved_locked_component",
+          "sha256": "a9d88d3f452547e834edaf4b40c37fef8c254519fdfd8df71af3fb7e4eb91cc5"
+        },
+        {
+          "bytes": 16163,
+          "path": "tests/test_data_versioning_config.py",
+          "role": "preserved_locked_component",
+          "sha256": "b440829ea7a674855ce81ad2ca4d2ae13582e25709c9208d94ca882677428dc8"
+        },
+        {
+          "bytes": 3323,
+          "path": "tests/test_dvc_add_from_manifest.py",
+          "role": "preserved_locked_component",
+          "sha256": "3411a993a963c5cd4a263e1d641cf7cd6ad38af9e8749084add548111284788d"
+        },
+        {
+          "bytes": 38538,
+          "path": "tests/test_fit_closure_anfis_state.py",
+          "role": "preserved_locked_component",
+          "sha256": "d1900529bd034c6916e3c270622f5da415bb9e5046ec4dd9fb550c1979656fd0"
+        },
+        {
+          "bytes": 12065,
+          "path": "tests/test_lock_closure_development_runtime.py",
+          "role": "preserved_locked_component",
+          "sha256": "e46f25ac682221ba7bbf3726b37f2cfc43eb09e636c2833657d1dba85e7c7284"
+        },
+        {
+          "bytes": 33484,
+          "path": "tests/test_prepare_commit_artifacts.py",
+          "role": "preserved_locked_component",
+          "sha256": "2ea9d10d16f14488c4ec1865dbc8a74f1c05289fd87b5052d5db53004b67ee8b"
+        }
+      ],
+      "records_sha256": "65d1f5ed5338269b7f491111b16f02007d36fa23ffdfbe42f6d63f3e31c5ef33"
+    },
+    "records": [
+      {
+        "bytes": 78141,
+        "path": "configs/closure_v1/development_runtime_patch_lock.schema.json",
+        "role": "base_development_runtime_patch_lock_schema",
+        "sha256": "652fa86482b585985eb0db260af1e499ddc16a620b8fa8c6f54e87c5c767dbac"
+      },
+      {
+        "bytes": 92714,
+        "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json",
+        "role": "base_development_runtime_patch_lock",
+        "sha256": "d15a471ca293de0b48e5b52c1b52527640f2bd1ac1233e6b0796c4afa127fac4"
+      },
+      {
+        "bytes": 2052,
+        "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock_manifest.json",
+        "role": "base_development_runtime_patch_companion",
+        "sha256": "ac0c84f0fffa458a64df351ad6c51d450bb8b7b4991d8ac38fa51c049b711b46"
+      }
+    ],
+    "records_sha256": "53610e076e6b0b6c638c67c836cfa439ce5b429412ea789ef5f14cc62906c277"
+  },
+  "compatibility_correction": {
+    "affected_storage": "Parquet",
+    "failure_status_is_authoritative": true,
+    "finite_failure_placeholder_accepted": false,
+    "partially_null_tensor_accepted": false,
+    "rollout_failure_encoding": "outer_valid_with_128_null_children",
+    "rollout_irc_physical_type": "fixed_size_list<float64>[128]",
+    "rollout_state_physical_type": "fixed_size_list<float32>[128]",
+    "scalar_target_null_encoding_changed": false,
+    "sequence_bundle_guard": "exclusive_ignored_guard_held_through_publication",
+    "sequence_failure_encoding": "outer_valid_with_12_null_float32_children",
+    "sequence_logical_null_policy": "none_or_exact_shape_12_all_missing",
+    "sequence_output_publication": "exclusive_temp_inode_hardlink_no_clobber",
+    "sequence_physical_type": "fixed_size_list<float32>[12]",
+    "success_payload_changed": false,
+    "trigger_exception": "pyarrow.lib.ArrowNotImplementedError: Lists with non-zero length null components are not supported",
+    "upstream_reference": "apache/arrow#24425"
+  },
+  "created_at_utc": "2026-08-04T16:52:09.950637Z",
+  "experiment_id": "closure_v1",
+  "gate": "E0-DLS",
+  "git_diff": {
+    "base_commit": "45705d620ad529b702624706b07e8a39fc138f72",
+    "entries": [
+      {
+        "path": "configs/closure_v1/development_runtime_sequence_patch_lock.schema.json",
+        "status": "A"
+      },
+      {
+        "path": "docs/closure_v1/E0_D_RUNTIME_SEQUENCE_PATCH_1.md",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "status": "M"
+      },
+      {
+        "path": "src/experiments/closure_development_runtime_sequence_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/lock_closure_development_runtime_sequence_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/rollout_closure_pipe.py",
+        "status": "M"
+      },
+      {
+        "path": "src/experiments/train_closure_pipe.py",
+        "status": "M"
+      },
+      {
+        "path": "tests/test_build_closure_pipe_sequences.py",
+        "status": "M"
+      },
+      {
+        "path": "tests/test_closure_development_runtime_sequence_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "tests/test_rollout_closure_pipe.py",
+        "status": "M"
+      },
+      {
+        "path": "tests/test_train_closure_pipe.py",
+        "status": "M"
+      }
+    ],
+    "only_allowed_additions_and_modifications": true,
+    "patch_head": "b660a81d65ca8bf1d40ada2f083124f558c8a4c5",
+    "paths": [
+      "configs/closure_v1/development_runtime_sequence_patch_lock.schema.json",
+      "docs/closure_v1/E0_D_RUNTIME_SEQUENCE_PATCH_1.md",
+      "src/experiments/build_closure_pipe_sequences.py",
+      "src/experiments/closure_development_runtime_sequence_patch.py",
+      "src/experiments/lock_closure_development_runtime_sequence_patch.py",
+      "src/experiments/rollout_closure_pipe.py",
+      "src/experiments/train_closure_pipe.py",
+      "tests/test_build_closure_pipe_sequences.py",
+      "tests/test_closure_development_runtime_sequence_patch.py",
+      "tests/test_rollout_closure_pipe.py",
+      "tests/test_train_closure_pipe.py"
+    ],
+    "paths_sha256": "b9fc490097c0b56d058003a7a0a30e6ccc21d0cbe641ae5d8a1e40e1bd66c6b5"
+  },
+  "lock_artifact": {
+    "path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock.json",
+    "role": "external_development_runtime_sequence_patch_lock",
+    "self_hash_policy": "verified_from_committed_and_published_bytes"
+  },
+  "lock_version": "closure_development_runtime_sequence_patch_lock_v1",
+  "p0_outputs": {
+    "all_absent_at_lock": true,
+    "count": 8,
+    "paths": [
+      "data/closure_v1/development/sequences/P0/expert_no_current.parquet",
+      "data/closure_v1/development/sequences/P0/expert_no_current.parquet.tmp",
+      "data/closure_v1/development/sequences/P0/expert_no_current.parquet.dvc",
+      "data/closure_v1/development/sequences/P0/expert_no_current.parquet.dvc.tmp",
+      "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv.tmp",
+      "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+      "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json.tmp"
+    ],
+    "paths_sha256": "384de5420a60a848c28fb765044dc22d84361ab39435a26e8b8f34349583e800"
+  },
+  "patch_components": {
+    "count": 11,
+    "paths": [
+      "configs/closure_v1/development_runtime_sequence_patch_lock.schema.json",
+      "docs/closure_v1/E0_D_RUNTIME_SEQUENCE_PATCH_1.md",
+      "src/experiments/build_closure_pipe_sequences.py",
+      "src/experiments/closure_development_runtime_sequence_patch.py",
+      "src/experiments/lock_closure_development_runtime_sequence_patch.py",
+      "src/experiments/rollout_closure_pipe.py",
+      "src/experiments/train_closure_pipe.py",
+      "tests/test_build_closure_pipe_sequences.py",
+      "tests/test_closure_development_runtime_sequence_patch.py",
+      "tests/test_rollout_closure_pipe.py",
+      "tests/test_train_closure_pipe.py"
+    ],
+    "paths_sha256": "b9fc490097c0b56d058003a7a0a30e6ccc21d0cbe641ae5d8a1e40e1bd66c6b5",
+    "records": [
+      {
+        "bytes": 13416,
+        "path": "configs/closure_v1/development_runtime_sequence_patch_lock.schema.json",
+        "role": "sequence_patch_lock_schema",
+        "sha256": "b78fc7a2576463bbe4491e49c6b24ed59b7f5fa878487392846878f7cc46f721"
+      },
+      {
+        "bytes": 5943,
+        "path": "docs/closure_v1/E0_D_RUNTIME_SEQUENCE_PATCH_1.md",
+        "role": "sequence_patch_protocol",
+        "sha256": "f7284174b9847d81a7dbdc8dc4594d79645745bccb656456dbaffd1220344e95"
+      },
+      {
+        "bytes": 110034,
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "role": "sequence_builder",
+        "sha256": "dc500d94c8ca4b3705d2cb849a037524e33915624cd86f9d355e5c4eebb347f6"
+      },
+      {
+        "bytes": 48107,
+        "path": "src/experiments/closure_development_runtime_sequence_patch.py",
+        "role": "sequence_patch_validator",
+        "sha256": "d755b6b1401fb8bf25afdefb4a1b81dff3f9e50dc24bde39ff50a8cce8b92ac7"
+      },
+      {
+        "bytes": 32858,
+        "path": "src/experiments/lock_closure_development_runtime_sequence_patch.py",
+        "role": "sequence_patch_locker",
+        "sha256": "3b128ac6edd281d0179acbd99573b59c78841cd4d4aa240f79996daa5f64af0c"
+      },
+      {
+        "bytes": 61261,
+        "path": "src/experiments/rollout_closure_pipe.py",
+        "role": "rollout_builder",
+        "sha256": "28630ca6e48e96b7223e9e63442f26bb2d720f014daddef4606506fc1a4675f0"
+      },
+      {
+        "bytes": 65828,
+        "path": "src/experiments/train_closure_pipe.py",
+        "role": "sequence_consumer",
+        "sha256": "0c589aaa05f9144053d59616adc08d0144d7cf1d8af5d14b4174d6a4d4fdabd4"
+      },
+      {
+        "bytes": 52498,
+        "path": "tests/test_build_closure_pipe_sequences.py",
+        "role": "sequence_builder_tests",
+        "sha256": "52b64e1cf1a63567df8ddfa7de01e6d53195689354a25aa07392f92280bd6bf7"
+      },
+      {
+        "bytes": 34051,
+        "path": "tests/test_closure_development_runtime_sequence_patch.py",
+        "role": "sequence_patch_tests",
+        "sha256": "0917c973fef698021f0f380952e594ac18cde758c28d02f537b14ad065ce759a"
+      },
+      {
+        "bytes": 33978,
+        "path": "tests/test_rollout_closure_pipe.py",
+        "role": "rollout_builder_tests",
+        "sha256": "35f122ff3659a30217e4292b3106951f4c66c2ca3c7d3003a07c7cb85c2a23e7"
+      },
+      {
+        "bytes": 32162,
+        "path": "tests/test_train_closure_pipe.py",
+        "role": "sequence_consumer_tests",
+        "sha256": "bb4c0145eb4bc03147f33df06be2249546a45ee6a42a00891c581d4ea929b3a6"
+      }
+    ],
+    "records_sha256": "faf2b398c6baede821fc57bc43f63df0592eb4e7e590287c584b76c80c1e3d36"
+  },
+  "patch_id": "development_runtime_sequence_serialization_patch_1",
+  "patch_repository": {
+    "branch": "main",
+    "exact_diff_verified": true,
+    "head": "b660a81d65ca8bf1d40ada2f083124f558c8a4c5",
+    "parent": "45705d620ad529b702624706b07e8a39fc138f72",
+    "published_head": "b660a81d65ca8bf1d40ada2f083124f558c8a4c5",
+    "published_ref": "origin/main",
+    "remote_main_oid": "b660a81d65ca8bf1d40ada2f083124f558c8a4c5",
+    "worktree_status": "clean"
+  },
+  "seals": {
+    "base_e0_dl_replaced": false,
+    "base_e0_dlp_replaced": false,
+    "common_origin_denominator_changed": false,
+    "dvc_operation_executed": false,
+    "e0_u_opened": false,
+    "evaluation_opened": false,
+    "future_outcomes_accessed": false,
+    "p0_materialized_at_lock": false,
+    "role_denominators_changed": false,
+    "runtime_config_changed": false,
+    "scientific_decisions_changed": false,
+    "state_or_target_values_imputed": false
+  },
+  "status": "locked",
+  "verification": {
+    "focused_tests": {
+      "command": [
+        ".venv/bin/pytest",
+        "tests/test_closure_development_runtime_patch.py",
+        "tests/test_build_closure_pipe_sequences.py",
+        "tests/test_closure_development_runtime_lock.py",
+        "tests/test_fit_closure_anfis_state.py",
+        "tests/test_train_closure_pipe.py",
+        "tests/test_rollout_closure_pipe.py",
+        "tests/test_closure_development_runtime_sequence_patch.py",
+        "-q"
+      ],
+      "deselected_count": 0,
+      "exit_code": 0,
+      "skipped_count": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 6,
+      "stdout_sha256": "779551d2b2f1d07572289a3a4692364e9ec4fafb503546ede5a8bdfab6a0178d",
+      "success_marker_verified": true,
+      "test_count": 310
+    },
+    "full_type_check": {
+      "command": [
+        ".venv/bin/ty",
+        "check"
+      ],
+      "exit_code": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "success_marker_verified": true
+    },
+    "git_diff_check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "exit_code": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "success_marker_verified": true
+    },
+    "poetry_check": {
+      "command": [
+        "poetry",
+        "check"
+      ],
+      "exit_code": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "a2428ed4ae02d9dbfff2895449321f5a297182c3fd189cddfe630c6e0fa76747",
+      "success_marker_verified": true
+    },
+    "publication_guard": {
+      "command": [
+        "scripts/check_repo_publication_ready.sh"
+      ],
+      "exit_code": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 2,
+      "stdout_sha256": "4f3d95eeb9a16ee98d6bac11f78c717e73a9952dd7f8baf48de4fff33480134b",
+      "success_marker_verified": true
+    }
+  }
+}
