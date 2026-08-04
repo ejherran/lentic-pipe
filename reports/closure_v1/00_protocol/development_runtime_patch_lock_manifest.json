@@ -1,0 +1,54 @@
+{
+  "manifest_version": "closure_development_runtime_patch_companion_manifest_v1",
+  "status": "completed",
+  "experiment_id": "closure_v1",
+  "gate": "E0-DLP",
+  "patch_id": "development_runtime_compatibility_patch_1",
+  "created_at_utc": "2026-08-04T12:09:13.120373+00:00",
+  "outputs": [
+    {
+      "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json",
+      "role": "external_development_runtime_patch_lock",
+      "bytes": 92714,
+      "sha256": "d15a471ca293de0b48e5b52c1b52527640f2bd1ac1233e6b0796c4afa127fac4"
+    }
+  ],
+  "script": {
+    "path": "src/experiments/lock_closure_development_runtime_patch.py",
+    "role": "generating_script",
+    "bytes": 33393,
+    "sha256": "e8718f4ebf3e5b53bfbaa8bb09b51813bd3d377b1385f8ea88f2050eaf434f24"
+  },
+  "inputs": [
+    {
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+      "role": "base_development_runtime_lock",
+      "bytes": 95285,
+      "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+    },
+    {
+      "path": "configs/closure_v1/development_runtime_lock.schema.json",
+      "role": "base_development_runtime_lock_schema",
+      "bytes": 20606,
+      "sha256": "5314f5d15a4e516d1a0500a7ca5a69cb412ac4827f42973f26a8ec45fcd63204"
+    },
+    {
+      "path": "configs/closure_v1/development_runtime_patch_lock.schema.json",
+      "role": "development_runtime_patch_lock_schema",
+      "bytes": 78141,
+      "sha256": "652fa86482b585985eb0db260af1e499ddc16a620b8fa8c6f54e87c5c767dbac"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_patch.py",
+      "role": "development_runtime_patch_validator",
+      "bytes": 169757,
+      "sha256": "9c14e5442b13b9a7f8f9f4a3a87d95f16e582abdda7092576388afe24b32b04d"
+    }
+  ],
+  "development_fit_authorized": true,
+  "evaluation_authorized": false,
+  "e0_u_authorized": false,
+  "future_outcomes_accessed": false,
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json"
+}
