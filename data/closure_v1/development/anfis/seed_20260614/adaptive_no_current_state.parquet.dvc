@@ -1,0 +1,5 @@
+outs:
+- md5: 526a682507875218a1125b3440af65a7
+  size: 1214501
+  hash: md5
+  path: adaptive_no_current_state.parquet
