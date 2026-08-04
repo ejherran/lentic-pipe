@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import sys
 import types
 from argparse import Namespace
+from contextlib import contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
@@ -30,8 +32,16 @@ from src.experiments.build_closure_pipe_sequences import (
 from src.experiments.closure_contract import load_yaml_mapping
 from src.experiments.train_closure_pipe import (
     EarlyStoppingState,
+    FitAvailability,
     MODEL_ARTIFACT_OUTPUT_NAMES,
+    SequenceInputContract,
+    TemporalModelInputContract,
     WindowBundle,
+    _TemporalOutputTransaction,
+    _open_real_output_parent,
+    _path_entry_exists,
+    _run_temporal_slot,
+    _temporal_slot_guard,
     _write_model_unavailable_evidence,
     _checkpoint_objective,
     advance_early_stopping,
@@ -767,6 +777,376 @@ def test_unavailable_slot_rejects_stale_fit_outputs(tmp_path: Path) -> None:
     assert not paths["manifest"].exists()
 
 
+def _temporal_test_paths(tmp_path: Path) -> dict[str, Path]:
+    return {
+        field: tmp_path / "slot" / f"{field}.artifact"
+        for field in (*MODEL_ARTIFACT_OUTPUT_NAMES, "manifest")
+    }
+
+
+def test_unavailable_slot_publishes_report_then_bound_manifest_without_fit_artifacts(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    paths = _temporal_test_paths(tmp_path)
+
+    _write_model_unavailable_evidence(
+        model_id="P0",
+        base_seed=1729,
+        device="cpu",
+        paths=paths,
+        input_records=[],
+        source_code_records=[],
+        cpu_execution_policy=expected_cpu_execution_policy_record(),
+        failure_reason="sequence_fit_rows_unavailable",
+        fit_status_counts={"autoregressive_target_unavailable": 488},
+        failure_reason_counts={"missing_target_state": 488},
+    )
+
+    assert paths["report"].read_text(encoding="utf-8").endswith(
+        "the failed slot was not replaced.\n"
+    )
+    payload = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+    assert payload["slot_status"] == "model_unavailable"
+    assert payload["fit_status"] == "not_attempted"
+    assert payload["model_artifact_emitted"] is False
+    assert payload["outputs"] == [
+        {
+            "path": paths["report"].as_posix(),
+            "bytes": paths["report"].stat().st_size,
+            "sha256": hashlib.sha256(paths["report"].read_bytes()).hexdigest(),
+            "artifact_role": "report",
+        }
+    ]
+    for name, path in paths.items():
+        assert _path_entry_exists(path) is (name in {"report", "manifest"})
+        assert not _path_entry_exists(path.with_suffix(path.suffix + ".tmp"))
+
+
+def test_unavailable_slot_rolls_back_report_when_manifest_publication_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    paths = _temporal_test_paths(tmp_path)
+    real_publish_json = _TemporalOutputTransaction.publish_json
+    fail_once = True
+
+    def fail_manifest(
+        self: _TemporalOutputTransaction,
+        payload: Mapping[str, Any],
+        path: Path,
+    ) -> None:
+        nonlocal fail_once
+        if fail_once:
+            fail_once = False
+            raise RuntimeError("injected manifest failure")
+        real_publish_json(self, payload, path)
+
+    monkeypatch.setattr(_TemporalOutputTransaction, "publish_json", fail_manifest)
+    with pytest.raises(RuntimeError, match="injected manifest failure"):
+        _write_model_unavailable_evidence(
+            model_id="P0",
+            base_seed=1729,
+            device="cpu",
+            paths=paths,
+            input_records=[],
+            source_code_records=[],
+            cpu_execution_policy=expected_cpu_execution_policy_record(),
+            failure_reason="sequence_fit_rows_unavailable",
+            fit_status_counts={"autoregressive_target_unavailable": 488},
+            failure_reason_counts={"missing_target_state": 488},
+        )
+
+    for path in paths.values():
+        assert not _path_entry_exists(path)
+        assert not _path_entry_exists(path.with_suffix(path.suffix + ".tmp"))
+
+    _write_model_unavailable_evidence(
+        model_id="P0",
+        base_seed=1729,
+        device="cpu",
+        paths=paths,
+        input_records=[],
+        source_code_records=[],
+        cpu_execution_policy=expected_cpu_execution_policy_record(),
+        failure_reason="sequence_fit_rows_unavailable",
+        fit_status_counts={"autoregressive_target_unavailable": 488},
+        failure_reason_counts={"missing_target_state": 488},
+    )
+    assert paths["report"].is_file()
+    assert paths["manifest"].is_file()
+
+
+def test_temporal_transaction_rolls_back_owned_outputs_but_preserves_replacement(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    first = tmp_path / "slot" / "first.txt"
+    second = tmp_path / "slot" / "second.txt"
+    with pytest.raises(RuntimeError, match="injected failure"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("owned", first)
+            transaction.publish_text("also-owned", second)
+            first.unlink()
+            first.write_text("replacement", encoding="utf-8")
+            raise RuntimeError("injected failure")
+
+    assert first.read_text(encoding="utf-8") == "replacement"
+    assert not _path_entry_exists(second)
+    assert not _path_entry_exists(first.with_suffix(".txt.tmp"))
+    assert not _path_entry_exists(second.with_suffix(".txt.tmp"))
+
+
+def test_temporal_transaction_attempts_every_rollback_after_fsync_failure(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    first = tmp_path / "slot" / "first.txt"
+    second = tmp_path / "slot" / "second.txt"
+    real_fsync = os.fsync
+    state = {"rollback": False, "failed_calls": 0}
+
+    def controlled_fsync(descriptor: int) -> None:
+        if state["rollback"]:
+            state["failed_calls"] += 1
+            raise OSError("injected fsync failure")
+        real_fsync(descriptor)
+
+    monkeypatch.setattr(module.os, "fsync", controlled_fsync)
+    with pytest.raises(ValueError, match="rollback could not be completed safely") as raised:
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("first", first)
+            transaction.publish_text("second", second)
+            state["rollback"] = True
+            raise RuntimeError("trigger rollback")
+
+    assert state["failed_calls"] == 2
+    assert not _path_entry_exists(first)
+    assert not _path_entry_exists(second)
+    assert raised.value.__notes__ == [
+        "Rollback failures: OSError: injected fsync failure; "
+        "OSError: injected fsync failure"
+    ]
+
+
+def test_temporal_transaction_refuses_existing_final_without_clobber(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    target = tmp_path / "slot" / "artifact.txt"
+    target.parent.mkdir(parents=True)
+    target.write_text("racer", encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Refusing to overwrite final artifact"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("ours", target)
+
+    assert target.read_text(encoding="utf-8") == "racer"
+    assert not _path_entry_exists(target.with_suffix(".txt.tmp"))
+
+
+def test_temporal_transaction_fails_closed_if_temporary_inode_is_replaced(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    target = tmp_path / "slot" / "artifact.txt"
+    temporary = target.with_suffix(".txt.tmp")
+    real_link = os.link
+
+    def replace_temporary_after_link(*args: Any, **kwargs: Any) -> None:
+        real_link(*args, **kwargs)
+        temporary.unlink()
+        temporary.write_text("foreign", encoding="utf-8")
+
+    monkeypatch.setattr(module.os, "link", replace_temporary_after_link)
+    with pytest.raises(ValueError, match="Temporary artifact changed before cleanup"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("owned", target)
+
+    assert not _path_entry_exists(target)
+    assert temporary.read_text(encoding="utf-8") == "foreign"
+
+
+def test_temporal_transaction_fails_commit_if_owned_final_is_replaced(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    target = tmp_path / "slot" / "artifact.txt"
+    with pytest.raises(ValueError, match="identity drifted before commit"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("owned", target)
+            target.unlink()
+            target.write_text("replacement", encoding="utf-8")
+
+    assert target.read_text(encoding="utf-8") == "replacement"
+    assert not _path_entry_exists(target.with_suffix(".txt.tmp"))
+
+
+def test_temporal_transaction_rejects_symlinked_output_ancestor(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    real_parent = tmp_path / "real-parent"
+    real_parent.mkdir()
+    linked_parent = tmp_path / "linked-parent"
+    linked_parent.symlink_to(real_parent, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="ancestor is not a real directory"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("forbidden", linked_parent / "artifact.txt")
+    assert list(real_parent.iterdir()) == []
+
+
+def test_output_parent_walk_closes_child_and_parent_once_when_child_fstat_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    real_open = os.open
+    real_close = os.close
+    real_fstat = os.fstat
+    opened: list[int] = []
+    closed: list[int] = []
+
+    def tracked_open(*args: Any, **kwargs: Any) -> int:
+        descriptor = real_open(*args, **kwargs)
+        opened.append(descriptor)
+        return descriptor
+
+    def fail_child_fstat(descriptor: int) -> os.stat_result:
+        if len(opened) == 2 and descriptor == opened[-1]:
+            raise OSError("injected child fstat failure")
+        return real_fstat(descriptor)
+
+    def tracked_close(descriptor: int) -> None:
+        closed.append(descriptor)
+        real_close(descriptor)
+
+    monkeypatch.setattr(module.os, "open", tracked_open)
+    monkeypatch.setattr(module.os, "fstat", fail_child_fstat)
+    monkeypatch.setattr(module.os, "close", tracked_close)
+    with pytest.raises(OSError, match="injected child fstat failure"):
+        _open_real_output_parent(tmp_path / "slot/artifact.txt")
+
+    assert len(opened) == 2
+    assert {descriptor: closed.count(descriptor) for descriptor in opened} == {
+        descriptor: 1 for descriptor in opened
+    }
+
+
+def test_temporal_writer_closes_duplicate_when_fdopen_fails(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    real_dup = os.dup
+    real_close = os.close
+    duplicates: list[int] = []
+    closed: list[int] = []
+
+    def tracked_dup(descriptor: int) -> int:
+        duplicate = real_dup(descriptor)
+        duplicates.append(duplicate)
+        return duplicate
+
+    def fail_fdopen(*args: Any, **kwargs: Any) -> Any:
+        raise RuntimeError("injected fdopen failure")
+
+    def tracked_close(descriptor: int) -> None:
+        closed.append(descriptor)
+        real_close(descriptor)
+
+    monkeypatch.setattr(module.os, "dup", tracked_dup)
+    monkeypatch.setattr(module.os, "fdopen", fail_fdopen)
+    monkeypatch.setattr(module.os, "close", tracked_close)
+    target = tmp_path / "slot/artifact.txt"
+    with pytest.raises(RuntimeError, match="injected fdopen failure"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("payload", target)
+
+    assert len(duplicates) == 1
+    assert closed.count(duplicates[0]) == 1
+    assert not _path_entry_exists(target)
+    assert not _path_entry_exists(target.with_suffix(".txt.tmp"))
+
+
+def test_temporal_writer_never_retries_close_and_fsyncs_local_rollback(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    real_open = os.open
+    real_close = os.close
+    real_fsync = os.fsync
+    temporary_descriptor: int | None = None
+    temporary_close_calls = 0
+    fsync_calls = 0
+
+    def tracked_open(path: Any, *args: Any, **kwargs: Any) -> int:
+        nonlocal temporary_descriptor
+        descriptor = real_open(path, *args, **kwargs)
+        if str(path).endswith("artifact.txt.tmp"):
+            temporary_descriptor = descriptor
+        return descriptor
+
+    def fail_close_once(descriptor: int) -> None:
+        nonlocal temporary_close_calls
+        if descriptor == temporary_descriptor:
+            temporary_close_calls += 1
+            real_close(descriptor)
+            raise OSError("injected close failure")
+        real_close(descriptor)
+
+    def tracked_fsync(descriptor: int) -> None:
+        nonlocal fsync_calls
+        fsync_calls += 1
+        real_fsync(descriptor)
+
+    monkeypatch.setattr(module.os, "open", tracked_open)
+    monkeypatch.setattr(module.os, "close", fail_close_once)
+    monkeypatch.setattr(module.os, "fsync", tracked_fsync)
+    target = tmp_path / "slot/artifact.txt"
+    with pytest.raises(OSError, match="injected close failure"):
+        with _TemporalOutputTransaction() as transaction:
+            transaction.publish_text("payload", target)
+
+    assert temporary_descriptor is not None
+    assert temporary_close_calls == 1
+    assert fsync_calls >= 3
+    assert not _path_entry_exists(target)
+    assert not _path_entry_exists(target.with_suffix(".txt.tmp"))
+
+
 def test_temporal_slot_preflight_forbids_partial_or_completed_resume(
     tmp_path: Path,
 ) -> None:
@@ -788,6 +1168,168 @@ def test_temporal_slot_preflight_forbids_partial_or_completed_resume(
     temporary.write_bytes(b"interrupted")
     with pytest.raises(ValueError, match="resume/overwrite is forbidden"):
         assert_temporal_slot_outputs_absent(paths)
+
+
+def test_temporal_slot_preflight_detects_broken_symlink_and_fifo(tmp_path: Path) -> None:
+    paths = _temporal_test_paths(tmp_path)
+    paths["report"].parent.mkdir(parents=True)
+    paths["report"].symlink_to(tmp_path / "missing-target")
+    assert not paths["report"].exists()
+    with pytest.raises(ValueError, match="resume/overwrite is forbidden"):
+        assert_temporal_slot_outputs_absent(paths)
+
+    paths["report"].unlink()
+    os.mkfifo(paths["report"])
+    with pytest.raises(ValueError, match="resume/overwrite is forbidden"):
+        assert_temporal_slot_outputs_absent(paths)
+
+
+def test_temporal_slot_guard_is_exclusive_and_releases_only_its_inode(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    guard = tmp_path / "tmp/closure_v1_temporal_consumer/P0_seed_1729.guard"
+    with _temporal_slot_guard("P0", 1729):
+        assert guard.is_file()
+        with pytest.raises(ValueError, match="already reserved"):
+            with _temporal_slot_guard("P0", 1729):
+                pass
+    assert not guard.exists()
+
+    with pytest.raises(ValueError, match="guard changed"):
+        with _temporal_slot_guard("P0", 1729):
+            guard.unlink()
+            guard.write_text("replacement", encoding="utf-8")
+    assert guard.read_text(encoding="utf-8") == "replacement"
+
+
+def test_temporal_slot_guard_rejects_symlinked_tmp_ancestor(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    redirected = tmp_path / "redirected"
+    redirected.mkdir()
+    (tmp_path / "tmp").symlink_to(redirected, target_is_directory=True)
+
+    with pytest.raises(ValueError, match="ancestor is not a real directory"):
+        with _temporal_slot_guard("P0", 1729):
+            pass
+    assert list(redirected.iterdir()) == []
+
+
+def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    sequence = tmp_path / "inputs/sequence.parquet"
+    summary = tmp_path / "inputs/summary.csv"
+    sequence_manifest = tmp_path / "inputs/manifest.json"
+    common = tmp_path / module.DEFAULT_COMMON_ORIGINS
+    for path, payload in (
+        (sequence, b"sequence"),
+        (summary, b"summary"),
+        (sequence_manifest, b"{}\n"),
+        (common, b"common"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(payload)
+    records = tuple(_file_record(path) for path in (sequence, summary, sequence_manifest, common))
+    sequence_contract = SequenceInputContract(
+        records=records,
+        state_path=tmp_path / "inputs/unavailable-state.parquet",
+        state_artifact_required=False,
+    )
+    model_contract = TemporalModelInputContract(
+        records=records,
+        source_code_records=(),
+        sequence_contract=sequence_contract,
+    )
+    monkeypatch.setattr(module, "load_yaml_mapping", lambda path: {})
+    monkeypatch.setattr(module, "validate_temporal_runtime_contract", lambda runtime: None)
+    monkeypatch.setattr(
+        module,
+        "configure_torch_cpu_execution_policy",
+        lambda runtime: expected_cpu_execution_policy_record(),
+    )
+    monkeypatch.setattr(
+        module,
+        "sequence_paths",
+        lambda model_id, base_seed: {
+            "sequence": sequence.relative_to(tmp_path),
+            "summary": summary.relative_to(tmp_path),
+            "manifest": sequence_manifest.relative_to(tmp_path),
+        },
+    )
+    monkeypatch.setattr(
+        module,
+        "collect_sequence_input_contract",
+        lambda **kwargs: sequence_contract,
+    )
+    monkeypatch.setattr(
+        module,
+        "collect_temporal_model_input_contract",
+        lambda **kwargs: model_contract,
+    )
+    monkeypatch.setattr(
+        module,
+        "validate_sequence_completion_manifest",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(module.pq, "read_schema", lambda path: object())
+    monkeypatch.setattr(module, "validate_sequence_physical_schema", lambda schema: None)
+    monkeypatch.setattr(
+        module.pd,
+        "read_parquet",
+        lambda *args, **kwargs: pd.DataFrame(),
+    )
+    monkeypatch.setattr(
+        module,
+        "validate_sequence_common_origin_identity",
+        lambda sequences, origins: None,
+    )
+    availability = FitAvailability(
+        available=False,
+        failure_reason="sequence_fit_rows_unavailable",
+        fit_status_counts={
+            "success": 8925,
+            "autoregressive_target_unavailable": 488,
+        },
+        failure_reason_counts={"missing_target_state": 488},
+    )
+    monkeypatch.setattr(module, "inspect_fit_availability", lambda *args, **kwargs: availability)
+    monkeypatch.setattr(
+        module,
+        "assert_temporal_model_input_contract_unchanged",
+        lambda contract: None,
+    )
+
+    def forbidden_fit(*args: Any, **kwargs: Any) -> None:
+        raise AssertionError("unavailable P0 must not tensorize or fit")
+
+    monkeypatch.setattr(module, "load_window_bundle", forbidden_fit)
+    monkeypatch.setattr(module, "fit_available_slot", forbidden_fit)
+    paths = _temporal_test_paths(tmp_path)
+    _run_temporal_slot(
+        args=Namespace(model_id="P0", base_seed=1729, device="cpu"),
+        paths=paths,
+    )
+
+    payload = json.loads(paths["manifest"].read_text(encoding="utf-8"))
+    assert payload["slot_status"] == "model_unavailable"
+    assert payload["fit_status"] == "not_attempted"
+    assert payload["fit_status_counts"] == availability.fit_status_counts
+    assert payload["failure_reason_counts"] == availability.failure_reason_counts
+    for name, path in paths.items():
+        assert _path_entry_exists(path) is (name in {"report", "manifest"})
 
 
 def test_unexpected_fit_runtime_error_propagates_without_manifest(
@@ -818,14 +1360,18 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_sequence_patch"
+        "src.experiments.closure_development_runtime_temporal_consumer_patch"
     )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
         assert device == "cpu"
         raise GateStopped
 
-    setattr(fake_lock, "require_development_fit_authorized_with_sequence_patch", stop_gate)
+    setattr(
+        fake_lock,
+        "require_development_fit_authorized_with_temporal_consumer_patch",
+        stop_gate,
+    )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
@@ -838,3 +1384,69 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
     with pytest.raises(GateStopped):
         module.main()
     assert reads == []
+
+
+def test_main_orders_gate_seed_paths_guard_and_slot_execution(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import train_closure_pipe as module
+
+    events: list[str] = []
+    fake_lock = types.ModuleType(
+        "src.experiments.closure_development_runtime_temporal_consumer_patch"
+    )
+
+    def gate(*, device: str | None = None) -> dict[str, object]:
+        assert device == "cpu"
+        events.append("gate")
+        return {}
+
+    setattr(
+        fake_lock,
+        "require_development_fit_authorized_with_temporal_consumer_patch",
+        gate,
+    )
+    monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
+    monkeypatch.setattr(
+        module,
+        "parse_args",
+        lambda: Namespace(model_id="P0", base_seed=1729, device="cpu"),
+    )
+
+    def validate_seed(model_id: str, base_seed: int) -> None:
+        assert (model_id, base_seed) == ("P0", 1729)
+        events.append("seed")
+
+    monkeypatch.setattr(module, "validate_temporal_seed", validate_seed)
+    relative_paths = {
+        name: Path(f"slot/{name}.artifact")
+        for name in (*MODEL_ARTIFACT_OUTPUT_NAMES, "manifest")
+    }
+
+    def paths(model_id: str, base_seed: int) -> dict[str, Path]:
+        assert (model_id, base_seed) == ("P0", 1729)
+        events.append("paths")
+        return relative_paths
+
+    monkeypatch.setattr(module, "_paths", paths)
+
+    @contextmanager
+    def guard(model_id: str, base_seed: int) -> Any:
+        assert (model_id, base_seed) == ("P0", 1729)
+        events.append("guard-enter")
+        try:
+            yield
+        finally:
+            events.append("guard-exit")
+
+    monkeypatch.setattr(module, "_temporal_slot_guard", guard)
+
+    def run(*, args: Namespace, paths: Mapping[str, Path]) -> None:
+        assert args.model_id == "P0"
+        assert set(paths) == set(relative_paths)
+        events.append("run")
+
+    monkeypatch.setattr(module, "_run_temporal_slot", run)
+    module.main()
+
+    assert events == ["gate", "seed", "paths", "guard-enter", "run", "guard-exit"]

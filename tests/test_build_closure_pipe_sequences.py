@@ -1211,13 +1211,17 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_sequence_patch"
+        "src.experiments.closure_development_runtime_temporal_consumer_patch"
     )
 
     def stop_gate(**_: object) -> dict[str, object]:
         raise GateStopped
 
-    setattr(fake_lock, "require_development_fit_authorized_with_sequence_patch", stop_gate)
+    setattr(
+        fake_lock,
+        "require_development_fit_authorized_with_temporal_consumer_patch",
+        stop_gate,
+    )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,

@@ -1,0 +1,537 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/development_runtime_temporal_consumer_patch_lock.schema.json",
+  "title": "Closure V1 development temporal-consumer atomicity patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version",
+    "status",
+    "experiment_id",
+    "gate",
+    "patch_id",
+    "created_at_utc",
+    "base_authority",
+    "patch_repository",
+    "patch_components",
+    "git_diff",
+    "correction",
+    "consumer_prelock",
+    "verification",
+    "authorizations",
+    "seals",
+    "lock_artifact"
+  ],
+  "properties": {
+    "lock_version": {
+      "const": "closure_development_runtime_temporal_consumer_patch_lock_v1"
+    },
+    "status": {"const": "locked"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-DLT"},
+    "patch_id": {
+      "const": "development_runtime_temporal_consumer_atomicity_patch_1"
+    },
+    "created_at_utc": {"type": "string", "minLength": 1},
+    "base_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dls_patch_head",
+        "dls_lock_commit",
+        "records",
+        "records_sha256",
+        "p_dls_base_preserved_components",
+        "preserved_components",
+        "superseded_components",
+        "p_dls_payload_validated",
+        "p_dls_companion_hash_validated",
+        "physical_development_authority_verified",
+        "p0_bundle"
+      ],
+      "properties": {
+        "dls_patch_head": {
+          "const": "b660a81d65ca8bf1d40ada2f083124f558c8a4c5"
+        },
+        "dls_lock_commit": {
+          "const": "92a9fb1ba17a61cb91c0b89782f2dd4bf956b5e1"
+        },
+        "records": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"},
+        "p_dls_base_preserved_components": {
+          "allOf": [
+            {"$ref": "#/$defs/fileBundle"},
+            {
+              "type": "object",
+              "properties": {
+                "count": {"const": 40},
+                "paths": {"minItems": 40, "maxItems": 40},
+                "paths_sha256": {
+                  "const": "59df505f57176cba4b737404da194bf0d48e58dbf729fa9a9704019fa4316322"
+                },
+                "records": {"minItems": 40, "maxItems": 40},
+                "records_sha256": {
+                  "const": "65d1f5ed5338269b7f491111b16f02007d36fa23ffdfbe42f6d63f3e31c5ef33"
+                }
+              }
+            }
+          ]
+        },
+        "preserved_components": {
+          "allOf": [
+            {"$ref": "#/$defs/fileBundle"},
+            {
+              "type": "object",
+              "properties": {
+                "count": {"const": 5},
+                "paths": {"minItems": 5, "maxItems": 5},
+                "records": {"minItems": 5, "maxItems": 5}
+              }
+            }
+          ]
+        },
+        "superseded_components": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "count",
+            "paths",
+            "paths_sha256",
+            "historical_records",
+            "historical_records_sha256",
+            "historical_records_verified_at_h_dls",
+            "current_bytes_required_to_match_h_dls"
+          ],
+          "properties": {
+            "count": {"const": 6},
+            "paths": {
+              "type": "array",
+              "minItems": 6,
+              "maxItems": 6,
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            },
+            "paths_sha256": {"$ref": "#/$defs/sha256"},
+            "historical_records": {
+              "type": "array",
+              "minItems": 6,
+              "maxItems": 6,
+              "items": {"$ref": "#/$defs/fileRecord"}
+            },
+            "historical_records_sha256": {"$ref": "#/$defs/sha256"},
+            "historical_records_verified_at_h_dls": {"const": true},
+            "current_bytes_required_to_match_h_dls": {"const": false}
+          }
+        },
+        "p_dls_payload_validated": {"const": true},
+        "p_dls_companion_hash_validated": {"const": true},
+        "physical_development_authority_verified": {"const": true},
+        "p0_bundle": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "commit",
+            "parent",
+            "records",
+            "records_sha256",
+            "payload",
+            "pointer_md5",
+            "pointer_size",
+            "physical_payload_verified",
+            "future_outcomes_accessed"
+          ],
+          "properties": {
+            "commit": {
+              "const": "b075d4f1606aa35c1b86493604c18845f2d28a2f"
+            },
+            "parent": {
+              "const": "92a9fb1ba17a61cb91c0b89782f2dd4bf956b5e1"
+            },
+            "records": {
+              "type": "array",
+              "minItems": 5,
+              "maxItems": 5,
+              "items": {"$ref": "#/$defs/fileRecord"}
+            },
+            "records_sha256": {"$ref": "#/$defs/sha256"},
+            "payload": {"$ref": "#/$defs/dvcPayloadRecord"},
+            "pointer_md5": {
+              "const": "690735883981160b6347a722420603e0"
+            },
+            "pointer_size": {"const": 1377124},
+            "physical_payload_verified": {"const": true},
+            "future_outcomes_accessed": {"const": false}
+          }
+        }
+      }
+    },
+    "patch_repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "parent",
+        "branch",
+        "published_ref",
+        "published_head",
+        "remote_main_oid",
+        "worktree_status",
+        "exact_diff_verified"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/commit"},
+        "parent": {
+          "const": "b075d4f1606aa35c1b86493604c18845f2d28a2f"
+        },
+        "branch": {"const": "main"},
+        "published_ref": {"const": "origin/main"},
+        "published_head": {"$ref": "#/$defs/commit"},
+        "remote_main_oid": {"$ref": "#/$defs/commit"},
+        "worktree_status": {"const": "clean"},
+        "exact_diff_verified": {"const": true}
+      }
+    },
+    "patch_components": {
+      "allOf": [
+        {"$ref": "#/$defs/fileBundle"},
+        {
+          "type": "object",
+          "properties": {
+            "count": {"const": 11},
+            "paths": {"minItems": 11, "maxItems": 11},
+            "records": {"minItems": 11, "maxItems": 11}
+          }
+        }
+      ]
+    },
+    "git_diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "patch_head",
+        "entries",
+        "paths",
+        "paths_sha256",
+        "only_allowed_additions_and_modifications"
+      ],
+      "properties": {
+        "base_commit": {
+          "const": "b075d4f1606aa35c1b86493604c18845f2d28a2f"
+        },
+        "patch_head": {"$ref": "#/$defs/commit"},
+        "entries": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "items": {"$ref": "#/$defs/diffEntry"}
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "only_allowed_additions_and_modifications": {"const": true}
+      }
+    },
+    "correction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "scientific_runtime_contract_changed",
+        "seed_set_changed",
+        "denominator_changed",
+        "state_mapping_changed",
+        "model_unavailable_semantics_changed",
+        "consumer_publication",
+        "consumer_failure_rollback",
+        "expected_p0_slot_status",
+        "expected_p0_fit_status",
+        "expected_p0_failure_reason",
+        "failed_slot_replacement"
+      ],
+      "properties": {
+        "classification": {"const": "implementation_hardening_only"},
+        "scientific_runtime_contract_changed": {"const": false},
+        "seed_set_changed": {"const": false},
+        "denominator_changed": {"const": false},
+        "state_mapping_changed": {"const": false},
+        "model_unavailable_semantics_changed": {"const": false},
+        "consumer_publication": {
+          "const": "exclusive_slot_guard_atomic_no_clobber_manifest_last"
+        },
+        "consumer_failure_rollback": {"const": "owned_inode_only"},
+        "expected_p0_slot_status": {"const": "model_unavailable"},
+        "expected_p0_fit_status": {"const": "not_attempted"},
+        "expected_p0_failure_reason": {
+          "const": "sequence_fit_rows_unavailable"
+        },
+        "failed_slot_replacement": {"const": false}
+      }
+    },
+    "consumer_prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "base_seeds",
+        "count",
+        "paths",
+        "paths_sha256",
+        "all_absent_at_lock"
+      ],
+      "properties": {
+        "model_id": {"const": "P0"},
+        "base_seeds": {
+          "const": [1729, 20260612, 20260613, 20260614, 314159]
+        },
+        "count": {"const": 95},
+        "paths": {
+          "type": "array",
+          "minItems": 95,
+          "maxItems": 95,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_absent_at_lock": {"const": true}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "git_diff_check",
+        "dvc_push_first",
+        "dvc_push_second"
+      ],
+      "properties": {
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"},
+        "dvc_push_first": {"$ref": "#/$defs/dvcEvidence"},
+        "dvc_push_second": {"$ref": "#/$defs/dvcEvidence"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "development_fit_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "development_fit_authorized": {"const": true},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_e0_dl_preserved",
+        "base_e0_dlp_preserved",
+        "base_e0_dls_preserved_as_historical_authority",
+        "p0_sequence_bundle_preserved",
+        "holdout_accessed",
+        "post_2021_outcomes_accessed",
+        "does_not_replace_e0_m"
+      ],
+      "properties": {
+        "base_e0_dl_preserved": {"const": true},
+        "base_e0_dlp_preserved": {"const": true},
+        "base_e0_dls_preserved_as_historical_authority": {"const": true},
+        "p0_sequence_bundle_preserved": {"const": true},
+        "holdout_accessed": {"const": false},
+        "post_2021_outcomes_accessed": {"const": false},
+        "does_not_replace_e0_m": {"const": true}
+      }
+    },
+    "lock_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "self_hash_policy"],
+      "properties": {
+        "path": {
+          "const": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock.json"
+        },
+        "role": {
+          "const": "external_development_runtime_temporal_consumer_patch_lock"
+        },
+        "self_hash_policy": {
+          "const": "verified_from_committed_and_published_bytes"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "md5": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{32}$"
+    },
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "dvcPayloadRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256", "md5"],
+      "properties": {
+        "path": {
+          "const": "data/closure_v1/development/sequences/P0/expert_no_current.parquet"
+        },
+        "role": {"const": "p0_sequence_payload"},
+        "bytes": {"const": 1377124},
+        "sha256": {
+          "const": "a10fbe5054d795b44dac1da2853a387b4dbead3e04dd7d9d942313b2aa5318fd"
+        },
+        "md5": {"const": "690735883981160b6347a722420603e0"}
+      }
+    },
+    "fileBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "paths", "paths_sha256", "records", "records_sha256"],
+      "properties": {
+        "count": {"type": "integer"},
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "records": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path"],
+      "properties": {
+        "status": {"enum": ["A", "M"]},
+        "path": {"type": "string", "minLength": 1}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "test_count",
+        "skipped_count",
+        "deselected_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 156},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "dvcEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "terminal_status"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "terminal_status": {"const": "Everything is up to date."}
+      }
+    }
+  }
+}

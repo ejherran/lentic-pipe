@@ -1184,11 +1184,11 @@ def main() -> None:
     args = parse_args()
 
     # The gate precedes model, sequence, common-origin, and output I/O.
-    from src.experiments.closure_development_runtime_sequence_patch import (
-        require_development_fit_authorized_with_sequence_patch,
+    from src.experiments.closure_development_runtime_temporal_consumer_patch import (
+        require_development_fit_authorized_with_temporal_consumer_patch,
     )
 
-    require_development_fit_authorized_with_sequence_patch(device=args.device)
+    require_development_fit_authorized_with_temporal_consumer_patch(device=args.device)
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_rollout_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)

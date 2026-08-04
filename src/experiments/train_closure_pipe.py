@@ -2,8 +2,9 @@
 """Fit the fixed Closure V1 residual probabilistic GRU profile.
 
 This module exposes synthetic-testable functional kernels, while its CLI is
-unconditionally guarded by the published E0-DL development authorization.  It
-never reads calibration outcomes, locked evaluation rows, or holdout rows.
+unconditionally guarded by the published additive E0-DLT development
+authorization.  It never reads calibration outcomes, locked evaluation rows,
+or holdout rows.
 """
 
 from __future__ import annotations
@@ -11,12 +12,15 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import random
+import stat
 import sys
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence, cast
+from typing import Any, Iterator, Mapping, Sequence, cast
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if PROJECT_ROOT.as_posix() not in sys.path:
@@ -51,8 +55,6 @@ from src.experiments.build_closure_pipe_sequences import (
     _sha256,
     _typed_scalar_equal,
     _validate_common_origins,
-    _write_csv_atomic,
-    _write_json_atomic,
     expected_cpu_execution_policy_record,
     validate_sequence_runtime_contract,
     validate_state_slot_manifest,
@@ -942,6 +944,8 @@ def collect_temporal_model_input_contract(
         PROJECT_ROOT / "src/experiments/closure_contract.py",
         PROJECT_ROOT / "src/experiments/closure_development_guard.py",
         PROJECT_ROOT / "src/experiments/closure_development_runtime_lock.py",
+        PROJECT_ROOT
+        / "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
         PROJECT_ROOT / "src/experiments/closure_runtime_contract.py",
         PROJECT_ROOT / "src/experiments/train_pipe_grud.py",
     )
@@ -1209,6 +1213,379 @@ def _paths(model_id: str, base_seed: int) -> dict[str, Path]:
     }
 
 
+@dataclass(frozen=True)
+class _OwnedOutput:
+    path: Path
+    device: int
+    inode: int
+    directory_descriptor: int
+
+
+def _path_entry_exists(path: Path) -> bool:
+    """Return true for every lexical entry, including a broken symlink."""
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _open_real_output_parent(path: Path, *, directory_mode: int = 0o755) -> int:
+    """Open an anchored real-directory parent without following symlinks."""
+    try:
+        repository_root = PROJECT_ROOT.resolve(strict=True)
+        lexical_parent = Path(os.path.abspath(path.parent))
+        relative_parent = lexical_parent.relative_to(repository_root)
+    except (FileNotFoundError, ValueError) as exc:
+        raise ClosurePipeTrainingError(f"Output parent escapes the repository: {path}") from exc
+    directory_flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    directory_flags |= getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(repository_root, directory_flags)
+    except OSError as exc:
+        raise ClosurePipeTrainingError("Repository root cannot be opened safely") from exc
+    try:
+        for part in relative_parent.parts:
+            try:
+                metadata = os.stat(part, dir_fd=descriptor, follow_symlinks=False)
+            except FileNotFoundError:
+                try:
+                    os.mkdir(part, mode=directory_mode, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+                metadata = os.stat(part, dir_fd=descriptor, follow_symlinks=False)
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise ClosurePipeTrainingError(
+                    f"Output ancestor is not a real directory: {path}"
+                )
+            child = os.open(part, directory_flags, dir_fd=descriptor)
+            try:
+                opened_child = os.fstat(child)
+            except BaseException:
+                os.close(child)
+                raise
+            if (opened_child.st_dev, opened_child.st_ino) != (
+                metadata.st_dev,
+                metadata.st_ino,
+            ):
+                os.close(child)
+                raise ClosurePipeTrainingError(f"Output ancestor identity drifted: {path}")
+            parent_descriptor = descriptor
+            descriptor = child
+            os.close(parent_descriptor)
+        opened = os.fstat(descriptor)
+        lexical = lexical_parent.lstat()
+        if (
+            not stat.S_ISDIR(lexical.st_mode)
+            or (opened.st_dev, opened.st_ino) != (lexical.st_dev, lexical.st_ino)
+        ):
+            raise ClosurePipeTrainingError(f"Output parent identity drifted: {path}")
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _unlink_name_if_owned(
+    directory_descriptor: int,
+    name: str,
+    *,
+    device: int,
+    inode: int,
+) -> bool:
+    try:
+        metadata = os.stat(name, dir_fd=directory_descriptor, follow_symlinks=False)
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise ClosurePipeTrainingError(
+            f"Cannot inspect owned temporal artifact during cleanup: {name}"
+        ) from exc
+    if (
+        stat.S_ISREG(metadata.st_mode)
+        and (metadata.st_dev, metadata.st_ino) == (device, inode)
+    ):
+        try:
+            os.unlink(name, dir_fd=directory_descriptor)
+        except OSError as exc:
+            raise ClosurePipeTrainingError(
+                f"Cannot remove owned temporal artifact during cleanup: {name}"
+            ) from exc
+        return True
+    return False
+
+
+def _write_output_no_clobber_owned(
+    path: Path,
+    writer: Any,
+    *,
+    binary: bool,
+) -> _OwnedOutput:
+    """Publish one regular file through an exclusive inode and hard link."""
+    directory_descriptor = _open_real_output_parent(path)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor: int | None = None
+    device: int | None = None
+    inode: int | None = None
+    committed = False
+    try:
+        try:
+            descriptor = os.open(temporary.name, flags, 0o644, dir_fd=directory_descriptor)
+        except FileExistsError as exc:
+            raise ClosurePipeTrainingError(
+                f"Refusing to overwrite temporary artifact: {temporary}"
+            ) from exc
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ClosurePipeTrainingError(f"Temporary artifact is not regular: {temporary}")
+        device, inode = metadata.st_dev, metadata.st_ino
+        duplicate = os.dup(descriptor)
+        if binary:
+            try:
+                binary_handle = os.fdopen(duplicate, "wb")
+            except BaseException:
+                os.close(duplicate)
+                raise
+            with binary_handle as handle:
+                writer(handle)
+                handle.flush()
+                os.fsync(handle.fileno())
+        else:
+            try:
+                text_handle = os.fdopen(
+                    duplicate,
+                    "w",
+                    encoding="utf-8",
+                    newline="",
+                )
+            except BaseException:
+                os.close(duplicate)
+                raise
+            with text_handle as handle:
+                writer(handle)
+                handle.flush()
+                os.fsync(handle.fileno())
+        temporary_metadata = os.stat(
+            temporary.name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        parent_opened = os.fstat(directory_descriptor)
+        parent_lexical = path.parent.lstat()
+        if (
+            not stat.S_ISREG(temporary_metadata.st_mode)
+            or (temporary_metadata.st_dev, temporary_metadata.st_ino) != (device, inode)
+            or not stat.S_ISDIR(parent_lexical.st_mode)
+            or (parent_lexical.st_dev, parent_lexical.st_ino)
+            != (parent_opened.st_dev, parent_opened.st_ino)
+        ):
+            raise ClosurePipeTrainingError(f"Temporary artifact identity drifted: {temporary}")
+        try:
+            os.link(
+                temporary.name,
+                path.name,
+                src_dir_fd=directory_descriptor,
+                dst_dir_fd=directory_descriptor,
+                follow_symlinks=False,
+            )
+        except FileExistsError as exc:
+            raise ClosurePipeTrainingError(
+                f"Refusing to overwrite final artifact: {path}"
+            ) from exc
+        final_metadata = os.stat(
+            path.name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        final_lexical = path.lstat()
+        parent_lexical = path.parent.lstat()
+        if (
+            not stat.S_ISREG(final_metadata.st_mode)
+            or not stat.S_ISREG(final_lexical.st_mode)
+            or (final_metadata.st_dev, final_metadata.st_ino) != (device, inode)
+            or (final_lexical.st_dev, final_lexical.st_ino) != (device, inode)
+            or (parent_lexical.st_dev, parent_lexical.st_ino)
+            != (parent_opened.st_dev, parent_opened.st_ino)
+        ):
+            _unlink_name_if_owned(
+                directory_descriptor,
+                path.name,
+                device=device,
+                inode=inode,
+            )
+            raise ClosurePipeTrainingError(f"Final artifact identity drifted: {path}")
+        temporary_removed = _unlink_name_if_owned(
+            directory_descriptor,
+            temporary.name,
+            device=device,
+            inode=inode,
+        )
+        if not temporary_removed:
+            _unlink_name_if_owned(
+                directory_descriptor,
+                path.name,
+                device=device,
+                inode=inode,
+            )
+            raise ClosurePipeTrainingError(
+                f"Temporary artifact changed before cleanup: {temporary}"
+        )
+        os.fsync(directory_descriptor)
+        closing_descriptor = descriptor
+        descriptor = None
+        os.close(closing_descriptor)
+        committed = True
+        return _OwnedOutput(
+            path=path,
+            device=device,
+            inode=inode,
+            directory_descriptor=directory_descriptor,
+        )
+    finally:
+        active_error = sys.exc_info()[1]
+        cleanup_errors: list[Exception] = []
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                cleanup_errors.append(exc)
+        if not committed:
+            if device is not None and inode is not None:
+                for name in (path.name, temporary.name):
+                    try:
+                        _unlink_name_if_owned(
+                            directory_descriptor,
+                            name,
+                            device=device,
+                            inode=inode,
+                        )
+                    except (ClosurePipeTrainingError, OSError) as exc:
+                        cleanup_errors.append(exc)
+                try:
+                    os.fsync(directory_descriptor)
+                except OSError as exc:
+                    cleanup_errors.append(exc)
+            try:
+                os.close(directory_descriptor)
+            except OSError as exc:
+                cleanup_errors.append(exc)
+        if cleanup_errors:
+            cleanup_error = ClosurePipeTrainingError(
+                "Temporal artifact cleanup could not be completed safely"
+            )
+            cleanup_error.add_note(
+                "Cleanup failures: "
+                + "; ".join(f"{type(error).__name__}: {error}" for error in cleanup_errors)
+            )
+            if active_error is not None:
+                raise cleanup_error from active_error
+            raise cleanup_error from cleanup_errors[0]
+
+
+class _TemporalOutputTransaction:
+    """Own and roll back every final inode until the manifest is published."""
+
+    def __init__(self) -> None:
+        self._owned: list[_OwnedOutput] = []
+
+    def __enter__(self) -> _TemporalOutputTransaction:
+        return self
+
+    def _publish(self, path: Path, writer: Any, *, binary: bool) -> None:
+        self._owned.append(
+            _write_output_no_clobber_owned(path, writer, binary=binary)
+        )
+
+    def publish_text(self, text: str, path: Path) -> None:
+        self._publish(path, lambda handle: handle.write(text), binary=False)
+
+    def publish_json(self, payload: Mapping[str, Any], path: Path) -> None:
+        def write(handle: Any) -> None:
+            json.dump(payload, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+
+        self._publish(path, write, binary=False)
+
+    def publish_csv(self, frame: pd.DataFrame, path: Path) -> None:
+        self._publish(path, lambda handle: frame.to_csv(handle, index=False), binary=False)
+
+    def publish_torch(self, payload: Mapping[str, Any], path: Path) -> None:
+        torch = _require_torch()
+        self._publish(path, lambda handle: torch.save(dict(payload), handle), binary=True)
+
+    def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+        commit_error: ClosurePipeTrainingError | None = None
+        rollback_errors: list[Exception] = []
+        if exc_type is None:
+            for owned in self._owned:
+                try:
+                    current = os.stat(
+                        owned.path.name,
+                        dir_fd=owned.directory_descriptor,
+                        follow_symlinks=False,
+                    )
+                    parent_opened = os.fstat(owned.directory_descriptor)
+                    parent_lexical = owned.path.parent.lstat()
+                except (FileNotFoundError, OSError):
+                    commit_error = ClosurePipeTrainingError(
+                        f"Temporal output disappeared before commit: {owned.path}"
+                    )
+                    break
+                if (
+                    not stat.S_ISREG(current.st_mode)
+                    or (current.st_dev, current.st_ino)
+                    != (owned.device, owned.inode)
+                    or not stat.S_ISDIR(parent_lexical.st_mode)
+                    or (parent_lexical.st_dev, parent_lexical.st_ino)
+                    != (parent_opened.st_dev, parent_opened.st_ino)
+                ):
+                    commit_error = ClosurePipeTrainingError(
+                        f"Temporal output identity drifted before commit: {owned.path}"
+                    )
+                    break
+        if exc_type is not None or commit_error is not None:
+            for owned in reversed(self._owned):
+                try:
+                    removed = _unlink_name_if_owned(
+                        owned.directory_descriptor,
+                        owned.path.name,
+                        device=owned.device,
+                        inode=owned.inode,
+                    )
+                    if removed:
+                        os.fsync(owned.directory_descriptor)
+                except (ClosurePipeTrainingError, OSError) as cleanup_error:
+                    rollback_errors.append(cleanup_error)
+        for owned in self._owned:
+            try:
+                os.close(owned.directory_descriptor)
+            except OSError as cleanup_error:
+                # Every file and parent was already fsynced and ownership was
+                # revalidated.  A directory-handle close error must not turn a
+                # durable manifest-last commit into an unretryable partial slot.
+                if exc_type is not None or commit_error is not None:
+                    rollback_errors.append(cleanup_error)
+        self._owned.clear()
+        if rollback_errors:
+            rollback_error = ClosurePipeTrainingError(
+                "Temporal output rollback could not be completed safely"
+            )
+            rollback_error.add_note(
+                "Rollback failures: "
+                + "; ".join(f"{type(error).__name__}: {error}" for error in rollback_errors)
+            )
+            if exc is not None:
+                raise rollback_error from exc
+            if commit_error is not None:
+                raise rollback_error from commit_error
+            raise rollback_error from rollback_errors[0]
+        if commit_error is not None:
+            raise commit_error
+        return False
+
+
 def assert_temporal_slot_outputs_absent(paths: Mapping[str, Path]) -> None:
     """Refuse implicit resume or overwrite of any retained slot artifact."""
     expected = {*MODEL_ARTIFACT_OUTPUT_NAMES, "manifest"}
@@ -1219,39 +1596,12 @@ def assert_temporal_slot_outputs_absent(paths: Mapping[str, Path]) -> None:
         for path in paths.values()
         for candidate in (path, path.with_suffix(path.suffix + ".tmp"))
     ]
-    existing = [path.as_posix() for path in candidates if path.exists()]
+    existing = [path.as_posix() for path in candidates if _path_entry_exists(path)]
     if existing:
         raise ClosurePipeTrainingError(
             "Temporal resume/overwrite is forbidden; existing slot artifacts require "
             f"explicit review and cleanup: {existing}"
         )
-
-
-def _save_torch_atomic(payload: Mapping[str, Any], path: Path) -> None:
-    torch = _require_torch()
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    if temporary.exists():
-        raise ClosurePipeTrainingError(f"Refusing to overwrite temporary artifact: {temporary}")
-    try:
-        torch.save(dict(payload), temporary)
-        temporary.replace(path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
-
-
-def _write_text_atomic(text: str, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    if temporary.exists():
-        raise ClosurePipeTrainingError(f"Refusing to overwrite temporary artifact: {temporary}")
-    try:
-        temporary.write_text(text, encoding="utf-8")
-        temporary.replace(path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
 
 
 def _write_model_unavailable_evidence(
@@ -1270,58 +1620,152 @@ def _write_model_unavailable_evidence(
     report = paths["report"]
     manifest = paths["manifest"]
     stale_fields = tuple(name for name in MODEL_ARTIFACT_OUTPUT_NAMES if name != "report")
-    stale = [paths[field] for field in stale_fields if paths[field].exists()]
+    stale = [paths[field] for field in stale_fields if _path_entry_exists(paths[field])]
     if stale:
         raise ClosurePipeTrainingError(
             "Unavailable temporal slot has stale fit outputs: "
             f"{[path.as_posix() for path in stale]}"
         )
-    _write_text_atomic(
-        "\n".join(
-            [
-                f"# Closure V1 {model_id} seed {base_seed}",
-                "",
-                "Status: `model_unavailable`",
-                f"Failure reason: `{failure_reason}`",
-                "",
-                "No model/checkpoint was emitted and the failed slot was not replaced.",
-                "",
-            ]
-        ),
-        report,
+    assert_temporal_slot_outputs_absent(paths)
+    with _TemporalOutputTransaction() as transaction:
+        transaction.publish_text(
+            "\n".join(
+                [
+                    f"# Closure V1 {model_id} seed {base_seed}",
+                    "",
+                    "Status: `model_unavailable`",
+                    f"Failure reason: `{failure_reason}`",
+                    "",
+                    "No model/checkpoint was emitted and the failed slot was not replaced.",
+                    "",
+                ]
+            ),
+            report,
+        )
+        payload = {
+            "manifest_version": "closure_pipe_model_manifest_v1",
+            "status": "completed",
+            "slot_status": "model_unavailable",
+            "fit_status": "not_attempted",
+            "failure_reason": failure_reason,
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "experiment_id": "closure_v1",
+            "surface_id": SURFACE_ID,
+            "model_id": model_id,
+            "base_seed": base_seed,
+            "device": device,
+            "future_outcomes_accessed": False,
+            "evaluation_authorized": False,
+            "e0_u_authorized": False,
+            "failed_slot_replaced": False,
+            "replacement_used": False,
+            "model_artifact_emitted": False,
+            "fit_status_counts": dict(fit_status_counts),
+            "failure_reason_counts": dict(failure_reason_counts),
+            "script": _file_record(Path(__file__)),
+            "cpu_execution_policy": dict(cpu_execution_policy),
+            "config": fixed_profile(),
+            "input_state_mapping": MODEL_STATE_MAPPINGS[model_id],
+            "target_state_mapping": MODEL_STATE_MAPPINGS[model_id],
+            "target_to_next_input_mapping": TARGET_TO_NEXT_INPUT_MAPPING,
+            "inputs": [dict(record) for record in input_records],
+            "source_code": [dict(record) for record in source_code_records],
+            "outputs": [{**_file_record(report), "artifact_role": "report"}],
+            "completion_marker_written_last": True,
+        }
+        transaction.publish_json(payload, manifest)
+
+
+def _temporal_consumer_guard_directory() -> Path:
+    return PROJECT_ROOT / "tmp" / "closure_v1_temporal_consumer"
+
+
+@contextmanager
+def _temporal_slot_guard(model_id: str, base_seed: int) -> Iterator[None]:
+    """Reserve exactly one temporal model/seed slot until publication ends."""
+    guard_directory = _temporal_consumer_guard_directory()
+    guard_name = f"{model_id}_seed_{base_seed}.guard"
+    directory_descriptor = _open_real_output_parent(
+        guard_directory / guard_name,
+        directory_mode=0o700,
     )
-    payload = {
-        "manifest_version": "closure_pipe_model_manifest_v1",
-        "status": "completed",
-        "slot_status": "model_unavailable",
-        "fit_status": "not_attempted",
-        "failure_reason": failure_reason,
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "experiment_id": "closure_v1",
-        "surface_id": SURFACE_ID,
-        "model_id": model_id,
-        "base_seed": base_seed,
-        "device": device,
-        "future_outcomes_accessed": False,
-        "evaluation_authorized": False,
-        "e0_u_authorized": False,
-        "failed_slot_replaced": False,
-        "replacement_used": False,
-        "model_artifact_emitted": False,
-        "fit_status_counts": dict(fit_status_counts),
-        "failure_reason_counts": dict(failure_reason_counts),
-        "script": _file_record(Path(__file__)),
-        "cpu_execution_policy": dict(cpu_execution_policy),
-        "config": fixed_profile(),
-        "input_state_mapping": MODEL_STATE_MAPPINGS[model_id],
-        "target_state_mapping": MODEL_STATE_MAPPINGS[model_id],
-        "target_to_next_input_mapping": TARGET_TO_NEXT_INPUT_MAPPING,
-        "inputs": [dict(record) for record in input_records],
-        "source_code": [dict(record) for record in source_code_records],
-        "outputs": [{**_file_record(report), "artifact_role": "report"}],
-        "completion_marker_written_last": True,
-    }
-    _write_json_atomic(payload, manifest)
+    descriptor: int | None = None
+    owned_device: int | None = None
+    owned_inode: int | None = None
+    try:
+        opened_directory = os.fstat(directory_descriptor)
+        lexical_directory = guard_directory.lstat()
+        if (
+            not stat.S_ISDIR(lexical_directory.st_mode)
+            or (opened_directory.st_dev, opened_directory.st_ino)
+            != (lexical_directory.st_dev, lexical_directory.st_ino)
+        ):
+            raise ClosurePipeTrainingError(
+                "Temporal consumer coordination directory identity drifted"
+            )
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(guard_name, flags, 0o600, dir_fd=directory_descriptor)
+        except FileExistsError as exc:
+            raise ClosurePipeTrainingError(
+                f"A temporal consumer slot is already reserved: {guard_name}"
+            ) from exc
+        owned = os.fstat(descriptor)
+        if not stat.S_ISREG(owned.st_mode):
+            raise ClosurePipeTrainingError("Temporal consumer guard is not a regular file")
+        owned_device, owned_inode = owned.st_dev, owned.st_ino
+        os.fsync(descriptor)
+        os.fsync(directory_descriptor)
+        yield
+        current = os.stat(
+            guard_name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        lexical_directory = guard_directory.lstat()
+        if (
+            not stat.S_ISREG(current.st_mode)
+            or (current.st_dev, current.st_ino) != (owned_device, owned_inode)
+            or (lexical_directory.st_dev, lexical_directory.st_ino)
+            != (opened_directory.st_dev, opened_directory.st_ino)
+        ):
+            raise ClosurePipeTrainingError("Temporal consumer guard changed during execution")
+    finally:
+        active_error = sys.exc_info()[1]
+        cleanup_errors: list[Exception] = []
+        if owned_device is not None and owned_inode is not None:
+            try:
+                removed = _unlink_name_if_owned(
+                    directory_descriptor,
+                    guard_name,
+                    device=owned_device,
+                    inode=owned_inode,
+                )
+                if removed:
+                    os.fsync(directory_descriptor)
+            except (ClosurePipeTrainingError, OSError) as exc:
+                cleanup_errors.append(exc)
+        if descriptor is not None:
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                cleanup_errors.append(exc)
+        try:
+            os.close(directory_descriptor)
+        except OSError as exc:
+            cleanup_errors.append(exc)
+        if cleanup_errors:
+            cleanup_error = ClosurePipeTrainingError(
+                "Temporal consumer guard cleanup could not be completed safely"
+            )
+            cleanup_error.add_note(
+                "Guard cleanup failures: "
+                + "; ".join(f"{type(error).__name__}: {error}" for error in cleanup_errors)
+            )
+            if active_error is not None:
+                raise cleanup_error from active_error
+            raise cleanup_error from cleanup_errors[0]
 
 
 def parse_args() -> argparse.Namespace:
@@ -1332,25 +1776,16 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
-def main() -> None:
-    args = parse_args()
-
-    # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_development_runtime_sequence_patch import (
-        require_development_fit_authorized_with_sequence_patch,
-    )
-
-    require_development_fit_authorized_with_sequence_patch(device=args.device)
+def _run_temporal_slot(
+    *,
+    args: argparse.Namespace,
+    paths: Mapping[str, Path],
+) -> None:
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_temporal_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)
     if cpu_execution_policy != expected_cpu_execution_policy_record():
         raise ClosurePipeTrainingError("Applied CPU execution policy drifted")
-    validate_temporal_seed(args.model_id, args.base_seed)
-    paths = {
-        name: PROJECT_ROOT / path
-        for name, path in _paths(args.model_id, args.base_seed).items()
-    }
     assert_temporal_slot_outputs_absent(paths)
     sequence_info = sequence_paths(args.model_id, None if args.model_id == "P0" else args.base_seed)
     sequence_path = PROJECT_ROOT / sequence_info["sequence"]
@@ -1452,30 +1887,6 @@ def main() -> None:
         "best_model_selection_objective": result.best_objective,
         "model_state_dict": result.best_state_dict,
     }
-    _save_torch_atomic({**artifact_base, "artifact_role": "raw_best_checkpoint"}, paths["checkpoint"])
-    _save_torch_atomic(
-        {
-            **artifact_base,
-            "artifact_role": "final_model_with_locked_output_blend",
-            "output_blend_weights": blend_mapping,
-        },
-        paths["model"],
-    )
-    _write_json_atomic(
-        {
-            "preprocessor_version": "closure_identity_float32_v1",
-            "policy": "identity_fixed_no_fit",
-            "dtype": "float32",
-            "input_columns": list(INPUT_COLUMNS),
-            "target_columns": list(TARGET_COLUMNS),
-            "data_dependent_scaling": False,
-            "nonfinite_replacement": False,
-        },
-        paths["preprocessor"],
-    )
-    _write_csv_atomic(result.metrics, paths["metrics"])
-    _write_csv_atomic(result.history, paths["training_curve"])
-    _write_csv_atomic(result.final_blend_weights, paths["blend_weights"])
     blend_evidence = pd.concat(
         [
             result.provisional_blend_searches,
@@ -1485,86 +1896,140 @@ def main() -> None:
         ignore_index=True,
         sort=False,
     )
-    _write_csv_atomic(blend_evidence, paths["blend_search"])
-    _write_text_atomic(
-        "\n".join(
-            [
-                f"# Closure V1 {args.model_id} seed {args.base_seed}",
-                "",
-                "Status: `completed`",
-                "",
-                f"Best raw epoch: `{result.best_epoch}`",
-                f"Best model-selection objective: `{result.best_objective:.12g}`",
-                "",
-                "No calibration, test, holdout, or locked-evaluation metric was emitted.",
-                "",
-            ]
-        ),
-        paths["report"],
-    )
-    manifest = {
-        "manifest_version": "closure_pipe_model_manifest_v1",
-        "status": "completed",
-        "slot_status": "available",
-        "fit_status": "passed",
-        "failure_reason": "",
-        "generated_at_utc": datetime.now(timezone.utc).isoformat(),
-        "experiment_id": "closure_v1",
-        "surface_id": SURFACE_ID,
-        "model_id": args.model_id,
-        "base_seed": args.base_seed,
-        "device": args.device,
-        "future_outcomes_accessed": False,
-        "evaluation_authorized": False,
-        "e0_u_authorized": False,
-        "model_artifact_emitted": True,
-        "failed_slot_replaced": False,
-        "replacement_used": False,
-        "script": _file_record(Path(__file__)),
-        "cpu_execution_policy": cpu_execution_policy,
-        "config": fixed_profile(),
-        "input_state_mapping": MODEL_STATE_MAPPINGS[args.model_id],
-        "target_state_mapping": MODEL_STATE_MAPPINGS[args.model_id],
-        "target_to_next_input_mapping": TARGET_TO_NEXT_INPUT_MAPPING,
-        "selection": {
-            "best_epoch": result.best_epoch,
-            "best_model_selection_objective": result.best_objective,
-            "checkpoint_role": "raw_best_unblended_model_state",
-            "final_blend_stage": "once_after_raw_best_restore",
-        },
-        "batch_order": {
-            "algorithm": "torch_randperm_cpu_generator",
-            "epoch_seed": "base_seed_plus_one_based_epoch",
-            "record_serialization": "compact_json_utf8_lf_per_batch",
-            "records": result.history[["epoch", "batch_order_sha256"]].to_dict(orient="records"),
-        },
-        "row_counts": {
-            "training_windows": int(bundle.metadata["time_role"].eq("training").sum()),
-            "model_selection_windows": int(bundle.metadata["time_role"].eq("model_selection").sum()),
-            "calibration_windows_not_used_for_fit": int(
-                bundle.metadata["time_role"].eq("calibration_threshold").sum()
-            ),
-            "test_windows": 0,
-            "holdout_windows": 0,
-        },
-        "inputs": input_records,
-        "source_code": [dict(record) for record in model_input_contract.source_code_records],
-        "outputs": [
+    with _TemporalOutputTransaction() as transaction:
+        transaction.publish_torch(
+            {**artifact_base, "artifact_role": "raw_best_checkpoint"},
+            paths["checkpoint"],
+        )
+        transaction.publish_torch(
             {
-                **_file_record(paths[name]),
-                **(
-                    {"artifact_role": "final_model_with_locked_output_blend"}
-                    if name == "model"
-                    else {"artifact_role": "raw_best_checkpoint"}
-                    if name == "checkpoint"
-                    else {}
+                **artifact_base,
+                "artifact_role": "final_model_with_locked_output_blend",
+                "output_blend_weights": blend_mapping,
+            },
+            paths["model"],
+        )
+        transaction.publish_json(
+            {
+                "preprocessor_version": "closure_identity_float32_v1",
+                "policy": "identity_fixed_no_fit",
+                "dtype": "float32",
+                "input_columns": list(INPUT_COLUMNS),
+                "target_columns": list(TARGET_COLUMNS),
+                "data_dependent_scaling": False,
+                "nonfinite_replacement": False,
+            },
+            paths["preprocessor"],
+        )
+        transaction.publish_csv(result.metrics, paths["metrics"])
+        transaction.publish_csv(result.history, paths["training_curve"])
+        transaction.publish_csv(result.final_blend_weights, paths["blend_weights"])
+        transaction.publish_csv(blend_evidence, paths["blend_search"])
+        transaction.publish_text(
+            "\n".join(
+                [
+                    f"# Closure V1 {args.model_id} seed {args.base_seed}",
+                    "",
+                    "Status: `completed`",
+                    "",
+                    f"Best raw epoch: `{result.best_epoch}`",
+                    f"Best model-selection objective: `{result.best_objective:.12g}`",
+                    "",
+                    "No calibration, test, holdout, or locked-evaluation metric was emitted.",
+                    "",
+                ]
+            ),
+            paths["report"],
+        )
+        manifest = {
+            "manifest_version": "closure_pipe_model_manifest_v1",
+            "status": "completed",
+            "slot_status": "available",
+            "fit_status": "passed",
+            "failure_reason": "",
+            "generated_at_utc": datetime.now(timezone.utc).isoformat(),
+            "experiment_id": "closure_v1",
+            "surface_id": SURFACE_ID,
+            "model_id": args.model_id,
+            "base_seed": args.base_seed,
+            "device": args.device,
+            "future_outcomes_accessed": False,
+            "evaluation_authorized": False,
+            "e0_u_authorized": False,
+            "model_artifact_emitted": True,
+            "failed_slot_replaced": False,
+            "replacement_used": False,
+            "script": _file_record(Path(__file__)),
+            "cpu_execution_policy": cpu_execution_policy,
+            "config": fixed_profile(),
+            "input_state_mapping": MODEL_STATE_MAPPINGS[args.model_id],
+            "target_state_mapping": MODEL_STATE_MAPPINGS[args.model_id],
+            "target_to_next_input_mapping": TARGET_TO_NEXT_INPUT_MAPPING,
+            "selection": {
+                "best_epoch": result.best_epoch,
+                "best_model_selection_objective": result.best_objective,
+                "checkpoint_role": "raw_best_unblended_model_state",
+                "final_blend_stage": "once_after_raw_best_restore",
+            },
+            "batch_order": {
+                "algorithm": "torch_randperm_cpu_generator",
+                "epoch_seed": "base_seed_plus_one_based_epoch",
+                "record_serialization": "compact_json_utf8_lf_per_batch",
+                "records": result.history[["epoch", "batch_order_sha256"]].to_dict(
+                    orient="records"
                 ),
-            }
-            for name in MODEL_ARTIFACT_OUTPUT_NAMES
-        ],
-        "completion_marker_written_last": True,
+            },
+            "row_counts": {
+                "training_windows": int(
+                    bundle.metadata["time_role"].eq("training").sum()
+                ),
+                "model_selection_windows": int(
+                    bundle.metadata["time_role"].eq("model_selection").sum()
+                ),
+                "calibration_windows_not_used_for_fit": int(
+                    bundle.metadata["time_role"].eq("calibration_threshold").sum()
+                ),
+                "test_windows": 0,
+                "holdout_windows": 0,
+            },
+            "inputs": input_records,
+            "source_code": [
+                dict(record) for record in model_input_contract.source_code_records
+            ],
+            "outputs": [
+                {
+                    **_file_record(paths[name]),
+                    **(
+                        {"artifact_role": "final_model_with_locked_output_blend"}
+                        if name == "model"
+                        else {"artifact_role": "raw_best_checkpoint"}
+                        if name == "checkpoint"
+                        else {}
+                    ),
+                }
+                for name in MODEL_ARTIFACT_OUTPUT_NAMES
+            ],
+            "completion_marker_written_last": True,
+        }
+        transaction.publish_json(manifest, paths["manifest"])
+
+
+def main() -> None:
+    args = parse_args()
+
+    # No sequence/model row or output path is touched before this external gate.
+    from src.experiments.closure_development_runtime_temporal_consumer_patch import (
+        require_development_fit_authorized_with_temporal_consumer_patch,
+    )
+
+    require_development_fit_authorized_with_temporal_consumer_patch(device=args.device)
+    validate_temporal_seed(args.model_id, args.base_seed)
+    paths = {
+        name: PROJECT_ROOT / path
+        for name, path in _paths(args.model_id, args.base_seed).items()
     }
-    _write_json_atomic(manifest, paths["manifest"])
+    with _temporal_slot_guard(args.model_id, args.base_seed):
+        _run_temporal_slot(args=args, paths=paths)
 
 
 if __name__ == "__main__":
