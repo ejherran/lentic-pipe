@@ -25,6 +25,7 @@ from src.experiments.build_closure_pipe_sequences import (
     _file_record,
     expected_cpu_execution_policy_record,
     sequence_arrow_table,
+    write_sequence_parquet,
 )
 from src.experiments.closure_contract import load_yaml_mapping
 from src.experiments.train_closure_pipe import (
@@ -287,6 +288,54 @@ def test_failed_fit_rows_are_reported_as_unavailable_without_tensorization() -> 
     assert availability.available is False
     assert availability.failure_reason == "sequence_fit_rows_unavailable"
     assert availability.fit_status_counts["model_slot_unavailable"] == 2
+
+
+def test_failed_fit_rows_accept_only_fully_null_fixed_size_tensors(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    frame = _sequence_frame()
+    training = frame["time_role"].eq("training")
+    frame.loc[training, "sequence_status"] = "model_slot_unavailable"
+    frame.loc[training, "failure_reason"] = "anfis_model_slot_unavailable"
+    for index in frame.index[training]:
+        for column in INPUT_COLUMNS:
+            frame.at[index, column] = None
+        for column in TARGET_COLUMNS:
+            frame.at[index, column] = np.nan
+
+    output = tmp_path / "sequence_with_failed_fit_rows.parquet"
+    write_sequence_parquet(frame, output)
+    restored = pd.read_parquet(output, columns=list(SEQUENCE_COLUMNS))
+
+    availability = inspect_fit_availability(
+        restored,
+        model_id="P0",
+        base_seed=1729,
+        enforce_locked_denominators=False,
+    )
+    assert availability.available is False
+
+    failure_index = restored.index[training][0]
+    invalid_tensors = (
+        np.array([np.nan] * 11 + [0.0], dtype=np.float32),
+        np.full(11, np.nan, dtype=np.float32),
+        np.full(13, np.nan, dtype=np.float32),
+        np.zeros(12, dtype=np.float32),
+        np.full(12, np.inf, dtype=np.float32),
+    )
+    for invalid in invalid_tensors:
+        restored.at[failure_index, INPUT_COLUMNS[0]] = invalid
+        with pytest.raises(ValueError, match="nullable tensors only"):
+            inspect_fit_availability(
+                restored,
+                model_id="P0",
+                base_seed=1729,
+                enforce_locked_denominators=False,
+            )
 
 
 def test_temporal_constants_match_authoritative_runtime() -> None:
@@ -768,13 +817,15 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
     class GateStopped(RuntimeError):
         pass
 
-    fake_lock = types.ModuleType("src.experiments.closure_development_runtime_lock")
+    fake_lock = types.ModuleType(
+        "src.experiments.closure_development_runtime_sequence_patch"
+    )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
         assert device == "cpu"
         raise GateStopped
 
-    setattr(fake_lock, "require_development_fit_authorized", stop_gate)
+    setattr(fake_lock, "require_development_fit_authorized_with_sequence_patch", stop_gate)
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,

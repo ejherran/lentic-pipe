@@ -345,7 +345,11 @@ def inspect_fit_availability(
         if status != "success" and not reason:
             raise ClosurePipeTrainingError("Unavailable sequence rows require a failure reason")
         if status != "success":
-            nonnull_inputs = [column for column in INPUT_COLUMNS if row[column] is not None]
+            nonnull_inputs = [
+                column
+                for column in INPUT_COLUMNS
+                if not _is_logically_null_input_tensor(row[column])
+            ]
             nonnull_targets = [column for column in TARGET_COLUMNS if not pd.isna(row[column])]
             if nonnull_inputs or nonnull_targets:
                 raise ClosurePipeTrainingError(
@@ -376,6 +380,14 @@ def inspect_fit_availability(
         fit_status_counts=counts,
         failure_reason_counts=failure_counts,
     )
+
+
+def _is_logically_null_input_tensor(value: Any) -> bool:
+    """Recognize logical nulls before and after FixedSizeList Parquet I/O."""
+    if value is None:
+        return True
+    array = np.asarray(value)
+    return array.shape == (HISTORY_LENGTH,) and bool(pd.isna(array).all())
 
 
 def _canonical_order(frame: pd.DataFrame) -> list[int]:
@@ -1324,9 +1336,11 @@ def main() -> None:
     args = parse_args()
 
     # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_development_runtime_lock import require_development_fit_authorized
+    from src.experiments.closure_development_runtime_sequence_patch import (
+        require_development_fit_authorized_with_sequence_patch,
+    )
 
-    require_development_fit_authorized(device=args.device)
+    require_development_fit_authorized_with_sequence_patch(device=args.device)
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_temporal_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)

@@ -10,6 +10,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 import pyarrow as pa
+import pyarrow.parquet as pq
 import pytest
 
 from src.experiments.build_closure_pipe_sequences import (
@@ -38,6 +39,7 @@ from src.experiments.rollout_closure_pipe import (
     rollout_origin_samples,
     validate_rollout_runtime_contract,
     validate_temporal_model_manifest,
+    write_rollout_parquet,
 )
 from src.experiments.closure_runtime_contract import (
     rollout_predraw_sha256,
@@ -229,7 +231,7 @@ def test_rollout_batch_512_kernel_is_origin_batch_invariant() -> None:
         assert np.array_equal(batched.irc_samples, single.irc_samples)
 
 
-def test_rollout_left_preserves_target_unavailable_and_failure_rows() -> None:
+def test_rollout_left_preserves_target_unavailable_and_failure_rows(tmp_path: Path) -> None:
     torch = pytest.importorskip("torch")
     success = build_closure_rollouts(
         _sequence(),
@@ -286,7 +288,31 @@ def test_rollout_left_preserves_target_unavailable_and_failure_rows() -> None:
     )
     assert set(unavailable_model["prediction_status"]) == {"model_unavailable"}
     assert set(unavailable_model["failure_reason"]) == {"sequence_fit_rows_unavailable"}
-    assert rollout_arrow_table(unavailable_model).column("sample_yN").null_count == 3
+    sample_array = rollout_arrow_table(unavailable_model).column("sample_yN").combine_chunks()
+    assert sample_array.null_count == 0
+    assert sample_array.values.null_count == 3 * 128
+
+    mixed = pd.concat(
+        [success.iloc[[0]], unavailable_model.iloc[[1]]],
+        ignore_index=True,
+    )
+    output = tmp_path / "mixed_rollout.parquet"
+    write_rollout_parquet(mixed, output)
+    restored = pq.read_table(output)
+    restored_samples = restored.column("sample_yN").combine_chunks()
+    assert restored.schema.field("sample_yN").type == pa.list_(pa.float32(), 128)
+    assert restored_samples.null_count == 0
+    assert restored_samples.values.null_count == 128
+    assert np.allclose(restored_samples[0].as_py(), mixed.iloc[0]["sample_yN"])
+    assert restored_samples[1].as_py() == [None] * 128
+    restored_irc = restored.column("irc_samples").combine_chunks()
+    assert restored.schema.field("irc_samples").type == pa.list_(pa.float64(), 128)
+    assert restored_irc.null_count == 0
+    assert restored_irc.values.null_count == 128
+    assert np.allclose(restored_irc[0].as_py(), mixed.iloc[0]["irc_samples"])
+    assert restored_irc[1].as_py() == [None] * 128
+    assert restored.column("raw_bloom_score").null_count == 1
+    assert not output.with_suffix(output.suffix + ".tmp").exists()
 
 
 def test_rollout_preserves_sequence_model_unavailable_cause_over_manifest_cause() -> None:
@@ -897,13 +923,15 @@ def test_main_stops_at_external_gate_before_rollout_io(monkeypatch: pytest.Monke
     class GateStopped(RuntimeError):
         pass
 
-    fake_lock = types.ModuleType("src.experiments.closure_development_runtime_lock")
+    fake_lock = types.ModuleType(
+        "src.experiments.closure_development_runtime_sequence_patch"
+    )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
         assert device == "cpu"
         raise GateStopped
 
-    setattr(fake_lock, "require_development_fit_authorized", stop_gate)
+    setattr(fake_lock, "require_development_fit_authorized_with_sequence_patch", stop_gate)
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,

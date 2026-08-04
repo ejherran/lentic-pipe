@@ -647,10 +647,13 @@ def build_closure_rollouts(
 
 
 def _fixed_size_array(values: Sequence[Any], *, value_type: pa.DataType) -> pa.Array:
-    normalized: list[list[float] | None] = []
+    normalized: list[list[float | None]] = []
     for value in values:
         if value is None:
-            normalized.append(None)
+            # Parquet cannot encode a parent-null FixedSizeList because every
+            # slot still owns 128 physical children (Apache Arrow #24425).
+            # Preserve the fixed-size schema with an all-null child payload.
+            normalized.append([None] * SAMPLES_PER_ORIGIN)
             continue
         array = np.asarray(value)
         if array.shape != (SAMPLES_PER_ORIGIN,):
@@ -1181,9 +1184,11 @@ def main() -> None:
     args = parse_args()
 
     # The gate precedes model, sequence, common-origin, and output I/O.
-    from src.experiments.closure_development_runtime_lock import require_development_fit_authorized
+    from src.experiments.closure_development_runtime_sequence_patch import (
+        require_development_fit_authorized_with_sequence_patch,
+    )
 
-    require_development_fit_authorized(device=args.device)
+    require_development_fit_authorized_with_sequence_patch(device=args.device)
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_rollout_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)

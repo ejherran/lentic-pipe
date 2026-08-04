@@ -3,6 +3,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+import os
 import sys
 import types
 from argparse import Namespace
@@ -590,7 +591,13 @@ def test_p1_sequence_uses_same_seed_scoped_no_current_mapping() -> None:
     assert row["target_delta_yT"] == pytest.approx(-0.19)
 
 
-def test_missing_history_is_retained_as_fixed_shape_failure() -> None:
+def test_missing_history_is_retained_as_fixed_shape_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     state = _state_frame().loc[lambda frame: ~frame["year_month"].eq("2020-03")]
     sequences, audit = build_closure_pipe_sequences(
         state,
@@ -609,11 +616,33 @@ def test_missing_history_is_retained_as_fixed_shape_failure() -> None:
     assert pd.isna(row["target_yN"])
 
     table = sequence_arrow_table(sequences)
-    assert table.column("x_yN").null_count == 1
+    input_array = table.column("x_yN").combine_chunks()
+    assert input_array.null_count == 0
+    assert input_array.values.null_count == 12
+    assert input_array[0].as_py() == [None] * 12
     assert table.column("target_yN").null_count == 1
 
+    output = tmp_path / "failed_sequence.parquet"
+    write_sequence_parquet(sequences, output)
+    restored = pq.read_table(output)
+    restored_input = restored.column("x_yN").combine_chunks()
+    assert restored.schema.field("x_yN").type == pa.list_(pa.float32(), 12)
+    assert restored_input.null_count == 0
+    assert restored_input.values.null_count == 12
+    assert restored_input[0].as_py() == [None] * 12
+    assert restored.column("target_yN").null_count == 1
+    assert restored.column("sequence_status")[0].as_py() == "input_history_unavailable"
+    assert restored.column("failure_reason")[0].as_py() == "missing_history_state"
+    assert not output.with_suffix(output.suffix + ".tmp").exists()
 
-def test_sequence_arrow_schema_uses_fixed_size_float32_lists(tmp_path: Path) -> None:
+
+def test_sequence_arrow_schema_uses_fixed_size_float32_lists(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     sequences, _ = build_closure_pipe_sequences(
         _state_frame(),
         _common_origin(),
@@ -636,6 +665,14 @@ def test_sequence_arrow_schema_uses_fixed_size_float32_lists(tmp_path: Path) -> 
     restored_schema = pq.read_schema(output)
     assert restored_schema.field("x_yN").type == pa.list_(pa.float32(), 12)
     assert restored_schema.field("target_yN").type == pa.float32()
+    restored = pq.read_table(output)
+    assert np.allclose(
+        restored.column("x_yN")[0].as_py(),
+        sequences.iloc[0]["x_yN"],
+    )
+    assert restored.column("target_yN")[0].as_py() == pytest.approx(
+        float(sequences.iloc[0]["target_yN"])
+    )
 
 
 def test_model_slot_unavailable_retains_origin_with_null_tensors() -> None:
@@ -653,7 +690,9 @@ def test_model_slot_unavailable_retains_origin_with_null_tensors() -> None:
     assert row["sequence_status"] == "model_slot_unavailable"
     assert row["failure_reason"] == "insufficient_eligible_training_rows"
     assert row["x_yN"] is None
-    assert sequence_arrow_table(sequences).column("x_yN").null_count == 1
+    input_array = sequence_arrow_table(sequences).column("x_yN").combine_chunks()
+    assert input_array.null_count == 0
+    assert input_array.values.null_count == 12
 
 
 def test_sequence_requires_origin_and_target_to_share_endpoint_role() -> None:
@@ -1171,12 +1210,14 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
     class GateStopped(RuntimeError):
         pass
 
-    fake_lock = types.ModuleType("src.experiments.closure_development_runtime_lock")
+    fake_lock = types.ModuleType(
+        "src.experiments.closure_development_runtime_sequence_patch"
+    )
 
     def stop_gate(**_: object) -> dict[str, object]:
         raise GateStopped
 
-    setattr(fake_lock, "require_development_fit_authorized", stop_gate)
+    setattr(fake_lock, "require_development_fit_authorized_with_sequence_patch", stop_gate)
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
@@ -1220,3 +1261,101 @@ def test_sequence_bundle_preflight_rejects_final_or_temporary_evidence(
     pointer.write_bytes(b"outs: []")
     with pytest.raises(ValueError, match="overwrite is forbidden"):
         assert_sequence_outputs_absent(paths)
+    with pytest.raises(ValueError, match="Concurrent DVC registration"):
+        module.assert_sequence_pointer_absent(paths)
+    pointer.unlink()
+    for candidate in (final, temporary, pointer):
+        candidate.parent.mkdir(parents=True, exist_ok=True)
+        candidate.symlink_to(tmp_path / "missing-target")
+        with pytest.raises(ValueError, match="overwrite is forbidden"):
+            assert_sequence_outputs_absent(paths)
+        candidate.unlink()
+
+
+def test_sequence_bundle_guard_is_exclusive_for_the_full_slot(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    with module._sequence_bundle_guard("P0", None):
+        with pytest.raises(ValueError, match="already reserved"):
+            with module._sequence_bundle_guard("P0", None):
+                raise AssertionError("unreachable")
+        assert (tmp_path / "tmp/closure_v1_sequence_builder/P0.guard").is_file()
+    assert not (tmp_path / "tmp/closure_v1_sequence_builder/P0.guard").exists()
+
+
+def test_sequence_writer_never_clobbers_final_or_broken_temporary(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    output = tmp_path / "reports/summary.json"
+    output.parent.mkdir(parents=True)
+    output.write_bytes(b"racing writer\n")
+    with pytest.raises(ValueError, match="overwrite final artifact"):
+        module._write_json_atomic({"ours": True}, output)
+    assert output.read_bytes() == b"racing writer\n"
+    assert not output.with_suffix(output.suffix + ".tmp").exists()
+
+    output.unlink()
+    temporary = output.with_suffix(output.suffix + ".tmp")
+    temporary.symlink_to(tmp_path / "missing-target")
+    with pytest.raises(ValueError, match="overwrite temporary artifact"):
+        module._write_json_atomic({"ours": True}, output)
+    assert temporary.is_symlink()
+    assert not output.exists()
+    temporary.unlink()
+
+    def replace_temporary(handle: Any) -> None:
+        handle.write(b"owned\n")
+        temporary.unlink()
+        temporary.write_bytes(b"foreign replacement\n")
+
+    with pytest.raises(ValueError, match="identity drifted"):
+        module._write_output_no_clobber(output, replace_temporary, binary=True)
+    assert temporary.read_bytes() == b"foreign replacement\n"
+    assert not output.exists()
+    temporary.unlink()
+
+    original_fsync = os.fsync
+    fsync_calls = 0
+
+    def fail_directory_fsync(descriptor: int) -> None:
+        nonlocal fsync_calls
+        fsync_calls += 1
+        if fsync_calls == 2:
+            raise OSError("directory fsync failed")
+        original_fsync(descriptor)
+
+    monkeypatch.setattr(os, "fsync", fail_directory_fsync)
+    with pytest.raises(OSError, match="directory fsync failed"):
+        module._write_output_no_clobber(
+            output,
+            lambda handle: handle.write(b"owned\n"),
+            binary=True,
+        )
+    assert not output.exists()
+    assert not temporary.exists()
+
+
+def test_sequence_writer_rejects_a_symlinked_output_ancestor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    repository = tmp_path / "repository"
+    outside = tmp_path / "outside"
+    repository.mkdir()
+    outside.mkdir()
+    (repository / "reports").symlink_to(outside, target_is_directory=True)
+    monkeypatch.setattr(module, "PROJECT_ROOT", repository)
+    output = repository / "reports/summary.json"
+    with pytest.raises(ValueError, match="ancestor is not a real directory"):
+        module._write_json_atomic({"ours": True}, output)
+    assert list(outside.iterdir()) == []

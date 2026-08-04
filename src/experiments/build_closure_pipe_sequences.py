@@ -13,13 +13,16 @@ import argparse
 import hashlib
 import json
 import math
+import os
 import re
+import stat
 import sys
 import unicodedata
+from contextlib import contextmanager
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping, Sequence, cast
+from typing import Any, Iterator, Mapping, Sequence, cast
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 if PROJECT_ROOT.as_posix() not in sys.path:
@@ -606,16 +609,232 @@ def _fixed_size_array(
     size: int,
     value_type: pa.DataType,
 ) -> pa.Array:
-    normalized: list[list[float] | None] = []
+    normalized: list[list[float | None]] = []
     for value in values:
         if value is None:
-            normalized.append(None)
+            # Parquet cannot encode a parent-null FixedSizeList because every
+            # slot still owns ``size`` physical children (Apache Arrow #24425).
+            # Keep the closed fixed-size schema and represent a logically null
+            # tensor with an outer-valid list whose children are all null.
+            normalized.append([None] * size)
             continue
         array = np.asarray(value)
         if array.shape != (size,):
             raise ClosurePipeSequenceError(f"Fixed-size list payload must have shape ({size},)")
         normalized.append(array.astype(np.float32).tolist())
     return pa.array(normalized, type=pa.list_(value_type, size))
+
+
+def _path_entry_exists(path: Path) -> bool:
+    """Return true for every lexical entry, including a broken symlink."""
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return False
+    return True
+
+
+def _open_real_output_parent(path: Path) -> int:
+    try:
+        repository_root = PROJECT_ROOT.resolve(strict=True)
+        lexical_parent = Path(os.path.abspath(path.parent))
+        relative_parent = lexical_parent.relative_to(repository_root)
+    except (FileNotFoundError, ValueError) as exc:
+        raise ClosurePipeSequenceError(f"Output parent escapes the repository: {path}") from exc
+    directory_flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    directory_flags |= getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        descriptor = os.open(repository_root, directory_flags)
+    except OSError as exc:
+        raise ClosurePipeSequenceError("Repository root cannot be opened safely") from exc
+    try:
+        for part in relative_parent.parts:
+            try:
+                metadata = os.stat(
+                    part,
+                    dir_fd=descriptor,
+                    follow_symlinks=False,
+                )
+            except FileNotFoundError:
+                try:
+                    os.mkdir(part, mode=0o755, dir_fd=descriptor)
+                except FileExistsError:
+                    pass
+                metadata = os.stat(
+                    part,
+                    dir_fd=descriptor,
+                    follow_symlinks=False,
+                )
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise ClosurePipeSequenceError(
+                    f"Output ancestor is not a real directory: {path}"
+                )
+            child = os.open(part, directory_flags, dir_fd=descriptor)
+            opened_child = os.fstat(child)
+            if (opened_child.st_dev, opened_child.st_ino) != (
+                metadata.st_dev,
+                metadata.st_ino,
+            ):
+                os.close(child)
+                raise ClosurePipeSequenceError(f"Output ancestor identity drifted: {path}")
+            os.close(descriptor)
+            descriptor = child
+        opened = os.fstat(descriptor)
+        lexical = lexical_parent.lstat()
+        if (
+            not stat.S_ISDIR(lexical.st_mode)
+            or (opened.st_dev, opened.st_ino) != (lexical.st_dev, lexical.st_ino)
+        ):
+            raise ClosurePipeSequenceError(f"Output parent identity drifted: {path}")
+        return descriptor
+    except BaseException:
+        os.close(descriptor)
+        raise
+
+
+def _unlink_name_if_owned(
+    directory_descriptor: int,
+    name: str,
+    *,
+    device: int,
+    inode: int,
+) -> None:
+    try:
+        metadata = os.stat(
+            name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+    except (FileNotFoundError, OSError):
+        return
+    if (
+        stat.S_ISREG(metadata.st_mode)
+        and (metadata.st_dev, metadata.st_ino) == (device, inode)
+    ):
+        os.unlink(name, dir_fd=directory_descriptor)
+
+
+def _write_output_no_clobber(
+    path: Path,
+    writer: Any,
+    *,
+    binary: bool,
+) -> None:
+    """Write through an exclusive temporary inode and hard-link it once."""
+    directory_descriptor = _open_real_output_parent(path)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+    flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    descriptor: int | None = None
+    device: int | None = None
+    inode: int | None = None
+    committed = False
+    try:
+        try:
+            descriptor = os.open(
+                temporary.name,
+                flags,
+                0o644,
+                dir_fd=directory_descriptor,
+            )
+        except FileExistsError as exc:
+            raise ClosurePipeSequenceError(
+                f"Refusing to overwrite temporary artifact: {temporary}"
+            ) from exc
+        metadata = os.fstat(descriptor)
+        if not stat.S_ISREG(metadata.st_mode):
+            raise ClosurePipeSequenceError(f"Temporary artifact is not regular: {temporary}")
+        device, inode = metadata.st_dev, metadata.st_ino
+        if binary:
+            with os.fdopen(os.dup(descriptor), "wb") as handle:
+                writer(handle)
+                handle.flush()
+                os.fsync(handle.fileno())
+        else:
+            with os.fdopen(
+                os.dup(descriptor),
+                "w",
+                encoding="utf-8",
+                newline="",
+            ) as handle:
+                writer(handle)
+                handle.flush()
+                os.fsync(handle.fileno())
+        temporary_metadata = os.stat(
+            temporary.name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        parent_opened = os.fstat(directory_descriptor)
+        parent_lexical = path.parent.lstat()
+        if (
+            not stat.S_ISREG(temporary_metadata.st_mode)
+            or (temporary_metadata.st_dev, temporary_metadata.st_ino) != (device, inode)
+            or not stat.S_ISDIR(parent_lexical.st_mode)
+            or (parent_lexical.st_dev, parent_lexical.st_ino)
+            != (parent_opened.st_dev, parent_opened.st_ino)
+        ):
+            raise ClosurePipeSequenceError(f"Temporary artifact identity drifted: {temporary}")
+        try:
+            os.link(
+                temporary.name,
+                path.name,
+                src_dir_fd=directory_descriptor,
+                dst_dir_fd=directory_descriptor,
+                follow_symlinks=False,
+            )
+        except FileExistsError as exc:
+            raise ClosurePipeSequenceError(
+                f"Refusing to overwrite final artifact: {path}"
+            ) from exc
+        final_metadata = os.stat(
+            path.name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        final_lexical = path.lstat()
+        parent_lexical = path.parent.lstat()
+        if (
+            not stat.S_ISREG(final_metadata.st_mode)
+            or not stat.S_ISREG(final_lexical.st_mode)
+            or (final_metadata.st_dev, final_metadata.st_ino) != (device, inode)
+            or (final_lexical.st_dev, final_lexical.st_ino) != (device, inode)
+            or (parent_lexical.st_dev, parent_lexical.st_ino)
+            != (parent_opened.st_dev, parent_opened.st_ino)
+        ):
+            _unlink_name_if_owned(
+                directory_descriptor,
+                path.name,
+                device=device,
+                inode=inode,
+            )
+            raise ClosurePipeSequenceError(f"Final artifact identity drifted: {path}")
+        _unlink_name_if_owned(
+            directory_descriptor,
+            temporary.name,
+            device=device,
+            inode=inode,
+        )
+        os.fsync(directory_descriptor)
+        committed = True
+    finally:
+        if device is not None and inode is not None:
+            if not committed:
+                _unlink_name_if_owned(
+                    directory_descriptor,
+                    path.name,
+                    device=device,
+                    inode=inode,
+                )
+            _unlink_name_if_owned(
+                directory_descriptor,
+                temporary.name,
+                device=device,
+                inode=inode,
+            )
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_descriptor)
 
 
 def sequence_arrow_table(frame: pd.DataFrame) -> pa.Table:
@@ -646,16 +865,17 @@ def sequence_arrow_table(frame: pd.DataFrame) -> pa.Table:
 
 
 def write_sequence_parquet(frame: pd.DataFrame, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    if temporary.exists():
-        raise ClosurePipeSequenceError(f"Refusing to overwrite temporary artifact: {temporary}")
-    try:
-        pq.write_table(sequence_arrow_table(frame), temporary, compression="zstd", use_dictionary=False)
-        temporary.replace(path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
+    table = sequence_arrow_table(frame)
+    _write_output_no_clobber(
+        path,
+        lambda handle: pq.write_table(
+            table,
+            handle,
+            compression="zstd",
+            use_dictionary=False,
+        ),
+        binary=True,
+    )
 
 
 def _sha256(path: Path) -> str:
@@ -2100,31 +2320,19 @@ def validate_state_slot_manifest(
 
 
 def _write_json_atomic(payload: Mapping[str, Any], path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    if temporary.exists():
-        raise ClosurePipeSequenceError(f"Refusing to overwrite temporary artifact: {temporary}")
-    try:
-        with temporary.open("w", encoding="utf-8") as handle:
-            json.dump(payload, handle, indent=2, ensure_ascii=False)
-            handle.write("\n")
-        temporary.replace(path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
+    def write(handle: Any) -> None:
+        json.dump(payload, handle, indent=2, ensure_ascii=False)
+        handle.write("\n")
+
+    _write_output_no_clobber(path, write, binary=False)
 
 
 def _write_csv_atomic(frame: pd.DataFrame, path: Path) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    if temporary.exists():
-        raise ClosurePipeSequenceError(f"Refusing to overwrite temporary artifact: {temporary}")
-    try:
-        frame.to_csv(temporary, index=False)
-        temporary.replace(path)
-    except BaseException:
-        temporary.unlink(missing_ok=True)
-        raise
+    _write_output_no_clobber(
+        path,
+        lambda handle: frame.to_csv(handle, index=False),
+        binary=False,
+    )
 
 
 def _paths(model_id: str, base_seed: int | None) -> dict[str, Path]:
@@ -2150,6 +2358,88 @@ def _paths(model_id: str, base_seed: int | None) -> dict[str, Path]:
     }
 
 
+def _sequence_guard_directory() -> Path:
+    tmp_root = PROJECT_ROOT / "tmp"
+    guard_directory = tmp_root / "closure_v1_sequence_builder"
+    for directory in (tmp_root, guard_directory):
+        directory.mkdir(mode=0o700, exist_ok=True)
+        metadata = directory.lstat()
+        if not stat.S_ISDIR(metadata.st_mode):
+            raise ClosurePipeSequenceError(
+                f"Sequence coordination path is not a real directory: {directory}"
+            )
+    try:
+        guard_directory.resolve(strict=True).relative_to(PROJECT_ROOT.resolve())
+    except ValueError as exc:
+        raise ClosurePipeSequenceError("Sequence coordination path escapes the repository") from exc
+    return guard_directory
+
+
+@contextmanager
+def _sequence_bundle_guard(
+    model_id: str,
+    base_seed: int | None,
+) -> Iterator[None]:
+    guard_directory = _sequence_guard_directory()
+    guard_name = "P0.guard" if model_id == "P0" else f"P1_seed_{base_seed}.guard"
+    directory_flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
+    directory_flags |= getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    directory_descriptor = os.open(guard_directory, directory_flags)
+    descriptor: int | None = None
+    owned_device: int | None = None
+    owned_inode: int | None = None
+    try:
+        opened_directory = os.fstat(directory_descriptor)
+        lexical_directory = guard_directory.lstat()
+        if (
+            (opened_directory.st_dev, opened_directory.st_ino)
+            != (lexical_directory.st_dev, lexical_directory.st_ino)
+        ):
+            raise ClosurePipeSequenceError("Sequence coordination directory identity drifted")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        flags |= getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            descriptor = os.open(
+                guard_name,
+                flags,
+                0o600,
+                dir_fd=directory_descriptor,
+            )
+        except FileExistsError as exc:
+            raise ClosurePipeSequenceError(
+                f"A sequence bundle build is already reserved: {guard_name}"
+            ) from exc
+        owned = os.fstat(descriptor)
+        if not stat.S_ISREG(owned.st_mode):
+            raise ClosurePipeSequenceError("Sequence bundle guard is not a regular file")
+        owned_device, owned_inode = owned.st_dev, owned.st_ino
+        yield
+        current = os.stat(
+            guard_name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        lexical_directory = guard_directory.lstat()
+        if (
+            not stat.S_ISREG(current.st_mode)
+            or (current.st_dev, current.st_ino) != (owned_device, owned_inode)
+            or (lexical_directory.st_dev, lexical_directory.st_ino)
+            != (opened_directory.st_dev, opened_directory.st_ino)
+        ):
+            raise ClosurePipeSequenceError("Sequence bundle guard changed during construction")
+    finally:
+        if owned_device is not None and owned_inode is not None:
+            _unlink_name_if_owned(
+                directory_descriptor,
+                guard_name,
+                device=owned_device,
+                inode=owned_inode,
+            )
+        if descriptor is not None:
+            os.close(descriptor)
+        os.close(directory_descriptor)
+
+
 def assert_sequence_outputs_absent(paths: Mapping[str, Path]) -> None:
     """Keep sequence completion bundles one-shot and fail on partial evidence."""
     output_names = ("sequence", "summary", "manifest")
@@ -2164,11 +2454,25 @@ def assert_sequence_outputs_absent(paths: Mapping[str, Path]) -> None:
     sequence_path = PROJECT_ROOT / paths["sequence"]
     pointer = Path(f"{sequence_path.as_posix()}.dvc")
     candidates.extend((pointer, pointer.with_suffix(pointer.suffix + ".tmp")))
-    existing = [path.as_posix() for path in candidates if path.exists()]
+    existing = [path.as_posix() for path in candidates if _path_entry_exists(path)]
     if existing:
         raise ClosurePipeSequenceError(
             "Sequence overwrite is forbidden; existing bundle artifacts require "
             f"explicit review and cleanup: {existing}"
+        )
+
+
+def assert_sequence_pointer_absent(paths: Mapping[str, Path]) -> None:
+    """Forbid concurrent DVC registration while a sequence bundle is built."""
+    if "sequence" not in paths:
+        raise ClosurePipeSequenceError("Sequence path set is incomplete")
+    sequence_path = PROJECT_ROOT / paths["sequence"]
+    pointer = Path(f"{sequence_path.as_posix()}.dvc")
+    candidates = (pointer, pointer.with_suffix(pointer.suffix + ".tmp"))
+    existing = [path.as_posix() for path in candidates if _path_entry_exists(path)]
+    if existing:
+        raise ClosurePipeSequenceError(
+            f"Concurrent DVC registration is forbidden during sequence build: {existing}"
         )
 
 
@@ -2184,9 +2488,11 @@ def main() -> None:
 
     # The external authorization check is deliberately the first operation in
     # main that may read repository artifacts.  There is no unlocked CLI mode.
-    from src.experiments.closure_development_runtime_lock import require_development_fit_authorized
+    from src.experiments.closure_development_runtime_sequence_patch import (
+        require_development_fit_authorized_with_sequence_patch,
+    )
 
-    require_development_fit_authorized()
+    require_development_fit_authorized_with_sequence_patch()
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_sequence_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)
@@ -2194,7 +2500,23 @@ def main() -> None:
         raise ClosurePipeSequenceError("Applied CPU execution policy drifted")
     validate_model_seed(args.model_id, args.base_seed)
     paths = _paths(args.model_id, args.base_seed)
-    assert_sequence_outputs_absent(paths)
+    with _sequence_bundle_guard(args.model_id, args.base_seed):
+        assert_sequence_outputs_absent(paths)
+        _materialize_sequence_bundle(
+            args,
+            runtime=runtime,
+            cpu_execution_policy=cpu_execution_policy,
+            paths=paths,
+        )
+
+
+def _materialize_sequence_bundle(
+    args: argparse.Namespace,
+    *,
+    runtime: Mapping[str, Any],
+    cpu_execution_policy: Mapping[str, Any],
+    paths: Mapping[str, Path],
+) -> None:
     gate = load_development_gate()
 
     state_path = PROJECT_ROOT / paths["state"]
@@ -2263,6 +2585,7 @@ def main() -> None:
     sequence_path = PROJECT_ROOT / paths["sequence"]
     summary_path = PROJECT_ROOT / paths["summary"]
     manifest_path = PROJECT_ROOT / paths["manifest"]
+    assert_sequence_pointer_absent(paths)
     write_sequence_parquet(sequences, sequence_path)
     summary = cast(
         pd.DataFrame,
@@ -2329,6 +2652,7 @@ def main() -> None:
         "outputs": [_file_record(sequence_path), _file_record(summary_path)],
         "completion_marker_written_last": True,
     }
+    assert_sequence_pointer_absent(paths)
     _write_json_atomic(manifest, manifest_path)
 
 
