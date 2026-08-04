@@ -1,10 +1,11 @@
 # Closure V1 E0-D Runtime Patch 1
 
-Status: closed implementation contract, effective only after P-DLP
-publication, identified as `E0-DLP`. It is a
-consumer-dialect correction layered on the published E0-DL lock. It is not a
-protocol amendment, does not replace E0-DL or E0-M, and does not authorize
-evaluation, E0-U, holdout access, or post-2021 outcome access.
+Status: closed implementation contract v1.1, effective only after P-DLP
+publication, identified as `E0-DLP`. It is a consumer-dialect correction plus
+the append-only R-DLP portable-evidence erratum layered on the published E0-DL
+lock. The erratum is not a fourth runtime-compatibility correction. This
+contract does not replace E0-DL or E0-M and does not authorize evaluation,
+E0-U, holdout access, or post-2021 outcome access.
 
 ## Purpose And Incident Classification
 
@@ -43,6 +44,17 @@ exact frozen seed-`1729` manifest under the published E0-DLP authority, and it
 must require locked lowercase path tokens for every future slot. No permissive
 alias, column-set comparison, reordering, normalization, or best-effort
 conversion is allowed.
+
+The first P-DLP check-only audit then exposed a separate reproducibility defect
+in the lock evidence itself. The v1 implementation tried to prove producer
+write order from current workspace `st_mtime_ns` values. DVC had preserved the
+state Parquet bytes but adopted it through a hardlink whose materialization
+metadata postdated the already sealed manifest. Git and DVC do not version the
+producer's POSIX timestamp ordering, so that predicate is neither portable to
+a fresh clone nor scientific evidence. R-DLP removes that predicate and
+replaces it with the Git-locked producer control flow plus the frozen
+content-addressed bundle. This changes no runtime decision, seed artifact,
+timestamp, DVC object, scientific result, or outcome-access boundary.
 
 ## Immutable Authorities And Frozen Evidence
 
@@ -96,6 +108,20 @@ marker. The complete bundle audit must prove `13` manifest output records,
 `14` physical finals, matching sizes and SHA-256 values, no temporary files,
 and no replacement or stale output.
 
+Completion order is proved without filesystem timestamps. The historical
+producer blob at `e7becdd5553decc92bbcf0af4cede7425ed12546` is exactly 59,865
+bytes with SHA-256
+`8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2`.
+Its `write_anfis_slot_bundle` control flow ends with the atomic manifest write
+to `anfis_manifest_template`, followed only by `return payload`. The historical
+37,021-byte regression has SHA-256
+`1022b4a1915e787fc92dae011d4d04a0a53f4dae784e64bdc442a9f906f212b6`
+and contains `test_slot_bundle_writes_completion_manifest_last`. This producer
+evidence is combined with `completion_marker_written_last=true`, all thirteen
+manifest output records, all fourteen physical final hashes, exact DVC
+ownership, and zero temporary/partial files. Workspace mtime, ctime, inode,
+and link-count metadata are explicitly non-authoritative.
+
 ## One-Shot Preservation And Adoption
 
 Seed `1729` must not be fitted again. Its Parquet, checkpoints, CSV files,
@@ -103,6 +129,12 @@ lineage audit, report, timestamps, and completion manifest must not be edited,
 rewritten, normalized, copied over, or replaced. In particular, the JSON must
 not be reordered to satisfy the consumer, and the metrics CSV must not be
 reordered to imitate sorted JSON keys.
+
+R-DLP must not touch or synthesize timestamps to imitate the original producer
+order. The earlier DVC adoption may legitimately alter materialization
+metadata while preserving content; `original_seed_rematerialized=false` in
+this contract means that R-DLP performs no new fit, payload rewrite, copy, or
+replacement. It does not claim that DVC never managed the physical link.
 
 E0-DLP adopts the bundle as evidence generated while the unmodified E0-DL
 authority was effective. Adoption is not retroactive production under the
@@ -171,6 +203,19 @@ src/experiments/lock_closure_development_runtime_patch.py
 tests/test_closure_development_runtime_patch.py
 docs/closure_v1/E0_D_RUNTIME_PATCH_1.md
 ```
+
+R-DLP modifies exactly four of those already introduced paths and no other
+path:
+
+```text
+configs/closure_v1/development_runtime_patch_lock.schema.json
+docs/closure_v1/E0_D_RUNTIME_PATCH_1.md
+src/experiments/closure_development_runtime_patch.py
+tests/test_closure_development_runtime_patch.py
+```
+
+R-DLP is therefore four modifications relative to H-DLP while the aggregate
+`L..R-DLP` inventory remains the same `23` unique paths.
 
 The only new P-DLP artifacts are:
 
@@ -241,9 +286,36 @@ not rewritten or smuggled into H-DLP. From the moment H-DLP changes a base
 component until P-DLP is published, all affected fit, sequence, training, and
 rollout entry points must fail closed.
 
+### R-DLP: Portable-Evidence Erratum
+
+R-DLP is a direct non-merge child of H-DLP commit
+`350c6b61c497384f5db7fee99e731c02d521e33d`. It modifies exactly the schema,
+protocol document, patch validator, and patch-validator test listed above. It
+must preserve A-DLP at
+`e8fa8b8e8ca26e3457bd073934c158c1d8ee15bf`, H-DLP, their direct-parent
+topology, and the exact `19 + 4 + 4` publication sequence. Since the four R-DLP
+paths were introduced in A-DLP, the aggregate `L..R-DLP` diff remains exactly
+the same 23-path A/M inventory.
+
+The v1.1 lock records an explicit implementation erratum classified as
+`reproducibility_evidence_correction_only`. It supersedes only
+`workspace_filesystem_mtime_order_v1` and requires
+`filesystem_mtime_used=false`. The replacement evidence verifies the exact
+historical producer and regression Git blobs, parses the producer control flow
+fail-closed, binds the manifest marker and all frozen file hashes, and treats
+DVC materialization metadata as non-authoritative. It must reject any mtime,
+ctime, inode, or link-count field and any content, path, ownership, or topology
+drift.
+
+R-DLP adds no fourth runtime correction, changes no authorization or seal, and
+does not run a fit, DVC operation, sequence builder, training job, rollout, or
+outcome read. It must retain the exact `231`-test focal suite, pass the full
+type check and repository publication assistant, and be published cleanly
+before P-DLP check-only or generation is retried.
+
 ### P-DLP: External Patch Lock
 
-Only after H-DLP is clean and published may the external locker generate
+Only after R-DLP is clean and published may the external locker generate
 `development_runtime_patch_lock.json` and its lightweight publication
 manifest. The locker is one-shot and outcome-blind. It must refuse either
 existing final, either temporary path (including broken symlinks), any
@@ -261,18 +333,19 @@ links. On failure it removes only output inodes created by that invocation.
 P-DLP must bind:
 
 - the exact E0-DL path, version, SHA-256, locked head, and publication commit;
-- H-DLP's exact commit, ancestry from `L`, canonical origin identity, live
-  publication reference, and clean tracked state;
+- A-DLP, H-DLP, and R-DLP's exact direct-parent topology from `L`, R-DLP's
+  canonical origin identity, live publication reference, and clean tracked
+  state;
 - the complete closed path sets and their current Git/physical hashes;
 - the three exact runtime-compatibility corrections and their regression
   evidence;
-- all fourteen frozen seed `1729` file records and the manifest-written-last
-  assertion;
+- all fourteen frozen seed `1729` file records and the portable
+  content-addressed completion-order evidence;
 - the unchanged scientific anchors and authorization boundaries; and
 - every seal in the next section.
 
 The generated pair must be reviewed and committed as one direct, non-merge
-child of H-DLP. That P-DLP commit contains exactly two additions—the lock and
+child of R-DLP. That P-DLP commit contains exactly two additions—the lock and
 its companion—and no modification or unrelated file. Both must be regular
 files, no descendant commit may touch either path, and their bytes must remain
 identical in P-DLP, current HEAD, local `origin/main`, and the live remote.
@@ -343,8 +416,9 @@ credential, token, bucket name, local configuration, or secret.
 The base seal `external_lock_bundle_committed_before_fit=true` remains a true
 historical assertion about E0-DL at `L`. E0-DLP must record the later chronology
 honestly: the frozen seed `1729` producer bundle was completed under `L` before
-the consumer incident was discovered; H-DLP and P-DLP are published after that
-bundle and before any affected consumer or subsequent fit is allowed to run.
+the consumer incident was discovered; H-DLP, R-DLP, and P-DLP are published
+after that bundle and before any affected consumer or subsequent fit is allowed
+to run.
 The patch must never recast P-DLP as a pre-fit authority for the already
 completed seed.
 

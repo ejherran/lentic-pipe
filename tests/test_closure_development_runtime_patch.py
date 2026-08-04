@@ -31,7 +31,8 @@ DEFAULT_PATCH_LOCK_SCHEMA = Path(
 SHA_A = "a" * 64
 SHA_B = "b" * 64
 HEAD_B = "d" * 40
-HEAD_C = "e" * 40
+ADOPTION_HEAD = runtime_patch.EXPECTED_ADOPTION_HEAD
+ACTIVATION_HEAD = runtime_patch.EXPECTED_ACTIVATION_HEAD
 BASE_LOCK_COMMIT = "e7becdd5553decc92bbcf0af4cede7425ed12546"
 BASE_LOCKED_HEAD = "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3"
 BASE_LOCK_SHA256 = "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
@@ -334,6 +335,7 @@ def _payload() -> dict[str, Any]:
         seed_manifest_record,
         *sorted([state, *checkpoints, *lightweight], key=lambda record: record["path"]),
     ]
+    bundle_records_sha256 = _record_digest(bundle_records)
     delta_relpaths = {
         str(record["path"]).removeprefix("models/") for record in checkpoints
     }
@@ -373,7 +375,7 @@ def _payload() -> dict[str, Any]:
         "only_allowed_additions_and_modifications": True,
     }
     return {
-        "lock_version": "closure_development_runtime_patch_lock_v1",
+        "lock_version": "closure_development_runtime_patch_lock_v1_1",
         "status": "locked",
         "gate": "E0-DLP",
         "experiment_id": "closure_v1",
@@ -421,14 +423,17 @@ def _payload() -> dict[str, Any]:
         },
         "publication_sequence": {
             "base_commit": BASE_LOCK_COMMIT,
-            "adoption_head": HEAD_C,
+            "adoption_head": ADOPTION_HEAD,
+            "activation_head": ACTIVATION_HEAD,
             "patch_head": HEAD_B,
-            "adoption_is_direct_first_parent_of_patch": True,
+            "adoption_is_direct_first_parent_of_activation": True,
+            "activation_is_direct_first_parent_of_patch": True,
             "base_is_ancestor_of_adoption": True,
-            "adoption_is_ancestor_of_patch": True,
+            "adoption_is_ancestor_of_activation": True,
+            "activation_is_ancestor_of_patch": True,
             "base_to_adoption": {
                 "base_commit": BASE_LOCK_COMMIT,
-                "patch_head": HEAD_C,
+                "patch_head": ADOPTION_HEAD,
                 "entries": [
                     {
                         "status": (
@@ -448,14 +453,27 @@ def _payload() -> dict[str, Any]:
                 "paths_sha256": _path_digest(adoption_paths),
                 "only_allowed_additions_and_modifications": True,
             },
-            "adoption_to_patch": {
-                "base_commit": HEAD_C,
-                "patch_head": HEAD_B,
+            "adoption_to_activation": {
+                "base_commit": ADOPTION_HEAD,
+                "patch_head": ACTIVATION_HEAD,
                 "entries": [
                     {"status": "M", "path": path} for path in activation_paths
                 ],
                 "paths": activation_paths,
                 "paths_sha256": _path_digest(activation_paths),
+                "only_allowed_additions_and_modifications": True,
+            },
+            "activation_to_patch": {
+                "base_commit": ACTIVATION_HEAD,
+                "patch_head": HEAD_B,
+                "entries": [
+                    {"status": "M", "path": path}
+                    for path in runtime_patch.PATCH_REPAIR_PATHS
+                ],
+                "paths": list(runtime_patch.PATCH_REPAIR_PATHS),
+                "paths_sha256": _path_digest(
+                    list(runtime_patch.PATCH_REPAIR_PATHS)
+                ),
                 "only_allowed_additions_and_modifications": True,
             },
             "base_to_patch": aggregate_diff,
@@ -504,6 +522,7 @@ def _payload() -> dict[str, Any]:
             "self_hash_policy": "verified_from_committed_and_published_bytes",
         },
         "git_diff": aggregate_diff,
+        "implementation_erratum": dict(runtime_patch.PATCH_IMPLEMENTATION_ERRATUM),
         "compatibility_corrections": [
             {
                 "issue_id": "published_ref_compatibility_patch_1",
@@ -571,9 +590,12 @@ def _payload() -> dict[str, Any]:
             "lightweight_outputs": lightweight,
             "bundle_record_count": 13,
             "physical_final_count": 14,
-            "completion_manifest_written_last_observed_at_adoption": True,
+            "completion_order_evidence": runtime_patch._completion_order_evidence_record(
+                bundle_records_sha256=bundle_records_sha256,
+                models_owner_hash_value=tree_hash_value,
+            ),
             "temporary_or_partial_file_count": 0,
-            "bundle_records_sha256": _record_digest(bundle_records),
+            "bundle_records_sha256": bundle_records_sha256,
             "state_audit": {
                 "rows": 42_110,
                 "locations": 353,
@@ -765,6 +787,7 @@ def _payload() -> dict[str, Any]:
             "patch_records_verified_at_execution_head": True,
             "patch_lock_artifact_verified": True,
             "seed_1729_bundle_verified": True,
+            "content_addressed_completion_order_evidence_verified": True,
             "seed_1729_preserved_without_rematerialization": True,
             "dvc_ownership_verified": True,
             "dvc_remote_verified_at_patch": True,
@@ -1023,9 +1046,9 @@ def test_patch_lock_semantics_reject_derived_dvc_or_state_drift(
             SHA_B
         )
     elif mutation == "publication_diff":
-        mutated["publication_sequence"]["base_to_adoption"]["entries"][0][
+        mutated["publication_sequence"]["activation_to_patch"]["entries"][0][
             "status"
-        ] = "M"
+        ] = "A"
     else:  # pragma: no cover - parametrization is closed above
         raise AssertionError(mutation)
     with pytest.raises(DevelopmentRuntimePatchError):
@@ -1050,11 +1073,54 @@ def test_patch_lock_schema_freezes_all_thirteen_seed_outputs(
 
 
 def test_patch_lock_schema_freezes_seed_completion_manifest(
-    payload: dict[str, Any], schema: dict[str, Any]
+    payload: dict[str, Any],
+    schema: dict[str, Any],
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    runtime_patch._verify_historical_completion_order_producer()
+    source_root = runtime_patch.PROJECT_ROOT
+    copied_paths = [
+        *runtime_patch.EXPECTED_SEED_FINALS,
+        runtime_patch.SEED_STATE_POINTER_PATH.as_posix(),
+    ]
+    for relative in copied_paths:
+        target = tmp_path / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((source_root / relative).read_bytes())
+    manifest = tmp_path / runtime_patch.SEED_MANIFEST_PATH
+    state = tmp_path / runtime_patch.SEED_STATE_PATH
+    os.utime(manifest, ns=(1_000_000_000, 1_000_000_000))
+    os.utime(state, ns=(2_000_000_000, 2_000_000_000))
+    assert state.stat().st_mtime_ns > manifest.stat().st_mtime_ns
+    monkeypatch.setattr(runtime_patch, "PROJECT_ROOT", tmp_path)
+    runtime_patch._validate_seed_final_inventory()
+
     mutated = copy.deepcopy(payload)
     mutated["adopted_seed_bundle"]["manifest"]["bytes"] += 1
     _assert_rejected(mutated, schema)
+
+    mutated = copy.deepcopy(payload)
+    mutated["adopted_seed_bundle"]["completion_order_evidence"][
+        "filesystem_mtime_used"
+    ] = True
+    _assert_rejected(mutated, schema)
+
+    mutated = copy.deepcopy(payload)
+    mutated["adopted_seed_bundle"]["completion_order_evidence"]["mtime_ns"] = 1
+    _assert_rejected(mutated, schema)
+
+    mutated = copy.deepcopy(payload)
+    mutated["adopted_seed_bundle"]["completion_order_evidence"][
+        "bundle_records_sha256"
+    ] = SHA_B
+    monkeypatch.setattr(
+        runtime_patch,
+        "_validate_base_models_tree_identity",
+        lambda _entries: None,
+    )
+    with pytest.raises(DevelopmentRuntimePatchError, match="completion-order"):
+        validate_development_runtime_patch_lock_payload(mutated, schema)
 
 
 @pytest.mark.parametrize(
@@ -1125,8 +1191,15 @@ def test_planned_model_owner_paths_use_locked_tokens_and_freeze_seed_1729_anfis(
 def test_publication_path_cardinalities_are_closed() -> None:
     assert len(runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST) == 19
     assert len(runtime_patch.PATCH_ACTIVATION_PATHS) == 4
+    assert len(runtime_patch.PATCH_REPAIR_PATHS) == 4
     assert len(runtime_patch.PATCH_PARENT_DIFF_ALLOWLIST) == 23
     assert set(runtime_patch.PATCH_ACTIVATION_PATHS).isdisjoint(
+        runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST
+    )
+    assert set(runtime_patch.PATCH_REPAIR_PATHS).isdisjoint(
+        runtime_patch.PATCH_ACTIVATION_PATHS
+    )
+    assert set(runtime_patch.PATCH_REPAIR_PATHS).issubset(
         runtime_patch.PATCH_ADOPTION_DIFF_ALLOWLIST
     )
 
@@ -2050,6 +2123,10 @@ def test_publication_bundle_is_one_exact_direct_two_file_commit(
     )
 
     assert observed == publication_commit
+    assert (
+        payload["publication_sequence"]["patch_head"]
+        == payload["patch_repository"]["head"]
+    )
     assert diff_calls == [
         (
             payload["patch_repository"]["head"],

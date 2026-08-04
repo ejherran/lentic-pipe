@@ -9,6 +9,7 @@ never reads scientific outcomes and never authorizes evaluation or E0-U.
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import math
@@ -74,7 +75,7 @@ from src.experiments.closure_runtime_contract import closure_state_deltas
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 
-PATCH_LOCK_VERSION = "closure_development_runtime_patch_lock_v1"
+PATCH_LOCK_VERSION = "closure_development_runtime_patch_lock_v1_1"
 DEFAULT_PATCH_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/development_runtime_patch_lock.json"
 )
@@ -91,6 +92,8 @@ EXPECTED_PUBLISHED_REF = "origin/main"
 REJECTED_SYNTHETIC_REF = "refs/remotes/origin/main"
 EXPECTED_BASE_LOCK_COMMIT = "e7becdd5553decc92bbcf0af4cede7425ed12546"
 EXPECTED_BASE_LOCKED_HEAD = "4fe2d02a0abf4e044e5f2aa223c99ccc95ee7cd3"
+EXPECTED_ADOPTION_HEAD = "e8fa8b8e8ca26e3457bd073934c158c1d8ee15bf"
+EXPECTED_ACTIVATION_HEAD = "350c6b61c497384f5db7fee99e731c02d521e33d"
 EXPECTED_BASE_LOCK_BYTES = 95_285
 EXPECTED_BASE_LOCK_SHA256 = (
     "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
@@ -104,6 +107,7 @@ EXPECTED_BASE_MODELS_TREE_SHA256 = (
 )
 EXPECTED_ADOPTED_MODELS_OWNER_SIZE = 115_709_141
 EXPECTED_ADOPTED_MODELS_OWNER_NFILES = 176
+EXPECTED_ADOPTED_MODELS_OWNER_MD5 = "70cfb056dcd1789cf41d54cd5e7ae90c.dir"
 EXPECTED_SEED_STATE_MD5 = "183bc5e98b1d5fa5084300ded6476712"
 
 FITTED_MODULE_METRIC_COLUMNS = (
@@ -156,6 +160,12 @@ PATCH_ACTIVATION_PATHS = (
     "src/experiments/fit_closure_anfis_state.py",
     "tests/test_closure_development_runtime_lock.py",
     "tests/test_fit_closure_anfis_state.py",
+)
+PATCH_REPAIR_PATHS = (
+    "configs/closure_v1/development_runtime_patch_lock.schema.json",
+    "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
+    "src/experiments/closure_development_runtime_patch.py",
+    "tests/test_closure_development_runtime_patch.py",
 )
 
 PATCH_COMPONENT_ROLES = {
@@ -216,6 +226,12 @@ HISTORICAL_ANFIS_SCRIPT_RECORD = {
 HISTORICAL_ANFIS_DEPENDENCY_RECORD = {
     **HISTORICAL_ANFIS_FITTER_FILE,
     "role": "strict_anfis_state_adapter",
+}
+HISTORICAL_ANFIS_TEST_RECORD = {
+    "path": "tests/test_fit_closure_anfis_state.py",
+    "role": "producer_completion_order_regression",
+    "bytes": 37_021,
+    "sha256": "1022b4a1915e787fc92dae011d4d04a0a53f4dae784e64bdc442a9f906f212b6",
 }
 SEED_LIGHTWEIGHT_PATHS = (
     Path("reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-N_sample_keys.csv"),
@@ -392,6 +408,7 @@ PATCH_AUDITS = {
     "patch_lock_artifact_verified": True,
     "three_runtime_compatibility_corrections_verified": True,
     "seed_1729_bundle_verified": True,
+    "content_addressed_completion_order_evidence_verified": True,
     "seed_1729_preserved_without_rematerialization": True,
     "dvc_ownership_verified": True,
     "dvc_remote_verified_at_patch": True,
@@ -400,6 +417,21 @@ PATCH_AUDITS = {
     "no_post_2021_materialization": True,
     "environment_locked": True,
     "legacy_summary_shape_verified": True,
+}
+PATCH_IMPLEMENTATION_ERRATUM = {
+    "erratum_id": "dvc_mtime_nonportable_completion_evidence_1",
+    "classification": "reproducibility_evidence_correction_only",
+    "trigger": "dvc_hardlink_materialization_mtime_postdates_producer_manifest",
+    "superseded_evidence": "workspace_filesystem_mtime_order_v1",
+    "replacement_evidence": (
+        "git_locked_producer_control_flow_and_content_addressed_bundle_v1"
+    ),
+    "filesystem_mtime_used": False,
+    "erratum_changes_seed_artifact_bytes": False,
+    "erratum_changes_seed_artifact_timestamps": False,
+    "git_history_rewritten": False,
+    "scientific_runtime_contract_changed": False,
+    "outcome_access_changed": False,
 }
 
 STATE_ALLOWLIST = (
@@ -1224,12 +1256,46 @@ def _git_diff(base_commit: str, patch_head: str) -> dict[str, Any]:
 
 
 def _publication_sequence(base_commit: str, patch_head: str) -> dict[str, Any]:
-    raw = _git("rev-list", "--parents", "-n", "1", patch_head).split()
-    if len(raw) != 2 or raw[0] != patch_head:
-        raise DevelopmentRuntimePatchError("H-DLP must be a non-merge commit with one parent")
-    adoption_head = _require_commit(raw[1], context="A-DLP adoption head")
+    patch_parents = _git("rev-list", "--parents", "-n", "1", patch_head).split()
+    if (
+        len(patch_parents) != 2
+        or patch_parents[0] != patch_head
+        or patch_parents[1] != EXPECTED_ACTIVATION_HEAD
+    ):
+        raise DevelopmentRuntimePatchError(
+            "R-DLP must be a direct non-merge child of the sealed H-DLP commit"
+        )
+    activation_head = _require_commit(
+        patch_parents[1], context="H-DLP activation head"
+    )
+    activation_parents = _git(
+        "rev-list", "--parents", "-n", "1", activation_head
+    ).split()
+    if (
+        len(activation_parents) != 2
+        or activation_parents[0] != activation_head
+        or activation_parents[1] != EXPECTED_ADOPTION_HEAD
+    ):
+        raise DevelopmentRuntimePatchError(
+            "H-DLP must remain a direct non-merge child of the sealed A-DLP commit"
+        )
+    adoption_head = _require_commit(
+        activation_parents[1], context="A-DLP adoption head"
+    )
+    adoption_parents = _git(
+        "rev-list", "--parents", "-n", "1", adoption_head
+    ).split()
+    if (
+        len(adoption_parents) != 2
+        or adoption_parents[0] != adoption_head
+        or adoption_parents[1] != base_commit
+    ):
+        raise DevelopmentRuntimePatchError(
+            "A-DLP must remain a direct non-merge child of the E0-DL lock commit"
+        )
     _require_ancestor(base_commit, adoption_head)
-    _require_ancestor(adoption_head, patch_head)
+    _require_ancestor(adoption_head, activation_head)
+    _require_ancestor(activation_head, patch_head)
     adoption_modified = frozenset(
         {
             "src/experiments/build_closure_pipe_sequences.py",
@@ -1245,20 +1311,30 @@ def _publication_sequence(base_commit: str, patch_head: str) -> dict[str, Any]:
     )
     activation_diff = _git_diff_exact(
         adoption_head,
-        patch_head,
+        activation_head,
         expected_paths=PATCH_ACTIVATION_PATHS,
         expected_modified_paths=frozenset(PATCH_ACTIVATION_PATHS),
+    )
+    repair_diff = _git_diff_exact(
+        activation_head,
+        patch_head,
+        expected_paths=PATCH_REPAIR_PATHS,
+        expected_modified_paths=frozenset(PATCH_REPAIR_PATHS),
     )
     aggregate_diff = _git_diff(base_commit, patch_head)
     return {
         "base_commit": base_commit,
         "adoption_head": adoption_head,
+        "activation_head": activation_head,
         "patch_head": patch_head,
-        "adoption_is_direct_first_parent_of_patch": True,
+        "adoption_is_direct_first_parent_of_activation": True,
+        "activation_is_direct_first_parent_of_patch": True,
         "base_is_ancestor_of_adoption": True,
-        "adoption_is_ancestor_of_patch": True,
+        "adoption_is_ancestor_of_activation": True,
+        "activation_is_ancestor_of_patch": True,
         "base_to_adoption": adoption_diff,
-        "adoption_to_patch": activation_diff,
+        "adoption_to_activation": activation_diff,
+        "activation_to_patch": repair_diff,
         "base_to_patch": aggregate_diff,
     }
 
@@ -1284,7 +1360,7 @@ def _require_expected_seed_final(path: str | Path) -> None:
         )
 
 
-def _validate_seed_final_inventory(*, verify_manifest_written_last: bool) -> None:
+def _validate_seed_final_inventory() -> None:
     for path in EXPECTED_SEED_FINALS:
         _require_expected_seed_final(path)
     report_dir = _resolve(SEED_MANIFEST_PATH).parent
@@ -1313,17 +1389,135 @@ def _validate_seed_final_inventory(*, verify_manifest_written_last: bool) -> Non
             for marker in forbidden_markers
         ):
             raise DevelopmentRuntimePatchError("Seed-1729 temporary/partial file is present")
-    if verify_manifest_written_last:
-        manifest_mtime = _resolve(SEED_MANIFEST_PATH).stat().st_mtime_ns
-        output_mtimes = [
-            _resolve(path).stat().st_mtime_ns
-            for path in EXPECTED_SEED_FINALS
-            if path != SEED_MANIFEST_PATH.as_posix()
-        ]
-        if not output_mtimes or manifest_mtime < max(output_mtimes):
-            raise DevelopmentRuntimePatchError(
-                "Seed-1729 completion manifest was not observed after every output"
-            )
+
+
+def _historical_blob(record: Mapping[str, Any], *, context: str) -> bytes:
+    path = str(record.get("path", ""))
+    blob = _git_blob(EXPECTED_BASE_LOCK_COMMIT, path)
+    if (
+        blob is None
+        or len(blob) != record.get("bytes")
+        or _sha256_bytes(blob) != record.get("sha256")
+    ):
+        raise DevelopmentRuntimePatchError(
+            f"{context} differs from its Git-locked E0-DL bytes"
+        )
+    return blob
+
+
+def _is_terminal_manifest_write(statement: ast.stmt) -> bool:
+    if not isinstance(statement, ast.Expr) or not isinstance(statement.value, ast.Call):
+        return False
+    call = statement.value
+    if (
+        not isinstance(call.func, ast.Name)
+        or call.func.id != "_write_json_atomic"
+        or len(call.args) != 2
+        or call.keywords
+        or not isinstance(call.args[0], ast.Name)
+        or call.args[0].id != "payload"
+    ):
+        return False
+    manifest_path = call.args[1]
+    return (
+        isinstance(manifest_path, ast.Subscript)
+        and isinstance(manifest_path.value, ast.Name)
+        and manifest_path.value.id == "paths"
+        and isinstance(manifest_path.slice, ast.Constant)
+        and manifest_path.slice.value == "anfis_manifest_template"
+    )
+
+
+def _verify_historical_completion_order_producer() -> None:
+    producer_blob = _historical_blob(
+        HISTORICAL_ANFIS_SCRIPT_RECORD,
+        context="Seed-1729 historical ANFIS producer",
+    )
+    regression_blob = _historical_blob(
+        HISTORICAL_ANFIS_TEST_RECORD,
+        context="Seed-1729 historical completion-order regression",
+    )
+    try:
+        producer_tree = ast.parse(producer_blob.decode("utf-8"))
+        regression_tree = ast.parse(regression_blob.decode("utf-8"))
+    except (UnicodeDecodeError, SyntaxError) as exc:
+        raise DevelopmentRuntimePatchError(
+            "Git-locked seed-1729 completion-order evidence is not parseable Python"
+        ) from exc
+    writers = [
+        node
+        for node in producer_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == "write_anfis_slot_bundle"
+    ]
+    if len(writers) != 1 or len(writers[0].body) < 2:
+        raise DevelopmentRuntimePatchError(
+            "Git-locked seed-1729 producer lacks one closed slot-bundle writer"
+        )
+    writer = writers[0]
+    terminal_writes = [
+        node
+        for node in ast.walk(writer)
+        if isinstance(node, ast.stmt) and _is_terminal_manifest_write(node)
+    ]
+    terminal_return = writer.body[-1]
+    if (
+        len(terminal_writes) != 1
+        or terminal_writes[0] is not writer.body[-2]
+        or not isinstance(terminal_return, ast.Return)
+        or not isinstance(terminal_return.value, ast.Name)
+        or terminal_return.value.id != "payload"
+    ):
+        raise DevelopmentRuntimePatchError(
+            "Git-locked seed-1729 producer does not write its manifest as the final bundle write"
+        )
+    regressions = [
+        node
+        for node in regression_tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+        and node.name == "test_slot_bundle_writes_completion_manifest_last"
+    ]
+    if len(regressions) != 1:
+        raise DevelopmentRuntimePatchError(
+            "Git-locked seed-1729 completion-order regression is absent or duplicated"
+        )
+
+
+def _completion_order_evidence_record(
+    *, bundle_records_sha256: str, models_owner_hash_value: str
+) -> dict[str, Any]:
+    if SHA256_RE.fullmatch(bundle_records_sha256) is None or re.fullmatch(
+        r"[0-9a-f]{32}\.dir", models_owner_hash_value
+    ) is None:
+        raise DevelopmentRuntimePatchError(
+            "Seed-1729 content-addressed completion evidence is malformed"
+        )
+    return {
+        "evidence_version": "closure_completion_order_evidence_v1",
+        "method": "git_locked_producer_control_flow_and_content_addressed_bundle_v1",
+        "producer_commit": EXPECTED_BASE_LOCK_COMMIT,
+        "producer_record": dict(HISTORICAL_ANFIS_SCRIPT_RECORD),
+        "producer_test_record": dict(HISTORICAL_ANFIS_TEST_RECORD),
+        "writer_function": "write_anfis_slot_bundle",
+        "historical_regression": "test_slot_bundle_writes_completion_manifest_last",
+        "manifest_write_function": "_write_json_atomic",
+        "manifest_path_key": "anfis_manifest_template",
+        "manifest_write_is_final_output_write": True,
+        "manifest_completion_marker_verified": True,
+        "manifest_output_record_count": 13,
+        "physical_final_count": 14,
+        "bundle_records_sha256": bundle_records_sha256,
+        "state_sha256": EXPECTED_SEED_FINALS[SEED_STATE_PATH.as_posix()][1],
+        "state_dvc_md5": EXPECTED_SEED_STATE_MD5,
+        "models_owner_hash_value": models_owner_hash_value,
+        "producer_control_flow_verified": True,
+        "producer_regression_verified": True,
+        "content_addressed_bundle_verified": True,
+        "temporary_or_partial_file_count": 0,
+        "filesystem_mtime_used": False,
+        "dvc_materialization_metadata_non_authoritative": True,
+        "portable_across_fresh_clone_and_dvc_materialization": True,
+    }
 
 
 def _validate_manifest_dependency_at_execution(
@@ -2027,18 +2221,16 @@ def adopted_seed_bundle_record(
     base_snapshot: Mapping[str, Any],
     *,
     require_physical_artifacts: bool = True,
-    verify_manifest_written_last: bool = False,
     locked_models_owner: Mapping[str, Any] | None = None,
     execution_head: str | None = None,
     runtime: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate and bind the completed seed-1729 bundle without rewriting it."""
     if require_physical_artifacts:
-        _validate_seed_final_inventory(
-            verify_manifest_written_last=verify_manifest_written_last
-        )
+        _validate_seed_final_inventory()
     else:
         _require_expected_seed_final(SEED_MANIFEST_PATH)
+    _verify_historical_completion_order_producer()
     manifest = load_json_mapping(SEED_MANIFEST_PATH)
     expected_top = {
         "manifest_version": "closure_anfis_seed_manifest_v1",
@@ -2178,7 +2370,18 @@ def adopted_seed_bundle_record(
         state_audit = cast(Mapping[str, Any], manifest.get("counts", {}))
         state_pointer = {}
         models_owner = {}
-    records_for_digest = [manifest_record, *sorted(output_records, key=lambda item: str(item["path"]))]
+    records_for_digest = [
+        manifest_record,
+        *sorted(output_records, key=lambda item: str(item["path"])),
+    ]
+    bundle_records_sha256 = _record_digest(records_for_digest)
+    models_owner_hash_value = str(
+        models_owner.get("hash_value", EXPECTED_ADOPTED_MODELS_OWNER_MD5)
+    )
+    completion_order_evidence = _completion_order_evidence_record(
+        bundle_records_sha256=bundle_records_sha256,
+        models_owner_hash_value=models_owner_hash_value,
+    )
     return {
         "base_seed": ADOPTED_BASE_SEED,
         "status": "adopted_prepatch_artifact_without_rematerialization",
@@ -2192,10 +2395,10 @@ def adopted_seed_bundle_record(
             next(record for record in output_records if record["path"] == path.as_posix())
             for path in SEED_LIGHTWEIGHT_PATHS
         ],
-        "bundle_records_sha256": _record_digest(records_for_digest),
+        "bundle_records_sha256": bundle_records_sha256,
         "bundle_record_count": 13,
         "physical_final_count": 14,
-        "completion_manifest_written_last_observed_at_adoption": True,
+        "completion_order_evidence": completion_order_evidence,
         "temporary_or_partial_file_count": 0,
         "state_audit": dict(state_audit),
         "dvc": {
@@ -2456,7 +2659,6 @@ def collect_patch_prelock_state(
     seed_bundle = adopted_seed_bundle_record(
         base,
         require_physical_artifacts=True,
-        verify_manifest_written_last=True,
     )
     environment = environment_payload(device, runtime)
     return {
@@ -2498,6 +2700,7 @@ def build_development_runtime_patch_lock_payload(
         "patch_components": prelock["patch_components"],
         "patch_lock_artifact": patch_lock_artifact_record(),
         "git_diff": prelock["git_diff"],
+        "implementation_erratum": dict(PATCH_IMPLEMENTATION_ERRATUM),
         "compatibility_corrections": prelock["compatibility_corrections"],
         "adopted_seed_bundle": prelock["adopted_seed_bundle"],
         "environment": prelock["environment"],
@@ -2669,13 +2872,17 @@ def _validate_publication_sequence_payload(payload: Mapping[str, Any]) -> None:
     patch_head = str(cast(Mapping[str, Any], payload["patch_repository"])["head"])
     sequence = cast(Mapping[str, Any], payload["publication_sequence"])
     adoption_head = str(sequence.get("adoption_head", ""))
+    activation_head = str(sequence.get("activation_head", ""))
     if (
         sequence.get("base_commit") != EXPECTED_BASE_LOCK_COMMIT
-        or SHA1_RE.fullmatch(adoption_head) is None
+        or adoption_head != EXPECTED_ADOPTION_HEAD
+        or activation_head != EXPECTED_ACTIVATION_HEAD
         or sequence.get("patch_head") != patch_head
-        or sequence.get("adoption_is_direct_first_parent_of_patch") is not True
+        or sequence.get("adoption_is_direct_first_parent_of_activation") is not True
+        or sequence.get("activation_is_direct_first_parent_of_patch") is not True
         or sequence.get("base_is_ancestor_of_adoption") is not True
-        or sequence.get("adoption_is_ancestor_of_patch") is not True
+        or sequence.get("adoption_is_ancestor_of_activation") is not True
+        or sequence.get("activation_is_ancestor_of_patch") is not True
     ):
         raise DevelopmentRuntimePatchError("E0-DLP publication chronology drifted")
     _validate_git_diff_payload(
@@ -2692,11 +2899,18 @@ def _validate_publication_sequence_payload(payload: Mapping[str, Any]) -> None:
         ),
     )
     _validate_git_diff_payload(
-        cast(Mapping[str, Any], sequence["adoption_to_patch"]),
+        cast(Mapping[str, Any], sequence["adoption_to_activation"]),
         base_commit=adoption_head,
-        patch_head=patch_head,
+        patch_head=activation_head,
         paths=PATCH_ACTIVATION_PATHS,
         modified_paths=frozenset(PATCH_ACTIVATION_PATHS),
+    )
+    _validate_git_diff_payload(
+        cast(Mapping[str, Any], sequence["activation_to_patch"]),
+        base_commit=activation_head,
+        patch_head=patch_head,
+        paths=PATCH_REPAIR_PATHS,
+        modified_paths=frozenset(PATCH_REPAIR_PATHS),
     )
     _validate_git_diff_payload(
         cast(Mapping[str, Any], sequence["base_to_patch"]),
@@ -2726,6 +2940,8 @@ def validate_development_runtime_patch_lock_payload(
         raise DevelopmentRuntimePatchError("E0-DLP seals drifted")
     if payload.get("audits") != PATCH_AUDITS:
         raise DevelopmentRuntimePatchError("E0-DLP audit seals drifted")
+    if payload.get("implementation_erratum") != PATCH_IMPLEMENTATION_ERRATUM:
+        raise DevelopmentRuntimePatchError("E0-DLP implementation erratum drifted")
     if payload.get("compatibility_corrections") != compatibility_correction_records():
         raise DevelopmentRuntimePatchError("E0-DLP compatibility corrections drifted")
     if payload.get("patch_lock_artifact") != patch_lock_artifact_record():
@@ -2796,7 +3012,6 @@ def validate_development_runtime_patch_lock_payload(
         or manifest_record.get("sha256") != expected_manifest[1]
         or bundle.get("bundle_record_count") != 13
         or bundle.get("physical_final_count") != 14
-        or bundle.get("completion_manifest_written_last_observed_at_adoption") is not True
         or bundle.get("temporary_or_partial_file_count") != 0
     ):
         raise DevelopmentRuntimePatchError("E0-DLP adopted seed anchors drifted")
@@ -2864,6 +3079,16 @@ def validate_development_runtime_patch_lock_payload(
     ):
         raise DevelopmentRuntimePatchError("E0-DLP state DVC ownership drifted")
     _validate_models_owner_payload(models_owner)
+    completion_order_evidence = bundle.get("completion_order_evidence")
+    if not isinstance(completion_order_evidence, Mapping) or dict(
+        completion_order_evidence
+    ) != _completion_order_evidence_record(
+        bundle_records_sha256=str(bundle["bundle_records_sha256"]),
+        models_owner_hash_value=str(models_owner["hash_value"]),
+    ):
+        raise DevelopmentRuntimePatchError(
+            "E0-DLP content-addressed completion-order evidence drifted"
+        )
     expected_original_authorization = {
         "lock_path": DEFAULT_LOCK_PATH.as_posix(),
         "lock_sha256": EXPECTED_BASE_LOCK_SHA256,
@@ -3218,7 +3443,7 @@ def _validate_patch_publication_bundle(
     ancestry = _git("rev-list", "--parents", "-n", "1", lock_commit).split()
     if ancestry != [lock_commit, patch_head]:
         raise DevelopmentRuntimePatchError(
-            "P-DLP must be a direct non-merge child of H-DLP"
+            "P-DLP must be a direct non-merge child of R-DLP"
         )
     expected_publication_paths = tuple(sorted((lock_path, companion_path)))
     _git_diff_exact(
@@ -3548,7 +3773,7 @@ def load_and_validate_development_runtime_patch_lock(
         raise DevelopmentRuntimePatchError("E0-DLP patch component records changed")
     publication_sequence = _publication_sequence(str(base["lock_commit"]), patch_head)
     if payload.get("publication_sequence") != publication_sequence:
-        raise DevelopmentRuntimePatchError("E0-DLP A/H publication sequence changed")
+        raise DevelopmentRuntimePatchError("E0-DLP A/H/R publication sequence changed")
     if payload.get("git_diff") != publication_sequence["base_to_patch"]:
         raise DevelopmentRuntimePatchError("E0-DLP Git diff changed")
     runtime = cast(Mapping[str, Any], base_physical["runtime"])

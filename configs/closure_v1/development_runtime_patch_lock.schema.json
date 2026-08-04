@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-patch-lock-v1.json",
-  "title": "Closure V1 E0-DLP development runtime patch lock",
+  "$id": "https://lentic-pipe.local/schemas/closure-development-runtime-patch-lock-v1-1.json",
+  "title": "Closure V1 E0-DLP development runtime patch lock v1.1 portable-evidence amendment",
   "type": "object",
   "required": [
     "lock_version",
@@ -18,6 +18,7 @@
     "patch_components",
     "patch_lock_artifact",
     "git_diff",
+    "implementation_erratum",
     "compatibility_corrections",
     "adopted_seed_bundle",
     "environment",
@@ -29,7 +30,7 @@
   ],
   "properties": {
     "lock_version": {
-      "const": "closure_development_runtime_patch_lock_v1"
+      "const": "closure_development_runtime_patch_lock_v1_1"
     },
     "status": {
       "const": "locked"
@@ -70,6 +71,9 @@
     },
     "git_diff": {
       "$ref": "#/$defs/gitDiff"
+    },
+    "implementation_erratum": {
+      "$ref": "#/$defs/implementationErratum"
     },
     "compatibility_corrections": {
       "$ref": "#/$defs/compatibilityCorrections"
@@ -1063,24 +1067,78 @@
       "required": [
         "base_commit",
         "adoption_head",
+        "activation_head",
         "patch_head",
-        "adoption_is_direct_first_parent_of_patch",
+        "adoption_is_direct_first_parent_of_activation",
+        "activation_is_direct_first_parent_of_patch",
         "base_is_ancestor_of_adoption",
-        "adoption_is_ancestor_of_patch",
+        "adoption_is_ancestor_of_activation",
+        "activation_is_ancestor_of_patch",
         "base_to_adoption",
-        "adoption_to_patch",
+        "adoption_to_activation",
+        "activation_to_patch",
         "base_to_patch"
       ],
       "properties": {
-        "base_commit": {"$ref": "#/$defs/gitCommit"},
-        "adoption_head": {"$ref": "#/$defs/gitCommit"},
+        "base_commit": {
+          "const": "e7becdd5553decc92bbcf0af4cede7425ed12546"
+        },
+        "adoption_head": {
+          "const": "e8fa8b8e8ca26e3457bd073934c158c1d8ee15bf"
+        },
+        "activation_head": {
+          "const": "350c6b61c497384f5db7fee99e731c02d521e33d"
+        },
         "patch_head": {"$ref": "#/$defs/gitCommit"},
-        "adoption_is_direct_first_parent_of_patch": {"const": true},
+        "adoption_is_direct_first_parent_of_activation": {"const": true},
+        "activation_is_direct_first_parent_of_patch": {"const": true},
         "base_is_ancestor_of_adoption": {"const": true},
-        "adoption_is_ancestor_of_patch": {"const": true},
+        "adoption_is_ancestor_of_activation": {"const": true},
+        "activation_is_ancestor_of_patch": {"const": true},
         "base_to_adoption": {"$ref": "#/$defs/gitDiff"},
-        "adoption_to_patch": {"$ref": "#/$defs/gitDiff"},
+        "adoption_to_activation": {"$ref": "#/$defs/gitDiff"},
+        "activation_to_patch": {"$ref": "#/$defs/gitDiff"},
         "base_to_patch": {"$ref": "#/$defs/gitDiff"}
+      },
+      "additionalProperties": false
+    },
+    "implementationErratum": {
+      "type": "object",
+      "required": [
+        "erratum_id",
+        "classification",
+        "trigger",
+        "superseded_evidence",
+        "replacement_evidence",
+        "filesystem_mtime_used",
+        "erratum_changes_seed_artifact_bytes",
+        "erratum_changes_seed_artifact_timestamps",
+        "git_history_rewritten",
+        "scientific_runtime_contract_changed",
+        "outcome_access_changed"
+      ],
+      "properties": {
+        "erratum_id": {
+          "const": "dvc_mtime_nonportable_completion_evidence_1"
+        },
+        "classification": {
+          "const": "reproducibility_evidence_correction_only"
+        },
+        "trigger": {
+          "const": "dvc_hardlink_materialization_mtime_postdates_producer_manifest"
+        },
+        "superseded_evidence": {
+          "const": "workspace_filesystem_mtime_order_v1"
+        },
+        "replacement_evidence": {
+          "const": "git_locked_producer_control_flow_and_content_addressed_bundle_v1"
+        },
+        "filesystem_mtime_used": {"const": false},
+        "erratum_changes_seed_artifact_bytes": {"const": false},
+        "erratum_changes_seed_artifact_timestamps": {"const": false},
+        "git_history_rewritten": {"const": false},
+        "scientific_runtime_contract_changed": {"const": false},
+        "outcome_access_changed": {"const": false}
       },
       "additionalProperties": false
     },
@@ -1573,6 +1631,107 @@
       },
       "additionalProperties": false
     },
+    "completionOrderEvidence": {
+      "type": "object",
+      "required": [
+        "evidence_version",
+        "method",
+        "producer_commit",
+        "producer_record",
+        "producer_test_record",
+        "writer_function",
+        "historical_regression",
+        "manifest_write_function",
+        "manifest_path_key",
+        "manifest_write_is_final_output_write",
+        "manifest_completion_marker_verified",
+        "manifest_output_record_count",
+        "physical_final_count",
+        "bundle_records_sha256",
+        "state_sha256",
+        "state_dvc_md5",
+        "models_owner_hash_value",
+        "producer_control_flow_verified",
+        "producer_regression_verified",
+        "content_addressed_bundle_verified",
+        "temporary_or_partial_file_count",
+        "filesystem_mtime_used",
+        "dvc_materialization_metadata_non_authoritative",
+        "portable_across_fresh_clone_and_dvc_materialization"
+      ],
+      "properties": {
+        "evidence_version": {
+          "const": "closure_completion_order_evidence_v1"
+        },
+        "method": {
+          "const": "git_locked_producer_control_flow_and_content_addressed_bundle_v1"
+        },
+        "producer_commit": {
+          "const": "e7becdd5553decc92bbcf0af4cede7425ed12546"
+        },
+        "producer_record": {
+          "allOf": [
+            {"$ref": "#/$defs/fileRecord"},
+            {
+              "properties": {
+                "path": {
+                  "const": "src/experiments/fit_closure_anfis_state.py"
+                },
+                "role": {"const": "generating_script"},
+                "bytes": {"const": 59865},
+                "sha256": {
+                  "const": "8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2"
+                }
+              }
+            }
+          ]
+        },
+        "producer_test_record": {
+          "allOf": [
+            {"$ref": "#/$defs/fileRecord"},
+            {
+              "properties": {
+                "path": {"const": "tests/test_fit_closure_anfis_state.py"},
+                "role": {"const": "producer_completion_order_regression"},
+                "bytes": {"const": 37021},
+                "sha256": {
+                  "const": "1022b4a1915e787fc92dae011d4d04a0a53f4dae784e64bdc442a9f906f212b6"
+                }
+              }
+            }
+          ]
+        },
+        "writer_function": {"const": "write_anfis_slot_bundle"},
+        "historical_regression": {
+          "const": "test_slot_bundle_writes_completion_manifest_last"
+        },
+        "manifest_write_function": {"const": "_write_json_atomic"},
+        "manifest_path_key": {"const": "anfis_manifest_template"},
+        "manifest_write_is_final_output_write": {"const": true},
+        "manifest_completion_marker_verified": {"const": true},
+        "manifest_output_record_count": {"const": 13},
+        "physical_final_count": {"const": 14},
+        "bundle_records_sha256": {"$ref": "#/$defs/sha256"},
+        "state_sha256": {
+          "const": "c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69"
+        },
+        "state_dvc_md5": {
+          "const": "183bc5e98b1d5fa5084300ded6476712"
+        },
+        "models_owner_hash_value": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{32}\\.dir$"
+        },
+        "producer_control_flow_verified": {"const": true},
+        "producer_regression_verified": {"const": true},
+        "content_addressed_bundle_verified": {"const": true},
+        "temporary_or_partial_file_count": {"const": 0},
+        "filesystem_mtime_used": {"const": false},
+        "dvc_materialization_metadata_non_authoritative": {"const": true},
+        "portable_across_fresh_clone_and_dvc_materialization": {"const": true}
+      },
+      "additionalProperties": false
+    },
     "adoptedSeedBundle": {
       "type": "object",
       "required": [
@@ -1584,7 +1743,7 @@
         "lightweight_outputs",
         "bundle_record_count",
         "physical_final_count",
-        "completion_manifest_written_last_observed_at_adoption",
+        "completion_order_evidence",
         "temporary_or_partial_file_count",
         "bundle_records_sha256",
         "state_audit",
@@ -1687,8 +1846,8 @@
         "physical_final_count": {
           "const": 14
         },
-        "completion_manifest_written_last_observed_at_adoption": {
-          "const": true
+        "completion_order_evidence": {
+          "$ref": "#/$defs/completionOrderEvidence"
         },
         "temporary_or_partial_file_count": {
           "const": 0
@@ -2258,6 +2417,7 @@
         "patch_records_verified_at_execution_head",
         "patch_lock_artifact_verified",
         "seed_1729_bundle_verified",
+        "content_addressed_completion_order_evidence_verified",
         "seed_1729_preserved_without_rematerialization",
         "dvc_ownership_verified",
         "dvc_remote_verified_at_patch",
@@ -2282,6 +2442,7 @@
         "patch_records_verified_at_execution_head": {"const": true},
         "patch_lock_artifact_verified": {"const": true},
         "seed_1729_bundle_verified": {"const": true},
+        "content_addressed_completion_order_evidence_verified": {"const": true},
         "seed_1729_preserved_without_rematerialization": {"const": true},
         "dvc_ownership_verified": {"const": true},
         "dvc_remote_verified_at_patch": {"const": true},
