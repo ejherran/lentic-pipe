@@ -1,0 +1,156 @@
+{
+  "completion_marker_written_last": true,
+  "created_at_utc": "2026-08-05T17:56:22.364245Z",
+  "e0_u_authorized": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-MA",
+  "inputs": [
+    {
+      "bytes": 18302,
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "role": "sealed_analysis_plan",
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "bytes": 7281,
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "role": "sealed_model_benchmark",
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "bytes": 10863,
+      "path": "configs/closure_v1/model_lock_availability_policy.schema.json",
+      "role": "h_slice_component",
+      "sha256": "500a7755d3676a82d2ad8a84e4843a55698db2feadbe8e9ce150e56ae6e49a7c"
+    },
+    {
+      "bytes": 7759,
+      "path": "configs/closure_v1/model_lock_availability_policy.yaml",
+      "role": "h_slice_component",
+      "sha256": "b9ec8f48918e801e502a3fa481cf63b95d744104e943857519ad4a1e4017ab10"
+    },
+    {
+      "bytes": 8214,
+      "path": "docs/closure_v1/E0_M_MODEL_AVAILABILITY_POLICY.md",
+      "role": "h_slice_component",
+      "sha256": "93301fafea6c11572ce485f58a88e7aac0015b8bc9ad9936f9256440e4bd8915"
+    },
+    {
+      "bytes": 95285,
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+      "role": "sealed_development_runtime_lock",
+      "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+    },
+    {
+      "bytes": 60769,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+      "role": "sealed_temporal_validation_lock",
+      "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+    },
+    {
+      "bytes": 5954,
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+      "role": "p0_sequence_manifest",
+      "sha256": "ec5c4a88eeb44c431484bced3053adf4f2824cda3db2a60ab9719f7be2f310fc"
+    },
+    {
+      "bytes": 356,
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+      "role": "p0_sequence_summary",
+      "sha256": "a6c6c837a82c13a9321233de03b588c60b7a4198b77dcf31b3c7a62027752c3e"
+    },
+    {
+      "bytes": 9845,
+      "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json",
+      "role": "p0_seed_1729_manifest",
+      "sha256": "0381ccc6423fb29d97b1de3f80eac1943e4466cec9f758058e6b0b79779bca15"
+    },
+    {
+      "bytes": 174,
+      "path": "reports/closure_v1/02_models/P0/seed_1729_report.md",
+      "role": "p0_seed_1729_report",
+      "sha256": "42a2ff4f6f64e4e8883cc6d28b8b6e20d05e718694dcc94702dd066b60922221"
+    },
+    {
+      "bytes": 9853,
+      "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json",
+      "role": "p0_seed_20260612_manifest",
+      "sha256": "646623232c8aff7820a8ae8d2404dd900461b65ace5b0d8d9119e1a665d841e4"
+    },
+    {
+      "bytes": 178,
+      "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md",
+      "role": "p0_seed_20260612_report",
+      "sha256": "5ff36ce38347a0037cc98d067d00a191e07acc07c282048e1a1de9d447102406"
+    },
+    {
+      "bytes": 9853,
+      "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json",
+      "role": "p0_seed_20260613_manifest",
+      "sha256": "1dedb2330a57c60feec0040fe9e467b86e78f6ba30e4dc5f110b4b461b7cd54e"
+    },
+    {
+      "bytes": 178,
+      "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md",
+      "role": "p0_seed_20260613_report",
+      "sha256": "d7b65ca7c1fb8da88c168680cc044531f71bb84d47f6ff329996e90d8c825e25"
+    },
+    {
+      "bytes": 9853,
+      "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json",
+      "role": "p0_seed_20260614_manifest",
+      "sha256": "822289cdfe8dd6f208efb26c0a82cba15e1d6cd7a2e7c7a632a74ba68352e8c9"
+    },
+    {
+      "bytes": 178,
+      "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md",
+      "role": "p0_seed_20260614_report",
+      "sha256": "24f16925c019735f79052252cb5c5c595be7d40825d926322bb705af05b2fd5c"
+    },
+    {
+      "bytes": 9849,
+      "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json",
+      "role": "p0_seed_314159_manifest",
+      "sha256": "641f7c05b6b50c3353d91186e02637f19890db160239ef1508627a5292a0ed98"
+    },
+    {
+      "bytes": 176,
+      "path": "reports/closure_v1/02_models/P0/seed_314159_report.md",
+      "role": "p0_seed_314159_report",
+      "sha256": "388d678890f1c20dd53308ed484e2d2bd1d320cc6a2cf15349ad9a6553c0fbb9"
+    },
+    {
+      "bytes": 32664,
+      "path": "src/experiments/lock_closure_development_runtime_temporal_consumer_patch.py",
+      "role": "hardened_writer_dependency",
+      "sha256": "906728e7ef04dfd82e3489f3df5ab4f6d31b3a6b0f7f4a45e6b78ab5c6c6e06d"
+    },
+    {
+      "bytes": 37488,
+      "path": "tests/test_audit_closure_p0_model_availability.py",
+      "role": "h_slice_component",
+      "sha256": "d2f572a737b0bc2a9bd9df45b39fea38668bf1e1ce556b533b71fc6f9470dca5"
+    }
+  ],
+  "manifest_version": "closure_p0_model_availability_registry_manifest_v1",
+  "model_id": "P0",
+  "outputs": [
+    {
+      "bytes": 54175,
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+      "role": "p0_model_availability_registry",
+      "sha256": "42830b5687f1283144c3548b67fc716909612ce804c425dfc7beaac08634fdcf"
+    }
+  ],
+  "registry_effective_in_payload": false,
+  "script": {
+    "bytes": 67415,
+    "path": "src/experiments/audit_closure_p0_model_availability.py",
+    "role": "generating_script",
+    "sha256": "0ff5014810471efb36d80f2f00aa33902dfd8009bd151b59b7b34c15a0440fca"
+  },
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla"
+}

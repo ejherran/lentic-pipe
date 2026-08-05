@@ -1,0 +1,1504 @@
+{
+  "comparison_disposition": {
+    "comparison_id": "P1_vs_P0",
+    "confidence_interval_policy": "not_emitted",
+    "denominator_adjustment": "forbidden",
+    "effect_estimate_policy": "not_emitted",
+    "family_membership_retained": true,
+    "holm_family_universe": "retained_as_predeclared",
+    "hypothesis_id": "H1_P1_vs_P0",
+    "multiplicity_family": "A",
+    "p_value_policy": "not_emitted",
+    "substitution": "forbidden",
+    "unavailable_status": "not_estimable_model_unavailable"
+  },
+  "completion_marker_written_last": true,
+  "created_at_utc": "2026-08-05T17:56:22.364245Z",
+  "denominator_authority": {
+    "available_fit_role_sequences": 8925,
+    "failed_origins": 505,
+    "fit_role_intent_origins": 9413,
+    "fit_roles": [
+      "training",
+      "model_selection"
+    ],
+    "holdout_overlap": 0,
+    "intent_origins": 9732,
+    "per_seed_counts_must_not_be_summed_as_ecological_denominator": true,
+    "post_2021_rows": 0,
+    "role_status_counts": {
+      "calibration_threshold": {
+        "autoregressive_target_unavailable": 17,
+        "success": 302
+      },
+      "model_selection": {
+        "autoregressive_target_unavailable": 45,
+        "success": 1016
+      },
+      "training": {
+        "autoregressive_target_unavailable": 443,
+        "success": 7909
+      }
+    },
+    "sequence_manifest": {
+      "bytes": 5954,
+      "git_blob": "b2e54e7e87b2bfcc08546e8bda16b152d1c46df5",
+      "git_commit": "b075d4f1606aa35c1b86493604c18845f2d28a2f",
+      "git_mode": "100644",
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+      "sha256": "ec5c4a88eeb44c431484bced3053adf4f2824cda3db2a60ab9719f7be2f310fc"
+    },
+    "sequence_summary": {
+      "bytes": 356,
+      "git_blob": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "git_commit": "b075d4f1606aa35c1b86493604c18845f2d28a2f",
+      "git_mode": "100644",
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+      "sha256": "a6c6c837a82c13a9321233de03b588c60b7a4198b77dcf31b3c7a62027752c3e"
+    },
+    "source_commit": "b075d4f1606aa35c1b86493604c18845f2d28a2f",
+    "successful_origins": 9227,
+    "unavailable_fit_role_sequences": 488
+  },
+  "e0_m_status": "not_started",
+  "experiment_id": "closure_v1",
+  "gate": "E0-MA",
+  "model_id": "P0",
+  "model_lock_hash_policy": {
+    "always_required": [
+      "manifest_hashes",
+      "report_hashes",
+      "code_hashes",
+      "config_hashes",
+      "seed_records",
+      "feature_lineage_audit",
+      "holdout_fit_overlap_count",
+      "sealed_batch_command",
+      "outcome_access_log_state"
+    ],
+    "available_slot_required": [
+      "model_hash",
+      "checkpoint_hash",
+      "preprocessor_hash",
+      "metrics_hash",
+      "training_curve_hash",
+      "blend_weights_hash",
+      "blend_search_hash",
+      "heavy_artifact_dvc_ownership"
+    ],
+    "calibration_applicability": {
+      "condition": "upstream_model_slot_available",
+      "e0_m_available_slot_terminal_status": "calibration_completed",
+      "forbidden_when_unavailable": [
+        "calibrator_specification_hash",
+        "calibrator_hash",
+        "alert_thresholds",
+        "alert_threshold",
+        "ordinal_cutpoints",
+        "ordinal_cutpoint",
+        "null_hash_placeholder"
+      ],
+      "identity_calibrator_policy": "hash_serialized_identity_specification",
+      "required_when_applicable": [
+        "calibrator_specification_hash",
+        "alert_thresholds",
+        "ordinal_cutpoints"
+      ],
+      "unavailable_artifact_record_count": 0,
+      "unavailable_physical_absence_scope": "e0_m_registered_calibration_paths",
+      "unavailable_status": "not_attempted_upstream_model_unavailable"
+    },
+    "unavailable_slot_forbidden": [
+      "model_hash",
+      "checkpoint_hash",
+      "preprocessor_hash",
+      "metrics_hash",
+      "training_curve_hash",
+      "blend_weights_hash",
+      "blend_search_hash",
+      "heavy_artifact_dvc_ownership",
+      "calibrator_specification_hash",
+      "calibrator_hash",
+      "alert_thresholds",
+      "ordinal_cutpoints",
+      "null_hash_placeholder"
+    ],
+    "unavailable_slot_required": [
+      "denominator_evidence",
+      "failure_reason",
+      "no_replacement_evidence",
+      "physical_absence_evidence",
+      "input_record_digest",
+      "source_code_record_digest"
+    ]
+  },
+  "outcome_access": {
+    "creating_empty_log_at_e0_m_authorizes_outcome_access": false,
+    "e0_u_authorized": false,
+    "evaluation_authorized": false,
+    "future_outcomes_accessed": false,
+    "holdout_accessed": false,
+    "outcome_access_log_current_e0_ma_state": "absent",
+    "outcome_access_log_path": "reports/closure_v1/00_protocol/outcome_access_log.jsonl",
+    "outcome_access_log_required_e0_m_records": 0,
+    "outcome_access_log_required_e0_m_state": "present_empty",
+    "post_2021_outcomes_accessed": false
+  },
+  "p1_materialized_path_count": 0,
+  "p1_progression": {
+    "batch_seed_execution": "forbidden",
+    "first_sequence_seed": 1729,
+    "p0_registry_manifest_path": "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json",
+    "p0_registry_must_be_published_before_p1_sequence_build": true,
+    "p0_registry_path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+    "p1_fit_authorized_by_this_policy": false,
+    "seed_order": [
+      1729,
+      20260612,
+      20260613,
+      20260614,
+      314159
+    ],
+    "sequence_bundle_audit_before_training": "required"
+  },
+  "publication_contract": {
+    "completion_marker_written_last": true,
+    "dvc_registration": "forbidden",
+    "effective_in_payload": false,
+    "effective_only_after_published_loader_passes": true,
+    "exact_addition_count": 2,
+    "exact_addition_paths": [
+      "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+      "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json"
+    ],
+    "expected_direct_parent": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+    "no_clobber": true,
+    "publication_order": [
+      "registry",
+      "companion_manifest"
+    ]
+  },
+  "registry_version": "closure_p0_model_availability_registry_v1",
+  "repository_binding": {
+    "branch": "main",
+    "h_slice_components": [
+      {
+        "bytes": 7759,
+        "git_blob": "cafd70777473795972892fe13a6bcba44de272ea",
+        "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+        "git_mode": "100644",
+        "path": "configs/closure_v1/model_lock_availability_policy.yaml",
+        "role": "h_slice_component",
+        "sha256": "b9ec8f48918e801e502a3fa481cf63b95d744104e943857519ad4a1e4017ab10"
+      },
+      {
+        "bytes": 10863,
+        "git_blob": "d16703d4b05e81ab41e1ab281c7262eeee790d53",
+        "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+        "git_mode": "100644",
+        "path": "configs/closure_v1/model_lock_availability_policy.schema.json",
+        "role": "h_slice_component",
+        "sha256": "500a7755d3676a82d2ad8a84e4843a55698db2feadbe8e9ce150e56ae6e49a7c"
+      },
+      {
+        "bytes": 67415,
+        "git_blob": "cbea6a5ca7fdb109b3feb3aa92b49f9c6faa5780",
+        "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+        "git_mode": "100644",
+        "path": "src/experiments/audit_closure_p0_model_availability.py",
+        "role": "h_slice_component",
+        "sha256": "0ff5014810471efb36d80f2f00aa33902dfd8009bd151b59b7b34c15a0440fca"
+      },
+      {
+        "bytes": 8214,
+        "git_blob": "8f4b40d1cb6f4b4b9e1ef81a2f4d5238d0cccabd",
+        "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+        "git_mode": "100644",
+        "path": "docs/closure_v1/E0_M_MODEL_AVAILABILITY_POLICY.md",
+        "role": "h_slice_component",
+        "sha256": "93301fafea6c11572ce485f58a88e7aac0015b8bc9ad9936f9256440e4bd8915"
+      },
+      {
+        "bytes": 37488,
+        "git_blob": "140ff302626bd9029b371e123728ba84b46f3bca",
+        "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+        "git_mode": "100644",
+        "path": "tests/test_audit_closure_p0_model_availability.py",
+        "role": "h_slice_component",
+        "sha256": "d2f572a737b0bc2a9bd9df45b39fea38668bf1e1ce556b533b71fc6f9470dca5"
+      }
+    ],
+    "h_slice_diff": [
+      {
+        "path": "configs/closure_v1/model_lock_availability_policy.schema.json",
+        "status": "A"
+      },
+      {
+        "path": "configs/closure_v1/model_lock_availability_policy.yaml",
+        "status": "A"
+      },
+      {
+        "path": "docs/closure_v1/E0_M_MODEL_AVAILABILITY_POLICY.md",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/audit_closure_p0_model_availability.py",
+        "status": "A"
+      },
+      {
+        "path": "tests/test_audit_closure_p0_model_availability.py",
+        "status": "A"
+      }
+    ],
+    "h_slice_head": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+    "h_slice_parent": "1a4aa4836548756e74008fb934f56b5251d22491",
+    "hardened_writer_dependency": {
+      "bytes": 32664,
+      "git_blob": "48f5d570875ff6721be4a80d7b6f4dc1da48da45",
+      "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "git_mode": "100644",
+      "path": "src/experiments/lock_closure_development_runtime_temporal_consumer_patch.py",
+      "role": "hardened_writer_dependency",
+      "sha256": "906728e7ef04dfd82e3489f3df5ab4f6d31b3a6b0f7f4a45e6b78ab5c6c6e06d"
+    },
+    "local_branch_ref": "refs/heads/main",
+    "p0_closure_head": "1a4aa4836548756e74008fb934f56b5251d22491",
+    "refs": {
+      "head": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "main": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "origin_head": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "tracking": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3"
+    },
+    "remote_main": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+    "remote_ref": "refs/heads/main",
+    "tracking_ref": "origin/main"
+  },
+  "sealed_authorities": [
+    {
+      "bytes": 7281,
+      "git_blob": "aa2fd85c0f8cc8035d8de1fcfd475271ec724025",
+      "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "git_mode": "100644",
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "role": "model_benchmark",
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "bytes": 18302,
+      "git_blob": "ed325686f4536549247675de176b3b43ab585174",
+      "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "git_mode": "100644",
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "bytes": 95285,
+      "git_blob": "0100cb6ac1c1b6f8b0c64011a39b9699deaaeb2e",
+      "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "git_mode": "100644",
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+      "role": "development_runtime_lock",
+      "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+    },
+    {
+      "bytes": 60769,
+      "git_blob": "0a8718e3526d81237c1dffa3b30b700b2ba56b32",
+      "git_commit": "1e9ea62448b6ba0df22397ce9e5da703e2841eb3",
+      "git_mode": "100644",
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+      "role": "temporal_validation_lock",
+      "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+    }
+  ],
+  "seed_slots": [
+    1729,
+    20260612,
+    20260613,
+    20260614,
+    314159
+  ],
+  "slot_count": 5,
+  "slot_status_counts": {
+    "model_unavailable": 5
+  },
+  "slots": [
+    {
+      "absent_artifacts": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_1729.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_1729.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_1729.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_1729.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_1729.guard",
+          "state": "absent"
+        }
+      ],
+      "available_fit_role_sequences": 8925,
+      "base_seed": 1729,
+      "calibration_artifacts": "forbidden",
+      "calibration_status": "not_attempted_upstream_model_unavailable",
+      "evidence_commit": {
+        "additions": [
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json",
+            "status": "A"
+          },
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_1729_report.md",
+            "status": "A"
+          }
+        ],
+        "commit": "f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f",
+        "exact_addition_count": 2,
+        "parent": "4ba5ecd45da7f0b25277c0a13602999413fa2849"
+      },
+      "failed_slot_replaced": false,
+      "failure_code": "missing_target_state",
+      "failure_reason": "sequence_fit_rows_unavailable",
+      "fit_status": "not_attempted",
+      "input_record_count": 23,
+      "input_records_sha256": "c1c4acb69b7882465c69eba0747617fa6c0fdc131b8e7e4c15969e28c3386a9b",
+      "manifest": {
+        "bytes": 9845,
+        "git_blob": "d86e9fd5605c6616738f5ab8986e21d7c928d01f",
+        "git_commit": "f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json",
+        "sha256": "0381ccc6423fb29d97b1de3f80eac1943e4466cec9f758058e6b0b79779bca15"
+      },
+      "model_artifact_emitted": false,
+      "present_path_count": 2,
+      "registered_namespace": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_1729.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_1729.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_report.md",
+          "state": "present"
+        },
+        {
+          "artifact_role": "manifest",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json",
+          "state": "present"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_1729.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_1729.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_1729.guard",
+          "state": "absent"
+        }
+      ],
+      "registered_namespace_path_count": 19,
+      "replacement_used": false,
+      "report": {
+        "bytes": 174,
+        "git_blob": "9235925af5b789a4e18bc0ddd3e3cea09d8f1dec",
+        "git_commit": "f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_1729_report.md",
+        "sha256": "42a2ff4f6f64e4e8883cc6d28b8b6e20d05e718694dcc94702dd066b60922221"
+      },
+      "slot_status": "model_unavailable",
+      "source_code_record_count": 10,
+      "source_code_records_sha256": "31305d92d395a00f774ea46eeb819651498a419e1589940e5f960268c43f8076",
+      "unavailable_fit_role_sequences": 488
+    },
+    {
+      "absent_artifacts": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_20260612.guard",
+          "state": "absent"
+        }
+      ],
+      "available_fit_role_sequences": 8925,
+      "base_seed": 20260612,
+      "calibration_artifacts": "forbidden",
+      "calibration_status": "not_attempted_upstream_model_unavailable",
+      "evidence_commit": {
+        "additions": [
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json",
+            "status": "A"
+          },
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md",
+            "status": "A"
+          }
+        ],
+        "commit": "118b404cdc98a144fe392aa6085c49f0eb97348d",
+        "exact_addition_count": 2,
+        "parent": "f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f"
+      },
+      "failed_slot_replaced": false,
+      "failure_code": "missing_target_state",
+      "failure_reason": "sequence_fit_rows_unavailable",
+      "fit_status": "not_attempted",
+      "input_record_count": 23,
+      "input_records_sha256": "c1c4acb69b7882465c69eba0747617fa6c0fdc131b8e7e4c15969e28c3386a9b",
+      "manifest": {
+        "bytes": 9853,
+        "git_blob": "c4a7ecf41a27aecf9b0351ff56d6e26cd3cc91d8",
+        "git_commit": "118b404cdc98a144fe392aa6085c49f0eb97348d",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json",
+        "sha256": "646623232c8aff7820a8ae8d2404dd900461b65ace5b0d8d9119e1a665d841e4"
+      },
+      "model_artifact_emitted": false,
+      "present_path_count": 2,
+      "registered_namespace": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md",
+          "state": "present"
+        },
+        {
+          "artifact_role": "manifest",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json",
+          "state": "present"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260612.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_20260612.guard",
+          "state": "absent"
+        }
+      ],
+      "registered_namespace_path_count": 19,
+      "replacement_used": false,
+      "report": {
+        "bytes": 178,
+        "git_blob": "98401635bb3075921cccc9ffdeea25da3293ee05",
+        "git_commit": "118b404cdc98a144fe392aa6085c49f0eb97348d",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md",
+        "sha256": "5ff36ce38347a0037cc98d067d00a191e07acc07c282048e1a1de9d447102406"
+      },
+      "slot_status": "model_unavailable",
+      "source_code_record_count": 10,
+      "source_code_records_sha256": "31305d92d395a00f774ea46eeb819651498a419e1589940e5f960268c43f8076",
+      "unavailable_fit_role_sequences": 488
+    },
+    {
+      "absent_artifacts": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_20260613.guard",
+          "state": "absent"
+        }
+      ],
+      "available_fit_role_sequences": 8925,
+      "base_seed": 20260613,
+      "calibration_artifacts": "forbidden",
+      "calibration_status": "not_attempted_upstream_model_unavailable",
+      "evidence_commit": {
+        "additions": [
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json",
+            "status": "A"
+          },
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md",
+            "status": "A"
+          }
+        ],
+        "commit": "f27ee8a105a623611220e7c10630efe1a676599a",
+        "exact_addition_count": 2,
+        "parent": "118b404cdc98a144fe392aa6085c49f0eb97348d"
+      },
+      "failed_slot_replaced": false,
+      "failure_code": "missing_target_state",
+      "failure_reason": "sequence_fit_rows_unavailable",
+      "fit_status": "not_attempted",
+      "input_record_count": 23,
+      "input_records_sha256": "c1c4acb69b7882465c69eba0747617fa6c0fdc131b8e7e4c15969e28c3386a9b",
+      "manifest": {
+        "bytes": 9853,
+        "git_blob": "9f1eb832c94f6e963a63fdc58ce1b895c1ade344",
+        "git_commit": "f27ee8a105a623611220e7c10630efe1a676599a",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json",
+        "sha256": "1dedb2330a57c60feec0040fe9e467b86e78f6ba30e4dc5f110b4b461b7cd54e"
+      },
+      "model_artifact_emitted": false,
+      "present_path_count": 2,
+      "registered_namespace": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md",
+          "state": "present"
+        },
+        {
+          "artifact_role": "manifest",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json",
+          "state": "present"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260613.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_20260613.guard",
+          "state": "absent"
+        }
+      ],
+      "registered_namespace_path_count": 19,
+      "replacement_used": false,
+      "report": {
+        "bytes": 178,
+        "git_blob": "8043a53510008cca3c3e55332775dd94bb8cabd5",
+        "git_commit": "f27ee8a105a623611220e7c10630efe1a676599a",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md",
+        "sha256": "d7b65ca7c1fb8da88c168680cc044531f71bb84d47f6ff329996e90d8c825e25"
+      },
+      "slot_status": "model_unavailable",
+      "source_code_record_count": 10,
+      "source_code_records_sha256": "31305d92d395a00f774ea46eeb819651498a419e1589940e5f960268c43f8076",
+      "unavailable_fit_role_sequences": 488
+    },
+    {
+      "absent_artifacts": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_20260614.guard",
+          "state": "absent"
+        }
+      ],
+      "available_fit_role_sequences": 8925,
+      "base_seed": 20260614,
+      "calibration_artifacts": "forbidden",
+      "calibration_status": "not_attempted_upstream_model_unavailable",
+      "evidence_commit": {
+        "additions": [
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json",
+            "status": "A"
+          },
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md",
+            "status": "A"
+          }
+        ],
+        "commit": "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd",
+        "exact_addition_count": 2,
+        "parent": "f27ee8a105a623611220e7c10630efe1a676599a"
+      },
+      "failed_slot_replaced": false,
+      "failure_code": "missing_target_state",
+      "failure_reason": "sequence_fit_rows_unavailable",
+      "fit_status": "not_attempted",
+      "input_record_count": 23,
+      "input_records_sha256": "c1c4acb69b7882465c69eba0747617fa6c0fdc131b8e7e4c15969e28c3386a9b",
+      "manifest": {
+        "bytes": 9853,
+        "git_blob": "e30d7deb1855f994f9007dcae47ddb24f852b911",
+        "git_commit": "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json",
+        "sha256": "822289cdfe8dd6f208efb26c0a82cba15e1d6cd7a2e7c7a632a74ba68352e8c9"
+      },
+      "model_artifact_emitted": false,
+      "present_path_count": 2,
+      "registered_namespace": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md",
+          "state": "present"
+        },
+        {
+          "artifact_role": "manifest",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json",
+          "state": "present"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_20260614.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_20260614.guard",
+          "state": "absent"
+        }
+      ],
+      "registered_namespace_path_count": 19,
+      "replacement_used": false,
+      "report": {
+        "bytes": 178,
+        "git_blob": "06c839cd474c68060414c0b3c7e660055645d37a",
+        "git_commit": "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md",
+        "sha256": "24f16925c019735f79052252cb5c5c595be7d40825d926322bb705af05b2fd5c"
+      },
+      "slot_status": "model_unavailable",
+      "source_code_record_count": 10,
+      "source_code_records_sha256": "31305d92d395a00f774ea46eeb819651498a419e1589940e5f960268c43f8076",
+      "unavailable_fit_role_sequences": 488
+    },
+    {
+      "absent_artifacts": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_314159.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_314159.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_314159.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_314159.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_314159.guard",
+          "state": "absent"
+        }
+      ],
+      "available_fit_role_sequences": 8925,
+      "base_seed": 314159,
+      "calibration_artifacts": "forbidden",
+      "calibration_status": "not_attempted_upstream_model_unavailable",
+      "evidence_commit": {
+        "additions": [
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json",
+            "status": "A"
+          },
+          {
+            "path": "reports/closure_v1/02_models/P0/seed_314159_report.md",
+            "status": "A"
+          }
+        ],
+        "commit": "1a4aa4836548756e74008fb934f56b5251d22491",
+        "exact_addition_count": 2,
+        "parent": "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd"
+      },
+      "failed_slot_replaced": false,
+      "failure_code": "missing_target_state",
+      "failure_reason": "sequence_fit_rows_unavailable",
+      "fit_status": "not_attempted",
+      "input_record_count": 23,
+      "input_records_sha256": "c1c4acb69b7882465c69eba0747617fa6c0fdc131b8e7e4c15969e28c3386a9b",
+      "manifest": {
+        "bytes": 9849,
+        "git_blob": "c26b6bb58c4d68ad00bb933c83c7e76b18c9bf33",
+        "git_commit": "1a4aa4836548756e74008fb934f56b5251d22491",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json",
+        "sha256": "641f7c05b6b50c3353d91186e02637f19890db160239ef1508627a5292a0ed98"
+      },
+      "model_artifact_emitted": false,
+      "present_path_count": 2,
+      "registered_namespace": [
+        {
+          "artifact_role": "model",
+          "path": "models/closure_v1/pipe/P0/seed_314159.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint",
+          "path": "models/closure_v1/pipe/P0/seed_314159.checkpoint.pt",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_preprocessor.json",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_metrics.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_training_curve.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_weights.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_search.csv",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_report.md",
+          "state": "present"
+        },
+        {
+          "artifact_role": "manifest",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json",
+          "state": "present"
+        },
+        {
+          "artifact_role": "model_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_314159.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "checkpoint_temporary",
+          "path": "models/closure_v1/pipe/P0/seed_314159.checkpoint.pt.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "preprocessor_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_preprocessor.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "metrics_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_metrics.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "training_curve_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_training_curve.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_weights_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_weights.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "blend_search_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_blend_search.csv.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "report_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_report.md.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "manifest_temporary",
+          "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json.tmp",
+          "state": "absent"
+        },
+        {
+          "artifact_role": "guard",
+          "path": "tmp/closure_v1_temporal_consumer/P0_seed_314159.guard",
+          "state": "absent"
+        }
+      ],
+      "registered_namespace_path_count": 19,
+      "replacement_used": false,
+      "report": {
+        "bytes": 176,
+        "git_blob": "43aaa011abe1de378dd4732662709b656a439ac4",
+        "git_commit": "1a4aa4836548756e74008fb934f56b5251d22491",
+        "git_mode": "100644",
+        "path": "reports/closure_v1/02_models/P0/seed_314159_report.md",
+        "sha256": "388d678890f1c20dd53308ed484e2d2bd1d320cc6a2cf15349ad9a6553c0fbb9"
+      },
+      "slot_status": "model_unavailable",
+      "source_code_record_count": 10,
+      "source_code_records_sha256": "31305d92d395a00f774ea46eeb819651498a419e1589940e5f960268c43f8076",
+      "unavailable_fit_role_sequences": 488
+    }
+  ],
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla"
+}
