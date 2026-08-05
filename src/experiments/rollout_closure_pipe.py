@@ -1185,12 +1185,12 @@ def main() -> None:
     args = parse_args()
 
     # The gate precedes model, sequence, common-origin, and output I/O.
-    from src.experiments.closure_development_runtime_temporal_validation_patch import (
-        require_development_fit_authorized_with_temporal_validation_patch,
+    from src.experiments.closure_development_runtime_temporal_validation_manifest_patch import (
+        require_development_fit_authorized_with_temporal_validation_manifest_patch,
     )
 
     temporal_validation_authority = (
-        require_development_fit_authorized_with_temporal_validation_patch(
+        require_development_fit_authorized_with_temporal_validation_manifest_patch(
             device=args.device,
         )
     )

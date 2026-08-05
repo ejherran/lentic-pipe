@@ -1,0 +1,466 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/closure_v1/development_runtime_temporal_validation_manifest_patch_lock.schema.json",
+  "title": "Closure V1 E0-DLTVM temporal validation manifest patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version",
+    "status",
+    "experiment_id",
+    "gate",
+    "patch_id",
+    "created_at_utc",
+    "patch_repository",
+    "git_diff",
+    "patch_components",
+    "base_authority",
+    "builder_provenance",
+    "consumer_prelock",
+    "correction",
+    "verification",
+    "authorizations",
+    "seals",
+    "lock_artifact"
+  ],
+  "properties": {
+    "lock_version": {
+      "const": "closure_development_runtime_temporal_validation_manifest_patch_lock_v1"
+    },
+    "status": {"const": "locked"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-DLTVM"},
+    "patch_id": {
+      "const": "development_runtime_temporal_manifest_dialect_patch_1"
+    },
+    "created_at_utc": {"type": "string", "minLength": 1},
+    "patch_repository": {"$ref": "#/$defs/repository"},
+    "git_diff": {"$ref": "#/$defs/gitDiff"},
+    "patch_components": {"$ref": "#/$defs/componentBundle"},
+    "base_authority": {"$ref": "#/$defs/baseAuthority"},
+    "builder_provenance": {"$ref": "#/$defs/builderProvenance"},
+    "consumer_prelock": {"$ref": "#/$defs/consumerPrelock"},
+    "correction": {"$ref": "#/$defs/correction"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"},
+    "seals": {"$ref": "#/$defs/seals"},
+    "lock_artifact": {"$ref": "#/$defs/lockArtifact"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "commit": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "componentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "parent",
+        "branch",
+        "published_ref",
+        "published_head",
+        "remote_main_oid",
+        "worktree_status",
+        "exact_diff_verified"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/commit"},
+        "parent": {
+          "const": "40c0fb08b279383083d129f2228403e5753cddda"
+        },
+        "branch": {"const": "main"},
+        "published_ref": {"const": "origin/main"},
+        "published_head": {"$ref": "#/$defs/commit"},
+        "remote_main_oid": {"$ref": "#/$defs/commit"},
+        "worktree_status": {"const": "clean"},
+        "exact_diff_verified": {"const": true}
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path"],
+      "properties": {
+        "status": {"enum": ["A", "M"]},
+        "path": {"$ref": "#/$defs/path"}
+      }
+    },
+    "gitDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "patch_head",
+        "entries",
+        "paths",
+        "paths_sha256",
+        "only_allowed_additions_and_modifications"
+      ],
+      "properties": {
+        "base_commit": {
+          "const": "40c0fb08b279383083d129f2228403e5753cddda"
+        },
+        "patch_head": {"$ref": "#/$defs/commit"},
+        "entries": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "items": {"$ref": "#/$defs/diffEntry"}
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "only_allowed_additions_and_modifications": {"const": true}
+      }
+    },
+    "historicalGitDiff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "patch_head",
+        "entries",
+        "paths",
+        "paths_sha256",
+        "only_allowed_additions_and_modifications"
+      ],
+      "properties": {
+        "base_commit": {
+          "const": "7ddacf6577f55508f37c5fb627117613efc8cbd3"
+        },
+        "patch_head": {
+          "const": "40c0fb08b279383083d129f2228403e5753cddda"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "items": {"$ref": "#/$defs/diffEntry"}
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "only_allowed_additions_and_modifications": {"const": true}
+      }
+    },
+    "componentBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "paths", "paths_sha256", "records", "records_sha256"],
+      "properties": {
+        "count": {"const": 11},
+        "paths": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "records": {
+          "type": "array",
+          "minItems": 11,
+          "maxItems": 11,
+          "items": {"$ref": "#/$defs/componentRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "partition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "paths",
+        "records",
+        "records_sha256",
+        "current_bytes_required_to_match_h_dltv"
+      ],
+      "properties": {
+        "count": {"type": "integer"},
+        "paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "records": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"$ref": "#/$defs/componentRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"},
+        "current_bytes_required_to_match_h_dltv": {"type": "boolean"}
+      }
+    },
+    "builderAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_commit",
+        "p0_artifact_builder_record",
+        "git_blob_verified",
+        "p_dlt_authority_verified",
+        "manifest_script_verified",
+        "manifest_source_code_verified",
+        "manifest_input_verified",
+        "manifest_trusted_as_authority"
+      ],
+      "properties": {
+        "artifact_commit": {
+          "const": "b075d4f1606aa35c1b86493604c18845f2d28a2f"
+        },
+        "p0_artifact_builder_record": {"$ref": "#/$defs/artifactRecord"},
+        "git_blob_verified": {"const": true},
+        "p_dlt_authority_verified": {"const": true},
+        "manifest_script_verified": {"const": true},
+        "manifest_source_code_verified": {"const": true},
+        "manifest_input_verified": {"const": true},
+        "manifest_trusted_as_authority": {"const": false}
+      }
+    },
+    "baseAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "patch_head",
+        "git_diff",
+        "component_bundle",
+        "superseded_components",
+        "preserved_components",
+        "nested_base_authority",
+        "p0_artifact_builder_provenance",
+        "h_dltv_runtime_builder_record",
+        "historical_git_authority_verified",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "patch_head": {
+          "const": "40c0fb08b279383083d129f2228403e5753cddda"
+        },
+        "git_diff": {"$ref": "#/$defs/historicalGitDiff"},
+        "component_bundle": {"$ref": "#/$defs/componentBundle"},
+        "superseded_components": {"$ref": "#/$defs/partition"},
+        "preserved_components": {"$ref": "#/$defs/partition"},
+        "nested_base_authority": {"type": "object"},
+        "p0_artifact_builder_provenance": {"$ref": "#/$defs/builderAuthority"},
+        "h_dltv_runtime_builder_record": {"$ref": "#/$defs/artifactRecord"},
+        "historical_git_authority_verified": {"const": true},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "builderProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p0_artifact_builder_record",
+        "h_dltv_runtime_builder_record",
+        "current_runtime_builder_record",
+        "all_records_are_distinct",
+        "historical_record_source",
+        "h_dltv_record_source",
+        "runtime_record_source"
+      ],
+      "properties": {
+        "p0_artifact_builder_record": {"$ref": "#/$defs/artifactRecord"},
+        "h_dltv_runtime_builder_record": {"$ref": "#/$defs/artifactRecord"},
+        "current_runtime_builder_record": {"$ref": "#/$defs/artifactRecord"},
+        "all_records_are_distinct": {"const": true},
+        "historical_record_source": {"const": "git_blob_at_p0_bundle_commit"},
+        "h_dltv_record_source": {"const": "git_blob_at_h_dltv_commit"},
+        "runtime_record_source": {"const": "physical_bytes_at_h_dltvm_head"}
+      }
+    },
+    "consumerPrelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "base_seeds", "count", "paths", "paths_sha256", "all_absent_at_lock"],
+      "properties": {
+        "model_id": {"const": "P0"},
+        "base_seeds": {
+          "const": [1729, 20260612, 20260613, 20260614, 314159]
+        },
+        "count": {"const": 95},
+        "paths": {
+          "type": "array",
+          "minItems": 95,
+          "maxItems": 95,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_absent_at_lock": {"const": true}
+      }
+    },
+    "correction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification",
+        "scientific_runtime_contract_changed",
+        "seed_set_changed",
+        "denominator_changed",
+        "state_mapping_changed",
+        "model_unavailable_semantics_changed",
+        "historical_artifact_builder_policy",
+        "h_dltv_runtime_builder_policy",
+        "current_runtime_builder_policy",
+        "builder_domains_separated",
+        "physical_inputs_field",
+        "historical_inputs_field",
+        "historical_inputs_compared_to_current_paths",
+        "failed_attempt_classification",
+        "expected_p0_slot_status",
+        "expected_p0_fit_status",
+        "expected_p0_failure_reason",
+        "failed_slot_replacement"
+      ],
+      "properties": {
+        "classification": {"const": "manifest_dialect_compatibility_only"},
+        "scientific_runtime_contract_changed": {"const": false},
+        "seed_set_changed": {"const": false},
+        "denominator_changed": {"const": false},
+        "state_mapping_changed": {"const": false},
+        "model_unavailable_semantics_changed": {"const": false},
+        "historical_artifact_builder_policy": {"const": "git_blob_at_p0_bundle_commit"},
+        "h_dltv_runtime_builder_policy": {"const": "git_blob_at_h_dltv_commit"},
+        "current_runtime_builder_policy": {"const": "physical_bytes_at_h_dltvm_head"},
+        "builder_domains_separated": {"const": true},
+        "physical_inputs_field": {"const": "inputs"},
+        "historical_inputs_field": {"const": "historical_inputs"},
+        "historical_inputs_compared_to_current_paths": {"const": false},
+        "failed_attempt_classification": {"const": "technical_pre_parquet_pre_output"},
+        "expected_p0_slot_status": {"const": "model_unavailable"},
+        "expected_p0_fit_status": {"const": "not_attempted"},
+        "expected_p0_failure_reason": {"const": "sequence_fit_rows_unavailable"},
+        "failed_slot_replacement": {"const": false}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "test_count", "skipped_count", "deselected_count"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 197},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "dvcEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "terminal_status"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "terminal_status": {"const": "Everything is up to date."}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["full_type_check", "focused_tests", "poetry_check", "publication_guard", "git_diff_check", "dvc_push_first", "dvc_push_second"],
+      "properties": {
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"},
+        "dvc_push_first": {"$ref": "#/$defs/dvcEvidence"},
+        "dvc_push_second": {"$ref": "#/$defs/dvcEvidence"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["development_fit_authorized", "evaluation_authorized", "e0_u_authorized", "future_outcomes_accessed"],
+      "properties": {
+        "development_fit_authorized": {"const": true},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_e0_dltv_preserved_as_historical_authority", "p0_sequence_bundle_preserved", "p0_artifact_manifest_rewritten", "holdout_accessed", "post_2021_outcomes_accessed", "does_not_replace_e0_m"],
+      "properties": {
+        "base_e0_dltv_preserved_as_historical_authority": {"const": true},
+        "p0_sequence_bundle_preserved": {"const": true},
+        "p0_artifact_manifest_rewritten": {"const": false},
+        "holdout_accessed": {"const": false},
+        "post_2021_outcomes_accessed": {"const": false},
+        "does_not_replace_e0_m": {"const": true}
+      }
+    },
+    "lockArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "self_hash_policy"],
+      "properties": {
+        "path": {"const": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json"},
+        "role": {"const": "external_development_runtime_temporal_validation_dialect_patch_lock"},
+        "self_hash_policy": {"const": "verified_from_committed_and_published_bytes"}
+      }
+    }
+  }
+}

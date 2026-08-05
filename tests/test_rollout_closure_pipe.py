@@ -924,7 +924,7 @@ def test_main_stops_at_external_gate_before_rollout_io(monkeypatch: pytest.Monke
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
     )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
@@ -933,7 +933,7 @@ def test_main_stops_at_external_gate_before_rollout_io(monkeypatch: pytest.Monke
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_patch",
+        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -976,7 +976,7 @@ def test_main_propagates_temporal_validation_builder_domains_before_sequence_io(
         "current_runtime_builder_record": current,
     }
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
     )
 
     def gate(*, device: str | None = None) -> dict[str, object]:
@@ -986,7 +986,7 @@ def test_main_propagates_temporal_validation_builder_domains_before_sequence_io(
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_patch",
+        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)

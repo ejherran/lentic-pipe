@@ -826,6 +826,58 @@ def test_sequence_input_contract_keeps_prefit_unavailable_state_absent(
         assert_sequence_input_contract_unchanged(contract)
 
 
+def test_temporal_model_contract_tracks_dltv_and_dltvm_sources(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as training_module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(training_module, "PROJECT_ROOT", tmp_path)
+    sequence_files = {
+        "sequence": Path("data/sequence.parquet"),
+        "summary": Path("reports/sequence_summary.csv"),
+        "manifest": Path("reports/sequence_manifest.json"),
+    }
+    monkeypatch.setattr(training_module, "sequence_paths", lambda *_: sequence_files)
+    source_paths = (
+        "src/experiments/train_closure_pipe.py",
+        "src/experiments/build_closure_pipe_sequences.py",
+        "src/experiments/closure_contract.py",
+        "src/experiments/closure_development_guard.py",
+        "src/experiments/closure_development_runtime_lock.py",
+        "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
+        "src/experiments/closure_development_runtime_temporal_validation_patch.py",
+        "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
+        "src/experiments/closure_runtime_contract.py",
+        "src/experiments/train_pipe_grud.py",
+    )
+    for relative in (*sequence_files.values(), *(Path(path) for path in source_paths)):
+        physical = tmp_path / relative
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(relative.as_posix().encode("utf-8"))
+
+    sequence_contract = SequenceInputContract(
+        manifest_input_records=(),
+        live_physical_records=(),
+        state_path=tmp_path / "data/absent_state.parquet",
+        state_artifact_required=False,
+    )
+    contract = training_module.collect_temporal_model_input_contract(
+        model_id="P0",
+        base_seed=1729,
+        sequence_contract=sequence_contract,
+    )
+
+    observed_sources = {str(record["path"]) for record in contract.source_code_records}
+    assert observed_sources == set(source_paths)
+    assert {
+        "src/experiments/closure_development_runtime_temporal_validation_patch.py",
+        "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
+    }.issubset(observed_sources)
+
+
 def test_unavailable_slot_rejects_stale_fit_outputs(tmp_path: Path) -> None:
     fields = (
         "model",
@@ -1498,7 +1550,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
     )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
@@ -1507,7 +1559,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_patch",
+        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -1531,7 +1583,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     events: list[str] = []
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
     )
     authority: dict[str, object] = {
         "p0_artifact_builder_record": P0_ARTIFACT_BUILDER_RECORD,
@@ -1549,7 +1601,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_patch",
+        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)

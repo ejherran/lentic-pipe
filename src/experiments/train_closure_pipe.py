@@ -2,7 +2,7 @@
 """Fit the fixed Closure V1 residual probabilistic GRU profile.
 
 This module exposes synthetic-testable functional kernels, while its CLI is
-unconditionally guarded by the published additive E0-DLTV development
+unconditionally guarded by the published additive E0-DLTVM development
 authorization.  It never reads calibration outcomes, locked evaluation rows,
 or holdout rows.
 """
@@ -907,7 +907,7 @@ def builder_records_from_temporal_validation_authority(
     )
     observed_runtime = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
     if current_runtime != observed_runtime:
-        raise ClosurePipeTrainingError("Current runtime builder differs from E0-DLTV authority")
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-DLTVM authority")
     return p0_artifact, current_runtime
 
 
@@ -930,7 +930,7 @@ def collect_sequence_input_contract(
     )
     observed_runtime_builder = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
     if current_runtime_builder != observed_runtime_builder:
-        raise ClosurePipeTrainingError("Current runtime builder differs from E0-DLTV authority")
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-DLTVM authority")
     if model_id == "P0":
         if artifact_builder != P0_ARTIFACT_BUILDER_RECORD:
             raise ClosurePipeTrainingError("P0 artifact builder authority drifted")
@@ -1028,6 +1028,8 @@ def collect_temporal_model_input_contract(
         / "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
         PROJECT_ROOT
         / "src/experiments/closure_development_runtime_temporal_validation_patch.py",
+        PROJECT_ROOT
+        / "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
         PROJECT_ROOT / "src/experiments/closure_runtime_contract.py",
         PROJECT_ROOT / "src/experiments/train_pipe_grud.py",
     )
@@ -2138,12 +2140,12 @@ def main() -> None:
     args = parse_args()
 
     # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_development_runtime_temporal_validation_patch import (
-        require_development_fit_authorized_with_temporal_validation_patch,
+    from src.experiments.closure_development_runtime_temporal_validation_manifest_patch import (
+        require_development_fit_authorized_with_temporal_validation_manifest_patch,
     )
 
     temporal_validation_authority = (
-        require_development_fit_authorized_with_temporal_validation_patch(
+        require_development_fit_authorized_with_temporal_validation_manifest_patch(
             device=args.device,
         )
     )
