@@ -634,7 +634,7 @@ def _path_entry_exists(path: Path) -> bool:
     return True
 
 
-def _open_real_output_parent(path: Path) -> int:
+def _open_real_output_parent(path: Path, *, directory_mode: int = 0o755) -> int:
     try:
         repository_root = PROJECT_ROOT.resolve(strict=True)
         lexical_parent = Path(os.path.abspath(path.parent))
@@ -657,7 +657,7 @@ def _open_real_output_parent(path: Path) -> int:
                 )
             except FileNotFoundError:
                 try:
-                    os.mkdir(part, mode=0o755, dir_fd=descriptor)
+                    os.mkdir(part, mode=directory_mode, dir_fd=descriptor)
                 except FileExistsError:
                     pass
                 metadata = os.stat(
@@ -670,15 +670,20 @@ def _open_real_output_parent(path: Path) -> int:
                     f"Output ancestor is not a real directory: {path}"
                 )
             child = os.open(part, directory_flags, dir_fd=descriptor)
-            opened_child = os.fstat(child)
+            try:
+                opened_child = os.fstat(child)
+            except BaseException:
+                os.close(child)
+                raise
             if (opened_child.st_dev, opened_child.st_ino) != (
                 metadata.st_dev,
                 metadata.st_ino,
             ):
                 os.close(child)
                 raise ClosurePipeSequenceError(f"Output ancestor identity drifted: {path}")
-            os.close(descriptor)
+            parent_descriptor = descriptor
             descriptor = child
+            os.close(parent_descriptor)
         opened = os.fstat(descriptor)
         lexical = lexical_parent.lstat()
         if (
@@ -698,29 +703,133 @@ def _unlink_name_if_owned(
     *,
     device: int,
     inode: int,
-) -> None:
+) -> bool:
     try:
         metadata = os.stat(
             name,
             dir_fd=directory_descriptor,
             follow_symlinks=False,
         )
-    except (FileNotFoundError, OSError):
-        return
+    except FileNotFoundError:
+        return False
+    except OSError as exc:
+        raise ClosurePipeSequenceError(
+            f"Cannot inspect owned sequence artifact during cleanup: {name}"
+        ) from exc
     if (
         stat.S_ISREG(metadata.st_mode)
         and (metadata.st_dev, metadata.st_ino) == (device, inode)
     ):
-        os.unlink(name, dir_fd=directory_descriptor)
+        try:
+            os.unlink(name, dir_fd=directory_descriptor)
+        except OSError as exc:
+            raise ClosurePipeSequenceError(
+                f"Cannot remove owned sequence artifact during cleanup: {name}"
+            ) from exc
+        return True
+    return False
 
 
-def _write_output_no_clobber(
+@dataclass(frozen=True)
+class _OwnedSequenceOutput:
+    path: Path
+    device: int
+    inode: int
+    bytes: int
+    sha256: str
+    directory_descriptor: int
+
+
+def _hash_owned_sequence_name(
+    directory_descriptor: int,
+    name: str,
+    *,
+    device: int,
+    inode: int,
+    context: Path,
+) -> tuple[int, str]:
+    """Hash one owned regular inode without following a replacement."""
+    flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        before = os.stat(
+            name,
+            dir_fd=directory_descriptor,
+            follow_symlinks=False,
+        )
+        descriptor = os.open(name, flags, dir_fd=directory_descriptor)
+    except OSError as exc:
+        raise ClosurePipeSequenceError(
+            f"Owned sequence output cannot be opened safely: {context}"
+        ) from exc
+    try:
+        opened_before = os.fstat(descriptor)
+        expected_identity = (device, inode)
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or not stat.S_ISREG(opened_before.st_mode)
+            or (before.st_dev, before.st_ino) != expected_identity
+            or (opened_before.st_dev, opened_before.st_ino) != expected_identity
+        ):
+            raise ClosurePipeSequenceError(
+                f"Owned sequence output identity drifted: {context}"
+            )
+        before_state = (
+            opened_before.st_dev,
+            opened_before.st_ino,
+            opened_before.st_size,
+            opened_before.st_mtime_ns,
+            opened_before.st_ctime_ns,
+        )
+        digest = hashlib.sha256()
+        size = 0
+        while chunk := os.read(descriptor, 1024 * 1024):
+            digest.update(chunk)
+            size += len(chunk)
+        opened_after = os.fstat(descriptor)
+        try:
+            named_after = os.stat(
+                name,
+                dir_fd=directory_descriptor,
+                follow_symlinks=False,
+            )
+        except OSError as exc:
+            raise ClosurePipeSequenceError(
+                f"Owned sequence output disappeared while hashing: {context}"
+            ) from exc
+        opened_after_state = (
+            opened_after.st_dev,
+            opened_after.st_ino,
+            opened_after.st_size,
+            opened_after.st_mtime_ns,
+            opened_after.st_ctime_ns,
+        )
+        named_after_state = (
+            named_after.st_dev,
+            named_after.st_ino,
+            named_after.st_size,
+            named_after.st_mtime_ns,
+            named_after.st_ctime_ns,
+        )
+        if before_state != opened_after_state or before_state != named_after_state:
+            raise ClosurePipeSequenceError(
+                f"Owned sequence output changed while hashing: {context}"
+            )
+        if size != opened_after.st_size:
+            raise ClosurePipeSequenceError(
+                f"Owned sequence output size drifted while hashing: {context}"
+            )
+        return size, digest.hexdigest()
+    finally:
+        os.close(descriptor)
+
+
+def _write_output_no_clobber_owned(
     path: Path,
     writer: Any,
     *,
     binary: bool,
-) -> None:
-    """Write through an exclusive temporary inode and hard-link it once."""
+) -> _OwnedSequenceOutput:
+    """Publish one regular file and retain ownership until bundle commit."""
     directory_descriptor = _open_real_output_parent(path)
     temporary = path.with_suffix(path.suffix + ".tmp")
     flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
@@ -745,18 +854,29 @@ def _write_output_no_clobber(
         if not stat.S_ISREG(metadata.st_mode):
             raise ClosurePipeSequenceError(f"Temporary artifact is not regular: {temporary}")
         device, inode = metadata.st_dev, metadata.st_ino
+        duplicate = os.dup(descriptor)
         if binary:
-            with os.fdopen(os.dup(descriptor), "wb") as handle:
+            try:
+                binary_handle = os.fdopen(duplicate, "wb")
+            except BaseException:
+                os.close(duplicate)
+                raise
+            with binary_handle as handle:
                 writer(handle)
                 handle.flush()
                 os.fsync(handle.fileno())
         else:
-            with os.fdopen(
-                os.dup(descriptor),
-                "w",
-                encoding="utf-8",
-                newline="",
-            ) as handle:
+            try:
+                text_handle = os.fdopen(
+                    duplicate,
+                    "w",
+                    encoding="utf-8",
+                    newline="",
+                )
+            except BaseException:
+                os.close(duplicate)
+                raise
+            with text_handle as handle:
                 writer(handle)
                 handle.flush()
                 os.fsync(handle.fileno())
@@ -809,32 +929,93 @@ def _write_output_no_clobber(
                 inode=inode,
             )
             raise ClosurePipeSequenceError(f"Final artifact identity drifted: {path}")
-        _unlink_name_if_owned(
+        if not _unlink_name_if_owned(
             directory_descriptor,
             temporary.name,
             device=device,
             inode=inode,
-        )
-        os.fsync(directory_descriptor)
-        committed = True
-    finally:
-        if device is not None and inode is not None:
-            if not committed:
-                _unlink_name_if_owned(
-                    directory_descriptor,
-                    path.name,
-                    device=device,
-                    inode=inode,
-                )
+        ):
             _unlink_name_if_owned(
                 directory_descriptor,
-                temporary.name,
+                path.name,
                 device=device,
                 inode=inode,
             )
+            raise ClosurePipeSequenceError(
+                f"Temporary artifact changed before cleanup: {temporary}"
+            )
+        os.fsync(directory_descriptor)
+        size, sha256 = _hash_owned_sequence_name(
+            directory_descriptor,
+            path.name,
+            device=device,
+            inode=inode,
+            context=path,
+        )
+        closing_descriptor = descriptor
+        descriptor = None
+        os.close(closing_descriptor)
+        committed = True
+        return _OwnedSequenceOutput(
+            path=path,
+            device=device,
+            inode=inode,
+            bytes=size,
+            sha256=sha256,
+            directory_descriptor=directory_descriptor,
+        )
+    finally:
+        active_error = sys.exc_info()[1]
+        cleanup_errors: list[Exception] = []
         if descriptor is not None:
-            os.close(descriptor)
-        os.close(directory_descriptor)
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                cleanup_errors.append(exc)
+        if not committed:
+            if device is not None and inode is not None:
+                for name in (path.name, temporary.name):
+                    try:
+                        _unlink_name_if_owned(
+                            directory_descriptor,
+                            name,
+                            device=device,
+                            inode=inode,
+                        )
+                    except (ClosurePipeSequenceError, OSError) as exc:
+                        cleanup_errors.append(exc)
+                try:
+                    os.fsync(directory_descriptor)
+                except OSError as exc:
+                    cleanup_errors.append(exc)
+            try:
+                os.close(directory_descriptor)
+            except OSError as exc:
+                cleanup_errors.append(exc)
+        if cleanup_errors:
+            cleanup_error = ClosurePipeSequenceError(
+                "Sequence artifact cleanup could not be completed safely"
+            )
+            cleanup_error.add_note(
+                "Cleanup failures: "
+                + "; ".join(
+                    f"{type(error).__name__}: {error}" for error in cleanup_errors
+                )
+            )
+            if active_error is not None:
+                raise cleanup_error from active_error
+            raise cleanup_error from cleanup_errors[0]
+
+
+def _write_output_no_clobber(
+    path: Path,
+    writer: Any,
+    *,
+    binary: bool,
+) -> None:
+    """Retain the historical one-file API on top of the bundle transaction."""
+    with _SequenceOutputTransaction() as transaction:
+        transaction._publish(path, writer, binary=binary)
 
 
 def sequence_arrow_table(frame: pd.DataFrame) -> pa.Table:
@@ -864,18 +1045,193 @@ def sequence_arrow_table(frame: pd.DataFrame) -> pa.Table:
     return pa.Table.from_arrays(arrays, schema=pa.schema(fields))
 
 
-def write_sequence_parquet(frame: pd.DataFrame, path: Path) -> None:
-    table = sequence_arrow_table(frame)
-    _write_output_no_clobber(
-        path,
-        lambda handle: pq.write_table(
-            table,
-            handle,
-            compression="zstd",
-            use_dictionary=False,
-        ),
-        binary=True,
+def _owned_sequence_file_record(owned: _OwnedSequenceOutput) -> dict[str, Any]:
+    size, sha256 = _hash_owned_sequence_name(
+        owned.directory_descriptor,
+        owned.path.name,
+        device=owned.device,
+        inode=owned.inode,
+        context=owned.path,
     )
+    if size != owned.bytes or sha256 != owned.sha256:
+        raise ClosurePipeSequenceError(
+            f"Owned sequence output bytes drifted before commit: {owned.path}"
+        )
+    return {
+        "path": _repo_path(owned.path),
+        "bytes": owned.bytes,
+        "sha256": owned.sha256,
+    }
+
+
+class _SequenceOutputTransaction:
+    """Own every final inode until the guarded manifest-last bundle commits."""
+
+    def __init__(self) -> None:
+        self._owned: list[_OwnedSequenceOutput] = []
+        self._forbidden_paths: list[Path] = []
+        self._commit_validators: list[Any] = []
+
+    def __enter__(self) -> _SequenceOutputTransaction:
+        return self
+
+    def _publish(self, path: Path, writer: Any, *, binary: bool) -> _OwnedSequenceOutput:
+        owned = _write_output_no_clobber_owned(path, writer, binary=binary)
+        self._owned.append(owned)
+        return owned
+
+    def publish_parquet(self, frame: pd.DataFrame, path: Path) -> _OwnedSequenceOutput:
+        table = sequence_arrow_table(frame)
+        return self._publish(
+            path,
+            lambda handle: pq.write_table(
+                table,
+                handle,
+                compression="zstd",
+                use_dictionary=False,
+            ),
+            binary=True,
+        )
+
+    def publish_csv(self, frame: pd.DataFrame, path: Path) -> _OwnedSequenceOutput:
+        return self._publish(
+            path,
+            lambda handle: frame.to_csv(handle, index=False),
+            binary=False,
+        )
+
+    def publish_json(
+        self,
+        payload: Mapping[str, Any],
+        path: Path,
+    ) -> _OwnedSequenceOutput:
+        def write(handle: Any) -> None:
+            json.dump(payload, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+
+        return self._publish(path, write, binary=False)
+
+    def file_record(self, owned: _OwnedSequenceOutput) -> dict[str, Any]:
+        if owned not in self._owned:
+            raise ClosurePipeSequenceError("Sequence output is not owned by this transaction")
+        return _owned_sequence_file_record(owned)
+
+    def forbid_path_entries(self, paths: Sequence[Path]) -> None:
+        for path in paths:
+            if path not in self._forbidden_paths:
+                self._forbidden_paths.append(path)
+
+    def add_commit_validator(self, validator: Any) -> None:
+        self._commit_validators.append(validator)
+
+    def _forbidden_entries(self) -> list[str]:
+        return [
+            path.as_posix()
+            for path in self._forbidden_paths
+            if _path_entry_exists(path)
+        ]
+
+    def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+        commit_error: ClosurePipeSequenceError | None = None
+        rollback_errors: list[Exception] = []
+        if exc_type is None:
+            existing_forbidden = self._forbidden_entries()
+            if existing_forbidden:
+                commit_error = ClosurePipeSequenceError(
+                    "Concurrent forbidden sequence artifact appeared before commit: "
+                    f"{existing_forbidden}"
+                )
+            for owned in self._owned:
+                if commit_error is not None:
+                    break
+                try:
+                    _owned_sequence_file_record(owned)
+                    parent_opened = os.fstat(owned.directory_descriptor)
+                    parent_lexical = owned.path.parent.lstat()
+                except ClosurePipeSequenceError as error:
+                    commit_error = error
+                    break
+                except (FileNotFoundError, OSError):
+                    commit_error = ClosurePipeSequenceError(
+                        f"Sequence output disappeared before commit: {owned.path}"
+                    )
+                    break
+                if (
+                    not stat.S_ISDIR(parent_lexical.st_mode)
+                    or (parent_lexical.st_dev, parent_lexical.st_ino)
+                    != (parent_opened.st_dev, parent_opened.st_ino)
+                ):
+                    commit_error = ClosurePipeSequenceError(
+                        f"Sequence output identity drifted before commit: {owned.path}"
+                    )
+                    break
+            if commit_error is None:
+                for validator in self._commit_validators:
+                    try:
+                        validator()
+                    except ClosurePipeSequenceError as error:
+                        commit_error = error
+                        break
+                    except BaseException as error:
+                        commit_error = ClosurePipeSequenceError(
+                            "Sequence dependency commit validation failed"
+                        )
+                        commit_error.add_note(
+                            f"{type(error).__name__}: {error}"
+                        )
+                        break
+            if commit_error is None:
+                existing_forbidden = self._forbidden_entries()
+                if existing_forbidden:
+                    commit_error = ClosurePipeSequenceError(
+                        "Concurrent forbidden sequence artifact appeared during commit: "
+                        f"{existing_forbidden}"
+                    )
+        if exc_type is not None or commit_error is not None:
+            for owned in reversed(self._owned):
+                try:
+                    removed = _unlink_name_if_owned(
+                        owned.directory_descriptor,
+                        owned.path.name,
+                        device=owned.device,
+                        inode=owned.inode,
+                    )
+                    if removed:
+                        os.fsync(owned.directory_descriptor)
+                except (ClosurePipeSequenceError, OSError) as cleanup_error:
+                    rollback_errors.append(cleanup_error)
+        for owned in self._owned:
+            try:
+                os.close(owned.directory_descriptor)
+            except OSError as cleanup_error:
+                if exc_type is not None or commit_error is not None:
+                    rollback_errors.append(cleanup_error)
+        self._owned.clear()
+        self._forbidden_paths.clear()
+        self._commit_validators.clear()
+        if rollback_errors:
+            rollback_error = ClosurePipeSequenceError(
+                "Sequence bundle rollback could not be completed safely"
+            )
+            rollback_error.add_note(
+                "Rollback failures: "
+                + "; ".join(
+                    f"{type(error).__name__}: {error}" for error in rollback_errors
+                )
+            )
+            if exc is not None:
+                raise rollback_error from exc
+            if commit_error is not None:
+                raise rollback_error from commit_error
+            raise rollback_error from rollback_errors[0]
+        if commit_error is not None:
+            raise commit_error
+        return False
+
+
+def write_sequence_parquet(frame: pd.DataFrame, path: Path) -> None:
+    with _SequenceOutputTransaction() as transaction:
+        transaction.publish_parquet(frame, path)
 
 
 def _sha256(path: Path) -> str:
@@ -895,6 +1251,60 @@ def _repo_path(path: Path) -> str:
 
 def _file_record(path: Path) -> dict[str, Any]:
     return {"path": _repo_path(path), "bytes": path.stat().st_size, "sha256": _sha256(path)}
+
+
+def _authorization_dependency_records(
+    authorization: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    raw_inputs = authorization.get("authorization_inputs")
+    if (
+        not isinstance(raw_inputs, Sequence)
+        or isinstance(raw_inputs, (str, bytes))
+        or len(raw_inputs) != 2
+        or not all(isinstance(record, Mapping) for record in raw_inputs)
+    ):
+        raise ClosurePipeSequenceError(
+            "E0-MB authorization must bind exactly lock and companion inputs"
+        )
+    records = [dict(cast(Mapping[str, Any], record)) for record in raw_inputs]
+    expected_roles = {
+        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json": (
+            "external_p1_sequence_builder_patch_lock"
+        ),
+        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json": (
+            "p1_sequence_builder_patch_companion"
+        ),
+    }
+    if {record.get("path"): record.get("role") for record in records} != expected_roles:
+        raise ClosurePipeSequenceError("E0-MB authorization input paths or roles drifted")
+    dependencies: list[dict[str, Any]] = []
+    for record in records:
+        if set(record) != {"path", "role", "bytes", "sha256"}:
+            raise ClosurePipeSequenceError("E0-MB authorization input record drifted")
+        observed = _file_record(PROJECT_ROOT / str(record["path"]))
+        if observed != {
+            "path": record["path"],
+            "bytes": record["bytes"],
+            "sha256": record["sha256"],
+        }:
+            raise ClosurePipeSequenceError(
+                f"E0-MB authorization input changed before sequence build: {record['path']}"
+            )
+        dependencies.append(observed)
+    return dependencies
+
+
+def _sequence_builder_manifest_binding(
+    builder_record: Mapping[str, Any],
+) -> dict[str, Any]:
+    expected_path = _repo_path(Path(__file__))
+    if (
+        set(builder_record) != {"path", "bytes", "sha256"}
+        or builder_record.get("path") != expected_path
+    ):
+        raise ClosurePipeSequenceError("Frozen sequence-builder record drifted")
+    frozen = dict(builder_record)
+    return {"script": frozen, "source_code": [dict(frozen)]}
 
 
 def _output_record_for_path(
@@ -2320,19 +2730,13 @@ def validate_state_slot_manifest(
 
 
 def _write_json_atomic(payload: Mapping[str, Any], path: Path) -> None:
-    def write(handle: Any) -> None:
-        json.dump(payload, handle, indent=2, ensure_ascii=False)
-        handle.write("\n")
-
-    _write_output_no_clobber(path, write, binary=False)
+    with _SequenceOutputTransaction() as transaction:
+        transaction.publish_json(payload, path)
 
 
 def _write_csv_atomic(frame: pd.DataFrame, path: Path) -> None:
-    _write_output_no_clobber(
-        path,
-        lambda handle: frame.to_csv(handle, index=False),
-        binary=False,
-    )
+    with _SequenceOutputTransaction() as transaction:
+        transaction.publish_csv(frame, path)
 
 
 def _paths(model_id: str, base_seed: int | None) -> dict[str, Path]:
@@ -2358,33 +2762,18 @@ def _paths(model_id: str, base_seed: int | None) -> dict[str, Path]:
     }
 
 
-def _sequence_guard_directory() -> Path:
-    tmp_root = PROJECT_ROOT / "tmp"
-    guard_directory = tmp_root / "closure_v1_sequence_builder"
-    for directory in (tmp_root, guard_directory):
-        directory.mkdir(mode=0o700, exist_ok=True)
-        metadata = directory.lstat()
-        if not stat.S_ISDIR(metadata.st_mode):
-            raise ClosurePipeSequenceError(
-                f"Sequence coordination path is not a real directory: {directory}"
-            )
-    try:
-        guard_directory.resolve(strict=True).relative_to(PROJECT_ROOT.resolve())
-    except ValueError as exc:
-        raise ClosurePipeSequenceError("Sequence coordination path escapes the repository") from exc
-    return guard_directory
-
-
 @contextmanager
 def _sequence_bundle_guard(
     model_id: str,
     base_seed: int | None,
 ) -> Iterator[None]:
-    guard_directory = _sequence_guard_directory()
     guard_name = "P0.guard" if model_id == "P0" else f"P1_seed_{base_seed}.guard"
-    directory_flags = os.O_RDONLY | getattr(os, "O_CLOEXEC", 0)
-    directory_flags |= getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
-    directory_descriptor = os.open(guard_directory, directory_flags)
+    guard_path = PROJECT_ROOT / "tmp" / "closure_v1_sequence_builder" / guard_name
+    guard_directory = guard_path.parent
+    directory_descriptor = _open_real_output_parent(
+        guard_path,
+        directory_mode=0o700,
+    )
     descriptor: int | None = None
     owned_device: int | None = None
     owned_inode: int | None = None
@@ -2428,16 +2817,45 @@ def _sequence_bundle_guard(
         ):
             raise ClosurePipeSequenceError("Sequence bundle guard changed during construction")
     finally:
+        active_error = sys.exc_info()[1]
+        cleanup_errors: list[Exception] = []
         if owned_device is not None and owned_inode is not None:
-            _unlink_name_if_owned(
-                directory_descriptor,
-                guard_name,
-                device=owned_device,
-                inode=owned_inode,
-            )
+            try:
+                removed = _unlink_name_if_owned(
+                    directory_descriptor,
+                    guard_name,
+                    device=owned_device,
+                    inode=owned_inode,
+                )
+                if not removed:
+                    raise ClosurePipeSequenceError(
+                        "Sequence bundle guard changed before release"
+                    )
+                os.fsync(directory_descriptor)
+            except (ClosurePipeSequenceError, OSError) as exc:
+                cleanup_errors.append(exc)
         if descriptor is not None:
-            os.close(descriptor)
-        os.close(directory_descriptor)
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                cleanup_errors.append(exc)
+        try:
+            os.close(directory_descriptor)
+        except OSError as exc:
+            cleanup_errors.append(exc)
+        if cleanup_errors:
+            cleanup_error = ClosurePipeSequenceError(
+                "Sequence bundle guard cleanup could not be completed safely"
+            )
+            cleanup_error.add_note(
+                "Guard cleanup failures: "
+                + "; ".join(
+                    f"{type(error).__name__}: {error}" for error in cleanup_errors
+                )
+            )
+            if active_error is not None:
+                raise cleanup_error from active_error
+            raise cleanup_error from cleanup_errors[0]
 
 
 def assert_sequence_outputs_absent(paths: Mapping[str, Path]) -> None:
@@ -2464,16 +2882,20 @@ def assert_sequence_outputs_absent(paths: Mapping[str, Path]) -> None:
 
 def assert_sequence_pointer_absent(paths: Mapping[str, Path]) -> None:
     """Forbid concurrent DVC registration while a sequence bundle is built."""
-    if "sequence" not in paths:
-        raise ClosurePipeSequenceError("Sequence path set is incomplete")
-    sequence_path = PROJECT_ROOT / paths["sequence"]
-    pointer = Path(f"{sequence_path.as_posix()}.dvc")
-    candidates = (pointer, pointer.with_suffix(pointer.suffix + ".tmp"))
+    candidates = _sequence_pointer_candidates(paths)
     existing = [path.as_posix() for path in candidates if _path_entry_exists(path)]
     if existing:
         raise ClosurePipeSequenceError(
             f"Concurrent DVC registration is forbidden during sequence build: {existing}"
         )
+
+
+def _sequence_pointer_candidates(paths: Mapping[str, Path]) -> tuple[Path, Path]:
+    if "sequence" not in paths:
+        raise ClosurePipeSequenceError("Sequence path set is incomplete")
+    sequence_path = PROJECT_ROOT / paths["sequence"]
+    pointer = Path(f"{sequence_path.as_posix()}.dvc")
+    return pointer, pointer.with_suffix(pointer.suffix + ".tmp")
 
 
 def parse_args() -> argparse.Namespace:
@@ -2486,13 +2908,17 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    # The external authorization check is deliberately the first operation in
-    # main that may read repository artifacts.  There is no unlocked CLI mode.
-    from src.experiments.closure_development_runtime_temporal_validation_manifest_patch import (
-        require_development_fit_authorized_with_temporal_validation_manifest_patch,
+    # The additive E0-MB gate is deliberately the first operation in main that
+    # may read runtime, state, Parquet, or output artifacts.  It reconstructs
+    # E0-DLTVM and E0-MA as historical authorities; there is no unlocked mode.
+    from src.experiments.closure_p1_sequence_builder_patch import (
+        require_p1_sequence_builder_authorized,
     )
 
-    require_development_fit_authorized_with_temporal_validation_manifest_patch()
+    authorization = require_p1_sequence_builder_authorized(
+        model_id=args.model_id,
+        base_seed=args.base_seed,
+    )
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_sequence_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)
@@ -2500,23 +2926,30 @@ def main() -> None:
         raise ClosurePipeSequenceError("Applied CPU execution policy drifted")
     validate_model_seed(args.model_id, args.base_seed)
     paths = _paths(args.model_id, args.base_seed)
-    with _sequence_bundle_guard(args.model_id, args.base_seed):
-        assert_sequence_outputs_absent(paths)
-        _materialize_sequence_bundle(
-            args,
-            runtime=runtime,
-            cpu_execution_policy=cpu_execution_policy,
-            paths=paths,
-        )
+    with _SequenceOutputTransaction() as transaction:
+        transaction.forbid_path_entries(_sequence_pointer_candidates(paths))
+        with _sequence_bundle_guard(args.model_id, args.base_seed):
+            assert_sequence_outputs_absent(paths)
+            _materialize_sequence_bundle(
+                args,
+                authorization=authorization,
+                runtime=runtime,
+                cpu_execution_policy=cpu_execution_policy,
+                paths=paths,
+                transaction=transaction,
+            )
 
 
 def _materialize_sequence_bundle(
     args: argparse.Namespace,
     *,
+    authorization: Mapping[str, Any],
     runtime: Mapping[str, Any],
     cpu_execution_policy: Mapping[str, Any],
     paths: Mapping[str, Path],
+    transaction: _SequenceOutputTransaction,
 ) -> None:
+    authorization_inputs = _authorization_dependency_records(authorization)
     gate = load_development_gate()
 
     state_path = PROJECT_ROOT / paths["state"]
@@ -2537,6 +2970,15 @@ def _materialize_sequence_bundle(
         state_manifest_path,
     ]
     before = {_repo_path(path): _file_record(path) for path in dependency_paths}
+    before.update(
+        {
+            str(record["path"]): record
+            for record in authorization_inputs
+        }
+    )
+    builder_binding = _sequence_builder_manifest_binding(
+        before[_repo_path(Path(__file__))]
+    )
     with state_manifest_path.open(encoding="utf-8") as handle:
         state_manifest = json.load(handle)
     if not isinstance(state_manifest, Mapping):
@@ -2567,26 +3009,36 @@ def _materialize_sequence_bundle(
         expected_role_counts=EXPECTED_INTENT_ORIGINS_BY_ROLE,
         model_slot_failure_reason=model_slot_failure_reason,
     )
-    after = {
-        name: _file_record(PROJECT_ROOT / record["path"])
-        for name, record in before.items()
-    }
-    if before != after or (
-        not state_available and not diagnostic_state_declared and state_path.exists()
-    ):
-        raise ClosurePipeSequenceError("A sequence dependency changed during construction")
-    if validate_state_slot_manifest(
-        state_manifest,
-        model_id=args.model_id,
-        base_seed=args.base_seed,
-        state_path=state_path,
-    ) != (state_available, model_slot_failure_reason, diagnostic_state_declared):
-        raise ClosurePipeSequenceError("State-slot manifest interpretation changed during construction")
+    def assert_dependencies_unchanged() -> None:
+        after: dict[str, dict[str, Any]] = {}
+        for name, record in before.items():
+            observed = _file_record(PROJECT_ROOT / record["path"])
+            if "role" in record:
+                observed["role"] = record["role"]
+            after[name] = observed
+        if before != after or (
+            not state_available and not diagnostic_state_declared and state_path.exists()
+        ):
+            raise ClosurePipeSequenceError(
+                "A sequence dependency changed during construction"
+            )
+        if validate_state_slot_manifest(
+            state_manifest,
+            model_id=args.model_id,
+            base_seed=args.base_seed,
+            state_path=state_path,
+        ) != (state_available, model_slot_failure_reason, diagnostic_state_declared):
+            raise ClosurePipeSequenceError(
+                "State-slot manifest interpretation changed during construction"
+            )
+
+    assert_dependencies_unchanged()
+    transaction.add_commit_validator(assert_dependencies_unchanged)
     sequence_path = PROJECT_ROOT / paths["sequence"]
     summary_path = PROJECT_ROOT / paths["summary"]
     manifest_path = PROJECT_ROOT / paths["manifest"]
     assert_sequence_pointer_absent(paths)
-    write_sequence_parquet(sequences, sequence_path)
+    sequence_owner = transaction.publish_parquet(sequences, sequence_path)
     summary = cast(
         pd.DataFrame,
         sequences.groupby(
@@ -2599,7 +3051,7 @@ def _materialize_sequence_bundle(
         ["time_role", "sequence_status", "failure_reason"],
         kind="mergesort",
     )
-    _write_csv_atomic(summary, summary_path)
+    summary_owner = transaction.publish_csv(summary, summary_path)
 
     manifest = {
         "manifest_version": "closure_pipe_sequence_manifest_v1",
@@ -2612,7 +3064,7 @@ def _materialize_sequence_bundle(
         "future_outcomes_accessed": False,
         "evaluation_authorized": False,
         "e0_u_authorized": False,
-        "script": _file_record(Path(__file__)),
+        "script": builder_binding["script"],
         "cpu_execution_policy": cpu_execution_policy,
         "input_state_mapping": MODEL_STATE_MAPPINGS[args.model_id],
         "target_state_mapping": MODEL_STATE_MAPPINGS[args.model_id],
@@ -2648,12 +3100,16 @@ def _materialize_sequence_bundle(
         "inputs": [
             *before.values(),
         ],
-        "source_code": [_file_record(Path(__file__))],
-        "outputs": [_file_record(sequence_path), _file_record(summary_path)],
+        "source_code": builder_binding["source_code"],
+        "outputs": [
+            transaction.file_record(sequence_owner),
+            transaction.file_record(summary_owner),
+        ],
         "completion_marker_written_last": True,
     }
     assert_sequence_pointer_absent(paths)
-    _write_json_atomic(manifest, manifest_path)
+    transaction.publish_json(manifest, manifest_path)
+    assert_sequence_pointer_absent(paths)
 
 
 if __name__ == "__main__":

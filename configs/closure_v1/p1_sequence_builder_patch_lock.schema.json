@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-p1-sequence-builder-patch-lock-v1.json",
+  "title": "Closure V1 P1 sequence-builder patch lock",
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitOid": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fileIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repoPath"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repoPath"},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path"],
+      "properties": {
+        "status": {"enum": ["A", "M"]},
+        "path": {"$ref": "#/$defs/repoPath"}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedCommandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "test_count",
+        "skipped_count",
+        "deselected_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 79},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "componentSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "paths",
+        "records",
+        "records_sha256",
+        "current_bytes_required_to_match_historical"
+      ],
+      "properties": {
+        "count": {"type": "integer"},
+        "paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        },
+        "records": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"},
+        "current_bytes_required_to_match_historical": {"type": "boolean"}
+      }
+    },
+    "supersededComponentSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["records"],
+      "properties": {
+        "count": {"type": "integer"},
+        "paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        },
+        "records": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"},
+        "current_bytes_required_to_match_historical": {"type": "boolean"}
+      }
+    },
+    "builderProvenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p0_artifact_builder_record",
+        "h_dltv_runtime_builder_record",
+        "current_runtime_builder_record",
+        "all_records_are_distinct",
+        "historical_record_source",
+        "h_dltv_record_source",
+        "runtime_record_source"
+      ],
+      "properties": {
+        "p0_artifact_builder_record": {"$ref": "#/$defs/fileIdentity"},
+        "h_dltv_runtime_builder_record": {"$ref": "#/$defs/fileIdentity"},
+        "current_runtime_builder_record": {"$ref": "#/$defs/fileIdentity"},
+        "all_records_are_distinct": {"const": true},
+        "historical_record_source": {"type": "string", "minLength": 1},
+        "h_dltv_record_source": {"type": "string", "minLength": 1},
+        "runtime_record_source": {"type": "string", "minLength": 1}
+      }
+    },
+    "dltvmAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["lock", "companion_manifest", "superseded_components"],
+      "properties": {
+        "gate": {"type": "string", "minLength": 1},
+        "patch_head": {"$ref": "#/$defs/gitOid"},
+        "lock_commit": {"$ref": "#/$defs/gitOid"},
+        "lock": {"$ref": "#/$defs/fileRecord"},
+        "companion_manifest": {"$ref": "#/$defs/fileRecord"},
+        "superseded_components": {"$ref": "#/$defs/supersededComponentSet"},
+        "preserved_components": {"$ref": "#/$defs/componentSet"},
+        "builder_provenance": {"$ref": "#/$defs/builderProvenance"},
+        "historical_development_fit_authorized": {"type": "boolean"},
+        "evaluation_authorized": {"type": "boolean"},
+        "e0_u_authorized": {"type": "boolean"},
+        "future_outcomes_accessed": {"type": "boolean"}
+      }
+    },
+    "registryReconstruction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "slot_count", "companion_input_count", "registry_sha256"],
+      "properties": {
+        "status": {"type": "string", "minLength": 1},
+        "slot_count": {"type": "integer"},
+        "companion_input_count": {"type": "integer"},
+        "registry_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "registryAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["registry", "companion_manifest"],
+      "properties": {
+        "gate": {"type": "string", "minLength": 1},
+        "registry_commit": {"$ref": "#/$defs/gitOid"},
+        "registry_parent": {"$ref": "#/$defs/gitOid"},
+        "registry": {"$ref": "#/$defs/fileRecord"},
+        "companion_manifest": {"$ref": "#/$defs/fileRecord"},
+        "p0_closure_head": {"$ref": "#/$defs/gitOid"},
+        "slot_count": {"type": "integer"},
+        "seed_slots": {
+          "type": "array",
+          "items": {"type": "integer"}
+        },
+        "available_fit_role_sequences_per_slot": {"type": "integer"},
+        "unavailable_fit_role_sequences_per_slot": {"type": "integer"},
+        "registry_reconstruction": {"$ref": "#/$defs/registryReconstruction"},
+        "registry_effective_as_historical_authority": {"type": "boolean"},
+        "p1_materialized_path_count": {"type": "integer"},
+        "e0_m_authorized": {"type": "boolean"},
+        "evaluation_authorized": {"type": "boolean"},
+        "e0_u_authorized": {"type": "boolean"},
+        "future_outcomes_accessed": {"type": "boolean"}
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version",
+    "status",
+    "experiment_id",
+    "surface_id",
+    "gate",
+    "patch_id",
+    "created_at_utc",
+    "patch_repository",
+    "git_diff",
+    "patch_components",
+    "base_authorities",
+    "current_runtime_builder_record",
+    "sequence_prelock",
+    "progression_prelock",
+    "atomicity",
+    "verification",
+    "authorizations",
+    "seals",
+    "lock_artifact"
+  ],
+  "properties": {
+    "lock_version": {"const": "closure_p1_sequence_builder_patch_lock_v1"},
+    "status": {"const": "locked"},
+    "experiment_id": {"const": "closure_v1"},
+    "surface_id": {"const": "closure_v1_wqp_adaptive_no_current_chla"},
+    "gate": {"const": "E0-MB"},
+    "patch_id": {"const": "p1_sequence_builder_authorization_atomicity_patch_1"},
+    "created_at_utc": {
+      "type": "string",
+      "minLength": 20,
+      "pattern": "(?:Z|[+-][0-9]{2}:[0-9]{2})$"
+    },
+    "patch_repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "parent",
+        "branch",
+        "published_ref",
+        "published_head",
+        "remote_main_oid",
+        "worktree_status",
+        "exact_diff_verified"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/gitOid"},
+        "parent": {"$ref": "#/$defs/gitOid"},
+        "branch": {"const": "main"},
+        "published_ref": {"const": "origin/main"},
+        "published_head": {"$ref": "#/$defs/gitOid"},
+        "remote_main_oid": {"$ref": "#/$defs/gitOid"},
+        "worktree_status": {"const": "clean"},
+        "exact_diff_verified": {"const": true}
+      }
+    },
+    "git_diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "patch_head",
+        "modified_count",
+        "added_count",
+        "entries",
+        "paths",
+        "paths_sha256",
+        "only_allowed_additions_and_modifications"
+      ],
+      "properties": {
+        "base_commit": {"$ref": "#/$defs/gitOid"},
+        "patch_head": {"$ref": "#/$defs/gitOid"},
+        "modified_count": {"const": 2},
+        "added_count": {"const": 5},
+        "entries": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/diffEntry"}
+        },
+        "paths": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "only_allowed_additions_and_modifications": {"const": true}
+      }
+    },
+    "patch_components": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "paths", "paths_sha256", "records", "records_sha256"],
+      "properties": {
+        "count": {"const": 7},
+        "paths": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "records": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "records_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "base_authorities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["e0_dltvm", "e0_ma"],
+      "properties": {
+        "e0_dltvm": {"$ref": "#/$defs/dltvmAuthority"},
+        "e0_ma": {"$ref": "#/$defs/registryAuthority"}
+      }
+    },
+    "current_runtime_builder_record": {"$ref": "#/$defs/fileRecord"},
+    "sequence_prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "base_seed",
+        "count",
+        "paths",
+        "paths_sha256",
+        "all_absent_at_lock"
+      ],
+      "properties": {
+        "model_id": {"const": "P1"},
+        "base_seed": {"const": 1729},
+        "count": {"const": 28},
+        "paths": {
+          "type": "array",
+          "minItems": 28,
+          "maxItems": 28,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/repoPath"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_absent_at_lock": {"const": true}
+      }
+    },
+    "progression_prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p1_seed_order",
+        "p1_path_count",
+        "p1_paths_sha256",
+        "p1_all_absent",
+        "e0_m_output_count",
+        "outcome_access_log_state",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "p1_seed_order": {"const": [1729, 20260612, 20260613, 20260614, 314159]},
+        "p1_path_count": {"const": 140},
+        "p1_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "p1_all_absent": {"const": true},
+        "e0_m_output_count": {"const": 0},
+        "outcome_access_log_state": {"const": "absent"},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "atomicity": {
+      "const": {
+        "bundle_outputs": ["sequence_parquet", "summary_csv", "manifest_json"],
+        "publication_order": ["sequence_parquet", "summary_csv", "manifest_json"],
+        "completion_marker": "manifest_json",
+        "completion_marker_written_last": true,
+        "exclusive_slot_guard": true,
+        "parent_walk_no_follow": true,
+        "temporary_creation": "exclusive_regular_inode",
+        "publication": "hardlink_no_clobber",
+        "rollback": "reverse_owned_inode_only",
+        "foreign_replacement_preserved": true,
+        "directory_fsync": true,
+        "owned_bytes_rehashed_at_commit": true,
+        "dependencies_revalidated_at_commit": true,
+        "dvc_pointer_checks": [
+          "preflight",
+          "before_manifest",
+          "after_manifest",
+          "transaction_commit_before_output_rehash",
+          "transaction_commit_after_dependency_revalidation"
+        ],
+        "uncoordinated_external_dvc_creator_excluded": false,
+        "sigkill_between_distinct_directories_is_detected_not_atomic": true
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "git_diff_check"
+      ],
+      "properties": {
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedCommandEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "authorizations": {
+      "const": {
+        "p1_sequence_builder_authorized": false,
+        "effective_in_payload": false,
+        "publication_required": true,
+        "authorized_model_id": "P1",
+        "authorized_base_seed": 1729,
+        "batch_seed_execution_authorized": false,
+        "p1_fit_authorized": false,
+        "e0_m_authorized": false,
+        "evaluation_authorized": false,
+        "e0_u_authorized": false,
+        "future_outcomes_accessed": false
+      }
+    },
+    "seals": {
+      "const": {
+        "e0_dltvm_preserved_as_historical_authority": true,
+        "e0_ma_registry_preserved_as_historical_authority": true,
+        "p0_artifacts_rewritten": false,
+        "scientific_sequence_contract_changed": false,
+        "state_mapping_changed": false,
+        "denominator_changed": false,
+        "seed_order_changed": false,
+        "holdout_accessed": false,
+        "post_2021_outcomes_accessed": false,
+        "does_not_replace_e0_m": true
+      }
+    },
+    "lock_artifact": {
+      "const": {
+        "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json",
+        "role": "external_p1_sequence_builder_patch_lock",
+        "self_hash_policy": "verified_from_committed_and_published_bytes"
+      }
+    }
+  }
+}

@@ -1210,23 +1210,21 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
     class GateStopped(RuntimeError):
         pass
 
-    fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
-    )
+    fake_lock = types.ModuleType("src.experiments.closure_p1_sequence_builder_patch")
 
     def stop_gate(**_: object) -> dict[str, object]:
         raise GateStopped
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
+        "require_p1_sequence_builder_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P0", base_seed=None),
+        lambda: Namespace(model_id="P1", base_seed=1729),
     )
     reads: list[object] = []
     monkeypatch.setattr(pd, "read_parquet", lambda *args, **kwargs: reads.append((args, kwargs)))
@@ -1289,6 +1287,209 @@ def test_sequence_bundle_guard_is_exclusive_for_the_full_slot(
                 raise AssertionError("unreachable")
         assert (tmp_path / "tmp/closure_v1_sequence_builder/P0.guard").is_file()
     assert not (tmp_path / "tmp/closure_v1_sequence_builder/P0.guard").exists()
+
+
+def test_sequence_bundle_transaction_rolls_back_prior_outputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    first = tmp_path / "data/sequence.parquet"
+    second = tmp_path / "reports/summary.csv"
+
+    def fail_writer(handle: Any) -> None:
+        handle.write("partial")
+        raise RuntimeError("summary failed")
+
+    with pytest.raises(RuntimeError, match="summary failed"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction._publish(
+                first,
+                lambda handle: handle.write(b"sequence"),
+                binary=True,
+            )
+            transaction._publish(second, fail_writer, binary=False)
+
+    assert not first.exists()
+    assert not second.exists()
+    assert not first.with_suffix(".parquet.tmp").exists()
+    assert not second.with_suffix(".csv.tmp").exists()
+
+
+def test_sequence_bundle_transaction_rolls_back_parquet_and_summary_if_manifest_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    sequence = tmp_path / "data/sequence.parquet"
+    summary = tmp_path / "reports/summary.csv"
+    manifest = tmp_path / "reports/manifest.json"
+
+    def fail_manifest(handle: Any) -> None:
+        handle.write("{")
+        raise RuntimeError("manifest failed")
+
+    with pytest.raises(RuntimeError, match="manifest failed"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction._publish(
+                sequence,
+                lambda handle: handle.write(b"sequence"),
+                binary=True,
+            )
+            transaction._publish(
+                summary,
+                lambda handle: handle.write("summary"),
+                binary=False,
+            )
+            transaction._publish(manifest, fail_manifest, binary=False)
+
+    assert all(not path.exists() for path in (sequence, summary, manifest))
+
+
+def test_sequence_bundle_transaction_preserves_a_foreign_final_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    first = tmp_path / "data/sequence.parquet"
+    second = tmp_path / "reports/summary.csv"
+
+    with pytest.raises(ValueError, match="identity drifted"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction._publish(
+                first,
+                lambda handle: handle.write(b"owned-sequence"),
+                binary=True,
+            )
+            transaction._publish(
+                second,
+                lambda handle: handle.write("owned-summary"),
+                binary=False,
+            )
+            first.unlink()
+            first.write_bytes(b"foreign replacement")
+
+    assert first.read_bytes() == b"foreign replacement"
+    assert not second.exists()
+
+
+def test_sequence_bundle_transaction_rolls_back_if_guard_release_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    output = tmp_path / "reports/manifest.json"
+    original_unlink = module._unlink_name_if_owned
+
+    def fail_guard_release(
+        descriptor: int,
+        name: str,
+        *,
+        device: int,
+        inode: int,
+    ) -> bool:
+        if name == "P1_seed_1729.guard":
+            raise OSError("guard release failed")
+        return original_unlink(
+            descriptor,
+            name,
+            device=device,
+            inode=inode,
+        )
+
+    monkeypatch.setattr(module, "_unlink_name_if_owned", fail_guard_release)
+    with pytest.raises(ValueError, match="guard cleanup"):
+        with module._SequenceOutputTransaction() as transaction:
+            with module._sequence_bundle_guard("P1", 1729):
+                transaction.publish_json({"completed": True}, output)
+
+    assert not output.exists()
+
+
+def test_concurrent_dvc_pointer_rolls_back_bundle_but_is_preserved(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    paths = {
+        "sequence": Path("data/sequence.parquet"),
+        "summary": Path("reports/summary.csv"),
+        "manifest": Path("reports/manifest.json"),
+    }
+    sequence = tmp_path / paths["sequence"]
+    summary = tmp_path / paths["summary"]
+    pointer = Path(f"{sequence.as_posix()}.dvc")
+
+    with pytest.raises(ValueError, match="Concurrent DVC registration"):
+        with module._SequenceOutputTransaction() as transaction:
+            with module._sequence_bundle_guard("P1", 1729):
+                transaction._publish(
+                    sequence,
+                    lambda handle: handle.write(b"sequence"),
+                    binary=True,
+                )
+                transaction._publish(
+                    summary,
+                    lambda handle: handle.write("summary"),
+                    binary=False,
+                )
+                pointer.write_bytes(b"outs: []\n")
+                module.assert_sequence_pointer_absent(paths)
+
+    assert not sequence.exists()
+    assert not summary.exists()
+    assert pointer.read_bytes() == b"outs: []\n"
+
+
+def test_sequence_writer_preserves_a_foreign_temp_replacement_after_hardlink(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    output = tmp_path / "reports/summary.json"
+    temporary = output.with_suffix(".json.tmp")
+    original_link = os.link
+
+    def replace_after_link(*args: Any, **kwargs: Any) -> None:
+        original_link(*args, **kwargs)
+        temporary.unlink()
+        temporary.write_bytes(b"foreign temp replacement\n")
+
+    monkeypatch.setattr(os, "link", replace_after_link)
+    with pytest.raises(ValueError, match="Temporary artifact changed before cleanup"):
+        module._write_json_atomic({"ours": True}, output)
+    assert temporary.read_bytes() == b"foreign temp replacement\n"
+    assert not output.exists()
+
+
+def test_sequence_guard_rejects_a_symlinked_coordination_ancestor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    repository = tmp_path / "repository"
+    outside = tmp_path / "outside"
+    repository.mkdir()
+    outside.mkdir()
+    (repository / "tmp").symlink_to(outside, target_is_directory=True)
+    monkeypatch.setattr(module, "PROJECT_ROOT", repository)
+    with pytest.raises(ValueError, match="ancestor is not a real directory"):
+        with module._sequence_bundle_guard("P1", 1729):
+            raise AssertionError("unreachable")
+    assert list(outside.iterdir()) == []
 
 
 def test_sequence_writer_never_clobbers_final_or_broken_temporary(
@@ -1363,3 +1564,233 @@ def test_sequence_writer_rejects_a_symlinked_output_ancestor(
     with pytest.raises(ValueError, match="ancestor is not a real directory"):
         module._write_json_atomic({"ours": True}, output)
     assert list(outside.iterdir()) == []
+
+
+def test_sequence_transaction_rehashes_and_rolls_back_same_inode_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    sequence = tmp_path / "data/sequence.parquet"
+    summary = tmp_path / "reports/summary.csv"
+
+    with pytest.raises(ValueError, match="bytes drifted before commit"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction._publish(
+                sequence,
+                lambda handle: handle.write(b"original-sequence"),
+                binary=True,
+            )
+            transaction._publish(
+                summary,
+                lambda handle: handle.write("original-summary"),
+                binary=False,
+            )
+            original_inode = sequence.stat().st_ino
+            sequence.write_bytes(b"mutated-sequence!")
+            assert sequence.stat().st_ino == original_inode
+
+    assert not sequence.exists()
+    assert not summary.exists()
+
+
+def test_sequence_transaction_rechecks_dvc_pointer_at_commit(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    sequence = tmp_path / "data/sequence.parquet"
+    summary = tmp_path / "reports/summary.csv"
+    pointer = Path(f"{sequence.as_posix()}.dvc")
+
+    with pytest.raises(ValueError, match="forbidden sequence artifact"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction.forbid_path_entries((pointer,))
+            transaction._publish(
+                sequence,
+                lambda handle: handle.write(b"sequence"),
+                binary=True,
+            )
+            transaction._publish(
+                summary,
+                lambda handle: handle.write("summary"),
+                binary=False,
+            )
+            pointer.write_bytes(b"outs: []\n")
+
+    assert not sequence.exists()
+    assert not summary.exists()
+    assert pointer.read_bytes() == b"outs: []\n"
+
+
+def test_sequence_transaction_rechecks_pointer_after_output_rehash(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    sequence = tmp_path / "data/sequence.parquet"
+    summary = tmp_path / "reports/summary.csv"
+    pointer = Path(f"{sequence.as_posix()}.dvc")
+    original_record = module._owned_sequence_file_record
+    injected = False
+
+    def record_then_register(
+        owned: Any,
+    ) -> dict[str, Any]:
+        nonlocal injected
+        record = original_record(owned)
+        if not injected:
+            pointer.write_bytes(b"outs: []\n")
+            injected = True
+        return record
+
+    monkeypatch.setattr(module, "_owned_sequence_file_record", record_then_register)
+    with pytest.raises(ValueError, match="appeared during commit"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction.forbid_path_entries((pointer,))
+            transaction._publish(
+                sequence,
+                lambda handle: handle.write(b"sequence"),
+                binary=True,
+            )
+            transaction._publish(
+                summary,
+                lambda handle: handle.write("summary"),
+                binary=False,
+            )
+
+    assert not sequence.exists()
+    assert not summary.exists()
+    assert pointer.read_bytes() == b"outs: []\n"
+
+
+def test_sequence_transaction_revalidates_dependencies_after_serialization(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    dependency = tmp_path / "reports/authority.json"
+    dependency.parent.mkdir(parents=True)
+    dependency.write_bytes(b"sealed-authority\n")
+    expected = module._file_record(dependency)
+    output = tmp_path / "data/sequence.parquet"
+
+    def validate_dependency() -> None:
+        if module._file_record(dependency) != expected:
+            raise module.ClosurePipeSequenceError(
+                "A sequence dependency changed during construction"
+            )
+
+    with pytest.raises(ValueError, match="dependency changed"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction.add_commit_validator(validate_dependency)
+            transaction._publish(
+                output,
+                lambda handle: handle.write(b"sequence"),
+                binary=True,
+            )
+            dependency.write_bytes(b"changed-authority\n")
+
+    assert not output.exists()
+
+
+def test_output_parent_walk_closes_child_when_fstat_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    repository = tmp_path / "repository"
+    (repository / "reports").mkdir(parents=True)
+    monkeypatch.setattr(module, "PROJECT_ROOT", repository)
+    real_open = os.open
+    real_close = os.close
+    real_fstat = os.fstat
+    opened: list[int] = []
+    closed: list[int] = []
+
+    def tracked_open(*args: Any, **kwargs: Any) -> int:
+        descriptor = real_open(*args, **kwargs)
+        opened.append(descriptor)
+        return descriptor
+
+    def fail_child_fstat(descriptor: int) -> os.stat_result:
+        if len(opened) >= 2 and descriptor == opened[1]:
+            raise OSError("injected child fstat failure")
+        return real_fstat(descriptor)
+
+    def tracked_close(descriptor: int) -> None:
+        closed.append(descriptor)
+        real_close(descriptor)
+
+    monkeypatch.setattr(os, "open", tracked_open)
+    monkeypatch.setattr(os, "fstat", fail_child_fstat)
+    monkeypatch.setattr(os, "close", tracked_close)
+    with pytest.raises(OSError, match="child fstat failure"):
+        module._open_real_output_parent(repository / "reports/output.json")
+
+    assert len(opened) == 2
+    assert sorted(closed) == sorted(opened)
+
+
+def test_authorization_inputs_are_exact_and_use_generic_manifest_record_dialect(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    roles = {
+        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json": (
+            "external_p1_sequence_builder_patch_lock"
+        ),
+        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json": (
+            "p1_sequence_builder_patch_companion"
+        ),
+    }
+    inputs: list[dict[str, Any]] = []
+    for index, (path, role) in enumerate(roles.items(), start=1):
+        physical = tmp_path / path
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(f"authority-{index}\n".encode())
+        inputs.append({**module._file_record(physical), "role": role})
+
+    dependencies = module._authorization_dependency_records(
+        {"authorization_inputs": inputs}
+    )
+    assert {record["path"] for record in dependencies} == set(roles)
+    assert all(set(record) == {"path", "bytes", "sha256"} for record in dependencies)
+
+    inputs[0]["role"] = "wrong_role"
+    with pytest.raises(ValueError, match="paths or roles drifted"):
+        module._authorization_dependency_records({"authorization_inputs": inputs})
+
+
+def test_sequence_manifest_reuses_one_frozen_builder_record(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    builder = tmp_path / "src/experiments/build_closure_pipe_sequences.py"
+    builder.parent.mkdir(parents=True)
+    builder.write_bytes(b"frozen builder\n")
+    monkeypatch.setattr(module, "__file__", builder.as_posix())
+    record = module._file_record(builder)
+    binding = module._sequence_builder_manifest_binding(record)
+    assert binding == {"script": record, "source_code": [record]}
+    assert binding["script"] is not binding["source_code"][0]
+
+    corrupted = dict(record)
+    corrupted["path"] = "src/experiments/other.py"
+    with pytest.raises(ValueError, match="Frozen sequence-builder record drifted"):
+        module._sequence_builder_manifest_binding(corrupted)
