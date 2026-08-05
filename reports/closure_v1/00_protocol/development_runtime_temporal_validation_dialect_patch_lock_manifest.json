@@ -1,0 +1,86 @@
+{
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+  "created_at_utc": "2026-08-05T02:46:56.785134Z",
+  "development_fit_authorized": true,
+  "e0_u_authorized": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-DLTVM",
+  "historical_inputs": [
+    {
+      "bytes": 110034,
+      "commit": "b075d4f1606aa35c1b86493604c18845f2d28a2f",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "historical_p0_artifact_builder",
+      "sha256": "dc500d94c8ca4b3705d2cb849a037524e33915624cd86f9d355e5c4eebb347f6"
+    },
+    {
+      "bytes": 110067,
+      "commit": "40c0fb08b279383083d129f2228403e5753cddda",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "historical_h_dltv_runtime_builder",
+      "sha256": "498c5b8ac673605e2164426624e968cd02c2180c2d2e0135c8e586c76b8ff411"
+    }
+  ],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 37435,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock.json",
+      "role": "base_development_runtime_temporal_consumer_patch_lock",
+      "sha256": "acde72b2de683b452c99799cbe5024a38397386e806e31469a3ada4a9cd9a0e7"
+    },
+    {
+      "bytes": 2755,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock_manifest.json",
+      "role": "base_development_runtime_temporal_consumer_patch_companion",
+      "sha256": "db69c38b37cf867be2fd738b5f47719e2d248f8a3bd7f219272bc9f9b394b49a"
+    },
+    {
+      "bytes": 42291,
+      "path": "src/experiments/closure_development_runtime_temporal_validation_patch.py",
+      "role": "base_temporal_validation_validator",
+      "sha256": "51e4da098a994d2ac79706acef5686c0ffdfd13cc4a00c55cec3f4512beb2b91"
+    },
+    {
+      "bytes": 16869,
+      "path": "configs/closure_v1/development_runtime_temporal_validation_manifest_patch_lock.schema.json",
+      "role": "temporal_validation_manifest_patch_lock_schema",
+      "sha256": "97d447a3dcfe645146fdb96c6ae6cddfa43c17f4f06057225781405a1d2d8478"
+    },
+    {
+      "bytes": 44465,
+      "path": "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
+      "role": "temporal_validation_manifest_patch_validator",
+      "sha256": "ac0af1cf60e064d0cae8ab46ef48a236c4bab58f82325be29aed2388c4a66c7f"
+    },
+    {
+      "bytes": 110094,
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "current_runtime_builder",
+      "sha256": "c37636343f9cf9f9215e13e669706d109ee0aae0474b12611fc476237074c7a0"
+    }
+  ],
+  "manifest_version": "closure_development_runtime_temporal_validation_manifest_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 60769,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+      "role": "external_development_runtime_temporal_validation_dialect_patch_lock",
+      "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+    }
+  ],
+  "patch_id": "development_runtime_temporal_manifest_dialect_patch_1",
+  "physical_inputs_only": true,
+  "script": {
+    "bytes": 14314,
+    "path": "src/experiments/lock_closure_development_runtime_temporal_validation_manifest_patch.py",
+    "role": "generating_script",
+    "sha256": "3bf57947320452ae1afaecc156a0adec8e1d827eb19036a856bd86ce1c2f526f"
+  },
+  "status": "completed"
+}
