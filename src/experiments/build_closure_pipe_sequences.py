@@ -2488,11 +2488,11 @@ def main() -> None:
 
     # The external authorization check is deliberately the first operation in
     # main that may read repository artifacts.  There is no unlocked CLI mode.
-    from src.experiments.closure_development_runtime_temporal_consumer_patch import (
-        require_development_fit_authorized_with_temporal_consumer_patch,
+    from src.experiments.closure_development_runtime_temporal_validation_patch import (
+        require_development_fit_authorized_with_temporal_validation_patch,
     )
 
-    require_development_fit_authorized_with_temporal_consumer_patch()
+    require_development_fit_authorized_with_temporal_validation_patch()
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_sequence_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)

@@ -1211,7 +1211,7 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_consumer_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_patch"
     )
 
     def stop_gate(**_: object) -> dict[str, object]:
@@ -1219,7 +1219,7 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_consumer_patch",
+        "require_development_fit_authorized_with_temporal_validation_patch",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)

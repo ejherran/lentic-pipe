@@ -5,7 +5,7 @@ import sys
 import types
 from argparse import Namespace
 from pathlib import Path
-from typing import Any
+from typing import Any, Mapping
 
 import numpy as np
 import pandas as pd
@@ -924,7 +924,7 @@ def test_main_stops_at_external_gate_before_rollout_io(monkeypatch: pytest.Monke
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_consumer_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_patch"
     )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
@@ -933,7 +933,7 @@ def test_main_stops_at_external_gate_before_rollout_io(monkeypatch: pytest.Monke
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_consumer_patch",
+        "require_development_fit_authorized_with_temporal_validation_patch",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -947,4 +947,91 @@ def test_main_stops_at_external_gate_before_rollout_io(monkeypatch: pytest.Monke
 
     with pytest.raises(GateStopped):
         module.main()
+    assert reads == []
+
+
+@pytest.mark.parametrize("model_id", ["P0", "P1"])
+def test_main_propagates_temporal_validation_builder_domains_before_sequence_io(
+    model_id: str,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import rollout_closure_pipe as module
+
+    class ContractObserved(RuntimeError):
+        pass
+
+    events: list[str] = []
+    historical = {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "bytes": 110_034,
+        "sha256": "dc500d94c8ca4b3705d2cb849a037524e33915624cd86f9d355e5c4eebb347f6",
+    }
+    current = {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "bytes": 1,
+        "sha256": "1" * 64,
+    }
+    authority: dict[str, object] = {
+        "p0_artifact_builder_record": historical,
+        "current_runtime_builder_record": current,
+    }
+    fake_lock = types.ModuleType(
+        "src.experiments.closure_development_runtime_temporal_validation_patch"
+    )
+
+    def gate(*, device: str | None = None) -> dict[str, object]:
+        assert device == "cpu"
+        events.append("gate")
+        return authority
+
+    setattr(
+        fake_lock,
+        "require_development_fit_authorized_with_temporal_validation_patch",
+        gate,
+    )
+    monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
+    monkeypatch.setattr(
+        module,
+        "parse_args",
+        lambda: Namespace(model_id=model_id, base_seed=1729, device="cpu"),
+    )
+
+    def builder_records(value: Mapping[str, Any]) -> tuple[dict[str, Any], dict[str, Any]]:
+        assert value is authority
+        events.append("builder-authority")
+        return historical, current
+
+    monkeypatch.setattr(
+        module,
+        "builder_records_from_temporal_validation_authority",
+        builder_records,
+    )
+    monkeypatch.setattr(module, "load_yaml_mapping", lambda path: {})
+    monkeypatch.setattr(module, "validate_rollout_runtime_contract", lambda runtime: None)
+    monkeypatch.setattr(
+        module,
+        "configure_torch_cpu_execution_policy",
+        lambda runtime: expected_cpu_execution_policy_record(),
+    )
+    monkeypatch.setattr(module, "validate_temporal_seed", lambda *args: None)
+    monkeypatch.setattr(module, "configure_deterministic_runtime", lambda *args: "cpu")
+    monkeypatch.setattr(module, "assert_rollout_outputs_absent", lambda paths: None)
+
+    def collect(**kwargs: Any) -> None:
+        assert kwargs == {
+            "model_id": model_id,
+            "base_seed": 1729,
+            "artifact_builder_record": historical if model_id == "P0" else current,
+            "current_runtime_builder_record": current,
+        }
+        events.append("sequence-contract")
+        raise ContractObserved
+
+    monkeypatch.setattr(module, "collect_sequence_input_contract", collect)
+    reads: list[object] = []
+    monkeypatch.setattr(pd, "read_parquet", lambda *args, **kwargs: reads.append((args, kwargs)))
+
+    with pytest.raises(ContractObserved):
+        module.main()
+    assert events == ["gate", "builder-authority", "sequence-contract"]
     assert reads == []

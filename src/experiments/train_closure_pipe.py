@@ -2,7 +2,7 @@
 """Fit the fixed Closure V1 residual probabilistic GRU profile.
 
 This module exposes synthetic-testable functional kernels, while its CLI is
-unconditionally guarded by the published additive E0-DLT development
+unconditionally guarded by the published additive E0-DLTV development
 authorization.  It never reads calibration outcomes, locked evaluation rows,
 or holdout rows.
 """
@@ -109,6 +109,12 @@ MODEL_ARTIFACT_OUTPUT_NAMES = (
     "blend_search",
     "report",
 )
+SEQUENCE_BUILDER_PATH = Path("src/experiments/build_closure_pipe_sequences.py")
+P0_ARTIFACT_BUILDER_RECORD = {
+    "path": SEQUENCE_BUILDER_PATH.as_posix(),
+    "bytes": 110_034,
+    "sha256": "dc500d94c8ca4b3705d2cb849a037524e33915624cd86f9d355e5c4eebb347f6",
+}
 
 
 class ClosurePipeTrainingError(ValueError):
@@ -140,7 +146,8 @@ class FitAvailability:
 
 @dataclass(frozen=True)
 class SequenceInputContract:
-    records: tuple[dict[str, Any], ...]
+    manifest_input_records: tuple[dict[str, Any], ...]
+    live_physical_records: tuple[dict[str, Any], ...]
     state_path: Path
     state_artifact_required: bool
 
@@ -859,13 +866,76 @@ def validate_sequence_physical_schema(schema: pa.Schema) -> None:
             raise ClosurePipeTrainingError(f"Sequence physical target field drifted: {column}")
 
 
+def _authority_file_record(
+    payload: object,
+    *,
+    field: str,
+) -> dict[str, Any]:
+    if not isinstance(payload, Mapping):
+        raise ClosurePipeTrainingError(f"Temporal validation authority field {field!r} drifted")
+    record = dict(cast(Mapping[str, Any], payload))
+    if set(record) != {"path", "bytes", "sha256"}:
+        raise ClosurePipeTrainingError(f"Temporal validation authority field {field!r} drifted")
+    path = record.get("path")
+    size = record.get("bytes")
+    digest = record.get("sha256")
+    if (
+        path != SEQUENCE_BUILDER_PATH.as_posix()
+        or type(size) is not int
+        or size < 0
+        or not isinstance(digest, str)
+        or len(digest) != 64
+        or any(character not in "0123456789abcdef" for character in digest)
+    ):
+        raise ClosurePipeTrainingError(f"Temporal validation authority field {field!r} drifted")
+    return {"path": path, "bytes": size, "sha256": digest}
+
+
+def builder_records_from_temporal_validation_authority(
+    authority: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve sealed artifact provenance separately from the live runtime source."""
+    p0_artifact = _authority_file_record(
+        authority.get("p0_artifact_builder_record"),
+        field="p0_artifact_builder_record",
+    )
+    if p0_artifact != P0_ARTIFACT_BUILDER_RECORD:
+        raise ClosurePipeTrainingError("P0 artifact builder authority drifted")
+    current_runtime = _authority_file_record(
+        authority.get("current_runtime_builder_record"),
+        field="current_runtime_builder_record",
+    )
+    observed_runtime = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
+    if current_runtime != observed_runtime:
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-DLTV authority")
+    return p0_artifact, current_runtime
+
+
 def collect_sequence_input_contract(
     *,
     model_id: str,
     base_seed: int,
+    artifact_builder_record: Mapping[str, Any],
+    current_runtime_builder_record: Mapping[str, Any],
 ) -> SequenceInputContract:
-    """Resolve and snapshot the exact upstream inputs used by the sequence builder."""
+    """Snapshot immutable manifest provenance and live runtime inputs separately."""
     validate_temporal_seed(model_id, base_seed)
+    artifact_builder = _authority_file_record(
+        artifact_builder_record,
+        field="artifact_builder_record",
+    )
+    current_runtime_builder = _authority_file_record(
+        current_runtime_builder_record,
+        field="current_runtime_builder_record",
+    )
+    observed_runtime_builder = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
+    if current_runtime_builder != observed_runtime_builder:
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-DLTV authority")
+    if model_id == "P0":
+        if artifact_builder != P0_ARTIFACT_BUILDER_RECORD:
+            raise ClosurePipeTrainingError("P0 artifact builder authority drifted")
+    elif artifact_builder != current_runtime_builder:
+        raise ClosurePipeTrainingError("P1 sequence builder must match the current runtime builder")
     sequence_seed: int | None = None if model_id == "P0" else base_seed
     paths = sequence_paths(model_id, sequence_seed)
     state_path = PROJECT_ROOT / paths["state"]
@@ -901,24 +971,34 @@ def collect_sequence_input_contract(
         PROJECT_ROOT / DEFAULT_ASSIGNMENT,
         PROJECT_ROOT / DEFAULT_HOLDOUT_MANIFEST,
         PROJECT_ROOT / DEFAULT_PROTOCOL_LOCK,
-        PROJECT_ROOT / "src/experiments/build_closure_pipe_sequences.py",
+        PROJECT_ROOT / SEQUENCE_BUILDER_PATH,
     )
-    records = [*(_file_record(path) for path in fixed_paths), state_manifest_before]
+    live_records = [*(_file_record(path) for path in fixed_paths), state_manifest_before]
     if state_required:
         assert state_before is not None
-        records.append(state_before)
-    paths_seen = [str(record["path"]) for record in records]
-    if len(paths_seen) != len(set(paths_seen)):
-        raise ClosurePipeTrainingError("Sequence input contract contains duplicate paths")
+        live_records.append(state_before)
+    live_paths = [str(record["path"]) for record in live_records]
+    if len(live_paths) != len(set(live_paths)):
+        raise ClosurePipeTrainingError("Live sequence input contract contains duplicate paths")
+    manifest_records = [
+        dict(artifact_builder)
+        if record["path"] == SEQUENCE_BUILDER_PATH.as_posix()
+        else dict(record)
+        for record in live_records
+    ]
+    manifest_paths = [str(record["path"]) for record in manifest_records]
+    if manifest_paths != live_paths:
+        raise ClosurePipeTrainingError("Sequence manifest/live input path ordering drifted")
     return SequenceInputContract(
-        records=tuple(records),
+        manifest_input_records=tuple(manifest_records),
+        live_physical_records=tuple(live_records),
         state_path=state_path,
         state_artifact_required=state_required,
     )
 
 
 def assert_sequence_input_contract_unchanged(contract: SequenceInputContract) -> None:
-    for record in contract.records:
+    for record in contract.live_physical_records:
         path = PROJECT_ROOT / str(record["path"])
         if _file_record(path) != record:
             raise ClosurePipeTrainingError(
@@ -946,6 +1026,8 @@ def collect_temporal_model_input_contract(
         PROJECT_ROOT / "src/experiments/closure_development_runtime_lock.py",
         PROJECT_ROOT
         / "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
+        PROJECT_ROOT
+        / "src/experiments/closure_development_runtime_temporal_validation_patch.py",
         PROJECT_ROOT / "src/experiments/closure_runtime_contract.py",
         PROJECT_ROOT / "src/experiments/train_pipe_grud.py",
     )
@@ -955,7 +1037,10 @@ def collect_temporal_model_input_contract(
         PROJECT_ROOT / sequence_info["manifest"],
         *source_paths,
     )
-    records = {str(record["path"]): dict(record) for record in sequence_contract.records}
+    records = {
+        str(record["path"]): dict(record)
+        for record in sequence_contract.live_physical_records
+    }
     for path in dependency_paths:
         record = _file_record(path)
         existing = records.get(str(record["path"]))
@@ -986,12 +1071,28 @@ def assert_temporal_model_input_contract_unchanged(
             )
 
 
+def validate_sequence_manifest_builder_binding(
+    payload: Mapping[str, Any],
+    *,
+    artifact_builder_record: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Bind immutable sequence provenance without conflating it with live source bytes."""
+    expected = _authority_file_record(
+        artifact_builder_record,
+        field="artifact_builder_record",
+    )
+    if payload.get("script") != expected or payload.get("source_code") != [expected]:
+        raise ClosurePipeTrainingError("Sequence manifest is not bound to its exact builder code")
+    return expected
+
+
 def validate_sequence_completion_manifest(
     payload: Mapping[str, Any],
     *,
     sequence_record: Mapping[str, Any],
     summary_record: Mapping[str, Any],
     expected_input_records: Sequence[Mapping[str, Any]],
+    artifact_builder_record: Mapping[str, Any],
     model_id: str,
     base_seed: int,
 ) -> None:
@@ -1072,9 +1173,10 @@ def validate_sequence_completion_manifest(
     for field, value in exact_sections.items():
         if not _typed_scalar_equal(payload.get(field), value):
             raise ClosurePipeTrainingError(f"Sequence manifest section {field!r} drifted")
-    expected_script = _file_record(PROJECT_ROOT / "src/experiments/build_closure_pipe_sequences.py")
-    if payload.get("script") != expected_script or payload.get("source_code") != [expected_script]:
-        raise ClosurePipeTrainingError("Sequence manifest is not bound to its exact builder code")
+    expected_script = validate_sequence_manifest_builder_binding(
+        payload,
+        artifact_builder_record=artifact_builder_record,
+    )
     counts = payload.get("counts")
     if not isinstance(counts, Mapping):
         raise ClosurePipeTrainingError("Sequence manifest counts are missing")
@@ -1103,20 +1205,26 @@ def validate_sequence_completion_manifest(
             )
         if raw_path in actual_inputs:
             raise ClosurePipeTrainingError("Sequence manifest input paths must be unique")
-        physical_path = PROJECT_ROOT / logical_path
-        try:
-            physical_path.resolve().relative_to(PROJECT_ROOT.resolve())
-        except ValueError as exc:
-            raise ClosurePipeTrainingError(
-                "Sequence manifest input path escapes the repository root"
-            ) from exc
-        if not physical_path.is_file() or not _typed_scalar_equal(
-            dict(record),
-            _file_record(physical_path),
-        ):
-            raise ClosurePipeTrainingError(
-                f"Sequence manifest input record differs from physical bytes: {raw_path}"
-            )
+        if raw_path == expected_script["path"]:
+            if not _typed_scalar_equal(dict(record), expected_script):
+                raise ClosurePipeTrainingError(
+                    "Sequence manifest builder input differs from sealed artifact provenance"
+                )
+        else:
+            physical_path = PROJECT_ROOT / logical_path
+            try:
+                physical_path.resolve().relative_to(PROJECT_ROOT.resolve())
+            except ValueError as exc:
+                raise ClosurePipeTrainingError(
+                    "Sequence manifest input path escapes the repository root"
+                ) from exc
+            if not physical_path.is_file() or not _typed_scalar_equal(
+                dict(record),
+                _file_record(physical_path),
+            ):
+                raise ClosurePipeTrainingError(
+                    f"Sequence manifest input record differs from physical bytes: {raw_path}"
+                )
         actual_inputs[raw_path] = record
     expected_inputs = {str(record.get("path")): record for record in expected_input_records}
     if len(expected_inputs) != len(expected_input_records):
@@ -1780,7 +1888,16 @@ def _run_temporal_slot(
     *,
     args: argparse.Namespace,
     paths: Mapping[str, Path],
+    temporal_validation_authority: Mapping[str, Any],
 ) -> None:
+    p0_artifact_builder, current_runtime_builder = (
+        builder_records_from_temporal_validation_authority(
+            temporal_validation_authority,
+        )
+    )
+    artifact_builder = (
+        p0_artifact_builder if args.model_id == "P0" else current_runtime_builder
+    )
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_temporal_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)
@@ -1795,6 +1912,8 @@ def _run_temporal_slot(
     sequence_input_contract = collect_sequence_input_contract(
         model_id=args.model_id,
         base_seed=args.base_seed,
+        artifact_builder_record=artifact_builder,
+        current_runtime_builder_record=current_runtime_builder,
     )
     model_input_contract = collect_temporal_model_input_contract(
         model_id=args.model_id,
@@ -1812,7 +1931,8 @@ def _run_temporal_slot(
         sequence_manifest,
         sequence_record=sequence_before,
         summary_record=summary_before,
-        expected_input_records=sequence_input_contract.records,
+        expected_input_records=sequence_input_contract.manifest_input_records,
+        artifact_builder_record=artifact_builder,
         model_id=args.model_id,
         base_seed=args.base_seed,
     )
@@ -2018,18 +2138,26 @@ def main() -> None:
     args = parse_args()
 
     # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_development_runtime_temporal_consumer_patch import (
-        require_development_fit_authorized_with_temporal_consumer_patch,
+    from src.experiments.closure_development_runtime_temporal_validation_patch import (
+        require_development_fit_authorized_with_temporal_validation_patch,
     )
 
-    require_development_fit_authorized_with_temporal_consumer_patch(device=args.device)
+    temporal_validation_authority = (
+        require_development_fit_authorized_with_temporal_validation_patch(
+            device=args.device,
+        )
+    )
     validate_temporal_seed(args.model_id, args.base_seed)
     paths = {
         name: PROJECT_ROOT / path
         for name, path in _paths(args.model_id, args.base_seed).items()
     }
     with _temporal_slot_guard(args.model_id, args.base_seed):
-        _run_temporal_slot(args=args, paths=paths)
+        _run_temporal_slot(
+            args=args,
+            paths=paths,
+            temporal_validation_authority=temporal_validation_authority,
+        )
 
 
 if __name__ == "__main__":

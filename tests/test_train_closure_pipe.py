@@ -37,6 +37,7 @@ from src.experiments.train_closure_pipe import (
     SequenceInputContract,
     TemporalModelInputContract,
     WindowBundle,
+    P0_ARTIFACT_BUILDER_RECORD,
     _TemporalOutputTransaction,
     _open_real_output_parent,
     _path_entry_exists,
@@ -58,6 +59,8 @@ from src.experiments.train_closure_pipe import (
     validate_sequence_physical_schema,
     validate_temporal_runtime_contract,
     assert_sequence_input_contract_unchanged,
+    builder_records_from_temporal_validation_authority,
+    validate_sequence_manifest_builder_binding,
 )
 from src.experiments.train_pipe_grud import make_model
 
@@ -485,6 +488,7 @@ def test_sequence_schema_and_completion_manifest_are_physically_bound(
         sequence_record=record,
         summary_record=summary_record,
         expected_input_records=expected_inputs,
+        artifact_builder_record=script_record,
         model_id="P0",
         base_seed=1729,
     )
@@ -495,6 +499,7 @@ def test_sequence_schema_and_completion_manifest_are_physically_bound(
             sequence_record=record,
             summary_record=summary_record,
             expected_input_records=expected_inputs,
+            artifact_builder_record=script_record,
             model_id="P0",
             base_seed=1729,
         )
@@ -505,6 +510,7 @@ def test_sequence_schema_and_completion_manifest_are_physically_bound(
             sequence_record=record,
             summary_record=summary_record,
             expected_input_records=expected_inputs,
+            artifact_builder_record=script_record,
             model_id="P0",
             base_seed=1729,
         )
@@ -580,6 +586,7 @@ def test_sequence_manifest_rejects_builder_or_common_input_drift(
             sequence_record=sequence_record,
             summary_record=summary_record,
             expected_input_records=[script_record, common_record],
+            artifact_builder_record=script_record,
             model_id="P0",
             base_seed=1729,
         )
@@ -590,6 +597,7 @@ def test_sequence_manifest_rejects_builder_or_common_input_drift(
             sequence_record=sequence_record,
             summary_record=summary_record,
             expected_input_records=[script_record, common_record],
+            artifact_builder_record=script_record,
             model_id="P0",
             base_seed=1729,
         )
@@ -602,6 +610,7 @@ def test_sequence_manifest_rejects_builder_or_common_input_drift(
             sequence_record=sequence_record,
             summary_record=summary_record,
             expected_input_records=[script_record, common_record],
+            artifact_builder_record=script_record,
             model_id="P0",
             base_seed=1729,
         )
@@ -615,8 +624,50 @@ def test_sequence_manifest_rejects_builder_or_common_input_drift(
             sequence_record=sequence_record,
             summary_record=summary_record,
             expected_input_records=[script_record, common_record],
+            artifact_builder_record=script_record,
             model_id="P0",
             base_seed=1729,
+        )
+
+
+def test_published_p0_manifest_binds_historical_builder_separately_from_live_runtime() -> None:
+    from src.experiments import train_closure_pipe as module
+
+    manifest_path = (
+        Path(__file__).resolve().parents[1]
+        / "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json"
+    )
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    assert validate_sequence_manifest_builder_binding(
+        payload,
+        artifact_builder_record=P0_ARTIFACT_BUILDER_RECORD,
+    ) == P0_ARTIFACT_BUILDER_RECORD
+
+    live_builder = _file_record(module.PROJECT_ROOT / module.SEQUENCE_BUILDER_PATH)
+    assert live_builder != P0_ARTIFACT_BUILDER_RECORD
+    artifact, runtime = builder_records_from_temporal_validation_authority(
+        {
+            "p0_artifact_builder_record": P0_ARTIFACT_BUILDER_RECORD,
+            "current_runtime_builder_record": live_builder,
+        }
+    )
+    assert artifact == P0_ARTIFACT_BUILDER_RECORD
+    assert runtime == live_builder
+
+    with pytest.raises(ValueError, match="exact builder code"):
+        validate_sequence_manifest_builder_binding(
+            payload,
+            artifact_builder_record=live_builder,
+        )
+    with pytest.raises(ValueError, match="artifact builder authority drifted"):
+        builder_records_from_temporal_validation_authority(
+            {
+                "p0_artifact_builder_record": {
+                    **P0_ARTIFACT_BUILDER_RECORD,
+                    "sha256": "0" * 64,
+                },
+                "current_runtime_builder_record": live_builder,
+            }
         )
 
 
@@ -681,13 +732,31 @@ def test_sequence_input_contract_snapshots_exact_state_and_gate_sources(
         lambda *args, **kwargs: (True, "", False),
     )
 
-    contract = collect_sequence_input_contract(model_id="P0", base_seed=1729)
-    observed = {str(record["path"]) for record in contract.records}
+    current_builder = _file_record(
+        tmp_path / "src/experiments/build_closure_pipe_sequences.py"
+    )
+    contract = collect_sequence_input_contract(
+        model_id="P0",
+        base_seed=1729,
+        artifact_builder_record=P0_ARTIFACT_BUILDER_RECORD,
+        current_runtime_builder_record=current_builder,
+    )
+    observed = {str(record["path"]) for record in contract.live_physical_records}
     assert observed == {
         *(path.as_posix() for path in fixed_paths),
         "reports/state_manifest.json",
         "data/state.parquet",
     }
+    manifest_by_path = {
+        str(record["path"]): record for record in contract.manifest_input_records
+    }
+    live_by_path = {
+        str(record["path"]): record for record in contract.live_physical_records
+    }
+    builder_path = "src/experiments/build_closure_pipe_sequences.py"
+    assert manifest_by_path[builder_path] == P0_ARTIFACT_BUILDER_RECORD
+    assert live_by_path[builder_path] == current_builder
+    assert manifest_by_path[builder_path] != live_by_path[builder_path]
     assert contract.state_artifact_required is True
     assert_sequence_input_contract_unchanged(contract)
     (tmp_path / training_module.DEFAULT_ASSIGNMENT).write_bytes(b"changed")
@@ -736,9 +805,20 @@ def test_sequence_input_contract_keeps_prefit_unavailable_state_absent(
         lambda *args, **kwargs: (False, "anfis_model_slot_unavailable", False),
     )
 
-    contract = collect_sequence_input_contract(model_id="P1", base_seed=1729)
+    current_builder = _file_record(
+        tmp_path / "src/experiments/build_closure_pipe_sequences.py"
+    )
+    contract = collect_sequence_input_contract(
+        model_id="P1",
+        base_seed=1729,
+        artifact_builder_record=current_builder,
+        current_runtime_builder_record=current_builder,
+    )
     assert contract.state_artifact_required is False
-    assert "data/state.parquet" not in {str(record["path"]) for record in contract.records}
+    assert "data/state.parquet" not in {
+        str(record["path"]) for record in contract.live_physical_records
+    }
+    assert contract.manifest_input_records == contract.live_physical_records
     state_path = tmp_path / "data/state.parquet"
     state_path.parent.mkdir(parents=True, exist_ok=True)
     state_path.write_bytes(b"appeared")
@@ -1227,29 +1307,94 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
     from src.experiments import train_closure_pipe as module
 
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     sequence = tmp_path / "inputs/sequence.parquet"
     summary = tmp_path / "inputs/summary.csv"
     sequence_manifest = tmp_path / "inputs/manifest.json"
     common = tmp_path / module.DEFAULT_COMMON_ORIGINS
+    builder = tmp_path / module.SEQUENCE_BUILDER_PATH
     for path, payload in (
         (sequence, b"sequence"),
         (summary, b"summary"),
-        (sequence_manifest, b"{}\n"),
         (common, b"common"),
+        (builder, b"current-runtime-builder"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(payload)
-    records = tuple(_file_record(path) for path in (sequence, summary, sequence_manifest, common))
+    sequence_record = _file_record(sequence)
+    summary_record = _file_record(summary)
+    common_record = _file_record(common)
+    current_builder_record = _file_record(builder)
+    manifest_inputs = (dict(P0_ARTIFACT_BUILDER_RECORD), common_record)
+    sequence_manifest.write_text(
+        json.dumps(
+            {
+                "manifest_version": "closure_pipe_sequence_manifest_v1",
+                "status": "completed",
+                "generated_at_utc": "2026-08-04T17:44:49+00:00",
+                "experiment_id": "closure_v1",
+                "surface_id": SURFACE_ID,
+                "model_id": "P0",
+                "base_seed": None,
+                "future_outcomes_accessed": False,
+                "evaluation_authorized": False,
+                "e0_u_authorized": False,
+                "script": dict(P0_ARTIFACT_BUILDER_RECORD),
+                "cpu_execution_policy": expected_cpu_execution_policy_record(),
+                "input_state_mapping": MODEL_STATE_MAPPINGS["P0"],
+                "target_state_mapping": MODEL_STATE_MAPPINGS["P0"],
+                "target_to_next_input_mapping": TARGET_TO_NEXT_INPUT_MAPPING,
+                "input_columns": list(INPUT_COLUMNS),
+                "target_columns": list(TARGET_COLUMNS),
+                "optional_context_columns": [],
+                "serialization": {
+                    "rows_per_common_origin": 1,
+                    "input_physical_type": "fixed_size_list<float32>[12]",
+                    "target_physical_type": "float32",
+                    "canonical_order": [
+                        "source_id",
+                        "site_id",
+                        "origin_year_month",
+                        "target_year_month",
+                    ],
+                },
+                "counts": {
+                    "intent_origins": 9732,
+                    "role_counts": {
+                        "training": 8352,
+                        "model_selection": 1061,
+                        "calibration_threshold": 319,
+                    },
+                },
+                "inputs": [dict(record) for record in manifest_inputs],
+                "source_code": [dict(P0_ARTIFACT_BUILDER_RECORD)],
+                "outputs": [sequence_record, summary_record],
+                "completion_marker_written_last": True,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    manifest_record = _file_record(sequence_manifest)
     sequence_contract = SequenceInputContract(
-        records=records,
+        manifest_input_records=manifest_inputs,
+        live_physical_records=(current_builder_record, common_record),
         state_path=tmp_path / "inputs/unavailable-state.parquet",
         state_artifact_required=False,
     )
     model_contract = TemporalModelInputContract(
-        records=records,
+        records=(
+            sequence_record,
+            summary_record,
+            manifest_record,
+            common_record,
+            current_builder_record,
+        ),
         source_code_records=(),
         sequence_contract=sequence_contract,
     )
@@ -1279,11 +1424,6 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
         "collect_temporal_model_input_contract",
         lambda **kwargs: model_contract,
     )
-    monkeypatch.setattr(
-        module,
-        "validate_sequence_completion_manifest",
-        lambda *args, **kwargs: None,
-    )
     monkeypatch.setattr(module.pq, "read_schema", lambda path: object())
     monkeypatch.setattr(module, "validate_sequence_physical_schema", lambda schema: None)
     monkeypatch.setattr(
@@ -1306,12 +1446,6 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
         failure_reason_counts={"missing_target_state": 488},
     )
     monkeypatch.setattr(module, "inspect_fit_availability", lambda *args, **kwargs: availability)
-    monkeypatch.setattr(
-        module,
-        "assert_temporal_model_input_contract_unchanged",
-        lambda contract: None,
-    )
-
     def forbidden_fit(*args: Any, **kwargs: Any) -> None:
         raise AssertionError("unavailable P0 must not tensorize or fit")
 
@@ -1321,6 +1455,10 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     _run_temporal_slot(
         args=Namespace(model_id="P0", base_seed=1729, device="cpu"),
         paths=paths,
+        temporal_validation_authority={
+            "p0_artifact_builder_record": P0_ARTIFACT_BUILDER_RECORD,
+            "current_runtime_builder_record": current_builder_record,
+        },
     )
 
     payload = json.loads(paths["manifest"].read_text(encoding="utf-8"))
@@ -1360,7 +1498,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_consumer_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_patch"
     )
 
     def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
@@ -1369,7 +1507,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_consumer_patch",
+        "require_development_fit_authorized_with_temporal_validation_patch",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -1393,17 +1531,25 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     events: list[str] = []
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_consumer_patch"
+        "src.experiments.closure_development_runtime_temporal_validation_patch"
     )
+    authority: dict[str, object] = {
+        "p0_artifact_builder_record": P0_ARTIFACT_BUILDER_RECORD,
+        "current_runtime_builder_record": {
+            "path": "src/experiments/build_closure_pipe_sequences.py",
+            "bytes": 1,
+            "sha256": "1" * 64,
+        },
+    }
 
     def gate(*, device: str | None = None) -> dict[str, object]:
         assert device == "cpu"
         events.append("gate")
-        return {}
+        return authority
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_consumer_patch",
+        "require_development_fit_authorized_with_temporal_validation_patch",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -1441,9 +1587,15 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     monkeypatch.setattr(module, "_temporal_slot_guard", guard)
 
-    def run(*, args: Namespace, paths: Mapping[str, Path]) -> None:
+    def run(
+        *,
+        args: Namespace,
+        paths: Mapping[str, Path],
+        temporal_validation_authority: Mapping[str, Any],
+    ) -> None:
         assert args.model_id == "P0"
         assert set(paths) == set(relative_paths)
+        assert temporal_validation_authority is authority
         events.append("run")
 
     monkeypatch.setattr(module, "_run_temporal_slot", run)

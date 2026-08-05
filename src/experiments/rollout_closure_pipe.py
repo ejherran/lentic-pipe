@@ -67,6 +67,7 @@ from src.experiments.train_closure_pipe import (
     _paths as model_paths,
     _require_torch,
     assert_temporal_model_input_contract_unchanged,
+    builder_records_from_temporal_validation_authority,
     collect_sequence_input_contract,
     collect_temporal_model_input_contract,
     configure_deterministic_runtime,
@@ -1184,11 +1185,23 @@ def main() -> None:
     args = parse_args()
 
     # The gate precedes model, sequence, common-origin, and output I/O.
-    from src.experiments.closure_development_runtime_temporal_consumer_patch import (
-        require_development_fit_authorized_with_temporal_consumer_patch,
+    from src.experiments.closure_development_runtime_temporal_validation_patch import (
+        require_development_fit_authorized_with_temporal_validation_patch,
     )
 
-    require_development_fit_authorized_with_temporal_consumer_patch(device=args.device)
+    temporal_validation_authority = (
+        require_development_fit_authorized_with_temporal_validation_patch(
+            device=args.device,
+        )
+    )
+    p0_artifact_builder, current_runtime_builder = (
+        builder_records_from_temporal_validation_authority(
+            temporal_validation_authority,
+        )
+    )
+    artifact_builder = (
+        p0_artifact_builder if args.model_id == "P0" else current_runtime_builder
+    )
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_rollout_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)
@@ -1216,6 +1229,8 @@ def main() -> None:
     sequence_input_contract = collect_sequence_input_contract(
         model_id=args.model_id,
         base_seed=args.base_seed,
+        artifact_builder_record=artifact_builder,
+        current_runtime_builder_record=current_runtime_builder,
     )
     model_input_contract = collect_temporal_model_input_contract(
         model_id=args.model_id,
@@ -1249,7 +1264,8 @@ def main() -> None:
         sequence_manifest,
         sequence_record=sequence_record,
         summary_record=summary_record,
-        expected_input_records=sequence_input_contract.records,
+        expected_input_records=sequence_input_contract.manifest_input_records,
+        artifact_builder_record=artifact_builder,
         model_id=args.model_id,
         base_seed=args.base_seed,
     )
