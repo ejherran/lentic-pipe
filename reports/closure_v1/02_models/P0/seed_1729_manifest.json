@@ -1,0 +1,298 @@
+{
+  "manifest_version": "closure_pipe_model_manifest_v1",
+  "status": "completed",
+  "slot_status": "model_unavailable",
+  "fit_status": "not_attempted",
+  "failure_reason": "sequence_fit_rows_unavailable",
+  "generated_at_utc": "2026-08-05T13:28:30.283278+00:00",
+  "experiment_id": "closure_v1",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "model_id": "P0",
+  "base_seed": 1729,
+  "device": "cpu",
+  "future_outcomes_accessed": false,
+  "evaluation_authorized": false,
+  "e0_u_authorized": false,
+  "failed_slot_replaced": false,
+  "replacement_used": false,
+  "model_artifact_emitted": false,
+  "fit_status_counts": {
+    "success": 8925,
+    "autoregressive_target_unavailable": 488
+  },
+  "failure_reason_counts": {
+    "missing_target_state": 488
+  },
+  "script": {
+    "path": "src/experiments/train_closure_pipe.py",
+    "bytes": 89980,
+    "sha256": "de971c91162e3639b9c925880b88dda02fc620c8289a016ba60247a4c2a26ad1"
+  },
+  "cpu_execution_policy": {
+    "device": "cpu",
+    "torch_num_threads": 1,
+    "torch_num_interop_threads": 1,
+    "blas_thread_environment_control": "not_locked_by_e0_dl_v1",
+    "bitwise_reproducibility_claim": "forbidden_across_processes_or_blas_backends",
+    "torch_num_threads_observed": 1,
+    "torch_num_interop_threads_observed": 1
+  },
+  "config": {
+    "history_length": 12,
+    "input_dimension": 13,
+    "target_dimension": 9,
+    "hidden_dimension": 96,
+    "recurrent_layers": 1,
+    "dropout": 0.0,
+    "residual_mode": "add_last",
+    "optimizer": "AdamW",
+    "learning_rate": 0.001,
+    "weight_decay": 1e-05,
+    "gradient_clip_norm": 1.0,
+    "batch_size": 2048,
+    "maximum_epochs": 20,
+    "early_stopping_patience": 5,
+    "early_stopping_minimum_delta": 0.0,
+    "mse_weight": 1.0,
+    "target_weights": {
+      "yN": 2.0,
+      "yF": 1.0,
+      "yT": 2.5,
+      "sigma_N": 0.5,
+      "sigma_F": 0.5,
+      "sigma_T": 0.5,
+      "delta_yN": 1.5,
+      "delta_yF": 1.5,
+      "delta_yT": 1.5
+    },
+    "blend_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.35,
+      0.5,
+      0.65,
+      0.8,
+      0.9,
+      1.0
+    ],
+    "cpu_execution_policy": {
+      "device": "cpu",
+      "torch_num_threads": 1,
+      "torch_num_interop_threads": 1,
+      "blas_thread_environment_control": "not_locked_by_e0_dl_v1",
+      "bitwise_reproducibility_claim": "forbidden_across_processes_or_blas_backends"
+    }
+  },
+  "input_state_mapping": {
+    "yN": "yN",
+    "yF": "yF",
+    "yT": "yT_no_chla",
+    "sigma_N": "sigma_N",
+    "sigma_F": "sigma_F",
+    "sigma_T": "sigma_T_no_chla",
+    "delta_yN": "delta_yN",
+    "delta_yF": "delta_yF",
+    "delta_yT": "delta_yT_no_chla"
+  },
+  "target_state_mapping": {
+    "yN": "yN",
+    "yF": "yF",
+    "yT": "yT_no_chla",
+    "sigma_N": "sigma_N",
+    "sigma_F": "sigma_F",
+    "sigma_T": "sigma_T_no_chla",
+    "delta_yN": "delta_yN",
+    "delta_yF": "delta_yF",
+    "delta_yT": "delta_yT_no_chla"
+  },
+  "target_to_next_input_mapping": {
+    "target_yN": "x_yN",
+    "target_yF": "x_yF",
+    "target_yT": "x_yT",
+    "target_sigma_N": "x_sigma_N",
+    "target_sigma_F": "x_sigma_F",
+    "target_sigma_T": "x_sigma_T",
+    "target_delta_yN": "x_delta_yN",
+    "target_delta_yF": "x_delta_yF",
+    "target_delta_yT": "x_delta_yT"
+  },
+  "inputs": [
+    {
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "bytes": 2763097,
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "bytes": 11524,
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "path": "configs/closure_v1/development_runtime.yaml",
+      "bytes": 46105,
+      "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d"
+    },
+    {
+      "path": "configs/closure_v1/development_runtime.schema.json",
+      "bytes": 55502,
+      "sha256": "1abb28734ab3dc4ef2cdc68ce13876741ee42b4b5a8de35aadb332e95aee9709"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+      "bytes": 95285,
+      "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+    },
+    {
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "bytes": 89635,
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "bytes": 3440,
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+    },
+    {
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "bytes": 8279,
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+    },
+    {
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "bytes": 110094,
+      "sha256": "c37636343f9cf9f9215e13e669706d109ee0aae0474b12611fc476237074c7a0"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json",
+      "bytes": 6898,
+      "sha256": "e0e12d41358e9e2fe1d0be98725f237254b2ed889860c714ed524fda250670c1"
+    },
+    {
+      "path": "data/closure_v1/development/expert/expert_no_current_state.parquet",
+      "bytes": 1201722,
+      "sha256": "3034d1cfff880c1f3dbe84502e2c54c332e2458b3f3ba3c83b1db105a1b3fe25"
+    },
+    {
+      "path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet",
+      "bytes": 1377124,
+      "sha256": "a10fbe5054d795b44dac1da2853a387b4dbead3e04dd7d9d942313b2aa5318fd"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+      "bytes": 356,
+      "sha256": "a6c6c837a82c13a9321233de03b588c60b7a4198b77dcf31b3c7a62027752c3e"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+      "bytes": 5954,
+      "sha256": "ec5c4a88eeb44c431484bced3053adf4f2824cda3db2a60ab9719f7be2f310fc"
+    },
+    {
+      "path": "src/experiments/train_closure_pipe.py",
+      "bytes": 89980,
+      "sha256": "de971c91162e3639b9c925880b88dda02fc620c8289a016ba60247a4c2a26ad1"
+    },
+    {
+      "path": "src/experiments/closure_contract.py",
+      "bytes": 87743,
+      "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+    },
+    {
+      "path": "src/experiments/closure_development_guard.py",
+      "bytes": 30856,
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_lock.py",
+      "bytes": 121930,
+      "sha256": "b988c1c732afc4416c8ea439d6f54c49a104973fd145121d7966a3cc9be91c9e"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
+      "bytes": 58977,
+      "sha256": "6bb6862db5e8f2f709432edd3d2ae1b96be6531152db2ea79407045e5dfe2791"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_temporal_validation_patch.py",
+      "bytes": 42291,
+      "sha256": "51e4da098a994d2ac79706acef5686c0ffdfd13cc4a00c55cec3f4512beb2b91"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
+      "bytes": 44465,
+      "sha256": "ac0af1cf60e064d0cae8ab46ef48a236c4bab58f82325be29aed2388c4a66c7f"
+    },
+    {
+      "path": "src/experiments/closure_runtime_contract.py",
+      "bytes": 113626,
+      "sha256": "4639e003e482682aef0da69816e71f8c9d77a38fc3fb4965fd416f0569ce3432"
+    },
+    {
+      "path": "src/experiments/train_pipe_grud.py",
+      "bytes": 51360,
+      "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+    }
+  ],
+  "source_code": [
+    {
+      "path": "src/experiments/train_closure_pipe.py",
+      "bytes": 89980,
+      "sha256": "de971c91162e3639b9c925880b88dda02fc620c8289a016ba60247a4c2a26ad1"
+    },
+    {
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "bytes": 110094,
+      "sha256": "c37636343f9cf9f9215e13e669706d109ee0aae0474b12611fc476237074c7a0"
+    },
+    {
+      "path": "src/experiments/closure_contract.py",
+      "bytes": 87743,
+      "sha256": "c3d0ea8b1ff74ddb31a8bbe1a12875eb5423b379dd834c5ed9d87cfc7529d9b8"
+    },
+    {
+      "path": "src/experiments/closure_development_guard.py",
+      "bytes": 30856,
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_lock.py",
+      "bytes": 121930,
+      "sha256": "b988c1c732afc4416c8ea439d6f54c49a104973fd145121d7966a3cc9be91c9e"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_temporal_consumer_patch.py",
+      "bytes": 58977,
+      "sha256": "6bb6862db5e8f2f709432edd3d2ae1b96be6531152db2ea79407045e5dfe2791"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_temporal_validation_patch.py",
+      "bytes": 42291,
+      "sha256": "51e4da098a994d2ac79706acef5686c0ffdfd13cc4a00c55cec3f4512beb2b91"
+    },
+    {
+      "path": "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
+      "bytes": 44465,
+      "sha256": "ac0af1cf60e064d0cae8ab46ef48a236c4bab58f82325be29aed2388c4a66c7f"
+    },
+    {
+      "path": "src/experiments/closure_runtime_contract.py",
+      "bytes": 113626,
+      "sha256": "4639e003e482682aef0da69816e71f8c9d77a38fc3fb4965fd416f0569ce3432"
+    },
+    {
+      "path": "src/experiments/train_pipe_grud.py",
+      "bytes": 51360,
+      "sha256": "12763d17cf396948e422863ff5ebf2cd2264ab68d30b0a249adaf4ae68767204"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "reports/closure_v1/02_models/P0/seed_1729_report.md",
+      "bytes": 174,
+      "sha256": "42a2ff4f6f64e4e8883cc6d28b8b6e20d05e718694dcc94702dd066b60922221",
+      "artifact_role": "report"
+    }
+  ],
+  "completion_marker_written_last": true
+}
