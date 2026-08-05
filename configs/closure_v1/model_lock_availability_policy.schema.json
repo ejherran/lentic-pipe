@@ -1,0 +1,295 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-model-lock-availability-policy-v1.json",
+  "title": "Closure V1 model-lock availability policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "status",
+    "gate",
+    "sealed_authorities",
+    "seed_slots",
+    "p0_closure",
+    "denominator_authority",
+    "model_lock_hash_policy",
+    "comparison_policy",
+    "registry_bundle",
+    "p1_progression",
+    "outcome_access"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "closure_model_lock_availability_policy_v1"
+    },
+    "experiment_id": {
+      "const": "closure_v1"
+    },
+    "status": {
+      "const": "ready_to_lock"
+    },
+    "gate": {
+      "const": "E0-MA"
+    },
+    "sealed_authorities": {
+      "const": {
+        "model_benchmark": {
+          "path": "configs/closure_v1/model_benchmark.yaml",
+          "mutation": "forbidden",
+          "interpretation": "availability_conditional_overlay"
+        },
+        "analysis_plan": {
+          "path": "configs/closure_v1/analysis_plan.yaml",
+          "mutation": "forbidden"
+        },
+        "development_runtime_lock": {
+          "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+          "mutation": "forbidden"
+        },
+        "temporal_validation_lock": {
+          "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+          "mutation": "forbidden"
+        }
+      }
+    },
+    "seed_slots": {
+      "const": [1729, 20260612, 20260613, 20260614, 314159]
+    },
+    "p0_closure": {
+      "const": {
+        "model_id": "P0",
+        "published_closure_head": "1a4aa4836548756e74008fb934f56b5251d22491",
+        "evidence_chain": [
+          {
+            "base_seed": 1729,
+            "commit": "f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f",
+            "parent": "4ba5ecd45da7f0b25277c0a13602999413fa2849"
+          },
+          {
+            "base_seed": 20260612,
+            "commit": "118b404cdc98a144fe392aa6085c49f0eb97348d",
+            "parent": "f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f"
+          },
+          {
+            "base_seed": 20260613,
+            "commit": "f27ee8a105a623611220e7c10630efe1a676599a",
+            "parent": "118b404cdc98a144fe392aa6085c49f0eb97348d"
+          },
+          {
+            "base_seed": 20260614,
+            "commit": "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd",
+            "parent": "f27ee8a105a623611220e7c10630efe1a676599a"
+          },
+          {
+            "base_seed": 314159,
+            "commit": "1a4aa4836548756e74008fb934f56b5251d22491",
+            "parent": "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd"
+          }
+        ],
+        "exact_additions_per_seed_commit": 2,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "expected_available_fit_role_sequences": 8925,
+        "expected_unavailable_fit_role_sequences": 488,
+        "expected_unavailable_failure_code": "missing_target_state",
+        "failed_slot_replacement": "forbidden",
+        "allowed_final_artifact_roles": ["manifest", "report"],
+        "forbidden_artifact_roles": [
+          "model",
+          "checkpoint",
+          "preprocessor",
+          "metrics",
+          "training_curve",
+          "blend_weights",
+          "blend_search"
+        ],
+        "exact_registered_namespace_paths_per_seed": 19,
+        "exact_present_paths_per_seed": 2,
+        "physical_absence_includes_broken_symlinks": true
+      }
+    },
+    "denominator_authority": {
+      "const": {
+        "source_commit": "b075d4f1606aa35c1b86493604c18845f2d28a2f",
+        "sequence_manifest": {
+          "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json",
+          "bytes": 5954,
+          "sha256": "ec5c4a88eeb44c431484bced3053adf4f2824cda3db2a60ab9719f7be2f310fc"
+        },
+        "sequence_summary": {
+          "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv",
+          "bytes": 356,
+          "sha256": "a6c6c837a82c13a9321233de03b588c60b7a4198b77dcf31b3c7a62027752c3e"
+        },
+        "intent_origins": 9732,
+        "successful_origins": 9227,
+        "failed_origins": 505,
+        "role_status_counts": {
+          "training": {
+            "success": 7909,
+            "autoregressive_target_unavailable": 443
+          },
+          "model_selection": {
+            "success": 1016,
+            "autoregressive_target_unavailable": 45
+          },
+          "calibration_threshold": {
+            "success": 302,
+            "autoregressive_target_unavailable": 17
+          }
+        },
+        "fit_roles": ["training", "model_selection"],
+        "available_fit_role_sequences": 8925,
+        "unavailable_fit_role_sequences": 488,
+        "holdout_overlap": 0,
+        "post_2021_rows": 0,
+        "per_seed_counts_must_not_be_summed_as_ecological_denominator": true
+      }
+    },
+    "model_lock_hash_policy": {
+      "const": {
+        "always_required": [
+          "manifest_hashes",
+          "report_hashes",
+          "code_hashes",
+          "config_hashes",
+          "seed_records",
+          "feature_lineage_audit",
+          "holdout_fit_overlap_count",
+          "sealed_batch_command",
+          "outcome_access_log_state"
+        ],
+        "available_slot_required": [
+          "model_hash",
+          "checkpoint_hash",
+          "preprocessor_hash",
+          "metrics_hash",
+          "training_curve_hash",
+          "blend_weights_hash",
+          "blend_search_hash",
+          "heavy_artifact_dvc_ownership"
+        ],
+        "unavailable_slot_required": [
+          "denominator_evidence",
+          "failure_reason",
+          "no_replacement_evidence",
+          "physical_absence_evidence",
+          "input_record_digest",
+          "source_code_record_digest"
+        ],
+        "unavailable_slot_forbidden": [
+          "model_hash",
+          "checkpoint_hash",
+          "preprocessor_hash",
+          "metrics_hash",
+          "training_curve_hash",
+          "blend_weights_hash",
+          "blend_search_hash",
+          "heavy_artifact_dvc_ownership",
+          "calibrator_specification_hash",
+          "calibrator_hash",
+          "alert_thresholds",
+          "ordinal_cutpoints",
+          "null_hash_placeholder"
+        ],
+        "calibration_applicability": {
+          "condition": "upstream_model_slot_available",
+          "e0_m_available_slot_terminal_status": "calibration_completed",
+          "required_when_applicable": [
+            "calibrator_specification_hash",
+            "alert_thresholds",
+            "ordinal_cutpoints"
+          ],
+          "unavailable_status": "not_attempted_upstream_model_unavailable",
+          "unavailable_artifact_record_count": 0,
+          "unavailable_physical_absence_scope": "e0_m_registered_calibration_paths",
+          "forbidden_when_unavailable": [
+            "calibrator_specification_hash",
+            "calibrator_hash",
+            "alert_thresholds",
+            "alert_threshold",
+            "ordinal_cutpoints",
+            "ordinal_cutpoint",
+            "null_hash_placeholder"
+          ],
+          "identity_calibrator_policy": "hash_serialized_identity_specification"
+        }
+      }
+    },
+    "comparison_policy": {
+      "const": {
+        "comparison_id": "P1_vs_P0",
+        "hypothesis_id": "H1_P1_vs_P0",
+        "multiplicity_family": "A",
+        "family_membership_retained": true,
+        "unavailable_status": "not_estimable_model_unavailable",
+        "p_value_policy": "not_emitted",
+        "effect_estimate_policy": "not_emitted",
+        "confidence_interval_policy": "not_emitted",
+        "holm_family_universe": "retained_as_predeclared",
+        "substitution": "forbidden",
+        "denominator_adjustment": "forbidden"
+      }
+    },
+    "registry_bundle": {
+      "const": {
+        "h_slice_base_head": "1a4aa4836548756e74008fb934f56b5251d22491",
+        "h_slice_exact_additions": 5,
+        "h_slice_paths": [
+          "configs/closure_v1/model_lock_availability_policy.yaml",
+          "configs/closure_v1/model_lock_availability_policy.schema.json",
+          "src/experiments/audit_closure_p0_model_availability.py",
+          "docs/closure_v1/E0_M_MODEL_AVAILABILITY_POLICY.md",
+          "tests/test_audit_closure_p0_model_availability.py"
+        ],
+        "registry_path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+        "companion_manifest_path": "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json",
+        "guard_directory": "tmp/closure_v1_e0_ma_registry",
+        "guard_paths": [
+          "tmp/closure_v1_e0_ma_registry/p0_model_availability_registry.guard",
+          "tmp/closure_v1_e0_ma_registry/p0_model_availability_registry_manifest.guard"
+        ],
+        "hardened_writer_dependency": "src/experiments/lock_closure_development_runtime_temporal_consumer_patch.py",
+        "temporary_suffix": ".tmp",
+        "registry_commit_exact_additions": 2,
+        "registry_commit_parent": "h_slice_head_recorded_in_registry",
+        "publication_order": ["registry", "companion_manifest"],
+        "completion_marker_written_last": true,
+        "no_clobber": true,
+        "dvc_registration": "forbidden",
+        "effective_only_after_published_loader_passes": true,
+        "branch": "main",
+        "tracking_ref": "origin/main",
+        "remote_ref": "refs/heads/main"
+      }
+    },
+    "p1_progression": {
+      "const": {
+        "p0_registry_path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+        "p0_registry_manifest_path": "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json",
+        "p0_registry_must_be_published_before_p1_sequence_build": true,
+        "first_sequence_seed": 1729,
+        "seed_order": [1729, 20260612, 20260613, 20260614, 314159],
+        "batch_seed_execution": "forbidden",
+        "sequence_bundle_audit_before_training": "required",
+        "p1_fit_authorized_by_this_policy": false
+      }
+    },
+    "outcome_access": {
+      "const": {
+        "evaluation_authorized": false,
+        "e0_u_authorized": false,
+        "future_outcomes_accessed": false,
+        "holdout_accessed": false,
+        "post_2021_outcomes_accessed": false,
+        "outcome_access_log_path": "reports/closure_v1/00_protocol/outcome_access_log.jsonl",
+        "outcome_access_log_current_e0_ma_state": "absent",
+        "outcome_access_log_required_e0_m_state": "present_empty",
+        "outcome_access_log_required_e0_m_records": 0,
+        "creating_empty_log_at_e0_m_authorizes_outcome_access": false
+      }
+    }
+  }
+}
