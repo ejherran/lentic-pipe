@@ -1,0 +1,100 @@
+{
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json",
+  "authorized_base_seed": 1729,
+  "authorized_model_id": "P1",
+  "completion_marker_written_last": true,
+  "created_at_utc": "2026-08-05T22:08:31.405982Z",
+  "e0_m_authorized": false,
+  "e0_u_authorized": false,
+  "effective_in_payload": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-MB",
+  "historical_inputs": [
+    {
+      "bytes": 110094,
+      "commit": "3ee008faef331f40cf73d1f1e3db59608b0deab1",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "sequence_builder_gate_routing",
+      "sha256": "c37636343f9cf9f9215e13e669706d109ee0aae0474b12611fc476237074c7a0"
+    },
+    {
+      "bytes": 52569,
+      "commit": "3ee008faef331f40cf73d1f1e3db59608b0deab1",
+      "hash_source": "git_blob_at_commit",
+      "path": "tests/test_build_closure_pipe_sequences.py",
+      "role": "sequence_builder_gate_tests",
+      "sha256": "d7e7287d3dc43fa2e7fd7bb9b15e3439a0d7ac24411656b2704101dceb0165c6"
+    }
+  ],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 15728,
+      "path": "configs/closure_v1/p1_sequence_builder_patch_lock.schema.json",
+      "role": "p1_sequence_builder_patch_lock_schema",
+      "sha256": "3639e249eba27d635510965df01838bb1f6883beb9bb6a19e4f18fd89e3d9e39"
+    },
+    {
+      "bytes": 60769,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+      "role": "external_development_runtime_temporal_validation_dialect_patch_lock",
+      "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+    },
+    {
+      "bytes": 3650,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json",
+      "role": "development_runtime_temporal_validation_manifest_patch_companion",
+      "sha256": "e165a0019e1c2d4e99ce682515b18e3230b0f8fbfcfb8c8e1c5514e6e0264772"
+    },
+    {
+      "bytes": 54175,
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+      "role": "p0_model_availability_registry",
+      "sha256": "42830b5687f1283144c3548b67fc716909612ce804c425dfc7beaac08634fdcf"
+    },
+    {
+      "bytes": 5879,
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json",
+      "role": "p0_model_availability_registry_companion",
+      "sha256": "f50cfd101a55769da78a650f3831e737ab1e8e5f3d6fe141971f6cfcb0e2d5ae"
+    },
+    {
+      "bytes": 127283,
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "current_runtime_builder",
+      "sha256": "0233f36bdef3ba2e92d6dbd3f21ff181c6ef3f2eae3a0e5cfdf855622a4e19b0"
+    },
+    {
+      "bytes": 62237,
+      "path": "src/experiments/closure_p1_sequence_builder_patch.py",
+      "role": "p1_sequence_builder_patch_validator",
+      "sha256": "1763bc50e670a0e203ee5dccc88c9c662675e707ccacfd9f689f88a0a2961152"
+    }
+  ],
+  "manifest_version": "closure_p1_sequence_builder_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 19709,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json",
+      "role": "external_p1_sequence_builder_patch_lock",
+      "sha256": "8a9a3e7cff21d2a0d4defe246019e31896e17410608102b23957ccdbf4719e52"
+    }
+  ],
+  "p1_fit_authorized": false,
+  "p1_sequence_builder_authorized": false,
+  "patch_id": "p1_sequence_builder_authorization_atomicity_patch_1",
+  "physical_inputs_only": true,
+  "publication_required": true,
+  "script": {
+    "bytes": 16083,
+    "path": "src/experiments/lock_closure_p1_sequence_builder_patch.py",
+    "role": "generating_script",
+    "sha256": "64b70a90c988bba714a8a55660a0d524dcfeb3e9c177b6fe462c449701bd4258"
+  },
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla"
+}
