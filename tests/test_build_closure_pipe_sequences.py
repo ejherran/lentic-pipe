@@ -1353,7 +1353,7 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_sequence_historical_anfis_patch"
+        "src.experiments.closure_p1_sequence_seed_20260612_patch"
     )
     gate_calls: list[dict[str, object]] = []
 
@@ -1363,14 +1363,14 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
 
     setattr(
         fake_lock,
-        "require_p1_sequence_historical_anfis_authorized",
+        "require_p1_sequence_seed_20260612_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P1", base_seed=1729),
+        lambda: Namespace(model_id="P1", base_seed=20260612),
     )
     io_calls: list[str] = []
 
@@ -1385,7 +1385,7 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
 
     with pytest.raises(GateStopped):
         module.main()
-    assert gate_calls == [{"model_id": "P1", "base_seed": 1729}]
+    assert gate_calls == [{"model_id": "P1", "base_seed": 20260612}]
     assert io_calls == []
 
 
@@ -1905,12 +1905,12 @@ def test_authorization_inputs_are_exact_and_use_generic_manifest_record_dialect(
     monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     roles = {
         "reports/closure_v1/00_protocol/"
-        "p1_sequence_historical_anfis_patch_lock.json": (
-            "external_p1_sequence_historical_anfis_patch_lock"
+        "p1_sequence_seed_20260612_patch_lock.json": (
+            "external_p1_sequence_seed_20260612_patch_lock"
         ),
         "reports/closure_v1/00_protocol/"
-        "p1_sequence_historical_anfis_patch_lock_manifest.json": (
-            "p1_sequence_historical_anfis_patch_companion"
+        "p1_sequence_seed_20260612_patch_lock_manifest.json": (
+            "p1_sequence_seed_20260612_patch_companion"
         ),
     }
     inputs: list[dict[str, Any]] = []
@@ -1931,7 +1931,7 @@ def test_authorization_inputs_are_exact_and_use_generic_manifest_record_dialect(
         module._authorization_dependency_records({"authorization_inputs": inputs})
 
 
-def test_sequence_transaction_rolls_back_if_e0_mc_authority_mutates(
+def test_sequence_transaction_rolls_back_if_e0_mh_authority_mutates(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1940,12 +1940,12 @@ def test_sequence_transaction_rolls_back_if_e0_mc_authority_mutates(
     monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     roles = {
         "reports/closure_v1/00_protocol/"
-        "p1_sequence_historical_anfis_patch_lock.json": (
-            "external_p1_sequence_historical_anfis_patch_lock"
+        "p1_sequence_seed_20260612_patch_lock.json": (
+            "external_p1_sequence_seed_20260612_patch_lock"
         ),
         "reports/closure_v1/00_protocol/"
-        "p1_sequence_historical_anfis_patch_lock_manifest.json": (
-            "p1_sequence_historical_anfis_patch_companion"
+        "p1_sequence_seed_20260612_patch_lock_manifest.json": (
+            "p1_sequence_seed_20260612_patch_companion"
         ),
     }
     inputs: list[dict[str, Any]] = []

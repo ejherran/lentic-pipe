@@ -1264,24 +1264,24 @@ def _authorization_dependency_records(
         or not all(isinstance(record, Mapping) for record in raw_inputs)
     ):
         raise ClosurePipeSequenceError(
-            "E0-MC authorization must bind exactly lock and companion inputs"
+            "E0-MH authorization must bind exactly lock and companion inputs"
         )
     records = [dict(cast(Mapping[str, Any], record)) for record in raw_inputs]
     expected_roles = {
-        "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json": (
-            "external_p1_sequence_historical_anfis_patch_lock"
+        "reports/closure_v1/00_protocol/p1_sequence_seed_20260612_patch_lock.json": (
+            "external_p1_sequence_seed_20260612_patch_lock"
         ),
         "reports/closure_v1/00_protocol/"
-        "p1_sequence_historical_anfis_patch_lock_manifest.json": (
-            "p1_sequence_historical_anfis_patch_companion"
+        "p1_sequence_seed_20260612_patch_lock_manifest.json": (
+            "p1_sequence_seed_20260612_patch_companion"
         ),
     }
     if {record.get("path"): record.get("role") for record in records} != expected_roles:
-        raise ClosurePipeSequenceError("E0-MC authorization input paths or roles drifted")
+        raise ClosurePipeSequenceError("E0-MH authorization input paths or roles drifted")
     dependencies: list[dict[str, Any]] = []
     for record in records:
         if set(record) != {"path", "role", "bytes", "sha256"}:
-            raise ClosurePipeSequenceError("E0-MC authorization input record drifted")
+            raise ClosurePipeSequenceError("E0-MH authorization input record drifted")
         observed = _file_record(PROJECT_ROOT / str(record["path"]))
         if observed != {
             "path": record["path"],
@@ -1289,7 +1289,7 @@ def _authorization_dependency_records(
             "sha256": record["sha256"],
         }:
             raise ClosurePipeSequenceError(
-                f"E0-MC authorization input changed before sequence build: {record['path']}"
+                f"E0-MH authorization input changed before sequence build: {record['path']}"
             )
         dependencies.append(observed)
     return dependencies
@@ -2923,14 +2923,15 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    # The additive E0-MC gate is deliberately the first operation in main that
+    # The additive E0-MH gate is deliberately the first operation in main that
     # may read runtime, state, Parquet, or output artifacts.  It reconstructs
-    # E0-MB and E0-DLP as historical authorities; there is no unlocked mode.
-    from src.experiments.closure_p1_sequence_historical_anfis_patch import (
-        require_p1_sequence_historical_anfis_authorized,
+    # E0-MC/E0-MG and P1/1729 as historical authorities; there is no unlocked
+    # mode for a later seed.
+    from src.experiments.closure_p1_sequence_seed_20260612_patch import (
+        require_p1_sequence_seed_20260612_authorized,
     )
 
-    authorization = require_p1_sequence_historical_anfis_authorized(
+    authorization = require_p1_sequence_seed_20260612_authorized(
         model_id=args.model_id,
         base_seed=args.base_seed,
     )
