@@ -1,0 +1,105 @@
+{
+  "auditor_execution_mode": "in_process_callable",
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/p1_temporal_consumer_schema_subset_patch_lock.json",
+  "authorized_base_seed": 1729,
+  "authorized_device": "cpu",
+  "authorized_model_id": "P1",
+  "batch_seed_execution_authorized": false,
+  "completion_marker_written_last": true,
+  "created_at_utc": "2026-08-06T20:47:33.550568Z",
+  "e0_m_authorized": false,
+  "e0_u_authorized": false,
+  "effective_in_payload": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-MG",
+  "historical_inputs": [
+    {
+      "bytes": 104076,
+      "commit": "ba5d42f391af1c9574a6c27a711083dd56b30147",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/train_closure_pipe.py",
+      "role": "p1_temporal_consumer_mf_gate_routing",
+      "sha256": "0044623eb3cefb24d9bc793013907675fec9d6de430f61109bfdbe65e908ec2e"
+    },
+    {
+      "bytes": 77946,
+      "commit": "ba5d42f391af1c9574a6c27a711083dd56b30147",
+      "hash_source": "git_blob_at_commit",
+      "path": "tests/test_train_closure_pipe.py",
+      "role": "p1_temporal_consumer_mf_gate_tests",
+      "sha256": "78be5d84c64a53b81269a9ec63aef55c4c575f80d93fa08be036c130c43825bf"
+    }
+  ],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 17751,
+      "path": "configs/closure_v1/p1_temporal_consumer_pytest_summary_patch_lock.schema.json",
+      "role": "p1_temporal_consumer_pytest_summary_patch_lock_schema",
+      "sha256": "97f20294ca79c3a57cfc6000a64e0f3bc7b699cb321d650e281d84ab2e6080f7"
+    },
+    {
+      "bytes": 21755,
+      "path": "configs/closure_v1/p1_temporal_consumer_schema_subset_patch_lock.schema.json",
+      "role": "p1_temporal_consumer_schema_subset_patch_lock_schema",
+      "sha256": "115afe4a6c3ebb75457f53138aeeb8580b1be6e2992be078e72397c4f88f15fd"
+    },
+    {
+      "bytes": 6148,
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_PYTEST_SUMMARY_PATCH_1.md",
+      "role": "p1_temporal_consumer_pytest_summary_patch_protocol",
+      "sha256": "ca0ccb051cdc5495632c66028901b4e56eda4a42bd0f3793d76929c313a3b8b9"
+    },
+    {
+      "bytes": 56448,
+      "path": "src/experiments/closure_p1_temporal_consumer_pytest_summary_patch.py",
+      "role": "p1_temporal_consumer_pytest_summary_patch_validator",
+      "sha256": "c1c896742e7a45cb99e9c9bbd9719662a1b5119611899e24a501bc1f226fdf47"
+    },
+    {
+      "bytes": 66284,
+      "path": "src/experiments/closure_p1_temporal_consumer_schema_subset_patch.py",
+      "role": "p1_temporal_consumer_schema_subset_patch_validator",
+      "sha256": "280939aeb0b29c9cfb7966cc9383cd651397a48ce95e3ff592cad2d1722e807a"
+    },
+    {
+      "bytes": 19352,
+      "path": "src/experiments/lock_closure_p1_temporal_consumer_pytest_summary_patch.py",
+      "role": "p1_temporal_consumer_pytest_summary_patch_locker",
+      "sha256": "2dadb81501c2f210567de064907c14a707d5e239fe39e07d08944d469ce9cecf"
+    },
+    {
+      "bytes": 38121,
+      "path": "tests/test_closure_p1_temporal_consumer_pytest_summary_patch.py",
+      "role": "p1_temporal_consumer_pytest_summary_patch_tests",
+      "sha256": "48f3356e1e5cb402830f49acf0f35fc0bbb6fe11a78c847b7fc178c2be5d669f"
+    }
+  ],
+  "manifest_version": "closure_p1_temporal_consumer_schema_subset_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 136990,
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_schema_subset_patch_lock.json",
+      "role": "external_p1_temporal_consumer_schema_subset_patch_lock",
+      "sha256": "f47c8c952b85bb80ef12bb22800b29d7305448fac0066157d6780c3e90062c49"
+    }
+  ],
+  "p1_consumer_authorized": false,
+  "p1_fit_authorized": false,
+  "patch_id": "p1_temporal_consumer_schema_subset_patch_1",
+  "physical_inputs_only": true,
+  "publication_required": true,
+  "python_auditor_subprocess_used": false,
+  "retry_authorized": false,
+  "script": {
+    "bytes": 22154,
+    "path": "src/experiments/lock_closure_p1_temporal_consumer_schema_subset_patch.py",
+    "role": "generating_script",
+    "sha256": "badad4d157a081b66daa1580139c38e8c115caa7cc152f1f842e46d4ca9cf439"
+  },
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla"
+}
