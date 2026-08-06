@@ -1,0 +1,159 @@
+{
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260612_patch_lock.json",
+  "authorized_base_seed": 20260612,
+  "authorized_model_id": "P1",
+  "batch_seed_execution_authorized": false,
+  "completion_marker_written_last": true,
+  "created_at_utc": "2026-08-06T23:20:44.049057Z",
+  "dvc_commands_authorized": false,
+  "e0_m_authorized": false,
+  "e0_u_authorized": false,
+  "effective_in_payload": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-MH",
+  "historical_inputs": [
+    {
+      "bytes": 127833,
+      "commit": "5bdac0fe8279297dbdb04e38146726431511fe7a",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "historical_anfis_aware_p1_sequence_builder",
+      "sha256": "f0e653b29035acb11e39bc9a7776e7940394996d75f16bf3bccb4da30013c9cf"
+    },
+    {
+      "bytes": 76127,
+      "commit": "5bdac0fe8279297dbdb04e38146726431511fe7a",
+      "hash_source": "git_blob_at_commit",
+      "path": "tests/test_build_closure_pipe_sequences.py",
+      "role": "historical_anfis_aware_p1_sequence_builder_tests",
+      "sha256": "fffdf4a08ccf935acf18554a4b120dca1aa2b65f02d19cc5a023e5b0b57c1d01"
+    }
+  ],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 18338,
+      "path": "configs/closure_v1/p1_sequence_seed_20260612_patch_lock.schema.json",
+      "role": "p1_sequence_seed_20260612_patch_lock_schema",
+      "sha256": "e6baa3594cfbcd7fe2d05f068b3ff9c0c2ad45f2233f5fc47a3bdb4b950aa6ce"
+    },
+    {
+      "bytes": 1214885,
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet",
+      "role": "anfis_20260612_state_parquet",
+      "sha256": "99b4bc37de88d76068c044423071046cb6b0341056024c4de41cd1af51d09d26"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_20260612_state_pointer",
+      "sha256": "7c88755a0cb55a6a177bf6f883f1e879221a5e415e3fd243fc27576051cd00e2"
+    },
+    {
+      "bytes": 1380222,
+      "path": "data/closure_v1/development/sequences/P1/seed_1729.parquet",
+      "role": "p1_1729_1",
+      "sha256": "860da77ac60c1aefb88cc9359631badc676864c77fb6df1d4b1ab87e01992069"
+    },
+    {
+      "bytes": 100,
+      "path": "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc",
+      "role": "p1_1729_2",
+      "sha256": "2281aee7f23f714837bf441b10b7c1c43829b830d4841ffe0513f9abbcf83db6"
+    },
+    {
+      "bytes": 25211,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json",
+      "role": "external_p1_sequence_historical_anfis_patch_lock",
+      "sha256": "434f94b89c42b226fced57e2c6d02b6a1aaea8d772d4437d703274cba5808088"
+    },
+    {
+      "bytes": 4814,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock_manifest.json",
+      "role": "p1_sequence_historical_anfis_patch_companion",
+      "sha256": "9ac3538ed8076117f34fd94112582e1927e68ee8e298fae26b3d0f714d6e7b63"
+    },
+    {
+      "bytes": 136990,
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_schema_subset_patch_lock.json",
+      "role": "external_p1_temporal_consumer_schema_subset_patch_lock",
+      "sha256": "f47c8c952b85bb80ef12bb22800b29d7305448fac0066157d6780c3e90062c49"
+    },
+    {
+      "bytes": 4302,
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_schema_subset_patch_lock_manifest.json",
+      "role": "p1_temporal_consumer_schema_subset_patch_companion",
+      "sha256": "0c2369e70c5ebdb619e801e005e558058a40033f5bd67048410ad2d635a1802e"
+    },
+    {
+      "bytes": 20883,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json",
+      "role": "anfis_20260612_state_manifest",
+      "sha256": "e7523963c6f09ea83235d9578d492ec34a654ce8328f79f1b05e49aa84669053"
+    },
+    {
+      "bytes": 6527,
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json",
+      "role": "p1_1729_4",
+      "sha256": "5f1086b9409dac13625d77759badd8f3e9ba39a140a1d578da5ef6285f0295ea"
+    },
+    {
+      "bytes": 356,
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv",
+      "role": "p1_1729_3",
+      "sha256": "a6c6c837a82c13a9321233de03b588c60b7a4198b77dcf31b3c7a62027752c3e"
+    },
+    {
+      "bytes": 13416,
+      "path": "reports/closure_v1/02_models/P1/seed_1729_manifest.json",
+      "role": "p1_1729_6",
+      "sha256": "3e95ee94ef1ae076d969bf7782b58a79b30a8e3d537e62efb16248e39b95e36a"
+    },
+    {
+      "bytes": 174,
+      "path": "reports/closure_v1/02_models/P1/seed_1729_report.md",
+      "role": "p1_1729_5",
+      "sha256": "aea483a6ba91d448fa0b743825ea9cb2284878f6b2b097fce53f6711216bfa6d"
+    },
+    {
+      "bytes": 127842,
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "current_runtime_builder",
+      "sha256": "6783dc9322f1869879c7a4cde0b02aef8d62785623e6dc8d4cccedc54d4e98ea"
+    },
+    {
+      "bytes": 67074,
+      "path": "src/experiments/closure_p1_sequence_seed_20260612_patch.py",
+      "role": "p1_sequence_seed_20260612_patch_validator",
+      "sha256": "7f7f293c583394e70d2267ba9099a2026d5c356e4b345b96983399ca63759513"
+    }
+  ],
+  "manifest_version": "closure_p1_sequence_seed_20260612_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 25333,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260612_patch_lock.json",
+      "role": "external_p1_sequence_seed_20260612_patch_lock",
+      "sha256": "2d4386300e6c44977ac5a85df0157d217c624c0ec44df0e1f6bf4f67725b4b17"
+    }
+  ],
+  "p1_consumer_authorized": false,
+  "p1_fit_authorized": false,
+  "p1_sequence_builder_authorized": false,
+  "patch_id": "p1_sequence_seed_20260612_authority_patch_1",
+  "physical_inputs_only": true,
+  "prior_p1_1729_slot_completed": true,
+  "publication_required": true,
+  "retry_authorized": false,
+  "script": {
+    "bytes": 35608,
+    "path": "src/experiments/lock_closure_p1_sequence_seed_20260612_patch.py",
+    "role": "generating_script",
+    "sha256": "60b0385f56215f120ce972cc633079aeb137101ddf913d98fbd3b84387c5ec6b"
+  },
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla"
+}
