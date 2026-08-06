@@ -1,0 +1,380 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-p1-temporal-consumer-pytest-summary-patch-lock-v1.json",
+  "title": "Closure V1 P1 temporal consumer pytest-summary patch lock",
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "repoPath": {"type": "string", "minLength": 1},
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repoPath"},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 0},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "diffEntry": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "path"],
+      "properties": {
+        "status": {"enum": ["A", "M"]},
+        "path": {"$ref": "#/$defs/repoPath"}
+      }
+    },
+    "recordBundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "paths", "paths_sha256", "records", "records_sha256"],
+      "properties": {
+        "count": {"type": "integer", "minimum": 1},
+        "paths": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/repoPath"}},
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "records": {"type": "array", "minItems": 1, "items": {"$ref": "#/$defs/fileRecord"}},
+        "records_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command", "returncode", "stdout_sha256", "stderr_sha256",
+        "stdout_line_count", "stderr_line_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer", "minimum": 0},
+        "stderr_line_count": {"type": "integer", "minimum": 0}
+      }
+    },
+    "focusedCommandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command", "returncode", "stdout_sha256", "stderr_sha256",
+        "stdout_line_count", "stderr_line_count", "test_count",
+        "skipped_count", "deselected_count", "summary_format",
+        "duration_seconds", "duration_clock"
+      ],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer", "minimum": 0},
+        "stderr_line_count": {"type": "integer", "minimum": 0},
+        "test_count": {"type": "integer", "minimum": 1},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0},
+        "summary_format": {"enum": ["pytest_short", "pytest_timedelta"]},
+        "duration_seconds": {"type": "string", "pattern": "^[0-9]+\\.[0-9]{2}$"},
+        "duration_clock": {
+          "oneOf": [
+            {"type": "null"},
+            {"type": "string", "pattern": "^(?:[0-9]+ day[s]?, )?[0-9]+:[0-9]{2}:[0-9]{2}$"}
+          ]
+        }
+      }
+    },
+    "dvcCommandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command", "returncode", "stdout_sha256", "stderr_sha256",
+        "stdout_line_count", "stderr_line_count", "terminal_status"
+      ],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string", "minLength": 1}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer", "minimum": 0},
+        "stderr_line_count": {"type": "integer", "minimum": 0},
+        "terminal_status": {"enum": ["1 file pushed", "Everything is up to date."]}
+      }
+    },
+    "auditEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "execution_mode", "callable_module", "callable_name", "callable_qualname",
+        "callable_source_path", "callable_code_filename", "callable_git_commit",
+        "callable_source_git", "callable_source_physical",
+        "audit_version", "status", "model_id", "base_seed", "intent_origins",
+        "successful_origins", "failed_origins", "fit_successful_origins",
+        "fit_unavailable_origins", "calibration_unavailable_origins",
+        "fit_failure_reason_counts", "sequence_fit_available",
+        "expected_slot_status", "expected_fit_status", "expected_failure_reason",
+        "result_bytes", "result_sha256", "auditor_read_only", "consumer_executed",
+        "fit_executed", "dvc_operation_executed", "future_outcomes_accessed"
+      ],
+      "properties": {
+        "execution_mode": {"const": "in_process_callable"},
+        "callable_module": {"const": "src.experiments.audit_closure_p1_sequence_bundle"},
+        "callable_name": {"const": "audit_p1_sequence_bundle"},
+        "callable_qualname": {"const": "audit_p1_sequence_bundle"},
+        "callable_source_path": {"const": "src/experiments/audit_closure_p1_sequence_bundle.py"},
+        "callable_code_filename": {"const": "src/experiments/audit_closure_p1_sequence_bundle.py"},
+        "callable_git_commit": {"const": "82c0bc10a8b17ab700a8f0c28491a60572a11d81"},
+        "callable_source_git": {"$ref": "#/$defs/fileRecord"},
+        "callable_source_physical": {"$ref": "#/$defs/fileRecord"},
+        "audit_version": {"const": "closure_p1_seed_1729_sequence_bundle_audit_v1"},
+        "status": {"const": "validated"},
+        "model_id": {"const": "P1"},
+        "base_seed": {"const": 1729},
+        "intent_origins": {"const": 9732},
+        "successful_origins": {"const": 9227},
+        "failed_origins": {"const": 505},
+        "fit_successful_origins": {"const": 8925},
+        "fit_unavailable_origins": {"const": 488},
+        "calibration_unavailable_origins": {"const": 17},
+        "fit_failure_reason_counts": {"const": {"missing_target_state": 488}},
+        "sequence_fit_available": {"const": false},
+        "expected_slot_status": {"const": "model_unavailable"},
+        "expected_fit_status": {"const": "not_attempted"},
+        "expected_failure_reason": {"const": "sequence_fit_rows_unavailable"},
+        "result_bytes": {"type": "integer", "minimum": 1},
+        "result_sha256": {"$ref": "#/$defs/sha256"},
+        "auditor_read_only": {"const": true},
+        "consumer_executed": {"const": false},
+        "fit_executed": {"const": false},
+        "dvc_operation_executed": {"const": false},
+        "future_outcomes_accessed": {"const": false}
+      }
+    }
+  },
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version", "status", "experiment_id", "surface_id", "gate", "patch_id",
+    "created_at_utc", "patch_repository", "git_diff", "patch_components",
+    "base_authority", "consumer_prelock", "fit_availability", "correction",
+    "verification", "authorizations", "seals", "lock_artifact"
+  ],
+  "properties": {
+    "lock_version": {"const": "closure_p1_temporal_consumer_pytest_summary_patch_lock_v1"},
+    "status": {"const": "locked"},
+    "experiment_id": {"const": "closure_v1"},
+    "surface_id": {"const": "closure_v1_wqp_adaptive_no_current_chla"},
+    "gate": {"const": "E0-MF"},
+    "patch_id": {"const": "p1_temporal_consumer_pytest_summary_patch_1"},
+    "created_at_utc": {"type": "string", "format": "date-time"},
+    "patch_repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head", "parent", "branch", "published_ref", "published_head",
+        "remote_main_oid", "worktree_status", "exact_diff_verified"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/gitOid"},
+        "parent": {"const": "1b30cd658acc9e46779e907e3efb30511f646983"},
+        "branch": {"const": "main"},
+        "published_ref": {"const": "origin/main"},
+        "published_head": {"$ref": "#/$defs/gitOid"},
+        "remote_main_oid": {"$ref": "#/$defs/gitOid"},
+        "worktree_status": {"const": "clean"},
+        "exact_diff_verified": {"const": true}
+      }
+    },
+    "git_diff": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit", "patch_head", "entries", "paths", "paths_sha256",
+        "added_count", "modified_count", "only_allowed_additions_and_modifications"
+      ],
+      "properties": {
+        "base_commit": {"const": "1b30cd658acc9e46779e907e3efb30511f646983"},
+        "patch_head": {"$ref": "#/$defs/gitOid"},
+        "entries": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/$defs/diffEntry"}},
+        "paths": {"type": "array", "minItems": 7, "maxItems": 7, "items": {"$ref": "#/$defs/repoPath"}},
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "added_count": {"const": 5},
+        "modified_count": {"const": 2},
+        "only_allowed_additions_and_modifications": {"const": true}
+      }
+    },
+    "patch_components": {"$ref": "#/$defs/recordBundle"},
+    "base_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["e0_me"],
+      "properties": {"e0_me": {"type": "object"}}
+    },
+    "consumer_prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "base_seed", "count", "paths", "paths_sha256", "all_absent_at_lock"],
+      "properties": {
+        "model_id": {"const": "P1"},
+        "base_seed": {"const": 1729},
+        "count": {"const": 19},
+        "paths": {"type": "array", "minItems": 19, "maxItems": 19, "items": {"$ref": "#/$defs/repoPath"}},
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_absent_at_lock": {"const": true}
+      }
+    },
+    "fit_availability": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sequence_fit_available", "fit_status_counts", "fit_failure_reason_counts",
+        "calibration_failure_count", "expected_slot_status", "expected_fit_status",
+        "expected_failure_reason", "replacement_used"
+      ],
+      "properties": {
+        "sequence_fit_available": {"const": false},
+        "fit_status_counts": {"const": {"success": 8925, "autoregressive_target_unavailable": 488}},
+        "fit_failure_reason_counts": {"const": {"missing_target_state": 488}},
+        "calibration_failure_count": {"const": 17},
+        "expected_slot_status": {"const": "model_unavailable"},
+        "expected_fit_status": {"const": "not_attempted"},
+        "expected_failure_reason": {"const": "sequence_fit_rows_unavailable"},
+        "replacement_used": {"const": false}
+      }
+    },
+    "correction": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "issue_id", "classification", "failed_execute_lock_stage",
+        "failed_execute_lock_authorization_consumed",
+        "failed_execute_lock_process_started",
+        "failed_execute_lock_prelock_completed",
+        "failed_execute_lock_guards_acquired",
+        "failed_execute_lock_guards_rolled_back",
+        "failed_execute_lock_full_type_check_run",
+        "failed_execute_lock_full_type_check_passed",
+        "failed_execute_lock_focused_pytest_run",
+        "failed_execute_lock_focused_pytest_returncode_zero",
+        "failed_execute_lock_focused_pytest_parser_rejected",
+        "failed_execute_lock_focused_pytest_stdout_preserved",
+        "failed_execute_lock_poetry_check_run",
+        "failed_execute_lock_publication_guard_run",
+        "failed_execute_lock_diff_check_run",
+        "failed_execute_lock_in_process_audit_run",
+        "failed_execute_lock_dvc_commands_run",
+        "failed_execute_lock_payload_built",
+        "failed_execute_lock_outputs_written",
+        "auditor_execution_mode", "pytest_summary_parser_policy",
+        "pytest_summary_reference_version",
+        "scientific_runtime_contract_changed", "denominator_changed",
+        "model_unavailable_semantics_changed", "outcome_access_changed"
+      ],
+      "properties": {
+        "issue_id": {"const": "p1_consumer_pytest_duration_suffix_parser_1"},
+        "classification": {"const": "verification_parser_only"},
+        "failed_execute_lock_stage": {"const": "post_pytest_pre_poetry_pre_audit_pre_dvc_pre_output"},
+        "failed_execute_lock_authorization_consumed": {"const": true},
+        "failed_execute_lock_process_started": {"const": true},
+        "failed_execute_lock_prelock_completed": {"const": true},
+        "failed_execute_lock_guards_acquired": {"const": true},
+        "failed_execute_lock_guards_rolled_back": {"const": true},
+        "failed_execute_lock_full_type_check_run": {"const": true},
+        "failed_execute_lock_full_type_check_passed": {"const": true},
+        "failed_execute_lock_focused_pytest_run": {"const": true},
+        "failed_execute_lock_focused_pytest_returncode_zero": {"const": true},
+        "failed_execute_lock_focused_pytest_parser_rejected": {"const": true},
+        "failed_execute_lock_focused_pytest_stdout_preserved": {"const": false},
+        "failed_execute_lock_poetry_check_run": {"const": false},
+        "failed_execute_lock_publication_guard_run": {"const": false},
+        "failed_execute_lock_diff_check_run": {"const": false},
+        "failed_execute_lock_in_process_audit_run": {"const": false},
+        "failed_execute_lock_dvc_commands_run": {"const": false},
+        "failed_execute_lock_payload_built": {"const": false},
+        "failed_execute_lock_outputs_written": {"const": false},
+        "auditor_execution_mode": {"const": "in_process_callable"},
+        "pytest_summary_parser_policy": {"const": "pytest_9_0_3_duration_clock_closed_v1"},
+        "pytest_summary_reference_version": {"const": "9.0.3"},
+        "scientific_runtime_contract_changed": {"const": false},
+        "denominator_changed": {"const": false},
+        "model_unavailable_semantics_changed": {"const": false},
+        "outcome_access_changed": {"const": false}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "full_type_check", "focused_tests", "poetry_check", "publication_guard",
+        "git_diff_check", "p1_bundle_audit", "dvc_push_first", "dvc_push_second"
+      ],
+      "properties": {
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedCommandEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"},
+        "p1_bundle_audit": {"$ref": "#/$defs/auditEvidence"},
+        "dvc_push_first": {"$ref": "#/$defs/dvcCommandEvidence"},
+        "dvc_push_second": {"$ref": "#/$defs/dvcCommandEvidence"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "authorized_model_id", "authorized_base_seed", "authorized_device",
+        "p1_consumer_authorized", "p1_fit_authorized", "effective_in_payload",
+        "publication_required", "batch_seed_execution_authorized", "retry_authorized",
+        "e0_m_authorized", "evaluation_authorized", "e0_u_authorized",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "authorized_model_id": {"const": "P1"},
+        "authorized_base_seed": {"const": 1729},
+        "authorized_device": {"const": "cpu"},
+        "p1_consumer_authorized": {"const": false},
+        "p1_fit_authorized": {"const": false},
+        "effective_in_payload": {"const": false},
+        "publication_required": {"const": true},
+        "batch_seed_execution_authorized": {"const": false},
+        "retry_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "h_e0_me_git_bound", "p_e0_me_absent", "me_preserved_component_count",
+        "me_superseded_component_count", "p1_sequence_bundle_preserved",
+        "consumer_outputs_absent_at_lock", "model_artifact_expected",
+        "holdout_accessed", "post_2021_outcomes_accessed", "does_not_replace_e0_m"
+      ],
+      "properties": {
+        "h_e0_me_git_bound": {"const": true},
+        "p_e0_me_absent": {"const": true},
+        "me_preserved_component_count": {"const": 5},
+        "me_superseded_component_count": {"const": 2},
+        "p1_sequence_bundle_preserved": {"const": true},
+        "consumer_outputs_absent_at_lock": {"const": true},
+        "model_artifact_expected": {"const": false},
+        "holdout_accessed": {"const": false},
+        "post_2021_outcomes_accessed": {"const": false},
+        "does_not_replace_e0_m": {"const": true}
+      }
+    },
+    "lock_artifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "self_hash_policy"],
+      "properties": {
+        "path": {"const": "reports/closure_v1/00_protocol/p1_temporal_consumer_pytest_summary_patch_lock.json"},
+        "role": {"const": "external_p1_temporal_consumer_pytest_summary_patch_lock"},
+        "self_hash_policy": {"const": "verified_from_committed_and_published_bytes"}
+      }
+    }
+  }
+}

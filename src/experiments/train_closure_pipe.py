@@ -2,9 +2,9 @@
 """Fit the fixed Closure V1 residual probabilistic GRU profile.
 
 This module exposes synthetic-testable functional kernels, while its CLI is
-unconditionally guarded by the published additive E0-ME P1-consumer
-verification authorization.  It never reads calibration outcomes, locked
-evaluation rows, or holdout rows.
+unconditionally guarded by the published additive E0-MF P1-consumer pytest-
+summary authorization.  It never reads calibration outcomes, locked evaluation
+rows, or holdout rows.
 """
 
 from __future__ import annotations
@@ -131,13 +131,13 @@ E0_MD_LOCK_PATH = Path(
 E0_MD_MANIFEST_PATH = Path(
     "reports/closure_v1/00_protocol/p1_temporal_consumer_patch_lock_manifest.json"
 )
-E0_ME_LOCK_PATH = Path(
+E0_MF_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/"
-    "p1_temporal_consumer_verification_patch_lock.json"
+    "p1_temporal_consumer_pytest_summary_patch_lock.json"
 )
-E0_ME_MANIFEST_PATH = Path(
+E0_MF_MANIFEST_PATH = Path(
     "reports/closure_v1/00_protocol/"
-    "p1_temporal_consumer_verification_patch_lock_manifest.json"
+    "p1_temporal_consumer_pytest_summary_patch_lock_manifest.json"
 )
 P1_SEQUENCE_AUDITOR_PATH = Path(
     "src/experiments/audit_closure_p1_sequence_bundle.py"
@@ -148,6 +148,9 @@ E0_MC_AUTHORITY_PATH = Path(
 E0_MD_GATE_PATH = Path("src/experiments/closure_p1_temporal_consumer_patch.py")
 E0_ME_GATE_PATH = Path(
     "src/experiments/closure_p1_temporal_consumer_verification_patch.py"
+)
+E0_MF_GATE_PATH = Path(
+    "src/experiments/closure_p1_temporal_consumer_pytest_summary_patch.py"
 )
 P1_FIT_STATUS_COUNTS = {
     "success": 8_925,
@@ -951,7 +954,7 @@ def builder_records_from_temporal_validation_authority(
     return p0_artifact, current_runtime
 
 
-def builder_records_from_p1_temporal_consumer_verification_authority(
+def builder_records_from_p1_temporal_consumer_pytest_summary_authority(
     authority: Mapping[str, Any],
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Resolve the sealed P1 artifact builder separately from live source bytes."""
@@ -965,7 +968,7 @@ def builder_records_from_p1_temporal_consumer_verification_authority(
     )
     observed_runtime = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
     if current_runtime != observed_runtime:
-        raise ClosurePipeTrainingError("Current runtime builder differs from E0-ME authority")
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-MF authority")
     if artifact != current_runtime:
         raise ClosurePipeTrainingError(
             "P1 artifact builder differs from the E0-MC/current runtime builder"
@@ -973,7 +976,7 @@ def builder_records_from_p1_temporal_consumer_verification_authority(
     return artifact, current_runtime
 
 
-def _p1_verification_authority_input_records(
+def _p1_pytest_summary_authority_input_records(
     authority: Mapping[str, Any],
 ) -> tuple[dict[str, Any], ...]:
     raw_records = authority.get("authority_input_records")
@@ -982,15 +985,15 @@ def _p1_verification_authority_input_records(
         or isinstance(raw_records, (str, bytes))
         or len(raw_records) != 2
     ):
-        raise ClosurePipeTrainingError("E0-ME authority input records drifted")
+        raise ClosurePipeTrainingError("E0-MF authority input records drifted")
     expected = (
         (
-            E0_ME_LOCK_PATH.as_posix(),
-            "external_p1_temporal_consumer_verification_patch_lock",
+            E0_MF_LOCK_PATH.as_posix(),
+            "external_p1_temporal_consumer_pytest_summary_patch_lock",
         ),
         (
-            E0_ME_MANIFEST_PATH.as_posix(),
-            "p1_temporal_consumer_verification_patch_companion",
+            E0_MF_MANIFEST_PATH.as_posix(),
+            "p1_temporal_consumer_pytest_summary_patch_companion",
         ),
     )
     observed: list[dict[str, Any]] = []
@@ -1001,23 +1004,23 @@ def _p1_verification_authority_input_records(
             "bytes",
             "sha256",
         }:
-            raise ClosurePipeTrainingError("E0-ME authority input record dialect drifted")
+            raise ClosurePipeTrainingError("E0-MF authority input record dialect drifted")
         record = cast(Mapping[str, Any], raw)
         if record.get("path") != expected_path or record.get("role") != expected_role:
-            raise ClosurePipeTrainingError("E0-ME authority input path/role drifted")
+            raise ClosurePipeTrainingError("E0-MF authority input path/role drifted")
         physical = _file_record(PROJECT_ROOT / expected_path)
         if any(
             record.get(key) != physical[key]
             for key in ("path", "bytes", "sha256")
         ):
             raise ClosurePipeTrainingError(
-                f"E0-ME authority input differs from physical bytes: {expected_path}"
+                f"E0-MF authority input differs from physical bytes: {expected_path}"
             )
         observed.append(physical)
     return tuple(observed)
 
 
-def validate_p1_temporal_consumer_verification_authority(
+def validate_p1_temporal_consumer_pytest_summary_authority(
     authority: Mapping[str, Any],
     *,
     model_id: str,
@@ -1029,13 +1032,23 @@ def validate_p1_temporal_consumer_verification_authority(
     Mapping[str, Any],
     tuple[dict[str, Any], ...],
 ]:
-    """Validate the effective E0-ME summary before any P1 dependency I/O."""
+    """Validate the effective E0-MF summary before any P1 dependency I/O."""
     expected = {
-        "gate": "E0-ME",
+        "gate": "E0-MF",
+        "publication_verified": True,
+        "remote_publication_verified": True,
+        "historical_e0_me_verified": True,
+        "historical_me_effective_loader_called": False,
+        "p_e0_me_absent": True,
+        "pytest_summary_parser_corrected": True,
+        "historical_e0_md_verified": True,
+        "p_e0_md_absent": True,
         "authorization_effective": True,
         "p1_consumer_authorized": True,
         "p1_fit_authorized": True,
+        "p1_sequence_bundle_verified": True,
         "in_process_audit_verified": True,
+        "consumer_namespace_absent": True,
         "historical_e0_dltvm_verified": True,
         "historical_dltvm_effective_loader_called": False,
         "authorized_model_id": "P1",
@@ -1045,6 +1058,10 @@ def validate_p1_temporal_consumer_verification_authority(
         "expected_slot_status": "model_unavailable",
         "expected_fit_status": "not_attempted",
         "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "auditor_execution_mode": "in_process_callable",
+        "python_auditor_subprocess_used": False,
+        "batch_seed_execution_authorized": False,
+        "retry_authorized": False,
         "e0_m_authorized": False,
         "evaluation_authorized": False,
         "e0_u_authorized": False,
@@ -1052,9 +1069,9 @@ def validate_p1_temporal_consumer_verification_authority(
     }
     drifted = [field for field, value in expected.items() if authority.get(field) != value]
     if drifted:
-        raise ClosurePipeTrainingError(f"E0-ME authorization predicates drifted: {drifted}")
+        raise ClosurePipeTrainingError(f"E0-MF authorization predicates drifted: {drifted}")
     if (model_id, base_seed, device) != ("P1", 1729, "cpu"):
-        raise ClosurePipeTrainingError("E0-ME authorizes only P1 seed 1729 on cpu")
+        raise ClosurePipeTrainingError("E0-MF authorizes only P1 seed 1729 on cpu")
     fit_availability = authority.get("fit_availability")
     expected_fit_availability = {
         "sequence_fit_available": False,
@@ -1067,10 +1084,10 @@ def validate_p1_temporal_consumer_verification_authority(
         "replacement_used": False,
     }
     if fit_availability != expected_fit_availability:
-        raise ClosurePipeTrainingError("E0-ME fit-availability contract drifted")
+        raise ClosurePipeTrainingError("E0-MF fit-availability contract drifted")
     in_process_audit = authority.get("in_process_audit_evidence")
     if not isinstance(in_process_audit, Mapping):
-        raise ClosurePipeTrainingError("E0-ME lacks in-process audit evidence")
+        raise ClosurePipeTrainingError("E0-MF lacks in-process audit evidence")
     expected_audit = {
         "execution_mode": "in_process_callable",
         "callable_module": "src.experiments.audit_closure_p1_sequence_bundle",
@@ -1121,8 +1138,29 @@ def validate_p1_temporal_consumer_verification_authority(
         or any(character not in "0123456789abcdef" for character in result_sha256)
     ):
         raise ClosurePipeTrainingError(
-            f"E0-ME in-process audit evidence drifted: {audit_drifted}"
+            f"E0-MF in-process audit evidence drifted: {audit_drifted}"
         )
+    e0_me_context = authority.get("e0_me_context_authorization")
+    expected_e0_me_context = {
+        "gate": "E0-ME",
+        "patch_head": "1b30cd658acc9e46779e907e3efb30511f646983",
+        "p_e0_me_absent": True,
+        "historical_git_authority_verified": True,
+        "historical_e0_md_verified": True,
+        "historical_e0_dltvm_verified": True,
+        "historical_me_effective_loader_called": False,
+        "effective_loader_called": False,
+        "p1_consumer_authorized": False,
+        "p1_fit_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "future_outcomes_accessed": False,
+    }
+    if not isinstance(e0_me_context, Mapping) or any(
+        e0_me_context.get(field) != value
+        for field, value in expected_e0_me_context.items()
+    ):
+        raise ClosurePipeTrainingError("E0-MF lacks its E0-ME context authorization")
     e0_md_context = authority.get("e0_md_context_authorization")
     if (
         not isinstance(e0_md_context, Mapping)
@@ -1130,14 +1168,14 @@ def validate_p1_temporal_consumer_verification_authority(
         or e0_md_context.get("historical_e0_dltvm_verified") is not True
         or e0_md_context.get("historical_dltvm_effective_loader_called") is not False
     ):
-        raise ClosurePipeTrainingError("E0-ME lacks its E0-MD context authorization")
+        raise ClosurePipeTrainingError("E0-MF lacks its E0-MD context authorization")
     e0_mc_context = authority.get("e0_mc_context_authorization")
     if not isinstance(e0_mc_context, Mapping) or e0_mc_context.get("gate") != "E0-MC":
-        raise ClosurePipeTrainingError("E0-ME lacks its E0-MC context authorization")
+        raise ClosurePipeTrainingError("E0-MF lacks its E0-MC context authorization")
     artifact, current_runtime = (
-        builder_records_from_p1_temporal_consumer_verification_authority(authority)
+        builder_records_from_p1_temporal_consumer_pytest_summary_authority(authority)
     )
-    authority_inputs = _p1_verification_authority_input_records(authority)
+    authority_inputs = _p1_pytest_summary_authority_input_records(authority)
     return artifact, current_runtime, e0_mc_context, authority_inputs
 
 
@@ -1276,6 +1314,7 @@ def collect_temporal_model_input_contract(
         PROJECT_ROOT / P1_SEQUENCE_AUDITOR_PATH,
         PROJECT_ROOT / E0_MD_GATE_PATH,
         PROJECT_ROOT / E0_ME_GATE_PATH,
+        PROJECT_ROOT / E0_MF_GATE_PATH,
     )
     source_paths = (
         *common_source_paths,
@@ -2173,7 +2212,7 @@ def _run_temporal_slot(
             current_runtime_builder,
             state_consumer_authority,
             authority_input_records,
-        ) = validate_p1_temporal_consumer_verification_authority(
+        ) = validate_p1_temporal_consumer_pytest_summary_authority(
             p1_temporal_consumer_authority,
             model_id=args.model_id,
             base_seed=args.base_seed,
@@ -2238,14 +2277,14 @@ def _run_temporal_slot(
     if args.model_id == "P1":
         if availability.available:
             raise ClosurePipeTrainingError(
-                "E0-ME forbids fitting because the sealed P1 fit rows are unavailable"
+                "E0-MF forbids fitting because the sealed P1 fit rows are unavailable"
             )
         if (
             availability.failure_reason != "sequence_fit_rows_unavailable"
             or availability.fit_status_counts != P1_FIT_STATUS_COUNTS
             or availability.failure_reason_counts != P1_FIT_FAILURE_REASON_COUNTS
         ):
-            raise ClosurePipeTrainingError("P1 unavailable-fit evidence differs from E0-ME")
+            raise ClosurePipeTrainingError("P1 unavailable-fit evidence differs from E0-MF")
     if not availability.available:
         assert_temporal_model_input_contract_unchanged(model_input_contract)
         after = {
@@ -2438,12 +2477,12 @@ def main() -> None:
     args = parse_args()
 
     # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_p1_temporal_consumer_verification_patch import (
-        require_p1_temporal_consumer_verification_authorized,
+    from src.experiments.closure_p1_temporal_consumer_pytest_summary_patch import (
+        require_p1_temporal_consumer_pytest_summary_patch_authorized,
     )
 
     p1_temporal_consumer_authority = (
-        require_p1_temporal_consumer_verification_authorized(
+        require_p1_temporal_consumer_pytest_summary_patch_authorized(
             model_id=args.model_id,
             base_seed=args.base_seed,
             device=args.device,
