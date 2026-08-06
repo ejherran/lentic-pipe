@@ -1,0 +1,119 @@
+{
+  "authoritative_contract": false,
+  "authoritative_lock_path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json",
+  "authorized_base_seed": 1729,
+  "authorized_model_id": "P1",
+  "completion_marker_written_last": true,
+  "created_at_utc": "2026-08-06T00:38:14.167174Z",
+  "e0_m_authorized": false,
+  "e0_u_authorized": false,
+  "effective_in_payload": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v1",
+  "future_outcomes_accessed": false,
+  "gate": "E0-MC",
+  "historical_inputs": [
+    {
+      "bytes": 98324,
+      "commit": "5bb01e92b9b8c9b099b07b2f2cc5b8b9be359b30",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "historical_e0_dlp_patched_base_component",
+      "sha256": "bf2a5c54454a88e448e5947df89e6dda8c83bab8b3346a57745538475e188d9b"
+    },
+    {
+      "bytes": 127283,
+      "commit": "e6fba7acc98287fb3d1e405bd7ffc64a7ff8793e",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "transactional_p1_sequence_builder",
+      "sha256": "0233f36bdef3ba2e92d6dbd3f21ff181c6ef3f2eae3a0e5cfdf855622a4e19b0"
+    },
+    {
+      "bytes": 47029,
+      "commit": "5bb01e92b9b8c9b099b07b2f2cc5b8b9be359b30",
+      "hash_source": "git_blob_at_commit",
+      "path": "tests/test_build_closure_pipe_sequences.py",
+      "role": "historical_e0_dlp_patched_base_component",
+      "sha256": "6c736abe206923f5bc2da98487a21f4807332573904bcce54151ce00510b7e08"
+    },
+    {
+      "bytes": 68165,
+      "commit": "e6fba7acc98287fb3d1e405bd7ffc64a7ff8793e",
+      "hash_source": "git_blob_at_commit",
+      "path": "tests/test_build_closure_pipe_sequences.py",
+      "role": "transactional_p1_sequence_builder_tests",
+      "sha256": "fcdc28c28a6c7095143affb6cb3bfd54bba0345b903c7f09dcefa048c7760a37"
+    }
+  ],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 17387,
+      "path": "configs/closure_v1/p1_sequence_historical_anfis_patch_lock.schema.json",
+      "role": "p1_sequence_historical_anfis_patch_lock_schema",
+      "sha256": "f3d92b3cfc6214f403d82d60315b44d5ed25af4dcb4bb1f3946ab9850975d4b4"
+    },
+    {
+      "bytes": 92714,
+      "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json",
+      "role": "external_development_runtime_patch_lock",
+      "sha256": "d15a471ca293de0b48e5b52c1b52527640f2bd1ac1233e6b0796c4afa127fac4"
+    },
+    {
+      "bytes": 2052,
+      "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock_manifest.json",
+      "role": "development_runtime_patch_companion",
+      "sha256": "ac0c84f0fffa458a64df351ad6c51d450bb8b7b4991d8ac38fa51c049b711b46"
+    },
+    {
+      "bytes": 19709,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json",
+      "role": "external_p1_sequence_builder_patch_lock",
+      "sha256": "8a9a3e7cff21d2a0d4defe246019e31896e17410608102b23957ccdbf4719e52"
+    },
+    {
+      "bytes": 4004,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json",
+      "role": "p1_sequence_builder_patch_companion",
+      "sha256": "2ce1e48c3ca2aff69b16d683749e95bedff1668367d1f5300424ab76346343c9"
+    },
+    {
+      "bytes": 127833,
+      "path": "src/experiments/build_closure_pipe_sequences.py",
+      "role": "current_runtime_builder",
+      "sha256": "f0e653b29035acb11e39bc9a7776e7940394996d75f16bf3bccb4da30013c9cf"
+    },
+    {
+      "bytes": 64044,
+      "path": "src/experiments/closure_p1_sequence_historical_anfis_patch.py",
+      "role": "p1_sequence_historical_anfis_patch_validator",
+      "sha256": "f8daf21d907e4bbccd6f4601fea0ab65f043aee8f6057c219e6a9ff98526150c"
+    }
+  ],
+  "manifest_version": "closure_p1_sequence_historical_anfis_patch_manifest_v1",
+  "outputs": [
+    {
+      "bytes": 25211,
+      "path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json",
+      "role": "external_p1_sequence_historical_anfis_patch_lock",
+      "sha256": "434f94b89c42b226fced57e2c6d02b6a1aaea8d772d4437d703274cba5808088"
+    }
+  ],
+  "p1_fit_authorized": false,
+  "p1_sequence_builder_authorized": false,
+  "p1_sequence_retry_authorized": false,
+  "patch_id": "p1_sequence_historical_anfis_authority_patch_1",
+  "physical_inputs_only": true,
+  "prior_one_shot_authorization_consumed": true,
+  "publication_required": true,
+  "retry_under_previous_authority_authorized": false,
+  "script": {
+    "bytes": 32115,
+    "path": "src/experiments/lock_closure_p1_sequence_historical_anfis_patch.py",
+    "role": "generating_script",
+    "sha256": "4a3cd483bfb912b8c0892407b410ca5e11a7b08e64bd3b03e0a69f48bd8ee304"
+  },
+  "status": "completed",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla"
+}

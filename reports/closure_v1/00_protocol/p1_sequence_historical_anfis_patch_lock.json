@@ -1,0 +1,603 @@
+{
+  "authorizations": {
+    "authorized_base_seed": 1729,
+    "authorized_model_id": "P1",
+    "batch_seed_execution_authorized": false,
+    "e0_m_authorized": false,
+    "e0_u_authorized": false,
+    "effective_in_payload": false,
+    "evaluation_authorized": false,
+    "future_outcomes_accessed": false,
+    "p1_fit_authorized": false,
+    "p1_sequence_builder_authorized": false,
+    "p1_sequence_retry_authorized": false,
+    "prior_one_shot_authorization_consumed": true,
+    "publication_required": true,
+    "retry_under_previous_authority_authorized": false
+  },
+  "base_authorities": {
+    "e0_dlp": {
+      "adopted_seed_manifest": {
+        "bytes": 20768,
+        "path": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json",
+        "role": "seed_1729_completion_manifest",
+        "sha256": "b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82"
+      },
+      "companion_manifest": {
+        "bytes": 2052,
+        "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock_manifest.json",
+        "role": "development_runtime_patch_companion",
+        "sha256": "ac0c84f0fffa458a64df351ad6c51d450bb8b7b4991d8ac38fa51c049b711b46"
+      },
+      "development_fit_historically_authorized": true,
+      "dls_historical_authority": {
+        "base_e0_dl_unchanged": true,
+        "base_e0_dlp_unchanged": true,
+        "base_repository_head": "45705d620ad529b702624706b07e8a39fc138f72",
+        "e0_dlp_adopted_seed_physical_artifacts_verified": true,
+        "e0_dlp_lock_commit": "9123b5120f9470bba8643c6f4c73b86f85ccec25",
+        "e0_dlp_patch_head": "5bb01e92b9b8c9b099b07b2f2cc5b8b9be359b30",
+        "historical_schema_and_payload_validated": true,
+        "physical_development_authority_verified": true,
+        "preserved_component_count": 40,
+        "preserved_component_records_sha256": "65d1f5ed5338269b7f491111b16f02007d36fa23ffdfbe42f6d63f3e31c5ef33",
+        "records_sha256": "53610e076e6b0b6c638c67c836cfa439ce5b429412ea789ef5f14cc62906c277"
+      },
+      "e0_u_authorized": false,
+      "effective_dlp_loader_called": false,
+      "evaluation_authorized": false,
+      "future_outcomes_accessed": false,
+      "gate": "E0-DLP",
+      "historical_authority_verified": true,
+      "lock": {
+        "bytes": 92714,
+        "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json",
+        "role": "external_development_runtime_patch_lock",
+        "sha256": "d15a471ca293de0b48e5b52c1b52527640f2bd1ac1233e6b0796c4afa127fac4"
+      },
+      "lock_commit": "9123b5120f9470bba8643c6f4c73b86f85ccec25",
+      "patch_head": "5bb01e92b9b8c9b099b07b2f2cc5b8b9be359b30",
+      "preserved_drift_components": {
+        "count": 4,
+        "current_bytes_required_to_match_historical": true,
+        "paths": [
+          "src/experiments/closure_development_runtime_lock.py",
+          "src/experiments/fit_closure_anfis_state.py",
+          "tests/test_closure_development_runtime_lock.py",
+          "tests/test_fit_closure_anfis_state.py"
+        ],
+        "records": [
+          {
+            "base_bytes": 121036,
+            "base_sha256": "024b942d32db1dc65500fac9ff9b56be9e983307ce6427dbb4f7fac966e78000",
+            "patch_bytes": 121930,
+            "patch_sha256": "b988c1c732afc4416c8ea439d6f54c49a104973fd145121d7966a3cc9be91c9e",
+            "path": "src/experiments/closure_development_runtime_lock.py"
+          },
+          {
+            "base_bytes": 59865,
+            "base_sha256": "8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2",
+            "patch_bytes": 60060,
+            "patch_sha256": "c186bc8369bc39774f1bb0043208d2db7af633eccc6b8047743fd9dabcb13be2",
+            "path": "src/experiments/fit_closure_anfis_state.py"
+          },
+          {
+            "base_bytes": 55797,
+            "base_sha256": "af10fa53f31b196e77122d840ecd4bcc159f4998ff30ab0a9335092902b06a1a",
+            "patch_bytes": 56728,
+            "patch_sha256": "8b98986a8bffca7284d546090d5dc3f8c638f785206eec61d22818b45ee6e376",
+            "path": "tests/test_closure_development_runtime_lock.py"
+          },
+          {
+            "base_bytes": 37021,
+            "base_sha256": "1022b4a1915e787fc92dae011d4d04a0a53f4dae784e64bdc442a9f906f212b6",
+            "patch_bytes": 38538,
+            "patch_sha256": "d1900529bd034c6916e3c270622f5da415bb9e5046ec4dd9fb550c1979656fd0",
+            "path": "tests/test_fit_closure_anfis_state.py"
+          }
+        ],
+        "records_sha256": "b22478851bf91ec13c9350dbf87ed205102ddf2b9aeb97ead3fe62eaad645c25"
+      },
+      "preserved_patch_components": {
+        "count": 5,
+        "current_bytes_required_to_match_historical": true,
+        "paths": [
+          "configs/closure_v1/development_runtime_patch_lock.schema.json",
+          "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
+          "src/experiments/closure_development_runtime_patch.py",
+          "src/experiments/lock_closure_development_runtime_patch.py",
+          "tests/test_closure_development_runtime_patch.py"
+        ],
+        "records": [
+          {
+            "bytes": 78141,
+            "path": "configs/closure_v1/development_runtime_patch_lock.schema.json",
+            "role": "development_runtime_patch_lock_schema",
+            "sha256": "652fa86482b585985eb0db260af1e499ddc16a620b8fa8c6f54e87c5c767dbac"
+          },
+          {
+            "bytes": 31120,
+            "path": "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md",
+            "role": "development_runtime_patch_protocol",
+            "sha256": "8b8545ccc9ca99a4820770d3f002a39390343b70acfaab1e2dbff2c7060fce21"
+          },
+          {
+            "bytes": 169757,
+            "path": "src/experiments/closure_development_runtime_patch.py",
+            "role": "development_runtime_patch_validator",
+            "sha256": "9c14e5442b13b9a7f8f9f4a3a87d95f16e582abdda7092576388afe24b32b04d"
+          },
+          {
+            "bytes": 33393,
+            "path": "src/experiments/lock_closure_development_runtime_patch.py",
+            "role": "development_runtime_patch_locker",
+            "sha256": "e8718f4ebf3e5b53bfbaa8bb09b51813bd3d377b1385f8ea88f2050eaf434f24"
+          },
+          {
+            "bytes": 90822,
+            "path": "tests/test_closure_development_runtime_patch.py",
+            "role": "development_runtime_patch_tests",
+            "sha256": "9dacf0b83206fe7f7a866c207df5a2455640da11a606984000165c0a019e6961"
+          }
+        ],
+        "records_sha256": "07da461e7b465bfc3073ca8ce6ac0974da53442cbcddd069779b43e118f7db6f"
+      },
+      "superseded_drift_components": {
+        "count": 2,
+        "current_bytes_required_to_match_historical": false,
+        "paths": [
+          "src/experiments/build_closure_pipe_sequences.py",
+          "tests/test_build_closure_pipe_sequences.py"
+        ],
+        "records": [
+          {
+            "base_bytes": 93507,
+            "base_sha256": "7902ad48c824fe73e045aeec16a740b03ff0fade60769d08f80de4bd26aff4a4",
+            "patch_bytes": 98324,
+            "patch_sha256": "bf2a5c54454a88e448e5947df89e6dda8c83bab8b3346a57745538475e188d9b",
+            "path": "src/experiments/build_closure_pipe_sequences.py"
+          },
+          {
+            "base_bytes": 45956,
+            "base_sha256": "a2e7a820d1546c0aee1a2e684aeb198edb697eec59b26f0a0b9391866b33d640",
+            "patch_bytes": 47029,
+            "patch_sha256": "6c736abe206923f5bc2da98487a21f4807332573904bcce54151ce00510b7e08",
+            "path": "tests/test_build_closure_pipe_sequences.py"
+          }
+        ],
+        "records_sha256": "1f7c8bcea5a0dd7e472482b3b2555ea4e97a14f7fd092d0e1bced88ef01e1e09"
+      }
+    },
+    "e0_mb": {
+      "companion_manifest": {
+        "bytes": 4004,
+        "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json",
+        "role": "p1_sequence_builder_patch_companion",
+        "sha256": "2ce1e48c3ca2aff69b16d683749e95bedff1668367d1f5300424ab76346343c9"
+      },
+      "e0_m_authorized": false,
+      "e0_u_authorized": false,
+      "evaluation_authorized": false,
+      "future_outcomes_accessed": false,
+      "gate": "E0-MB",
+      "historical_authority_verified": true,
+      "lock": {
+        "bytes": 19709,
+        "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json",
+        "role": "external_p1_sequence_builder_patch_lock",
+        "sha256": "8a9a3e7cff21d2a0d4defe246019e31896e17410608102b23957ccdbf4719e52"
+      },
+      "lock_commit": "34c0b4e3203eca32bee69732a823519f2b0e61eb",
+      "p1_fit_authorized": false,
+      "p1_sequence_builder_authorized": false,
+      "patch_head": "e6fba7acc98287fb3d1e405bd7ffc64a7ff8793e",
+      "preserved_components": {
+        "count": 5,
+        "current_bytes_required_to_match_historical": true,
+        "paths": [
+          "configs/closure_v1/p1_sequence_builder_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_SEQUENCE_BUILDER_PATCH_1.md",
+          "src/experiments/closure_p1_sequence_builder_patch.py",
+          "src/experiments/lock_closure_p1_sequence_builder_patch.py",
+          "tests/test_closure_p1_sequence_builder_patch.py"
+        ],
+        "records": [
+          {
+            "bytes": 15728,
+            "path": "configs/closure_v1/p1_sequence_builder_patch_lock.schema.json",
+            "role": "p1_sequence_builder_patch_lock_schema",
+            "sha256": "3639e249eba27d635510965df01838bb1f6883beb9bb6a19e4f18fd89e3d9e39"
+          },
+          {
+            "bytes": 8357,
+            "path": "docs/closure_v1/E0_M_P1_SEQUENCE_BUILDER_PATCH_1.md",
+            "role": "p1_sequence_builder_patch_protocol",
+            "sha256": "d953cd8240de3cbde20bf702f113ac7d42650262ad9f9744eb60b2dde7c5afd9"
+          },
+          {
+            "bytes": 62237,
+            "path": "src/experiments/closure_p1_sequence_builder_patch.py",
+            "role": "p1_sequence_builder_patch_validator",
+            "sha256": "1763bc50e670a0e203ee5dccc88c9c662675e707ccacfd9f689f88a0a2961152"
+          },
+          {
+            "bytes": 16083,
+            "path": "src/experiments/lock_closure_p1_sequence_builder_patch.py",
+            "role": "p1_sequence_builder_patch_locker",
+            "sha256": "64b70a90c988bba714a8a55660a0d524dcfeb3e9c177b6fe462c449701bd4258"
+          },
+          {
+            "bytes": 31865,
+            "path": "tests/test_closure_p1_sequence_builder_patch.py",
+            "role": "p1_sequence_builder_patch_tests",
+            "sha256": "00a78248eb32e73a17f63e0c2504d3546eb996effb62259af75debba839f1bdd"
+          }
+        ],
+        "records_sha256": "fd4abf3cfd1ea027356d627b8f969c441746c5c9e866b9d67e3907dc95941ab6"
+      },
+      "publication_topology_verified": true,
+      "superseded_components": {
+        "count": 2,
+        "current_bytes_required_to_match_historical": false,
+        "paths": [
+          "src/experiments/build_closure_pipe_sequences.py",
+          "tests/test_build_closure_pipe_sequences.py"
+        ],
+        "records": [
+          {
+            "bytes": 127283,
+            "path": "src/experiments/build_closure_pipe_sequences.py",
+            "role": "transactional_p1_sequence_builder",
+            "sha256": "0233f36bdef3ba2e92d6dbd3f21ff181c6ef3f2eae3a0e5cfdf855622a4e19b0"
+          },
+          {
+            "bytes": 68165,
+            "path": "tests/test_build_closure_pipe_sequences.py",
+            "role": "transactional_p1_sequence_builder_tests",
+            "sha256": "fcdc28c28a6c7095143affb6cb3bfd54bba0345b903c7f09dcefa048c7760a37"
+          }
+        ],
+        "records_sha256": "926a871d21585c82cab7a22b2e7715056e557747c03ea3a735cf96121f19f111"
+      }
+    }
+  },
+  "correction": {
+    "classification": "historical_provenance_adapter_only",
+    "denominator_changed": false,
+    "e0_dlp_preserved_drift_component_count": 4,
+    "e0_dlp_superseded_drift_component_count": 2,
+    "e0_mb_preserved_component_count": 5,
+    "e0_mb_superseded_component_count": 2,
+    "issue_id": "historical_anfis_effective_loader_domain_mismatch_1",
+    "legacy_effective_dlp_loader_used_for_historical_manifest": false,
+    "outcome_access_changed": false,
+    "replacement": "git_bound_historical_e0_dlp_reconstruction",
+    "scientific_sequence_contract_changed": false,
+    "state_mapping_changed": false
+  },
+  "created_at_utc": "2026-08-06T00:38:14.167174Z",
+  "current_runtime_builder_record": {
+    "bytes": 127833,
+    "path": "src/experiments/build_closure_pipe_sequences.py",
+    "role": "current_runtime_builder",
+    "sha256": "f0e653b29035acb11e39bc9a7776e7940394996d75f16bf3bccb4da30013c9cf"
+  },
+  "experiment_id": "closure_v1",
+  "gate": "E0-MC",
+  "git_diff": {
+    "added_count": 5,
+    "base_commit": "34c0b4e3203eca32bee69732a823519f2b0e61eb",
+    "entries": [
+      {
+        "path": "configs/closure_v1/p1_sequence_historical_anfis_patch_lock.schema.json",
+        "status": "A"
+      },
+      {
+        "path": "docs/closure_v1/E0_M_P1_SEQUENCE_HISTORICAL_ANFIS_PATCH_1.md",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "status": "M"
+      },
+      {
+        "path": "src/experiments/closure_p1_sequence_historical_anfis_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/lock_closure_p1_sequence_historical_anfis_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "tests/test_build_closure_pipe_sequences.py",
+        "status": "M"
+      },
+      {
+        "path": "tests/test_closure_p1_sequence_historical_anfis_patch.py",
+        "status": "A"
+      }
+    ],
+    "modified_count": 2,
+    "only_allowed_additions_and_modifications": true,
+    "patch_head": "5bdac0fe8279297dbdb04e38146726431511fe7a",
+    "paths": [
+      "configs/closure_v1/p1_sequence_historical_anfis_patch_lock.schema.json",
+      "docs/closure_v1/E0_M_P1_SEQUENCE_HISTORICAL_ANFIS_PATCH_1.md",
+      "src/experiments/build_closure_pipe_sequences.py",
+      "src/experiments/closure_p1_sequence_historical_anfis_patch.py",
+      "src/experiments/lock_closure_p1_sequence_historical_anfis_patch.py",
+      "tests/test_build_closure_pipe_sequences.py",
+      "tests/test_closure_p1_sequence_historical_anfis_patch.py"
+    ],
+    "paths_sha256": "ff5ad66c07c357ff33ea0ffee6e0b8b0bed685a380da54fbff9b2ee253623500"
+  },
+  "historical_anfis_contract": {
+    "base_seed": 1729,
+    "effective_dlp_loader_called": false,
+    "generating_script_record": {
+      "bytes": 59865,
+      "path": "src/experiments/fit_closure_anfis_state.py",
+      "role": "generating_script",
+      "sha256": "8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2"
+    },
+    "git_bound_historical_authority_required": true,
+    "historical_uppercase_artifact_paths": true,
+    "manifest": {
+      "bytes": 20768,
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json",
+      "role": "seed_1729_completion_manifest",
+      "sha256": "b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82"
+    },
+    "runtime_validator_record": {
+      "bytes": 121036,
+      "path": "src/experiments/closure_development_runtime_lock.py",
+      "role": "runtime_lock_validator",
+      "sha256": "024b942d32db1dc65500fac9ff9b56be9e983307ce6427dbb4f7fac966e78000"
+    },
+    "strict_state_adapter_record": {
+      "bytes": 59865,
+      "path": "src/experiments/fit_closure_anfis_state.py",
+      "role": "strict_anfis_state_adapter",
+      "sha256": "8177a9e19943222e51b16befc6f05e3978faa8abd46d37b7f43fa724fbd454f2"
+    }
+  },
+  "lock_artifact": {
+    "path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json",
+    "role": "external_p1_sequence_historical_anfis_patch_lock",
+    "self_hash_policy": "verified_from_committed_and_published_bytes"
+  },
+  "lock_version": "closure_p1_sequence_historical_anfis_patch_lock_v1",
+  "patch_components": {
+    "count": 7,
+    "paths": [
+      "configs/closure_v1/p1_sequence_historical_anfis_patch_lock.schema.json",
+      "docs/closure_v1/E0_M_P1_SEQUENCE_HISTORICAL_ANFIS_PATCH_1.md",
+      "src/experiments/build_closure_pipe_sequences.py",
+      "src/experiments/closure_p1_sequence_historical_anfis_patch.py",
+      "src/experiments/lock_closure_p1_sequence_historical_anfis_patch.py",
+      "tests/test_build_closure_pipe_sequences.py",
+      "tests/test_closure_p1_sequence_historical_anfis_patch.py"
+    ],
+    "paths_sha256": "ff5ad66c07c357ff33ea0ffee6e0b8b0bed685a380da54fbff9b2ee253623500",
+    "records": [
+      {
+        "bytes": 17387,
+        "path": "configs/closure_v1/p1_sequence_historical_anfis_patch_lock.schema.json",
+        "role": "p1_sequence_historical_anfis_patch_lock_schema",
+        "sha256": "f3d92b3cfc6214f403d82d60315b44d5ed25af4dcb4bb1f3946ab9850975d4b4"
+      },
+      {
+        "bytes": 8775,
+        "path": "docs/closure_v1/E0_M_P1_SEQUENCE_HISTORICAL_ANFIS_PATCH_1.md",
+        "role": "p1_sequence_historical_anfis_patch_protocol",
+        "sha256": "ab15cd36385433fb2b8469ca810974fcbd06423d1fec0a4eaf894cc71ceedaba"
+      },
+      {
+        "bytes": 127833,
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "role": "historical_anfis_aware_p1_sequence_builder",
+        "sha256": "f0e653b29035acb11e39bc9a7776e7940394996d75f16bf3bccb4da30013c9cf"
+      },
+      {
+        "bytes": 64044,
+        "path": "src/experiments/closure_p1_sequence_historical_anfis_patch.py",
+        "role": "p1_sequence_historical_anfis_patch_validator",
+        "sha256": "f8daf21d907e4bbccd6f4601fea0ab65f043aee8f6057c219e6a9ff98526150c"
+      },
+      {
+        "bytes": 32115,
+        "path": "src/experiments/lock_closure_p1_sequence_historical_anfis_patch.py",
+        "role": "p1_sequence_historical_anfis_patch_locker",
+        "sha256": "4a3cd483bfb912b8c0892407b410ca5e11a7b08e64bd3b03e0a69f48bd8ee304"
+      },
+      {
+        "bytes": 76127,
+        "path": "tests/test_build_closure_pipe_sequences.py",
+        "role": "historical_anfis_aware_p1_sequence_builder_tests",
+        "sha256": "fffdf4a08ccf935acf18554a4b120dca1aa2b65f02d19cc5a023e5b0b57c1d01"
+      },
+      {
+        "bytes": 27164,
+        "path": "tests/test_closure_p1_sequence_historical_anfis_patch.py",
+        "role": "p1_sequence_historical_anfis_patch_tests",
+        "sha256": "f9e58d45f2af8f7909f16bccf350ea02355ed75730149a9a69a80f9f895fd656"
+      }
+    ],
+    "records_sha256": "69d124e63bcdeb96cf4e0a828822f61a1f36d0e12222c28dfb6f749303a1fee8"
+  },
+  "patch_id": "p1_sequence_historical_anfis_authority_patch_1",
+  "patch_repository": {
+    "branch": "main",
+    "exact_diff_verified": true,
+    "head": "5bdac0fe8279297dbdb04e38146726431511fe7a",
+    "parent": "34c0b4e3203eca32bee69732a823519f2b0e61eb",
+    "published_head": "5bdac0fe8279297dbdb04e38146726431511fe7a",
+    "published_ref": "origin/main",
+    "remote_main_oid": "5bdac0fe8279297dbdb04e38146726431511fe7a",
+    "worktree_status": "clean"
+  },
+  "progression_prelock": {
+    "e0_m_output_count": 0,
+    "future_outcomes_accessed": false,
+    "outcome_access_log_state": "absent",
+    "p1_all_absent": true,
+    "p1_path_count": 140,
+    "p1_paths_sha256": "5325c8494903eab783bc3ca8b0afb19aecb4406ae6b87212933ca69949f4c24a",
+    "p1_seed_order": [
+      1729,
+      20260612,
+      20260613,
+      20260614,
+      314159
+    ]
+  },
+  "seals": {
+    "denominator_changed": false,
+    "does_not_replace_e0_m": true,
+    "e0_dlp_lock_rewritten": false,
+    "e0_dlp_preserved_as_historical_authority": true,
+    "e0_mb_lock_rewritten": false,
+    "e0_mb_preserved_as_historical_authority": true,
+    "holdout_accessed": false,
+    "only_builder_and_test_superseded_in_e0_dlp_drift": true,
+    "only_builder_and_test_superseded_in_e0_mb": true,
+    "post_2021_outcomes_accessed": false,
+    "scientific_sequence_contract_changed": false,
+    "seed_order_changed": false,
+    "state_mapping_changed": false
+  },
+  "sequence_atomicity": {
+    "bundle_outputs": [
+      "sequence_parquet",
+      "summary_csv",
+      "manifest_json"
+    ],
+    "completion_marker": "manifest_json",
+    "completion_marker_written_last": true,
+    "dependencies_revalidated_at_commit": true,
+    "directory_fsync": true,
+    "dvc_pointer_checks": [
+      "preflight",
+      "before_manifest",
+      "after_manifest",
+      "transaction_commit_before_output_rehash",
+      "transaction_commit_after_dependency_revalidation"
+    ],
+    "exclusive_slot_guard": true,
+    "foreign_replacement_preserved": true,
+    "owned_bytes_rehashed_at_commit": true,
+    "parent_walk_no_follow": true,
+    "publication": "hardlink_no_clobber",
+    "publication_order": [
+      "sequence_parquet",
+      "summary_csv",
+      "manifest_json"
+    ],
+    "rollback": "reverse_owned_inode_only",
+    "sigkill_between_distinct_directories_is_detected_not_atomic": true,
+    "temporary_creation": "exclusive_regular_inode",
+    "uncoordinated_external_dvc_creator_excluded": false
+  },
+  "sequence_prelock": {
+    "all_absent_at_lock": true,
+    "base_seed": 1729,
+    "count": 28,
+    "model_id": "P1",
+    "paths": [
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet",
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet.tmp",
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc",
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc.tmp",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv.tmp",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json.tmp",
+      "tmp/closure_v1_sequence_builder/P1_seed_1729.guard",
+      "models/closure_v1/pipe/P1/seed_1729.pt",
+      "models/closure_v1/pipe/P1/seed_1729.checkpoint.pt",
+      "reports/closure_v1/02_models/P1/seed_1729_preprocessor.json",
+      "reports/closure_v1/02_models/P1/seed_1729_metrics.csv",
+      "reports/closure_v1/02_models/P1/seed_1729_training_curve.csv",
+      "reports/closure_v1/02_models/P1/seed_1729_blend_weights.csv",
+      "reports/closure_v1/02_models/P1/seed_1729_blend_search.csv",
+      "reports/closure_v1/02_models/P1/seed_1729_report.md",
+      "reports/closure_v1/02_models/P1/seed_1729_manifest.json",
+      "models/closure_v1/pipe/P1/seed_1729.pt.tmp",
+      "models/closure_v1/pipe/P1/seed_1729.checkpoint.pt.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_preprocessor.json.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_metrics.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_training_curve.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_blend_weights.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_blend_search.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_report.md.tmp",
+      "reports/closure_v1/02_models/P1/seed_1729_manifest.json.tmp",
+      "tmp/closure_v1_temporal_consumer/P1_seed_1729.guard"
+    ],
+    "paths_sha256": "c1d6f5c6077341640b09094935a376287e0d3785d0ddb0e832f86e8da6813719"
+  },
+  "status": "locked",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "verification": {
+    "focused_tests": {
+      "command": [
+        ".venv/bin/pytest",
+        "tests/test_closure_p1_sequence_historical_anfis_patch.py",
+        "tests/test_closure_p1_sequence_builder_patch.py",
+        "tests/test_build_closure_pipe_sequences.py",
+        "-q"
+      ],
+      "deselected_count": 0,
+      "returncode": 0,
+      "skipped_count": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 3,
+      "stdout_sha256": "d934fc2d42e9b94b083e9f53dcc2c6ab096253bb71c058fa992a45f0eb7ffbec",
+      "test_count": 116
+    },
+    "full_type_check": {
+      "command": [
+        ".venv/bin/ty",
+        "check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "git_diff_check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "poetry_check": {
+      "command": [
+        "poetry",
+        "check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "a2428ed4ae02d9dbfff2895449321f5a297182c3fd189cddfe630c6e0fa76747"
+    },
+    "publication_guard": {
+      "command": [
+        "scripts/check_repo_publication_ready.sh"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 2,
+      "stdout_sha256": "4f3d95eeb9a16ee98d6bac11f78c717e73a9952dd7f8baf48de4fff33480134b"
+    }
+  }
+}
