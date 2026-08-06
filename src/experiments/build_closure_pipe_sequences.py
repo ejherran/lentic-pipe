@@ -1264,23 +1264,24 @@ def _authorization_dependency_records(
         or not all(isinstance(record, Mapping) for record in raw_inputs)
     ):
         raise ClosurePipeSequenceError(
-            "E0-MB authorization must bind exactly lock and companion inputs"
+            "E0-MC authorization must bind exactly lock and companion inputs"
         )
     records = [dict(cast(Mapping[str, Any], record)) for record in raw_inputs]
     expected_roles = {
-        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json": (
-            "external_p1_sequence_builder_patch_lock"
+        "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json": (
+            "external_p1_sequence_historical_anfis_patch_lock"
         ),
-        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json": (
-            "p1_sequence_builder_patch_companion"
+        "reports/closure_v1/00_protocol/"
+        "p1_sequence_historical_anfis_patch_lock_manifest.json": (
+            "p1_sequence_historical_anfis_patch_companion"
         ),
     }
     if {record.get("path"): record.get("role") for record in records} != expected_roles:
-        raise ClosurePipeSequenceError("E0-MB authorization input paths or roles drifted")
+        raise ClosurePipeSequenceError("E0-MC authorization input paths or roles drifted")
     dependencies: list[dict[str, Any]] = []
     for record in records:
         if set(record) != {"path", "role", "bytes", "sha256"}:
-            raise ClosurePipeSequenceError("E0-MB authorization input record drifted")
+            raise ClosurePipeSequenceError("E0-MC authorization input record drifted")
         observed = _file_record(PROJECT_ROOT / str(record["path"]))
         if observed != {
             "path": record["path"],
@@ -1288,7 +1289,7 @@ def _authorization_dependency_records(
             "sha256": record["sha256"],
         }:
             raise ClosurePipeSequenceError(
-                f"E0-MB authorization input changed before sequence build: {record['path']}"
+                f"E0-MC authorization input changed before sequence build: {record['path']}"
             )
         dependencies.append(observed)
     return dependencies
@@ -1503,17 +1504,22 @@ def _physical_manifest_record(
 
 def _historical_anfis_consumer_context(
     payload: Mapping[str, Any],
+    *,
+    consumer_authority: Mapping[str, Any] | None,
 ) -> Mapping[str, Any] | None:
-    from src.experiments.closure_development_runtime_patch import (  # noqa: PLC0415
-        DevelopmentRuntimePatchError,
-        require_adopted_seed_1729_consumer_context,
+    from src.experiments.closure_p1_sequence_historical_anfis_patch import (  # noqa: PLC0415
+        P1SequenceHistoricalAnfisPatchError,
+        historical_seed_1729_anfis_context,
     )
 
     try:
-        context = require_adopted_seed_1729_consumer_context(payload)
-    except DevelopmentRuntimePatchError as exc:
+        context = historical_seed_1729_anfis_context(
+            payload,
+            authorization=consumer_authority,
+        )
+    except P1SequenceHistoricalAnfisPatchError as exc:
         raise ClosurePipeSequenceError(
-            "ANFIS historical dependency lacks valid published E0-DLP authority"
+            "ANFIS historical dependency lacks valid published E0-MC authority"
         ) from exc
     if context is None:
         return None
@@ -1549,10 +1555,15 @@ def _expected_anfis_source_record(
 
 def _validate_anfis_provenance(
     payload: Mapping[str, Any],
+    *,
+    consumer_authority: Mapping[str, Any] | None,
 ) -> tuple[Mapping[str, Any], Mapping[str, Any] | None]:
     if payload.get("development_fit_authorized") is not True:
         raise ClosurePipeSequenceError("ANFIS manifest lacks development-fit authorization")
-    historical_context = _historical_anfis_consumer_context(payload)
+    historical_context = _historical_anfis_consumer_context(
+        payload,
+        consumer_authority=consumer_authority,
+    )
     historical_records = cast(
         Mapping[str, Mapping[str, Any]],
         historical_context.get("historical_source_records", {})
@@ -2575,6 +2586,7 @@ def validate_state_slot_manifest(
     model_id: str,
     base_seed: int | None,
     state_path: Path,
+    consumer_authority: Mapping[str, Any] | None = None,
 ) -> tuple[bool, str, bool]:
     """Validate upstream P0/F1 completion and its physical state linkage."""
     common_expected = {
@@ -2611,7 +2623,10 @@ def validate_state_slot_manifest(
     for field, expected in expected_identity.items():
         if not _typed_scalar_equal(payload.get(field), expected):
             raise ClosurePipeSequenceError(f"ANFIS state manifest field {field!r} drifted")
-    runtime, historical_context = _validate_anfis_provenance(payload)
+    runtime, historical_context = _validate_anfis_provenance(
+        payload,
+        consumer_authority=consumer_authority,
+    )
     historical_uppercase_artifact_paths = historical_context is not None
     slot_status = payload.get("slot_status")
     if slot_status == "available":
@@ -2908,14 +2923,14 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    # The additive E0-MB gate is deliberately the first operation in main that
+    # The additive E0-MC gate is deliberately the first operation in main that
     # may read runtime, state, Parquet, or output artifacts.  It reconstructs
-    # E0-DLTVM and E0-MA as historical authorities; there is no unlocked mode.
-    from src.experiments.closure_p1_sequence_builder_patch import (
-        require_p1_sequence_builder_authorized,
+    # E0-MB and E0-DLP as historical authorities; there is no unlocked mode.
+    from src.experiments.closure_p1_sequence_historical_anfis_patch import (
+        require_p1_sequence_historical_anfis_authorized,
     )
 
-    authorization = require_p1_sequence_builder_authorized(
+    authorization = require_p1_sequence_historical_anfis_authorized(
         model_id=args.model_id,
         base_seed=args.base_seed,
     )
@@ -2985,10 +3000,11 @@ def _materialize_sequence_bundle(
         raise ClosurePipeSequenceError("State manifest must contain a JSON object")
     state_available, model_slot_failure_reason, diagnostic_state_declared = (
         validate_state_slot_manifest(
-        state_manifest,
-        model_id=args.model_id,
-        base_seed=args.base_seed,
-        state_path=state_path,
+            state_manifest,
+            model_id=args.model_id,
+            base_seed=args.base_seed,
+            state_path=state_path,
+            consumer_authority=authorization,
         )
     )
     state: pd.DataFrame | None = None
@@ -3027,6 +3043,7 @@ def _materialize_sequence_bundle(
             model_id=args.model_id,
             base_seed=args.base_seed,
             state_path=state_path,
+            consumer_authority=authorization,
         ) != (state_available, model_slot_failure_reason, diagnostic_state_declared):
             raise ClosurePipeSequenceError(
                 "State-slot manifest interpretation changed during construction"

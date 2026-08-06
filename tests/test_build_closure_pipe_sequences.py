@@ -8,7 +8,7 @@ import sys
 import types
 from argparse import Namespace
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, Mapping, cast
 
 import numpy as np
 import pandas as pd
@@ -713,6 +713,148 @@ def test_sequence_constants_match_authoritative_runtime() -> None:
     validate_sequence_runtime_contract(load_yaml_mapping(DEFAULT_RUNTIME_CONFIG))
 
 
+def test_real_seed_1729_manifest_uses_explicit_historical_anfis_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    manifest_path = (
+        module.PROJECT_ROOT
+        / "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json"
+    )
+    payload = cast(dict[str, Any], json.loads(manifest_path.read_text(encoding="utf-8")))
+    dependencies = {
+        str(record["role"]): dict(record)
+        for record in cast(list[dict[str, Any]], payload["dependencies"])
+    }
+    historical_context = {
+        "historical_source_records": {
+            "generating_script": dict(cast(dict[str, Any], payload["script"])),
+            "strict_anfis_state_adapter": dependencies["strict_anfis_state_adapter"],
+            "runtime_lock_validator": dependencies["runtime_lock_validator"],
+        },
+        "historical_uppercase_artifact_paths": True,
+    }
+    authority: dict[str, Any] = {"authorization_effective": True}
+    calls: list[tuple[Mapping[str, Any], Mapping[str, Any] | None]] = []
+    fake_patch = types.ModuleType(
+        "src.experiments.closure_p1_sequence_historical_anfis_patch"
+    )
+
+    class FakePatchError(Exception):
+        pass
+
+    def historical_context_adapter(
+        manifest: Mapping[str, Any],
+        *,
+        authorization: Mapping[str, Any] | None,
+    ) -> dict[str, Any]:
+        calls.append((manifest, authorization))
+        return historical_context
+
+    setattr(fake_patch, "P1SequenceHistoricalAnfisPatchError", FakePatchError)
+    setattr(fake_patch, "historical_seed_1729_anfis_context", historical_context_adapter)
+    monkeypatch.setitem(sys.modules, fake_patch.__name__, fake_patch)
+
+    assert validate_state_slot_manifest(
+        payload,
+        model_id="P1",
+        base_seed=1729,
+        state_path=(
+            module.PROJECT_ROOT
+            / "data/closure_v1/development/anfis/seed_1729/"
+            "adaptive_no_current_state.parquet"
+        ),
+        consumer_authority=authority,
+    ) == (True, "", False)
+    assert calls == [(payload, authority)]
+
+
+def test_historical_seed_1729_manifest_requires_explicit_consumer_authority(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    manifest_path = (
+        module.PROJECT_ROOT
+        / "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json"
+    )
+    payload = cast(dict[str, Any], json.loads(manifest_path.read_text(encoding="utf-8")))
+    fake_patch = types.ModuleType(
+        "src.experiments.closure_p1_sequence_historical_anfis_patch"
+    )
+
+    class FakePatchError(Exception):
+        pass
+
+    def require_authority(
+        _: Mapping[str, Any],
+        *,
+        authorization: Mapping[str, Any] | None,
+    ) -> None:
+        if authorization is None:
+            raise FakePatchError("explicit E0-MC authority is required")
+
+    setattr(fake_patch, "P1SequenceHistoricalAnfisPatchError", FakePatchError)
+    setattr(fake_patch, "historical_seed_1729_anfis_context", require_authority)
+    monkeypatch.setitem(sys.modules, fake_patch.__name__, fake_patch)
+
+    with pytest.raises(ValueError, match="valid published E0-MC authority"):
+        validate_state_slot_manifest(
+            payload,
+            model_id="P1",
+            base_seed=1729,
+            state_path=(
+                module.PROJECT_ROOT
+                / "data/closure_v1/development/anfis/seed_1729/"
+                "adaptive_no_current_state.parquet"
+            ),
+        )
+
+
+def test_historical_anfis_adapter_does_not_mask_unexpected_defects(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    manifest_path = (
+        module.PROJECT_ROOT
+        / "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json"
+    )
+    payload = cast(dict[str, Any], json.loads(manifest_path.read_text(encoding="utf-8")))
+    fake_patch = types.ModuleType(
+        "src.experiments.closure_p1_sequence_historical_anfis_patch"
+    )
+
+    class FakePatchError(Exception):
+        pass
+
+    def unexpected_defect(
+        _: Mapping[str, Any],
+        *,
+        authorization: Mapping[str, Any] | None,
+    ) -> None:
+        del authorization
+        raise TypeError("unexpected adapter defect")
+
+    setattr(fake_patch, "P1SequenceHistoricalAnfisPatchError", FakePatchError)
+    setattr(fake_patch, "historical_seed_1729_anfis_context", unexpected_defect)
+    monkeypatch.setitem(sys.modules, fake_patch.__name__, fake_patch)
+
+    with pytest.raises(TypeError, match="unexpected adapter defect"):
+        validate_state_slot_manifest(
+            payload,
+            model_id="P1",
+            base_seed=1729,
+            state_path=(
+                module.PROJECT_ROOT
+                / "data/closure_v1/development/anfis/seed_1729/"
+                "adaptive_no_current_state.parquet"
+            ),
+            consumer_authority={"authorization_effective": True},
+        )
+
+
 def test_state_slot_manifest_requires_exact_available_physical_link(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1210,14 +1352,18 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
     class GateStopped(RuntimeError):
         pass
 
-    fake_lock = types.ModuleType("src.experiments.closure_p1_sequence_builder_patch")
+    fake_lock = types.ModuleType(
+        "src.experiments.closure_p1_sequence_historical_anfis_patch"
+    )
+    gate_calls: list[dict[str, object]] = []
 
-    def stop_gate(**_: object) -> dict[str, object]:
+    def stop_gate(**arguments: object) -> dict[str, object]:
+        gate_calls.append(arguments)
         raise GateStopped
 
     setattr(
         fake_lock,
-        "require_p1_sequence_builder_authorized",
+        "require_p1_sequence_historical_anfis_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -1226,12 +1372,21 @@ def test_main_stops_at_external_gate_before_state_io(monkeypatch: pytest.MonkeyP
         "parse_args",
         lambda: Namespace(model_id="P1", base_seed=1729),
     )
-    reads: list[object] = []
-    monkeypatch.setattr(pd, "read_parquet", lambda *args, **kwargs: reads.append((args, kwargs)))
+    io_calls: list[str] = []
+
+    def unexpected_io(*_: object, **__: object) -> None:
+        io_calls.append("unexpected")
+
+    monkeypatch.setattr(module, "load_yaml_mapping", unexpected_io)
+    monkeypatch.setattr(module, "load_development_gate", unexpected_io)
+    monkeypatch.setattr(module, "_paths", unexpected_io)
+    monkeypatch.setattr(module, "_sequence_bundle_guard", unexpected_io)
+    monkeypatch.setattr(pd, "read_parquet", unexpected_io)
 
     with pytest.raises(GateStopped):
         module.main()
-    assert reads == []
+    assert gate_calls == [{"model_id": "P1", "base_seed": 1729}]
+    assert io_calls == []
 
 
 def test_sequence_bundle_preflight_rejects_final_or_temporary_evidence(
@@ -1749,11 +1904,13 @@ def test_authorization_inputs_are_exact_and_use_generic_manifest_record_dialect(
 
     monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     roles = {
-        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json": (
-            "external_p1_sequence_builder_patch_lock"
+        "reports/closure_v1/00_protocol/"
+        "p1_sequence_historical_anfis_patch_lock.json": (
+            "external_p1_sequence_historical_anfis_patch_lock"
         ),
-        "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json": (
-            "p1_sequence_builder_patch_companion"
+        "reports/closure_v1/00_protocol/"
+        "p1_sequence_historical_anfis_patch_lock_manifest.json": (
+            "p1_sequence_historical_anfis_patch_companion"
         ),
     }
     inputs: list[dict[str, Any]] = []
@@ -1772,6 +1929,68 @@ def test_authorization_inputs_are_exact_and_use_generic_manifest_record_dialect(
     inputs[0]["role"] = "wrong_role"
     with pytest.raises(ValueError, match="paths or roles drifted"):
         module._authorization_dependency_records({"authorization_inputs": inputs})
+
+
+def test_sequence_transaction_rolls_back_if_e0_mc_authority_mutates(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as module
+
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    roles = {
+        "reports/closure_v1/00_protocol/"
+        "p1_sequence_historical_anfis_patch_lock.json": (
+            "external_p1_sequence_historical_anfis_patch_lock"
+        ),
+        "reports/closure_v1/00_protocol/"
+        "p1_sequence_historical_anfis_patch_lock_manifest.json": (
+            "p1_sequence_historical_anfis_patch_companion"
+        ),
+    }
+    inputs: list[dict[str, Any]] = []
+    for index, (path, role) in enumerate(roles.items(), start=1):
+        physical = tmp_path / path
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(f"authority-{index}\n".encode())
+        inputs.append({**module._file_record(physical), "role": role})
+    dependencies = module._authorization_dependency_records(
+        {"authorization_inputs": inputs}
+    )
+
+    def validate_authority_dependencies() -> None:
+        observed = [
+            module._file_record(tmp_path / str(record["path"]))
+            for record in dependencies
+        ]
+        if observed != dependencies:
+            raise module.ClosurePipeSequenceError(
+                "A sequence dependency changed during construction"
+            )
+
+    sequence = tmp_path / "data/sequence.parquet"
+    summary = tmp_path / "reports/summary.csv"
+    companion = tmp_path / next(
+        path for path, role in roles.items() if role.endswith("_companion")
+    )
+    with pytest.raises(ValueError, match="dependency changed"):
+        with module._SequenceOutputTransaction() as transaction:
+            transaction.add_commit_validator(validate_authority_dependencies)
+            transaction._publish(
+                sequence,
+                lambda handle: handle.write(b"sequence"),
+                binary=True,
+            )
+            transaction._publish(
+                summary,
+                lambda handle: handle.write("summary"),
+                binary=False,
+            )
+            companion.write_bytes(b"mutated companion\n")
+
+    assert not sequence.exists()
+    assert not summary.exists()
+    assert companion.read_bytes() == b"mutated companion\n"
 
 
 def test_sequence_manifest_reuses_one_frozen_builder_record(
