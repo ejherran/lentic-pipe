@@ -37,8 +37,9 @@ from src.experiments.train_closure_pipe import (
     E0_MC_LOCK_PATH,
     E0_MC_MANIFEST_PATH,
     E0_MD_GATE_PATH,
-    E0_MD_LOCK_PATH,
-    E0_MD_MANIFEST_PATH,
+    E0_ME_GATE_PATH,
+    E0_ME_LOCK_PATH,
+    E0_ME_MANIFEST_PATH,
     MODEL_ARTIFACT_OUTPUT_NAMES,
     P1_FIT_FAILURE_REASON_COUNTS,
     P1_FIT_STATUS_COUNTS,
@@ -70,7 +71,7 @@ from src.experiments.train_closure_pipe import (
     validate_temporal_runtime_contract,
     assert_sequence_input_contract_unchanged,
     builder_records_from_temporal_validation_authority,
-    validate_p1_temporal_consumer_authority,
+    validate_p1_temporal_consumer_verification_authority,
     validate_sequence_manifest_builder_binding,
 )
 from src.experiments.train_pipe_grud import make_model
@@ -165,17 +166,20 @@ def _common_from_sequences(frame: pd.DataFrame) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def _p1_consumer_authority(
+def _p1_consumer_verification_authority(
     *,
     builder_record: Mapping[str, Any],
     lock_record: Mapping[str, Any],
     companion_record: Mapping[str, Any],
 ) -> dict[str, Any]:
     return {
-        "gate": "E0-MD",
+        "gate": "E0-ME",
         "authorization_effective": True,
         "p1_consumer_authorized": True,
         "p1_fit_authorized": True,
+        "in_process_audit_verified": True,
+        "historical_e0_dltvm_verified": True,
+        "historical_dltvm_effective_loader_called": False,
         "authorized_model_id": "P1",
         "authorized_base_seed": 1729,
         "authorized_device": "cpu",
@@ -191,12 +195,63 @@ def _p1_consumer_authority(
         "current_runtime_builder_record": dict(builder_record),
         "e0_mc_context_authorization": {"gate": "E0-MC"},
         "authority_input_records": [
-            {**dict(lock_record), "role": "external_p1_temporal_consumer_patch_lock"},
+            {
+                **dict(lock_record),
+                "role": "external_p1_temporal_consumer_verification_patch_lock",
+            },
             {
                 **dict(companion_record),
-                "role": "p1_temporal_consumer_patch_companion",
+                "role": "p1_temporal_consumer_verification_patch_companion",
             },
         ],
+        "in_process_audit_evidence": {
+            "execution_mode": "in_process_callable",
+            "callable_module": "src.experiments.audit_closure_p1_sequence_bundle",
+            "callable_name": "audit_p1_sequence_bundle",
+            "callable_qualname": "audit_p1_sequence_bundle",
+            "callable_source_path": P1_SEQUENCE_AUDITOR_PATH.as_posix(),
+            "callable_code_filename": P1_SEQUENCE_AUDITOR_PATH.as_posix(),
+            "callable_git_commit": "82c0bc10a8b17ab700a8f0c28491a60572a11d81",
+            "callable_source_git": {
+                "path": P1_SEQUENCE_AUDITOR_PATH.as_posix(),
+                "role": "p1_sequence_bundle_auditor_callable",
+                "bytes": 1,
+                "sha256": "1" * 64,
+            },
+            "callable_source_physical": {
+                "path": P1_SEQUENCE_AUDITOR_PATH.as_posix(),
+                "role": "p1_sequence_bundle_auditor_callable",
+                "bytes": 1,
+                "sha256": "1" * 64,
+            },
+            "audit_version": "closure_p1_seed_1729_sequence_bundle_audit_v1",
+            "status": "validated",
+            "model_id": "P1",
+            "base_seed": 1729,
+            "intent_origins": 9_732,
+            "successful_origins": 9_227,
+            "failed_origins": 505,
+            "fit_successful_origins": 8_925,
+            "fit_unavailable_origins": 488,
+            "calibration_unavailable_origins": 17,
+            "fit_failure_reason_counts": dict(P1_FIT_FAILURE_REASON_COUNTS),
+            "sequence_fit_available": False,
+            "expected_slot_status": "model_unavailable",
+            "expected_fit_status": "not_attempted",
+            "expected_failure_reason": "sequence_fit_rows_unavailable",
+            "result_bytes": 1,
+            "result_sha256": "2" * 64,
+            "auditor_read_only": True,
+            "consumer_executed": False,
+            "fit_executed": False,
+            "dvc_operation_executed": False,
+            "future_outcomes_accessed": False,
+        },
+        "e0_md_context_authorization": {
+            "gate": "E0-MD",
+            "historical_e0_dltvm_verified": True,
+            "historical_dltvm_effective_loader_called": False,
+        },
         "fit_availability": {
             "sequence_fit_available": False,
             "fit_status_counts": dict(P1_FIT_STATUS_COUNTS),
@@ -727,7 +782,7 @@ def test_published_p0_manifest_binds_historical_builder_separately_from_live_run
         )
 
 
-def test_p1_consumer_authority_separates_e0_mc_builder_and_effective_lock_inputs(
+def test_p1_consumer_verification_authority_separates_builder_and_me_inputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -737,24 +792,24 @@ def test_p1_consumer_authority_separates_e0_mc_builder_and_effective_lock_inputs
     monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
     monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
     builder = tmp_path / module.SEQUENCE_BUILDER_PATH
-    lock = tmp_path / E0_MD_LOCK_PATH
-    companion = tmp_path / E0_MD_MANIFEST_PATH
+    lock = tmp_path / E0_ME_LOCK_PATH
+    companion = tmp_path / E0_ME_MANIFEST_PATH
     for path, content in (
         (builder, b"e0-mc-builder"),
-        (lock, b"md-lock"),
-        (companion, b"md-companion"),
+        (lock, b"me-lock"),
+        (companion, b"me-companion"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
     builder_record = _file_record(builder)
-    authority = _p1_consumer_authority(
+    authority = _p1_consumer_verification_authority(
         builder_record=builder_record,
         lock_record=_file_record(lock),
         companion_record=_file_record(companion),
     )
 
     artifact, current, context, authority_inputs = (
-        validate_p1_temporal_consumer_authority(
+        validate_p1_temporal_consumer_verification_authority(
             authority,
             model_id="P1",
             base_seed=1729,
@@ -773,8 +828,41 @@ def test_p1_consumer_authority_separates_e0_mc_builder_and_effective_lock_inputs
         },
     }
     with pytest.raises(ValueError, match="fit-availability contract drifted"):
-        validate_p1_temporal_consumer_authority(
+        validate_p1_temporal_consumer_verification_authority(
             drifted,
+            model_id="P1",
+            base_seed=1729,
+            device="cpu",
+        )
+    audit_drifted = {
+        **authority,
+        "in_process_audit_evidence": {
+            **authority["in_process_audit_evidence"],
+            "fit_unavailable_origins": 487,
+        },
+    }
+    with pytest.raises(ValueError, match="in-process audit evidence drifted"):
+        validate_p1_temporal_consumer_verification_authority(
+            audit_drifted,
+            model_id="P1",
+            base_seed=1729,
+            device="cpu",
+        )
+    missing_md = {**authority, "e0_md_context_authorization": None}
+    with pytest.raises(ValueError, match="E0-MD context authorization"):
+        validate_p1_temporal_consumer_verification_authority(
+            missing_md,
+            model_id="P1",
+            base_seed=1729,
+            device="cpu",
+        )
+    missing_dltvm_context = {
+        **authority,
+        "e0_md_context_authorization": {"gate": "E0-MD"},
+    }
+    with pytest.raises(ValueError, match="E0-MD context authorization"):
+        validate_p1_temporal_consumer_verification_authority(
+            missing_dltvm_context,
             model_id="P1",
             base_seed=1729,
             device="cpu",
@@ -999,7 +1087,7 @@ def test_temporal_model_contract_tracks_dltv_and_dltvm_sources(
     }.issubset(observed_sources)
 
 
-def test_p1_temporal_model_contract_tracks_pointer_mc_auditor_gate_and_md_inputs(
+def test_p1_temporal_model_contract_tracks_md_me_sources_and_me_inputs(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1029,14 +1117,19 @@ def test_p1_temporal_model_contract_tracks_pointer_mc_auditor_gate_and_md_inputs
         Path("src/experiments/closure_runtime_contract.py"),
         Path("src/experiments/train_pipe_grud.py"),
     )
-    p1_sources = (E0_MC_AUTHORITY_PATH, P1_SEQUENCE_AUDITOR_PATH, E0_MD_GATE_PATH)
+    p1_sources = (
+        E0_MC_AUTHORITY_PATH,
+        P1_SEQUENCE_AUDITOR_PATH,
+        E0_MD_GATE_PATH,
+        E0_ME_GATE_PATH,
+    )
     dependency_paths = (
         *sequence_files.values(),
         P1_SEQUENCE_POINTER_PATH,
         E0_MC_LOCK_PATH,
         E0_MC_MANIFEST_PATH,
-        E0_MD_LOCK_PATH,
-        E0_MD_MANIFEST_PATH,
+        E0_ME_LOCK_PATH,
+        E0_ME_MANIFEST_PATH,
         *common_sources,
         *p1_sources,
     )
@@ -1056,8 +1149,8 @@ def test_p1_temporal_model_contract_tracks_pointer_mc_auditor_gate_and_md_inputs
         base_seed=1729,
         sequence_contract=sequence_contract,
         authority_input_records=(
-            _file_record(tmp_path / E0_MD_LOCK_PATH),
-            _file_record(tmp_path / E0_MD_MANIFEST_PATH),
+            _file_record(tmp_path / E0_ME_LOCK_PATH),
+            _file_record(tmp_path / E0_ME_MANIFEST_PATH),
         ),
     )
 
@@ -1561,15 +1654,15 @@ def test_run_p1_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     sequence_manifest = tmp_path / "inputs/manifest.json"
     common = tmp_path / module.DEFAULT_COMMON_ORIGINS
     builder = tmp_path / module.SEQUENCE_BUILDER_PATH
-    md_lock = tmp_path / E0_MD_LOCK_PATH
-    md_companion = tmp_path / E0_MD_MANIFEST_PATH
+    me_lock = tmp_path / E0_ME_LOCK_PATH
+    me_companion = tmp_path / E0_ME_MANIFEST_PATH
     for path, payload in (
         (sequence, b"sequence"),
         (summary, b"summary"),
         (common, b"common"),
         (builder, b"current-runtime-builder"),
-        (md_lock, b"md-lock"),
-        (md_companion, b"md-companion"),
+        (me_lock, b"me-lock"),
+        (me_companion, b"me-companion"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(payload)
@@ -1700,10 +1793,10 @@ def test_run_p1_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     monkeypatch.setattr(module, "load_window_bundle", forbidden_fit)
     monkeypatch.setattr(module, "fit_available_slot", forbidden_fit)
     paths = _temporal_test_paths(tmp_path)
-    authority = _p1_consumer_authority(
+    authority = _p1_consumer_verification_authority(
         builder_record=current_builder_record,
-        lock_record=_file_record(md_lock),
-        companion_record=_file_record(md_companion),
+        lock_record=_file_record(me_lock),
+        companion_record=_file_record(me_companion),
     )
     _run_temporal_slot(
         args=Namespace(model_id="P1", base_seed=1729, device="cpu"),
@@ -1748,7 +1841,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_temporal_consumer_patch"
+        "src.experiments.closure_p1_temporal_consumer_verification_patch"
     )
 
     def stop_gate(
@@ -1763,7 +1856,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
 
     setattr(
         fake_lock,
-        "require_p1_temporal_consumer_authorized",
+        "require_p1_temporal_consumer_verification_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
@@ -1787,7 +1880,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     events: list[str] = []
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_temporal_consumer_patch"
+        "src.experiments.closure_p1_temporal_consumer_verification_patch"
     )
     authority: dict[str, object] = {
         "p1_artifact_builder_record": {
@@ -1810,7 +1903,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     setattr(
         fake_lock,
-        "require_p1_temporal_consumer_authorized",
+        "require_p1_temporal_consumer_verification_authorized",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
