@@ -33,7 +33,17 @@ from src.experiments.closure_contract import load_yaml_mapping
 from src.experiments.train_closure_pipe import (
     EarlyStoppingState,
     FitAvailability,
+    E0_MC_AUTHORITY_PATH,
+    E0_MC_LOCK_PATH,
+    E0_MC_MANIFEST_PATH,
+    E0_MD_GATE_PATH,
+    E0_MD_LOCK_PATH,
+    E0_MD_MANIFEST_PATH,
     MODEL_ARTIFACT_OUTPUT_NAMES,
+    P1_FIT_FAILURE_REASON_COUNTS,
+    P1_FIT_STATUS_COUNTS,
+    P1_SEQUENCE_AUDITOR_PATH,
+    P1_SEQUENCE_POINTER_PATH,
     SequenceInputContract,
     TemporalModelInputContract,
     WindowBundle,
@@ -60,6 +70,7 @@ from src.experiments.train_closure_pipe import (
     validate_temporal_runtime_contract,
     assert_sequence_input_contract_unchanged,
     builder_records_from_temporal_validation_authority,
+    validate_p1_temporal_consumer_authority,
     validate_sequence_manifest_builder_binding,
 )
 from src.experiments.train_pipe_grud import make_model
@@ -152,6 +163,51 @@ def _common_from_sequences(frame: pd.DataFrame) -> pd.DataFrame:
                 }
             )
     return pd.DataFrame(rows)
+
+
+def _p1_consumer_authority(
+    *,
+    builder_record: Mapping[str, Any],
+    lock_record: Mapping[str, Any],
+    companion_record: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "gate": "E0-MD",
+        "authorization_effective": True,
+        "p1_consumer_authorized": True,
+        "p1_fit_authorized": True,
+        "authorized_model_id": "P1",
+        "authorized_base_seed": 1729,
+        "authorized_device": "cpu",
+        "sequence_fit_available": False,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "e0_m_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "future_outcomes_accessed": False,
+        "p1_artifact_builder_record": dict(builder_record),
+        "current_runtime_builder_record": dict(builder_record),
+        "e0_mc_context_authorization": {"gate": "E0-MC"},
+        "authority_input_records": [
+            {**dict(lock_record), "role": "external_p1_temporal_consumer_patch_lock"},
+            {
+                **dict(companion_record),
+                "role": "p1_temporal_consumer_patch_companion",
+            },
+        ],
+        "fit_availability": {
+            "sequence_fit_available": False,
+            "fit_status_counts": dict(P1_FIT_STATUS_COUNTS),
+            "fit_failure_reason_counts": dict(P1_FIT_FAILURE_REASON_COUNTS),
+            "calibration_failure_count": 17,
+            "expected_slot_status": "model_unavailable",
+            "expected_fit_status": "not_attempted",
+            "expected_failure_reason": "sequence_fit_rows_unavailable",
+            "replacement_used": False,
+        },
+    }
 
 
 def test_window_loader_uses_canonical_utf8_order_and_does_not_fit_calibration() -> None:
@@ -671,6 +727,60 @@ def test_published_p0_manifest_binds_historical_builder_separately_from_live_run
         )
 
 
+def test_p1_consumer_authority_separates_e0_mc_builder_and_effective_lock_inputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    builder = tmp_path / module.SEQUENCE_BUILDER_PATH
+    lock = tmp_path / E0_MD_LOCK_PATH
+    companion = tmp_path / E0_MD_MANIFEST_PATH
+    for path, content in (
+        (builder, b"e0-mc-builder"),
+        (lock, b"md-lock"),
+        (companion, b"md-companion"),
+    ):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(content)
+    builder_record = _file_record(builder)
+    authority = _p1_consumer_authority(
+        builder_record=builder_record,
+        lock_record=_file_record(lock),
+        companion_record=_file_record(companion),
+    )
+
+    artifact, current, context, authority_inputs = (
+        validate_p1_temporal_consumer_authority(
+            authority,
+            model_id="P1",
+            base_seed=1729,
+            device="cpu",
+        )
+    )
+
+    assert artifact == current == builder_record
+    assert context == {"gate": "E0-MC"}
+    assert authority_inputs == (_file_record(lock), _file_record(companion))
+    drifted = {
+        **authority,
+        "fit_availability": {
+            **authority["fit_availability"],
+            "sequence_fit_available": True,
+        },
+    }
+    with pytest.raises(ValueError, match="fit-availability contract drifted"):
+        validate_p1_temporal_consumer_authority(
+            drifted,
+            model_id="P1",
+            base_seed=1729,
+            device="cpu",
+        )
+
+
 def test_sequence_identity_must_match_every_common_origin_h1_row() -> None:
     sequences = _sequence_frame()
     common = _common_from_sequences(sequences)
@@ -764,7 +874,7 @@ def test_sequence_input_contract_snapshots_exact_state_and_gate_sources(
         assert_sequence_input_contract_unchanged(contract)
 
 
-def test_sequence_input_contract_keeps_prefit_unavailable_state_absent(
+def test_sequence_input_contract_accepts_published_p1_thirteen_input_dialect(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -783,14 +893,19 @@ def test_sequence_input_contract_keeps_prefit_unavailable_state_absent(
         training_module.DEFAULT_HOLDOUT_MANIFEST,
         training_module.DEFAULT_PROTOCOL_LOCK,
         Path("src/experiments/build_closure_pipe_sequences.py"),
+        E0_MC_LOCK_PATH,
+        E0_MC_MANIFEST_PATH,
     )
     for relative in fixed_paths:
         physical = tmp_path / relative
         physical.parent.mkdir(parents=True, exist_ok=True)
         physical.write_bytes(relative.as_posix().encode("utf-8"))
     state_manifest_path = tmp_path / "reports/state_manifest.json"
+    state_path = tmp_path / "data/state.parquet"
     state_manifest_path.parent.mkdir(parents=True, exist_ok=True)
+    state_path.parent.mkdir(parents=True, exist_ok=True)
     state_manifest_path.write_text("{}\n", encoding="utf-8")
+    state_path.write_bytes(b"state")
     monkeypatch.setattr(
         training_module,
         "sequence_paths",
@@ -799,11 +914,13 @@ def test_sequence_input_contract_keeps_prefit_unavailable_state_absent(
             "state_manifest": Path("reports/state_manifest.json"),
         },
     )
-    monkeypatch.setattr(
-        training_module,
-        "validate_state_slot_manifest",
-        lambda *args, **kwargs: (False, "anfis_model_slot_unavailable", False),
-    )
+    observed_authorities: list[object] = []
+
+    def validate_state(*args: object, **kwargs: object) -> tuple[bool, str, bool]:
+        observed_authorities.append(kwargs.get("consumer_authority"))
+        return True, "", False
+
+    monkeypatch.setattr(training_module, "validate_state_slot_manifest", validate_state)
 
     current_builder = _file_record(
         tmp_path / "src/experiments/build_closure_pipe_sequences.py"
@@ -813,16 +930,20 @@ def test_sequence_input_contract_keeps_prefit_unavailable_state_absent(
         base_seed=1729,
         artifact_builder_record=current_builder,
         current_runtime_builder_record=current_builder,
+        state_consumer_authority={"gate": "E0-MC"},
     )
-    assert contract.state_artifact_required is False
-    assert "data/state.parquet" not in {
-        str(record["path"]) for record in contract.live_physical_records
-    }
+    assert contract.state_artifact_required is True
+    assert len(contract.manifest_input_records) == 13
+    assert [str(record["path"]) for record in contract.manifest_input_records][-4:] == [
+        "reports/state_manifest.json",
+        E0_MC_LOCK_PATH.as_posix(),
+        E0_MC_MANIFEST_PATH.as_posix(),
+        "data/state.parquet",
+    ]
     assert contract.manifest_input_records == contract.live_physical_records
-    state_path = tmp_path / "data/state.parquet"
-    state_path.parent.mkdir(parents=True, exist_ok=True)
-    state_path.write_bytes(b"appeared")
-    with pytest.raises(ValueError, match="state appeared"):
+    assert observed_authorities == [{"gate": "E0-MC"}]
+    state_path.write_bytes(b"changed")
+    with pytest.raises(ValueError, match="upstream input changed"):
         assert_sequence_input_contract_unchanged(contract)
 
 
@@ -876,6 +997,77 @@ def test_temporal_model_contract_tracks_dltv_and_dltvm_sources(
         "src/experiments/closure_development_runtime_temporal_validation_patch.py",
         "src/experiments/closure_development_runtime_temporal_validation_manifest_patch.py",
     }.issubset(observed_sources)
+
+
+def test_p1_temporal_model_contract_tracks_pointer_mc_auditor_gate_and_md_inputs(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as training_module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(training_module, "PROJECT_ROOT", tmp_path)
+    sequence_files = {
+        "sequence": Path("data/sequence.parquet"),
+        "summary": Path("reports/sequence_summary.csv"),
+        "manifest": Path("reports/sequence_manifest.json"),
+    }
+    monkeypatch.setattr(training_module, "sequence_paths", lambda *_: sequence_files)
+    common_sources = (
+        Path("src/experiments/train_closure_pipe.py"),
+        Path("src/experiments/build_closure_pipe_sequences.py"),
+        Path("src/experiments/closure_contract.py"),
+        Path("src/experiments/closure_development_guard.py"),
+        Path("src/experiments/closure_development_runtime_lock.py"),
+        Path("src/experiments/closure_development_runtime_temporal_consumer_patch.py"),
+        Path("src/experiments/closure_development_runtime_temporal_validation_patch.py"),
+        Path(
+            "src/experiments/"
+            "closure_development_runtime_temporal_validation_manifest_patch.py"
+        ),
+        Path("src/experiments/closure_runtime_contract.py"),
+        Path("src/experiments/train_pipe_grud.py"),
+    )
+    p1_sources = (E0_MC_AUTHORITY_PATH, P1_SEQUENCE_AUDITOR_PATH, E0_MD_GATE_PATH)
+    dependency_paths = (
+        *sequence_files.values(),
+        P1_SEQUENCE_POINTER_PATH,
+        E0_MC_LOCK_PATH,
+        E0_MC_MANIFEST_PATH,
+        E0_MD_LOCK_PATH,
+        E0_MD_MANIFEST_PATH,
+        *common_sources,
+        *p1_sources,
+    )
+    for relative in dependency_paths:
+        physical = tmp_path / relative
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(relative.as_posix().encode("utf-8"))
+
+    sequence_contract = SequenceInputContract(
+        manifest_input_records=(),
+        live_physical_records=(),
+        state_path=tmp_path / "data/absent_state.parquet",
+        state_artifact_required=False,
+    )
+    contract = training_module.collect_temporal_model_input_contract(
+        model_id="P1",
+        base_seed=1729,
+        sequence_contract=sequence_contract,
+        authority_input_records=(
+            _file_record(tmp_path / E0_MD_LOCK_PATH),
+            _file_record(tmp_path / E0_MD_MANIFEST_PATH),
+        ),
+    )
+
+    observed = {str(record["path"]) for record in contract.records}
+    observed_sources = {str(record["path"]) for record in contract.source_code_records}
+    assert {path.as_posix() for path in dependency_paths}.issubset(observed)
+    assert observed_sources == {
+        *(path.as_posix() for path in common_sources),
+        *(path.as_posix() for path in p1_sources),
+    }
 
 
 def test_unavailable_slot_rejects_stale_fit_outputs(tmp_path: Path) -> None:
@@ -1355,7 +1547,7 @@ def test_temporal_slot_guard_rejects_symlinked_tmp_ancestor(
     assert list(redirected.iterdir()) == []
 
 
-def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
+def test_run_p1_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,
 ) -> None:
@@ -1369,11 +1561,15 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     sequence_manifest = tmp_path / "inputs/manifest.json"
     common = tmp_path / module.DEFAULT_COMMON_ORIGINS
     builder = tmp_path / module.SEQUENCE_BUILDER_PATH
+    md_lock = tmp_path / E0_MD_LOCK_PATH
+    md_companion = tmp_path / E0_MD_MANIFEST_PATH
     for path, payload in (
         (sequence, b"sequence"),
         (summary, b"summary"),
         (common, b"common"),
         (builder, b"current-runtime-builder"),
+        (md_lock, b"md-lock"),
+        (md_companion, b"md-companion"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(payload)
@@ -1381,7 +1577,7 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     summary_record = _file_record(summary)
     common_record = _file_record(common)
     current_builder_record = _file_record(builder)
-    manifest_inputs = (dict(P0_ARTIFACT_BUILDER_RECORD), common_record)
+    manifest_inputs = (current_builder_record, common_record)
     sequence_manifest.write_text(
         json.dumps(
             {
@@ -1390,15 +1586,15 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
                 "generated_at_utc": "2026-08-04T17:44:49+00:00",
                 "experiment_id": "closure_v1",
                 "surface_id": SURFACE_ID,
-                "model_id": "P0",
-                "base_seed": None,
+                "model_id": "P1",
+                "base_seed": 1729,
                 "future_outcomes_accessed": False,
                 "evaluation_authorized": False,
                 "e0_u_authorized": False,
-                "script": dict(P0_ARTIFACT_BUILDER_RECORD),
+                "script": current_builder_record,
                 "cpu_execution_policy": expected_cpu_execution_policy_record(),
-                "input_state_mapping": MODEL_STATE_MAPPINGS["P0"],
-                "target_state_mapping": MODEL_STATE_MAPPINGS["P0"],
+                "input_state_mapping": MODEL_STATE_MAPPINGS["P1"],
+                "target_state_mapping": MODEL_STATE_MAPPINGS["P1"],
                 "target_to_next_input_mapping": TARGET_TO_NEXT_INPUT_MAPPING,
                 "input_columns": list(INPUT_COLUMNS),
                 "target_columns": list(TARGET_COLUMNS),
@@ -1423,7 +1619,7 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
                     },
                 },
                 "inputs": [dict(record) for record in manifest_inputs],
-                "source_code": [dict(P0_ARTIFACT_BUILDER_RECORD)],
+                "source_code": [current_builder_record],
                 "outputs": [sequence_record, summary_record],
                 "completion_marker_written_last": True,
             },
@@ -1499,18 +1695,20 @@ def test_run_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     )
     monkeypatch.setattr(module, "inspect_fit_availability", lambda *args, **kwargs: availability)
     def forbidden_fit(*args: Any, **kwargs: Any) -> None:
-        raise AssertionError("unavailable P0 must not tensorize or fit")
+        raise AssertionError("unavailable P1 must not tensorize or fit")
 
     monkeypatch.setattr(module, "load_window_bundle", forbidden_fit)
     monkeypatch.setattr(module, "fit_available_slot", forbidden_fit)
     paths = _temporal_test_paths(tmp_path)
+    authority = _p1_consumer_authority(
+        builder_record=current_builder_record,
+        lock_record=_file_record(md_lock),
+        companion_record=_file_record(md_companion),
+    )
     _run_temporal_slot(
-        args=Namespace(model_id="P0", base_seed=1729, device="cpu"),
+        args=Namespace(model_id="P1", base_seed=1729, device="cpu"),
         paths=paths,
-        temporal_validation_authority={
-            "p0_artifact_builder_record": P0_ARTIFACT_BUILDER_RECORD,
-            "current_runtime_builder_record": current_builder_record,
-        },
+        p1_temporal_consumer_authority=authority,
     )
 
     payload = json.loads(paths["manifest"].read_text(encoding="utf-8"))
@@ -1550,23 +1748,29 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
+        "src.experiments.closure_p1_temporal_consumer_patch"
     )
 
-    def stop_gate(*, device: str | None = None, **_: object) -> dict[str, object]:
+    def stop_gate(
+        *,
+        model_id: str,
+        base_seed: int,
+        device: str,
+    ) -> dict[str, object]:
+        assert (model_id, base_seed) == ("P1", 1729)
         assert device == "cpu"
         raise GateStopped
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
+        "require_p1_temporal_consumer_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P0", base_seed=1729, device="cpu"),
+        lambda: Namespace(model_id="P1", base_seed=1729, device="cpu"),
     )
     reads: list[object] = []
     monkeypatch.setattr(pd, "read_parquet", lambda *args, **kwargs: reads.append((args, kwargs)))
@@ -1583,10 +1787,14 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     events: list[str] = []
     fake_lock = types.ModuleType(
-        "src.experiments.closure_development_runtime_temporal_validation_manifest_patch"
+        "src.experiments.closure_p1_temporal_consumer_patch"
     )
     authority: dict[str, object] = {
-        "p0_artifact_builder_record": P0_ARTIFACT_BUILDER_RECORD,
+        "p1_artifact_builder_record": {
+            "path": "src/experiments/build_closure_pipe_sequences.py",
+            "bytes": 1,
+            "sha256": "1" * 64,
+        },
         "current_runtime_builder_record": {
             "path": "src/experiments/build_closure_pipe_sequences.py",
             "bytes": 1,
@@ -1594,25 +1802,26 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
         },
     }
 
-    def gate(*, device: str | None = None) -> dict[str, object]:
+    def gate(*, model_id: str, base_seed: int, device: str) -> dict[str, object]:
+        assert (model_id, base_seed) == ("P1", 1729)
         assert device == "cpu"
         events.append("gate")
         return authority
 
     setattr(
         fake_lock,
-        "require_development_fit_authorized_with_temporal_validation_manifest_patch",
+        "require_p1_temporal_consumer_authorized",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P0", base_seed=1729, device="cpu"),
+        lambda: Namespace(model_id="P1", base_seed=1729, device="cpu"),
     )
 
     def validate_seed(model_id: str, base_seed: int) -> None:
-        assert (model_id, base_seed) == ("P0", 1729)
+        assert (model_id, base_seed) == ("P1", 1729)
         events.append("seed")
 
     monkeypatch.setattr(module, "validate_temporal_seed", validate_seed)
@@ -1622,7 +1831,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
     }
 
     def paths(model_id: str, base_seed: int) -> dict[str, Path]:
-        assert (model_id, base_seed) == ("P0", 1729)
+        assert (model_id, base_seed) == ("P1", 1729)
         events.append("paths")
         return relative_paths
 
@@ -1630,7 +1839,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     @contextmanager
     def guard(model_id: str, base_seed: int) -> Any:
-        assert (model_id, base_seed) == ("P0", 1729)
+        assert (model_id, base_seed) == ("P1", 1729)
         events.append("guard-enter")
         try:
             yield
@@ -1643,11 +1852,11 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
         *,
         args: Namespace,
         paths: Mapping[str, Path],
-        temporal_validation_authority: Mapping[str, Any],
+        p1_temporal_consumer_authority: Mapping[str, Any],
     ) -> None:
-        assert args.model_id == "P0"
+        assert args.model_id == "P1"
         assert set(paths) == set(relative_paths)
-        assert temporal_validation_authority is authority
+        assert p1_temporal_consumer_authority is authority
         events.append("run")
 
     monkeypatch.setattr(module, "_run_temporal_slot", run)

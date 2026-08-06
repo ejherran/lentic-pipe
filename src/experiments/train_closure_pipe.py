@@ -2,7 +2,7 @@
 """Fit the fixed Closure V1 residual probabilistic GRU profile.
 
 This module exposes synthetic-testable functional kernels, while its CLI is
-unconditionally guarded by the published additive E0-DLTVM development
+unconditionally guarded by the published additive E0-MD P1-consumer
 authorization.  It never reads calibration outcomes, locked evaluation rows,
 or holdout rows.
 """
@@ -115,6 +115,35 @@ P0_ARTIFACT_BUILDER_RECORD = {
     "bytes": 110_034,
     "sha256": "dc500d94c8ca4b3705d2cb849a037524e33915624cd86f9d355e5c4eebb347f6",
 }
+P1_SEQUENCE_POINTER_PATH = Path(
+    "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc"
+)
+E0_MC_LOCK_PATH = Path(
+    "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json"
+)
+E0_MC_MANIFEST_PATH = Path(
+    "reports/closure_v1/00_protocol/"
+    "p1_sequence_historical_anfis_patch_lock_manifest.json"
+)
+E0_MD_LOCK_PATH = Path(
+    "reports/closure_v1/00_protocol/p1_temporal_consumer_patch_lock.json"
+)
+E0_MD_MANIFEST_PATH = Path(
+    "reports/closure_v1/00_protocol/p1_temporal_consumer_patch_lock_manifest.json"
+)
+P1_SEQUENCE_AUDITOR_PATH = Path(
+    "src/experiments/audit_closure_p1_sequence_bundle.py"
+)
+E0_MC_AUTHORITY_PATH = Path(
+    "src/experiments/closure_p1_sequence_historical_anfis_patch.py"
+)
+E0_MD_GATE_PATH = Path("src/experiments/closure_p1_temporal_consumer_patch.py")
+P1_FIT_STATUS_COUNTS = {
+    "success": 8_925,
+    "autoregressive_target_unavailable": 488,
+}
+P1_FIT_FAILURE_REASON_COUNTS = {"missing_target_state": 488}
+P1_CALIBRATION_FAILURE_COUNT = 17
 
 
 class ClosurePipeTrainingError(ValueError):
@@ -911,12 +940,137 @@ def builder_records_from_temporal_validation_authority(
     return p0_artifact, current_runtime
 
 
+def builder_records_from_p1_temporal_consumer_authority(
+    authority: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Resolve the sealed P1 artifact builder separately from live source bytes."""
+    artifact = _authority_file_record(
+        authority.get("p1_artifact_builder_record"),
+        field="p1_artifact_builder_record",
+    )
+    current_runtime = _authority_file_record(
+        authority.get("current_runtime_builder_record"),
+        field="current_runtime_builder_record",
+    )
+    observed_runtime = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
+    if current_runtime != observed_runtime:
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-MD authority")
+    if artifact != current_runtime:
+        raise ClosurePipeTrainingError(
+            "P1 artifact builder differs from the E0-MC/current runtime builder"
+        )
+    return artifact, current_runtime
+
+
+def _p1_authority_input_records(
+    authority: Mapping[str, Any],
+) -> tuple[dict[str, Any], ...]:
+    raw_records = authority.get("authority_input_records")
+    if (
+        not isinstance(raw_records, Sequence)
+        or isinstance(raw_records, (str, bytes))
+        or len(raw_records) != 2
+    ):
+        raise ClosurePipeTrainingError("E0-MD authority input records drifted")
+    expected = (
+        (
+            E0_MD_LOCK_PATH.as_posix(),
+            "external_p1_temporal_consumer_patch_lock",
+        ),
+        (
+            E0_MD_MANIFEST_PATH.as_posix(),
+            "p1_temporal_consumer_patch_companion",
+        ),
+    )
+    observed: list[dict[str, Any]] = []
+    for raw, (expected_path, expected_role) in zip(raw_records, expected, strict=True):
+        if not isinstance(raw, Mapping) or set(raw) != {
+            "path",
+            "role",
+            "bytes",
+            "sha256",
+        }:
+            raise ClosurePipeTrainingError("E0-MD authority input record dialect drifted")
+        record = cast(Mapping[str, Any], raw)
+        if record.get("path") != expected_path or record.get("role") != expected_role:
+            raise ClosurePipeTrainingError("E0-MD authority input path/role drifted")
+        physical = _file_record(PROJECT_ROOT / expected_path)
+        if any(
+            record.get(key) != physical[key]
+            for key in ("path", "bytes", "sha256")
+        ):
+            raise ClosurePipeTrainingError(
+                f"E0-MD authority input differs from physical bytes: {expected_path}"
+            )
+        observed.append(physical)
+    return tuple(observed)
+
+
+def validate_p1_temporal_consumer_authority(
+    authority: Mapping[str, Any],
+    *,
+    model_id: str,
+    base_seed: int,
+    device: str,
+) -> tuple[
+    dict[str, Any],
+    dict[str, Any],
+    Mapping[str, Any],
+    tuple[dict[str, Any], ...],
+]:
+    """Validate the effective E0-MD summary before any P1 dependency I/O."""
+    expected = {
+        "gate": "E0-MD",
+        "authorization_effective": True,
+        "p1_consumer_authorized": True,
+        "p1_fit_authorized": True,
+        "authorized_model_id": "P1",
+        "authorized_base_seed": 1729,
+        "authorized_device": "cpu",
+        "sequence_fit_available": False,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "e0_m_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "future_outcomes_accessed": False,
+    }
+    drifted = [field for field, value in expected.items() if authority.get(field) != value]
+    if drifted:
+        raise ClosurePipeTrainingError(f"E0-MD authorization predicates drifted: {drifted}")
+    if (model_id, base_seed, device) != ("P1", 1729, "cpu"):
+        raise ClosurePipeTrainingError("E0-MD authorizes only P1 seed 1729 on cpu")
+    fit_availability = authority.get("fit_availability")
+    expected_fit_availability = {
+        "sequence_fit_available": False,
+        "fit_status_counts": P1_FIT_STATUS_COUNTS,
+        "fit_failure_reason_counts": P1_FIT_FAILURE_REASON_COUNTS,
+        "calibration_failure_count": P1_CALIBRATION_FAILURE_COUNT,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "replacement_used": False,
+    }
+    if fit_availability != expected_fit_availability:
+        raise ClosurePipeTrainingError("E0-MD fit-availability contract drifted")
+    e0_mc_context = authority.get("e0_mc_context_authorization")
+    if not isinstance(e0_mc_context, Mapping):
+        raise ClosurePipeTrainingError("E0-MD lacks its E0-MC context authorization")
+    artifact, current_runtime = builder_records_from_p1_temporal_consumer_authority(
+        authority
+    )
+    authority_inputs = _p1_authority_input_records(authority)
+    return artifact, current_runtime, e0_mc_context, authority_inputs
+
+
 def collect_sequence_input_contract(
     *,
     model_id: str,
     base_seed: int,
     artifact_builder_record: Mapping[str, Any],
     current_runtime_builder_record: Mapping[str, Any],
+    state_consumer_authority: Mapping[str, Any] | None = None,
 ) -> SequenceInputContract:
     """Snapshot immutable manifest provenance and live runtime inputs separately."""
     validate_temporal_seed(model_id, base_seed)
@@ -951,6 +1105,7 @@ def collect_sequence_input_contract(
         model_id=model_id,
         base_seed=sequence_seed,
         state_path=state_path,
+        consumer_authority=state_consumer_authority,
     )
     state_required = state_available or diagnostic_state_declared
     if _file_record(state_manifest_path) != state_manifest_before:
@@ -974,6 +1129,11 @@ def collect_sequence_input_contract(
         PROJECT_ROOT / SEQUENCE_BUILDER_PATH,
     )
     live_records = [*(_file_record(path) for path in fixed_paths), state_manifest_before]
+    if model_id == "P1":
+        live_records.extend(
+            _file_record(PROJECT_ROOT / path)
+            for path in (E0_MC_LOCK_PATH, E0_MC_MANIFEST_PATH)
+        )
     if state_required:
         assert state_before is not None
         live_records.append(state_before)
@@ -1015,10 +1175,11 @@ def collect_temporal_model_input_contract(
     model_id: str,
     base_seed: int,
     sequence_contract: SequenceInputContract,
+    authority_input_records: Sequence[Mapping[str, Any]] = (),
 ) -> TemporalModelInputContract:
     sequence_seed: int | None = None if model_id == "P0" else base_seed
     sequence_info = sequence_paths(model_id, sequence_seed)
-    source_paths = (
+    common_source_paths = (
         PROJECT_ROOT / "src/experiments/train_closure_pipe.py",
         PROJECT_ROOT / "src/experiments/build_closure_pipe_sequences.py",
         PROJECT_ROOT / "src/experiments/closure_contract.py",
@@ -1033,10 +1194,25 @@ def collect_temporal_model_input_contract(
         PROJECT_ROOT / "src/experiments/closure_runtime_contract.py",
         PROJECT_ROOT / "src/experiments/train_pipe_grud.py",
     )
+    p1_source_paths = (
+        PROJECT_ROOT / E0_MC_AUTHORITY_PATH,
+        PROJECT_ROOT / P1_SEQUENCE_AUDITOR_PATH,
+        PROJECT_ROOT / E0_MD_GATE_PATH,
+    )
+    source_paths = (
+        *common_source_paths,
+        *(p1_source_paths if model_id == "P1" else ()),
+    )
+    p1_dependency_paths = (
+        PROJECT_ROOT / P1_SEQUENCE_POINTER_PATH,
+        PROJECT_ROOT / E0_MC_LOCK_PATH,
+        PROJECT_ROOT / E0_MC_MANIFEST_PATH,
+    )
     dependency_paths = (
         PROJECT_ROOT / sequence_info["sequence"],
         PROJECT_ROOT / sequence_info["summary"],
         PROJECT_ROOT / sequence_info["manifest"],
+        *(p1_dependency_paths if model_id == "P1" else ()),
         *source_paths,
     )
     records = {
@@ -1045,6 +1221,25 @@ def collect_temporal_model_input_contract(
     }
     for path in dependency_paths:
         record = _file_record(path)
+        existing = records.get(str(record["path"]))
+        if existing is not None and existing != record:
+            raise ClosurePipeTrainingError(
+                f"Temporal model input record conflicts at {record['path']}"
+            )
+        records[str(record["path"])] = record
+    for raw_record in authority_input_records:
+        if not isinstance(raw_record, Mapping) or set(raw_record) != {
+            "path",
+            "bytes",
+            "sha256",
+        }:
+            raise ClosurePipeTrainingError("Temporal authority input record dialect drifted")
+        path = PROJECT_ROOT / str(raw_record["path"])
+        record = _file_record(path)
+        if dict(raw_record) != record:
+            raise ClosurePipeTrainingError(
+                f"Temporal authority input differs from physical bytes: {record['path']}"
+            )
         existing = records.get(str(record["path"]))
         if existing is not None and existing != record:
             raise ClosurePipeTrainingError(
@@ -1890,16 +2085,28 @@ def _run_temporal_slot(
     *,
     args: argparse.Namespace,
     paths: Mapping[str, Path],
-    temporal_validation_authority: Mapping[str, Any],
+    p1_temporal_consumer_authority: Mapping[str, Any],
 ) -> None:
-    p0_artifact_builder, current_runtime_builder = (
-        builder_records_from_temporal_validation_authority(
-            temporal_validation_authority,
+    state_consumer_authority: Mapping[str, Any] | None = None
+    authority_input_records: tuple[dict[str, Any], ...] = ()
+    if args.model_id == "P1":
+        (
+            artifact_builder,
+            current_runtime_builder,
+            state_consumer_authority,
+            authority_input_records,
+        ) = validate_p1_temporal_consumer_authority(
+            p1_temporal_consumer_authority,
+            model_id=args.model_id,
+            base_seed=args.base_seed,
+            device=args.device,
         )
-    )
-    artifact_builder = (
-        p0_artifact_builder if args.model_id == "P0" else current_runtime_builder
-    )
+    else:
+        artifact_builder, current_runtime_builder = (
+            builder_records_from_temporal_validation_authority(
+                p1_temporal_consumer_authority,
+            )
+        )
     runtime = load_yaml_mapping(DEFAULT_RUNTIME_CONFIG)
     validate_temporal_runtime_contract(runtime)
     cpu_execution_policy = configure_torch_cpu_execution_policy(runtime)
@@ -1916,11 +2123,13 @@ def _run_temporal_slot(
         base_seed=args.base_seed,
         artifact_builder_record=artifact_builder,
         current_runtime_builder_record=current_runtime_builder,
+        state_consumer_authority=state_consumer_authority,
     )
     model_input_contract = collect_temporal_model_input_contract(
         model_id=args.model_id,
         base_seed=args.base_seed,
         sequence_contract=sequence_input_contract,
+        authority_input_records=authority_input_records,
     )
     before = {str(record["path"]): dict(record) for record in model_input_contract.records}
     sequence_before = before[_file_record(sequence_path)["path"]]
@@ -1948,6 +2157,17 @@ def _run_temporal_slot(
         model_id=args.model_id,
         base_seed=args.base_seed,
     )
+    if args.model_id == "P1":
+        if availability.available:
+            raise ClosurePipeTrainingError(
+                "E0-MD forbids fitting because the sealed P1 fit rows are unavailable"
+            )
+        if (
+            availability.failure_reason != "sequence_fit_rows_unavailable"
+            or availability.fit_status_counts != P1_FIT_STATUS_COUNTS
+            or availability.failure_reason_counts != P1_FIT_FAILURE_REASON_COUNTS
+        ):
+            raise ClosurePipeTrainingError("P1 unavailable-fit evidence differs from E0-MD")
     if not availability.available:
         assert_temporal_model_input_contract_unchanged(model_input_contract)
         after = {
@@ -2140,14 +2360,14 @@ def main() -> None:
     args = parse_args()
 
     # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_development_runtime_temporal_validation_manifest_patch import (
-        require_development_fit_authorized_with_temporal_validation_manifest_patch,
+    from src.experiments.closure_p1_temporal_consumer_patch import (
+        require_p1_temporal_consumer_authorized,
     )
 
-    temporal_validation_authority = (
-        require_development_fit_authorized_with_temporal_validation_manifest_patch(
-            device=args.device,
-        )
+    p1_temporal_consumer_authority = require_p1_temporal_consumer_authorized(
+        model_id=args.model_id,
+        base_seed=args.base_seed,
+        device=args.device,
     )
     validate_temporal_seed(args.model_id, args.base_seed)
     paths = {
@@ -2158,7 +2378,7 @@ def main() -> None:
         _run_temporal_slot(
             args=args,
             paths=paths,
-            temporal_validation_authority=temporal_validation_authority,
+            p1_temporal_consumer_authority=p1_temporal_consumer_authority,
         )
 
 

@@ -1,0 +1,467 @@
+#!/usr/bin/env python
+"""Create and verify the additive Closure V1 E0-MD lock bundle."""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import sys
+from collections.abc import Mapping, Sequence
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Any
+
+if __package__ in {None, ""}:
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+
+from src.experiments import (  # noqa: E402
+    lock_closure_development_runtime_temporal_consumer_patch as hardened,
+)
+from src.experiments.closure_p1_temporal_consumer_patch import (  # noqa: E402
+    DEFAULT_PATCH_LOCK_PATH,
+    DEFAULT_PATCH_LOCK_SCHEMA,
+    DEFAULT_PATCH_MANIFEST_PATH,
+    DIFF_CHECK_COMMAND,
+    DVC_PUSH_COMMAND,
+    FOCUSED_TEST_COMMAND,
+    FOCUSED_TEST_COUNT,
+    P1_AUDIT_COMMAND,
+    POETRY_CHECK_COMMAND,
+    PUBLICATION_GUARD_COMMAND,
+    TYPE_CHECK_COMMAND,
+    P1TemporalConsumerPatchError,
+    _canonical_json,
+    _expected_companion,
+    _file_record,
+    _load_regular_json,
+    build_p1_temporal_consumer_patch_lock_payload,
+    collect_p1_temporal_consumer_patch_prelock_state,
+    load_and_validate_p1_temporal_consumer_patch_lock,
+    p1_consumer_namespace_absence,
+    require_p1_temporal_consumer_authorized,
+    validate_p1_temporal_consumer_patch_lock_payload,
+)
+
+
+PROJECT_ROOT = Path(__file__).resolve().parents[2]
+OUTPUT_GUARD_DIRECTORY = PROJECT_ROOT / "tmp" / "closure_v1_e0_md_locker"
+OUTPUT_GUARD_NAMES = (
+    "p1_temporal_consumer_patch_lock.guard",
+    "p1_temporal_consumer_patch_lock_manifest.guard",
+)
+FORBIDDEN_PYTEST_SUMMARY_RE = re.compile(
+    r"\b(?:warnings?|skipped|deselected|xfailed|xpassed|errors?|failed)\b",
+    flags=re.IGNORECASE,
+)
+
+
+def _run_command(
+    command: Sequence[str],
+    *,
+    sanitize_pytest_environment: bool = False,
+    environment: Mapping[str, str] | None = None,
+) -> tuple[dict[str, Any], str, str]:
+    try:
+        return hardened._run_command(
+            command,
+            sanitize_pytest_environment=sanitize_pytest_environment,
+            environment=environment,
+        )
+    except hardened.DevelopmentRuntimeTemporalConsumerPatchError as exc:
+        raise P1TemporalConsumerPatchError(str(exc)) from exc
+
+
+def _require_success_marker(stdout: str, stderr: str, marker: str) -> None:
+    if marker not in stdout + "\n" + stderr:
+        raise P1TemporalConsumerPatchError(
+            f"E0-MD verification marker is absent: {marker}"
+        )
+
+
+def _require_empty_output(stdout: str, stderr: str, *, context: str) -> None:
+    if stdout.strip() or stderr.strip():
+        raise P1TemporalConsumerPatchError(
+            f"E0-MD expected empty output from {context}"
+        )
+
+
+def _parse_focused_summary(stdout: str, stderr: str) -> int:
+    combined = stdout + "\n" + stderr
+    lines = [line.strip() for line in combined.splitlines() if line.strip()]
+    summary_re = re.compile(
+        rf"^{FOCUSED_TEST_COUNT} passed in [0-9]+(?:\.[0-9]+)?s$"
+    )
+    matches = [line for line in lines if summary_re.fullmatch(line)]
+    if (
+        FOCUSED_TEST_COUNT <= 0
+        or not lines
+        or matches != [lines[-1]]
+        or FORBIDDEN_PYTEST_SUMMARY_RE.search(combined) is not None
+    ):
+        raise P1TemporalConsumerPatchError(
+            "E0-MD focused pytest summary is not one exact clean result"
+        )
+    return FOCUSED_TEST_COUNT
+
+
+def _dvc_terminal_status(
+    stdout: str,
+    stderr: str,
+    *,
+    require_idempotent: bool,
+) -> str:
+    lines = [
+        line.strip()
+        for line in (stdout + "\n" + stderr).splitlines()
+        if line.strip()
+    ]
+    allowed = {"Everything is up to date.", "1 file pushed"}
+    terminals = [line for line in lines if line in allowed]
+    if len(terminals) != 1 or (require_idempotent and terminals[0] != "Everything is up to date."):
+        raise P1TemporalConsumerPatchError(
+            "E0-MD targeted DVC push terminal evidence drifted"
+        )
+    if any(
+        re.fullmatch(r"[2-9][0-9]* files? pushed", line)
+        or re.fullmatch(r"1[0-9]+ files? pushed", line)
+        for line in lines
+    ):
+        raise P1TemporalConsumerPatchError(
+            "E0-MD targeted DVC push exceeded one object"
+        )
+    return terminals[0]
+
+
+def run_p1_temporal_consumer_patch_verification() -> dict[str, Any]:
+    """Run the closed H-E0-MD verification set; intentionally heavy."""
+    if FOCUSED_TEST_COUNT <= 0:
+        raise P1TemporalConsumerPatchError(
+            "E0-MD focused-test count has not been finalized"
+        )
+    try:
+        hardened._require_fixed_venv_executable(TYPE_CHECK_COMMAND)
+        hardened._require_fixed_venv_executable(FOCUSED_TEST_COMMAND)
+        hardened._require_fixed_venv_executable(P1_AUDIT_COMMAND)
+        hardened._require_fixed_venv_executable(DVC_PUSH_COMMAND)
+    except hardened.DevelopmentRuntimeTemporalConsumerPatchError as exc:
+        raise P1TemporalConsumerPatchError(str(exc)) from exc
+
+    type_check, stdout, stderr = _run_command(TYPE_CHECK_COMMAND)
+    _require_success_marker(stdout, stderr, "All checks passed!")
+
+    focused, stdout, stderr = _run_command(
+        FOCUSED_TEST_COMMAND,
+        sanitize_pytest_environment=True,
+    )
+    focused.update(
+        {
+            "test_count": _parse_focused_summary(stdout, stderr),
+            "skipped_count": 0,
+            "deselected_count": 0,
+        }
+    )
+
+    poetry_check, stdout, stderr = _run_command(POETRY_CHECK_COMMAND)
+    _require_success_marker(stdout, stderr, "All set!")
+    publication_guard, _, _ = _run_command(PUBLICATION_GUARD_COMMAND)
+    diff_check, stdout, stderr = _run_command(DIFF_CHECK_COMMAND)
+    _require_empty_output(stdout, stderr, context="git diff --check")
+    p1_bundle_audit, stdout, stderr = _run_command(P1_AUDIT_COMMAND)
+    _require_empty_output("", stderr, context="P1 bundle audit stderr")
+    if '"status": "validated"' not in stdout:
+        raise P1TemporalConsumerPatchError("P1 bundle audit did not validate")
+
+    dvc_environment = {"DVC_NO_ANALYTICS": "1"}
+    dvc_first, stdout, stderr = _run_command(
+        DVC_PUSH_COMMAND,
+        environment=dvc_environment,
+    )
+    dvc_first["terminal_status"] = _dvc_terminal_status(
+        stdout,
+        stderr,
+        require_idempotent=False,
+    )
+    dvc_second, stdout, stderr = _run_command(
+        DVC_PUSH_COMMAND,
+        environment=dvc_environment,
+    )
+    dvc_second["terminal_status"] = _dvc_terminal_status(
+        stdout,
+        stderr,
+        require_idempotent=True,
+    )
+
+    return {
+        "full_type_check": type_check,
+        "focused_tests": focused,
+        "poetry_check": poetry_check,
+        "publication_guard": publication_guard,
+        "git_diff_check": diff_check,
+        "p1_bundle_audit": p1_bundle_audit,
+        "dvc_push_first": dvc_first,
+        "dvc_push_second": dvc_second,
+    }
+
+
+def _closed_output(path: Path, expected: Path) -> Path:
+    try:
+        return hardened._closed_output(path, expected)
+    except hardened.DevelopmentRuntimeTemporalConsumerPatchError as exc:
+        raise P1TemporalConsumerPatchError(str(exc)) from exc
+
+
+def _guard_paths(*, create_directory: bool) -> tuple[Path, Path]:
+    tmp_root = PROJECT_ROOT / "tmp"
+    if OUTPUT_GUARD_DIRECTORY != tmp_root / "closure_v1_e0_md_locker":
+        raise P1TemporalConsumerPatchError(
+            "E0-MD coordination directory escaped ignored tmp/"
+        )
+    if create_directory:
+        try:
+            hardened._ensure_real_directory(
+                tmp_root,
+                parent=PROJECT_ROOT,
+                context="E0-MD tmp root",
+            )
+            hardened._ensure_real_directory(
+                OUTPUT_GUARD_DIRECTORY,
+                parent=tmp_root,
+                context="E0-MD guard directory",
+            )
+        except hardened.DevelopmentRuntimeTemporalConsumerPatchError as exc:
+            raise P1TemporalConsumerPatchError(str(exc)) from exc
+    return (
+        OUTPUT_GUARD_DIRECTORY / OUTPUT_GUARD_NAMES[0],
+        OUTPUT_GUARD_DIRECTORY / OUTPUT_GUARD_NAMES[1],
+    )
+
+
+def _refuse_existing_outputs(output: Path, companion: Path) -> None:
+    lock_path = _closed_output(output, DEFAULT_PATCH_LOCK_PATH)
+    companion_path = _closed_output(companion, DEFAULT_PATCH_MANIFEST_PATH)
+    candidates = (
+        lock_path,
+        lock_path.with_suffix(lock_path.suffix + ".tmp"),
+        companion_path,
+        companion_path.with_suffix(companion_path.suffix + ".tmp"),
+        *_guard_paths(create_directory=False),
+    )
+    existing = [str(path) for path in candidates if os.path.lexists(path)]
+    if existing:
+        raise P1TemporalConsumerPatchError(
+            f"Refusing to overwrite an existing E0-MD lock bundle: {existing}"
+        )
+
+
+def _acquire_guards(
+    output: Path,
+    companion: Path,
+) -> tuple[hardened._OutputGuard, hardened._OutputGuard]:
+    _refuse_existing_outputs(output, companion)
+    guards: list[hardened._OutputGuard] = []
+    try:
+        for path in _guard_paths(create_directory=True):
+            guards.append(hardened._open_guard(path))
+    except BaseException as exc:
+        for guard in reversed(guards):
+            hardened._release_guard(guard)
+        if isinstance(exc, hardened.DevelopmentRuntimeTemporalConsumerPatchError):
+            raise P1TemporalConsumerPatchError(str(exc)) from exc
+        raise
+    if len(guards) != 2:
+        raise P1TemporalConsumerPatchError("E0-MD requires exactly two guards")
+    return guards[0], guards[1]
+
+
+def _execute_lock(output: Path, companion: Path) -> dict[str, Any]:
+    lock_path = _closed_output(output, DEFAULT_PATCH_LOCK_PATH)
+    companion_path = _closed_output(companion, DEFAULT_PATCH_MANIFEST_PATH)
+    guards = _acquire_guards(output, companion)
+    owners: list[hardened._OwnedFile] = []
+    succeeded = False
+    result: dict[str, Any] | None = None
+    active_error: BaseException | None = None
+    try:
+        hardened._assert_lock_namespace(
+            lock_path,
+            companion_path,
+            guards,
+            owners,
+        )
+        prelock = collect_p1_temporal_consumer_patch_prelock_state(
+            verify_remote=True
+        )
+        verification = run_p1_temporal_consumer_patch_verification()
+        p1_consumer_namespace_absence()
+        repeated = collect_p1_temporal_consumer_patch_prelock_state(
+            verify_remote=True
+        )
+        if repeated != prelock:
+            raise P1TemporalConsumerPatchError(
+                "E0-MD authority changed during verification"
+            )
+        timestamp = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        payload = build_p1_temporal_consumer_patch_lock_payload(
+            prelock,
+            verification,
+            created_at_utc=timestamp,
+        )
+        schema = _load_regular_json(DEFAULT_PATCH_LOCK_SCHEMA, context="E0-MD schema")
+        validate_p1_temporal_consumer_patch_lock_payload(payload, schema)
+
+        try:
+            lock_owner = hardened._publish_guarded_bytes(
+                _canonical_json(payload),
+                lock_path,
+                DEFAULT_PATCH_LOCK_PATH,
+                guards[0],
+            )
+        except hardened.DevelopmentRuntimeTemporalConsumerPatchError as exc:
+            raise P1TemporalConsumerPatchError(str(exc)) from exc
+        owners.append(lock_owner)
+        lock_record = hardened._owned_file_record(
+            lock_owner,
+            role="external_p1_temporal_consumer_patch_lock",
+        )
+        companion_payload = _expected_companion(payload, lock_record=lock_record)
+        try:
+            companion_owner = hardened._publish_guarded_bytes(
+                _canonical_json(companion_payload),
+                companion_path,
+                DEFAULT_PATCH_MANIFEST_PATH,
+                guards[1],
+            )
+        except hardened.DevelopmentRuntimeTemporalConsumerPatchError as exc:
+            raise P1TemporalConsumerPatchError(str(exc)) from exc
+        owners.append(companion_owner)
+        companion_record = hardened._owned_file_record(
+            companion_owner,
+            role="p1_temporal_consumer_patch_companion",
+        )
+        load_and_validate_p1_temporal_consumer_patch_lock(
+            require_published=False,
+            verify_remote=False,
+        )
+        p1_consumer_namespace_absence()
+        result = {
+            "status": "locked_unpublished",
+            "gate": "E0-MD",
+            "patch_head": payload["patch_repository"]["head"],
+            "lock": lock_record,
+            "companion": companion_record,
+            "authorized_model_id": "P1",
+            "authorized_base_seed": 1729,
+            "authorized_device": "cpu",
+            "p1_consumer_authorized": False,
+            "p1_fit_authorized": False,
+            "sequence_fit_available": False,
+            "publication_required": True,
+            "e0_m_authorized": False,
+            "evaluation_authorized": False,
+            "e0_u_authorized": False,
+            "future_outcomes_accessed": False,
+        }
+        succeeded = True
+    except BaseException as exc:
+        active_error = exc
+    try:
+        hardened._cleanup_lock_resources(
+            owners,
+            guards,
+            succeeded=succeeded,
+            active_error=active_error,
+        )
+    except BaseException as exc:
+        raise P1TemporalConsumerPatchError(
+            "E0-MD lock transaction cleanup failed closed"
+        ) from exc
+    if active_error is not None:
+        if isinstance(active_error, P1TemporalConsumerPatchError):
+            raise active_error
+        raise P1TemporalConsumerPatchError("E0-MD lock transaction failed") from active_error
+    if result is None:
+        raise P1TemporalConsumerPatchError("E0-MD lock transaction produced no result")
+    return result
+
+
+def _check_only(output: Path, companion: Path) -> dict[str, Any]:
+    _refuse_existing_outputs(output, companion)
+    prelock = collect_p1_temporal_consumer_patch_prelock_state(
+        verify_remote=True
+    )
+    return {
+        "status": "ready_to_lock",
+        "gate": "E0-MD",
+        "patch_repository": prelock["patch_repository"],
+        "patch_component_count": prelock["patch_components"]["count"],
+        "consumer_prelock": prelock["consumer_prelock"],
+        "fit_availability": prelock["fit_availability"],
+        "p1_consumer_authorized": False,
+        "p1_fit_authorized": False,
+        "writes_performed": False,
+        "verification_commands_run": False,
+        "dvc_commands_run": False,
+        "outcome_paths_opened": False,
+    }
+
+
+def _check_effective(output: Path, companion: Path) -> dict[str, Any]:
+    _closed_output(output, DEFAULT_PATCH_LOCK_PATH)
+    _closed_output(companion, DEFAULT_PATCH_MANIFEST_PATH)
+    before = (
+        _file_record(output, role="external_p1_temporal_consumer_patch_lock"),
+        _file_record(companion, role="p1_temporal_consumer_patch_companion"),
+    )
+    summary = require_p1_temporal_consumer_authorized(
+        model_id="P1",
+        base_seed=1729,
+        device="cpu",
+    )
+    after = (
+        _file_record(output, role="external_p1_temporal_consumer_patch_lock"),
+        _file_record(companion, role="p1_temporal_consumer_patch_companion"),
+    )
+    if before != after:
+        raise P1TemporalConsumerPatchError("E0-MD lock bundle changed during preflight")
+    return {
+        "status": "effective_preflight_passed",
+        "gate": "E0-MD",
+        "authorization": summary,
+        "writes_performed": False,
+        "verification_commands_run": False,
+        "dvc_commands_run": False,
+        "outcome_paths_opened": False,
+    }
+
+
+def _parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__)
+    mode = parser.add_mutually_exclusive_group(required=True)
+    mode.add_argument("--check-only", action="store_true")
+    mode.add_argument("--execute-lock", action="store_true")
+    mode.add_argument("--check-effective", action="store_true")
+    parser.add_argument("--output", type=Path, default=DEFAULT_PATCH_LOCK_PATH)
+    parser.add_argument(
+        "--companion-output",
+        type=Path,
+        default=DEFAULT_PATCH_MANIFEST_PATH,
+    )
+    return parser.parse_args(argv)
+
+
+def main(argv: Sequence[str] | None = None) -> int:
+    args = _parse_args(argv)
+    if args.check_only:
+        result = _check_only(args.output, args.companion_output)
+    elif args.execute_lock:
+        result = _execute_lock(args.output, args.companion_output)
+    else:
+        result = _check_effective(args.output, args.companion_output)
+    print(json.dumps(result, indent=2, sort_keys=True))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
