@@ -103,6 +103,173 @@ CLOSURE_EXPERT_STATE_MANIFEST_PATH = Path(
 CLOSURE_EXPERT_STATE_OUTPUT_PATH = Path(
     "data/closure_v1/development/expert/expert_no_current_state.parquet"
 )
+CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_PATH = Path(
+    "reports/closure_v1/02_models/M0/manifest.json"
+)
+CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_SCHEMA_VERSION = (
+    "closure_mifal_development_manifest_v1"
+)
+CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_STATUS = (
+    "mifal_development_bundle_written_unpublished"
+)
+CLOSURE_MIFAL_DEVELOPMENT_SCRIPT = Path(
+    "src/experiments/run_closure_mifal.py"
+)
+CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS = (
+    Path("data/closure_v1/development/mifal/M0/raw_scores.parquet"),
+    Path("reports/closure_v1/02_models/M0/model_spec.json"),
+    Path("reports/closure_v1/02_models/M0/lineage_audit.json"),
+    Path("reports/closure_v1/02_models/M0/availability.csv"),
+    Path("reports/closure_v1/02_models/M0/report.md"),
+)
+CLOSURE_MIFAL_DEVELOPMENT_SOURCE_PATHS = (
+    Path("src/mifal/ed_t2.py"),
+    CLOSURE_MIFAL_DEVELOPMENT_SCRIPT,
+    Path("src/mifal/closure_panel_adapter.py"),
+)
+CLOSURE_MIFAL_DEVELOPMENT_INPUT_PATHS_AND_ROLES = (
+    (Path("reports/closure_v1/00_protocol/protocol_lock.json"), "protocol_lock"),
+    (
+        Path("reports/closure_v1/00_protocol/development_runtime_lock.json"),
+        "development_runtime_lock",
+    ),
+    (
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "development_runtime_temporal_validation_dialect_patch_lock.json"
+        ),
+        "effective_development_runtime_lock",
+    ),
+    (
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "development_runtime_temporal_validation_dialect_patch_lock_manifest.json"
+        ),
+        "effective_development_runtime_lock_manifest",
+    ),
+    (Path("src/experiments/closure_development_guard.py"), "development_guard"),
+    (
+        Path("data/closure_v1/closure_holdout_assignment.csv"),
+        "holdout_assignment",
+    ),
+    (
+        Path("reports/closure_v1/00_protocol/holdout_manifest.json"),
+        "holdout_manifest",
+    ),
+    (
+        Path("data/closure_v1/common_origin_manifest.parquet"),
+        "common_origin",
+    ),
+    (
+        Path("data/closure_v1/common_origin_manifest.parquet.dvc"),
+        "common_origin_pointer",
+    ),
+    (
+        Path("reports/closure_v1/01_surface/common_origin_manifest.json"),
+        "common_origin_manifest",
+    ),
+    (Path("data/panel/panel_monthly_v0.parquet"), "panel"),
+    (Path("data/panel/panel_monthly_v0.parquet.dvc"), "panel_pointer"),
+    (Path("configs/closure_v1/model_benchmark.yaml"), "model_benchmark"),
+    (Path("configs/closure_v1/surface_primary.yaml"), "primary_surface"),
+    (Path("configs/closure_v1/analysis_plan.yaml"), "analysis_plan"),
+    (
+        Path("configs/closure_v1/experimental_matrix.yaml"),
+        "experimental_matrix",
+    ),
+    (Path("src/mifal/ed_t2.py"), "mifal_core"),
+    (Path("pyproject.toml"), "pyproject"),
+    (Path("poetry.lock"), "poetry_lock"),
+    (
+        Path("reports/closure_v1/02_models/baselines/manifest.json"),
+        "upstream_baseline_manifest",
+    ),
+    (
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "baseline_development_publication_guard_patch_lock.json"
+        ),
+        "upstream_baseline_patch_lock",
+    ),
+    (
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "baseline_development_publication_guard_patch_lock_manifest.json"
+        ),
+        "upstream_baseline_patch_lock_manifest",
+    ),
+    (Path("models.dvc"), "models_dvc_observer"),
+    (
+        Path("configs/closure_v1/mifal_development_runtime.yaml"),
+        "mifal_runtime",
+    ),
+    (
+        Path("reports/closure_v1/00_protocol/mifal_development_patch_lock.json"),
+        "effective_patch_lock",
+    ),
+    (
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "mifal_development_patch_lock_manifest.json"
+        ),
+        "effective_patch_lock_manifest",
+    ),
+    (CLOSURE_MIFAL_DEVELOPMENT_SCRIPT, "mifal_development_runner"),
+    (Path("src/mifal/closure_panel_adapter.py"), "strict_panel_adapter"),
+)
+CLOSURE_MIFAL_RAW_PREDICTION_CONTRACT_SHA256 = (
+    "e6e50951d083e0109f9a7395ab711edc318d8c80b0c11b7e5d7de8f086eaf2e1"
+)
+CLOSURE_MIFAL_EXPECTED_AUTHORITY = {
+    "gate": "E0-MR",
+    "status": "effective_preflight_passed",
+    "strict_adapter_authorized": True,
+    "mifal_one_shot_authorized": True,
+    "m0_execution_authorized": True,
+    "tuning_authorized": False,
+    "target_access_authorized": False,
+    "calibration_authorized": False,
+    "metrics_authorized": False,
+    "e0_m_authorized": False,
+    "evaluation_authorized": False,
+    "e0_u_authorized": False,
+    "dvc_commands_authorized": False,
+    "scientific_network_authorized": False,
+    "outcome_access_authorized": False,
+    "future_outcomes_accessed": False,
+    "h_patch_head": "4dab0a286f4df31c95251fde7f9e36ee7d09e968",
+    "p_patch_head": "9106ff042ecea135d3652e8dedac4d78a2360b3e",
+    "lock_sha256": "59eb0674ae4502bcbae16b9ad0f4c653429771e3c9ec89b1ef1f31e3dbb08125",
+    "companion_sha256": "3628973b4eda30b14787f57554bef8b13d8c9580d1b3c3f2c4134acb7c3130f9",
+    "runtime_sha256": "26a1e2fa6f7d630cbe770dd282f8d86b21a152f4733874ecc6b19de53b5e7d84",
+    "h_components_sha256": "8bfad66fb5e2c2072e815966b85bff207f501ddf7cdc680fbadcefe8f44b8955",
+    "physical_inputs_sha256": "49ffcc28dec8ea2306d46b2f5b274a318ec7d8d2c94a36ea5fa970fa059b16d3",
+    "runner_sha256": "a4afeeeb475d0cc4d9532ed92e5a05d1b37ca73e2b9bf8755d224f7b1fc3d6f4",
+    "adapter_sha256": "d9438eacd4dfdd1127a2cf22398de420802c8044948b548dccd23d28fbde4773",
+    "mifal_core_sha256": "46490b08e6efd2725c14ba4cd07eede2b06b191179d25d1ffecf189efec1ca53",
+    "exact_raw_prediction_rows": 29196,
+    "minimum_observed_evidence_groups": 2,
+}
+CLOSURE_MIFAL_EXPECTED_COUNTS = {
+    "raw_rows": 29196,
+    "intent_origins": 9732,
+    "eligible_origins": 9732,
+    "input_ineligible_origins": 0,
+    "development_locations": 353,
+    "final_paths": 6,
+}
+CLOSURE_MIFAL_MANIFEST_FALSE_FLAGS = (
+    "tuning_performed",
+    "targets_opened",
+    "calibration_performed",
+    "metrics_computed",
+    "e0_m_authorized",
+    "evaluation_authorized",
+    "e0_u_authorized",
+    "dvc_commands_run",
+    "network_calls_made",
+    "future_outcomes_accessed",
+)
 CLOSURE_COMMON_ORIGIN_CODE_PATHS = (
     CLOSURE_COMMON_ORIGIN_MANIFEST_SCRIPT,
     Path("src/experiments/build_closure_holdout.py"),
@@ -821,6 +988,276 @@ def discover_relevant_manifest_paths(staged_paths: set[Path]) -> list[Path]:
     return sorted(manifest_paths, key=lambda path: path.as_posix())
 
 
+def _canonical_json_sha256(value: Any) -> str | None:
+    try:
+        payload = json.dumps(
+            value,
+            ensure_ascii=False,
+            sort_keys=True,
+            separators=(",", ":"),
+            allow_nan=False,
+        ).encode("utf-8")
+    except (TypeError, ValueError):
+        return None
+    return hashlib.sha256(payload).hexdigest()
+
+
+def validate_closure_mifal_development_manifest(
+    payload: Any,
+    manifest_path: Path,
+) -> list[ReproducibilityFinding]:
+    """Validate the exact manifest-last M0 dialect without rewriting it."""
+    findings: list[ReproducibilityFinding] = []
+
+    def fail(message: str) -> None:
+        findings.append(
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                message,
+            )
+        )
+
+    if manifest_path != CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_PATH:
+        fail("Closure M0 manifest compatibility is restricted to its exact path.")
+        return findings
+    if not isinstance(payload, dict):
+        fail("Closure M0 manifest must contain a JSON object.")
+        return findings
+
+    expected_top_level = {
+        "schema_version",
+        "experiment_id",
+        "surface_id",
+        "model_id",
+        "gate",
+        "status",
+        "started_at_utc",
+        "counts",
+        "raw_prediction_contract",
+        "model_spec_sha256",
+        "lineage_audit_sha256",
+        "runtime_versions",
+        "effective_authority",
+        "inputs",
+        "script",
+        "source_code",
+        "outputs",
+        "manifest_written_last",
+        *CLOSURE_MIFAL_MANIFEST_FALSE_FLAGS,
+        "outcome_access_log_state",
+        "completion_marker_written_last",
+    }
+    if set(payload) != expected_top_level:
+        fail("Closure M0 manifest top-level dialect drifted.")
+    if (
+        payload.get("schema_version")
+        != CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_SCHEMA_VERSION
+        or payload.get("experiment_id") != "closure_v1"
+        or payload.get("surface_id")
+        != "closure_v1_wqp_adaptive_no_current_chla"
+        or payload.get("model_id") != "M0"
+        or payload.get("gate") != "E0-MR"
+        or payload.get("status") != CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_STATUS
+    ):
+        fail("Closure M0 manifest identity/schema/status drifted.")
+
+    started_at = payload.get("started_at_utc")
+    try:
+        parsed_started_at = datetime.fromisoformat(started_at)
+    except (TypeError, ValueError):
+        parsed_started_at = None
+    if (
+        parsed_started_at is None
+        or not isinstance(started_at, str)
+        or not started_at.endswith("+00:00")
+        or parsed_started_at.tzinfo is None
+    ):
+        fail("Closure M0 manifest UTC start timestamp is invalid.")
+    if payload.get("counts") != CLOSURE_MIFAL_EXPECTED_COUNTS:
+        fail("Closure M0 manifest denominators drifted.")
+
+    raw_contract = payload.get("raw_prediction_contract")
+    if (
+        not isinstance(raw_contract, dict)
+        or _canonical_json_sha256(raw_contract)
+        != CLOSURE_MIFAL_RAW_PREDICTION_CONTRACT_SHA256
+    ):
+        fail("Closure M0 exact 28-column raw prediction contract drifted.")
+    expected_authority = {
+        **CLOSURE_MIFAL_EXPECTED_AUTHORITY,
+        "raw_prediction_contract": raw_contract,
+    }
+    if payload.get("effective_authority") != expected_authority:
+        fail("Closure M0 effective E0-MR authority drifted.")
+
+    runtime_versions = payload.get("runtime_versions")
+    if (
+        not isinstance(runtime_versions, dict)
+        or set(runtime_versions)
+        != {
+            "python",
+            "numpy",
+            "pandas",
+            "pyarrow",
+            "threadpoolctl",
+            "threadpool_limit",
+            "mifal_core",
+        }
+        or any(
+            not isinstance(runtime_versions.get(name), str)
+            or not runtime_versions[name]
+            for name in (
+                "python",
+                "numpy",
+                "pandas",
+                "pyarrow",
+                "threadpoolctl",
+            )
+        )
+        or runtime_versions.get("threadpool_limit") != 1
+        or runtime_versions.get("mifal_core") != "5.0.0"
+    ):
+        fail("Closure M0 runtime-version record drifted.")
+
+    inputs = payload.get("inputs")
+    input_by_path: dict[Path, dict[str, Any]] = {}
+    expected_input_bindings = [
+        (path.as_posix(), role)
+        for path, role in CLOSURE_MIFAL_DEVELOPMENT_INPUT_PATHS_AND_ROLES
+    ]
+    if not isinstance(inputs, list) or len(inputs) != len(expected_input_bindings):
+        fail("Closure M0 manifest must bind exactly 28 inputs.")
+    else:
+        observed_input_bindings: list[tuple[str, str]] = []
+        valid_inputs = True
+        for raw_record in inputs:
+            if not isinstance(raw_record, dict):
+                valid_inputs = False
+                continue
+            record = cast(dict[str, Any], raw_record)
+            path = record.get("path")
+            role = record.get("artifact_role")
+            sha256 = record.get("sha256")
+            if (
+                set(record) != {"path", "bytes", "sha256", "artifact_role"}
+                or not isinstance(path, str)
+                or not isinstance(role, str)
+                or type(record.get("bytes")) is not int
+                or record["bytes"] < 1
+                or not isinstance(sha256, str)
+                or len(sha256) != 64
+                or any(character not in "0123456789abcdef" for character in sha256)
+            ):
+                valid_inputs = False
+                continue
+            observed_input_bindings.append((path, role))
+            input_by_path[Path(path)] = record
+        if (
+            not valid_inputs
+            or observed_input_bindings != expected_input_bindings
+            or len(input_by_path) != len(expected_input_bindings)
+        ):
+            fail("Closure M0 input paths, roles, order, or record dialect drifted.")
+
+    script = payload.get("script")
+    if (
+        CLOSURE_MIFAL_DEVELOPMENT_SCRIPT not in input_by_path
+        or script != input_by_path.get(CLOSURE_MIFAL_DEVELOPMENT_SCRIPT)
+    ):
+        fail("Closure M0 generating script is not the exact bound runner input.")
+    source_code = payload.get("source_code")
+    if (
+        not isinstance(source_code, list)
+        or len(source_code) != len(CLOSURE_MIFAL_DEVELOPMENT_SOURCE_PATHS)
+        or [manifest_record_path(record) for record in source_code]
+        != list(CLOSURE_MIFAL_DEVELOPMENT_SOURCE_PATHS)
+        or any(
+            record != input_by_path.get(path)
+            for record, path in zip(
+                source_code,
+                CLOSURE_MIFAL_DEVELOPMENT_SOURCE_PATHS,
+                strict=True,
+            )
+        )
+    ):
+        fail("Closure M0 source-code triplet drifted from its bound inputs.")
+
+    outputs = payload.get("outputs")
+    output_by_path: dict[Path, dict[str, Any]] = {}
+    if (
+        not isinstance(outputs, list)
+        or len(outputs) != len(CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS)
+    ):
+        fail("Closure M0 manifest must bind exactly five pre-manifest outputs.")
+    else:
+        valid_outputs = True
+        for raw_record in outputs:
+            if not isinstance(raw_record, dict):
+                valid_outputs = False
+                continue
+            record = cast(dict[str, Any], raw_record)
+            path = manifest_record_path(record)
+            sha256 = record.get("sha256")
+            if (
+                set(record) != {"path", "bytes", "sha256"}
+                or path is None
+                or type(record.get("bytes")) is not int
+                or record["bytes"] < 1
+                or not isinstance(sha256, str)
+                or len(sha256) != 64
+                or any(character not in "0123456789abcdef" for character in sha256)
+            ):
+                valid_outputs = False
+                continue
+            output_by_path[path] = record
+        if (
+            not valid_outputs
+            or [manifest_record_path(record) for record in outputs]
+            != list(CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS)
+            or len(output_by_path) != len(CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS)
+        ):
+            fail("Closure M0 output paths, order, or record dialect drifted.")
+
+    model_spec_path = CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS[1]
+    lineage_path = CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS[2]
+    if (
+        payload.get("model_spec_sha256")
+        != output_by_path.get(model_spec_path, {}).get("sha256")
+        or payload.get("lineage_audit_sha256")
+        != output_by_path.get(lineage_path, {}).get("sha256")
+    ):
+        fail("Closure M0 model-spec/lineage cross-hashes drifted.")
+
+    if payload.get("manifest_written_last") is not True:
+        fail("Closure M0 manifest must record manifest_written_last=true.")
+    for field in CLOSURE_MIFAL_MANIFEST_FALSE_FLAGS:
+        if payload.get(field) is not False:
+            fail(f"Closure M0 manifest requires `{field}=false`.")
+    if payload.get("outcome_access_log_state") != "absent":
+        fail("Closure M0 outcome-access log state must remain absent.")
+    if (
+        tuple(payload)[-1:] != ("completion_marker_written_last",)
+        or payload.get("completion_marker_written_last") is not True
+    ):
+        fail("Closure M0 completion marker must be the true final top-level key.")
+
+    if findings:
+        return findings
+    return [
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            manifest_path.as_posix(),
+            (
+                "Closure M0 schema, E0-MR authority, 28 inputs, three source "
+                "records, five outputs, cross-hashes, and manifest-last seals passed."
+            ),
+        )
+    ]
+
+
 def validate_experiment_manifests(
     *,
     staged_paths: set[Path],
@@ -881,6 +1318,9 @@ def validate_experiment_manifests(
         )
         is_closure_expert_state_manifest = (
             manifest_path == CLOSURE_EXPERT_STATE_MANIFEST_PATH
+        )
+        is_closure_mifal_development_manifest = (
+            manifest_path == CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_PATH
         )
         if is_closure_development_runtime_lock:
             findings.extend(
@@ -1053,6 +1493,10 @@ def validate_experiment_manifests(
                             "Closure common-origin manifest has an invalid sealed execution record.",
                         )
                     )
+        elif is_closure_mifal_development_manifest:
+            findings.extend(
+                validate_closure_mifal_development_manifest(payload, manifest_path)
+            )
         elif isinstance(payload, dict) and payload.get("status") not in {None, "completed"}:
             findings.append(
                 ReproducibilityFinding(
@@ -1101,6 +1545,7 @@ def validate_experiment_manifests(
                 force_hash=(
                     is_closure_common_origin_manifest
                     or is_closure_expert_state_manifest
+                    or is_closure_mifal_development_manifest
                 ),
             )
             if record_path is not None:
@@ -1328,10 +1773,12 @@ def validate_experiment_manifests(
                         verify_manifest_inputs
                         or is_closure_common_origin_manifest
                         or is_closure_expert_state_manifest
+                        or is_closure_mifal_development_manifest
                     ),
                     force_hash=(
                         is_closure_common_origin_manifest
                         or is_closure_expert_state_manifest
+                        or is_closure_mifal_development_manifest
                     ),
                 )
         elif inputs is None:

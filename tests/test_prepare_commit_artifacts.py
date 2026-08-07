@@ -295,6 +295,267 @@ def _write_closure_common_origin_fixture(
     )
 
 
+def _write_closure_mifal_development_fixture(
+    root: Path,
+) -> tuple[Path, dict[str, Any], tuple[Path, ...], tuple[Path, ...]]:
+    raw_contract: dict[str, Any] = {
+        "columns": [
+            {"name": f"column_{index}", "dtype": "string", "nullable": False}
+            for index in range(28)
+        ],
+        "fixture": "exact_raw_contract",
+    }
+    input_records: list[dict[str, Any]] = []
+    input_by_path: dict[Path, dict[str, Any]] = {}
+    input_paths: list[Path] = []
+    for path, role in precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_INPUT_PATHS_AND_ROLES:
+        physical = root / path
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_text(f"input fixture: {path.as_posix()}\n", encoding="utf-8")
+        record = {**_manifest_record(path), "artifact_role": role}
+        input_records.append(record)
+        input_by_path[path] = record
+        input_paths.append(path)
+
+    output_records: list[dict[str, Any]] = []
+    output_paths: list[Path] = []
+    for path in precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS:
+        physical = root / path
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_text(f"output fixture: {path.as_posix()}\n", encoding="utf-8")
+        output_records.append(_manifest_record(path))
+        output_paths.append(path)
+
+    authority = {
+        **precommit_artifacts.CLOSURE_MIFAL_EXPECTED_AUTHORITY,
+        "raw_prediction_contract": raw_contract,
+    }
+    model_spec = precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS[1]
+    lineage = precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_OUTPUT_PATHS[2]
+    payload: dict[str, Any] = {
+        "schema_version": precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_SCHEMA_VERSION,
+        "experiment_id": "closure_v1",
+        "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+        "model_id": "M0",
+        "gate": "E0-MR",
+        "status": precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_STATUS,
+        "started_at_utc": "2026-08-07T23:13:12.949966+00:00",
+        "counts": dict(precommit_artifacts.CLOSURE_MIFAL_EXPECTED_COUNTS),
+        "raw_prediction_contract": raw_contract,
+        "model_spec_sha256": input_by_path.get(model_spec, output_records[1])["sha256"],
+        "lineage_audit_sha256": input_by_path.get(lineage, output_records[2])["sha256"],
+        "runtime_versions": {
+            "python": "3.14.6",
+            "numpy": "2.4.5",
+            "pandas": "3.0.3",
+            "pyarrow": "24.0.0",
+            "threadpoolctl": "3.6.0",
+            "threadpool_limit": 1,
+            "mifal_core": "5.0.0",
+        },
+        "effective_authority": authority,
+        "inputs": input_records,
+        "script": input_by_path[
+            precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_SCRIPT
+        ],
+        "source_code": [
+            input_by_path[path]
+            for path in precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_SOURCE_PATHS
+        ],
+        "outputs": output_records,
+        "manifest_written_last": True,
+        "tuning_performed": False,
+        "targets_opened": False,
+        "calibration_performed": False,
+        "metrics_computed": False,
+        "e0_m_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "dvc_commands_run": False,
+        "network_calls_made": False,
+        "future_outcomes_accessed": False,
+        "outcome_access_log_state": "absent",
+        "completion_marker_written_last": True,
+    }
+    manifest = precommit_artifacts.CLOSURE_MIFAL_DEVELOPMENT_MANIFEST_PATH
+    physical_manifest = root / manifest
+    physical_manifest.parent.mkdir(parents=True, exist_ok=True)
+    physical_manifest.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+    return manifest, payload, tuple(input_paths), tuple(output_paths)
+
+
+def _validate_closure_mifal_fixture(
+    manifest: Path,
+    outputs: tuple[Path, ...],
+) -> list[precommit_artifacts.ReproducibilityFinding]:
+    staged = {manifest}
+    staged.update(
+        path for path in outputs if path.as_posix().startswith("reports/")
+    )
+    return validate_experiment_manifests(
+        staged_paths=staged,
+        artifacts=[],
+        max_hash_bytes=0,
+        verify_manifest_inputs=False,
+    )
+
+
+def _bind_closure_mifal_fixture_raw_contract(
+    monkeypatch,
+    payload: dict[str, Any],
+) -> None:
+    digest = precommit_artifacts._canonical_json_sha256(
+        payload["raw_prediction_contract"]
+    )
+    assert digest is not None
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "CLOSURE_MIFAL_RAW_PREDICTION_CONTRACT_SHA256",
+        digest,
+    )
+
+
+def test_closure_mifal_development_manifest_adapts_exact_unpublished_dialect(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest, payload, _, outputs = _write_closure_mifal_development_fixture(
+        tmp_path
+    )
+    _bind_closure_mifal_fixture_raw_contract(monkeypatch, payload)
+
+    findings = _validate_closure_mifal_fixture(manifest, outputs)
+
+    assert not has_failing_findings(findings)
+    assert not any(finding.level == "warn" for finding in findings)
+    assert any(
+        "28 inputs, three source records, five outputs" in finding.message
+        for finding in findings
+    )
+
+
+def test_closure_mifal_development_status_compatibility_is_exact_path_only(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    _, payload, _, _ = _write_closure_mifal_development_fixture(tmp_path)
+    _bind_closure_mifal_fixture_raw_contract(monkeypatch, payload)
+    alternate = Path("reports/other/M0/manifest.json")
+    alternate.parent.mkdir(parents=True, exist_ok=True)
+    alternate.write_text(json.dumps(payload, indent=2) + "\n", encoding="utf-8")
+
+    findings = validate_experiment_manifests(
+        staged_paths={alternate},
+        artifacts=[],
+        max_hash_bytes=0,
+        verify_manifest_inputs=False,
+    )
+
+    assert has_failing_findings(findings)
+    assert any("expected `completed`" in finding.message for finding in findings)
+
+
+def test_closure_mifal_development_manifest_rejects_contract_mutation_matrix(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest, payload, _, outputs = _write_closure_mifal_development_fixture(
+        tmp_path
+    )
+    _bind_closure_mifal_fixture_raw_contract(monkeypatch, payload)
+    mutations: list[tuple[str, dict[str, Any]]] = []
+
+    mutated = deepcopy(payload)
+    mutated["schema_version"] = "wrong_schema"
+    mutations.append(("schema", mutated))
+
+    mutated = deepcopy(payload)
+    mutated["status"] = "completed"
+    mutations.append(("status", mutated))
+
+    mutated = deepcopy(payload)
+    mutated["model_id"] = "M1"
+    mutations.append(("identity", mutated))
+
+    mutated = deepcopy(payload)
+    cast(dict[str, Any], mutated["counts"])["eligible_origins"] = 9731
+    mutations.append(("counts", mutated))
+
+    mutated = deepcopy(payload)
+    cast(dict[str, Any], mutated["effective_authority"])[
+        "e0_m_authorized"
+    ] = True
+    mutations.append(("authority", mutated))
+
+    mutated = deepcopy(payload)
+    cast(dict[str, Any], mutated["raw_prediction_contract"])["fixture"] = "drift"
+    mutations.append(("raw_contract", mutated))
+
+    mutated = deepcopy(payload)
+    inputs = cast(list[dict[str, Any]], mutated["inputs"])
+    inputs[1] = deepcopy(inputs[0])
+    mutations.append(("input_duplicate", mutated))
+
+    mutated = deepcopy(payload)
+    cast(list[dict[str, Any]], mutated["source_code"]).reverse()
+    mutations.append(("source_triplet", mutated))
+
+    mutated = deepcopy(payload)
+    cast(list[dict[str, Any]], mutated["outputs"]).reverse()
+    mutations.append(("output_order", mutated))
+
+    mutated = deepcopy(payload)
+    mutated["model_spec_sha256"] = "0" * 64
+    mutations.append(("cross_hash", mutated))
+
+    mutated = deepcopy(payload)
+    mutated["targets_opened"] = True
+    mutations.append(("false_flag", mutated))
+
+    mutated = deepcopy(payload)
+    marker = mutated.pop("completion_marker_written_last")
+    mutated = {"completion_marker_written_last": marker, **mutated}
+    mutations.append(("last_key", mutated))
+
+    mutated = deepcopy(payload)
+    mutated["script"] = deepcopy(cast(list[dict[str, Any]], mutated["inputs"])[0])
+    mutations.append(("script", mutated))
+
+    for label, mutated_payload in mutations:
+        manifest.write_text(
+            json.dumps(mutated_payload, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        findings = _validate_closure_mifal_fixture(manifest, outputs)
+        assert has_failing_findings(findings), label
+
+
+def test_closure_mifal_development_manifest_forces_physical_hash_checks(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    monkeypatch.chdir(tmp_path)
+    manifest, payload, inputs, outputs = _write_closure_mifal_development_fixture(
+        tmp_path
+    )
+    _bind_closure_mifal_fixture_raw_contract(monkeypatch, payload)
+
+    for path in (inputs[0], outputs[0]):
+        original = path.read_bytes()
+        path.write_bytes(original + b"drift\n")
+        findings = _validate_closure_mifal_fixture(manifest, outputs)
+        assert has_failing_findings(findings), path
+        assert any(
+            finding.path == path.as_posix()
+            and "SHA-256 changed" in finding.message
+            for finding in findings
+        ), path
+        path.write_bytes(original)
+
+
 def test_closure_protocol_lock_is_a_strict_experiment_manifest() -> None:
     path = Path("reports/closure_v1/00_protocol/protocol_lock.json")
 
