@@ -1,0 +1,5 @@
+outs:
+- md5: 81624996dac006b293f974b39fdade9b
+  size: 7324854
+  hash: md5
+  path: raw_scores.parquet

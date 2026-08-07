@@ -1,0 +1,4 @@
+horizon_months,selected_candidate,selection_status,failure_reason,mean_brier,mean_pr_auc
+1,hist_gradient_boosting_classifier,selected,,0.15139874275844115,0.4819700769686045
+2,hist_gradient_boosting_classifier,selected,,0.1592569999280779,0.42719805584407855
+3,hist_gradient_boosting_classifier,selected,,0.1591240432708927,0.45479384709107995
