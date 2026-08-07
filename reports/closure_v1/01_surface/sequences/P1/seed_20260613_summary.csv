@@ -1,0 +1,7 @@
+time_role,sequence_status,failure_reason,rows
+calibration_threshold,autoregressive_target_unavailable,missing_target_state,17
+calibration_threshold,success,,302
+model_selection,autoregressive_target_unavailable,missing_target_state,45
+model_selection,success,,1016
+training,autoregressive_target_unavailable,missing_target_state,443
+training,success,,7909
