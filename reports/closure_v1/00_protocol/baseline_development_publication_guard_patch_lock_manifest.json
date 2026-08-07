@@ -1,0 +1,364 @@
+{
+  "data_execution_run": false,
+  "dvc_commands_run": false,
+  "future_outcomes_accessed": false,
+  "gate": "E0-MQ",
+  "historical_inputs": [
+    {
+      "bytes": 91983,
+      "commit": "7f4099644c53e0b56d6af1adf62a0d107ade4d3a",
+      "hash_source": "git_blob_at_commit",
+      "path": "src/experiments/fit_closure_baselines.py",
+      "role": "historical_baseline_development_runner",
+      "sha256": "1cc21117d0f286efa5812661e3595115e695f63bc7cacb52eb89cc301ec9c32b"
+    },
+    {
+      "bytes": 24739,
+      "commit": "7f4099644c53e0b56d6af1adf62a0d107ade4d3a",
+      "hash_source": "git_blob_at_commit",
+      "path": "tests/test_fit_closure_baselines.py",
+      "role": "historical_baseline_development_runner_tests",
+      "sha256": "1a0447d1f9c68141ee06ce2cf086817c16968e554448faf4ba318b7d561a6bd8"
+    }
+  ],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 18302,
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "bytes": 17464,
+      "path": "configs/closure_v1/baseline_development_patch_lock.schema.json",
+      "role": "baseline_development_patch_lock_schema",
+      "sha256": "7d4b4c0396b6c9a5107079fff14f95fd75b5571baba440297232fd98fccd2973"
+    },
+    {
+      "bytes": 21489,
+      "path": "configs/closure_v1/baseline_development_publication_guard_patch_lock.schema.json",
+      "role": "baseline_development_publication_guard_patch_lock_schema",
+      "sha256": "73f5bc363b018b1d5aa9208835bd50e4a385d67769d9a971dc0685472c0b02fa"
+    },
+    {
+      "bytes": 17524,
+      "path": "configs/closure_v1/baseline_development_runtime.yaml",
+      "role": "baseline_development_runtime",
+      "sha256": "5a68c99650e4019dfe28cf9db4ec476ea268bd66d888613e71baf5c147a65cb8"
+    },
+    {
+      "bytes": 46105,
+      "path": "configs/closure_v1/development_runtime.yaml",
+      "role": "development_runtime",
+      "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d"
+    },
+    {
+      "bytes": 7305,
+      "path": "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+      "role": "dvc_ownership_overlay",
+      "sha256": "912fbdf38d1ec4cebd92dfe01e6cd760031c2c55cba3147df4707b025974ff5a"
+    },
+    {
+      "bytes": 7281,
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "role": "model_benchmark",
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "bytes": 7759,
+      "path": "configs/closure_v1/model_lock_availability_policy.yaml",
+      "role": "model_availability_policy",
+      "sha256": "b9ec8f48918e801e502a3fa481cf63b95d744104e943857519ad4a1e4017ab10"
+    },
+    {
+      "bytes": 3660,
+      "path": "configs/closure_v1/surface_primary.yaml",
+      "role": "primary_surface",
+      "sha256": "44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "holdout_assignment",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "bytes": 2763097,
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "role": "common_origin",
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "bytes": 113,
+      "path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "role": "common_origin_pointer",
+      "sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3"
+    },
+    {
+      "bytes": 1215081,
+      "path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet",
+      "role": "anfis_1729_state",
+      "sha256": "c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_1729_pointer",
+      "sha256": "23f126ba6de15bb76e3b71fc343f3c1fd39bc1d6748f8b227fef40fbcedd106e"
+    },
+    {
+      "bytes": 1214885,
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet",
+      "role": "anfis_20260612_state",
+      "sha256": "99b4bc37de88d76068c044423071046cb6b0341056024c4de41cd1af51d09d26"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_20260612_pointer",
+      "sha256": "7c88755a0cb55a6a177bf6f883f1e879221a5e415e3fd243fc27576051cd00e2"
+    },
+    {
+      "bytes": 1215359,
+      "path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet",
+      "role": "anfis_20260613_state",
+      "sha256": "53f9a733e660d1968f8cf45916b1947ffa902346c16fabe2f07df9d27c4618a2"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_20260613_pointer",
+      "sha256": "7afddc7b3b22d07e9630a90d851e3d7cc5972b0d94904678cf49eee0168a9e93"
+    },
+    {
+      "bytes": 1214501,
+      "path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet",
+      "role": "anfis_20260614_state",
+      "sha256": "58aff087072fabae30afb7fa01b474fb2ba1c7dd1958e7ed8e9d1a19d989ead9"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_20260614_pointer",
+      "sha256": "e6e402593a26760270558bf24b9b03963b238f5b5f0d21572066c6c7b4f84f04"
+    },
+    {
+      "bytes": 1214293,
+      "path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet",
+      "role": "anfis_314159_state",
+      "sha256": "53e71211cf0f58f78bb473869dcac7e15b578c39d6722eba02954c13a86101f0"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_314159_pointer",
+      "sha256": "1c91d9c32feb0fbafe427e1d1f8c9e6252cb37570e0ae819ba54f587a6d4c181"
+    },
+    {
+      "bytes": 103469973,
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "panel",
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "bytes": 109,
+      "path": "data/panel/panel_monthly_v0.parquet.dvc",
+      "role": "panel_pointer",
+      "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c"
+    },
+    {
+      "bytes": 108,
+      "path": "data/targets.dvc",
+      "role": "targets_pointer",
+      "sha256": "2288bca25d34ae58f103c6033b47a366f8e1254214c2a10627ceb3dfb3af2f98"
+    },
+    {
+      "bytes": 35541493,
+      "path": "data/targets/monthly_targets_model_v0.parquet",
+      "role": "targets",
+      "sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799"
+    },
+    {
+      "bytes": 5337,
+      "path": "docs/closure_v1/E0_M_BASELINE_DEVELOPMENT_PATCH_1.md",
+      "role": "baseline_development_patch_protocol",
+      "sha256": "d6ca53676bcd85ecfdfc5f2f700c199ded0575b5d9b0510f49f603ccf568ac35"
+    },
+    {
+      "bytes": 4552,
+      "path": "docs/closure_v1/E0_M_BASELINE_DEVELOPMENT_PUBLICATION_GUARD_PATCH_1.md",
+      "role": "baseline_development_publication_guard_patch_protocol",
+      "sha256": "474a72a83205a1e1eece16ba7bb3d511187c7c30a831f098ce43392af8a3db55"
+    },
+    {
+      "bytes": 109,
+      "path": "models.dvc",
+      "role": "models_dvc",
+      "sha256": "49525d1f9eec6b94094299b77c8ff5986c777542d9ab49d0d09dbd524118282d"
+    },
+    {
+      "bytes": 497461,
+      "path": "poetry.lock",
+      "role": "poetry_lock",
+      "sha256": "eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4"
+    },
+    {
+      "bytes": 1699,
+      "path": "pyproject.toml",
+      "role": "pyproject",
+      "sha256": "ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22"
+    },
+    {
+      "bytes": 95285,
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+      "role": "development_runtime_lock",
+      "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+    },
+    {
+      "bytes": 60769,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+      "role": "effective_development_runtime_lock",
+      "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+    },
+    {
+      "bytes": 3650,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json",
+      "role": "effective_development_runtime_lock_manifest",
+      "sha256": "e165a0019e1c2d4e99ce682515b18e3230b0f8fbfcfb8c8e1c5514e6e0264772"
+    },
+    {
+      "bytes": 3440,
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "role": "holdout_manifest",
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+    },
+    {
+      "bytes": 54175,
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json",
+      "role": "model_availability_registry",
+      "sha256": "42830b5687f1283144c3548b67fc716909612ce804c425dfc7beaac08634fdcf"
+    },
+    {
+      "bytes": 5879,
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json",
+      "role": "model_availability_registry_manifest",
+      "sha256": "f50cfd101a55769da78a650f3831e737ab1e8e5f3d6fe141971f6cfcb0e2d5ae"
+    },
+    {
+      "bytes": 8279,
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "role": "protocol_lock",
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+    },
+    {
+      "bytes": 20768,
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json",
+      "role": "anfis_1729_manifest",
+      "sha256": "b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82"
+    },
+    {
+      "bytes": 20883,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json",
+      "role": "anfis_20260612_manifest",
+      "sha256": "e7523963c6f09ea83235d9578d492ec34a654ce8328f79f1b05e49aa84669053"
+    },
+    {
+      "bytes": 20881,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/manifest.json",
+      "role": "anfis_20260613_manifest",
+      "sha256": "c40c9ef87729d135933ef37ffce7236523b6b8fe957d90e33dde4837e5a2bd00"
+    },
+    {
+      "bytes": 20886,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/manifest.json",
+      "role": "anfis_20260614_manifest",
+      "sha256": "04d8dd355acd813656a0b3fd99123f095db7aa9ca7181f195e1e047214417946"
+    },
+    {
+      "bytes": 20821,
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/manifest.json",
+      "role": "anfis_314159_manifest",
+      "sha256": "dedcc82dd998499fa5f3f8049554431b1e97dcf6dff32645e7e6bf4e5240f2f4"
+    },
+    {
+      "bytes": 11524,
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "role": "common_origin_manifest",
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "bytes": 48877,
+      "path": "src/experiments/closure_baseline_development_patch.py",
+      "role": "baseline_development_patch_validator",
+      "sha256": "ef86f42a3f408b0d9d8febff1556e6d909c90f98fe50d02f1dfc143d28446dd9"
+    },
+    {
+      "bytes": 66042,
+      "path": "src/experiments/closure_baseline_development_publication_guard_patch.py",
+      "role": "baseline_development_publication_guard_patch_validator",
+      "sha256": "ec847a18cee114a63e47428e2ab5ca0ef148867bb3411a0bf206a09c84fddfa1"
+    },
+    {
+      "bytes": 30856,
+      "path": "src/experiments/closure_development_guard.py",
+      "role": "development_guard",
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "bytes": 92079,
+      "path": "src/experiments/fit_closure_baselines.py",
+      "role": "baseline_development_runner",
+      "sha256": "bbeb4b8a800751e87aaecbcb5bc0aefc05a40246e8c8a139fd7a36d510c386ea"
+    },
+    {
+      "bytes": 32699,
+      "path": "src/experiments/lock_closure_baseline_development_patch.py",
+      "role": "baseline_development_patch_locker",
+      "sha256": "69aeb0826cbebcc536c35878d06e3c703ea37bb6b920a08a1563ab505b3eed47"
+    },
+    {
+      "bytes": 34465,
+      "path": "src/experiments/lock_closure_baseline_development_publication_guard_patch.py",
+      "role": "baseline_development_publication_guard_patch_locker",
+      "sha256": "ede7d471f464c1ffc1b9cc5d151412c06afe351cf8ce48bfef359ec2a957fc71"
+    },
+    {
+      "bytes": 21043,
+      "path": "tests/test_closure_baseline_development_patch.py",
+      "role": "baseline_development_patch_tests",
+      "sha256": "7ea9b27290b98d440a4521d766055a7fd7283e0e2b1fb3e4ef1276295f92cfc7"
+    },
+    {
+      "bytes": 27616,
+      "path": "tests/test_closure_baseline_development_publication_guard_patch.py",
+      "role": "baseline_development_publication_guard_patch_tests",
+      "sha256": "add5b51c444b03c84b87dff5acc849b476f51b99c82da456b7de41a3b6601bce"
+    },
+    {
+      "bytes": 24739,
+      "path": "tests/test_fit_closure_baselines.py",
+      "role": "baseline_development_runner_tests",
+      "sha256": "3a104bf7ca5172707d361cecfdf9b374fe8a9625f77d33e873851099f7b6606e"
+    }
+  ],
+  "manifest_version": "closure_baseline_development_publication_guard_patch_lock_manifest_v1",
+  "manifest_written_last": true,
+  "network_commands_run": true,
+  "outputs": [
+    {
+      "bytes": 34399,
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json",
+      "role": "baseline_development_publication_guard_patch_lock",
+      "sha256": "01d8b3ac0d869fe585f55af9911a870039afac0013f9f30b3122efc4f586caac"
+    }
+  ],
+  "physical_inputs_only": true,
+  "script": {
+    "bytes": 34465,
+    "path": "src/experiments/lock_closure_baseline_development_publication_guard_patch.py",
+    "role": "baseline_development_publication_guard_patch_locker",
+    "sha256": "ede7d471f464c1ffc1b9cc5d151412c06afe351cf8ce48bfef359ec2a957fc71"
+  },
+  "status": "completed"
+}
