@@ -46,9 +46,11 @@ from src.experiments.closure_development_guard import assert_development_frame, 
 
 
 RUNTIME_PATH = Path("configs/closure_v1/baseline_development_runtime.yaml")
-PATCH_LOCK_PATH = Path("reports/closure_v1/00_protocol/baseline_development_patch_lock.json")
+PATCH_LOCK_PATH = Path(
+    "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json"
+)
 PATCH_COMPANION_PATH = Path(
-    "reports/closure_v1/00_protocol/baseline_development_patch_lock_manifest.json"
+    "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock_manifest.json"
 )
 COMMON_PATH = Path("data/closure_v1/common_origin_manifest.parquet")
 PANEL_PATH = Path("data/panel/panel_monthly_v0.parquet")
@@ -483,11 +485,11 @@ def select_b2_families(metrics: pd.DataFrame, *, tolerance: float = 0.001) -> pd
 
 
 def _require_effective_authority() -> dict[str, Any]:
-    from src.experiments.closure_baseline_development_patch import (
-        require_baseline_development_authority,
+    from src.experiments.closure_baseline_development_publication_guard_patch import (
+        require_baseline_development_publication_guard_authority,
     )
 
-    return require_baseline_development_authority(verify_remote=True)
+    return require_baseline_development_publication_guard_authority(verify_remote=True)
 
 
 def _validated_authority_snapshot(authority: Mapping[str, Any]) -> dict[str, Any]:
@@ -507,16 +509,16 @@ def _validated_authority_snapshot(authority: Mapping[str, Any]) -> dict[str, Any
         "outcome_access_authorized",
         "future_outcomes_accessed",
     )
-    if authority.get("gate") != "E0-MP" or authority.get("status") != "effective_preflight_passed":
-        raise BaselineDevelopmentError("Published E0-MP authority identity/status drifted")
+    if authority.get("gate") != "E0-MQ" or authority.get("status") != "effective_preflight_passed":
+        raise BaselineDevelopmentError("Published E0-MQ authority identity/status drifted")
     if any(authority.get(name) is not True for name in required_true):
-        raise BaselineDevelopmentError("Published E0-MP authority is incomplete")
+        raise BaselineDevelopmentError("Published E0-MQ authority is incomplete")
     if any(authority.get(name) is not False for name in required_false):
-        raise BaselineDevelopmentError("Published E0-MP authority broadened a forbidden operation")
+        raise BaselineDevelopmentError("Published E0-MQ authority broadened a forbidden operation")
     if authority.get("development_target_access_end") != "2020-12" or authority.get(
         "target_projection"
     ) != list(TARGET_PROJECTION):
-        raise BaselineDevelopmentError("Published E0-MP target-access authority drifted")
+        raise BaselineDevelopmentError("Published E0-MQ target-access authority drifted")
     sha_fields = (
         "lock_sha256",
         "companion_sha256",
@@ -530,14 +532,14 @@ def _validated_authority_snapshot(authority: Mapping[str, Any]) -> dict[str, Any
         or re.fullmatch(r"[0-9a-f]{64}", str(authority.get(name))) is None
         for name in sha_fields
     ):
-        raise BaselineDevelopmentError("Published E0-MP authority hash binding is incomplete")
+        raise BaselineDevelopmentError("Published E0-MQ authority hash binding is incomplete")
     commit_fields = ("h_patch_head", "p_patch_head")
     if any(
         not isinstance(authority.get(name), str)
         or re.fullmatch(r"[0-9a-f]{40}", str(authority.get(name))) is None
         for name in commit_fields
     ):
-        raise BaselineDevelopmentError("Published E0-MP authority commit binding is incomplete")
+        raise BaselineDevelopmentError("Published E0-MQ authority commit binding is incomplete")
     keys = (
         "gate",
         "status",
@@ -1624,7 +1626,7 @@ def _compare_supplied_authority(
 ) -> None:
     if supplied is not None and dict(supplied) != dict(effective):
         raise BaselineDevelopmentError(
-            "Supplied E0-MP authority differs from the effective published authority"
+            "Supplied E0-MQ authority differs from the effective published authority"
         )
 
 
@@ -1650,17 +1652,17 @@ def _preflight_with_verified_authority(authority: Mapping[str, Any]) -> dict[str
         "artifact_role": "baseline_development_runner",
     }
     if runtime_record["sha256"] != authority_snapshot["runtime_sha256"]:
-        raise BaselineDevelopmentError("Effective E0-MP runtime binding drifted")
+        raise BaselineDevelopmentError("Effective E0-MQ runtime binding drifted")
     if lock_record["sha256"] != authority_snapshot["lock_sha256"]:
-        raise BaselineDevelopmentError("Effective E0-MP lock binding drifted")
+        raise BaselineDevelopmentError("Effective E0-MQ lock binding drifted")
     if companion_record["sha256"] != authority_snapshot["companion_sha256"]:
-        raise BaselineDevelopmentError("Effective E0-MP companion binding drifted")
+        raise BaselineDevelopmentError("Effective E0-MQ companion binding drifted")
     if runner_record["sha256"] != authority_snapshot["runner_sha256"]:
-        raise BaselineDevelopmentError("Effective E0-MP runner binding drifted")
+        raise BaselineDevelopmentError("Effective E0-MQ runner binding drifted")
     exact_feature_columns(contract)
     return {
         "status": "ready_to_execute_one_shot",
-        "gate": "E0-MP",
+        "gate": "E0-MQ",
         "baseline_one_shot_authorized": True,
         "authority_input_count": len(records) + 4,
         "authority_binding": authority_snapshot,
@@ -1851,7 +1853,7 @@ def _execute_one_shot_with_verified_authority(
             )
         )
         if input_records_before[-1]["sha256"] != authority_snapshot["runner_sha256"]:
-            raise BaselineDevelopmentError("Effective E0-MP runner binding drifted")
+            raise BaselineDevelopmentError("Effective E0-MQ runner binding drifted")
         if len({record["path"] for record in input_records_before}) != len(
             input_records_before
         ):
@@ -2031,7 +2033,7 @@ def _execute_one_shot_with_verified_authority(
                 "experiment_id": "closure_v1",
                 "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
                 "created_at": datetime.now(timezone.utc).isoformat(),
-                "gate": "E0-MP",
+                "gate": "E0-MQ",
                 "models": ["B0", "B1", "B2"],
                 "seeds": list(MODEL_SEEDS),
                 "counts": {

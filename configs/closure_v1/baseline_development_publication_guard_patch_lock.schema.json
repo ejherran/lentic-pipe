@@ -1,0 +1,565 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure-baseline-development-publication-guard-patch-lock-v1",
+  "title": "Closure V1 E0-MQ baseline development patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version",
+    "gate",
+    "patch_id",
+    "experiment_id",
+    "surface_id",
+    "status",
+    "created_at_utc",
+    "repository",
+    "correction",
+    "mp_authority",
+    "h_patch",
+    "runtime_contract",
+    "prelock",
+    "verification",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "lock_version": {"const": "closure_baseline_development_publication_guard_patch_lock_v1"},
+    "gate": {"const": "E0-MQ"},
+    "patch_id": {"const": "baseline_development_publication_guard_authority_patch_1"},
+    "experiment_id": {"const": "closure_v1"},
+    "surface_id": {"const": "closure_v1_wqp_adaptive_no_current_chla"},
+    "status": {"const": "locked_unpublished"},
+    "created_at_utc": {"type": "string"},
+    "repository": {"$ref": "#/$defs/repository"},
+    "correction": {"$ref": "#/$defs/correction"},
+    "mp_authority": {"$ref": "#/$defs/mpAuthority"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runtime_contract": {"$ref": "#/$defs/runtimeContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"},
+    "seals": {"$ref": "#/$defs/seals"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stringArray": {
+      "type": "array",
+      "items": {"type": "string"},
+      "uniqueItems": true
+    },
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "historicalRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256", "commit", "hash_source"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "commit": {"const": "7f4099644c53e0b56d6af1adf62a0d107ade4d3a"},
+        "hash_source": {"const": "git_blob_at_commit"}
+      }
+    },
+    "correction": {
+      "const": {
+        "classification": "publication_guard_marker_and_manifest_dialect_only",
+        "scientific_runtime_contract_changed": false,
+        "failed_gate": "P-E0-MP",
+        "failed_command": ["scripts/check_repo_publication_ready.sh"],
+        "failed_command_returncode": 0,
+        "rejected_marker": "Repository publication guard passed.",
+        "accepted_marker": "OK: tracked files look publication-ready.",
+        "full_type_check_passed": true,
+        "focused_test_count_passed": 55,
+        "poetry_check_passed": true,
+        "git_diff_check_reached": false,
+        "payload_build_reached": false,
+        "output_guard_acquired": false,
+        "temporary_or_final_output_written": false,
+        "p_mp_is_authority": false
+      }
+    },
+    "mpAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit", "h_commit", "path_count", "paths", "paths_sha256",
+        "preserved_count", "preserved_records", "preserved_records_sha256",
+        "superseded_count", "historical_records", "historical_records_sha256",
+        "git_authority_verified", "effective_loader_called"
+      ],
+      "properties": {
+        "base_commit": {"const": "a9aa51aaa1566d0b8e7154697fae69c458c5019f"},
+        "h_commit": {"const": "7f4099644c53e0b56d6af1adf62a0d107ade4d3a"},
+        "path_count": {"const": 8},
+        "paths": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "string"}, "uniqueItems": true},
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "preserved_count": {"const": 6},
+        "preserved_records": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/fileRecord"}},
+        "preserved_records_sha256": {"$ref": "#/$defs/sha256"},
+        "superseded_count": {"const": 2},
+        "historical_records": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/historicalRecord"}},
+        "historical_records_sha256": {"$ref": "#/$defs/sha256"},
+        "git_authority_verified": {"const": true},
+        "effective_loader_called": {"const": false}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string"}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "parent",
+        "branch",
+        "tracking_ref",
+        "tracking_head",
+        "remote_head",
+        "remote_observation_mode",
+        "worktree_status"
+      ],
+      "properties": {
+        "head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "parent": {"const": "7f4099644c53e0b56d6af1adf62a0d107ade4d3a"},
+        "branch": {"const": "main"},
+        "tracking_ref": {"const": "origin/main"},
+        "tracking_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "remote_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "remote_observation_mode": {"const": "live_remote_main_verified"},
+        "worktree_status": {"const": "clean"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "added_count",
+        "modified_count",
+        "paths",
+        "paths_sha256",
+        "components",
+        "components_sha256"
+      ],
+      "properties": {
+        "base_commit": {"const": "7f4099644c53e0b56d6af1adf62a0d107ade4d3a"},
+        "added_count": {"const": 5},
+        "modified_count": {"const": 2},
+        "paths": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "components": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runtimeContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record",
+        "schema_subset_verified",
+        "pins_verified",
+        "target_cutoff",
+        "target_projection",
+        "raw_prediction_contract",
+        "b1_seed_count",
+        "candidate_slot_count",
+        "maximum_pipeline_count",
+        "exact_preprocessor_record_count",
+        "minimum_final_path_count",
+        "maximum_final_path_count",
+        "physical_input_count",
+        "physical_inputs",
+        "physical_inputs_sha256"
+      ],
+      "properties": {
+        "record": {"$ref": "#/$defs/fileRecord"},
+        "schema_subset_verified": {"const": true},
+        "pins_verified": {"const": true},
+        "target_cutoff": {"const": "2020-12"},
+        "target_projection": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "prefixItems": [
+            {"const": "source_id"},
+            {"const": "site_id"},
+            {"const": "origin_year_month"},
+            {"const": "target_year_month"},
+            {"const": "horizon_months"},
+            {"const": "bloom_h"},
+            {"const": "target_risk_chla_h"}
+          ],
+          "items": false,
+          "uniqueItems": true
+        },
+        "raw_prediction_contract": {
+          "const": {
+            "columns": [
+              {"name": "surface_id", "dtype": "string", "nullable": false},
+              {"name": "model_id", "dtype": "string", "nullable": false},
+              {"name": "source_id", "dtype": "string", "nullable": false},
+              {"name": "site_id", "dtype": "string", "nullable": false},
+              {"name": "common_origin_id", "dtype": "string", "nullable": false},
+              {"name": "evaluation_unit_id", "dtype": "string", "nullable": false},
+              {"name": "holdout_group_id", "dtype": "string", "nullable": false},
+              {"name": "assignment_role", "dtype": "string", "nullable": false},
+              {"name": "time_role", "dtype": "string", "nullable": false},
+              {"name": "origin_year_month", "dtype": "string", "nullable": false},
+              {"name": "target_year_month", "dtype": "string", "nullable": false},
+              {"name": "horizon_months", "dtype": "int16", "nullable": false},
+              {"name": "technical_seed", "dtype": "int64", "nullable": false},
+              {"name": "model_seed", "dtype": "int64", "nullable": true},
+              {"name": "upstream_state_seed", "dtype": "int64", "nullable": true},
+              {"name": "candidate", "dtype": "string", "nullable": false},
+              {"name": "selected_family", "dtype": "bool", "nullable": false},
+              {"name": "availability_status", "dtype": "string", "nullable": false},
+              {"name": "failure_reason", "dtype": "string", "nullable": false},
+              {"name": "score_semantics", "dtype": "string", "nullable": false},
+              {"name": "raw_score", "dtype": "float64", "nullable": true},
+              {"name": "predicted_bloom_probability", "dtype": "float64", "nullable": true}
+            ],
+            "canonical_sort_keys": [
+              "model_seed_rank",
+              "upstream_state_seed_rank",
+              "candidate_rank",
+              "source_id",
+              "site_id",
+              "origin_year_month",
+              "horizon_months",
+              "target_year_month",
+              "common_origin_id",
+              "evaluation_unit_id"
+            ],
+            "model_seed_order": [1729, 20260612, 20260613, 20260614, 314159],
+            "candidate_order": ["logistic_sgd", "hist_gradient_boosting_classifier"],
+            "availability_status_values": ["success", "model_unavailable"],
+            "success_score_policy": "raw_score_and_probability_finite_in_closed_unit_interval",
+            "unavailable_score_policy": "raw_score_and_probability_both_null",
+            "B0_seed_policy": "technical_seed_only",
+            "B1_seed_policy": "upstream_state_seed_only",
+            "B2_seed_policy": "model_seed_only",
+            "B1_probability_semantics": "uncalibrated_chla_free_irc_persistence_probability"
+          }
+        },
+        "b1_seed_count": {"const": 5},
+        "candidate_slot_count": {"const": 30},
+        "maximum_pipeline_count": {"const": 30},
+        "exact_preprocessor_record_count": {"const": 30},
+        "minimum_final_path_count": {"const": 39},
+        "maximum_final_path_count": {"const": 69},
+        "physical_input_count": {"const": 40},
+        "physical_inputs": {
+          "type": "array",
+          "minItems": 40,
+          "maxItems": 40,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "namespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "final_count",
+        "final_paths",
+        "final_paths_sha256",
+        "all_final_absent",
+        "temporary_count",
+        "temporary_paths_sha256",
+        "all_temporary_absent",
+        "future_pointer_count",
+        "future_pointer_paths",
+        "future_pointer_paths_sha256",
+        "all_future_pointers_absent",
+        "future_pointer_temporary_count",
+        "future_pointer_temporary_paths_sha256",
+        "all_future_pointer_temporaries_absent",
+        "guard_path",
+        "guard_absent"
+      ],
+      "properties": {
+        "final_count": {"const": 69},
+        "final_paths": {
+          "type": "array",
+          "minItems": 69,
+          "maxItems": 69,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "final_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_final_absent": {"const": true},
+        "temporary_count": {"const": 69},
+        "temporary_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_temporary_absent": {"const": true},
+        "future_pointer_count": {"const": 3},
+        "future_pointer_paths": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "future_pointer_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_future_pointers_absent": {"const": true},
+        "future_pointer_temporary_count": {"const": 3},
+        "future_pointer_temporary_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_future_pointer_temporaries_absent": {"const": true},
+        "guard_path": {"const": "tmp/closure_v1_baseline_development/baseline_bundle.guard"},
+        "guard_absent": {"const": true}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_namespace",
+        "e0_m_paths",
+        "all_e0_m_paths_absent",
+        "outcome_access_log_path",
+        "outcome_access_log_absent",
+        "dvc_commands_run",
+        "network_commands_run",
+        "data_execution_run",
+        "auditor_run",
+        "future_outcomes_accessed",
+        "p_mp_lock_absent",
+        "p_mp_companion_absent",
+        "p_mp_temporaries_absent",
+        "p_mp_guard_absent",
+        "p_mq_outputs_absent",
+        "p_mq_temporaries_absent",
+        "p_mq_guard_absent"
+      ],
+      "properties": {
+        "output_namespace": {"$ref": "#/$defs/namespace"},
+        "e0_m_paths": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "all_e0_m_paths_absent": {"const": true},
+        "outcome_access_log_path": {"const": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"},
+        "outcome_access_log_absent": {"const": true},
+        "dvc_commands_run": {"const": false},
+        "network_commands_run": {"const": true},
+        "data_execution_run": {"const": false},
+        "auditor_run": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "p_mp_lock_absent": {"const": true},
+        "p_mp_companion_absent": {"const": true},
+        "p_mp_temporaries_absent": {"const": true},
+        "p_mp_guard_absent": {"const": true},
+        "p_mq_outputs_absent": {"const": true},
+        "p_mq_temporaries_absent": {"const": true},
+        "p_mq_guard_absent": {"const": true}
+      }
+    },
+    "focusedTests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command", "returncode", "stdout_sha256", "stderr_sha256",
+        "stdout_line_count", "stderr_line_count", "test_count",
+        "skipped_count", "deselected_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 69},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "schema_path",
+        "schema_bytes",
+        "schema_sha256",
+        "supported_subset_verified",
+        "minimum_keyword_absent",
+        "format_keyword_absent"
+      ],
+      "properties": {
+        "gate": {"const": "E0-MQ"},
+        "schema_path": {"const": "configs/closure_v1/baseline_development_publication_guard_patch_lock.schema.json"},
+        "schema_bytes": {"type": "integer"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "supported_subset_verified": {"const": true},
+        "minimum_keyword_absent": {"const": true},
+        "format_keyword_absent": {"const": true}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_preflight",
+        "full_type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "git_diff_check"
+      ],
+      "properties": {
+        "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedTests"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "baseline_one_shot_authorized",
+        "b0_fit_authorized",
+        "b1_execution_authorized",
+        "b2_fit_authorized",
+        "calibration_authorized",
+        "e0_m_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized",
+        "dvc_commands_authorized",
+        "network_authorized",
+        "outcome_access_authorized",
+        "future_outcomes_accessed",
+        "effective_in_payload",
+        "publication_required"
+      ],
+      "properties": {
+        "baseline_one_shot_authorized": {"const": false},
+        "b0_fit_authorized": {"const": false},
+        "b1_execution_authorized": {"const": false},
+        "b2_fit_authorized": {"const": false},
+        "calibration_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "network_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "effective_in_payload": {"const": false},
+        "publication_required": {"const": true}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "h_scope_exact_two_modifications_five_additions",
+        "p_scope_exact_two_additions",
+        "legacy_baseline_scripts_unchanged",
+        "dvc_overlay_unchanged",
+        "target_cutoff_enforced",
+        "calibration_labels_not_materialized",
+        "b1_five_seed_mapping_locked",
+        "b2_five_of_five_selection_locked",
+        "thirty_candidate_slots_locked",
+        "maximum_thirty_pipelines_locked",
+        "exact_thirty_preprocessor_records_locked",
+        "final_path_range_39_to_69_locked",
+        "sixty_nine_potential_outputs_absent_at_lock",
+        "manifest_written_last",
+        "no_clobber_and_owned_inode_rollback_locked",
+        "e0_m_absent",
+        "outcome_access_log_absent",
+        "future_outcomes_accessed",
+        "h_mp_six_preserved_two_superseded",
+        "p_mp_failed_outputs_absent",
+        "publication_guard_exact_success_marker_locked",
+        "companion_script_record_locked",
+        "companion_exact_fifty_three_plus_two_locked"
+      ],
+      "properties": {
+        "h_scope_exact_two_modifications_five_additions": {"const": true},
+        "p_scope_exact_two_additions": {"const": true},
+        "legacy_baseline_scripts_unchanged": {"const": true},
+        "dvc_overlay_unchanged": {"const": true},
+        "target_cutoff_enforced": {"const": true},
+        "calibration_labels_not_materialized": {"const": true},
+        "b1_five_seed_mapping_locked": {"const": true},
+        "b2_five_of_five_selection_locked": {"const": true},
+        "thirty_candidate_slots_locked": {"const": true},
+        "maximum_thirty_pipelines_locked": {"const": true},
+        "exact_thirty_preprocessor_records_locked": {"const": true},
+        "final_path_range_39_to_69_locked": {"const": true},
+        "sixty_nine_potential_outputs_absent_at_lock": {"const": true},
+        "manifest_written_last": {"const": true},
+        "no_clobber_and_owned_inode_rollback_locked": {"const": true},
+        "e0_m_absent": {"const": true},
+        "outcome_access_log_absent": {"const": true},
+        "future_outcomes_accessed": {"const": false},
+        "h_mp_six_preserved_two_superseded": {"const": true},
+        "p_mp_failed_outputs_absent": {"const": true},
+        "publication_guard_exact_success_marker_locked": {"const": true},
+        "companion_script_record_locked": {"const": true},
+        "companion_exact_fifty_three_plus_two_locked": {"const": true}
+      }
+    }
+  }
+}

@@ -415,7 +415,7 @@ def test_cli_is_closed() -> None:
 
 def _effective_authority() -> dict[str, object]:
     return {
-        "gate": "E0-MP",
+        "gate": "E0-MQ",
         "status": "effective_preflight_passed",
         "baseline_one_shot_authorized": True,
         "b0_fit_authorized": True,
