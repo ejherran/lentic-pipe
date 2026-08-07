@@ -50,11 +50,17 @@ from src.experiments.train_closure_pipe import (
     E0_MI_LOCK_PATH,
     E0_MI_MANIFEST_PATH,
     E0_MI_SCHEMA_PATH,
+    E0_MJ_LOCK_PATH,
+    E0_MJ_MANIFEST_PATH,
+    E0_MK_LOCK_PATH,
+    E0_MK_MANIFEST_PATH,
+    E0_MK_SCHEMA_PATH,
     MODEL_ARTIFACT_OUTPUT_NAMES,
     P1_FIT_FAILURE_REASON_COUNTS,
     P1_FIT_STATUS_COUNTS,
     P1_SEQUENCE_AUDITOR_PATH,
     P1_SEQUENCE_20260612_AUDITOR_PATH,
+    P1_SEQUENCE_20260613_AUDITOR_PATH,
     P1_SEQUENCE_POINTER_PATH,
     P1_SEQUENCE_20260612_POINTER_PATH,
     P1_20260612_AUTHORITY_SOURCE_PATHS,
@@ -85,7 +91,9 @@ from src.experiments.train_closure_pipe import (
     assert_sequence_input_contract_unchanged,
     builder_records_from_temporal_validation_authority,
     builder_records_from_p1_seed_20260612_temporal_consumer_authority,
+    builder_records_from_p1_seed_20260613_temporal_consumer_authority,
     validate_p1_temporal_consumer_seed_20260612_authority,
+    validate_p1_temporal_consumer_seed_20260613_authority,
     validate_p1_temporal_consumer_schema_subset_authority,
     validate_sequence_manifest_builder_binding,
 )
@@ -361,6 +369,8 @@ def _p1_20260612_consumer_authority(
         **dict(auditor_record),
         "role": "p1_sequence_bundle_auditor_callable",
     }
+
+
     return {
         "gate": "E0-MI",
         "publication_verified": True,
@@ -481,6 +491,99 @@ def _p1_20260612_consumer_authority(
             "replacement_used": False,
         },
     }
+
+
+def _p1_20260613_consumer_authority(
+    *,
+    builder_record: Mapping[str, Any],
+    mj_lock_record: Mapping[str, Any],
+    mj_companion_record: Mapping[str, Any],
+    mk_lock_record: Mapping[str, Any],
+    mk_companion_record: Mapping[str, Any],
+    auditor_record: Mapping[str, Any],
+) -> dict[str, Any]:
+    authority = _p1_20260612_consumer_authority(
+        builder_record=builder_record,
+        mh_lock_record=mj_lock_record,
+        mh_companion_record=mj_companion_record,
+        mi_lock_record=mk_lock_record,
+        mi_companion_record=mk_companion_record,
+        auditor_record=auditor_record,
+    )
+    for field in (
+        "historical_e0_mg_verified",
+        "historical_mg_effective_loader_called",
+        "historical_e0_mh_verified",
+        "historical_mh_effective_loader_called",
+        "p1_20260612_sequence_bundle_verified",
+    ):
+        authority.pop(field)
+    authority.update(
+        {
+            "gate": "E0-MK",
+            "historical_e0_mi_verified": True,
+            "historical_mi_effective_loader_called": False,
+            "historical_e0_mj_verified": True,
+            "historical_mj_effective_loader_called": False,
+            "p1_20260612_slot_preserved": True,
+            "p1_20260613_sequence_bundle_verified": True,
+            "authorized_base_seed": 20_260_613,
+            "schema_subset_preflight_evidence": {
+                "gate": "E0-MK",
+                "schema_path": E0_MK_SCHEMA_PATH.as_posix(),
+                "schema_bytes": 1,
+                "schema_sha256": "3" * 64,
+                "supported_subset_verified": True,
+                "minimum_keyword_absent": True,
+                "format_keyword_absent": True,
+            },
+            "sequence_authority_input_records": [
+                {
+                    **dict(mj_lock_record),
+                    "role": "external_p1_sequence_seed_20260613_patch_lock",
+                },
+                {
+                    **dict(mj_companion_record),
+                    "role": "p1_sequence_seed_20260613_patch_companion",
+                },
+            ],
+            "authority_input_records": [
+                {
+                    **dict(mk_lock_record),
+                    "role": (
+                        "external_p1_temporal_consumer_seed_20260613_patch_lock"
+                    ),
+                },
+                {
+                    **dict(mk_companion_record),
+                    "role": "p1_temporal_consumer_seed_20260613_patch_companion",
+                },
+            ],
+        }
+    )
+    audit = dict(authority["in_process_audit_evidence"])
+    auditor_with_role = {
+        **dict(auditor_record),
+        "role": "p1_sequence_bundle_auditor_callable",
+    }
+    audit.update(
+        {
+            "callable_module": (
+                "src.experiments.audit_closure_p1_seed_20260613_sequence_bundle"
+            ),
+            "callable_name": "audit_p1_seed_20260613_sequence_bundle",
+            "callable_qualname": "audit_p1_seed_20260613_sequence_bundle",
+            "callable_source_path": P1_SEQUENCE_20260613_AUDITOR_PATH.as_posix(),
+            "callable_code_filename": P1_SEQUENCE_20260613_AUDITOR_PATH.as_posix(),
+            "callable_git_commit": "a25863c05730d65d0fb3454a608243b2c9eca639",
+            "callable_source_git": auditor_with_role,
+            "callable_source_physical": auditor_with_role,
+            "audit_version": "closure_p1_seed_20260613_sequence_bundle_audit_v1",
+            "base_seed": 20_260_613,
+        }
+    )
+    authority["in_process_audit_evidence"] = audit
+    return authority
 
 
 def test_window_loader_uses_canonical_utf8_order_and_does_not_fit_calibration() -> None:
@@ -1256,6 +1359,80 @@ def test_p1_20260612_authority_binds_mh_mi_builder_and_auditor(
             {**authority, "state_consumer_authority": {"gate": "E0-MC"}},
             model_id="P1",
             base_seed=20_260_612,
+            device="cpu",
+        )
+
+
+def test_p1_20260613_authority_summary_binds_mj_mk_and_trainer(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    physical_paths = (
+        module.SEQUENCE_BUILDER_PATH,
+        E0_MJ_LOCK_PATH,
+        E0_MJ_MANIFEST_PATH,
+        E0_MK_LOCK_PATH,
+        E0_MK_MANIFEST_PATH,
+        P1_SEQUENCE_20260613_AUDITOR_PATH,
+    )
+    for relative in physical_paths:
+        physical = tmp_path / relative
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(relative.as_posix().encode("utf-8"))
+    builder_record = _file_record(tmp_path / module.SEQUENCE_BUILDER_PATH)
+    authority = _p1_20260613_consumer_authority(
+        builder_record=builder_record,
+        mj_lock_record=_file_record(tmp_path / E0_MJ_LOCK_PATH),
+        mj_companion_record=_file_record(tmp_path / E0_MJ_MANIFEST_PATH),
+        mk_lock_record=_file_record(tmp_path / E0_MK_LOCK_PATH),
+        mk_companion_record=_file_record(tmp_path / E0_MK_MANIFEST_PATH),
+        auditor_record=_file_record(tmp_path / P1_SEQUENCE_20260613_AUDITOR_PATH),
+    )
+
+    artifact, current, state_context, sequence_inputs, consumer_inputs = (
+        validate_p1_temporal_consumer_seed_20260613_authority(
+            authority,
+            model_id="P1",
+            base_seed=20_260_613,
+            device="cpu",
+        )
+    )
+    assert artifact == current == builder_record
+    assert state_context is None
+    assert sequence_inputs == (
+        _file_record(tmp_path / E0_MJ_LOCK_PATH),
+        _file_record(tmp_path / E0_MJ_MANIFEST_PATH),
+    )
+    assert consumer_inputs == (
+        _file_record(tmp_path / E0_MK_LOCK_PATH),
+        _file_record(tmp_path / E0_MK_MANIFEST_PATH),
+    )
+    assert builder_records_from_p1_seed_20260613_temporal_consumer_authority(
+        authority
+    ) == (builder_record, builder_record)
+
+    legacy_names = dict(authority)
+    legacy_names.pop("historical_mi_effective_loader_called")
+    legacy_names.pop("historical_mj_effective_loader_called")
+    legacy_names["historical_mg_effective_loader_called"] = False
+    legacy_names["historical_mh_effective_loader_called"] = False
+    with pytest.raises(ValueError, match="authorization predicates drifted"):
+        validate_p1_temporal_consumer_seed_20260613_authority(
+            legacy_names,
+            model_id="P1",
+            base_seed=20_260_613,
+            device="cpu",
+        )
+    with pytest.raises(ValueError, match="authorization predicates drifted"):
+        validate_p1_temporal_consumer_seed_20260613_authority(
+            {**authority, "p1_20260612_slot_preserved": False},
+            model_id="P1",
+            base_seed=20_260_613,
             device="cpu",
         )
 
@@ -2404,7 +2581,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_temporal_consumer_seed_20260612_patch"
+        "src.experiments.closure_p1_temporal_consumer_seed_20260613_patch"
     )
 
     def stop_gate(
@@ -2413,24 +2590,24 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         base_seed: int,
         device: str,
     ) -> dict[str, object]:
-        assert (model_id, base_seed) == ("P1", 20_260_612)
+        assert (model_id, base_seed) == ("P1", 20_260_613)
         assert device == "cpu"
         raise GateStopped
 
     setattr(
         fake_lock,
-        "require_p1_temporal_consumer_seed_20260612_patch_authorized",
+        "require_p1_temporal_consumer_seed_20260613_patch_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P1", base_seed=20_260_612, device="cpu"),
+        lambda: Namespace(model_id="P1", base_seed=20_260_613, device="cpu"),
     )
 
     def forbidden_after_gate(*args: object, **kwargs: object) -> object:
-        raise AssertionError("MI gate must stop before seed, paths, guards, or slot I/O")
+        raise AssertionError("MK gate must stop before seed, paths, guards, or slot I/O")
 
     monkeypatch.setattr(module, "validate_temporal_seed", forbidden_after_gate)
     monkeypatch.setattr(module, "_paths", forbidden_after_gate)
@@ -2451,7 +2628,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     events: list[str] = []
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_temporal_consumer_seed_20260612_patch"
+        "src.experiments.closure_p1_temporal_consumer_seed_20260613_patch"
     )
     authority: dict[str, object] = {
         "p1_artifact_builder_record": {
@@ -2467,25 +2644,25 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
     }
 
     def gate(*, model_id: str, base_seed: int, device: str) -> dict[str, object]:
-        assert (model_id, base_seed) == ("P1", 20_260_612)
+        assert (model_id, base_seed) == ("P1", 20_260_613)
         assert device == "cpu"
         events.append("gate")
         return authority
 
     setattr(
         fake_lock,
-        "require_p1_temporal_consumer_seed_20260612_patch_authorized",
+        "require_p1_temporal_consumer_seed_20260613_patch_authorized",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P1", base_seed=20_260_612, device="cpu"),
+        lambda: Namespace(model_id="P1", base_seed=20_260_613, device="cpu"),
     )
 
     def validate_seed(model_id: str, base_seed: int) -> None:
-        assert (model_id, base_seed) == ("P1", 20_260_612)
+        assert (model_id, base_seed) == ("P1", 20_260_613)
         events.append("seed")
 
     monkeypatch.setattr(module, "validate_temporal_seed", validate_seed)
@@ -2495,7 +2672,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
     }
 
     def paths(model_id: str, base_seed: int) -> dict[str, Path]:
-        assert (model_id, base_seed) == ("P1", 20_260_612)
+        assert (model_id, base_seed) == ("P1", 20_260_613)
         events.append("paths")
         return relative_paths
 
@@ -2503,7 +2680,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     @contextmanager
     def guard(model_id: str, base_seed: int) -> Any:
-        assert (model_id, base_seed) == ("P1", 20_260_612)
+        assert (model_id, base_seed) == ("P1", 20_260_613)
         events.append("guard-enter")
         try:
             yield
