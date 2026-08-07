@@ -1264,24 +1264,24 @@ def _authorization_dependency_records(
         or not all(isinstance(record, Mapping) for record in raw_inputs)
     ):
         raise ClosurePipeSequenceError(
-            "E0-MJ authorization must bind exactly lock and companion inputs"
+            "E0-ML authorization must bind exactly lock and companion inputs"
         )
     records = [dict(cast(Mapping[str, Any], record)) for record in raw_inputs]
     expected_roles = {
-        "reports/closure_v1/00_protocol/p1_sequence_seed_20260613_patch_lock.json": (
-            "external_p1_sequence_seed_20260613_patch_lock"
+        "reports/closure_v1/00_protocol/p1_sequence_seed_20260614_patch_lock.json": (
+            "external_p1_sequence_seed_20260614_patch_lock"
         ),
         "reports/closure_v1/00_protocol/"
-        "p1_sequence_seed_20260613_patch_lock_manifest.json": (
-            "p1_sequence_seed_20260613_patch_companion"
+        "p1_sequence_seed_20260614_patch_lock_manifest.json": (
+            "p1_sequence_seed_20260614_patch_companion"
         ),
     }
     if {record.get("path"): record.get("role") for record in records} != expected_roles:
-        raise ClosurePipeSequenceError("E0-MJ authorization input paths or roles drifted")
+        raise ClosurePipeSequenceError("E0-ML authorization input paths or roles drifted")
     dependencies: list[dict[str, Any]] = []
     for record in records:
         if set(record) != {"path", "role", "bytes", "sha256"}:
-            raise ClosurePipeSequenceError("E0-MJ authorization input record drifted")
+            raise ClosurePipeSequenceError("E0-ML authorization input record drifted")
         observed = _file_record(PROJECT_ROOT / str(record["path"]))
         if observed != {
             "path": record["path"],
@@ -1289,7 +1289,7 @@ def _authorization_dependency_records(
             "sha256": record["sha256"],
         }:
             raise ClosurePipeSequenceError(
-                f"E0-MJ authorization input changed before sequence build: {record['path']}"
+                f"E0-ML authorization input changed before sequence build: {record['path']}"
             )
         dependencies.append(observed)
     return dependencies
@@ -2923,15 +2923,15 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
 
-    # The additive E0-MJ gate is deliberately the first operation in main that
+    # The additive E0-ML gate is deliberately the first operation in main that
     # may read runtime, state, Parquet, or output artifacts.  It reconstructs
-    # E0-MH/E0-MI and P1/20260612 as historical authorities; there is no unlocked
-    # mode for a later seed.
-    from src.experiments.closure_p1_sequence_seed_20260613_patch import (
-        require_p1_sequence_seed_20260613_authorized,
+    # E0-MJ/E0-MK and all three completed P1 slots as historical authorities;
+    # there is no unlocked mode for a later seed.
+    from src.experiments.closure_p1_sequence_seed_20260614_patch import (
+        require_p1_sequence_seed_20260614_authorized,
     )
 
-    authorization = require_p1_sequence_seed_20260613_authorized(
+    authorization = require_p1_sequence_seed_20260614_authorized(
         model_id=args.model_id,
         base_seed=args.base_seed,
     )
