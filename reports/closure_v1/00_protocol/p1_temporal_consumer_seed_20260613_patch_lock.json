@@ -1,0 +1,883 @@
+{
+  "authorizations": {
+    "authorized_base_seed": 20260613,
+    "authorized_device": "cpu",
+    "authorized_model_id": "P1",
+    "batch_seed_execution_authorized": false,
+    "dvc_commands_authorized": false,
+    "e0_m_authorized": false,
+    "e0_u_authorized": false,
+    "effective_in_payload": false,
+    "evaluation_authorized": false,
+    "fit_attempt_authorized": false,
+    "future_outcomes_accessed": false,
+    "p1_consumer_authorized": false,
+    "p1_fit_authorized": false,
+    "p1_sequence_builder_authorized": false,
+    "publication_required": true,
+    "replacement_authorized": false,
+    "retry_authorized": false
+  },
+  "base_authorities": {
+    "e0_mi": {
+      "companion_manifest": {
+        "bytes": 8850,
+        "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260612_patch_lock_manifest.json",
+        "role": "p1_temporal_consumer_seed_20260612_patch_companion",
+        "sha256": "9a165cd88cc6a2fa351215e493b1832a4402c52cefd2c588a62545014e992ce1"
+      },
+      "effective_loader_called": false,
+      "future_outcomes_accessed": false,
+      "gate": "E0-MI",
+      "git_diff": {
+        "added_count": 5,
+        "base_commit": "b448e1fb0ee75b6135da11f0ea9a8877d89e0ee1",
+        "entries": [
+          {
+            "path": "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json",
+            "status": "A"
+          },
+          {
+            "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md",
+            "status": "A"
+          },
+          {
+            "path": "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "status": "A"
+          },
+          {
+            "path": "src/experiments/lock_closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "status": "A"
+          },
+          {
+            "path": "src/experiments/train_closure_pipe.py",
+            "status": "M"
+          },
+          {
+            "path": "tests/test_closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "status": "A"
+          },
+          {
+            "path": "tests/test_train_closure_pipe.py",
+            "status": "M"
+          }
+        ],
+        "modified_count": 2,
+        "only_allowed_additions_and_modifications": true,
+        "patch_head": "e8efbf800e1b171ba70bd3a863aec64138b6b0fb",
+        "paths": [
+          "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md",
+          "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "src/experiments/lock_closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "src/experiments/train_closure_pipe.py",
+          "tests/test_closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "tests/test_train_closure_pipe.py"
+        ],
+        "paths_sha256": "61f3bfbe6728dde6b83e5f2fa912af4f7f77f9cd341633e5ab2761ff57ff5766"
+      },
+      "historical_authority_verified": true,
+      "lock": {
+        "bytes": 37901,
+        "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260612_patch_lock.json",
+        "role": "external_p1_temporal_consumer_seed_20260612_patch_lock",
+        "sha256": "494ff320e6019c7bf8330f5c65f05344e97daabfa169aa434c2a44dd393d9f94"
+      },
+      "lock_commit": "16ee69f8fa923e4b7a9466024d4240b39a1a20d3",
+      "patch_components": {
+        "count": 7,
+        "paths": [
+          "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md",
+          "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "src/experiments/lock_closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "src/experiments/train_closure_pipe.py",
+          "tests/test_closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "tests/test_train_closure_pipe.py"
+        ],
+        "paths_sha256": "61f3bfbe6728dde6b83e5f2fa912af4f7f77f9cd341633e5ab2761ff57ff5766",
+        "records": [
+          {
+            "bytes": 22608,
+            "path": "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json",
+            "role": "p1_temporal_consumer_seed_20260612_patch_lock_schema",
+            "sha256": "7f8067506df17aa61ae23b2c141fbb7ff1847047feaa7cabb2028263d92f08cb"
+          },
+          {
+            "bytes": 5103,
+            "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md",
+            "role": "p1_temporal_consumer_seed_20260612_patch_protocol",
+            "sha256": "ce66bafd14c58da56820ea45d800dc0c577c5073ff9fb0587a49fad7bfbbdbb8"
+          },
+          {
+            "bytes": 78166,
+            "path": "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "role": "p1_temporal_consumer_seed_20260612_patch_validator",
+            "sha256": "387bf5c8be292403927c934a5355158134a458504704e8e728d1f0d6f054717b"
+          },
+          {
+            "bytes": 22411,
+            "path": "src/experiments/lock_closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "role": "p1_temporal_consumer_seed_20260612_patch_locker",
+            "sha256": "001f9e7b965c6b44b9fa69aa2ff1b9c33b5f257cdb56fa6bbb19706d67f0c393"
+          },
+          {
+            "bytes": 120840,
+            "path": "src/experiments/train_closure_pipe.py",
+            "role": "p1_temporal_consumer_mi_gate_routing",
+            "sha256": "3ad071f9b5002a0f4f23c3f4ae01d6632fd8f5852ac377bede525d5191819c2a"
+          },
+          {
+            "bytes": 30141,
+            "path": "tests/test_closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "role": "p1_temporal_consumer_seed_20260612_patch_tests",
+            "sha256": "3b9107cd3495be76a0f42110783c5417350228fc0f68ee9eccfb71da2ef4925b"
+          },
+          {
+            "bytes": 97790,
+            "path": "tests/test_train_closure_pipe.py",
+            "role": "p1_temporal_consumer_mi_gate_tests",
+            "sha256": "d95155eb068f09628367ff358bd96a7f63c1cd1d38c1d75639be4df2e7f909ca"
+          }
+        ],
+        "records_sha256": "7ee22696a3231dcf776dc2702d6702d8b8bbf8502843bf851ae161353dc6d3f3"
+      },
+      "patch_head": "e8efbf800e1b171ba70bd3a863aec64138b6b0fb",
+      "preserved_components": {
+        "count": 5,
+        "current_bytes_required_to_match_historical": true,
+        "paths": [
+          "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md",
+          "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "src/experiments/lock_closure_p1_temporal_consumer_seed_20260612_patch.py",
+          "tests/test_closure_p1_temporal_consumer_seed_20260612_patch.py"
+        ],
+        "records": [
+          {
+            "bytes": 22608,
+            "path": "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json",
+            "role": "p1_temporal_consumer_seed_20260612_patch_lock_schema",
+            "sha256": "7f8067506df17aa61ae23b2c141fbb7ff1847047feaa7cabb2028263d92f08cb"
+          },
+          {
+            "bytes": 5103,
+            "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md",
+            "role": "p1_temporal_consumer_seed_20260612_patch_protocol",
+            "sha256": "ce66bafd14c58da56820ea45d800dc0c577c5073ff9fb0587a49fad7bfbbdbb8"
+          },
+          {
+            "bytes": 78166,
+            "path": "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "role": "p1_temporal_consumer_seed_20260612_patch_validator",
+            "sha256": "387bf5c8be292403927c934a5355158134a458504704e8e728d1f0d6f054717b"
+          },
+          {
+            "bytes": 22411,
+            "path": "src/experiments/lock_closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "role": "p1_temporal_consumer_seed_20260612_patch_locker",
+            "sha256": "001f9e7b965c6b44b9fa69aa2ff1b9c33b5f257cdb56fa6bbb19706d67f0c393"
+          },
+          {
+            "bytes": 30141,
+            "path": "tests/test_closure_p1_temporal_consumer_seed_20260612_patch.py",
+            "role": "p1_temporal_consumer_seed_20260612_patch_tests",
+            "sha256": "3b9107cd3495be76a0f42110783c5417350228fc0f68ee9eccfb71da2ef4925b"
+          }
+        ],
+        "records_sha256": "61d47489680e19efe951901d9cfef51eb8f3b207feb2f3b9763cbb28af5dad2a"
+      },
+      "publication_topology_verified": true,
+      "superseded_components": {
+        "count": 2,
+        "current_bytes_required_to_match_historical": false,
+        "paths": [
+          "src/experiments/train_closure_pipe.py",
+          "tests/test_train_closure_pipe.py"
+        ],
+        "records": [
+          {
+            "bytes": 120840,
+            "path": "src/experiments/train_closure_pipe.py",
+            "role": "p1_temporal_consumer_mi_gate_routing",
+            "sha256": "3ad071f9b5002a0f4f23c3f4ae01d6632fd8f5852ac377bede525d5191819c2a"
+          },
+          {
+            "bytes": 97790,
+            "path": "tests/test_train_closure_pipe.py",
+            "role": "p1_temporal_consumer_mi_gate_tests",
+            "sha256": "d95155eb068f09628367ff358bd96a7f63c1cd1d38c1d75639be4df2e7f909ca"
+          }
+        ],
+        "records_sha256": "fceacd2fb60fab3b4411b54f44039897b050d893e113205f3e5144823cfbb14c"
+      }
+    },
+    "e0_mj": {
+      "companion_manifest": {
+        "bytes": 7835,
+        "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260613_patch_lock_manifest.json",
+        "role": "p1_sequence_seed_20260613_patch_companion",
+        "sha256": "81a02be5697e39ec26a04a28c52345d02871946974f5b070809518aa2f371d63"
+      },
+      "current_runtime_builder_record": {
+        "bytes": 127846,
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "role": "current_runtime_builder",
+        "sha256": "d1af38a75dc40be60b89f23f9c4aedbea38a300902f81cbc4417fda49567a7b9"
+      },
+      "effective_loader_called": false,
+      "future_outcomes_accessed": false,
+      "gate": "E0-MJ",
+      "git_diff": {
+        "added_count": 5,
+        "base_commit": "5b2c5d6b4f4c296c9485d1cb22561086aeeb6b85",
+        "entries": [
+          {
+            "path": "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json",
+            "status": "A"
+          },
+          {
+            "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md",
+            "status": "A"
+          },
+          {
+            "path": "src/experiments/build_closure_pipe_sequences.py",
+            "status": "M"
+          },
+          {
+            "path": "src/experiments/closure_p1_sequence_seed_20260613_patch.py",
+            "status": "A"
+          },
+          {
+            "path": "src/experiments/lock_closure_p1_sequence_seed_20260613_patch.py",
+            "status": "A"
+          },
+          {
+            "path": "tests/test_build_closure_pipe_sequences.py",
+            "status": "M"
+          },
+          {
+            "path": "tests/test_closure_p1_sequence_seed_20260613_patch.py",
+            "status": "A"
+          }
+        ],
+        "modified_count": 2,
+        "only_allowed_additions_and_modifications": true,
+        "patch_head": "3b86b75edcfa5d11eab6bb97ab7cfd71df468fab",
+        "paths": [
+          "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md",
+          "src/experiments/build_closure_pipe_sequences.py",
+          "src/experiments/closure_p1_sequence_seed_20260613_patch.py",
+          "src/experiments/lock_closure_p1_sequence_seed_20260613_patch.py",
+          "tests/test_build_closure_pipe_sequences.py",
+          "tests/test_closure_p1_sequence_seed_20260613_patch.py"
+        ],
+        "paths_sha256": "94af1bc0e51c7e7af1a320f1d1809447442c20c927ec4ccd8b18abe75f0303bb"
+      },
+      "historical_authority_verified": true,
+      "historical_e0_mi_seal_verified": true,
+      "lock": {
+        "bytes": 28541,
+        "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260613_patch_lock.json",
+        "role": "external_p1_sequence_seed_20260613_patch_lock",
+        "sha256": "4d525e8032c202a689d8ab27d444d8117528f2e0bd90ecb9d155aabab14a5ea1"
+      },
+      "lock_commit": "04b3420b60cec62773fb600c85485be396a15654",
+      "patch_components": {
+        "count": 7,
+        "paths": [
+          "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md",
+          "src/experiments/build_closure_pipe_sequences.py",
+          "src/experiments/closure_p1_sequence_seed_20260613_patch.py",
+          "src/experiments/lock_closure_p1_sequence_seed_20260613_patch.py",
+          "tests/test_build_closure_pipe_sequences.py",
+          "tests/test_closure_p1_sequence_seed_20260613_patch.py"
+        ],
+        "paths_sha256": "94af1bc0e51c7e7af1a320f1d1809447442c20c927ec4ccd8b18abe75f0303bb",
+        "records": [
+          {
+            "bytes": 19021,
+            "path": "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json",
+            "role": "p1_sequence_seed_20260613_patch_lock_schema",
+            "sha256": "b0bf89ca3c04a956b5c30c854cda55e0e518b36af136c7d1e6ec8be7f74898fc"
+          },
+          {
+            "bytes": 3900,
+            "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md",
+            "role": "p1_sequence_seed_20260613_patch_protocol",
+            "sha256": "9baea121e824677e05a276ef123ec74f8fcfeb07e07537a9c7623efb9942d2d2"
+          },
+          {
+            "bytes": 127846,
+            "path": "src/experiments/build_closure_pipe_sequences.py",
+            "role": "p1_sequence_seed_20260613_gate_routing",
+            "sha256": "d1af38a75dc40be60b89f23f9c4aedbea38a300902f81cbc4417fda49567a7b9"
+          },
+          {
+            "bytes": 78355,
+            "path": "src/experiments/closure_p1_sequence_seed_20260613_patch.py",
+            "role": "p1_sequence_seed_20260613_patch_validator",
+            "sha256": "704021e2da49d63e95f1d49c6b786f42df1983e54a2917c68577d9319a76aa06"
+          },
+          {
+            "bytes": 36016,
+            "path": "src/experiments/lock_closure_p1_sequence_seed_20260613_patch.py",
+            "role": "p1_sequence_seed_20260613_patch_locker",
+            "sha256": "09c3a11993de1765f7eb04b186de59e4703798fce7d35100b280aa3ad7c285ea"
+          },
+          {
+            "bytes": 76105,
+            "path": "tests/test_build_closure_pipe_sequences.py",
+            "role": "p1_sequence_seed_20260613_builder_gate_tests",
+            "sha256": "f6da67cf6674e6e494b88ba500bed3798a9f658c3fb0a588b6346afa4bea14e5"
+          },
+          {
+            "bytes": 36537,
+            "path": "tests/test_closure_p1_sequence_seed_20260613_patch.py",
+            "role": "p1_sequence_seed_20260613_patch_tests",
+            "sha256": "1855416536c74ad92ccac0921f43b4757051c23c5d8f01c76e32a9751a8f095e"
+          }
+        ],
+        "records_sha256": "99f8a52dd4e12c7456e196e70663608f9511fad8f6a7b8d508993b79e2b85840"
+      },
+      "patch_head": "3b86b75edcfa5d11eab6bb97ab7cfd71df468fab",
+      "preserved_components": {
+        "count": 7,
+        "current_bytes_required_to_match_historical": true,
+        "paths": [
+          "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json",
+          "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md",
+          "src/experiments/build_closure_pipe_sequences.py",
+          "src/experiments/closure_p1_sequence_seed_20260613_patch.py",
+          "src/experiments/lock_closure_p1_sequence_seed_20260613_patch.py",
+          "tests/test_build_closure_pipe_sequences.py",
+          "tests/test_closure_p1_sequence_seed_20260613_patch.py"
+        ],
+        "records": [
+          {
+            "bytes": 19021,
+            "path": "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json",
+            "role": "p1_sequence_seed_20260613_patch_lock_schema",
+            "sha256": "b0bf89ca3c04a956b5c30c854cda55e0e518b36af136c7d1e6ec8be7f74898fc"
+          },
+          {
+            "bytes": 3900,
+            "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md",
+            "role": "p1_sequence_seed_20260613_patch_protocol",
+            "sha256": "9baea121e824677e05a276ef123ec74f8fcfeb07e07537a9c7623efb9942d2d2"
+          },
+          {
+            "bytes": 127846,
+            "path": "src/experiments/build_closure_pipe_sequences.py",
+            "role": "p1_sequence_seed_20260613_gate_routing",
+            "sha256": "d1af38a75dc40be60b89f23f9c4aedbea38a300902f81cbc4417fda49567a7b9"
+          },
+          {
+            "bytes": 78355,
+            "path": "src/experiments/closure_p1_sequence_seed_20260613_patch.py",
+            "role": "p1_sequence_seed_20260613_patch_validator",
+            "sha256": "704021e2da49d63e95f1d49c6b786f42df1983e54a2917c68577d9319a76aa06"
+          },
+          {
+            "bytes": 36016,
+            "path": "src/experiments/lock_closure_p1_sequence_seed_20260613_patch.py",
+            "role": "p1_sequence_seed_20260613_patch_locker",
+            "sha256": "09c3a11993de1765f7eb04b186de59e4703798fce7d35100b280aa3ad7c285ea"
+          },
+          {
+            "bytes": 76105,
+            "path": "tests/test_build_closure_pipe_sequences.py",
+            "role": "p1_sequence_seed_20260613_builder_gate_tests",
+            "sha256": "f6da67cf6674e6e494b88ba500bed3798a9f658c3fb0a588b6346afa4bea14e5"
+          },
+          {
+            "bytes": 36537,
+            "path": "tests/test_closure_p1_sequence_seed_20260613_patch.py",
+            "role": "p1_sequence_seed_20260613_patch_tests",
+            "sha256": "1855416536c74ad92ccac0921f43b4757051c23c5d8f01c76e32a9751a8f095e"
+          }
+        ],
+        "records_sha256": "99f8a52dd4e12c7456e196e70663608f9511fad8f6a7b8d508993b79e2b85840"
+      },
+      "publication_topology_verified": true
+    }
+  },
+  "consumer_prelock": {
+    "all_absent_at_lock": true,
+    "base_seed": 20260613,
+    "count": 19,
+    "model_id": "P1",
+    "paths": [
+      "models/closure_v1/pipe/P1/seed_20260613.pt",
+      "models/closure_v1/pipe/P1/seed_20260613.checkpoint.pt",
+      "reports/closure_v1/02_models/P1/seed_20260613_preprocessor.json",
+      "reports/closure_v1/02_models/P1/seed_20260613_metrics.csv",
+      "reports/closure_v1/02_models/P1/seed_20260613_training_curve.csv",
+      "reports/closure_v1/02_models/P1/seed_20260613_blend_weights.csv",
+      "reports/closure_v1/02_models/P1/seed_20260613_blend_search.csv",
+      "reports/closure_v1/02_models/P1/seed_20260613_report.md",
+      "reports/closure_v1/02_models/P1/seed_20260613_manifest.json",
+      "models/closure_v1/pipe/P1/seed_20260613.pt.tmp",
+      "models/closure_v1/pipe/P1/seed_20260613.checkpoint.pt.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_preprocessor.json.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_metrics.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_training_curve.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_blend_weights.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_blend_search.csv.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_report.md.tmp",
+      "reports/closure_v1/02_models/P1/seed_20260613_manifest.json.tmp",
+      "tmp/closure_v1_temporal_consumer/P1_seed_20260613.guard"
+    ],
+    "paths_sha256": "3cbcd6d053d423315d65fd47263a5b89e17aac8085b17ad8cf3a2516d80748c1"
+  },
+  "correction": {
+    "auditor_execution_mode": "in_process_callable",
+    "authorized_next_consumer_seed": 20260613,
+    "classification": "ordered_seed_progression_authority_only",
+    "closure_contract_modified": false,
+    "denominator_changed": false,
+    "historical_e0_mi_effective_loader_called": false,
+    "historical_e0_mj_effective_loader_called": false,
+    "issue_id": "p1_temporal_consumer_next_seed_authority_1",
+    "model_unavailable_semantics_changed": false,
+    "outcome_access_changed": false,
+    "p1_1729_consumer_preserved": true,
+    "p1_20260612_sequence_and_consumer_preserved": true,
+    "p1_20260613_sequence_bundle_preserved": true,
+    "pytest_summary_parser_policy": "pytest_9_0_3_duration_clock_closed_v1",
+    "pytest_summary_reference_version": "9.0.3",
+    "schema_dialect": "closure_contract_closed_draft_2020_12_subset_v1",
+    "scientific_runtime_contract_changed": false
+  },
+  "created_at_utc": "2026-08-07T12:38:57.230512Z",
+  "current_runtime_builder_record": {
+    "bytes": 127846,
+    "path": "src/experiments/build_closure_pipe_sequences.py",
+    "role": "current_runtime_builder",
+    "sha256": "d1af38a75dc40be60b89f23f9c4aedbea38a300902f81cbc4417fda49567a7b9"
+  },
+  "experiment_id": "closure_v1",
+  "fit_availability": {
+    "calibration_failure_count": 17,
+    "expected_failure_reason": "sequence_fit_rows_unavailable",
+    "expected_fit_status": "not_attempted",
+    "expected_slot_status": "model_unavailable",
+    "fit_failure_reason_counts": {
+      "missing_target_state": 488
+    },
+    "fit_status_counts": {
+      "autoregressive_target_unavailable": 488,
+      "success": 8925
+    },
+    "replacement_used": false,
+    "sequence_fit_available": false
+  },
+  "gate": "E0-MK",
+  "git_diff": {
+    "added_count": 5,
+    "base_commit": "a25863c05730d65d0fb3454a608243b2c9eca639",
+    "entries": [
+      {
+        "path": "configs/closure_v1/p1_temporal_consumer_seed_20260613_patch_lock.schema.json",
+        "status": "A"
+      },
+      {
+        "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260613_PATCH_1.md",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/lock_closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "src/experiments/train_closure_pipe.py",
+        "status": "M"
+      },
+      {
+        "path": "tests/test_closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "status": "A"
+      },
+      {
+        "path": "tests/test_train_closure_pipe.py",
+        "status": "M"
+      }
+    ],
+    "modified_count": 2,
+    "only_allowed_additions_and_modifications": true,
+    "patch_head": "a718808f2c249d5a2d73f85a5b3344cdf940a197",
+    "paths": [
+      "configs/closure_v1/p1_temporal_consumer_seed_20260613_patch_lock.schema.json",
+      "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260613_PATCH_1.md",
+      "src/experiments/closure_p1_temporal_consumer_seed_20260613_patch.py",
+      "src/experiments/lock_closure_p1_temporal_consumer_seed_20260613_patch.py",
+      "src/experiments/train_closure_pipe.py",
+      "tests/test_closure_p1_temporal_consumer_seed_20260613_patch.py",
+      "tests/test_train_closure_pipe.py"
+    ],
+    "paths_sha256": "9b8d61058ddcab8055913140b740039865e7d5e04f85b4e37131bf38a85f996e"
+  },
+  "lock_artifact": {
+    "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260613_patch_lock.json",
+    "role": "external_p1_temporal_consumer_seed_20260613_patch_lock",
+    "self_hash_policy": "verified_from_committed_and_published_bytes"
+  },
+  "lock_version": "closure_p1_temporal_consumer_seed_20260613_patch_lock_v1",
+  "p1_20260613_publication": {
+    "commit": "a25863c05730d65d0fb3454a608243b2c9eca639",
+    "exact_five_addition_scope_verified": true,
+    "future_outcomes_accessed": false,
+    "parent": "04b3420b60cec62773fb600c85485be396a15654",
+    "payload_regular_and_hash_verified": true,
+    "records": [
+      {
+        "bytes": 1379656,
+        "path": "data/closure_v1/development/sequences/P1/seed_20260613.parquet",
+        "role": "p1_seed_20260613_sequence_payload",
+        "sha256": "4dfd3ec12e061d29730fbf005e2e4c7e24a922335da5d4512a9b8c5eb847171a"
+      },
+      {
+        "bytes": 104,
+        "path": "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc",
+        "role": "p1_seed_20260613_sequence_dvc_pointer",
+        "sha256": "a2b6f345ba7340abaf6791bf99d22ec8a989c940f91f3634456fa02bd9902962"
+      },
+      {
+        "bytes": 6541,
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260613_manifest.json",
+        "role": "p1_seed_20260613_sequence_manifest",
+        "sha256": "d2ecb7b9b25b0b60a6534d64679db44d77e2484f6e3f269c7ae3db020bcfbac3"
+      },
+      {
+        "bytes": 356,
+        "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260613_summary.csv",
+        "role": "p1_seed_20260613_sequence_summary",
+        "sha256": "a6c6c837a82c13a9321233de03b588c60b7a4198b77dcf31b3c7a62027752c3e"
+      },
+      {
+        "bytes": 68559,
+        "path": "src/experiments/audit_closure_p1_seed_20260613_sequence_bundle.py",
+        "role": "p1_seed_20260613_sequence_auditor",
+        "sha256": "19345bf9986dab2aeee098aa579104e99928c1355f4cfb52a7e137147f096869"
+      },
+      {
+        "bytes": 27310,
+        "path": "tests/test_audit_closure_p1_seed_20260613_sequence_bundle.py",
+        "role": "p1_seed_20260613_sequence_auditor_tests",
+        "sha256": "fc3936589260b2265206672986ee76f197b6c2108200be79f4f19084b3e754c7"
+      }
+    ],
+    "records_sha256": "efd9992aa7856248077b16b35b37781464ba27a1cb1468efd4693f587a8fa308"
+  },
+  "patch_components": {
+    "count": 7,
+    "paths": [
+      "configs/closure_v1/p1_temporal_consumer_seed_20260613_patch_lock.schema.json",
+      "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260613_PATCH_1.md",
+      "src/experiments/closure_p1_temporal_consumer_seed_20260613_patch.py",
+      "src/experiments/lock_closure_p1_temporal_consumer_seed_20260613_patch.py",
+      "src/experiments/train_closure_pipe.py",
+      "tests/test_closure_p1_temporal_consumer_seed_20260613_patch.py",
+      "tests/test_train_closure_pipe.py"
+    ],
+    "paths_sha256": "9b8d61058ddcab8055913140b740039865e7d5e04f85b4e37131bf38a85f996e",
+    "records": [
+      {
+        "bytes": 22783,
+        "path": "configs/closure_v1/p1_temporal_consumer_seed_20260613_patch_lock.schema.json",
+        "role": "p1_temporal_consumer_seed_20260613_patch_lock_schema",
+        "sha256": "1c2606a5ef966698f7ca46163e54ba665f5d76c7a3e701618672c5e7ee0edc4f"
+      },
+      {
+        "bytes": 5211,
+        "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260613_PATCH_1.md",
+        "role": "p1_temporal_consumer_seed_20260613_patch_protocol",
+        "sha256": "0b1ee9f164af2dc7643e51e38f68d4ab5a9e9a1ac984bc29f6a7cc3bc2cccbb9"
+      },
+      {
+        "bytes": 78900,
+        "path": "src/experiments/closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "role": "p1_temporal_consumer_seed_20260613_patch_validator",
+        "sha256": "42ce3e0ebbd64a31090c3436661f700f15b56a1cfdd9e7c874274af42c784134"
+      },
+      {
+        "bytes": 22411,
+        "path": "src/experiments/lock_closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "role": "p1_temporal_consumer_seed_20260613_patch_locker",
+        "sha256": "6dcf09c0e772a4456ad8b224ae5c1bf189624541ec59e4fbb2d040c3835255a1"
+      },
+      {
+        "bytes": 131729,
+        "path": "src/experiments/train_closure_pipe.py",
+        "role": "p1_temporal_consumer_mk_gate_routing",
+        "sha256": "e214454bc6a610aa52b475346adc3328c3ef69b263b68490ad383a37d46e50d0"
+      },
+      {
+        "bytes": 30910,
+        "path": "tests/test_closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "role": "p1_temporal_consumer_seed_20260613_patch_tests",
+        "sha256": "8c7aa82db9197c5001ceea31f3e1d750156ecf2f0849b584e86e4bb39108230f"
+      },
+      {
+        "bytes": 104640,
+        "path": "tests/test_train_closure_pipe.py",
+        "role": "p1_temporal_consumer_mk_gate_tests",
+        "sha256": "02c7999610957577e1e6c8d7605216051c73aba5818a4c83d955a5865891d761"
+      }
+    ],
+    "records_sha256": "d0b5c77fdf2cf0acf217a1a94a2d0f1b2033622e9a65f37e0cf158dbec775837"
+  },
+  "patch_id": "p1_temporal_consumer_seed_20260613_authority_patch_1",
+  "patch_repository": {
+    "branch": "main",
+    "exact_diff_verified": true,
+    "head": "a718808f2c249d5a2d73f85a5b3344cdf940a197",
+    "parent": "a25863c05730d65d0fb3454a608243b2c9eca639",
+    "published_head": "a718808f2c249d5a2d73f85a5b3344cdf940a197",
+    "published_ref": "origin/main",
+    "remote_main_oid": "a718808f2c249d5a2d73f85a5b3344cdf940a197",
+    "worktree_status": "clean"
+  },
+  "progression_prelock": {
+    "current_consumer_absent_count": 19,
+    "current_present_count": 4,
+    "current_present_paths": [
+      "data/closure_v1/development/sequences/P1/seed_20260613.parquet",
+      "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260613_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260613_manifest.json"
+    ],
+    "current_present_paths_sha256": "543c5649eb8234e23e5dda564fbea93375a7b36ac0fceb8bfd9d494d27cfb42a",
+    "current_seed": 20260613,
+    "current_sequence_temporary_absent_count": 5,
+    "e0_m_absent_count": 4,
+    "exact_registered_namespace_verified": true,
+    "expected_present_count": 16,
+    "expected_present_paths": [
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet",
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json",
+      "reports/closure_v1/02_models/P1/seed_1729_report.md",
+      "reports/closure_v1/02_models/P1/seed_1729_manifest.json",
+      "data/closure_v1/development/sequences/P1/seed_20260612.parquet",
+      "data/closure_v1/development/sequences/P1/seed_20260612.parquet.dvc",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260612_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260612_manifest.json",
+      "reports/closure_v1/02_models/P1/seed_20260612_report.md",
+      "reports/closure_v1/02_models/P1/seed_20260612_manifest.json",
+      "data/closure_v1/development/sequences/P1/seed_20260613.parquet",
+      "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260613_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260613_manifest.json"
+    ],
+    "expected_present_paths_sha256": "0727ea9418be20dd0bf9555e66f8a1815271bdee1d0dc8b973db39064efa5dbb",
+    "future_outcomes_accessed": false,
+    "later_absent_count": 56,
+    "later_paths_sha256": "00fd0f9a136b66a05f5bd7f560a3c40285b579ad64ac2bed62bf674785add9d0",
+    "ordered_progression_verified": true,
+    "outcome_access_log_absent": true,
+    "prior_present_count": 12,
+    "prior_present_paths": [
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet",
+      "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json",
+      "reports/closure_v1/02_models/P1/seed_1729_report.md",
+      "reports/closure_v1/02_models/P1/seed_1729_manifest.json",
+      "data/closure_v1/development/sequences/P1/seed_20260612.parquet",
+      "data/closure_v1/development/sequences/P1/seed_20260612.parquet.dvc",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260612_summary.csv",
+      "reports/closure_v1/01_surface/sequences/P1/seed_20260612_manifest.json",
+      "reports/closure_v1/02_models/P1/seed_20260612_report.md",
+      "reports/closure_v1/02_models/P1/seed_20260612_manifest.json"
+    ],
+    "prior_present_paths_sha256": "2668d90a6dfb9fad5bdd75e43a0d9f8f6e5b00eed9c85d829ab4582bed9865da",
+    "prior_residual_absent_count": 44,
+    "prior_seeds": [
+      1729,
+      20260612
+    ],
+    "registered_absent_count": 124,
+    "registered_path_count": 140
+  },
+  "seals": {
+    "closure_contract_modified": false,
+    "consumer_outputs_absent_at_lock": true,
+    "current_sequence_temps_and_guard_absent_at_lock": true,
+    "does_not_replace_e0_m": true,
+    "e0_mi_preserved_as_historical_authority": true,
+    "e0_mj_preserved_as_historical_authority": true,
+    "exact_registered_namespace_at_lock": true,
+    "fit_attempt_expected": false,
+    "format_keyword_absent": true,
+    "holdout_accessed": false,
+    "later_seed_namespaces_absent_at_lock": true,
+    "mi_preserved_component_count": 5,
+    "mi_superseded_component_count": 2,
+    "minimum_keyword_absent": true,
+    "mj_preserved_component_count": 7,
+    "model_artifact_expected": false,
+    "numeric_bounds_validated_semantically": true,
+    "p1_1729_sequence_and_consumer_preserved": true,
+    "p1_20260612_sequence_and_consumer_preserved": true,
+    "p1_20260613_sequence_bundle_preserved": true,
+    "post_2021_outcomes_accessed": false,
+    "prior_p1_residuals_absent_at_lock": true,
+    "schema_supported_subset_verified": true,
+    "timestamp_validated_semantically": true
+  },
+  "status": "locked",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "verification": {
+    "dvc_push_first": {
+      "command": [
+        ".venv/bin/dvc",
+        "push",
+        "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "b59769a01123d983b15b2043cfabde0156c0fa381e7da5ed394c4b0d72bd41f3",
+      "terminal_status": "Everything is up to date."
+    },
+    "dvc_push_second": {
+      "command": [
+        ".venv/bin/dvc",
+        "push",
+        "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "b59769a01123d983b15b2043cfabde0156c0fa381e7da5ed394c4b0d72bd41f3",
+      "terminal_status": "Everything is up to date."
+    },
+    "focused_tests": {
+      "command": [
+        ".venv/bin/pytest",
+        "tests/test_closure_p1_temporal_consumer_seed_20260613_patch.py",
+        "tests/test_train_closure_pipe.py",
+        "tests/test_audit_closure_p1_seed_20260613_sequence_bundle.py",
+        "-q"
+      ],
+      "deselected_count": 0,
+      "duration_clock": "0:01:09",
+      "duration_seconds": "69.49",
+      "returncode": 0,
+      "skipped_count": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 3,
+      "stdout_sha256": "2a8a743fd9938bdc0e77a5b200abdbbb49e66932657398542ae96c2d7f1a3dbf",
+      "summary_format": "pytest_timedelta",
+      "test_count": 122
+    },
+    "full_type_check": {
+      "command": [
+        ".venv/bin/ty",
+        "check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "git_diff_check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "p1_bundle_audit": {
+      "audit_version": "closure_p1_seed_20260613_sequence_bundle_audit_v1",
+      "auditor_read_only": true,
+      "base_seed": 20260613,
+      "calibration_unavailable_origins": 17,
+      "callable_code_filename": "src/experiments/audit_closure_p1_seed_20260613_sequence_bundle.py",
+      "callable_git_commit": "a25863c05730d65d0fb3454a608243b2c9eca639",
+      "callable_module": "src.experiments.audit_closure_p1_seed_20260613_sequence_bundle",
+      "callable_name": "audit_p1_seed_20260613_sequence_bundle",
+      "callable_qualname": "audit_p1_seed_20260613_sequence_bundle",
+      "callable_source_git": {
+        "bytes": 68559,
+        "path": "src/experiments/audit_closure_p1_seed_20260613_sequence_bundle.py",
+        "role": "p1_sequence_bundle_auditor_callable",
+        "sha256": "19345bf9986dab2aeee098aa579104e99928c1355f4cfb52a7e137147f096869"
+      },
+      "callable_source_path": "src/experiments/audit_closure_p1_seed_20260613_sequence_bundle.py",
+      "callable_source_physical": {
+        "bytes": 68559,
+        "path": "src/experiments/audit_closure_p1_seed_20260613_sequence_bundle.py",
+        "role": "p1_sequence_bundle_auditor_callable",
+        "sha256": "19345bf9986dab2aeee098aa579104e99928c1355f4cfb52a7e137147f096869"
+      },
+      "consumer_executed": false,
+      "dvc_operation_executed": false,
+      "execution_mode": "in_process_callable",
+      "expected_failure_reason": "sequence_fit_rows_unavailable",
+      "expected_fit_status": "not_attempted",
+      "expected_slot_status": "model_unavailable",
+      "failed_origins": 505,
+      "fit_executed": false,
+      "fit_failure_reason_counts": {
+        "missing_target_state": 488
+      },
+      "fit_successful_origins": 8925,
+      "fit_unavailable_origins": 488,
+      "future_outcomes_accessed": false,
+      "intent_origins": 9732,
+      "model_id": "P1",
+      "result_bytes": 10225,
+      "result_sha256": "29f7984e221773f76dfac6be8b260cb57f6d2db5d28cce750987608395c6e5d3",
+      "sequence_fit_available": false,
+      "status": "validated",
+      "successful_origins": 9227
+    },
+    "poetry_check": {
+      "command": [
+        "poetry",
+        "check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "a2428ed4ae02d9dbfff2895449321f5a297182c3fd189cddfe630c6e0fa76747"
+    },
+    "publication_guard": {
+      "command": [
+        "scripts/check_repo_publication_ready.sh"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 2,
+      "stdout_sha256": "4f3d95eeb9a16ee98d6bac11f78c717e73a9952dd7f8baf48de4fff33480134b"
+    },
+    "schema_subset_preflight": {
+      "format_keyword_absent": true,
+      "gate": "E0-MK",
+      "minimum_keyword_absent": true,
+      "schema_bytes": 22783,
+      "schema_path": "configs/closure_v1/p1_temporal_consumer_seed_20260613_patch_lock.schema.json",
+      "schema_sha256": "1c2606a5ef966698f7ca46163e54ba665f5d76c7a3e701618672c5e7ee0edc4f",
+      "supported_subset_verified": true
+    }
+  }
+}
