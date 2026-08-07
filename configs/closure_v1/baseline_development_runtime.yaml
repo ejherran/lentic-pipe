@@ -1,0 +1,397 @@
+schema_version: closure_baseline_development_runtime_v1
+experiment_id: closure_v1
+surface_id: closure_v1_wqp_adaptive_no_current_chla
+status: ready_to_lock
+gate: E0-MP
+patch_id: baseline_development_authority_patch_1
+patch_base_commit: a9aa51aaa1566d0b8e7154697fae69c458c5019f
+
+authority:
+  branch: main
+  tracking_ref: origin/main
+  published_ref: refs/heads/main
+  clean_committed_head_required: true
+  p1_seed_314159_consumer_commit: a9aa51aaa1566d0b8e7154697fae69c458c5019f
+  p1_seed_314159_consumer_parent: 9b7a20782f87d7557653fd5fa40db89e154ad3df
+  protocol_lock:
+    path: reports/closure_v1/00_protocol/protocol_lock.json
+    sha256: 7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6
+  development_runtime_lock:
+    path: reports/closure_v1/00_protocol/development_runtime_lock.json
+    sha256: 5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81
+  effective_development_runtime_lock:
+    path: reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json
+    bytes: 60769
+    sha256: cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e
+  effective_development_runtime_lock_manifest:
+    path: reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json
+    bytes: 3650
+    sha256: e165a0019e1c2d4e99ce682515b18e3230b0f8fbfcfb8c8e1c5514e6e0264772
+  development_guard:
+    path: src/experiments/closure_development_guard.py
+    bytes: 30856
+    sha256: 98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683
+  holdout_assignment:
+    path: data/closure_v1/closure_holdout_assignment.csv
+    sha256: b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef
+  holdout_manifest:
+    path: reports/closure_v1/00_protocol/holdout_manifest.json
+    bytes: 3440
+    sha256: b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1
+  common_origin:
+    path: data/closure_v1/common_origin_manifest.parquet
+    bytes: 2763097
+    sha256: eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0
+  common_origin_pointer:
+    path: data/closure_v1/common_origin_manifest.parquet.dvc
+    bytes: 113
+    sha256: 707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3
+  common_origin_manifest:
+    path: reports/closure_v1/01_surface/common_origin_manifest.json
+    bytes: 11524
+    sha256: 19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05
+  panel:
+    path: data/panel/panel_monthly_v0.parquet
+    bytes: 103469973
+    sha256: 8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62
+  panel_pointer:
+    path: data/panel/panel_monthly_v0.parquet.dvc
+    bytes: 109
+    sha256: eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c
+  targets:
+    path: data/targets/monthly_targets_model_v0.parquet
+    bytes: 35541493
+    sha256: c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799
+  targets_pointer:
+    path: data/targets.dvc
+    bytes: 108
+    sha256: 2288bca25d34ae58f103c6033b47a366f8e1254214c2a10627ceb3dfb3af2f98
+  model_benchmark:
+    path: configs/closure_v1/model_benchmark.yaml
+    sha256: d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95
+  primary_surface:
+    path: configs/closure_v1/surface_primary.yaml
+    sha256: 44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132
+  analysis_plan:
+    path: configs/closure_v1/analysis_plan.yaml
+    bytes: 18302
+    sha256: e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a
+  development_runtime:
+    path: configs/closure_v1/development_runtime.yaml
+    bytes: 46105
+    sha256: 0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d
+  dvc_ownership_overlay:
+    path: configs/closure_v1/dvc_artifacts_post_lock.yaml
+    bytes: 7305
+    sha256: 912fbdf38d1ec4cebd92dfe01e6cd760031c2c55cba3147df4707b025974ff5a
+  model_availability_policy:
+    path: configs/closure_v1/model_lock_availability_policy.yaml
+    bytes: 7759
+    sha256: b9ec8f48918e801e502a3fa481cf63b95d744104e943857519ad4a1e4017ab10
+  model_availability_registry:
+    path: reports/closure_v1/00_protocol/p0_model_availability_registry.json
+    bytes: 54175
+    sha256: 42830b5687f1283144c3548b67fc716909612ce804c425dfc7beaac08634fdcf
+  model_availability_registry_manifest:
+    path: reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json
+    bytes: 5879
+    sha256: f50cfd101a55769da78a650f3831e737ab1e8e5f3d6fe141971f6cfcb0e2d5ae
+  pyproject:
+    path: pyproject.toml
+    bytes: 1699
+    sha256: ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22
+  poetry_lock:
+    path: poetry.lock
+    bytes: 497461
+    sha256: eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4
+  models_dvc:
+    path: models.dvc
+    bytes: 109
+    sha256: 49525d1f9eec6b94094299b77c8ff5986c777542d9ab49d0d09dbd524118282d
+
+upstream_anfis_bundles:
+  - base_seed: 1729
+    state: {path: data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet, bytes: 1215081, sha256: c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69}
+    pointer: {path: data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc, bytes: 116, sha256: 23f126ba6de15bb76e3b71fc343f3c1fd39bc1d6748f8b227fef40fbcedd106e}
+    manifest: {path: reports/closure_v1/01_surface/anfis/seed_1729/manifest.json, bytes: 20768, sha256: b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82}
+  - base_seed: 20260612
+    state: {path: data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet, bytes: 1214885, sha256: 99b4bc37de88d76068c044423071046cb6b0341056024c4de41cd1af51d09d26}
+    pointer: {path: data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet.dvc, bytes: 116, sha256: 7c88755a0cb55a6a177bf6f883f1e879221a5e415e3fd243fc27576051cd00e2}
+    manifest: {path: reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json, bytes: 20883, sha256: e7523963c6f09ea83235d9578d492ec34a654ce8328f79f1b05e49aa84669053}
+  - base_seed: 20260613
+    state: {path: data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet, bytes: 1215359, sha256: 53f9a733e660d1968f8cf45916b1947ffa902346c16fabe2f07df9d27c4618a2}
+    pointer: {path: data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet.dvc, bytes: 116, sha256: 7afddc7b3b22d07e9630a90d851e3d7cc5972b0d94904678cf49eee0168a9e93}
+    manifest: {path: reports/closure_v1/01_surface/anfis/seed_20260613/manifest.json, bytes: 20881, sha256: c40c9ef87729d135933ef37ffce7236523b6b8fe957d90e33dde4837e5a2bd00}
+  - base_seed: 20260614
+    state: {path: data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet, bytes: 1214501, sha256: 58aff087072fabae30afb7fa01b474fb2ba1c7dd1958e7ed8e9d1a19d989ead9}
+    pointer: {path: data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet.dvc, bytes: 116, sha256: e6e402593a26760270558bf24b9b03963b238f5b5f0d21572066c6c7b4f84f04}
+    manifest: {path: reports/closure_v1/01_surface/anfis/seed_20260614/manifest.json, bytes: 20886, sha256: 04d8dd355acd813656a0b3fd99123f095db7aa9ca7181f195e1e047214417946}
+  - base_seed: 314159
+    state: {path: data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet, bytes: 1214293, sha256: 53e71211cf0f58f78bb473869dcac7e15b578c39d6722eba02954c13a86101f0}
+    pointer: {path: data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet.dvc, bytes: 116, sha256: 1c91d9c32feb0fbafe427e1d1f8c9e6252cb37570e0ae819ba54f587a6d4c181}
+    manifest: {path: reports/closure_v1/01_surface/anfis/seed_314159/manifest.json, bytes: 20821, sha256: dedcc82dd998499fa5f3f8049554431b1e97dcf6dff32645e7e6bf4e5240f2f4}
+
+roles:
+  training_target_end: "2018-12"
+  model_selection_origin_start: "2019-01"
+  model_selection_target_end: "2020-12"
+  calibration_threshold_start: "2021-01"
+  calibration_labels_materialized_by_this_runner: false
+  locked_evaluation_start: "2022-01"
+  origin_and_target_must_share_role: true
+  holdout_locations_excluded: true
+  target_scanner_predicate: source_id=wqp AND exact development site_id AND origin_year_month<=2020-12 AND target_year_month<=2020-12
+
+denominators:
+  common_origin_rows: 29196
+  intent_origins: 9732
+  development_locations: 353
+  intent_origins_by_role:
+    training: 8352
+    model_selection: 1061
+    calibration_threshold: 319
+  complete_horizons_required_for_fit_and_selection: true
+  complete_target_origins_by_role:
+    training: 5932
+    model_selection: 658
+    calibration_threshold: 224
+  horizons_months: [1, 2, 3]
+
+seeds:
+  technical_seed: 1729
+  ordered_model_seeds: [1729, 20260612, 20260613, 20260614, 314159]
+  best_seed_selection: forbidden
+  pooling_as_independent_observations: forbidden
+
+models:
+  B0:
+    family: horizon_prevalence
+    fit_role: training
+    fit_complete_target_origins_only: true
+    probability: arithmetic_mean_of_bloom_h_by_horizon
+    smoothing: none
+    feature_inputs: []
+    technical_seed: 1729
+    prediction_rows: 29196
+    calibration_authorized: false
+  B1:
+    family: chla_free_state_persistence
+    upstream_state_template: data/closure_v1/development/anfis/seed_{base_seed}/adaptive_no_current_state.parquet
+    upstream_state_seeds: [1729, 20260612, 20260613, 20260614, 314159]
+    origin_state_columns: [yN_adaptive, yF_adaptive, yT_no_chla_adaptive]
+    raw_score_formula: clip_0_1_of_yN_plus_1_minus_yF_plus_yT_no_chla_divided_by_3
+    score_semantics: uncalibrated_chla_free_irc_persistence_probability
+    predicted_bloom_probability: same_as_raw_score
+    calibration_applied: false
+    horizons_months: [1, 2, 3]
+    fallback: forbidden
+    missing_origin_state_status: model_unavailable
+    technical_seed: 1729
+    prediction_rows_per_upstream_seed: 29196
+    total_prediction_rows: 145980
+  B2:
+    family: strict_raw_tabular_baseline
+    fit_role: training
+    selection_role: model_selection
+    fit_complete_target_origins_only: true
+    selection_complete_target_origins_only: true
+    physical_feature_columns:
+      - mean_TP_ugL
+      - std_TP_ugL
+      - n_obs_TP_ugL
+      - n_bad_TP_ugL
+      - qc_ok_rate_TP_ugL
+      - mean_TN_ugL
+      - std_TN_ugL
+      - n_obs_TN_ugL
+      - n_bad_TN_ugL
+      - qc_ok_rate_TN_ugL
+      - mean_temperature_C
+      - std_temperature_C
+      - n_obs_temperature_C
+      - n_bad_temperature_C
+      - qc_ok_rate_temperature_C
+      - mean_secchi_depth_m
+      - std_secchi_depth_m
+      - n_obs_secchi_depth_m
+      - n_bad_secchi_depth_m
+      - qc_ok_rate_secchi_depth_m
+      - mean_turbidity_NTU
+      - std_turbidity_NTU
+      - n_obs_turbidity_NTU
+      - n_bad_turbidity_NTU
+      - qc_ok_rate_turbidity_NTU
+      - mean_DO_mgL
+      - std_DO_mgL
+      - n_obs_DO_mgL
+      - n_bad_DO_mgL
+      - qc_ok_rate_DO_mgL
+      - mean_pH
+      - std_pH
+      - n_obs_pH
+      - n_bad_pH
+      - qc_ok_rate_pH
+      - log_TP
+      - log_TN
+      - TN_TP_ratio
+    derived_calendar_columns:
+      - season_sin_annual
+      - season_cos_annual
+      - season_sin_semiannual
+      - season_cos_semiannual
+    calendar_formula:
+      month_angle_float64: 2*pi*(month-1)/12
+      derivation_output_dtype: float32
+      model_matrix_dtype: float64
+    exact_feature_count: 42
+    forbidden_feature_classes:
+      - observed_chlorophyll_at_any_lag_or_derivative
+      - legacy_feature_alias
+      - source_identifier
+      - year_or_raw_month
+      - imputation_missing_indicator
+    preprocessing:
+      imputation: training_median_per_horizon
+      imputation_indicator: false
+      logistic_scaling: standard_scaler
+      fit_outside_training: forbidden
+      nonfinite_normalization: positive_or_negative_infinity_to_null
+      all_missing_training_feature_policy: candidate_horizon_unavailable
+      missing_panel_key_policy: retain_model_unavailable_without_synthetic_row
+      duplicate_panel_key_policy: fail_closed
+      exact_feature_order: model_benchmark_allowlist_order
+      median_and_model_matrix_dtype: float64
+      zero_variance_scaler_policy: allowed_with_unit_scale
+    candidates:
+      logistic_sgd:
+        loss: log_loss
+        penalty: l2
+        alpha: 0.0001
+        max_iter: 100
+        tol: 0.001
+        class_weight: balanced
+        n_jobs: 1
+        early_stopping: false
+        random_state: model_seed
+      hist_gradient_boosting_classifier:
+        loss: log_loss
+        max_iter: 150
+        learning_rate: 0.05
+        max_leaf_nodes: 31
+        early_stopping: false
+        random_state: model_seed
+    candidate_count_per_seed_horizon: 2
+    candidate_slot_count: 30
+    maximum_pipeline_count: 30
+    exact_preprocessor_record_count: 30
+    total_candidate_prediction_rows: 291960
+    selection:
+      scope: one_family_per_horizon_shared_by_all_seeds
+      required_finite_seed_count: 5
+      primary: minimum_mean_brier_within_tolerance
+      brier_tolerance: 0.001
+      secondary: maximum_mean_pr_auc
+      final_tie_break: logistic_sgd
+
+outputs:
+  exact_raw_prediction_rows: 467136
+  minimum_final_path_count: 39
+  maximum_final_path_count: 69
+  raw_prediction_contract:
+    columns:
+      - {name: surface_id, dtype: string, nullable: false}
+      - {name: model_id, dtype: string, nullable: false}
+      - {name: source_id, dtype: string, nullable: false}
+      - {name: site_id, dtype: string, nullable: false}
+      - {name: common_origin_id, dtype: string, nullable: false}
+      - {name: evaluation_unit_id, dtype: string, nullable: false}
+      - {name: holdout_group_id, dtype: string, nullable: false}
+      - {name: assignment_role, dtype: string, nullable: false}
+      - {name: time_role, dtype: string, nullable: false}
+      - {name: origin_year_month, dtype: string, nullable: false}
+      - {name: target_year_month, dtype: string, nullable: false}
+      - {name: horizon_months, dtype: int16, nullable: false}
+      - {name: technical_seed, dtype: int64, nullable: false}
+      - {name: model_seed, dtype: int64, nullable: true}
+      - {name: upstream_state_seed, dtype: int64, nullable: true}
+      - {name: candidate, dtype: string, nullable: false}
+      - {name: selected_family, dtype: bool, nullable: false}
+      - {name: availability_status, dtype: string, nullable: false}
+      - {name: failure_reason, dtype: string, nullable: false}
+      - {name: score_semantics, dtype: string, nullable: false}
+      - {name: raw_score, dtype: float64, nullable: true}
+      - {name: predicted_bloom_probability, dtype: float64, nullable: true}
+    canonical_sort_keys:
+      - model_seed_rank
+      - upstream_state_seed_rank
+      - candidate_rank
+      - source_id
+      - site_id
+      - origin_year_month
+      - horizon_months
+      - target_year_month
+      - common_origin_id
+      - evaluation_unit_id
+    model_seed_order: [1729, 20260612, 20260613, 20260614, 314159]
+    candidate_order: [logistic_sgd, hist_gradient_boosting_classifier]
+    availability_status_values: [success, model_unavailable]
+    success_score_policy: raw_score_and_probability_finite_in_closed_unit_interval
+    unavailable_score_policy: raw_score_and_probability_both_null
+    B0_seed_policy: technical_seed_only
+    B1_seed_policy: upstream_state_seed_only
+    B2_seed_policy: model_seed_only
+    B1_probability_semantics: uncalibrated_chla_free_irc_persistence_probability
+  raw_score_parquets:
+    B0: data/closure_v1/development/baselines/B0/raw_scores.parquet
+    B1: data/closure_v1/development/baselines/B1/raw_scores.parquet
+    B2: data/closure_v1/development/baselines/B2/raw_scores.parquet
+  b2_pipeline_template: models/closure_v1/baselines/B2/seed_{model_seed}/{candidate}_h{horizon}_pipeline.joblib
+  b2_preprocessor_template: models/closure_v1/baselines/B2/seed_{model_seed}/{candidate}_h{horizon}_preprocessor.json
+  light_bundle:
+    model_specs: reports/closure_v1/02_models/baselines/model_specs.json
+    metrics: reports/closure_v1/02_models/baselines/metrics.csv
+    selection: reports/closure_v1/02_models/baselines/selection.csv
+    lineage_audit: reports/closure_v1/02_models/baselines/lineage_audit.json
+    report: reports/closure_v1/02_models/baselines/report.md
+    manifest: reports/closure_v1/02_models/baselines/manifest.json
+  manifest_written_last: true
+  publication:
+    guard_path: tmp/closure_v1_baseline_development/baseline_bundle.guard
+    temporary_suffix: .tmp
+    parent_walk_no_follow: true
+    no_clobber: true
+    hardlink_publication: true
+    rollback_owned_inode_only: true
+
+reproducibility:
+  execution_device: cpu
+  threadpool_limit: 1
+  dependency_files: [pyproject.toml, poetry.lock]
+  runtime_versions_recorded_in_manifest: true
+
+dvc:
+  authorized_during_h_or_p: false
+  authorized_during_one_shot: false
+  post_audit_registration_required: true
+  raw_parquet_ownership: explicit_pointer_per_parquet
+  b2_model_ownership: models.dvc_monolithic_parent
+  future_pointer_paths:
+    - data/closure_v1/development/baselines/B0/raw_scores.parquet.dvc
+    - data/closure_v1/development/baselines/B1/raw_scores.parquet.dvc
+    - data/closure_v1/development/baselines/B2/raw_scores.parquet.dvc
+  models_pointer: models.dvc
+
+authorizations:
+  baseline_one_shot_authorized: false
+  b0_fit_authorized: false
+  b1_execution_authorized: false
+  b2_fit_authorized: false
+  calibration_authorized: false
+  e0_m_authorized: false
+  evaluation_authorized: false
+  e0_u_authorized: false
+  dvc_commands_authorized: false
+  network_authorized: false
+  outcome_access_authorized: false
+  future_outcomes_accessed: false
+  outcome_access_log_required_state: absent
