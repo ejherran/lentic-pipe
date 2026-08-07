@@ -1,0 +1,545 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure-mifal-development-patch-lock-v1",
+  "title": "Closure V1 E0-MR strict MIFAL development patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version",
+    "gate",
+    "patch_id",
+    "experiment_id",
+    "surface_id",
+    "model_id",
+    "status",
+    "created_at_utc",
+    "repository",
+    "h_patch",
+    "runtime_contract",
+    "prelock",
+    "verification",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "lock_version": {"const": "closure_mifal_development_patch_lock_v1"},
+    "gate": {"const": "E0-MR"},
+    "patch_id": {"const": "mifal_development_authority_patch_1"},
+    "experiment_id": {"const": "closure_v1"},
+    "surface_id": {"const": "closure_v1_wqp_adaptive_no_current_chla"},
+    "model_id": {"const": "M0"},
+    "status": {"const": "locked_unpublished"},
+    "created_at_utc": {"type": "string"},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runtime_contract": {"$ref": "#/$defs/runtimeContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"},
+    "seals": {"$ref": "#/$defs/seals"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "gitSha": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "parent",
+        "branch",
+        "tracking_ref",
+        "tracking_head",
+        "remote_head",
+        "remote_observation_mode",
+        "worktree_status"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/gitSha"},
+        "parent": {"const": "aa0d2cbfac186464a8b6e17b87d71aeedaa92c95"},
+        "branch": {"const": "main"},
+        "tracking_ref": {"const": "origin/main"},
+        "tracking_head": {"$ref": "#/$defs/gitSha"},
+        "remote_head": {"$ref": "#/$defs/gitSha"},
+        "remote_observation_mode": {"const": "live_remote_main_verified"},
+        "worktree_status": {"const": "clean"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "added_count",
+        "modified_count",
+        "deleted_count",
+        "paths",
+        "paths_sha256",
+        "components",
+        "components_sha256"
+      ],
+      "properties": {
+        "base_commit": {"const": "aa0d2cbfac186464a8b6e17b87d71aeedaa92c95"},
+        "added_count": {"const": 9},
+        "modified_count": {"const": 0},
+        "deleted_count": {"const": 0},
+        "paths": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "components": {
+          "type": "array",
+          "minItems": 9,
+          "maxItems": 9,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runtimeContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record",
+        "schema_subset_verified",
+        "pins_verified",
+        "physical_input_count",
+        "physical_inputs",
+        "physical_inputs_sha256",
+        "panel_projection_count",
+        "panel_projection",
+        "evidence_groups",
+        "minimum_observed_evidence_groups",
+        "default_config_sha256",
+        "raw_prediction_contract",
+        "exact_raw_prediction_rows",
+        "exact_final_path_count",
+        "target_artifact_inputs",
+        "target_columns_scanned"
+      ],
+      "properties": {
+        "record": {"$ref": "#/$defs/fileRecord"},
+        "schema_subset_verified": {"const": true},
+        "pins_verified": {"const": true},
+        "physical_input_count": {"const": 23},
+        "physical_inputs": {
+          "type": "array",
+          "minItems": 23,
+          "maxItems": 23,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "panel_projection_count": {"const": 27},
+        "panel_projection": {
+          "type": "array",
+          "minItems": 27,
+          "maxItems": 27,
+          "prefixItems": [
+            {"const": "source_id"},
+            {"const": "site_id"},
+            {"const": "year_month"},
+            {"const": "mean_temperature_C"},
+            {"const": "n_obs_temperature_C"},
+            {"const": "qc_ok_rate_temperature_C"},
+            {"const": "std_temperature_C"},
+            {"const": "mean_TP_ugL"},
+            {"const": "n_obs_TP_ugL"},
+            {"const": "qc_ok_rate_TP_ugL"},
+            {"const": "std_TP_ugL"},
+            {"const": "mean_TN_ugL"},
+            {"const": "n_obs_TN_ugL"},
+            {"const": "qc_ok_rate_TN_ugL"},
+            {"const": "std_TN_ugL"},
+            {"const": "mean_secchi_depth_m"},
+            {"const": "n_obs_secchi_depth_m"},
+            {"const": "qc_ok_rate_secchi_depth_m"},
+            {"const": "std_secchi_depth_m"},
+            {"const": "mean_turbidity_NTU"},
+            {"const": "n_obs_turbidity_NTU"},
+            {"const": "qc_ok_rate_turbidity_NTU"},
+            {"const": "std_turbidity_NTU"},
+            {"const": "mean_DO_mgL"},
+            {"const": "n_obs_DO_mgL"},
+            {"const": "qc_ok_rate_DO_mgL"},
+            {"const": "std_DO_mgL"}
+          ],
+          "items": false,
+          "uniqueItems": true
+        },
+        "evidence_groups": {
+          "const": {
+            "temperature": ["Tw"],
+            "nutrients": ["TP", "TN"],
+            "light": ["Secchi", "Turb"],
+            "internal_do": ["DOb"]
+          }
+        },
+        "minimum_observed_evidence_groups": {"const": 2},
+        "default_config_sha256": {"const": "8ad6314fbd833945d9cbd3d84267f0d18a7e79a53fbd61cdea89f703e05f4ded"},
+        "raw_prediction_contract": {"$ref": "#/$defs/rawPredictionContract"},
+        "exact_raw_prediction_rows": {"const": 29196},
+        "exact_final_path_count": {"const": 6},
+        "target_artifact_inputs": {"const": []},
+        "target_columns_scanned": {"const": []}
+      }
+    },
+    "rawColumn": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "dtype", "nullable"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "dtype": {"enum": ["string", "int8", "int16", "int64", "float64", "bool"]},
+        "nullable": {"type": "boolean"}
+      }
+    },
+    "rawPredictionContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "columns",
+        "canonical_sort_keys",
+        "availability_status_values",
+        "candidate_policy",
+        "selected_family_policy",
+        "success_policy",
+        "success_probability_policy",
+        "ineligible_policy",
+        "payload_variables_encoding",
+        "technical_seed_policy",
+        "model_seed_policy",
+        "upstream_state_seed_policy",
+        "execution_exception_policy"
+      ],
+      "properties": {
+        "columns": {
+          "type": "array",
+          "minItems": 28,
+          "maxItems": 28,
+          "items": {"$ref": "#/$defs/rawColumn"}
+        },
+        "canonical_sort_keys": {
+          "const": [
+            "source_id",
+            "site_id",
+            "origin_year_month",
+            "horizon_months",
+            "target_year_month",
+            "common_origin_id",
+            "evaluation_unit_id"
+          ]
+        },
+        "availability_status_values": {"const": ["success", "input_ineligible"]},
+        "candidate_policy": {"const": "constant_mifal_ed_t2_v5_defaults"},
+        "selected_family_policy": {"const": "constant_false_no_selection_or_tuning"},
+        "success_policy": {"const": "at_least_two_evidence_groups_and_finite_raw_interval_reliability_in_closed_unit_interval"},
+        "success_probability_policy": {"const": "predicted_bloom_probability_is_null_before_common_calibration"},
+        "ineligible_policy": {"const": "scores_interval_and_reliability_null_but_row_retained"},
+        "payload_variables_encoding": {"const": "comma_joined_subsequence_of_variable_order"},
+        "technical_seed_policy": {"const": "constant_1729"},
+        "model_seed_policy": {"const": "null"},
+        "upstream_state_seed_policy": {"const": "null"},
+        "execution_exception_policy": {"const": "transaction_abort_with_owned_inode_rollback"}
+      }
+    },
+    "namespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "final_count",
+        "final_paths",
+        "final_paths_sha256",
+        "all_final_absent",
+        "temporary_count",
+        "temporary_paths",
+        "temporary_paths_sha256",
+        "all_temporary_absent",
+        "future_pointer_path",
+        "future_pointer_absent",
+        "future_pointer_temporary_path",
+        "future_pointer_temporary_absent",
+        "guard_path",
+        "guard_absent"
+      ],
+      "properties": {
+        "final_count": {"const": 6},
+        "final_paths": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "final_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_final_absent": {"const": true},
+        "temporary_count": {"const": 6},
+        "temporary_paths": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "temporary_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "all_temporary_absent": {"const": true},
+        "future_pointer_path": {"const": "data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc"},
+        "future_pointer_absent": {"const": true},
+        "future_pointer_temporary_path": {"const": "data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc.tmp"},
+        "future_pointer_temporary_absent": {"const": true},
+        "guard_path": {"const": "tmp/closure_v1_mifal_development/mifal_bundle.guard"},
+        "guard_absent": {"const": true}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "output_namespace",
+        "e0_m_paths",
+        "all_e0_m_paths_absent",
+        "outcome_access_log_path",
+        "outcome_access_log_absent",
+        "p_lock_path",
+        "p_lock_absent",
+        "p_manifest_path",
+        "p_manifest_absent",
+        "p_temporaries_absent",
+        "locker_guard_path",
+        "locker_guard_absent",
+        "target_paths_opened",
+        "dvc_commands_run",
+        "scientific_network_commands_run",
+        "git_remote_verification_run",
+        "data_execution_run",
+        "auditor_run",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "output_namespace": {"$ref": "#/$defs/namespace"},
+        "e0_m_paths": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "items": {"type": "string"},
+          "uniqueItems": true
+        },
+        "all_e0_m_paths_absent": {"const": true},
+        "outcome_access_log_path": {"const": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"},
+        "outcome_access_log_absent": {"const": true},
+        "p_lock_path": {"const": "reports/closure_v1/00_protocol/mifal_development_patch_lock.json"},
+        "p_lock_absent": {"const": true},
+        "p_manifest_path": {"const": "reports/closure_v1/00_protocol/mifal_development_patch_lock_manifest.json"},
+        "p_manifest_absent": {"const": true},
+        "p_temporaries_absent": {"const": true},
+        "locker_guard_path": {"const": "tmp/closure_v1_e0_mr_locker/mifal_development_patch_lock.guard"},
+        "locker_guard_absent": {"const": true},
+        "target_paths_opened": {"const": []},
+        "dvc_commands_run": {"const": false},
+        "scientific_network_commands_run": {"const": false},
+        "git_remote_verification_run": {"const": true},
+        "data_execution_run": {"const": false},
+        "auditor_run": {"const": false},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedTests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "test_count",
+        "skipped_count",
+        "deselected_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 62},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "schema_path",
+        "schema_bytes",
+        "schema_sha256",
+        "supported_subset_verified",
+        "minimum_keyword_absent",
+        "format_keyword_absent"
+      ],
+      "properties": {
+        "gate": {"const": "E0-MR"},
+        "schema_path": {"const": "configs/closure_v1/mifal_development_patch_lock.schema.json"},
+        "schema_bytes": {"type": "integer"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "supported_subset_verified": {"const": true},
+        "minimum_keyword_absent": {"const": true},
+        "format_keyword_absent": {"const": true}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_preflight",
+        "full_type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "git_diff_check"
+      ],
+      "properties": {
+        "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedTests"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "strict_adapter_authorized",
+        "mifal_one_shot_authorized",
+        "m0_execution_authorized",
+        "tuning_authorized",
+        "target_access_authorized",
+        "calibration_authorized",
+        "metrics_authorized",
+        "e0_m_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized",
+        "dvc_commands_authorized",
+        "scientific_network_authorized",
+        "outcome_access_authorized",
+        "future_outcomes_accessed",
+        "effective_in_payload",
+        "publication_required"
+      ],
+      "properties": {
+        "strict_adapter_authorized": {"const": false},
+        "mifal_one_shot_authorized": {"const": false},
+        "m0_execution_authorized": {"const": false},
+        "tuning_authorized": {"const": false},
+        "target_access_authorized": {"const": false},
+        "calibration_authorized": {"const": false},
+        "metrics_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "effective_in_payload": {"const": false},
+        "publication_required": {"const": true}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "h_scope_exact_nine_additions",
+        "p_scope_exact_two_additions",
+        "legacy_mifal_adapter_unchanged_no_direct_import_invocation_or_projection",
+        "strict_panel_projection_twenty_seven_locked",
+        "minimum_two_ecological_groups_locked",
+        "raw_twenty_eight_columns_locked",
+        "single_deterministic_surface_locked",
+        "mifal_v5_defaults_without_tuning_locked",
+        "structural_memory_is_global_prior_not_observation",
+        "predicted_probability_null_before_calibration",
+        "target_artifacts_not_inputs",
+        "target_columns_not_scanned",
+        "exact_six_outputs_absent_at_lock",
+        "manifest_written_last",
+        "companion_script_record_locked",
+        "companion_exact_thirty_two_inputs_locked",
+        "no_clobber_and_owned_inode_rollback_locked",
+        "dvc_closed",
+        "e0_m_absent",
+        "outcome_access_log_absent",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "h_scope_exact_nine_additions": {"const": true},
+        "p_scope_exact_two_additions": {"const": true},
+        "legacy_mifal_adapter_unchanged_no_direct_import_invocation_or_projection": {"const": true},
+        "strict_panel_projection_twenty_seven_locked": {"const": true},
+        "minimum_two_ecological_groups_locked": {"const": true},
+        "raw_twenty_eight_columns_locked": {"const": true},
+        "single_deterministic_surface_locked": {"const": true},
+        "mifal_v5_defaults_without_tuning_locked": {"const": true},
+        "structural_memory_is_global_prior_not_observation": {"const": true},
+        "predicted_probability_null_before_calibration": {"const": true},
+        "target_artifacts_not_inputs": {"const": true},
+        "target_columns_not_scanned": {"const": true},
+        "exact_six_outputs_absent_at_lock": {"const": true},
+        "manifest_written_last": {"const": true},
+        "companion_script_record_locked": {"const": true},
+        "companion_exact_thirty_two_inputs_locked": {"const": true},
+        "no_clobber_and_owned_inode_rollback_locked": {"const": true},
+        "dvc_closed": {"const": true},
+        "e0_m_absent": {"const": true},
+        "outcome_access_log_absent": {"const": true},
+        "future_outcomes_accessed": {"const": false}
+      }
+    }
+  }
+}

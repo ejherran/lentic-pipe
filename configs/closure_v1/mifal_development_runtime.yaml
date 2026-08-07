@@ -1,0 +1,308 @@
+schema_version: closure_mifal_development_runtime_v1
+experiment_id: closure_v1
+surface_id: closure_v1_wqp_adaptive_no_current_chla
+model_id: M0
+status: ready_to_lock
+gate: E0-MR
+patch_id: mifal_development_authority_patch_1
+patch_base_commit: aa0d2cbfac186464a8b6e17b87d71aeedaa92c95
+
+authority:
+  branch: main
+  tracking_ref: origin/main
+  published_ref: refs/heads/main
+  clean_committed_head_required: true
+  upstream_baseline_bundle_commit: aa0d2cbfac186464a8b6e17b87d71aeedaa92c95
+  upstream_baseline_bundle_parent: 281546abdc0296e86ed0e726ffe8bc14c62a5c14
+  physical_input_count: 23
+  physical_inputs:
+    - {role: protocol_lock, path: reports/closure_v1/00_protocol/protocol_lock.json, bytes: 8279, sha256: 7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6}
+    - {role: development_runtime_lock, path: reports/closure_v1/00_protocol/development_runtime_lock.json, bytes: 95285, sha256: 5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81}
+    - {role: effective_development_runtime_lock, path: reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json, bytes: 60769, sha256: cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e}
+    - {role: effective_development_runtime_lock_manifest, path: reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json, bytes: 3650, sha256: e165a0019e1c2d4e99ce682515b18e3230b0f8fbfcfb8c8e1c5514e6e0264772}
+    - {role: development_guard, path: src/experiments/closure_development_guard.py, bytes: 30856, sha256: 98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683}
+    - {role: holdout_assignment, path: data/closure_v1/closure_holdout_assignment.csv, bytes: 89635, sha256: b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef}
+    - {role: holdout_manifest, path: reports/closure_v1/00_protocol/holdout_manifest.json, bytes: 3440, sha256: b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1}
+    - {role: common_origin, path: data/closure_v1/common_origin_manifest.parquet, bytes: 2763097, sha256: eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0}
+    - {role: common_origin_pointer, path: data/closure_v1/common_origin_manifest.parquet.dvc, bytes: 113, sha256: 707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3}
+    - {role: common_origin_manifest, path: reports/closure_v1/01_surface/common_origin_manifest.json, bytes: 11524, sha256: 19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05}
+    - {role: panel, path: data/panel/panel_monthly_v0.parquet, bytes: 103469973, sha256: 8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62}
+    - {role: panel_pointer, path: data/panel/panel_monthly_v0.parquet.dvc, bytes: 109, sha256: eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c}
+    - {role: model_benchmark, path: configs/closure_v1/model_benchmark.yaml, bytes: 7281, sha256: d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95}
+    - {role: primary_surface, path: configs/closure_v1/surface_primary.yaml, bytes: 3660, sha256: 44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132}
+    - {role: analysis_plan, path: configs/closure_v1/analysis_plan.yaml, bytes: 18302, sha256: e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a}
+    - {role: experimental_matrix, path: configs/closure_v1/experimental_matrix.yaml, bytes: 24374, sha256: 9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6}
+    - {role: mifal_core, path: src/mifal/ed_t2.py, bytes: 43273, sha256: 46490b08e6efd2725c14ba4cd07eede2b06b191179d25d1ffecf189efec1ca53}
+    - {role: pyproject, path: pyproject.toml, bytes: 1699, sha256: ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22}
+    - {role: poetry_lock, path: poetry.lock, bytes: 497461, sha256: eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4}
+    - {role: upstream_baseline_manifest, path: reports/closure_v1/02_models/baselines/manifest.json, bytes: 26518, sha256: 98f08b53c02a5f88d29792b6edda9b22d7eec0d72c8a886a16f21c6c0ecb4a95}
+    - {role: upstream_baseline_patch_lock, path: reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json, bytes: 34399, sha256: 01d8b3ac0d869fe585f55af9911a870039afac0013f9f30b3122efc4f586caac}
+    - {role: upstream_baseline_patch_lock_manifest, path: reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock_manifest.json, bytes: 14205, sha256: ce7e8334be74b35e057e2c86603bb46645bdd3ba1f07c9143da83ee97e34d8d9}
+    - {role: models_dvc_observer, path: models.dvc, bytes: 109, sha256: fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d}
+
+patch_scope:
+  exact_added_count: 9
+  exact_modified_count: 0
+  exact_deleted_count: 0
+  paths:
+    - configs/closure_v1/mifal_development_patch_lock.schema.json
+    - configs/closure_v1/mifal_development_runtime.yaml
+    - docs/closure_v1/E0_M_MIFAL_DEVELOPMENT_PATCH_1.md
+    - src/experiments/closure_mifal_development_patch.py
+    - src/experiments/lock_closure_mifal_development_patch.py
+    - src/experiments/run_closure_mifal.py
+    - src/mifal/closure_panel_adapter.py
+    - tests/test_closure_mifal_development_patch.py
+    - tests/test_run_closure_mifal.py
+
+roles:
+  training_target_end: "2018-12"
+  model_selection_origin_start: "2019-01"
+  model_selection_target_end: "2020-12"
+  calibration_threshold_start: "2021-01"
+  locked_evaluation_start: "2022-01"
+  origin_and_target_must_share_role: true
+  holdout_locations_excluded: true
+  outcome_values_opened_by_m0: false
+
+denominators:
+  common_origin_rows: 29196
+  intent_origins: 9732
+  development_locations: 353
+  horizons_months: [1, 2, 3]
+  rows_by_horizon: {"1": 9732, "2": 9732, "3": 9732}
+  rows_by_time_role: {training: 25056, model_selection: 3183, calibration_threshold: 957}
+  origins_by_time_role: {training: 8352, model_selection: 1061, calibration_threshold: 319}
+  assignment_roles: [development]
+  origin_year_month_min: "1973-05"
+  origin_year_month_max: "2021-09"
+  target_year_month_min: "1973-06"
+  target_year_month_max: "2021-12"
+  evidence_group_snapshot_origins:
+    eligible: 9732
+    ineligible: 0
+    with_4_groups: 9209
+    with_3_groups: 505
+    with_2_groups: 18
+    with_1_group: 0
+    with_0_groups: 0
+  evidence_group_snapshot_rows:
+    eligible: 29196
+    ineligible: 0
+    with_4_groups: 27627
+    with_3_groups: 1515
+    with_2_groups: 54
+
+strict_adapter:
+  implementation: src/mifal/closure_panel_adapter.py
+  legacy_adapter_direct_import_authorized: false
+  legacy_adapter_invocation_authorized: false
+  legacy_adapter_data_projection_authorized: false
+  package_initializer_symbol_loading: incidental_non_authoritative_no_io
+  exact_panel_projection_count: 27
+  exact_panel_projection:
+    - source_id
+    - site_id
+    - year_month
+    - mean_temperature_C
+    - n_obs_temperature_C
+    - qc_ok_rate_temperature_C
+    - std_temperature_C
+    - mean_TP_ugL
+    - n_obs_TP_ugL
+    - qc_ok_rate_TP_ugL
+    - std_TP_ugL
+    - mean_TN_ugL
+    - n_obs_TN_ugL
+    - qc_ok_rate_TN_ugL
+    - std_TN_ugL
+    - mean_secchi_depth_m
+    - n_obs_secchi_depth_m
+    - qc_ok_rate_secchi_depth_m
+    - std_secchi_depth_m
+    - mean_turbidity_NTU
+    - n_obs_turbidity_NTU
+    - qc_ok_rate_turbidity_NTU
+    - std_turbidity_NTU
+    - mean_DO_mgL
+    - n_obs_DO_mgL
+    - qc_ok_rate_DO_mgL
+    - std_DO_mgL
+  variable_order: [Tw, TP, TN, Secchi, Turb, DOb]
+  variable_mapping:
+    Tw: {value: mean_temperature_C, n_obs: n_obs_temperature_C, quality: qc_ok_rate_temperature_C, sigma: std_temperature_C, scale: 1.0, source_fit: 1.0, group: temperature}
+    TP: {value: mean_TP_ugL, n_obs: n_obs_TP_ugL, quality: qc_ok_rate_TP_ugL, sigma: std_TP_ugL, scale: 1.0, source_fit: 1.0, group: nutrients}
+    TN: {value: mean_TN_ugL, n_obs: n_obs_TN_ugL, quality: qc_ok_rate_TN_ugL, sigma: std_TN_ugL, scale: 0.001, source_fit: 0.95, group: nutrients}
+    Secchi: {value: mean_secchi_depth_m, n_obs: n_obs_secchi_depth_m, quality: qc_ok_rate_secchi_depth_m, sigma: std_secchi_depth_m, scale: 1.0, source_fit: 1.0, group: light}
+    Turb: {value: mean_turbidity_NTU, n_obs: n_obs_turbidity_NTU, quality: qc_ok_rate_turbidity_NTU, sigma: std_turbidity_NTU, scale: 1.0, source_fit: 0.90, group: light}
+    DOb: {value: mean_DO_mgL, n_obs: n_obs_DO_mgL, quality: qc_ok_rate_DO_mgL, sigma: std_DO_mgL, scale: 1.0, source_fit: 0.55, group: internal_do}
+  evidence_groups:
+    temperature: [Tw]
+    nutrients: [TP, TN]
+    light: [Secchi, Turb]
+    internal_do: [DOb]
+  minimum_observed_evidence_groups: 2
+  observed_variable_eligibility: finite_value_and_n_obs_at_least_one
+  source_quality_formula: 0_80_times_clip_qc_ok_rate_times_sqrt_min_n_obs_3_over_3
+  source_quality_base: 0.80
+  missing_qc_ok_rate_fallback: 0.75
+  source_fit_policy: per_variable_locked_mapping
+  age_days: 15.0
+  independence: 1.0
+  sigma_formula: observed_std_times_unit_scale_divided_by_sqrt_n_obs
+  sigma_policy: finite_nonnegative_formula_else_v5_default_sigma
+  do_semantics: dissolved_oxygen_proxy_not_verified_bottom_oxygen
+  no_temporal_carry: true
+  forbidden_observed_lineage:
+    - observed_chlorophyll_current
+    - observed_chlorophyll_lagged
+    - observed_chlorophyll_derived
+    - observed_site_specific_memory
+    - risk_chlorophyll_proxy
+  target_artifact_inputs: []
+  target_columns_scanned: []
+
+model:
+  family: mifal_ed_t2_strict_no_chla_memory
+  core_path: src/mifal/ed_t2.py
+  core_version: 5.0.0
+  configuration: v5_dataclass_defaults_without_tuning
+  default_config_canonical_json_bytes: 3217
+  default_config_sha256: 8ad6314fbd833945d9cbd3d84267f0d18a7e79a53fbd61cdea89f703e05f4ded
+  initial_state: [0.05, 0.35]
+  gammaM: 0.28
+  missing_memory_fallback_interval: [0.0, 0.35]
+  structural_memory_semantics: global_constant_prior_not_observed_or_site_specific_memory
+  observed_memory_inputs: []
+  observed_chlorophyll_inputs: []
+  parameter_tuning: forbidden
+  technical_seed: 1729
+  logical_reuse_model_seeds: [1729, 20260612, 20260613, 20260614, 314159]
+  stored_surface_count: 1
+  seed_replication_in_storage: forbidden
+  step_call:
+    dt_days_formula: horizon_months_times_30_4375
+    days_per_horizon_month: 30.4375
+    assimilate: false
+    update_state: false
+    compute_voi: false
+  raw_score_field: risk_conservative
+  candidate: mifal_ed_t2_v5_defaults
+  score_semantics: mifal_type2_conservative_raw_risk_uncalibrated
+  predicted_bloom_probability_state: null_until_future_common_calibration
+  calibration_applied: false
+  ineligible_status: input_ineligible
+  ineligible_reason: strict_non_chla_evidence_incomplete
+  ineligible_row_policy: retain_with_null_numeric_outputs
+
+outputs:
+  exact_final_path_count: 6
+  exact_raw_prediction_rows: 29196
+  raw_scores: data/closure_v1/development/mifal/M0/raw_scores.parquet
+  light_bundle:
+    model_spec: reports/closure_v1/02_models/M0/model_spec.json
+    lineage_audit: reports/closure_v1/02_models/M0/lineage_audit.json
+    availability: reports/closure_v1/02_models/M0/availability.csv
+    report: reports/closure_v1/02_models/M0/report.md
+    manifest: reports/closure_v1/02_models/M0/manifest.json
+  light_bundle_contract:
+    model_spec: binds_core_v5_default_digest_call_flags_and_source_hashes
+    lineage_audit: binds_projection_groups_and_zero_forbidden_or_target_lineage
+    availability: exact_denominators_by_status_group_count_role_and_horizon
+    report: states_raw_uncalibrated_development_only_and_no_empirical_inference
+    manifest: binds_authority_inputs_sources_outputs_and_atomic_transaction
+  raw_prediction_contract:
+    columns:
+      - {name: surface_id, dtype: string, nullable: false}
+      - {name: model_id, dtype: string, nullable: false}
+      - {name: source_id, dtype: string, nullable: false}
+      - {name: site_id, dtype: string, nullable: false}
+      - {name: common_origin_id, dtype: string, nullable: false}
+      - {name: evaluation_unit_id, dtype: string, nullable: false}
+      - {name: holdout_group_id, dtype: string, nullable: false}
+      - {name: assignment_role, dtype: string, nullable: false}
+      - {name: time_role, dtype: string, nullable: false}
+      - {name: origin_year_month, dtype: string, nullable: false}
+      - {name: target_year_month, dtype: string, nullable: false}
+      - {name: horizon_months, dtype: int16, nullable: false}
+      - {name: technical_seed, dtype: int64, nullable: false}
+      - {name: model_seed, dtype: int64, nullable: true}
+      - {name: upstream_state_seed, dtype: int64, nullable: true}
+      - {name: candidate, dtype: string, nullable: false}
+      - {name: selected_family, dtype: bool, nullable: false}
+      - {name: availability_status, dtype: string, nullable: false}
+      - {name: failure_reason, dtype: string, nullable: false}
+      - {name: score_semantics, dtype: string, nullable: false}
+      - {name: raw_score, dtype: float64, nullable: true}
+      - {name: predicted_bloom_probability, dtype: float64, nullable: true}
+      - {name: interval_lower, dtype: float64, nullable: true}
+      - {name: interval_upper, dtype: float64, nullable: true}
+      - {name: data_reliability, dtype: float64, nullable: true}
+      - {name: evidence_group_count, dtype: int8, nullable: false}
+      - {name: payload_variable_count, dtype: int8, nullable: false}
+      - {name: payload_variables, dtype: string, nullable: false}
+    canonical_sort_keys:
+      - source_id
+      - site_id
+      - origin_year_month
+      - horizon_months
+      - target_year_month
+      - common_origin_id
+      - evaluation_unit_id
+    availability_status_values: [success, input_ineligible]
+    candidate_policy: constant_mifal_ed_t2_v5_defaults
+    selected_family_policy: constant_false_no_selection_or_tuning
+    success_policy: at_least_two_evidence_groups_and_finite_raw_interval_reliability_in_closed_unit_interval
+    success_probability_policy: predicted_bloom_probability_is_null_before_common_calibration
+    ineligible_policy: scores_interval_and_reliability_null_but_row_retained
+    payload_variables_encoding: comma_joined_subsequence_of_variable_order
+    technical_seed_policy: constant_1729
+    model_seed_policy: "null"
+    upstream_state_seed_policy: "null"
+    execution_exception_policy: transaction_abort_with_owned_inode_rollback
+  manifest_written_last: true
+  publication:
+    guard_path: tmp/closure_v1_mifal_development/mifal_bundle.guard
+    temporary_suffix: .tmp
+    parent_walk_no_follow: true
+    no_clobber: true
+    hardlink_publication: true
+    rollback_owned_inode_only: true
+  forbidden_final_classes:
+    - model_checkpoint
+    - fitted_preprocessor
+    - calibrator
+    - threshold
+    - target_derived_metric
+    - outcome_record
+
+reproducibility:
+  execution_device: cpu
+  threadpool_limit: 1
+  dependency_files: [pyproject.toml, poetry.lock]
+  runtime_versions_recorded_in_manifest: true
+
+dvc:
+  authorized_during_h_or_p: false
+  authorized_during_one_shot: false
+  post_audit_registration_required: true
+  raw_parquet_pointer: data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc
+  model_artifact_required: false
+  models_dvc_must_remain_unchanged: true
+
+authorizations:
+  strict_adapter_authorized: false
+  mifal_one_shot_authorized: false
+  m0_execution_authorized: false
+  tuning_authorized: false
+  target_access_authorized: false
+  calibration_authorized: false
+  metrics_authorized: false
+  e0_m_authorized: false
+  evaluation_authorized: false
+  e0_u_authorized: false
+  dvc_commands_authorized: false
+  scientific_network_authorized: false
+  outcome_access_authorized: false
+  future_outcomes_accessed: false
+  outcome_access_log_required_state: absent
