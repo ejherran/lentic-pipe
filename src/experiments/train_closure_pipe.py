@@ -2,8 +2,8 @@
 """Fit the fixed Closure V1 residual probabilistic GRU profile.
 
 This module exposes synthetic-testable functional kernels, while its CLI is
-unconditionally guarded by the published additive E0-MG P1-consumer schema-
-subset authorization.  It never reads calibration outcomes, locked evaluation
+unconditionally guarded by the published additive E0-MI P1/20260612 consumer
+authorization.  It never reads calibration outcomes, locked evaluation
 rows, or holdout rows.
 """
 
@@ -118,6 +118,9 @@ P0_ARTIFACT_BUILDER_RECORD = {
 P1_SEQUENCE_POINTER_PATH = Path(
     "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc"
 )
+P1_SEQUENCE_20260612_POINTER_PATH = Path(
+    "data/closure_v1/development/sequences/P1/seed_20260612.parquet.dvc"
+)
 E0_MC_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json"
 )
@@ -142,8 +145,29 @@ E0_MG_MANIFEST_PATH = Path(
 E0_MG_SCHEMA_PATH = Path(
     "configs/closure_v1/p1_temporal_consumer_schema_subset_patch_lock.schema.json"
 )
+E0_MH_LOCK_PATH = Path(
+    "reports/closure_v1/00_protocol/p1_sequence_seed_20260612_patch_lock.json"
+)
+E0_MH_MANIFEST_PATH = Path(
+    "reports/closure_v1/00_protocol/"
+    "p1_sequence_seed_20260612_patch_lock_manifest.json"
+)
+E0_MI_LOCK_PATH = Path(
+    "reports/closure_v1/00_protocol/"
+    "p1_temporal_consumer_seed_20260612_patch_lock.json"
+)
+E0_MI_MANIFEST_PATH = Path(
+    "reports/closure_v1/00_protocol/"
+    "p1_temporal_consumer_seed_20260612_patch_lock_manifest.json"
+)
+E0_MI_SCHEMA_PATH = Path(
+    "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json"
+)
 P1_SEQUENCE_AUDITOR_PATH = Path(
     "src/experiments/audit_closure_p1_sequence_bundle.py"
+)
+P1_SEQUENCE_20260612_AUDITOR_PATH = Path(
+    "src/experiments/audit_closure_p1_seed_20260612_sequence_bundle.py"
 )
 E0_MC_AUTHORITY_PATH = Path(
     "src/experiments/closure_p1_sequence_historical_anfis_patch.py"
@@ -157,6 +181,23 @@ E0_MF_GATE_PATH = Path(
 )
 E0_MG_GATE_PATH = Path(
     "src/experiments/closure_p1_temporal_consumer_schema_subset_patch.py"
+)
+E0_MH_GATE_PATH = Path(
+    "src/experiments/closure_p1_sequence_seed_20260612_patch.py"
+)
+E0_MI_GATE_PATH = Path(
+    "src/experiments/closure_p1_temporal_consumer_seed_20260612_patch.py"
+)
+P1_20260612_AUTHORITY_SOURCE_PATHS = (
+    E0_MC_AUTHORITY_PATH,
+    P1_SEQUENCE_AUDITOR_PATH,
+    E0_MD_GATE_PATH,
+    E0_ME_GATE_PATH,
+    E0_MF_GATE_PATH,
+    E0_MG_GATE_PATH,
+    E0_MH_GATE_PATH,
+    P1_SEQUENCE_20260612_AUDITOR_PATH,
+    E0_MI_GATE_PATH,
 )
 P1_FIT_STATUS_COUNTS = {
     "success": 8_925,
@@ -1250,6 +1291,256 @@ def validate_p1_temporal_consumer_schema_subset_authority(
     return artifact, current_runtime, e0_mc_context, authority_inputs
 
 
+def _closed_temporal_authority_input_records(
+    authority: Mapping[str, Any],
+    *,
+    field: str,
+    expected: Sequence[tuple[str, str]],
+) -> tuple[dict[str, Any], ...]:
+    raw_records = authority.get(field)
+    if (
+        not isinstance(raw_records, Sequence)
+        or isinstance(raw_records, (str, bytes))
+        or len(raw_records) != len(expected)
+    ):
+        raise ClosurePipeTrainingError(f"E0-MI {field} drifted")
+    observed: list[dict[str, Any]] = []
+    for raw, (expected_path, expected_role) in zip(raw_records, expected, strict=True):
+        if not isinstance(raw, Mapping) or set(raw) != {
+            "path",
+            "role",
+            "bytes",
+            "sha256",
+        }:
+            raise ClosurePipeTrainingError(f"E0-MI {field} record dialect drifted")
+        record = cast(Mapping[str, Any], raw)
+        if record.get("path") != expected_path or record.get("role") != expected_role:
+            raise ClosurePipeTrainingError(f"E0-MI {field} path/role drifted")
+        physical = _file_record(PROJECT_ROOT / expected_path)
+        if any(
+            record.get(key) != physical[key] for key in ("path", "bytes", "sha256")
+        ):
+            raise ClosurePipeTrainingError(
+                f"E0-MI {field} differs from physical bytes: {expected_path}"
+            )
+        observed.append(physical)
+    return tuple(observed)
+
+
+def builder_records_from_p1_seed_20260612_temporal_consumer_authority(
+    authority: Mapping[str, Any],
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Bind the P1/20260612 artifact builder to the unchanged live builder."""
+    artifact = _authority_file_record(
+        authority.get("p1_artifact_builder_record"),
+        field="p1_artifact_builder_record",
+    )
+    current_runtime = _authority_file_record(
+        authority.get("current_runtime_builder_record"),
+        field="current_runtime_builder_record",
+    )
+    observed_runtime = _file_record(PROJECT_ROOT / SEQUENCE_BUILDER_PATH)
+    if current_runtime != observed_runtime:
+        raise ClosurePipeTrainingError("Current runtime builder differs from E0-MI authority")
+    if artifact != current_runtime:
+        raise ClosurePipeTrainingError(
+            "P1/20260612 artifact builder differs from the E0-MH runtime builder"
+        )
+    return artifact, current_runtime
+
+
+def validate_p1_temporal_consumer_seed_20260612_authority(
+    authority: Mapping[str, Any],
+    *,
+    model_id: str,
+    base_seed: int,
+    device: str,
+) -> tuple[
+    dict[str, Any],
+    dict[str, Any],
+    Mapping[str, Any] | None,
+    tuple[dict[str, Any], ...],
+    tuple[dict[str, Any], ...],
+]:
+    """Validate effective E0-MI before any sequence, model, or output I/O."""
+    expected = {
+        "gate": "E0-MI",
+        "publication_verified": True,
+        "remote_publication_verified": True,
+        "historical_e0_mg_verified": True,
+        "historical_mg_effective_loader_called": False,
+        "historical_e0_mh_verified": True,
+        "historical_mh_effective_loader_called": False,
+        "p1_1729_slot_preserved": True,
+        "p1_20260612_sequence_bundle_verified": True,
+        "schema_subset_preflight_verified": True,
+        "schema_supported_subset_verified": True,
+        "minimum_keyword_absent": True,
+        "format_keyword_absent": True,
+        "numeric_bounds_validated_semantically": True,
+        "timestamp_validated_semantically": True,
+        "in_process_audit_verified": True,
+        "consumer_namespace_absent": True,
+        "later_seed_namespaces_absent": True,
+        "progression_prelock_verified": True,
+        "authorization_effective": True,
+        "p1_consumer_authorized": True,
+        "p1_fit_authorized": False,
+        "fit_attempt_authorized": False,
+        "p1_sequence_builder_authorized": False,
+        "dvc_commands_authorized": False,
+        "authorized_model_id": "P1",
+        "authorized_base_seed": 20_260_612,
+        "authorized_device": "cpu",
+        "sequence_fit_available": False,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "auditor_execution_mode": "in_process_callable",
+        "python_auditor_subprocess_used": False,
+        "batch_seed_execution_authorized": False,
+        "retry_authorized": False,
+        "replacement_authorized": False,
+        "e0_m_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "future_outcomes_accessed": False,
+    }
+    drifted = [field for field, value in expected.items() if authority.get(field) != value]
+    if drifted:
+        raise ClosurePipeTrainingError(f"E0-MI authorization predicates drifted: {drifted}")
+    if (model_id, base_seed, device) != ("P1", 20_260_612, "cpu"):
+        raise ClosurePipeTrainingError("E0-MI authorizes only P1 seed 20260612 on cpu")
+    if authority.get("state_consumer_authority") is not None:
+        raise ClosurePipeTrainingError("E0-MI state consumer authority must be null")
+
+    schema_preflight = authority.get("schema_subset_preflight_evidence")
+    expected_schema_fields = {
+        "gate",
+        "schema_path",
+        "schema_bytes",
+        "schema_sha256",
+        "supported_subset_verified",
+        "minimum_keyword_absent",
+        "format_keyword_absent",
+    }
+    if not isinstance(schema_preflight, Mapping) or set(schema_preflight) != expected_schema_fields:
+        raise ClosurePipeTrainingError("E0-MI schema-subset preflight evidence drifted")
+    schema_bytes = schema_preflight.get("schema_bytes")
+    schema_sha256 = schema_preflight.get("schema_sha256")
+    if (
+        schema_preflight.get("gate") != "E0-MI"
+        or schema_preflight.get("schema_path") != E0_MI_SCHEMA_PATH.as_posix()
+        or type(schema_bytes) is not int
+        or schema_bytes <= 0
+        or not isinstance(schema_sha256, str)
+        or len(schema_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in schema_sha256)
+        or schema_preflight.get("supported_subset_verified") is not True
+        or schema_preflight.get("minimum_keyword_absent") is not True
+        or schema_preflight.get("format_keyword_absent") is not True
+    ):
+        raise ClosurePipeTrainingError("E0-MI schema-subset preflight evidence drifted")
+
+    fit_availability = authority.get("fit_availability")
+    expected_fit_availability = {
+        "sequence_fit_available": False,
+        "fit_status_counts": P1_FIT_STATUS_COUNTS,
+        "fit_failure_reason_counts": P1_FIT_FAILURE_REASON_COUNTS,
+        "calibration_failure_count": P1_CALIBRATION_FAILURE_COUNT,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "replacement_used": False,
+    }
+    if fit_availability != expected_fit_availability:
+        raise ClosurePipeTrainingError("E0-MI fit-availability contract drifted")
+
+    audit = authority.get("in_process_audit_evidence")
+    if not isinstance(audit, Mapping):
+        raise ClosurePipeTrainingError("E0-MI lacks in-process audit evidence")
+    expected_audit = {
+        "execution_mode": "in_process_callable",
+        "callable_module": (
+            "src.experiments.audit_closure_p1_seed_20260612_sequence_bundle"
+        ),
+        "callable_name": "audit_p1_seed_20260612_sequence_bundle",
+        "callable_qualname": "audit_p1_seed_20260612_sequence_bundle",
+        "callable_source_path": P1_SEQUENCE_20260612_AUDITOR_PATH.as_posix(),
+        "callable_code_filename": P1_SEQUENCE_20260612_AUDITOR_PATH.as_posix(),
+        "callable_git_commit": "b448e1fb0ee75b6135da11f0ea9a8877d89e0ee1",
+        "audit_version": "closure_p1_seed_20260612_sequence_bundle_audit_v1",
+        "status": "validated",
+        "model_id": "P1",
+        "base_seed": 20_260_612,
+        "intent_origins": 9_732,
+        "successful_origins": 9_227,
+        "failed_origins": 505,
+        "fit_successful_origins": 8_925,
+        "fit_unavailable_origins": 488,
+        "calibration_unavailable_origins": 17,
+        "fit_failure_reason_counts": P1_FIT_FAILURE_REASON_COUNTS,
+        "sequence_fit_available": False,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "auditor_read_only": True,
+        "consumer_executed": False,
+        "fit_executed": False,
+        "dvc_operation_executed": False,
+        "future_outcomes_accessed": False,
+    }
+    audit_drifted = [
+        field for field, value in expected_audit.items() if audit.get(field) != value
+    ]
+    source_git = audit.get("callable_source_git")
+    source_physical = audit.get("callable_source_physical")
+    result_bytes = audit.get("result_bytes")
+    result_sha256 = audit.get("result_sha256")
+    if (
+        audit_drifted
+        or not isinstance(source_git, Mapping)
+        or not isinstance(source_physical, Mapping)
+        or source_git != source_physical
+        or source_git.get("path") != P1_SEQUENCE_20260612_AUDITOR_PATH.as_posix()
+        or type(result_bytes) is not int
+        or result_bytes <= 0
+        or not isinstance(result_sha256, str)
+        or len(result_sha256) != 64
+        or any(character not in "0123456789abcdef" for character in result_sha256)
+    ):
+        raise ClosurePipeTrainingError(
+            f"E0-MI in-process audit evidence drifted: {audit_drifted}"
+        )
+
+    artifact, current = builder_records_from_p1_seed_20260612_temporal_consumer_authority(
+        authority
+    )
+    sequence_inputs = _closed_temporal_authority_input_records(
+        authority,
+        field="sequence_authority_input_records",
+        expected=(
+            (E0_MH_LOCK_PATH.as_posix(), "external_p1_sequence_seed_20260612_patch_lock"),
+            (E0_MH_MANIFEST_PATH.as_posix(), "p1_sequence_seed_20260612_patch_companion"),
+        ),
+    )
+    consumer_inputs = _closed_temporal_authority_input_records(
+        authority,
+        field="authority_input_records",
+        expected=(
+            (
+                E0_MI_LOCK_PATH.as_posix(),
+                "external_p1_temporal_consumer_seed_20260612_patch_lock",
+            ),
+            (
+                E0_MI_MANIFEST_PATH.as_posix(),
+                "p1_temporal_consumer_seed_20260612_patch_companion",
+            ),
+        ),
+    )
+    return artifact, current, None, sequence_inputs, consumer_inputs
+
+
 def collect_sequence_input_contract(
     *,
     model_id: str,
@@ -1257,6 +1548,7 @@ def collect_sequence_input_contract(
     artifact_builder_record: Mapping[str, Any],
     current_runtime_builder_record: Mapping[str, Any],
     state_consumer_authority: Mapping[str, Any] | None = None,
+    sequence_authority_input_records: Sequence[Mapping[str, Any]] | None = None,
 ) -> SequenceInputContract:
     """Snapshot immutable manifest provenance and live runtime inputs separately."""
     validate_temporal_seed(model_id, base_seed)
@@ -1316,10 +1608,31 @@ def collect_sequence_input_contract(
     )
     live_records = [*(_file_record(path) for path in fixed_paths), state_manifest_before]
     if model_id == "P1":
-        live_records.extend(
-            _file_record(PROJECT_ROOT / path)
-            for path in (E0_MC_LOCK_PATH, E0_MC_MANIFEST_PATH)
-        )
+        if sequence_authority_input_records is None:
+            live_records.extend(
+                _file_record(PROJECT_ROOT / path)
+                for path in (E0_MC_LOCK_PATH, E0_MC_MANIFEST_PATH)
+            )
+        else:
+            if len(sequence_authority_input_records) != 2:
+                raise ClosurePipeTrainingError(
+                    "P1 sequence authority must bind exactly two physical inputs"
+                )
+            for raw_record in sequence_authority_input_records:
+                if not isinstance(raw_record, Mapping) or set(raw_record) != {
+                    "path",
+                    "bytes",
+                    "sha256",
+                }:
+                    raise ClosurePipeTrainingError(
+                        "P1 sequence authority input record dialect drifted"
+                    )
+                physical = _file_record(PROJECT_ROOT / str(raw_record["path"]))
+                if dict(raw_record) != physical:
+                    raise ClosurePipeTrainingError(
+                        "P1 sequence authority input differs from physical bytes"
+                    )
+                live_records.append(physical)
     if state_required:
         assert state_before is not None
         live_records.append(state_before)
@@ -1362,6 +1675,7 @@ def collect_temporal_model_input_contract(
     base_seed: int,
     sequence_contract: SequenceInputContract,
     authority_input_records: Sequence[Mapping[str, Any]] = (),
+    p1_authority_source_paths: Sequence[Path] | None = None,
 ) -> TemporalModelInputContract:
     sequence_seed: int | None = None if model_id == "P0" else base_seed
     sequence_info = sequence_paths(model_id, sequence_seed)
@@ -1380,22 +1694,28 @@ def collect_temporal_model_input_contract(
         PROJECT_ROOT / "src/experiments/closure_runtime_contract.py",
         PROJECT_ROOT / "src/experiments/train_pipe_grud.py",
     )
-    p1_source_paths = (
-        PROJECT_ROOT / E0_MC_AUTHORITY_PATH,
-        PROJECT_ROOT / P1_SEQUENCE_AUDITOR_PATH,
-        PROJECT_ROOT / E0_MD_GATE_PATH,
-        PROJECT_ROOT / E0_ME_GATE_PATH,
-        PROJECT_ROOT / E0_MF_GATE_PATH,
-        PROJECT_ROOT / E0_MG_GATE_PATH,
+    historical_p1_source_paths = (
+        E0_MC_AUTHORITY_PATH,
+        P1_SEQUENCE_AUDITOR_PATH,
+        E0_MD_GATE_PATH,
+        E0_ME_GATE_PATH,
+        E0_MF_GATE_PATH,
+        E0_MG_GATE_PATH,
     )
+    selected_p1_sources = (
+        historical_p1_source_paths
+        if p1_authority_source_paths is None
+        else tuple(p1_authority_source_paths)
+    )
+    if len(selected_p1_sources) != len(set(selected_p1_sources)):
+        raise ClosurePipeTrainingError("P1 authority source paths must be unique")
+    p1_source_paths = tuple(PROJECT_ROOT / path for path in selected_p1_sources)
     source_paths = (
         *common_source_paths,
         *(p1_source_paths if model_id == "P1" else ()),
     )
     p1_dependency_paths = (
-        PROJECT_ROOT / P1_SEQUENCE_POINTER_PATH,
-        PROJECT_ROOT / E0_MC_LOCK_PATH,
-        PROJECT_ROOT / E0_MC_MANIFEST_PATH,
+        PROJECT_ROOT / Path(f"{sequence_info['sequence'].as_posix()}.dvc"),
     )
     dependency_paths = (
         PROJECT_ROOT / sequence_info["sequence"],
@@ -2277,19 +2597,23 @@ def _run_temporal_slot(
     p1_temporal_consumer_authority: Mapping[str, Any],
 ) -> None:
     state_consumer_authority: Mapping[str, Any] | None = None
+    sequence_authority_input_records: tuple[dict[str, Any], ...] | None = None
     authority_input_records: tuple[dict[str, Any], ...] = ()
+    p1_authority_source_paths: Sequence[Path] | None = None
     if args.model_id == "P1":
         (
             artifact_builder,
             current_runtime_builder,
             state_consumer_authority,
+            sequence_authority_input_records,
             authority_input_records,
-        ) = validate_p1_temporal_consumer_schema_subset_authority(
+        ) = validate_p1_temporal_consumer_seed_20260612_authority(
             p1_temporal_consumer_authority,
             model_id=args.model_id,
             base_seed=args.base_seed,
             device=args.device,
         )
+        p1_authority_source_paths = P1_20260612_AUTHORITY_SOURCE_PATHS
     else:
         artifact_builder, current_runtime_builder = (
             builder_records_from_temporal_validation_authority(
@@ -2313,12 +2637,14 @@ def _run_temporal_slot(
         artifact_builder_record=artifact_builder,
         current_runtime_builder_record=current_runtime_builder,
         state_consumer_authority=state_consumer_authority,
+        sequence_authority_input_records=sequence_authority_input_records,
     )
     model_input_contract = collect_temporal_model_input_contract(
         model_id=args.model_id,
         base_seed=args.base_seed,
         sequence_contract=sequence_input_contract,
         authority_input_records=authority_input_records,
+        p1_authority_source_paths=p1_authority_source_paths,
     )
     before = {str(record["path"]): dict(record) for record in model_input_contract.records}
     sequence_before = before[_file_record(sequence_path)["path"]]
@@ -2349,14 +2675,14 @@ def _run_temporal_slot(
     if args.model_id == "P1":
         if availability.available:
             raise ClosurePipeTrainingError(
-                "E0-MG forbids fitting because the sealed P1 fit rows are unavailable"
+                "E0-MI forbids fitting because the sealed P1 fit rows are unavailable"
             )
         if (
             availability.failure_reason != "sequence_fit_rows_unavailable"
             or availability.fit_status_counts != P1_FIT_STATUS_COUNTS
             or availability.failure_reason_counts != P1_FIT_FAILURE_REASON_COUNTS
         ):
-            raise ClosurePipeTrainingError("P1 unavailable-fit evidence differs from E0-MG")
+            raise ClosurePipeTrainingError("P1 unavailable-fit evidence differs from E0-MI")
     if not availability.available:
         assert_temporal_model_input_contract_unchanged(model_input_contract)
         after = {
@@ -2549,12 +2875,12 @@ def main() -> None:
     args = parse_args()
 
     # No sequence/model row or output path is touched before this external gate.
-    from src.experiments.closure_p1_temporal_consumer_schema_subset_patch import (
-        require_p1_temporal_consumer_schema_subset_patch_authorized,
+    from src.experiments.closure_p1_temporal_consumer_seed_20260612_patch import (
+        require_p1_temporal_consumer_seed_20260612_patch_authorized,
     )
 
     p1_temporal_consumer_authority = (
-        require_p1_temporal_consumer_schema_subset_patch_authorized(
+        require_p1_temporal_consumer_seed_20260612_patch_authorized(
             model_id=args.model_id,
             base_seed=args.base_seed,
             device=args.device,

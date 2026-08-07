@@ -43,11 +43,21 @@ from src.experiments.train_closure_pipe import (
     E0_MG_LOCK_PATH,
     E0_MG_MANIFEST_PATH,
     E0_MG_SCHEMA_PATH,
+    E0_MH_GATE_PATH,
+    E0_MH_LOCK_PATH,
+    E0_MH_MANIFEST_PATH,
+    E0_MI_GATE_PATH,
+    E0_MI_LOCK_PATH,
+    E0_MI_MANIFEST_PATH,
+    E0_MI_SCHEMA_PATH,
     MODEL_ARTIFACT_OUTPUT_NAMES,
     P1_FIT_FAILURE_REASON_COUNTS,
     P1_FIT_STATUS_COUNTS,
     P1_SEQUENCE_AUDITOR_PATH,
+    P1_SEQUENCE_20260612_AUDITOR_PATH,
     P1_SEQUENCE_POINTER_PATH,
+    P1_SEQUENCE_20260612_POINTER_PATH,
+    P1_20260612_AUTHORITY_SOURCE_PATHS,
     SequenceInputContract,
     TemporalModelInputContract,
     WindowBundle,
@@ -74,6 +84,8 @@ from src.experiments.train_closure_pipe import (
     validate_temporal_runtime_contract,
     assert_sequence_input_contract_unchanged,
     builder_records_from_temporal_validation_authority,
+    builder_records_from_p1_seed_20260612_temporal_consumer_authority,
+    validate_p1_temporal_consumer_seed_20260612_authority,
     validate_p1_temporal_consumer_schema_subset_authority,
     validate_sequence_manifest_builder_binding,
 )
@@ -321,6 +333,141 @@ def _p1_consumer_schema_subset_authority(
             "p1_fit_authorized": False,
             "evaluation_authorized": False,
             "e0_u_authorized": False,
+            "future_outcomes_accessed": False,
+        },
+        "fit_availability": {
+            "sequence_fit_available": False,
+            "fit_status_counts": dict(P1_FIT_STATUS_COUNTS),
+            "fit_failure_reason_counts": dict(P1_FIT_FAILURE_REASON_COUNTS),
+            "calibration_failure_count": 17,
+            "expected_slot_status": "model_unavailable",
+            "expected_fit_status": "not_attempted",
+            "expected_failure_reason": "sequence_fit_rows_unavailable",
+            "replacement_used": False,
+        },
+    }
+
+
+def _p1_20260612_consumer_authority(
+    *,
+    builder_record: Mapping[str, Any],
+    mh_lock_record: Mapping[str, Any],
+    mh_companion_record: Mapping[str, Any],
+    mi_lock_record: Mapping[str, Any],
+    mi_companion_record: Mapping[str, Any],
+    auditor_record: Mapping[str, Any],
+) -> dict[str, Any]:
+    auditor_with_role = {
+        **dict(auditor_record),
+        "role": "p1_sequence_bundle_auditor_callable",
+    }
+    return {
+        "gate": "E0-MI",
+        "publication_verified": True,
+        "remote_publication_verified": True,
+        "historical_e0_mg_verified": True,
+        "historical_mg_effective_loader_called": False,
+        "historical_e0_mh_verified": True,
+        "historical_mh_effective_loader_called": False,
+        "p1_1729_slot_preserved": True,
+        "p1_20260612_sequence_bundle_verified": True,
+        "schema_subset_preflight_verified": True,
+        "schema_supported_subset_verified": True,
+        "minimum_keyword_absent": True,
+        "format_keyword_absent": True,
+        "numeric_bounds_validated_semantically": True,
+        "timestamp_validated_semantically": True,
+        "in_process_audit_verified": True,
+        "consumer_namespace_absent": True,
+        "later_seed_namespaces_absent": True,
+        "progression_prelock_verified": True,
+        "authorization_effective": True,
+        "p1_consumer_authorized": True,
+        "p1_fit_authorized": False,
+        "fit_attempt_authorized": False,
+        "p1_sequence_builder_authorized": False,
+        "dvc_commands_authorized": False,
+        "authorized_model_id": "P1",
+        "authorized_base_seed": 20_260_612,
+        "authorized_device": "cpu",
+        "sequence_fit_available": False,
+        "expected_slot_status": "model_unavailable",
+        "expected_fit_status": "not_attempted",
+        "expected_failure_reason": "sequence_fit_rows_unavailable",
+        "auditor_execution_mode": "in_process_callable",
+        "python_auditor_subprocess_used": False,
+        "batch_seed_execution_authorized": False,
+        "retry_authorized": False,
+        "replacement_authorized": False,
+        "e0_m_authorized": False,
+        "evaluation_authorized": False,
+        "e0_u_authorized": False,
+        "future_outcomes_accessed": False,
+        "schema_subset_preflight_evidence": {
+            "gate": "E0-MI",
+            "schema_path": E0_MI_SCHEMA_PATH.as_posix(),
+            "schema_bytes": 1,
+            "schema_sha256": "3" * 64,
+            "supported_subset_verified": True,
+            "minimum_keyword_absent": True,
+            "format_keyword_absent": True,
+        },
+        "p1_artifact_builder_record": dict(builder_record),
+        "current_runtime_builder_record": dict(builder_record),
+        "state_consumer_authority": None,
+        "sequence_authority_input_records": [
+            {
+                **dict(mh_lock_record),
+                "role": "external_p1_sequence_seed_20260612_patch_lock",
+            },
+            {
+                **dict(mh_companion_record),
+                "role": "p1_sequence_seed_20260612_patch_companion",
+            },
+        ],
+        "authority_input_records": [
+            {
+                **dict(mi_lock_record),
+                "role": "external_p1_temporal_consumer_seed_20260612_patch_lock",
+            },
+            {
+                **dict(mi_companion_record),
+                "role": "p1_temporal_consumer_seed_20260612_patch_companion",
+            },
+        ],
+        "in_process_audit_evidence": {
+            "execution_mode": "in_process_callable",
+            "callable_module": (
+                "src.experiments.audit_closure_p1_seed_20260612_sequence_bundle"
+            ),
+            "callable_name": "audit_p1_seed_20260612_sequence_bundle",
+            "callable_qualname": "audit_p1_seed_20260612_sequence_bundle",
+            "callable_source_path": P1_SEQUENCE_20260612_AUDITOR_PATH.as_posix(),
+            "callable_code_filename": P1_SEQUENCE_20260612_AUDITOR_PATH.as_posix(),
+            "callable_git_commit": "b448e1fb0ee75b6135da11f0ea9a8877d89e0ee1",
+            "callable_source_git": auditor_with_role,
+            "callable_source_physical": auditor_with_role,
+            "audit_version": "closure_p1_seed_20260612_sequence_bundle_audit_v1",
+            "status": "validated",
+            "model_id": "P1",
+            "base_seed": 20_260_612,
+            "intent_origins": 9_732,
+            "successful_origins": 9_227,
+            "failed_origins": 505,
+            "fit_successful_origins": 8_925,
+            "fit_unavailable_origins": 488,
+            "calibration_unavailable_origins": 17,
+            "fit_failure_reason_counts": dict(P1_FIT_FAILURE_REASON_COUNTS),
+            "sequence_fit_available": False,
+            "expected_slot_status": "model_unavailable",
+            "expected_fit_status": "not_attempted",
+            "expected_failure_reason": "sequence_fit_rows_unavailable",
+            "result_bytes": 1,
+            "result_sha256": "2" * 64,
+            "auditor_read_only": True,
+            "consumer_executed": False,
+            "fit_executed": False,
+            "dvc_operation_executed": False,
             "future_outcomes_accessed": False,
         },
         "fit_availability": {
@@ -1022,6 +1169,97 @@ def test_p1_consumer_schema_subset_authority_separates_builder_and_mg_inputs(
         )
 
 
+def test_p1_20260612_authority_binds_mh_mi_builder_and_auditor(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    physical_paths = (
+        module.SEQUENCE_BUILDER_PATH,
+        E0_MH_LOCK_PATH,
+        E0_MH_MANIFEST_PATH,
+        E0_MI_LOCK_PATH,
+        E0_MI_MANIFEST_PATH,
+        P1_SEQUENCE_20260612_AUDITOR_PATH,
+    )
+    for relative in physical_paths:
+        physical = tmp_path / relative
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(relative.as_posix().encode("utf-8"))
+    builder_record = _file_record(tmp_path / module.SEQUENCE_BUILDER_PATH)
+    authority = _p1_20260612_consumer_authority(
+        builder_record=builder_record,
+        mh_lock_record=_file_record(tmp_path / E0_MH_LOCK_PATH),
+        mh_companion_record=_file_record(tmp_path / E0_MH_MANIFEST_PATH),
+        mi_lock_record=_file_record(tmp_path / E0_MI_LOCK_PATH),
+        mi_companion_record=_file_record(tmp_path / E0_MI_MANIFEST_PATH),
+        auditor_record=_file_record(tmp_path / P1_SEQUENCE_20260612_AUDITOR_PATH),
+    )
+    artifact, current, state_context, sequence_inputs, consumer_inputs = (
+        validate_p1_temporal_consumer_seed_20260612_authority(
+            authority,
+            model_id="P1",
+            base_seed=20_260_612,
+            device="cpu",
+        )
+    )
+    assert artifact == current == builder_record
+    assert state_context is None
+    assert sequence_inputs == (
+        _file_record(tmp_path / E0_MH_LOCK_PATH),
+        _file_record(tmp_path / E0_MH_MANIFEST_PATH),
+    )
+    assert consumer_inputs == (
+        _file_record(tmp_path / E0_MI_LOCK_PATH),
+        _file_record(tmp_path / E0_MI_MANIFEST_PATH),
+    )
+    assert builder_records_from_p1_seed_20260612_temporal_consumer_authority(
+        authority
+    ) == (builder_record, builder_record)
+
+    for model_id, base_seed, device in (
+        ("P0", 20_260_612, "cpu"),
+        ("P1", 1_729, "cpu"),
+        ("P1", 20_260_613, "cpu"),
+        ("P1", 20_260_612, "cuda"),
+    ):
+        with pytest.raises(ValueError, match="only P1 seed 20260612"):
+            validate_p1_temporal_consumer_seed_20260612_authority(
+                authority,
+                model_id=model_id,
+                base_seed=base_seed,
+                device=device,
+            )
+    fit_drifted = {
+        **authority,
+        "fit_availability": {
+            **authority["fit_availability"],
+            "fit_status_counts": {
+                "success": 8_924,
+                "autoregressive_target_unavailable": 489,
+            },
+        },
+    }
+    with pytest.raises(ValueError, match="fit-availability contract drifted"):
+        validate_p1_temporal_consumer_seed_20260612_authority(
+            fit_drifted,
+            model_id="P1",
+            base_seed=20_260_612,
+            device="cpu",
+        )
+    with pytest.raises(ValueError, match="state consumer authority must be null"):
+        validate_p1_temporal_consumer_seed_20260612_authority(
+            {**authority, "state_consumer_authority": {"gate": "E0-MC"}},
+            model_id="P1",
+            base_seed=20_260_612,
+            device="cpu",
+        )
+
+
 def test_sequence_identity_must_match_every_common_origin_h1_row() -> None:
     sequences = _sequence_frame()
     common = _common_from_sequences(sequences)
@@ -1188,6 +1426,83 @@ def test_sequence_input_contract_accepts_published_p1_thirteen_input_dialect(
         assert_sequence_input_contract_unchanged(contract)
 
 
+def test_sequence_input_contract_accepts_seed_20260612_mh_input_dialect(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    fixed_paths = (
+        module.DEFAULT_COMMON_ORIGINS,
+        module.DEFAULT_COMMON_COMPLETION,
+        module.DEFAULT_RUNTIME_CONFIG,
+        module.DEFAULT_RUNTIME_SCHEMA,
+        module.DEFAULT_RUNTIME_LOCK,
+        module.DEFAULT_ASSIGNMENT,
+        module.DEFAULT_HOLDOUT_MANIFEST,
+        module.DEFAULT_PROTOCOL_LOCK,
+        module.SEQUENCE_BUILDER_PATH,
+    )
+    state_manifest_path = Path(
+        "reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json"
+    )
+    state_path = Path(
+        "data/closure_v1/development/anfis/seed_20260612/"
+        "adaptive_no_current_state.parquet"
+    )
+    for relative in (
+        *fixed_paths,
+        state_manifest_path,
+        E0_MH_LOCK_PATH,
+        E0_MH_MANIFEST_PATH,
+        state_path,
+    ):
+        physical = tmp_path / relative
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(relative.as_posix().encode("utf-8"))
+    (tmp_path / state_manifest_path).write_text("{}\n", encoding="utf-8")
+    monkeypatch.setattr(
+        module,
+        "sequence_paths",
+        lambda *_: {"state": state_path, "state_manifest": state_manifest_path},
+    )
+    observed_authorities: list[object] = []
+
+    def validate_state(*args: object, **kwargs: object) -> tuple[bool, str, bool]:
+        observed_authorities.append(kwargs.get("consumer_authority"))
+        return True, "", False
+
+    monkeypatch.setattr(module, "validate_state_slot_manifest", validate_state)
+    builder_record = _file_record(tmp_path / module.SEQUENCE_BUILDER_PATH)
+    sequence_authorities = (
+        _file_record(tmp_path / E0_MH_LOCK_PATH),
+        _file_record(tmp_path / E0_MH_MANIFEST_PATH),
+    )
+    contract = collect_sequence_input_contract(
+        model_id="P1",
+        base_seed=20_260_612,
+        artifact_builder_record=builder_record,
+        current_runtime_builder_record=builder_record,
+        state_consumer_authority=None,
+        sequence_authority_input_records=sequence_authorities,
+    )
+    assert [str(record["path"]) for record in contract.manifest_input_records] == [
+        *(path.as_posix() for path in fixed_paths),
+        state_manifest_path.as_posix(),
+        E0_MH_LOCK_PATH.as_posix(),
+        E0_MH_MANIFEST_PATH.as_posix(),
+        state_path.as_posix(),
+    ]
+    assert E0_MC_LOCK_PATH.as_posix() not in {
+        str(record["path"]) for record in contract.manifest_input_records
+    }
+    assert contract.manifest_input_records == contract.live_physical_records
+    assert observed_authorities == [None]
+
+
 def test_temporal_model_contract_tracks_dltv_and_dltvm_sources(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -1240,7 +1555,7 @@ def test_temporal_model_contract_tracks_dltv_and_dltvm_sources(
     }.issubset(observed_sources)
 
 
-def test_p1_temporal_model_contract_tracks_md_me_mf_mg_sources_and_mg_inputs(
+def test_p1_temporal_model_contract_tracks_historical_sources_and_dynamic_pointer(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -1280,9 +1595,7 @@ def test_p1_temporal_model_contract_tracks_md_me_mf_mg_sources_and_mg_inputs(
     )
     dependency_paths = (
         *sequence_files.values(),
-        P1_SEQUENCE_POINTER_PATH,
-        E0_MC_LOCK_PATH,
-        E0_MC_MANIFEST_PATH,
+        Path("data/sequence.parquet.dvc"),
         E0_MG_LOCK_PATH,
         E0_MG_MANIFEST_PATH,
         *common_sources,
@@ -1316,6 +1629,91 @@ def test_p1_temporal_model_contract_tracks_md_me_mf_mg_sources_and_mg_inputs(
         *(path.as_posix() for path in common_sources),
         *(path.as_posix() for path in p1_sources),
     }
+
+
+def test_p1_20260612_model_contract_uses_dynamic_pointer_and_mi_lineage(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from src.experiments import build_closure_pipe_sequences as sequence_module
+    from src.experiments import train_closure_pipe as module
+
+    monkeypatch.setattr(sequence_module, "PROJECT_ROOT", tmp_path)
+    monkeypatch.setattr(module, "PROJECT_ROOT", tmp_path)
+    sequence_files = {
+        "sequence": Path(
+            "data/closure_v1/development/sequences/P1/seed_20260612.parquet"
+        ),
+        "summary": Path(
+            "reports/closure_v1/01_surface/sequences/P1/"
+            "seed_20260612_summary.csv"
+        ),
+        "manifest": Path(
+            "reports/closure_v1/01_surface/sequences/P1/"
+            "seed_20260612_manifest.json"
+        ),
+    }
+    monkeypatch.setattr(module, "sequence_paths", lambda *_: sequence_files)
+    common_sources = (
+        Path("src/experiments/train_closure_pipe.py"),
+        Path("src/experiments/build_closure_pipe_sequences.py"),
+        Path("src/experiments/closure_contract.py"),
+        Path("src/experiments/closure_development_guard.py"),
+        Path("src/experiments/closure_development_runtime_lock.py"),
+        Path("src/experiments/closure_development_runtime_temporal_consumer_patch.py"),
+        Path("src/experiments/closure_development_runtime_temporal_validation_patch.py"),
+        Path(
+            "src/experiments/"
+            "closure_development_runtime_temporal_validation_manifest_patch.py"
+        ),
+        Path("src/experiments/closure_runtime_contract.py"),
+        Path("src/experiments/train_pipe_grud.py"),
+    )
+    pointer = Path(f"{sequence_files['sequence'].as_posix()}.dvc")
+    for relative in (
+        *sequence_files.values(),
+        pointer,
+        *common_sources,
+        *P1_20260612_AUTHORITY_SOURCE_PATHS,
+        E0_MH_LOCK_PATH,
+        E0_MH_MANIFEST_PATH,
+        E0_MI_LOCK_PATH,
+        E0_MI_MANIFEST_PATH,
+    ):
+        physical = tmp_path / relative
+        physical.parent.mkdir(parents=True, exist_ok=True)
+        physical.write_bytes(relative.as_posix().encode("utf-8"))
+    sequence_contract = SequenceInputContract(
+        manifest_input_records=(),
+        live_physical_records=(
+            _file_record(tmp_path / E0_MH_LOCK_PATH),
+            _file_record(tmp_path / E0_MH_MANIFEST_PATH),
+        ),
+        state_path=tmp_path / "data/absent-state.parquet",
+        state_artifact_required=False,
+    )
+    contract = module.collect_temporal_model_input_contract(
+        model_id="P1",
+        base_seed=20_260_612,
+        sequence_contract=sequence_contract,
+        authority_input_records=(
+            _file_record(tmp_path / E0_MI_LOCK_PATH),
+            _file_record(tmp_path / E0_MI_MANIFEST_PATH),
+        ),
+        p1_authority_source_paths=P1_20260612_AUTHORITY_SOURCE_PATHS,
+    )
+    observed = {str(record["path"]) for record in contract.records}
+    observed_sources = [str(record["path"]) for record in contract.source_code_records]
+    assert pointer == P1_SEQUENCE_20260612_POINTER_PATH
+    assert pointer.as_posix() in observed
+    assert P1_SEQUENCE_POINTER_PATH.as_posix() not in observed
+    assert observed_sources == [
+        *(path.as_posix() for path in common_sources),
+        *(path.as_posix() for path in P1_20260612_AUTHORITY_SOURCE_PATHS),
+    ]
+    assert len(observed_sources) == 19
+    assert E0_MI_LOCK_PATH.as_posix() in observed
+    assert E0_MH_LOCK_PATH.as_posix() in observed
 
 
 def test_unavailable_slot_rejects_stale_fit_outputs(tmp_path: Path) -> None:
@@ -1384,6 +1782,7 @@ def test_unavailable_slot_publishes_report_then_bound_manifest_without_fit_artif
     payload = json.loads(paths["manifest"].read_text(encoding="utf-8"))
     assert payload["slot_status"] == "model_unavailable"
     assert payload["fit_status"] == "not_attempted"
+    assert payload["failure_reason"] == "sequence_fit_rows_unavailable"
     assert payload["model_artifact_emitted"] is False
     assert payload["outputs"] == [
         {
@@ -1809,15 +2208,21 @@ def test_run_p1_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     sequence_manifest = tmp_path / "inputs/manifest.json"
     common = tmp_path / module.DEFAULT_COMMON_ORIGINS
     builder = tmp_path / module.SEQUENCE_BUILDER_PATH
-    mg_lock = tmp_path / E0_MG_LOCK_PATH
-    mg_companion = tmp_path / E0_MG_MANIFEST_PATH
+    mh_lock = tmp_path / E0_MH_LOCK_PATH
+    mh_companion = tmp_path / E0_MH_MANIFEST_PATH
+    mi_lock = tmp_path / E0_MI_LOCK_PATH
+    mi_companion = tmp_path / E0_MI_MANIFEST_PATH
+    auditor = tmp_path / P1_SEQUENCE_20260612_AUDITOR_PATH
     for path, payload in (
         (sequence, b"sequence"),
         (summary, b"summary"),
         (common, b"common"),
         (builder, b"current-runtime-builder"),
-        (mg_lock, b"mg-lock"),
-        (mg_companion, b"mg-companion"),
+        (mh_lock, b"mh-lock"),
+        (mh_companion, b"mh-companion"),
+        (mi_lock, b"mi-lock"),
+        (mi_companion, b"mi-companion"),
+        (auditor, b"read-only-auditor"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(payload)
@@ -1835,7 +2240,7 @@ def test_run_p1_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
                 "experiment_id": "closure_v1",
                 "surface_id": SURFACE_ID,
                 "model_id": "P1",
-                "base_seed": 1729,
+                "base_seed": 20_260_612,
                 "future_outcomes_accessed": False,
                 "evaluation_authorized": False,
                 "e0_u_authorized": False,
@@ -1948,13 +2353,16 @@ def test_run_p1_temporal_slot_emits_only_unavailable_evidence_and_never_fits(
     monkeypatch.setattr(module, "load_window_bundle", forbidden_fit)
     monkeypatch.setattr(module, "fit_available_slot", forbidden_fit)
     paths = _temporal_test_paths(tmp_path)
-    authority = _p1_consumer_schema_subset_authority(
+    authority = _p1_20260612_consumer_authority(
         builder_record=current_builder_record,
-        lock_record=_file_record(mg_lock),
-        companion_record=_file_record(mg_companion),
+        mh_lock_record=_file_record(mh_lock),
+        mh_companion_record=_file_record(mh_companion),
+        mi_lock_record=_file_record(mi_lock),
+        mi_companion_record=_file_record(mi_companion),
+        auditor_record=_file_record(auditor),
     )
     _run_temporal_slot(
-        args=Namespace(model_id="P1", base_seed=1729, device="cpu"),
+        args=Namespace(model_id="P1", base_seed=20_260_612, device="cpu"),
         paths=paths,
         p1_temporal_consumer_authority=authority,
     )
@@ -1996,7 +2404,7 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         pass
 
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_temporal_consumer_schema_subset_patch"
+        "src.experiments.closure_p1_temporal_consumer_seed_20260612_patch"
     )
 
     def stop_gate(
@@ -2005,24 +2413,24 @@ def test_main_stops_at_external_gate_before_sequence_io(monkeypatch: pytest.Monk
         base_seed: int,
         device: str,
     ) -> dict[str, object]:
-        assert (model_id, base_seed) == ("P1", 1729)
+        assert (model_id, base_seed) == ("P1", 20_260_612)
         assert device == "cpu"
         raise GateStopped
 
     setattr(
         fake_lock,
-        "require_p1_temporal_consumer_schema_subset_patch_authorized",
+        "require_p1_temporal_consumer_seed_20260612_patch_authorized",
         stop_gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P1", base_seed=1729, device="cpu"),
+        lambda: Namespace(model_id="P1", base_seed=20_260_612, device="cpu"),
     )
 
     def forbidden_after_gate(*args: object, **kwargs: object) -> object:
-        raise AssertionError("MG gate must stop before seed, paths, guards, or slot I/O")
+        raise AssertionError("MI gate must stop before seed, paths, guards, or slot I/O")
 
     monkeypatch.setattr(module, "validate_temporal_seed", forbidden_after_gate)
     monkeypatch.setattr(module, "_paths", forbidden_after_gate)
@@ -2043,7 +2451,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     events: list[str] = []
     fake_lock = types.ModuleType(
-        "src.experiments.closure_p1_temporal_consumer_schema_subset_patch"
+        "src.experiments.closure_p1_temporal_consumer_seed_20260612_patch"
     )
     authority: dict[str, object] = {
         "p1_artifact_builder_record": {
@@ -2059,25 +2467,25 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
     }
 
     def gate(*, model_id: str, base_seed: int, device: str) -> dict[str, object]:
-        assert (model_id, base_seed) == ("P1", 1729)
+        assert (model_id, base_seed) == ("P1", 20_260_612)
         assert device == "cpu"
         events.append("gate")
         return authority
 
     setattr(
         fake_lock,
-        "require_p1_temporal_consumer_schema_subset_patch_authorized",
+        "require_p1_temporal_consumer_seed_20260612_patch_authorized",
         gate,
     )
     monkeypatch.setitem(sys.modules, fake_lock.__name__, fake_lock)
     monkeypatch.setattr(
         module,
         "parse_args",
-        lambda: Namespace(model_id="P1", base_seed=1729, device="cpu"),
+        lambda: Namespace(model_id="P1", base_seed=20_260_612, device="cpu"),
     )
 
     def validate_seed(model_id: str, base_seed: int) -> None:
-        assert (model_id, base_seed) == ("P1", 1729)
+        assert (model_id, base_seed) == ("P1", 20_260_612)
         events.append("seed")
 
     monkeypatch.setattr(module, "validate_temporal_seed", validate_seed)
@@ -2087,7 +2495,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
     }
 
     def paths(model_id: str, base_seed: int) -> dict[str, Path]:
-        assert (model_id, base_seed) == ("P1", 1729)
+        assert (model_id, base_seed) == ("P1", 20_260_612)
         events.append("paths")
         return relative_paths
 
@@ -2095,7 +2503,7 @@ def test_main_orders_gate_seed_paths_guard_and_slot_execution(
 
     @contextmanager
     def guard(model_id: str, base_seed: int) -> Any:
-        assert (model_id, base_seed) == ("P1", 1729)
+        assert (model_id, base_seed) == ("P1", 20_260_612)
         events.append("guard-enter")
         try:
             yield
