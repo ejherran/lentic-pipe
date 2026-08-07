@@ -1,0 +1,633 @@
+{
+  "authorizations": {
+    "calibration_authorized": false,
+    "dvc_commands_authorized": false,
+    "e0_m_authorized": false,
+    "e0_u_authorized": false,
+    "effective_in_payload": false,
+    "evaluation_authorized": false,
+    "future_outcomes_accessed": false,
+    "m0_execution_authorized": false,
+    "metrics_authorized": false,
+    "mifal_one_shot_authorized": false,
+    "outcome_access_authorized": false,
+    "publication_required": true,
+    "scientific_network_authorized": false,
+    "strict_adapter_authorized": false,
+    "target_access_authorized": false,
+    "tuning_authorized": false
+  },
+  "created_at_utc": "2026-08-07T23:03:22.155224+00:00",
+  "experiment_id": "closure_v1",
+  "gate": "E0-MR",
+  "h_patch": {
+    "added_count": 9,
+    "base_commit": "aa0d2cbfac186464a8b6e17b87d71aeedaa92c95",
+    "components": [
+      {
+        "bytes": 19505,
+        "path": "configs/closure_v1/mifal_development_patch_lock.schema.json",
+        "role": "mifal_development_patch_lock_schema",
+        "sha256": "dbef0b778fb026056f48d02329279a85f459c8dbb62a222533cbc919eb9e7a13"
+      },
+      {
+        "bytes": 15633,
+        "path": "configs/closure_v1/mifal_development_runtime.yaml",
+        "role": "mifal_development_runtime",
+        "sha256": "26a1e2fa6f7d630cbe770dd282f8d86b21a152f4733874ecc6b19de53b5e7d84"
+      },
+      {
+        "bytes": 8222,
+        "path": "docs/closure_v1/E0_M_MIFAL_DEVELOPMENT_PATCH_1.md",
+        "role": "mifal_development_patch_protocol",
+        "sha256": "a101d50b658de45cf438d7f905236f07cab04003a8adf5dfa3133911c71297e5"
+      },
+      {
+        "bytes": 75741,
+        "path": "src/experiments/closure_mifal_development_patch.py",
+        "role": "mifal_development_patch_validator",
+        "sha256": "1933bb7141ebf514d0eadbc7b1683d4b7186d9e27b4c698ad7fee9869a6c298e"
+      },
+      {
+        "bytes": 31062,
+        "path": "src/experiments/lock_closure_mifal_development_patch.py",
+        "role": "mifal_development_patch_locker",
+        "sha256": "6f3a2246b870cf7955a9a785166a09d740a37c143d23802f38cbf1f3bc0653c6"
+      },
+      {
+        "bytes": 78222,
+        "path": "src/experiments/run_closure_mifal.py",
+        "role": "mifal_development_runner",
+        "sha256": "a4afeeeb475d0cc4d9532ed92e5a05d1b37ca73e2b9bf8755d224f7b1fc3d6f4"
+      },
+      {
+        "bytes": 9112,
+        "path": "src/mifal/closure_panel_adapter.py",
+        "role": "mifal_strict_panel_adapter",
+        "sha256": "d9438eacd4dfdd1127a2cf22398de420802c8044948b548dccd23d28fbde4773"
+      },
+      {
+        "bytes": 30377,
+        "path": "tests/test_closure_mifal_development_patch.py",
+        "role": "mifal_development_patch_tests",
+        "sha256": "0c13a3a7e6f187476d7787ad99690b30e9c232deab38f469243685f63d2f4250"
+      },
+      {
+        "bytes": 19023,
+        "path": "tests/test_run_closure_mifal.py",
+        "role": "mifal_development_runner_tests",
+        "sha256": "d2f34f37d775bc0c468d5da8893b814b39c7faee1a99ec50bf6a0cf70df1bc30"
+      }
+    ],
+    "components_sha256": "8bfad66fb5e2c2072e815966b85bff207f501ddf7cdc680fbadcefe8f44b8955",
+    "deleted_count": 0,
+    "modified_count": 0,
+    "paths": [
+      "configs/closure_v1/mifal_development_patch_lock.schema.json",
+      "configs/closure_v1/mifal_development_runtime.yaml",
+      "docs/closure_v1/E0_M_MIFAL_DEVELOPMENT_PATCH_1.md",
+      "src/experiments/closure_mifal_development_patch.py",
+      "src/experiments/lock_closure_mifal_development_patch.py",
+      "src/experiments/run_closure_mifal.py",
+      "src/mifal/closure_panel_adapter.py",
+      "tests/test_closure_mifal_development_patch.py",
+      "tests/test_run_closure_mifal.py"
+    ],
+    "paths_sha256": "02205e7fd310fae39bbe9ae12786bce17aa1e9bb862ef288476da78bd79404b3"
+  },
+  "lock_version": "closure_mifal_development_patch_lock_v1",
+  "model_id": "M0",
+  "patch_id": "mifal_development_authority_patch_1",
+  "prelock": {
+    "all_e0_m_paths_absent": true,
+    "auditor_run": false,
+    "data_execution_run": false,
+    "dvc_commands_run": false,
+    "e0_m_paths": [
+      "reports/closure_v1/00_protocol/model_lock.yaml",
+      "reports/closure_v1/00_protocol/calibration_lock.yaml",
+      "reports/closure_v1/00_protocol/hypothesis_registry.csv",
+      "reports/closure_v1/00_protocol/locked_batch_command.txt"
+    ],
+    "future_outcomes_accessed": false,
+    "git_remote_verification_run": true,
+    "locker_guard_absent": true,
+    "locker_guard_path": "tmp/closure_v1_e0_mr_locker/mifal_development_patch_lock.guard",
+    "outcome_access_log_absent": true,
+    "outcome_access_log_path": "reports/closure_v1/00_protocol/outcome_access_log.jsonl",
+    "output_namespace": {
+      "all_final_absent": true,
+      "all_temporary_absent": true,
+      "final_count": 6,
+      "final_paths": [
+        "data/closure_v1/development/mifal/M0/raw_scores.parquet",
+        "reports/closure_v1/02_models/M0/model_spec.json",
+        "reports/closure_v1/02_models/M0/lineage_audit.json",
+        "reports/closure_v1/02_models/M0/availability.csv",
+        "reports/closure_v1/02_models/M0/report.md",
+        "reports/closure_v1/02_models/M0/manifest.json"
+      ],
+      "final_paths_sha256": "ccb028165e1d2d21ef91e3e2fcc2ebbfdbc34f23faf47572fc21dfea2c6c1ebb",
+      "future_pointer_absent": true,
+      "future_pointer_path": "data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc",
+      "future_pointer_temporary_absent": true,
+      "future_pointer_temporary_path": "data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc.tmp",
+      "guard_absent": true,
+      "guard_path": "tmp/closure_v1_mifal_development/mifal_bundle.guard",
+      "temporary_count": 6,
+      "temporary_paths": [
+        "data/closure_v1/development/mifal/M0/raw_scores.parquet.tmp",
+        "reports/closure_v1/02_models/M0/model_spec.json.tmp",
+        "reports/closure_v1/02_models/M0/lineage_audit.json.tmp",
+        "reports/closure_v1/02_models/M0/availability.csv.tmp",
+        "reports/closure_v1/02_models/M0/report.md.tmp",
+        "reports/closure_v1/02_models/M0/manifest.json.tmp"
+      ],
+      "temporary_paths_sha256": "6b1f86dfc0987a4b7da7731ba8ebb63e440313666a7353e3b02bc9e7c6428225"
+    },
+    "p_lock_absent": true,
+    "p_lock_path": "reports/closure_v1/00_protocol/mifal_development_patch_lock.json",
+    "p_manifest_absent": true,
+    "p_manifest_path": "reports/closure_v1/00_protocol/mifal_development_patch_lock_manifest.json",
+    "p_temporaries_absent": true,
+    "scientific_network_commands_run": false,
+    "target_paths_opened": []
+  },
+  "repository": {
+    "branch": "main",
+    "head": "4dab0a286f4df31c95251fde7f9e36ee7d09e968",
+    "parent": "aa0d2cbfac186464a8b6e17b87d71aeedaa92c95",
+    "remote_head": "4dab0a286f4df31c95251fde7f9e36ee7d09e968",
+    "remote_observation_mode": "live_remote_main_verified",
+    "tracking_head": "4dab0a286f4df31c95251fde7f9e36ee7d09e968",
+    "tracking_ref": "origin/main",
+    "worktree_status": "clean"
+  },
+  "runtime_contract": {
+    "default_config_sha256": "8ad6314fbd833945d9cbd3d84267f0d18a7e79a53fbd61cdea89f703e05f4ded",
+    "evidence_groups": {
+      "internal_do": [
+        "DOb"
+      ],
+      "light": [
+        "Secchi",
+        "Turb"
+      ],
+      "nutrients": [
+        "TP",
+        "TN"
+      ],
+      "temperature": [
+        "Tw"
+      ]
+    },
+    "exact_final_path_count": 6,
+    "exact_raw_prediction_rows": 29196,
+    "minimum_observed_evidence_groups": 2,
+    "panel_projection": [
+      "source_id",
+      "site_id",
+      "year_month",
+      "mean_temperature_C",
+      "n_obs_temperature_C",
+      "qc_ok_rate_temperature_C",
+      "std_temperature_C",
+      "mean_TP_ugL",
+      "n_obs_TP_ugL",
+      "qc_ok_rate_TP_ugL",
+      "std_TP_ugL",
+      "mean_TN_ugL",
+      "n_obs_TN_ugL",
+      "qc_ok_rate_TN_ugL",
+      "std_TN_ugL",
+      "mean_secchi_depth_m",
+      "n_obs_secchi_depth_m",
+      "qc_ok_rate_secchi_depth_m",
+      "std_secchi_depth_m",
+      "mean_turbidity_NTU",
+      "n_obs_turbidity_NTU",
+      "qc_ok_rate_turbidity_NTU",
+      "std_turbidity_NTU",
+      "mean_DO_mgL",
+      "n_obs_DO_mgL",
+      "qc_ok_rate_DO_mgL",
+      "std_DO_mgL"
+    ],
+    "panel_projection_count": 27,
+    "physical_input_count": 23,
+    "physical_inputs": [
+      {
+        "bytes": 8279,
+        "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+        "role": "protocol_lock",
+        "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+      },
+      {
+        "bytes": 95285,
+        "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+        "role": "development_runtime_lock",
+        "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+      },
+      {
+        "bytes": 60769,
+        "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+        "role": "effective_development_runtime_lock",
+        "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+      },
+      {
+        "bytes": 3650,
+        "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json",
+        "role": "effective_development_runtime_lock_manifest",
+        "sha256": "e165a0019e1c2d4e99ce682515b18e3230b0f8fbfcfb8c8e1c5514e6e0264772"
+      },
+      {
+        "bytes": 30856,
+        "path": "src/experiments/closure_development_guard.py",
+        "role": "development_guard",
+        "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+      },
+      {
+        "bytes": 89635,
+        "path": "data/closure_v1/closure_holdout_assignment.csv",
+        "role": "holdout_assignment",
+        "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+      },
+      {
+        "bytes": 3440,
+        "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+        "role": "holdout_manifest",
+        "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+      },
+      {
+        "bytes": 2763097,
+        "path": "data/closure_v1/common_origin_manifest.parquet",
+        "role": "common_origin",
+        "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+      },
+      {
+        "bytes": 113,
+        "path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+        "role": "common_origin_pointer",
+        "sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3"
+      },
+      {
+        "bytes": 11524,
+        "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+        "role": "common_origin_manifest",
+        "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+      },
+      {
+        "bytes": 103469973,
+        "path": "data/panel/panel_monthly_v0.parquet",
+        "role": "panel",
+        "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+      },
+      {
+        "bytes": 109,
+        "path": "data/panel/panel_monthly_v0.parquet.dvc",
+        "role": "panel_pointer",
+        "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c"
+      },
+      {
+        "bytes": 7281,
+        "path": "configs/closure_v1/model_benchmark.yaml",
+        "role": "model_benchmark",
+        "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+      },
+      {
+        "bytes": 3660,
+        "path": "configs/closure_v1/surface_primary.yaml",
+        "role": "primary_surface",
+        "sha256": "44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132"
+      },
+      {
+        "bytes": 18302,
+        "path": "configs/closure_v1/analysis_plan.yaml",
+        "role": "analysis_plan",
+        "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+      },
+      {
+        "bytes": 24374,
+        "path": "configs/closure_v1/experimental_matrix.yaml",
+        "role": "experimental_matrix",
+        "sha256": "9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6"
+      },
+      {
+        "bytes": 43273,
+        "path": "src/mifal/ed_t2.py",
+        "role": "mifal_core",
+        "sha256": "46490b08e6efd2725c14ba4cd07eede2b06b191179d25d1ffecf189efec1ca53"
+      },
+      {
+        "bytes": 1699,
+        "path": "pyproject.toml",
+        "role": "pyproject",
+        "sha256": "ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22"
+      },
+      {
+        "bytes": 497461,
+        "path": "poetry.lock",
+        "role": "poetry_lock",
+        "sha256": "eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4"
+      },
+      {
+        "bytes": 26518,
+        "path": "reports/closure_v1/02_models/baselines/manifest.json",
+        "role": "upstream_baseline_manifest",
+        "sha256": "98f08b53c02a5f88d29792b6edda9b22d7eec0d72c8a886a16f21c6c0ecb4a95"
+      },
+      {
+        "bytes": 34399,
+        "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json",
+        "role": "upstream_baseline_patch_lock",
+        "sha256": "01d8b3ac0d869fe585f55af9911a870039afac0013f9f30b3122efc4f586caac"
+      },
+      {
+        "bytes": 14205,
+        "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock_manifest.json",
+        "role": "upstream_baseline_patch_lock_manifest",
+        "sha256": "ce7e8334be74b35e057e2c86603bb46645bdd3ba1f07c9143da83ee97e34d8d9"
+      },
+      {
+        "bytes": 109,
+        "path": "models.dvc",
+        "role": "models_dvc_observer",
+        "sha256": "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"
+      }
+    ],
+    "physical_inputs_sha256": "49ffcc28dec8ea2306d46b2f5b274a318ec7d8d2c94a36ea5fa970fa059b16d3",
+    "pins_verified": true,
+    "raw_prediction_contract": {
+      "availability_status_values": [
+        "success",
+        "input_ineligible"
+      ],
+      "candidate_policy": "constant_mifal_ed_t2_v5_defaults",
+      "canonical_sort_keys": [
+        "source_id",
+        "site_id",
+        "origin_year_month",
+        "horizon_months",
+        "target_year_month",
+        "common_origin_id",
+        "evaluation_unit_id"
+      ],
+      "columns": [
+        {
+          "dtype": "string",
+          "name": "surface_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "model_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "source_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "site_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "common_origin_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "evaluation_unit_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "holdout_group_id",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "assignment_role",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "time_role",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "origin_year_month",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "target_year_month",
+          "nullable": false
+        },
+        {
+          "dtype": "int16",
+          "name": "horizon_months",
+          "nullable": false
+        },
+        {
+          "dtype": "int64",
+          "name": "technical_seed",
+          "nullable": false
+        },
+        {
+          "dtype": "int64",
+          "name": "model_seed",
+          "nullable": true
+        },
+        {
+          "dtype": "int64",
+          "name": "upstream_state_seed",
+          "nullable": true
+        },
+        {
+          "dtype": "string",
+          "name": "candidate",
+          "nullable": false
+        },
+        {
+          "dtype": "bool",
+          "name": "selected_family",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "availability_status",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "failure_reason",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "score_semantics",
+          "nullable": false
+        },
+        {
+          "dtype": "float64",
+          "name": "raw_score",
+          "nullable": true
+        },
+        {
+          "dtype": "float64",
+          "name": "predicted_bloom_probability",
+          "nullable": true
+        },
+        {
+          "dtype": "float64",
+          "name": "interval_lower",
+          "nullable": true
+        },
+        {
+          "dtype": "float64",
+          "name": "interval_upper",
+          "nullable": true
+        },
+        {
+          "dtype": "float64",
+          "name": "data_reliability",
+          "nullable": true
+        },
+        {
+          "dtype": "int8",
+          "name": "evidence_group_count",
+          "nullable": false
+        },
+        {
+          "dtype": "int8",
+          "name": "payload_variable_count",
+          "nullable": false
+        },
+        {
+          "dtype": "string",
+          "name": "payload_variables",
+          "nullable": false
+        }
+      ],
+      "execution_exception_policy": "transaction_abort_with_owned_inode_rollback",
+      "ineligible_policy": "scores_interval_and_reliability_null_but_row_retained",
+      "model_seed_policy": "null",
+      "payload_variables_encoding": "comma_joined_subsequence_of_variable_order",
+      "selected_family_policy": "constant_false_no_selection_or_tuning",
+      "success_policy": "at_least_two_evidence_groups_and_finite_raw_interval_reliability_in_closed_unit_interval",
+      "success_probability_policy": "predicted_bloom_probability_is_null_before_common_calibration",
+      "technical_seed_policy": "constant_1729",
+      "upstream_state_seed_policy": "null"
+    },
+    "record": {
+      "bytes": 15633,
+      "path": "configs/closure_v1/mifal_development_runtime.yaml",
+      "role": "mifal_development_runtime",
+      "sha256": "26a1e2fa6f7d630cbe770dd282f8d86b21a152f4733874ecc6b19de53b5e7d84"
+    },
+    "schema_subset_verified": true,
+    "target_artifact_inputs": [],
+    "target_columns_scanned": []
+  },
+  "seals": {
+    "companion_exact_thirty_two_inputs_locked": true,
+    "companion_script_record_locked": true,
+    "dvc_closed": true,
+    "e0_m_absent": true,
+    "exact_six_outputs_absent_at_lock": true,
+    "future_outcomes_accessed": false,
+    "h_scope_exact_nine_additions": true,
+    "legacy_mifal_adapter_unchanged_no_direct_import_invocation_or_projection": true,
+    "manifest_written_last": true,
+    "mifal_v5_defaults_without_tuning_locked": true,
+    "minimum_two_ecological_groups_locked": true,
+    "no_clobber_and_owned_inode_rollback_locked": true,
+    "outcome_access_log_absent": true,
+    "p_scope_exact_two_additions": true,
+    "predicted_probability_null_before_calibration": true,
+    "raw_twenty_eight_columns_locked": true,
+    "single_deterministic_surface_locked": true,
+    "strict_panel_projection_twenty_seven_locked": true,
+    "structural_memory_is_global_prior_not_observation": true,
+    "target_artifacts_not_inputs": true,
+    "target_columns_not_scanned": true
+  },
+  "status": "locked_unpublished",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "verification": {
+    "focused_tests": {
+      "command": [
+        ".venv/bin/pytest",
+        "tests/test_closure_mifal_development_patch.py",
+        "tests/test_run_closure_mifal.py",
+        "-q"
+      ],
+      "deselected_count": 0,
+      "returncode": 0,
+      "skipped_count": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 2,
+      "stdout_sha256": "754bead162eb758f38a4e4c927ff1e2a486e351a7b32c70f4b3928b5d751c150",
+      "test_count": 62
+    },
+    "full_type_check": {
+      "command": [
+        ".venv/bin/ty",
+        "check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    "git_diff_check": {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 0,
+      "stdout_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "poetry_check": {
+      "command": [
+        "poetry",
+        "check"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 1,
+      "stdout_sha256": "a2428ed4ae02d9dbfff2895449321f5a297182c3fd189cddfe630c6e0fa76747"
+    },
+    "publication_guard": {
+      "command": [
+        "scripts/check_repo_publication_ready.sh"
+      ],
+      "returncode": 0,
+      "stderr_line_count": 0,
+      "stderr_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "stdout_line_count": 2,
+      "stdout_sha256": "4f3d95eeb9a16ee98d6bac11f78c717e73a9952dd7f8baf48de4fff33480134b"
+    },
+    "schema_preflight": {
+      "format_keyword_absent": true,
+      "gate": "E0-MR",
+      "minimum_keyword_absent": true,
+      "schema_bytes": 19505,
+      "schema_path": "configs/closure_v1/mifal_development_patch_lock.schema.json",
+      "schema_sha256": "dbef0b778fb026056f48d02329279a85f459c8dbb62a222533cbc919eb9e7a13",
+      "supported_subset_verified": true
+    }
+  }
+}

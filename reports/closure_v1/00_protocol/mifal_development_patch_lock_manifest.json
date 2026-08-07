@@ -1,0 +1,221 @@
+{
+  "data_execution_run": false,
+  "dvc_commands_run": false,
+  "future_outcomes_accessed": false,
+  "gate": "E0-MR",
+  "historical_inputs": [],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 18302,
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "bytes": 24374,
+      "path": "configs/closure_v1/experimental_matrix.yaml",
+      "role": "experimental_matrix",
+      "sha256": "9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6"
+    },
+    {
+      "bytes": 19505,
+      "path": "configs/closure_v1/mifal_development_patch_lock.schema.json",
+      "role": "mifal_development_patch_lock_schema",
+      "sha256": "dbef0b778fb026056f48d02329279a85f459c8dbb62a222533cbc919eb9e7a13"
+    },
+    {
+      "bytes": 15633,
+      "path": "configs/closure_v1/mifal_development_runtime.yaml",
+      "role": "mifal_development_runtime",
+      "sha256": "26a1e2fa6f7d630cbe770dd282f8d86b21a152f4733874ecc6b19de53b5e7d84"
+    },
+    {
+      "bytes": 7281,
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "role": "model_benchmark",
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "bytes": 3660,
+      "path": "configs/closure_v1/surface_primary.yaml",
+      "role": "primary_surface",
+      "sha256": "44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "holdout_assignment",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "bytes": 2763097,
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "role": "common_origin",
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "bytes": 113,
+      "path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "role": "common_origin_pointer",
+      "sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3"
+    },
+    {
+      "bytes": 103469973,
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "panel",
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "bytes": 109,
+      "path": "data/panel/panel_monthly_v0.parquet.dvc",
+      "role": "panel_pointer",
+      "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c"
+    },
+    {
+      "bytes": 8222,
+      "path": "docs/closure_v1/E0_M_MIFAL_DEVELOPMENT_PATCH_1.md",
+      "role": "mifal_development_patch_protocol",
+      "sha256": "a101d50b658de45cf438d7f905236f07cab04003a8adf5dfa3133911c71297e5"
+    },
+    {
+      "bytes": 109,
+      "path": "models.dvc",
+      "role": "models_dvc_observer",
+      "sha256": "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"
+    },
+    {
+      "bytes": 497461,
+      "path": "poetry.lock",
+      "role": "poetry_lock",
+      "sha256": "eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4"
+    },
+    {
+      "bytes": 1699,
+      "path": "pyproject.toml",
+      "role": "pyproject",
+      "sha256": "ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22"
+    },
+    {
+      "bytes": 34399,
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json",
+      "role": "upstream_baseline_patch_lock",
+      "sha256": "01d8b3ac0d869fe585f55af9911a870039afac0013f9f30b3122efc4f586caac"
+    },
+    {
+      "bytes": 14205,
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock_manifest.json",
+      "role": "upstream_baseline_patch_lock_manifest",
+      "sha256": "ce7e8334be74b35e057e2c86603bb46645bdd3ba1f07c9143da83ee97e34d8d9"
+    },
+    {
+      "bytes": 95285,
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json",
+      "role": "development_runtime_lock",
+      "sha256": "5d858028ff5df561cc4a5e6086d9f83d08ac4c5ef6ffe27e844001f9fa495a81"
+    },
+    {
+      "bytes": 60769,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json",
+      "role": "effective_development_runtime_lock",
+      "sha256": "cb76eeca0bf069155218e9c3a150e626ba512ed20f6fff0f9e394c591ffe890e"
+    },
+    {
+      "bytes": 3650,
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json",
+      "role": "effective_development_runtime_lock_manifest",
+      "sha256": "e165a0019e1c2d4e99ce682515b18e3230b0f8fbfcfb8c8e1c5514e6e0264772"
+    },
+    {
+      "bytes": 3440,
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "role": "holdout_manifest",
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+    },
+    {
+      "bytes": 8279,
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "role": "protocol_lock",
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+    },
+    {
+      "bytes": 11524,
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "role": "common_origin_manifest",
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "bytes": 26518,
+      "path": "reports/closure_v1/02_models/baselines/manifest.json",
+      "role": "upstream_baseline_manifest",
+      "sha256": "98f08b53c02a5f88d29792b6edda9b22d7eec0d72c8a886a16f21c6c0ecb4a95"
+    },
+    {
+      "bytes": 30856,
+      "path": "src/experiments/closure_development_guard.py",
+      "role": "development_guard",
+      "sha256": "98115a235a88ce41b356260c8c3d953064c01bbd3d56e9b131e71c2e1eed7683"
+    },
+    {
+      "bytes": 75741,
+      "path": "src/experiments/closure_mifal_development_patch.py",
+      "role": "mifal_development_patch_validator",
+      "sha256": "1933bb7141ebf514d0eadbc7b1683d4b7186d9e27b4c698ad7fee9869a6c298e"
+    },
+    {
+      "bytes": 31062,
+      "path": "src/experiments/lock_closure_mifal_development_patch.py",
+      "role": "mifal_development_patch_locker",
+      "sha256": "6f3a2246b870cf7955a9a785166a09d740a37c143d23802f38cbf1f3bc0653c6"
+    },
+    {
+      "bytes": 78222,
+      "path": "src/experiments/run_closure_mifal.py",
+      "role": "mifal_development_runner",
+      "sha256": "a4afeeeb475d0cc4d9532ed92e5a05d1b37ca73e2b9bf8755d224f7b1fc3d6f4"
+    },
+    {
+      "bytes": 9112,
+      "path": "src/mifal/closure_panel_adapter.py",
+      "role": "mifal_strict_panel_adapter",
+      "sha256": "d9438eacd4dfdd1127a2cf22398de420802c8044948b548dccd23d28fbde4773"
+    },
+    {
+      "bytes": 43273,
+      "path": "src/mifal/ed_t2.py",
+      "role": "mifal_core",
+      "sha256": "46490b08e6efd2725c14ba4cd07eede2b06b191179d25d1ffecf189efec1ca53"
+    },
+    {
+      "bytes": 30377,
+      "path": "tests/test_closure_mifal_development_patch.py",
+      "role": "mifal_development_patch_tests",
+      "sha256": "0c13a3a7e6f187476d7787ad99690b30e9c232deab38f469243685f63d2f4250"
+    },
+    {
+      "bytes": 19023,
+      "path": "tests/test_run_closure_mifal.py",
+      "role": "mifal_development_runner_tests",
+      "sha256": "d2f34f37d775bc0c468d5da8893b814b39c7faee1a99ec50bf6a0cf70df1bc30"
+    }
+  ],
+  "manifest_version": "closure_mifal_development_patch_lock_manifest_v1",
+  "manifest_written_last": true,
+  "network_commands_run": true,
+  "outputs": [
+    {
+      "bytes": 21899,
+      "path": "reports/closure_v1/00_protocol/mifal_development_patch_lock.json",
+      "role": "mifal_development_patch_lock",
+      "sha256": "59eb0674ae4502bcbae16b9ad0f4c653429771e3c9ec89b1ef1f31e3dbb08125"
+    }
+  ],
+  "physical_inputs_only": true,
+  "script": {
+    "bytes": 31062,
+    "path": "src/experiments/lock_closure_mifal_development_patch.py",
+    "role": "mifal_development_patch_locker",
+    "sha256": "6f3a2246b870cf7955a9a785166a09d740a37c143d23802f38cbf1f3bc0653c6"
+  },
+  "status": "completed"
+}
