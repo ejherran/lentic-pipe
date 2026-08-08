@@ -1,0 +1,407 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure-anfis-ablation-sequence-development-patch-lock-v1",
+  "title": "Closure V1 E0-MS input-only A0/A1 sequence development patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "lock_version",
+    "gate",
+    "patch_id",
+    "experiment_id",
+    "surface_id",
+    "status",
+    "created_at_utc",
+    "repository",
+    "h_patch",
+    "runtime_contract",
+    "prelock",
+    "verification",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "lock_version": {"const": "closure_anfis_ablation_sequence_development_patch_lock_v1"},
+    "gate": {"const": "E0-MS"},
+    "patch_id": {"const": "anfis_ablation_sequence_development_authority_patch_1"},
+    "experiment_id": {"const": "closure_v1"},
+    "surface_id": {"const": "closure_v1_wqp_adaptive_no_current_chla"},
+    "status": {"const": "locked_unpublished"},
+    "created_at_utc": {"type": "string"},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runtime_contract": {"$ref": "#/$defs/runtimeContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"},
+    "seals": {"$ref": "#/$defs/seals"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitSha": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "role", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "role": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "head",
+        "parent",
+        "branch",
+        "tracking_ref",
+        "tracking_head",
+        "remote_head",
+        "remote_observation_mode",
+        "worktree_status"
+      ],
+      "properties": {
+        "head": {"$ref": "#/$defs/gitSha"},
+        "parent": {"const": "0a323b0b4c73384558b7782f63512b342a5411c5"},
+        "branch": {"const": "main"},
+        "tracking_ref": {"const": "origin/main"},
+        "tracking_head": {"$ref": "#/$defs/gitSha"},
+        "remote_head": {"$ref": "#/$defs/gitSha"},
+        "remote_observation_mode": {"const": "live_remote_main_verified"},
+        "worktree_status": {"const": "clean"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "added_count",
+        "modified_count",
+        "deleted_count",
+        "paths",
+        "paths_sha256",
+        "components",
+        "components_sha256"
+      ],
+      "properties": {
+        "base_commit": {"const": "0a323b0b4c73384558b7782f63512b342a5411c5"},
+        "added_count": {"const": 10},
+        "modified_count": {"const": 0},
+        "deleted_count": {"const": 0},
+        "paths": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {"type": "string"}
+        },
+        "paths_sha256": {"$ref": "#/$defs/sha256"},
+        "components": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runtimeContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record",
+        "schema_subset_verified",
+        "pins_verified",
+        "physical_input_count",
+        "physical_inputs",
+        "physical_inputs_sha256",
+        "roles",
+        "denominators",
+        "features",
+        "bundles",
+        "outputs"
+      ],
+      "properties": {
+        "record": {"$ref": "#/$defs/fileRecord"},
+        "schema_subset_verified": {"const": true},
+        "pins_verified": {"const": true},
+        "physical_input_count": {"const": 44},
+        "physical_inputs": {
+          "type": "array",
+          "minItems": 44,
+          "maxItems": 44,
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "roles": {"type": "object"},
+        "denominators": {"type": "object"},
+        "features": {"type": "object"},
+        "bundles": {"type": "object"},
+        "outputs": {"type": "object"}
+      }
+    },
+    "namespaceEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "final_path_count",
+        "final_paths",
+        "final_paths_sha256",
+        "present_final_count",
+        "absent_final_count",
+        "temporary_path_count",
+        "temporary_paths",
+        "temporary_paths_sha256",
+        "present_temporary_count",
+        "pointer_path_count",
+        "pointer_paths",
+        "pointer_paths_sha256",
+        "present_pointer_count",
+        "pointer_temporary_path_count",
+        "pointer_temporary_paths",
+        "pointer_temporary_paths_sha256",
+        "present_pointer_temporary_count",
+        "guard_path_count",
+        "guard_paths",
+        "guard_paths_sha256",
+        "present_guard_count"
+      ],
+      "properties": {
+        "final_path_count": {"const": 18},
+        "final_paths": {"type": "array", "minItems": 18, "maxItems": 18, "uniqueItems": true, "items": {"type": "string"}},
+        "final_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "present_final_count": {"const": 0},
+        "absent_final_count": {"const": 18},
+        "temporary_path_count": {"const": 18},
+        "temporary_paths": {"type": "array", "minItems": 18, "maxItems": 18, "uniqueItems": true, "items": {"type": "string"}},
+        "temporary_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "present_temporary_count": {"const": 0},
+        "pointer_path_count": {"const": 6},
+        "pointer_paths": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": {"type": "string"}},
+        "pointer_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "present_pointer_count": {"const": 0},
+        "pointer_temporary_path_count": {"const": 6},
+        "pointer_temporary_paths": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": {"type": "string"}},
+        "pointer_temporary_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "present_pointer_temporary_count": {"const": 0},
+        "guard_path_count": {"const": 6},
+        "guard_paths": {"type": "array", "minItems": 6, "maxItems": 6, "uniqueItems": true, "items": {"type": "string"}},
+        "guard_paths_sha256": {"$ref": "#/$defs/sha256"},
+        "present_guard_count": {"const": 0}
+      }
+    },
+    "controlNamespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "p_lock_path",
+        "p_lock_absent",
+        "p_manifest_path",
+        "p_manifest_absent",
+        "p_lock_temporary_absent",
+        "p_manifest_temporary_absent",
+        "p_guard_path",
+        "p_guard_absent"
+      ],
+      "properties": {
+        "p_lock_path": {"const": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock.json"},
+        "p_lock_absent": {"const": true},
+        "p_manifest_path": {"const": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock_manifest.json"},
+        "p_manifest_absent": {"const": true},
+        "p_lock_temporary_absent": {"const": true},
+        "p_manifest_temporary_absent": {"const": true},
+        "p_guard_path": {"const": "tmp/closure_v1_anfis_ablation_sequence_development_patch/lock_bundle.guard"},
+        "p_guard_absent": {"const": true}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "m0_progression",
+        "output_namespace",
+        "control_namespace",
+        "target_artifact_inputs",
+        "target_columns_scanned",
+        "e0_m_paths_present",
+        "outcome_access_log_present",
+        "outputs_written",
+        "verification_commands_run",
+        "dvc_commands_run",
+        "scientific_network_calls_made",
+        "future_outcomes_accessed"
+      ],
+      "properties": {
+        "m0_progression": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["published_commit", "manifest", "verified"],
+          "properties": {
+            "published_commit": {"const": "0a323b0b4c73384558b7782f63512b342a5411c5"},
+            "manifest": {"$ref": "#/$defs/fileRecord"},
+            "verified": {"const": true}
+          }
+        },
+        "output_namespace": {"$ref": "#/$defs/namespaceEvidence"},
+        "control_namespace": {"$ref": "#/$defs/controlNamespace"},
+        "target_artifact_inputs": {"type": "array", "maxItems": 0},
+        "target_columns_scanned": {"type": "array", "maxItems": 0},
+        "e0_m_paths_present": {"const": 0},
+        "outcome_access_log_present": {"const": false},
+        "outputs_written": {"const": false},
+        "verification_commands_run": {"const": false},
+        "dvc_commands_run": {"const": false},
+        "scientific_network_calls_made": {"const": false},
+        "future_outcomes_accessed": {"const": false}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "test_count", "skipped_count", "deselected_count"],
+      "properties": {
+        "command": {"type": "array", "minItems": 1, "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"type": "integer", "const": 63},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "schema_path", "schema_bytes", "schema_sha256", "supported_subset_verified", "minimum_keyword_absent", "format_keyword_absent"],
+      "properties": {
+        "gate": {"const": "E0-MS"},
+        "schema_path": {"const": "configs/closure_v1/anfis_ablation_sequence_development_patch_lock.schema.json"},
+        "schema_bytes": {"type": "integer"},
+        "schema_sha256": {"$ref": "#/$defs/sha256"},
+        "supported_subset_verified": {"const": true},
+        "minimum_keyword_absent": {"const": true},
+        "format_keyword_absent": {"const": true}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_preflight", "full_type_check", "focused_tests", "poetry_check", "publication_guard", "git_diff_check"],
+      "properties": {
+        "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "a0_sequence_build_authorized",
+        "a1_sequence_build_authorized",
+        "sequence_bundle_audit_authorized",
+        "temporal_fit_authorized",
+        "target_access_authorized",
+        "calibration_authorized",
+        "metrics_authorized",
+        "rollout_authorized",
+        "e0_m_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized",
+        "dvc_commands_authorized",
+        "scientific_network_authorized",
+        "outcome_access_authorized",
+        "future_outcomes_accessed",
+        "effective_in_payload",
+        "publication_required"
+      ],
+      "properties": {
+        "a0_sequence_build_authorized": {"const": false},
+        "a1_sequence_build_authorized": {"const": false},
+        "sequence_bundle_audit_authorized": {"const": false},
+        "temporal_fit_authorized": {"const": false},
+        "target_access_authorized": {"const": false},
+        "calibration_authorized": {"const": false},
+        "metrics_authorized": {"const": false},
+        "rollout_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "effective_in_payload": {"const": false},
+        "publication_required": {"const": true}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "input_only",
+        "exact_a0_input_dimension",
+        "exact_a1_input_dimension",
+        "exact_bundle_count",
+        "targets_absent",
+        "fit_absent",
+        "calibration_absent",
+        "metrics_absent",
+        "rollout_absent",
+        "e7_learning_curve_sizes_authorized",
+        "e7_learning_curve_status",
+        "no_best_seed_selection",
+        "no_seed_pooling_as_independent_observations",
+        "no_chlorophyll_predictor_or_lineage",
+        "no_holdout_or_post_2021_outcomes",
+        "current_p0_p1_status",
+        "replacement_or_substitution_authorized",
+        "e7_comparison_status",
+        "e7_claims_authorized"
+      ],
+      "properties": {
+        "input_only": {"const": true},
+        "exact_a0_input_dimension": {"const": 18},
+        "exact_a1_input_dimension": {"const": 27},
+        "exact_bundle_count": {"const": 6},
+        "targets_absent": {"const": true},
+        "fit_absent": {"const": true},
+        "calibration_absent": {"const": true},
+        "metrics_absent": {"const": true},
+        "rollout_absent": {"const": true},
+        "e7_learning_curve_sizes_authorized": {"const": false},
+        "e7_learning_curve_status": {"const": "blocked_for_separate_gate"},
+        "no_best_seed_selection": {"const": true},
+        "no_seed_pooling_as_independent_observations": {"const": true},
+        "no_chlorophyll_predictor_or_lineage": {"const": true},
+        "no_holdout_or_post_2021_outcomes": {"const": true},
+        "current_p0_p1_status": {"const": "model_unavailable_not_attempted"},
+        "replacement_or_substitution_authorized": {"const": false},
+        "e7_comparison_status": {"const": "non_estimable_until_comparator_and_ablation_models_available"},
+        "e7_claims_authorized": {"const": false}
+      }
+    }
+  }
+}
