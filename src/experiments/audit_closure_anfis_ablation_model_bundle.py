@@ -105,23 +105,23 @@ AUTHORITY_BINDING_KEYS = (
 SEALED_TARGET_ROLES = frozenset({"development_targets", "target_manifest"})
 AUTHORITY_RECORD_SPECS = (
     (
-        "anfis_ablation_training_runtime",
+        "anfis_ablation_training_runtime_contract",
         DEFAULT_RUNTIME,
         "runtime_sha256",
     ),
     (
-        "anfis_ablation_training_development_patch_lock",
+        "anfis_ablation_training_cohort_patch_lock",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_training_development_patch_lock.json"
+            "anfis_ablation_training_cohort_patch_lock.json"
         ),
         "lock_sha256",
     ),
     (
-        "anfis_ablation_training_development_patch_lock_manifest",
+        "anfis_ablation_training_cohort_patch_lock_manifest",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_training_development_patch_lock_manifest.json"
+            "anfis_ablation_training_cohort_patch_lock_manifest.json"
         ),
         "companion_sha256",
     ),
@@ -390,18 +390,18 @@ def _load_runtime_contract(repo_root: Path) -> tuple[dict[str, Any], dict[str, A
 def _require_audit_authority(
     repo_root: Path, *, model_id: str, base_seed: int
 ) -> dict[str, Any]:
-    from src.experiments.closure_anfis_ablation_training_development_patch import (
-        require_anfis_ablation_training_authority,
+    from src.experiments.closure_anfis_ablation_training_cohort_patch import (
+        require_anfis_ablation_training_cohort_authority,
     )
 
-    authority = require_anfis_ablation_training_authority(
+    authority = require_anfis_ablation_training_cohort_authority(
         model_id,
         base_seed,
         audit_current_unpublished=True,
         repo_root=repo_root,
     )
-    if authority.get("gate") != "E0-MT" or authority.get("status") != "effective_preflight_passed":
-        raise AnfisAblationModelAuditError("Effective E0-MT audit authority drifted")
+    if authority.get("gate") != "E0-MU" or authority.get("status") != "effective_preflight_passed":
+        raise AnfisAblationModelAuditError("Effective E0-MU audit authority drifted")
     if (
         authority.get("authorized_model_id") != model_id
         or authority.get("authorized_base_seed") != base_seed
@@ -414,7 +414,7 @@ def _require_audit_authority(
         < int(authority["completed_prefix_count"])
         <= len(BUNDLE_SLOTS)
     ):
-        raise AnfisAblationModelAuditError("E0-MT audit target/prefix binding drifted")
+        raise AnfisAblationModelAuditError("E0-MU audit target/prefix binding drifted")
     required_true = (
         "model_bundle_audit_authorized",
         "target_access_through_2020_authorized",
@@ -439,14 +439,14 @@ def _require_audit_authority(
     if any(authority.get(key) is not True for key in required_true) or any(
         authority.get(key) is not False for key in forbidden
     ):
-        raise AnfisAblationModelAuditError("E0-MT audit authority matrix drifted")
+        raise AnfisAblationModelAuditError("E0-MU audit authority matrix drifted")
     return authority
 
 
 def _authority_manifest_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
     missing = [key for key in AUTHORITY_BINDING_KEYS if key not in authority]
     if missing:
-        raise AnfisAblationModelAuditError(f"E0-MT authority binding is incomplete: {missing}")
+        raise AnfisAblationModelAuditError(f"E0-MU authority binding is incomplete: {missing}")
     binding = {key: authority[key] for key in AUTHORITY_BINDING_KEYS}
     binding["completed_prefix_count"] = int(authority["slot_creation_prefix_count"])
     return binding
@@ -1921,7 +1921,7 @@ def audit_anfis_ablation_model_bundle(
     )
     if authority is not None and dict(authority) != effective:
         raise AnfisAblationModelAuditError(
-            "Injected authority differs from live E0-MT authority"
+            "Injected authority differs from live E0-MU authority"
         )
     live_runtime, _ = _load_runtime_contract(repo_root)
     if runtime is not None and dict(runtime) != live_runtime:

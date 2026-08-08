@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Fit one development-only Closure V1 A0/A1 ANFIS-ablation slot.
 
-The public entry points are fail-closed behind the published E0-MT authority.
+The public entry points are fail-closed behind the published E0-MU authority.
 Only the frozen development targets through 2020-12 are projected.  Calibration,
 holdout, E0-M, E0-U, DVC and network operations are outside this module.
 """
@@ -76,6 +76,9 @@ INTERVAL_Z90 = 1.6448536269514722
 EXPECTED_TRAINING_ORIGINS = 5_932
 EXPECTED_SELECTION_ORIGINS = 658
 EXPECTED_FIT_ORIGINS = EXPECTED_TRAINING_ORIGINS + EXPECTED_SELECTION_ORIGINS
+EXPECTED_SEQUENCE_TRAINING_ORIGINS = 8_352
+EXPECTED_SEQUENCE_SELECTION_ORIGINS = 1_061
+EXPECTED_SEQUENCE_CALIBRATION_ORIGINS = 319
 EXPECTED_TRAINING_TARGET_ROWS = EXPECTED_TRAINING_ORIGINS * len(HORIZONS)
 EXPECTED_SELECTION_TARGET_ROWS = EXPECTED_SELECTION_ORIGINS * len(HORIZONS)
 EXPECTED_CALIBRATION_TARGET_ROWS_READ = 0
@@ -117,23 +120,23 @@ OUTCOME_ACCESS_LOG = Path("reports/closure_v1/00_protocol/outcome_access_log.jso
 AUTHORITY_RECORD_SPECS = (
     (
         "runtime",
-        "anfis_ablation_training_runtime",
+        "anfis_ablation_training_runtime_contract",
         Path("configs/closure_v1/anfis_ablation_training_development_runtime.yaml"),
     ),
     (
         "lock",
-        "anfis_ablation_training_development_patch_lock",
+        "anfis_ablation_training_cohort_patch_lock",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_training_development_patch_lock.json"
+            "anfis_ablation_training_cohort_patch_lock.json"
         ),
     ),
     (
         "companion",
-        "anfis_ablation_training_development_patch_lock_manifest",
+        "anfis_ablation_training_cohort_patch_lock_manifest",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_training_development_patch_lock_manifest.json"
+            "anfis_ablation_training_cohort_patch_lock_manifest.json"
         ),
     ),
 )
@@ -146,6 +149,15 @@ TARGET_JOIN_COLUMNS = (
 )
 TARGET_PROJECTION = (*TARGET_JOIN_COLUMNS, "bloom_h", "target_risk_chla_h")
 FIT_ROLES = ("training", "model_selection")
+SUPERVISED_ORIGIN_COLUMNS = (
+    "source_id",
+    "site_id",
+    "common_origin_id",
+    "holdout_group_id",
+    "assignment_role",
+    "time_role",
+    "origin_year_month",
+)
 
 PREDICTION_COLUMNS = (
     "surface_id",
@@ -917,7 +929,11 @@ def _sequence_frame(
         frame["source_id"].astype(str)
     ) != {"wqp"}:
         raise AnfisAblationTrainingError("Input sequence crosses the development boundary")
-    expected_roles = {"training": 8_352, "model_selection": 1_061, "calibration_threshold": 319}
+    expected_roles = {
+        "training": EXPECTED_SEQUENCE_TRAINING_ORIGINS,
+        "model_selection": EXPECTED_SEQUENCE_SELECTION_ORIGINS,
+        "calibration_threshold": EXPECTED_SEQUENCE_CALIBRATION_ORIGINS,
+    }
     if frame["time_role"].value_counts().to_dict() != expected_roles:
         raise AnfisAblationTrainingError("Input sequence role counts drifted")
     if frame.duplicated(["source_id", "site_id", "origin_year_month"]).any():
@@ -974,6 +990,100 @@ def validate_fit_role_months(frame: pd.DataFrame) -> None:
         raise AnfisAblationTrainingError(
             "Development origin/target months do not share the sealed time role"
         )
+
+
+def collapse_supervised_origins(frame: pd.DataFrame) -> pd.DataFrame:
+    """Collapse the three horizon rows to one supervised row per origin.
+
+    ``evaluation_unit_id`` is deliberately excluded: it identifies a
+    horizon-specific evaluation row, not a model input origin.  Including it
+    would repeat every input tensor and target vector three times.
+    """
+
+    required = (
+        *SUPERVISED_ORIGIN_COLUMNS,
+        "evaluation_unit_id",
+        "target_year_month",
+        "horizon_months",
+    )
+    if not set(required).issubset(frame.columns) or frame.loc[:, list(required)].isna().any().any():
+        raise AnfisAblationTrainingError("Supervised origin identity is incomplete")
+    grouped = frame.groupby("common_origin_id", sort=False)
+    if (
+        not grouped.size().eq(len(HORIZONS)).all()
+        or not grouped["horizon_months"].nunique().eq(len(HORIZONS)).all()
+        or set(pd.to_numeric(frame["horizon_months"], errors="coerce").astype(int))
+        != set(HORIZONS)
+    ):
+        raise AnfisAblationTrainingError(
+            "Every supervised origin must retain exactly three horizon rows"
+        )
+    stable_columns = tuple(
+        column for column in SUPERVISED_ORIGIN_COLUMNS if column != "common_origin_id"
+    )
+    if any(not grouped[column].nunique(dropna=False).eq(1).all() for column in stable_columns):
+        raise AnfisAblationTrainingError(
+            "Supervised origin identity changes across horizons"
+        )
+    origins = (
+        frame.loc[:, list(SUPERVISED_ORIGIN_COLUMNS)]
+        .drop_duplicates()
+        .sort_values(
+            ["source_id", "site_id", "origin_year_month", "common_origin_id"],
+            kind="mergesort",
+        )
+        .reset_index(drop=True)
+    )
+    if not origins["common_origin_id"].is_unique or len(origins) * len(HORIZONS) != len(frame):
+        raise AnfisAblationTrainingError(
+            "Supervised rows did not collapse to one row per origin"
+        )
+    return origins
+
+
+def fit_sequence_training_standardizer(
+    sequence: pd.DataFrame, *, model_id: str
+) -> RawStandardizer:
+    """Fit input-only raw statistics on every row in the training role."""
+
+    if "time_role" not in sequence.columns or "common_origin_id" not in sequence.columns:
+        raise AnfisAblationTrainingError("Sequence training identity is incomplete")
+    training = sequence.loc[sequence["time_role"].eq("training")].reset_index(drop=True)
+    if training.empty or not training["common_origin_id"].is_unique:
+        raise AnfisAblationTrainingError("Sequence training origins are empty or duplicated")
+    return fit_mask_aware_standardizer(_tensor_from_sequence(training, model_id=model_id))
+
+
+def supervised_target_matrices(
+    frame: pd.DataFrame, origins: pd.DataFrame
+) -> tuple[np.ndarray, np.ndarray]:
+    """Materialize the three direct target heads for each unique origin."""
+
+    target_index = frame.set_index(["common_origin_id", "horizon_months"])
+    if not target_index.index.is_unique:
+        raise AnfisAblationTrainingError("Complete target origin/horizon index is duplicated")
+    origin_ids = origins["common_origin_id"].astype(str).tolist()
+    bloom = np.asarray(
+        [
+            [float(target_index.loc[(origin, horizon), "bloom_h"]) for horizon in HORIZONS]
+            for origin in origin_ids
+        ],
+        dtype=np.float64,
+    )
+    risk = np.asarray(
+        [
+            [
+                float(target_index.loc[(origin, horizon), "target_risk_chla_h"])
+                for horizon in HORIZONS
+            ]
+            for origin in origin_ids
+        ],
+        dtype=np.float64,
+    )
+    expected_shape = (len(origins), len(HORIZONS))
+    if bloom.shape != expected_shape or risk.shape != expected_shape:
+        raise AnfisAblationTrainingError("Direct target matrix shape drifted")
+    return bloom, risk
 
 
 def load_training_bundle(
@@ -1055,23 +1165,16 @@ def load_training_bundle(
     }
     if positives != expected_positives:
         raise AnfisAblationTrainingError("Development bloom-positive counts drifted")
-    identity_columns = [
-        "source_id",
-        "site_id",
-        "common_origin_id",
-        "evaluation_unit_id",
-        "holdout_group_id",
-        "assignment_role",
-        "time_role",
-        "origin_year_month",
-    ]
-    origins = (
-        joined[identity_columns]
-        .drop_duplicates()
-        .sort_values(["source_id", "site_id", "origin_year_month", "common_origin_id"], kind="mergesort")
-        .reset_index(drop=True)
-    )
-    sequence_index = sequence.set_index("common_origin_id", verify_integrity=True)
+    origins = collapse_supervised_origins(joined)
+    origin_counts = origins["time_role"].value_counts().to_dict()
+    if origin_counts != {
+        "training": EXPECTED_TRAINING_ORIGINS,
+        "model_selection": EXPECTED_SELECTION_ORIGINS,
+    } or len(origins) != EXPECTED_FIT_ORIGINS:
+        raise AnfisAblationTrainingError("Supervised origin denominator drifted")
+    sequence_index = sequence.set_index("common_origin_id")
+    if not sequence_index.index.is_unique:
+        raise AnfisAblationTrainingError("Input sequence origin index is duplicated")
     missing_sequence = sorted(set(origins["common_origin_id"]) - set(sequence_index.index))
     if missing_sequence:
         raise AnfisAblationTrainingError("Complete target origins are missing input sequences")
@@ -1079,24 +1182,10 @@ def load_training_bundle(
     for column in ("source_id", "site_id", "time_role", "origin_year_month"):
         if selected_sequence[column].astype(str).tolist() != origins[column].astype(str).tolist():
             raise AnfisAblationTrainingError("Sequence/target origin identity drifted")
-    target_index = joined.set_index(["common_origin_id", "horizon_months"], verify_integrity=True)
-    bloom_matrix = np.asarray(
-        [
-            [float(target_index.loc[(origin, horizon), "bloom_h"]) for horizon in HORIZONS]
-            for origin in origins["common_origin_id"]
-        ],
-        dtype=np.float64,
-    )
-    risk_matrix = np.asarray(
-        [
-            [float(target_index.loc[(origin, horizon), "target_risk_chla_h"]) for horizon in HORIZONS]
-            for origin in origins["common_origin_id"]
-        ],
-        dtype=np.float64,
-    )
+    bloom_matrix, risk_matrix = supervised_target_matrices(joined, origins)
     tensor = _tensor_from_sequence(selected_sequence, model_id=model_id)
     unprocessed = TrainingBundle(origins, tensor, bloom_matrix, risk_matrix)
-    standardizer = fit_mask_aware_standardizer(unprocessed.subset("training").x)
+    standardizer = fit_sequence_training_standardizer(sequence, model_id=model_id)
     validate_physical_standardizer(standardizer)
     processed = TrainingBundle(
         origins,
@@ -1794,12 +1883,12 @@ def _authority_records(
             "sha256",
         }:
             raise AnfisAblationTrainingError(
-                f"E0-MT authority record is incomplete: {key}"
+                f"E0-MU authority record is incomplete: {key}"
             )
         physical = {"role": role, **_stable_file_record(repo_root / path, repo_root=repo_root)}
         if dict(raw) != physical:
             raise AnfisAblationTrainingError(
-                f"E0-MT authority record differs from disk: {key}"
+                f"E0-MU authority record differs from disk: {key}"
             )
         records.append(physical)
     return records
@@ -1809,11 +1898,11 @@ def _refresh_authority_records(
     records: Sequence[Mapping[str, Any]], *, repo_root: Path
 ) -> list[dict[str, Any]]:
     if len(records) != len(AUTHORITY_RECORD_SPECS):
-        raise AnfisAblationTrainingError("E0-MT authority record count drifted")
+        raise AnfisAblationTrainingError("E0-MU authority record count drifted")
     refreshed: list[dict[str, Any]] = []
     for record, (_, role, path) in zip(records, AUTHORITY_RECORD_SPECS, strict=True):
         if record.get("role") != role or record.get("path") != path.as_posix():
-            raise AnfisAblationTrainingError("E0-MT authority record ordering drifted")
+            raise AnfisAblationTrainingError("E0-MU authority record ordering drifted")
         refreshed.append(
             {"role": role, **_stable_file_record(repo_root / path, repo_root=repo_root)}
         )
@@ -1864,7 +1953,7 @@ def _assert_local_git_snapshot(
         or current_head != authority.get("p_patch_head")
         or not baseline_status.issubset(current_status)
     ):
-        raise AnfisAblationTrainingError("E0-MT Git authority changed during fit")
+        raise AnfisAblationTrainingError("E0-MU Git authority changed during fit")
     allowed = {
         _repo_relative(path, repo_root)
         for path in allowed_new_paths
@@ -1872,25 +1961,25 @@ def _assert_local_git_snapshot(
     for entry in current_status - baseline_status:
         if len(entry) < 4 or entry[:2] != "??" or entry[3:] not in allowed:
             raise AnfisAblationTrainingError(
-                "E0-MT worktree scope changed during fit"
+                "E0-MU worktree scope changed during fit"
             )
 
 
 def _require_effective_authority(
     *, repo_root: Path, model_id: str, base_seed: int
 ) -> dict[str, Any]:
-    from src.experiments.closure_anfis_ablation_training_development_patch import (
-        require_anfis_ablation_training_authority,
+    from src.experiments.closure_anfis_ablation_training_cohort_patch import (
+        require_anfis_ablation_training_cohort_authority,
     )
 
-    authority = require_anfis_ablation_training_authority(
+    authority = require_anfis_ablation_training_cohort_authority(
         model_id,
         base_seed,
         repo_root=repo_root,
         audit_current_unpublished=False,
     )
-    if not isinstance(authority, Mapping):
-        raise AnfisAblationTrainingError("E0-MT authority must be a mapping")
+    if not isinstance(authority, Mapping) or authority.get("gate") != "E0-MU":
+        raise AnfisAblationTrainingError("E0-MU authority must be an exact mapping")
     return dict(authority)
 
 
@@ -2030,7 +2119,7 @@ def _authority_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
     )
     missing = [key for key in required if key not in authority]
     if missing:
-        raise AnfisAblationTrainingError(f"E0-MT authority binding is incomplete: {missing}")
+        raise AnfisAblationTrainingError(f"E0-MU authority binding is incomplete: {missing}")
     normalized = {key: authority[key] for key in required}
     # Historical bundles retain their slot-creation prefix even when audited
     # after a longer completed prefix exists.
@@ -2038,7 +2127,7 @@ def _authority_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
     try:
         json.dumps(normalized, ensure_ascii=False, allow_nan=False)
     except (TypeError, ValueError) as exc:
-        raise AnfisAblationTrainingError("E0-MT authority binding is not JSON-safe") from exc
+        raise AnfisAblationTrainingError("E0-MU authority binding is not JSON-safe") from exc
     return normalized
 
 
@@ -2218,13 +2307,13 @@ def execute_one_shot(
     repo_root: Path = PROJECT_ROOT,
     authority: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Consume one E0-MT slot authorization and publish eight finals atomically."""
+    """Consume one E0-MU slot authorization and publish eight finals atomically."""
 
     effective = _require_effective_authority(
         repo_root=repo_root, model_id=model_id, base_seed=base_seed
     )
     if authority is not None and dict(authority) != effective:
-        raise AnfisAblationTrainingError("Injected E0-MT authority differs from live authority")
+        raise AnfisAblationTrainingError("Injected E0-MU authority differs from live authority")
     authority_records = _authority_records(effective, repo_root=repo_root)
     git_snapshot = _local_git_snapshot(repo_root)
     _assert_local_git_snapshot(

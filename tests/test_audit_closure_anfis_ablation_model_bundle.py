@@ -15,7 +15,7 @@ import pytest
 import yaml
 
 from src.experiments import audit_closure_anfis_ablation_model_bundle as auditor
-from src.experiments import closure_anfis_ablation_training_development_patch as authority_patch
+from src.experiments import closure_anfis_ablation_training_cohort_patch as authority_patch
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -39,7 +39,7 @@ def _authority(
 ) -> dict[str, Any]:
     slot_index = auditor.BUNDLE_SLOTS.index((model_id, base_seed))
     return {
-        "gate": "E0-MT",
+        "gate": "E0-MU",
         "status": "effective_preflight_passed",
         "authorized_model_id": model_id,
         "authorized_base_seed": base_seed,
@@ -618,12 +618,24 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
     valid = _authority()
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_training_authority",
+        "require_anfis_ablation_training_cohort_authority",
         lambda *args, **kwargs: copy.deepcopy(valid),
     )
     assert auditor._require_audit_authority(
         tmp_path, model_id="A0", base_seed=1729
     )["model_bundle_audit_authorized"] is True
+
+    stale_gate = copy.deepcopy(valid)
+    stale_gate["gate"] = "E0-MT"
+    monkeypatch.setattr(
+        authority_patch,
+        "require_anfis_ablation_training_cohort_authority",
+        lambda *args, **kwargs: copy.deepcopy(stale_gate),
+    )
+    with pytest.raises(auditor.AnfisAblationModelAuditError, match="E0-MU"):
+        auditor._require_audit_authority(
+            tmp_path, model_id="A0", base_seed=1729
+        )
 
     for key in (
         "model_bundle_audit_authorized",
@@ -634,7 +646,7 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
         mutated[key] = False
         monkeypatch.setattr(
             authority_patch,
-            "require_anfis_ablation_training_authority",
+            "require_anfis_ablation_training_cohort_authority",
             lambda *args, payload=mutated, **kwargs: copy.deepcopy(payload),
         )
         with pytest.raises(auditor.AnfisAblationModelAuditError, match="matrix"):
@@ -651,7 +663,7 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
         mutated[key] = True
         monkeypatch.setattr(
             authority_patch,
-            "require_anfis_ablation_training_authority",
+            "require_anfis_ablation_training_cohort_authority",
             lambda *args, payload=mutated, **kwargs: copy.deepcopy(payload),
         )
         with pytest.raises(auditor.AnfisAblationModelAuditError, match="matrix"):

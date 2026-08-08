@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -11,6 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 import yaml
 
+from src.experiments import closure_anfis_ablation_training_cohort_patch as authority_patch
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -69,6 +71,97 @@ def test_mask_aware_standardizer_uses_only_observed_training_cells() -> None:
     assert transformed[0, 0, 0] == 0.0
     assert transformed.dtype == np.float32
     assert np.isfinite(transformed).all()
+
+
+def test_input_scaler_uses_all_training_rows_and_targets_collapse_to_three_heads() -> None:
+    tensor = _tensor(4)
+    tensor[2:, :, 0] += 1_000.0
+    sequence = pd.DataFrame(
+        {
+            "common_origin_id": [f"origin-{index}" for index in range(4)],
+            "time_role": ["training"] * 4,
+            **{
+                column: [tensor[row, :, index] for row in range(4)]
+                for index, column in enumerate(trainer.A0_INPUT_COLUMNS)
+            },
+        }
+    )
+    standardizer = trainer.fit_sequence_training_standardizer(
+        sequence, model_id="A0"
+    )
+    all_training = trainer.fit_mask_aware_standardizer(tensor)
+    supervised_subset = trainer.fit_mask_aware_standardizer(tensor[:2])
+    np.testing.assert_array_equal(standardizer.counts, all_training.counts)
+    np.testing.assert_allclose(standardizer.means, all_training.means, rtol=0.0, atol=0.0)
+    assert standardizer.means[0] != supervised_subset.means[0]
+    duplicated_sequence = pd.concat([sequence, sequence.iloc[[0]]], ignore_index=True)
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="duplicated"):
+        trainer.fit_sequence_training_standardizer(
+            duplicated_sequence, model_id="A0"
+        )
+
+    target_rows = pd.DataFrame(
+        [
+            {
+                "source_id": "wqp",
+                "site_id": f"site-{origin}",
+                "common_origin_id": f"origin-{origin}",
+                "evaluation_unit_id": f"unit-{origin}-h{horizon}",
+                "holdout_group_id": f"group-{origin}",
+                "assignment_role": "development",
+                "time_role": "training",
+                "origin_year_month": "2018-01",
+                "target_year_month": f"2018-{1 + horizon:02d}",
+                "horizon_months": horizon,
+                "bloom_h": float(horizon == 2),
+                "target_risk_chla_h": float(horizon) / 4.0,
+            }
+            for origin in range(2)
+            for horizon in trainer.HORIZONS
+        ]
+    )
+    origins = trainer.collapse_supervised_origins(target_rows)
+    bloom, risk = trainer.supervised_target_matrices(target_rows, origins)
+    assert len(origins) == 2
+    assert origins["common_origin_id"].is_unique
+    assert "evaluation_unit_id" not in origins.columns
+    assert bloom.shape == risk.shape == (2, 3)
+    np.testing.assert_array_equal(bloom, [[0.0, 1.0, 0.0], [0.0, 1.0, 0.0]])
+    np.testing.assert_allclose(risk, [[0.25, 0.5, 0.75], [0.25, 0.5, 0.75]])
+    changed_identity = target_rows.copy()
+    changed_identity.loc[1, "site_id"] = "different-site"
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="changes across"):
+        trainer.collapse_supervised_origins(changed_identity)
+    duplicate_target = pd.concat([target_rows, target_rows.iloc[[0]]], ignore_index=True)
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="duplicated"):
+        trainer.supervised_target_matrices(duplicate_target, origins)
+
+
+def test_physical_a0_loader_uses_frozen_input_scaler_and_unique_supervised_origins() -> None:
+    with warnings.catch_warnings(record=True) as captured:
+        warnings.simplefilter("always")
+        bundle, standardizer, records, paths = trainer.load_training_bundle(
+            model_id="A0", base_seed=1729
+        )
+    assert captured == []
+    training = bundle.subset("training")
+    selection = bundle.subset("model_selection")
+    assert len(training.metadata) == trainer.EXPECTED_TRAINING_ORIGINS
+    assert len(selection.metadata) == trainer.EXPECTED_SELECTION_ORIGINS
+    assert bundle.metadata["common_origin_id"].is_unique
+    assert training.bloom.shape == (trainer.EXPECTED_TRAINING_ORIGINS, 3)
+    assert selection.bloom.shape == (trainer.EXPECTED_SELECTION_ORIGINS, 3)
+    temperature_index = standardizer.columns.index("x_mean_temperature_C")
+    assert int(standardizer.counts[temperature_index]) == (
+        trainer.EXPECTED_SEQUENCE_TRAINING_ORIGINS * trainer.HISTORY_LENGTH
+    )
+    for index, column in enumerate(standardizer.columns):
+        count, mean, standard_deviation = trainer.EXPECTED_RAW_STANDARDIZATION[column]
+        assert int(standardizer.counts[index]) == count
+        assert float(standardizer.means[index]) == mean
+        assert float(standardizer.standard_deviations[index]) == standard_deviation
+    assert len(records) == len(paths) == 10
+    assert len({str(record["role"]) for record in records}) == 10
 
 
 def test_mask_and_identity_channels_are_not_scaled() -> None:
@@ -360,6 +453,30 @@ def test_importable_execute_cannot_bypass_gate(
     with pytest.raises(trainer.AnfisAblationTrainingError, match="closed"):
         trainer.execute_one_shot(model_id="A0", base_seed=1729, repo_root=tmp_path)
     assert events == ["gate"]
+
+
+def test_effective_authority_is_routed_exclusively_through_e0_mu(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    payload = {"gate": "E0-MU", "status": "effective_preflight_passed"}
+    monkeypatch.setattr(
+        authority_patch,
+        "require_anfis_ablation_training_cohort_authority",
+        lambda *args, **kwargs: dict(payload),
+    )
+    assert trainer._require_effective_authority(
+        repo_root=tmp_path, model_id="A0", base_seed=1729
+    ) == payload
+
+    monkeypatch.setattr(
+        authority_patch,
+        "require_anfis_ablation_training_cohort_authority",
+        lambda *args, **kwargs: {**payload, "gate": "E0-MT"},
+    )
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MU"):
+        trainer._require_effective_authority(
+            repo_root=tmp_path, model_id="A0", base_seed=1729
+        )
 
 
 def test_main_calls_gate_before_check_only(
