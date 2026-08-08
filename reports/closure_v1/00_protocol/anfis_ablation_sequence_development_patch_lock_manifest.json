@@ -1,0 +1,353 @@
+{
+  "data_execution_run": false,
+  "dvc_commands_run": false,
+  "future_outcomes_accessed": false,
+  "gate": "E0-MS",
+  "historical_inputs": [],
+  "historical_inputs_compared_to_current_paths": false,
+  "inputs": [
+    {
+      "bytes": 18302,
+      "path": "configs/closure_v1/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "e9ba0cde0f547710eb9062ab13bc324179524dd8cafd5992d75aab2797f3a17a"
+    },
+    {
+      "bytes": 15575,
+      "path": "configs/closure_v1/anfis_ablation_sequence_development_patch_lock.schema.json",
+      "role": "anfis_ablation_sequence_development_patch_lock_schema",
+      "sha256": "fe16ef9d7fa4cfeadd5054262520899eff37b7f4877896994b8c4056fb51db19"
+    },
+    {
+      "bytes": 21827,
+      "path": "configs/closure_v1/anfis_ablation_sequence_development_runtime.yaml",
+      "role": "anfis_ablation_sequence_development_runtime",
+      "sha256": "49d1a3f562f2cd68ff65f29c92ac4e028b3ad407f30a9960ea0d29260df7d56b"
+    },
+    {
+      "bytes": 24374,
+      "path": "configs/closure_v1/experimental_matrix.yaml",
+      "role": "experimental_matrix",
+      "sha256": "9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6"
+    },
+    {
+      "bytes": 7281,
+      "path": "configs/closure_v1/model_benchmark.yaml",
+      "role": "model_benchmark",
+      "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95"
+    },
+    {
+      "bytes": 3660,
+      "path": "configs/closure_v1/surface_primary.yaml",
+      "role": "primary_surface",
+      "sha256": "44b225727a3e665b3dc7ad5c78dbd0cad894d6e92d2f3fb661ac9803b4cb5132"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "holdout_assignment",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "bytes": 2763097,
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "role": "common_origin",
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "bytes": 113,
+      "path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "role": "common_origin_pointer",
+      "sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3"
+    },
+    {
+      "bytes": 1215081,
+      "path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet",
+      "role": "anfis_state_seed_1729",
+      "sha256": "c1987e31edb5b0f830f433120715f2abb7d7a375f8f38e6ad24056fc12447c69"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_state_pointer_seed_1729",
+      "sha256": "23f126ba6de15bb76e3b71fc343f3c1fd39bc1d6748f8b227fef40fbcedd106e"
+    },
+    {
+      "bytes": 1214885,
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet",
+      "role": "anfis_state_seed_20260612",
+      "sha256": "99b4bc37de88d76068c044423071046cb6b0341056024c4de41cd1af51d09d26"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_state_pointer_seed_20260612",
+      "sha256": "7c88755a0cb55a6a177bf6f883f1e879221a5e415e3fd243fc27576051cd00e2"
+    },
+    {
+      "bytes": 1215359,
+      "path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet",
+      "role": "anfis_state_seed_20260613",
+      "sha256": "53f9a733e660d1968f8cf45916b1947ffa902346c16fabe2f07df9d27c4618a2"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_state_pointer_seed_20260613",
+      "sha256": "7afddc7b3b22d07e9630a90d851e3d7cc5972b0d94904678cf49eee0168a9e93"
+    },
+    {
+      "bytes": 1214501,
+      "path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet",
+      "role": "anfis_state_seed_20260614",
+      "sha256": "58aff087072fabae30afb7fa01b474fb2ba1c7dd1958e7ed8e9d1a19d989ead9"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_state_pointer_seed_20260614",
+      "sha256": "e6e402593a26760270558bf24b9b03963b238f5b5f0d21572066c6c7b4f84f04"
+    },
+    {
+      "bytes": 1214293,
+      "path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet",
+      "role": "anfis_state_seed_314159",
+      "sha256": "53e71211cf0f58f78bb473869dcac7e15b578c39d6722eba02954c13a86101f0"
+    },
+    {
+      "bytes": 116,
+      "path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet.dvc",
+      "role": "anfis_state_pointer_seed_314159",
+      "sha256": "1c91d9c32feb0fbafe427e1d1f8c9e6252cb37570e0ae819ba54f587a6d4c181"
+    },
+    {
+      "bytes": 101,
+      "path": "data/closure_v1/development/baselines/B0/raw_scores.parquet.dvc",
+      "role": "baseline_b0_pointer",
+      "sha256": "854310b34ca0f1d28be226a65475cc67accd4108a7254b4d1c39ffdb0fd6e491"
+    },
+    {
+      "bytes": 101,
+      "path": "data/closure_v1/development/baselines/B1/raw_scores.parquet.dvc",
+      "role": "baseline_b1_pointer",
+      "sha256": "73d4ea483251848643f62076a5095417d51863b5fe4464be59511f8d44124c4f"
+    },
+    {
+      "bytes": 102,
+      "path": "data/closure_v1/development/baselines/B2/raw_scores.parquet.dvc",
+      "role": "baseline_b2_pointer",
+      "sha256": "7ae5fe8322b8de971c11692183ed8277373cddf1055edb138f6e88cbfd1725e7"
+    },
+    {
+      "bytes": 101,
+      "path": "data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc",
+      "role": "m0_raw_pointer",
+      "sha256": "ab0bb1dd25a84dea7e405cb5ce679bfee3487c83ff2eb4629b7f93b092a9db96"
+    },
+    {
+      "bytes": 103469973,
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "panel",
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "bytes": 109,
+      "path": "data/panel/panel_monthly_v0.parquet.dvc",
+      "role": "panel_pointer",
+      "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c"
+    },
+    {
+      "bytes": 10436,
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_SEQUENCE_DEVELOPMENT_PATCH_1.md",
+      "role": "anfis_ablation_sequence_development_patch_protocol",
+      "sha256": "4a07ab0c05561be1e5d46c31bddc9be4abb5b2ecdd0dd8eaab458b1e4b199bde"
+    },
+    {
+      "bytes": 109,
+      "path": "models.dvc",
+      "role": "models_dvc_observer",
+      "sha256": "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"
+    },
+    {
+      "bytes": 497461,
+      "path": "poetry.lock",
+      "role": "poetry_lock",
+      "sha256": "eb686d9811fde771e632dcbe6814879a6999dfd5fa94467915151651b894a0d4"
+    },
+    {
+      "bytes": 1699,
+      "path": "pyproject.toml",
+      "role": "pyproject",
+      "sha256": "ea396336baba003de55e371c49c5bab5269de9779cba82bd4045e44f82ba3d22"
+    },
+    {
+      "bytes": 34399,
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json",
+      "role": "baseline_patch_lock",
+      "sha256": "01d8b3ac0d869fe585f55af9911a870039afac0013f9f30b3122efc4f586caac"
+    },
+    {
+      "bytes": 14205,
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock_manifest.json",
+      "role": "baseline_patch_lock_manifest",
+      "sha256": "ce7e8334be74b35e057e2c86603bb46645bdd3ba1f07c9143da83ee97e34d8d9"
+    },
+    {
+      "bytes": 3440,
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json",
+      "role": "holdout_manifest",
+      "sha256": "b05e7767c35630806258494bcfac49ac26f7e628fea5d4185c5f9545ca480bc1"
+    },
+    {
+      "bytes": 21899,
+      "path": "reports/closure_v1/00_protocol/mifal_development_patch_lock.json",
+      "role": "m0_patch_lock",
+      "sha256": "59eb0674ae4502bcbae16b9ad0f4c653429771e3c9ec89b1ef1f31e3dbb08125"
+    },
+    {
+      "bytes": 8069,
+      "path": "reports/closure_v1/00_protocol/mifal_development_patch_lock_manifest.json",
+      "role": "m0_patch_lock_manifest",
+      "sha256": "3628973b4eda30b14787f57554bef8b13d8c9580d1b3c3f2c4134acb7c3130f9"
+    },
+    {
+      "bytes": 8279,
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json",
+      "role": "protocol_lock",
+      "sha256": "7b6530dd3b918a61b55e26b54d5cd68919e9cf6919e3521b452f7b05e2ded9c6"
+    },
+    {
+      "bytes": 20768,
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json",
+      "role": "anfis_manifest_seed_1729",
+      "sha256": "b38e54d21dd64edbf5a5968d9bee505569ea72b9f03c6750baf9a54114e9ef82"
+    },
+    {
+      "bytes": 20883,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json",
+      "role": "anfis_manifest_seed_20260612",
+      "sha256": "e7523963c6f09ea83235d9578d492ec34a654ce8328f79f1b05e49aa84669053"
+    },
+    {
+      "bytes": 20881,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/manifest.json",
+      "role": "anfis_manifest_seed_20260613",
+      "sha256": "c40c9ef87729d135933ef37ffce7236523b6b8fe957d90e33dde4837e5a2bd00"
+    },
+    {
+      "bytes": 20886,
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/manifest.json",
+      "role": "anfis_manifest_seed_20260614",
+      "sha256": "04d8dd355acd813656a0b3fd99123f095db7aa9ca7181f195e1e047214417946"
+    },
+    {
+      "bytes": 20821,
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/manifest.json",
+      "role": "anfis_manifest_seed_314159",
+      "sha256": "dedcc82dd998499fa5f3f8049554431b1e97dcf6dff32645e7e6bf4e5240f2f4"
+    },
+    {
+      "bytes": 11524,
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "role": "common_origin_manifest",
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "bytes": 672,
+      "path": "reports/closure_v1/02_models/M0/availability.csv",
+      "role": "m0_availability",
+      "sha256": "3fb0a283f6b2840d2ac78d0fa6225aa4774e9d7ac31098c5f193b2238bd0dc1e"
+    },
+    {
+      "bytes": 2735,
+      "path": "reports/closure_v1/02_models/M0/lineage_audit.json",
+      "role": "m0_lineage_audit",
+      "sha256": "fe0868237649ea1845a244c75dd4d1db69d10b3b6aaf29e0f71d1afc1a85e0c9"
+    },
+    {
+      "bytes": 14446,
+      "path": "reports/closure_v1/02_models/M0/manifest.json",
+      "role": "m0_manifest",
+      "sha256": "a4d005338c97e5bc7c869e255e1fd92406b583ca21e7e6929d9e584512c6d156"
+    },
+    {
+      "bytes": 1825,
+      "path": "reports/closure_v1/02_models/M0/model_spec.json",
+      "role": "m0_model_spec",
+      "sha256": "a3936772073c5424849c76b0597a46e54281aa9de3609b35ffa3dd7e8396f9a9"
+    },
+    {
+      "bytes": 570,
+      "path": "reports/closure_v1/02_models/M0/report.md",
+      "role": "m0_report",
+      "sha256": "1423c06a2e5deda125dc714bb6c288dc7ef51ff6c560ea716c9aadfa47a12bed"
+    },
+    {
+      "bytes": 26518,
+      "path": "reports/closure_v1/02_models/baselines/manifest.json",
+      "role": "baseline_bundle_manifest",
+      "sha256": "98f08b53c02a5f88d29792b6edda9b22d7eec0d72c8a886a16f21c6c0ecb4a95"
+    },
+    {
+      "bytes": 18190,
+      "path": "src/experiments/audit_closure_anfis_ablation_sequence_bundle.py",
+      "role": "anfis_ablation_sequence_bundle_auditor",
+      "sha256": "60e3644f2993d9cfd763b1d9602e50959c4c8b01dc391156af6223c9846f9f22"
+    },
+    {
+      "bytes": 63806,
+      "path": "src/experiments/build_closure_anfis_ablation_sequences.py",
+      "role": "anfis_ablation_sequence_builder",
+      "sha256": "7fbf5dea26410ce8e1ea6b9e7f37f5fc5fb3e807476e605210d0dcf5c4ecd97a"
+    },
+    {
+      "bytes": 108043,
+      "path": "src/experiments/closure_anfis_ablation_sequence_development_patch.py",
+      "role": "anfis_ablation_sequence_development_patch_validator",
+      "sha256": "465f8c07fef0f09fc944aa5460381bb728be3f077e0679bbc7a8b47436342417"
+    },
+    {
+      "bytes": 31428,
+      "path": "src/experiments/lock_closure_anfis_ablation_sequence_development_patch.py",
+      "role": "anfis_ablation_sequence_development_patch_locker",
+      "sha256": "3b70757a8493b1f0daeca21cc45c3b5734b23758cfa3cbda0e7c7717157185aa"
+    },
+    {
+      "bytes": 12614,
+      "path": "tests/test_audit_closure_anfis_ablation_sequence_bundle.py",
+      "role": "anfis_ablation_sequence_bundle_auditor_tests",
+      "sha256": "59d2659d275a406ec8744086d94e4be5da7acebb7623be66f854dc67e580ee69"
+    },
+    {
+      "bytes": 19702,
+      "path": "tests/test_build_closure_anfis_ablation_sequences.py",
+      "role": "anfis_ablation_sequence_builder_tests",
+      "sha256": "7ed7f3595279ae6dc8ff87d4fec59ce52e9a960178f1f64c6205dfa3f0f86829"
+    },
+    {
+      "bytes": 44716,
+      "path": "tests/test_closure_anfis_ablation_sequence_development_patch.py",
+      "role": "anfis_ablation_sequence_development_patch_tests",
+      "sha256": "5bd9c6589aa6f2418d744f29c9b503efa38eb1082cb594d76a2785ea93210a4c"
+    }
+  ],
+  "manifest_version": "closure_anfis_ablation_sequence_development_patch_lock_manifest_v1",
+  "manifest_written_last": true,
+  "network_commands_run": true,
+  "outputs": [
+    {
+      "bytes": 40836,
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock.json",
+      "role": "anfis_ablation_sequence_development_patch_lock",
+      "sha256": "50af5f6ada06454c060c23d14dfab319ce902c59ae6eec610bf80e2f6907da29"
+    }
+  ],
+  "physical_inputs_only": true,
+  "script": {
+    "bytes": 31428,
+    "path": "src/experiments/lock_closure_anfis_ablation_sequence_development_patch.py",
+    "role": "anfis_ablation_sequence_development_patch_locker",
+    "sha256": "3b70757a8493b1f0daeca21cc45c3b5734b23758cfa3cbda0e7c7717157185aa"
+  },
+  "status": "completed"
+}
