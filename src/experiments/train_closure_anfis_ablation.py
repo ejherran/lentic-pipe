@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Fit one development-only Closure V1 A0/A1 ANFIS-ablation slot.
 
-The public entry points are fail-closed behind the published E0-MU authority.
+The public entry points are fail-closed behind the published E0-MV authority.
 Only the frozen development targets through 2020-12 are projected.  Calibration,
 holdout, E0-M, E0-U, DVC and network operations are outside this module.
 """
@@ -125,18 +125,18 @@ AUTHORITY_RECORD_SPECS = (
     ),
     (
         "lock",
-        "anfis_ablation_training_cohort_patch_lock",
+        "anfis_ablation_model_manifest_patch_lock",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_training_cohort_patch_lock.json"
+            "anfis_ablation_model_manifest_patch_lock.json"
         ),
     ),
     (
         "companion",
-        "anfis_ablation_training_cohort_patch_lock_manifest",
+        "anfis_ablation_model_manifest_patch_lock_manifest",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_training_cohort_patch_lock_manifest.json"
+            "anfis_ablation_model_manifest_patch_lock_manifest.json"
         ),
     ),
 )
@@ -761,7 +761,7 @@ def _unlink_name_if_owned(
     return False
 
 
-def _stable_file_record(path: Path, *, repo_root: Path) -> dict[str, Any]:
+def _stable_file_fingerprint(path: Path, *, repo_root: Path) -> dict[str, Any]:
     parent_fd, lexical = _open_real_repository_parent(path, repo_root=repo_root, create=False)
     descriptor: int | None = None
     try:
@@ -777,6 +777,7 @@ def _stable_file_record(path: Path, *, repo_root: Path) -> dict[str, Any]:
         state = (
             opened_before.st_dev,
             opened_before.st_ino,
+            opened_before.st_mode,
             opened_before.st_size,
             opened_before.st_mtime_ns,
             opened_before.st_ctime_ns,
@@ -791,6 +792,7 @@ def _stable_file_record(path: Path, *, repo_root: Path) -> dict[str, Any]:
         after_open = (
             opened_after.st_dev,
             opened_after.st_ino,
+            opened_after.st_mode,
             opened_after.st_size,
             opened_after.st_mtime_ns,
             opened_after.st_ctime_ns,
@@ -798,6 +800,7 @@ def _stable_file_record(path: Path, *, repo_root: Path) -> dict[str, Any]:
         after_name = (
             named_after.st_dev,
             named_after.st_ino,
+            named_after.st_mode,
             named_after.st_size,
             named_after.st_mtime_ns,
             named_after.st_ctime_ns,
@@ -808,11 +811,20 @@ def _stable_file_record(path: Path, *, repo_root: Path) -> dict[str, Any]:
             "path": _repo_relative(lexical, repo_root),
             "bytes": size,
             "sha256": digest.hexdigest(),
+            "mode": stat.S_IMODE(opened_after.st_mode),
         }
     finally:
         if descriptor is not None:
             os.close(descriptor)
         os.close(parent_fd)
+
+
+def _stable_file_record(path: Path, *, repo_root: Path) -> dict[str, Any]:
+    fingerprint = _stable_file_fingerprint(path, repo_root=repo_root)
+    return {
+        key: fingerprint[key]
+        for key in ("path", "bytes", "sha256")
+    }
 
 
 @contextmanager
@@ -1883,12 +1895,12 @@ def _authority_records(
             "sha256",
         }:
             raise AnfisAblationTrainingError(
-                f"E0-MU authority record is incomplete: {key}"
+                f"E0-MV authority record is incomplete: {key}"
             )
         physical = {"role": role, **_stable_file_record(repo_root / path, repo_root=repo_root)}
         if dict(raw) != physical:
             raise AnfisAblationTrainingError(
-                f"E0-MU authority record differs from disk: {key}"
+                f"E0-MV authority record differs from disk: {key}"
             )
         records.append(physical)
     return records
@@ -1898,15 +1910,85 @@ def _refresh_authority_records(
     records: Sequence[Mapping[str, Any]], *, repo_root: Path
 ) -> list[dict[str, Any]]:
     if len(records) != len(AUTHORITY_RECORD_SPECS):
-        raise AnfisAblationTrainingError("E0-MU authority record count drifted")
+        raise AnfisAblationTrainingError("E0-MV authority record count drifted")
     refreshed: list[dict[str, Any]] = []
     for record, (_, role, path) in zip(records, AUTHORITY_RECORD_SPECS, strict=True):
         if record.get("role") != role or record.get("path") != path.as_posix():
-            raise AnfisAblationTrainingError("E0-MU authority record ordering drifted")
+            raise AnfisAblationTrainingError("E0-MV authority record ordering drifted")
         refreshed.append(
             {"role": role, **_stable_file_record(repo_root / path, repo_root=repo_root)}
         )
     return refreshed
+
+
+def _completed_prefix_snapshot(
+    authority: Mapping[str, Any], *, repo_root: Path
+) -> tuple[dict[str, Any], ...]:
+    completed = authority.get("completed_prefix_count")
+    creation = authority.get("slot_creation_prefix_count")
+    ordered = authority.get("ordered_slots")
+    expected_order = tuple(
+        (model_id, seed)
+        for seed in REGISTERED_SEEDS
+        for model_id in MODEL_IDS
+    )
+    if (
+        type(completed) is not int
+        or type(creation) is not int
+        or completed != creation
+        or not 0 <= completed <= len(expected_order)
+        or type(ordered) is not list
+        or len(ordered) != len(expected_order)
+    ):
+        raise AnfisAblationTrainingError(
+            "E0-MV completed-prefix authority is incomplete"
+        )
+    normalized: list[tuple[str, int]] = []
+    for raw, (expected_model, expected_seed) in zip(
+        ordered, expected_order, strict=True
+    ):
+        if type(raw) is not dict or set(raw) != {"model_id", "base_seed"}:
+            raise AnfisAblationTrainingError(
+                "E0-MV completed-prefix slot order drifted"
+            )
+        slot = cast(dict[str, Any], raw)
+        if (
+            type(slot.get("model_id")) is not str
+            or type(slot.get("base_seed")) is not int
+            or slot.get("model_id") != expected_model
+            or slot.get("base_seed") != expected_seed
+        ):
+            raise AnfisAblationTrainingError(
+                "E0-MV completed-prefix slot order drifted"
+            )
+        normalized.append((expected_model, expected_seed))
+    snapshot: list[dict[str, Any]] = []
+    for model_id, base_seed in normalized[:completed]:
+        for path in slot_paths(model_id, base_seed, repo_root=repo_root).finals:
+            fingerprint = _stable_file_fingerprint(path, repo_root=repo_root)
+            if fingerprint["mode"] != 0o644:
+                raise AnfisAblationTrainingError(
+                    f"Completed-prefix artifact mode drifted: {fingerprint['path']}"
+                )
+            snapshot.append(fingerprint)
+    if len(snapshot) != 8 * completed:
+        raise AnfisAblationTrainingError(
+            "E0-MV completed-prefix artifact count drifted"
+        )
+    return tuple(snapshot)
+
+
+def _assert_completed_prefix_snapshot(
+    baseline: Sequence[Mapping[str, Any]],
+    *,
+    authority: Mapping[str, Any],
+    repo_root: Path,
+) -> None:
+    current = _completed_prefix_snapshot(authority, repo_root=repo_root)
+    if list(current) != [dict(record) for record in baseline]:
+        raise AnfisAblationTrainingError(
+            "E0-MV completed-prefix artifact changed during fit/publication"
+        )
 
 
 def _local_git_snapshot(repo_root: Path) -> tuple[str, frozenset[str]]:
@@ -1953,7 +2035,7 @@ def _assert_local_git_snapshot(
         or current_head != authority.get("p_patch_head")
         or not baseline_status.issubset(current_status)
     ):
-        raise AnfisAblationTrainingError("E0-MU Git authority changed during fit")
+        raise AnfisAblationTrainingError("E0-MV Git authority changed during fit")
     allowed = {
         _repo_relative(path, repo_root)
         for path in allowed_new_paths
@@ -1961,25 +2043,25 @@ def _assert_local_git_snapshot(
     for entry in current_status - baseline_status:
         if len(entry) < 4 or entry[:2] != "??" or entry[3:] not in allowed:
             raise AnfisAblationTrainingError(
-                "E0-MU worktree scope changed during fit"
+                "E0-MV worktree scope changed during fit"
             )
 
 
 def _require_effective_authority(
     *, repo_root: Path, model_id: str, base_seed: int
 ) -> dict[str, Any]:
-    from src.experiments.closure_anfis_ablation_training_cohort_patch import (
-        require_anfis_ablation_training_cohort_authority,
+    from src.experiments.closure_anfis_ablation_model_manifest_patch import (
+        require_anfis_ablation_model_manifest_authority,
     )
 
-    authority = require_anfis_ablation_training_cohort_authority(
+    authority = require_anfis_ablation_model_manifest_authority(
         model_id,
         base_seed,
         repo_root=repo_root,
         audit_current_unpublished=False,
     )
-    if not isinstance(authority, Mapping) or authority.get("gate") != "E0-MU":
-        raise AnfisAblationTrainingError("E0-MU authority must be an exact mapping")
+    if not isinstance(authority, Mapping) or authority.get("gate") != "E0-MV":
+        raise AnfisAblationTrainingError("E0-MV authority must be an exact mapping")
     return dict(authority)
 
 
@@ -2117,17 +2199,30 @@ def _authority_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
         "lock_sha256",
         "companion_sha256",
     )
-    missing = [key for key in required if key not in authority]
-    if missing:
-        raise AnfisAblationTrainingError(f"E0-MU authority binding is incomplete: {missing}")
-    normalized = {key: authority[key] for key in required}
-    # Historical bundles retain their slot-creation prefix even when audited
-    # after a longer completed prefix exists.
-    normalized["completed_prefix_count"] = int(authority["slot_creation_prefix_count"])
+    raw = authority.get("slot_manifest_authority")
+    if not isinstance(raw, Mapping) or set(raw) != set(required):
+        raise AnfisAblationTrainingError(
+            "E0-MV slot-manifest authority binding is incomplete"
+        )
+    normalized = {key: raw[key] for key in required}
+    if (
+        normalized.get("gate") != "E0-MV"
+        or normalized.get("status") != "effective_preflight_passed"
+        or normalized.get("authorized_model_id")
+        != authority.get("authorized_model_id")
+        or normalized.get("authorized_base_seed")
+        != authority.get("authorized_base_seed")
+        or type(normalized.get("slot_creation_prefix_count")) is not int
+        or normalized.get("completed_prefix_count")
+        != normalized.get("slot_creation_prefix_count")
+    ):
+        raise AnfisAblationTrainingError(
+            "E0-MV slot-manifest authority binding drifted"
+        )
     try:
         json.dumps(normalized, ensure_ascii=False, allow_nan=False)
     except (TypeError, ValueError) as exc:
-        raise AnfisAblationTrainingError("E0-MU authority binding is not JSON-safe") from exc
+        raise AnfisAblationTrainingError("E0-MV authority binding is not JSON-safe") from exc
     return normalized
 
 
@@ -2307,17 +2402,20 @@ def execute_one_shot(
     repo_root: Path = PROJECT_ROOT,
     authority: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Consume one E0-MU slot authorization and publish eight finals atomically."""
+    """Consume one E0-MV slot authorization and publish eight finals atomically."""
 
     effective = _require_effective_authority(
         repo_root=repo_root, model_id=model_id, base_seed=base_seed
     )
     if authority is not None and dict(authority) != effective:
-        raise AnfisAblationTrainingError("Injected E0-MU authority differs from live authority")
+        raise AnfisAblationTrainingError("Injected E0-MV authority differs from live authority")
     authority_records = _authority_records(effective, repo_root=repo_root)
     git_snapshot = _local_git_snapshot(repo_root)
     _assert_local_git_snapshot(
         git_snapshot, authority=effective, repo_root=repo_root
+    )
+    completed_prefix_snapshot = _completed_prefix_snapshot(
+        effective, repo_root=repo_root
     )
     runtime = _load_runtime_after_gate(repo_root)
     validate_model_seed(model_id, base_seed)
@@ -2358,6 +2456,11 @@ def execute_one_shot(
             != source_record
         ):
             raise AnfisAblationTrainingError("Trainer inputs/source changed during fit")
+        _assert_completed_prefix_snapshot(
+            completed_prefix_snapshot,
+            authority=effective,
+            repo_root=repo_root,
+        )
         _assert_local_git_snapshot(
             git_snapshot, authority=effective, repo_root=repo_root
         )
@@ -2428,6 +2531,11 @@ def execute_one_shot(
                 {"role": name, **transaction.record(owned[name])}
                 for name in MODEL_OUTPUT_NAMES
             ]
+            _assert_completed_prefix_snapshot(
+                completed_prefix_snapshot,
+                authority=effective,
+                repo_root=repo_root,
+            )
             if _refresh_role_records(
                 before_inputs, input_paths, repo_root=repo_root
             ) != before_inputs or _refresh_authority_records(
@@ -2492,6 +2600,11 @@ def execute_one_shot(
                 _json_bytes(manifest), paths.manifest
             )
             manifest_record = transaction.record(manifest_owned)
+            _assert_completed_prefix_snapshot(
+                completed_prefix_snapshot,
+                authority=effective,
+                repo_root=repo_root,
+            )
             if _refresh_role_records(
                 before_inputs, input_paths, repo_root=repo_root
             ) != before_inputs or _refresh_authority_records(
@@ -2510,6 +2623,11 @@ def execute_one_shot(
                 allowed_new_paths=paths.finals,
             )
             _assert_published_namespace(paths, repo_root=repo_root)
+            _assert_completed_prefix_snapshot(
+                completed_prefix_snapshot,
+                authority=effective,
+                repo_root=repo_root,
+            )
             try:
                 _release_guard(guard)
             finally:

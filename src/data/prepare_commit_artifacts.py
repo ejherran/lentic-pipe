@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import shlex
+import stat
 import subprocess
 import sys
 from collections.abc import Mapping
@@ -41,6 +42,116 @@ DEFAULT_DVC_BIN = Path(".venv/bin/dvc")
 DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
 HASH_CHUNK_SIZE = 16 * 1024 * 1024
 DEFAULT_MAX_MANIFEST_HASH_BYTES = 512 * 1024 * 1024
+
+# E0-MV is the sole exception to the normal immediate ``dvc add`` policy.  Its
+# first one-shot model bundle must stay byte-exact and unregistered until all
+# ten A0/A1 slots exist.  Keep this inventory local to the assistant so the
+# exception cannot silently grow with a mutable experiment module.
+DEFERRED_DVC_MODELS_TARGET = Path("models")
+DEFERRED_DVC_MODELS_POINTER = Path("models.dvc")
+DEFERRED_DVC_MODELS_POINTER_SHA256 = (
+    "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"
+)
+DEFERRED_DVC_MODELS_DIRECTORY_MD5 = "fc60851634c1345cc5dc2c9169be9e1c"
+DEFERRED_DVC_MODELS_DIRECTORY_SHA256 = (
+    "f40b5ca2ddfff0e99f12db5ea9a6360ea6d62830856c4a0e09ef0c870d1b1eb1"
+)
+DEFERRED_DVC_MODELS_DIRECTORY_BYTES = 34_581
+DEFERRED_DVC_MODELS_NFILES = 248
+DEFERRED_DVC_MODELS_BYTES = 124_717_666
+DEFERRED_DVC_MODELS_STATUS = {
+    "models.dvc": [{"changed outs": {"models": "modified"}}]
+}
+DEFERRED_DVC_A0_FINAL_RECORDS = (
+    (
+        "model",
+        "models/closure_v1/anfis_ablation/A0/seed_1729.pt",
+        142_911,
+        "1e5c2c21b9cb69a4dfa9139fcd6058e57afd4922a19bd1b3cd071a6608897fef",
+    ),
+    (
+        "checkpoint",
+        "models/closure_v1/anfis_ablation/A0/seed_1729.checkpoint.pt",
+        142_911,
+        "0991ff130f694b69ae30bd37416d3ba2d63f67874b3d895976efb9e28c6ce277",
+    ),
+    (
+        "preprocessor",
+        "reports/closure_v1/02_models/A0/seed_1729_preprocessor.json",
+        2_472,
+        "ebffd11d392c62e68e2afbd3ee05febfd05a7411fc83ca18563c7773a51faa62",
+    ),
+    (
+        "training_curve",
+        "reports/closure_v1/02_models/A0/seed_1729_training_curve.csv",
+        2_588,
+        "edfb193302b0fe21708e1ff1556dcdcdf817948a8bd35cef2f90b16be9cc0ec0",
+    ),
+    (
+        "selection_predictions",
+        "data/closure_v1/development/anfis_ablation/A0/seed_1729_selection_predictions.parquet",
+        64_842,
+        "6ca58207a32ba345fc4611c73a879e0546a608d7d076baf8f8da057373a3a4ae",
+    ),
+    (
+        "selection_metrics",
+        "reports/closure_v1/02_models/A0/seed_1729_selection_metrics.csv",
+        914,
+        "f6444a2047d2032334580f1322c4f61637a9028fd0aab27815a6c7386cf860eb",
+    ),
+    (
+        "report",
+        "reports/closure_v1/02_models/A0/seed_1729_report.md",
+        320,
+        "6e12b1d2fc0a1fce8baf7c1f81edbeb1bdd3d013d4365d606d21cc20399d123e",
+    ),
+    (
+        "manifest",
+        "reports/closure_v1/02_models/A0/seed_1729_manifest.json",
+        11_231,
+        "406bf44de3ecdc49ff3d5797cbca1ec0c11ebfbdc70ba262130b85a2e58e31e2",
+    ),
+)
+DEFERRED_DVC_A0_LIGHT_EXCLUDE_PATTERNS = tuple(
+    sorted(
+        f"/{path}"
+        for _, path, _, _ in DEFERRED_DVC_A0_FINAL_RECORDS
+        if path.startswith("reports/")
+    )
+)
+DEFERRED_DVC_A0_PREDICTION_POINTER = Path(
+    "data/closure_v1/development/anfis_ablation/A0/"
+    "seed_1729_selection_predictions.parquet.dvc"
+)
+DEFERRED_DVC_A0_GUARD = Path(
+    "tmp/closure_v1_anfis_ablation_training/A0_seed_1729.guard"
+)
+DEFERRED_DVC_H_MV_STAGED_SCOPE = {
+    "configs/closure_v1/anfis_ablation_model_manifest_patch_lock.schema.json": "A",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_MANIFEST_PATCH_1.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/audit_closure_anfis_ablation_model_bundle.py": "M",
+    "src/experiments/closure_anfis_ablation_model_manifest_patch.py": "A",
+    "src/experiments/lock_closure_anfis_ablation_model_manifest_patch.py": "A",
+    "src/experiments/train_closure_anfis_ablation.py": "M",
+    "tests/test_audit_closure_anfis_ablation_model_bundle.py": "M",
+    "tests/test_closure_anfis_ablation_model_manifest_patch.py": "A",
+    "tests/test_train_closure_anfis_ablation.py": "M",
+}
+DEFERRED_DVC_P_MV_STAGED_SCOPE = {
+    "reports/closure_v1/00_protocol/anfis_ablation_model_manifest_patch_lock.json": "A",
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_model_manifest_patch_lock_manifest.json"
+    ): "A",
+}
+DEFERRED_DVC_H_MV_GIT_MODES = {
+    path: ("100755" if path == "src/data/prepare_commit_artifacts.py" else "100644")
+    for path in DEFERRED_DVC_H_MV_STAGED_SCOPE
+}
+DEFERRED_DVC_P_MV_GIT_MODES = {
+    path: "100644" for path in DEFERRED_DVC_P_MV_STAGED_SCOPE
+}
 
 HEAVY_PREFIXES = (
     "data/raw/",
@@ -384,6 +495,21 @@ class ReproducibilityFinding:
     message: str
 
 
+@dataclass(frozen=True)
+class DeferredDvcFinalSnapshot:
+    path: str
+    device: int
+    inode: int
+    mtime_ns: int
+    size: int
+    sha256: str
+    mode: int
+
+
+class DeferredDvcTargetError(RuntimeError):
+    """Raised when the closed E0-MV DVC-deferral exception drifts."""
+
+
 def command_text(command: list[str]) -> str:
     return " ".join(shlex.quote(part) for part in command)
 
@@ -394,6 +520,424 @@ def sha256_file(path: Path, chunk_size: int = HASH_CHUNK_SIZE) -> str:
         for chunk in iter(lambda: handle.read(chunk_size), b""):
             digest.update(chunk)
     return digest.hexdigest()
+
+
+def _md5_file(path: Path, chunk_size: int = HASH_CHUNK_SIZE) -> str:
+    digest = hashlib.md5(usedforsecurity=False)
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(chunk_size), b""):
+            digest.update(chunk)
+    return digest.hexdigest()
+
+
+def _require_regular_file(path: Path, *, mode: int | None = None) -> os.stat_result:
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError as exc:
+        raise DeferredDvcTargetError(f"Required deferred-DVC file is absent: {path}") from exc
+    if not stat.S_ISREG(metadata.st_mode):
+        raise DeferredDvcTargetError(f"Deferred-DVC path is not a regular file: {path}")
+    if mode is not None and stat.S_IMODE(metadata.st_mode) != mode:
+        raise DeferredDvcTargetError(
+            f"Deferred-DVC file mode drifted: {path} "
+            f"({stat.S_IMODE(metadata.st_mode):04o} != {mode:04o})"
+        )
+    return metadata
+
+
+def _require_no_symlink_ancestors(path: Path, *, anchor: Path) -> None:
+    try:
+        relative = path.relative_to(anchor)
+    except ValueError as exc:
+        raise DeferredDvcTargetError(
+            f"Deferred-DVC path escapes its lexical anchor: {path}"
+        ) from exc
+    current = anchor
+    if not stat.S_ISDIR(current.lstat().st_mode):
+        raise DeferredDvcTargetError(
+            f"Deferred-DVC lexical anchor is not a directory: {anchor}"
+        )
+    for part in relative.parts[:-1]:
+        current = current / part
+        try:
+            metadata = current.lstat()
+        except FileNotFoundError as exc:
+            raise DeferredDvcTargetError(
+                f"Deferred-DVC lexical ancestor is absent: {current}"
+            ) from exc
+        if not stat.S_ISDIR(metadata.st_mode):
+            raise DeferredDvcTargetError(
+                f"Deferred-DVC lexical ancestor is not a directory: {current}"
+            )
+
+
+def validate_deferred_dvc_git_exclude_environment(
+    *, env: Mapping[str, str] | None = None
+) -> tuple[int, int, int, str]:
+    """Validate the exact command-scoped Git exclusion used by E0-MV.
+
+    The exception is deliberately unusable without the five-path exclusion:
+    otherwise ``git add -A`` would stage the adopted one-shot reports.
+    """
+    source = os.environ if env is None else env
+    expected_names = {"GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0"}
+    observed_names = {
+        name
+        for name in source
+        if name.startswith("GIT_CONFIG")
+    }
+    if observed_names != expected_names:
+        raise DeferredDvcTargetError(
+            "Deferred models DVC target requires exactly one command-scoped Git config entry"
+        )
+    if source.get("GIT_CONFIG_COUNT") != "1" or source.get("GIT_CONFIG_KEY_0") != "core.excludesFile":
+        raise DeferredDvcTargetError(
+            "Deferred models DVC target requires GIT_CONFIG_COUNT=1 and core.excludesFile"
+        )
+    raw_path = source.get("GIT_CONFIG_VALUE_0")
+    if not isinstance(raw_path, str) or not raw_path:
+        raise DeferredDvcTargetError("Deferred models DVC exclude-file path is absent")
+    exclude_path = Path(raw_path)
+    if not exclude_path.is_absolute():
+        raise DeferredDvcTargetError("Deferred models DVC exclude-file path must be absolute")
+    redirected_git_environment = {
+        "GIT_INDEX_FILE",
+        "GIT_DIR",
+        "GIT_WORK_TREE",
+        "GIT_COMMON_DIR",
+        "GIT_OBJECT_DIRECTORY",
+        "GIT_ALTERNATE_OBJECT_DIRECTORIES",
+        "GIT_NAMESPACE",
+    }
+    present_redirects = sorted(redirected_git_environment.intersection(source))
+    if present_redirects:
+        raise DeferredDvcTargetError(
+            "Deferred models DVC mode forbids redirected Git state: "
+            + ", ".join(present_redirects)
+        )
+    metadata = _require_regular_file(exclude_path, mode=0o600)
+    _require_no_symlink_ancestors(exclude_path, anchor=Path(exclude_path.anchor))
+    if metadata.st_nlink != 1:
+        raise DeferredDvcTargetError(
+            "Deferred models DVC exclude file must have exactly one hard link"
+        )
+    expected = "".join(f"{pattern}\n" for pattern in DEFERRED_DVC_A0_LIGHT_EXCLUDE_PATTERNS)
+    try:
+        payload = exclude_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError as exc:
+        raise DeferredDvcTargetError("Deferred models DVC exclude file is not UTF-8") from exc
+    if payload != expected:
+        raise DeferredDvcTargetError(
+            "Deferred models DVC exclude file must contain the exact five rooted A0 paths"
+        )
+    return (metadata.st_dev, metadata.st_ino, metadata.st_mtime_ns, sha256_file(exclude_path))
+
+
+def normalize_deferred_dvc_targets(
+    raw_targets: list[str], *, no_push: bool
+) -> list[Path]:
+    if not raw_targets:
+        return []
+    if raw_targets != [DEFERRED_DVC_MODELS_TARGET.as_posix()]:
+        raise DeferredDvcTargetError(
+            "The only supported deferred DVC target is the single exact path: models"
+        )
+    if not no_push:
+        raise DeferredDvcTargetError("Deferred DVC targets require --no-push")
+    return [DEFERRED_DVC_MODELS_TARGET]
+
+
+def validate_deferred_dvc_invocation(
+    args: Any,
+    deferred_paths: list[Path],
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    if not deferred_paths:
+        return
+    source = os.environ if env is None else env
+    dvc_site_cache = source.get("DVC_SITE_CACHE_DIR")
+    if (
+        args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or not args.allow_unmanaged
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or "DVC_BIN" in source
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or (
+            dvc_site_cache is not None
+            and dvc_site_cache != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise DeferredDvcTargetError(
+            "Deferred models mode requires --allow-unmanaged --no-push and forbids "
+            "--yes, --dry-run, --jobs, --skip-publication-check, custom DVC binaries, "
+            "custom DVC manifests, custom report paths, analytics-enabled DVC, and "
+            "custom DVC site-cache paths"
+        )
+
+
+def validate_deferred_dvc_target_selection(
+    deferred_paths: list[Path],
+    *,
+    artifacts: list[DvcArtifact],
+    changed_artifacts: list[DvcArtifact],
+    missing_pointer_artifacts: list[DvcArtifact],
+    manual_targets: list[Path],
+) -> None:
+    if not deferred_paths:
+        return
+    configured = [
+        artifact
+        for artifact in artifacts
+        if artifact.dvc and artifact.path == DEFERRED_DVC_MODELS_TARGET
+    ]
+    if len(configured) != 1 or not DEFERRED_DVC_MODELS_TARGET.exists():
+        raise DeferredDvcTargetError(
+            "Deferred models target must be one present configured DVC artifact"
+        )
+    if [artifact.path for artifact in changed_artifacts] != [DEFERRED_DVC_MODELS_TARGET]:
+        raise DeferredDvcTargetError(
+            "Deferred mode requires models to be the only changed DVC artifact"
+        )
+    if missing_pointer_artifacts:
+        raise DeferredDvcTargetError("Deferred mode forbids missing DVC pointers")
+    if manual_targets:
+        raise DeferredDvcTargetError("Deferred mode forbids additional manual DVC targets")
+
+
+def _git_output(repo_root: Path, *args: str) -> str:
+    return run_command(["git", "-C", repo_root.as_posix(), *args]).stdout
+
+
+def _validate_deferred_models_pointer(repo_root: Path) -> None:
+    pointer = repo_root / DEFERRED_DVC_MODELS_POINTER
+    _require_no_symlink_ancestors(pointer, anchor=repo_root)
+    metadata = _require_regular_file(pointer, mode=0o644)
+    if metadata.st_size != 109 or sha256_file(pointer) != DEFERRED_DVC_MODELS_POINTER_SHA256:
+        raise DeferredDvcTargetError("models.dvc bytes drifted from the deferred-DVC baseline")
+    try:
+        payload = yaml.safe_load(pointer.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, yaml.YAMLError) as exc:
+        raise DeferredDvcTargetError("models.dvc is not strict readable YAML") from exc
+    expected = {
+        "outs": [
+            {
+                "md5": f"{DEFERRED_DVC_MODELS_DIRECTORY_MD5}.dir",
+                "size": DEFERRED_DVC_MODELS_BYTES,
+                "nfiles": DEFERRED_DVC_MODELS_NFILES,
+                "hash": "md5",
+                "path": "models",
+            }
+        ]
+    }
+    if payload != expected:
+        raise DeferredDvcTargetError("models.dvc descriptor dialect drifted")
+
+    head_oid = _git_output(repo_root, "rev-parse", "HEAD:models.dvc").strip()
+    worktree_oid = _git_output(repo_root, "hash-object", "models.dvc").strip()
+    index_line = _git_output(repo_root, "ls-files", "-s", "--", "models.dvc").strip()
+    if index_line != f"100644 {head_oid} 0\tmodels.dvc" or worktree_oid != head_oid:
+        raise DeferredDvcTargetError("models.dvc HEAD/index/worktree binding drifted")
+    if _git_output(repo_root, "diff", "--name-only", "--", "models.dvc").strip():
+        raise DeferredDvcTargetError("models.dvc has an unstaged change")
+    if _git_output(repo_root, "diff", "--cached", "--name-only", "--", "models.dvc").strip():
+        raise DeferredDvcTargetError("models.dvc must not be staged by deferred mode")
+
+
+def _walk_regular_tree(root: Path) -> dict[str, Path]:
+    try:
+        root_metadata = root.lstat()
+    except FileNotFoundError as exc:
+        raise DeferredDvcTargetError(f"Deferred-DVC tree is absent: {root}") from exc
+    if not stat.S_ISDIR(root_metadata.st_mode):
+        raise DeferredDvcTargetError(f"Deferred-DVC tree root is not a directory: {root}")
+    result: dict[str, Path] = {}
+    for current, directory_names, file_names in os.walk(root, topdown=True, followlinks=False):
+        current_path = Path(current)
+        for name in directory_names:
+            candidate = current_path / name
+            if not stat.S_ISDIR(candidate.lstat().st_mode):
+                raise DeferredDvcTargetError(
+                    f"Deferred-DVC tree contains a non-directory ancestor: {candidate}"
+                )
+        for name in file_names:
+            candidate = current_path / name
+            if not stat.S_ISREG(candidate.lstat().st_mode):
+                raise DeferredDvcTargetError(
+                    f"Deferred-DVC tree contains a non-regular file: {candidate}"
+                )
+            relative = candidate.relative_to(root).as_posix()
+            if relative in result:
+                raise DeferredDvcTargetError(f"Deferred-DVC tree path is duplicated: {relative}")
+            result[relative] = candidate
+    return result
+
+
+def _validate_deferred_models_tree(repo_root: Path) -> None:
+    descriptor_path = (
+        repo_root
+        / ".dvc/cache/files/md5"
+        / DEFERRED_DVC_MODELS_DIRECTORY_MD5[:2]
+        / f"{DEFERRED_DVC_MODELS_DIRECTORY_MD5[2:]}.dir"
+    )
+    _require_no_symlink_ancestors(descriptor_path, anchor=repo_root)
+    descriptor_metadata = _require_regular_file(descriptor_path, mode=0o444)
+    if (
+        descriptor_metadata.st_size != DEFERRED_DVC_MODELS_DIRECTORY_BYTES
+        or sha256_file(descriptor_path) != DEFERRED_DVC_MODELS_DIRECTORY_SHA256
+        or _md5_file(descriptor_path) != DEFERRED_DVC_MODELS_DIRECTORY_MD5
+    ):
+        raise DeferredDvcTargetError("Deferred models DVC .dir descriptor drifted")
+    try:
+        records = json.loads(descriptor_path.read_text(encoding="utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise DeferredDvcTargetError("Deferred models DVC .dir descriptor is invalid JSON") from exc
+    if not isinstance(records, list) or len(records) != DEFERRED_DVC_MODELS_NFILES:
+        raise DeferredDvcTargetError("Deferred models DVC .dir record count drifted")
+
+    baseline: dict[str, str] = {}
+    for record in records:
+        if not isinstance(record, dict) or set(record) != {"md5", "relpath"}:
+            raise DeferredDvcTargetError("Deferred models DVC .dir record dialect drifted")
+        digest = record.get("md5")
+        relative = record.get("relpath")
+        if (
+            not isinstance(digest, str)
+            or len(digest) != 32
+            or any(character not in "0123456789abcdef" for character in digest)
+            or not isinstance(relative, str)
+            or not relative
+        ):
+            raise DeferredDvcTargetError("Deferred models DVC .dir record is malformed")
+        relative_path = Path(relative)
+        if relative_path.is_absolute() or "." in relative_path.parts or ".." in relative_path.parts:
+            raise DeferredDvcTargetError("Deferred models DVC .dir relpath is unsafe")
+        if relative in baseline:
+            raise DeferredDvcTargetError("Deferred models DVC .dir relpath is duplicated")
+        baseline[relative] = digest
+    if list(baseline) != sorted(baseline):
+        raise DeferredDvcTargetError("Deferred models DVC .dir records are not canonically sorted")
+
+    model_files = _walk_regular_tree(repo_root / DEFERRED_DVC_MODELS_TARGET)
+    exact_extras = {
+        Path(path).relative_to(DEFERRED_DVC_MODELS_TARGET).as_posix()
+        for _, path, _, _ in DEFERRED_DVC_A0_FINAL_RECORDS
+        if path.startswith("models/")
+    }
+    if set(model_files) != set(baseline) | exact_extras:
+        raise DeferredDvcTargetError(
+            "Deferred models DVC tree differs from 248 baseline files plus two exact A0 files"
+        )
+    total_bytes = 0
+    for relative, digest in baseline.items():
+        workspace_path = model_files[relative]
+        cache_path = repo_root / ".dvc/cache/files/md5" / digest[:2] / digest[2:]
+        _require_no_symlink_ancestors(cache_path, anchor=repo_root)
+        cache_metadata = _require_regular_file(cache_path, mode=0o444)
+        workspace_metadata = _require_regular_file(workspace_path)
+        if _md5_file(cache_path) != digest or _md5_file(workspace_path) != digest:
+            raise DeferredDvcTargetError(f"Deferred models DVC baseline object drifted: {relative}")
+        if cache_metadata.st_size != workspace_metadata.st_size:
+            raise DeferredDvcTargetError(f"Deferred models DVC baseline size drifted: {relative}")
+        total_bytes += workspace_metadata.st_size
+    if total_bytes != DEFERRED_DVC_MODELS_BYTES:
+        raise DeferredDvcTargetError("Deferred models DVC baseline byte count drifted")
+
+
+def snapshot_deferred_dvc_models_bundle(
+    *, repo_root: Path = Path(".")
+) -> tuple[DeferredDvcFinalSnapshot, ...]:
+    snapshots: list[DeferredDvcFinalSnapshot] = []
+    for _, raw_path, expected_bytes, expected_sha256 in DEFERRED_DVC_A0_FINAL_RECORDS:
+        path = repo_root / raw_path
+        _require_no_symlink_ancestors(path, anchor=repo_root)
+        metadata = _require_regular_file(path, mode=0o644)
+        if metadata.st_nlink != 1:
+            raise DeferredDvcTargetError(
+                f"Deferred A0 final must have one hard link: {raw_path}"
+            )
+        digest = sha256_file(path)
+        if metadata.st_size != expected_bytes or digest != expected_sha256:
+            raise DeferredDvcTargetError(f"Deferred A0 final bytes drifted: {raw_path}")
+        snapshots.append(
+            DeferredDvcFinalSnapshot(
+                path=raw_path,
+                device=metadata.st_dev,
+                inode=metadata.st_ino,
+                mtime_ns=metadata.st_mtime_ns,
+                size=metadata.st_size,
+                sha256=digest,
+                mode=stat.S_IMODE(metadata.st_mode),
+            )
+        )
+        temporary = Path(f"{path}.tmp")
+        if os.path.lexists(temporary):
+            raise DeferredDvcTargetError(f"Deferred A0 temporary is present: {temporary}")
+    if snapshots[-1].mtime_ns <= max(record.mtime_ns for record in snapshots[:-1]):
+        raise DeferredDvcTargetError("Deferred A0 manifest is not physically last")
+    for prohibited in (
+        repo_root / DEFERRED_DVC_A0_PREDICTION_POINTER,
+        repo_root / Path(f"{DEFERRED_DVC_A0_PREDICTION_POINTER}.tmp"),
+        repo_root / DEFERRED_DVC_A0_GUARD,
+    ):
+        if os.path.lexists(prohibited):
+            raise DeferredDvcTargetError(f"Deferred A0 prohibited path is present: {prohibited}")
+    report_root = repo_root / "reports/closure_v1/02_models/A0"
+    expected_reports = {
+        Path(record.path).name
+        for record in snapshots
+        if record.path.startswith("reports/")
+    }
+    if set(_walk_regular_tree(report_root)) != expected_reports:
+        raise DeferredDvcTargetError(
+            "Deferred A0 report namespace is not the exact five-file prefix"
+        )
+    prediction_root = repo_root / "data/closure_v1/development/anfis_ablation"
+    expected_prediction = {
+        Path(DEFERRED_DVC_A0_FINAL_RECORDS[4][1])
+        .relative_to("data/closure_v1/development/anfis_ablation")
+        .as_posix()
+    }
+    if set(_walk_regular_tree(prediction_root)) != expected_prediction:
+        raise DeferredDvcTargetError(
+            "Deferred A0 prediction namespace is not the exact one-file prefix"
+        )
+    if os.path.lexists(repo_root / "reports/closure_v1/02_models/A1"):
+        raise DeferredDvcTargetError("Deferred A1 report namespace must remain absent")
+    return tuple(snapshots)
+
+
+def validate_deferred_dvc_models_state(
+    dvc_status: Mapping[str, Any],
+    *,
+    repo_root: Path = Path("."),
+    expected_final_snapshot: tuple[DeferredDvcFinalSnapshot, ...] | None = None,
+) -> tuple[DeferredDvcFinalSnapshot, ...]:
+    if dict(dvc_status) != DEFERRED_DVC_MODELS_STATUS:
+        raise DeferredDvcTargetError(
+            "Deferred models DVC status must be the exact single modified models output"
+        )
+    _validate_deferred_models_pointer(repo_root)
+    _validate_deferred_models_tree(repo_root)
+    snapshot = snapshot_deferred_dvc_models_bundle(repo_root=repo_root)
+    if expected_final_snapshot is not None and snapshot != expected_final_snapshot:
+        raise DeferredDvcTargetError("Deferred A0 inode/mtime/hash snapshot drifted")
+    staged = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-only",
+        "--",
+        *(record.path for record in snapshot),
+    ).strip()
+    if staged:
+        raise DeferredDvcTargetError("Deferred A0 finals must not be staged")
+    return snapshot
 
 
 def sha256_directory(path: Path) -> tuple[int, str]:
@@ -654,6 +1198,110 @@ def parse_git_name_status(output: str) -> list[tuple[str, Path]]:
             continue
         rows.append((parts[0], Path(parts[-1])))
     return rows
+
+
+def validate_deferred_dvc_staged_scope(staged_status: str) -> str:
+    rows = parse_git_name_status(staged_status)
+    observed: dict[str, str] = {}
+    for status_code, path in rows:
+        if status_code not in {"A", "M"} or path.as_posix() in observed:
+            raise DeferredDvcTargetError(
+                "Deferred models staging contains a rename, deletion, duplicate, or unknown status"
+            )
+        observed[path.as_posix()] = status_code
+    if observed == DEFERRED_DVC_H_MV_STAGED_SCOPE:
+        return "H-E0-MV"
+    if observed == DEFERRED_DVC_P_MV_STAGED_SCOPE:
+        return "P-E0-MV"
+    raise DeferredDvcTargetError(
+        "Deferred models staging must be exact H-E0-MV 5M+5A or P-E0-MV 2A"
+    )
+
+
+def validate_deferred_dvc_pre_stage_scope(status_output: str) -> str:
+    rows = parse_git_status_lines(status_output)
+    observed: dict[str, str] = {}
+    for status_code, raw_path in rows:
+        if raw_path in observed:
+            raise DeferredDvcTargetError(
+                "Deferred models pre-stage scope contains a duplicate path"
+            )
+        observed[raw_path] = status_code
+
+    def expected(scope: Mapping[str, str]) -> dict[str, str]:
+        return {
+            path: ("??" if staged_code == "A" else " M")
+            for path, staged_code in scope.items()
+        }
+
+    if observed == expected(DEFERRED_DVC_H_MV_STAGED_SCOPE):
+        return "H-E0-MV"
+    if observed == expected(DEFERRED_DVC_P_MV_STAGED_SCOPE):
+        return "P-E0-MV"
+    raise DeferredDvcTargetError(
+        "Deferred models pre-stage scope must be exact H-E0-MV 5M+5A or P-E0-MV 2A"
+    )
+
+
+def validate_deferred_dvc_staged_bindings(
+    gate: str, *, repo_root: Path = Path(".")
+) -> None:
+    if gate == "H-E0-MV":
+        expected_modes = DEFERRED_DVC_H_MV_GIT_MODES
+        expected_scope = DEFERRED_DVC_H_MV_STAGED_SCOPE
+    elif gate == "P-E0-MV":
+        expected_modes = DEFERRED_DVC_P_MV_GIT_MODES
+        expected_scope = DEFERRED_DVC_P_MV_STAGED_SCOPE
+    else:
+        raise DeferredDvcTargetError("Deferred models staged binding gate is unknown")
+    staged_status = _git_output(
+        repo_root, "diff", "--cached", "--name-status"
+    )
+    if validate_deferred_dvc_staged_scope(staged_status) != gate:
+        raise DeferredDvcTargetError(
+            "Deferred models staged scope changed after the initial Git add"
+        )
+    expected_short_status = [
+        f"{status_code}  {path}"
+        for path, status_code in sorted(expected_scope.items())
+    ]
+    observed_short_status = _git_output(
+        repo_root, "status", "--short", "--untracked-files=normal"
+    ).splitlines()
+    if observed_short_status != expected_short_status:
+        raise DeferredDvcTargetError(
+            "Deferred models short Git status differs from the exact staged scope"
+        )
+    if _git_output(repo_root, "diff", "--name-status").strip():
+        raise DeferredDvcTargetError(
+            "Deferred models mode left an unstaged tracked change"
+        )
+    for raw_path, git_mode in sorted(expected_modes.items()):
+        path = repo_root / raw_path
+        _require_no_symlink_ancestors(path, anchor=repo_root)
+        physical_mode = 0o755 if git_mode == "100755" else 0o644
+        _require_regular_file(path, mode=physical_mode)
+        index_line = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip()
+        parts = index_line.split(maxsplit=3)
+        if (
+            len(parts) != 4
+            or parts[0] != git_mode
+            or parts[2] != "0"
+            or parts[3] != raw_path
+        ):
+            raise DeferredDvcTargetError(
+                f"Deferred models staged mode/stage binding drifted: {raw_path}"
+            )
+        index_oid = parts[1]
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if index_oid != worktree_oid or len(index_oid) != 40:
+            raise DeferredDvcTargetError(
+                f"Deferred models staged blob differs from worktree: {raw_path}"
+            )
 
 
 def should_skip_ignored_path(path: str) -> bool:
@@ -2064,9 +2712,13 @@ def write_report(
     *,
     dry_run: bool,
     selected_dvc_paths: list[Path],
+    deferred_dvc_paths: list[Path],
+    deferred_snapshot_before: tuple[DeferredDvcFinalSnapshot, ...] | None,
+    deferred_snapshot_after: tuple[DeferredDvcFinalSnapshot, ...] | None,
     rejected_unmanaged_paths: list[Path],
     git_status_before: str,
     dvc_status_before: dict[str, Any],
+    dvc_status_after: dict[str, Any] | None,
     cloud_status_before: CommandResult | None,
     dvc_add_results: list[CommandResult],
     dvc_push_result: CommandResult | None,
@@ -2074,8 +2726,10 @@ def write_report(
     publication_check_result: CommandResult | None,
     reproducibility_findings: list[ReproducibilityFinding],
     staged_status: str,
+    exclusive: bool = False,
 ) -> None:
-    report_path.parent.mkdir(parents=True, exist_ok=True)
+    if not exclusive:
+        report_path.parent.mkdir(parents=True, exist_ok=True)
     lines = [
         "# Pre-Commit Artifact Preparation Report",
         "",
@@ -2087,6 +2741,51 @@ def write_report(
     ]
     if selected_dvc_paths:
         lines.extend(f"- `{path.as_posix()}`" for path in selected_dvc_paths)
+    else:
+        lines.append("- none")
+
+    lines.extend(["", "## Deferred DVC A0 Snapshot", ""])
+    if deferred_snapshot_before is None and deferred_snapshot_after is None:
+        lines.append("Not applicable.")
+    else:
+        def snapshot_records(
+            records: tuple[DeferredDvcFinalSnapshot, ...] | None,
+        ) -> list[dict[str, Any]] | None:
+            if records is None:
+                return None
+            return [
+                {
+                    "path": record.path,
+                    "device": record.device,
+                    "inode": record.inode,
+                    "mtime_ns": record.mtime_ns,
+                    "bytes": record.size,
+                    "sha256": record.sha256,
+                    "mode": f"{record.mode:04o}",
+                }
+                for record in records
+            ]
+
+        snapshot_payload = {
+            "before": snapshot_records(deferred_snapshot_before),
+            "after": snapshot_records(deferred_snapshot_after),
+            "identical": deferred_snapshot_before == deferred_snapshot_after,
+        }
+        lines.extend(
+            [
+                "```json",
+                json.dumps(snapshot_payload, indent=2, sort_keys=True),
+                "```",
+            ]
+        )
+
+    lines.extend(["", "## Deferred DVC Targets (Not Added)", ""])
+    if deferred_dvc_paths:
+        lines.extend(
+            f"- `OK` `{path.as_posix()}`: exact E0-MV A0/1729 deferral; "
+            "real DVC status preserved and no DVC add or push run."
+            for path in deferred_dvc_paths
+        )
     else:
         lines.append("- none")
 
@@ -2107,6 +2806,17 @@ def write_report(
             "```",
         ]
     )
+    lines.extend(["", "## DVC Status After Staging", ""])
+    if dvc_status_after is None:
+        lines.append("Not run.")
+    else:
+        lines.extend(
+            [
+                "```json",
+                json.dumps(dvc_status_after, indent=2, sort_keys=True),
+                "```",
+            ]
+        )
 
     lines.extend(["", "## DVC Cloud Status Before Push", ""])
     if cloud_status_before is None:
@@ -2188,7 +2898,58 @@ def write_report(
         lines.append("- none")
 
     lines.extend(["", "## Staged Status After Preparation", "", "```text", staged_status.rstrip() or "none", "```", ""])
-    report_path.write_text("\n".join(lines), encoding="utf-8")
+    report_bytes = "\n".join(lines).encode("utf-8")
+    if not exclusive:
+        report_path.write_bytes(report_bytes)
+        return
+    if report_path.is_absolute() or report_path.parent != DEFAULT_REPORT_DIR:
+        raise DeferredDvcTargetError(
+            "Deferred models report must be a default relative path directly under tmp"
+        )
+    _require_no_symlink_ancestors(report_path, anchor=Path("."))
+    parent_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    try:
+        parent_fd = os.open(report_path.parent, parent_flags)
+    except OSError as exc:
+        raise DeferredDvcTargetError("Deferred models report parent cannot be opened safely") from exc
+    report_fd = -1
+    try:
+        opened_parent = os.fstat(parent_fd)
+        lexical_parent = report_path.parent.lstat()
+        if (
+            not stat.S_ISDIR(opened_parent.st_mode)
+            or (opened_parent.st_dev, opened_parent.st_ino)
+            != (lexical_parent.st_dev, lexical_parent.st_ino)
+        ):
+            raise DeferredDvcTargetError("Deferred models report parent identity drifted")
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | getattr(os, "O_NOFOLLOW", 0)
+        try:
+            report_fd = os.open(report_path.name, flags, 0o600, dir_fd=parent_fd)
+        except FileExistsError as exc:
+            raise DeferredDvcTargetError(
+                "Refusing to overwrite an existing deferred models report"
+            ) from exc
+        with os.fdopen(report_fd, "wb", closefd=False) as handle:
+            handle.write(report_bytes)
+            handle.flush()
+            os.fsync(report_fd)
+        named = os.stat(report_path.name, dir_fd=parent_fd, follow_symlinks=False)
+        opened = os.fstat(report_fd)
+        lexical_parent_after = report_path.parent.lstat()
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or stat.S_IMODE(opened.st_mode) != 0o600
+            or opened.st_nlink != 1
+            or (named.st_dev, named.st_ino) != (opened.st_dev, opened.st_ino)
+            or (lexical_parent_after.st_dev, lexical_parent_after.st_ino)
+            != (opened_parent.st_dev, opened_parent.st_ino)
+        ):
+            raise DeferredDvcTargetError("Deferred models report identity drifted")
+        os.fsync(parent_fd)
+    finally:
+        if report_fd >= 0:
+            os.close(report_fd)
+        os.close(parent_fd)
 
 
 def parse_args() -> argparse.Namespace:
@@ -2202,6 +2963,15 @@ def parse_args() -> argparse.Namespace:
         help="Local report path. Defaults to a timestamped file under ignored tmp/.",
     )
     parser.add_argument("--target", action="append", default=[], help="Additional path to track with dvc add.")
+    parser.add_argument(
+        "--defer-dvc-target",
+        action="append",
+        default=[],
+        help=(
+            "Explicitly defer one sealed changed DVC target without dvc add. "
+            "Only the exact E0-MV target 'models' is supported."
+        ),
+    )
     parser.add_argument("--jobs", default=None, help="DVC push jobs.")
     parser.add_argument("--yes", action="store_true", help="Accept DVC add prompts.")
     parser.add_argument("--dry-run", action="store_true", help="Print and report actions without changing Git/DVC.")
@@ -2225,16 +2995,64 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     ensure_repo_root()
+    try:
+        deferred_dvc_paths = normalize_deferred_dvc_targets(
+            list(args.defer_dvc_target), no_push=bool(args.no_push)
+        )
+        exclude_snapshot: tuple[int, int, int, str] | None = None
+        if deferred_dvc_paths:
+            validate_deferred_dvc_invocation(args, deferred_dvc_paths)
+            exclude_snapshot = validate_deferred_dvc_git_exclude_environment()
+    except DeferredDvcTargetError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     report_path = args.report or default_report_path()
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
+    if deferred_dvc_paths and dvc_bin != DEFAULT_DVC_BIN.as_posix():
+        print("Deferred models mode requires the repository .venv/bin/dvc.", file=sys.stderr)
+        return 2
+    if deferred_dvc_paths:
+        try:
+            _require_no_symlink_ancestors(DEFAULT_DVC_BIN, anchor=Path("."))
+            _require_regular_file(DEFAULT_DVC_BIN, mode=0o755)
+        except DeferredDvcTargetError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
     artifacts = load_configured_dvc_artifacts(args.manifest)
 
     git_status_before = versionable_changes()
+    deferred_stage_gate = ""
+    if deferred_dvc_paths:
+        try:
+            deferred_stage_gate = validate_deferred_dvc_pre_stage_scope(
+                git_status_before
+            )
+        except DeferredDvcTargetError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
     dvc_status_before = dvc_status_json(dvc_bin)
     changed_artifacts = dvc_status_candidates(dvc_status_before, artifacts)
     missing_pointer_artifacts = declared_artifacts_missing_pointers(artifacts)
     manual_targets = unique_paths([Path(path) for path in args.target])
     unmanaged_paths = unmanaged_ignored_heavy_paths(artifacts)
+
+    deferred_final_snapshot: tuple[DeferredDvcFinalSnapshot, ...] | None = None
+    deferred_post_snapshot: tuple[DeferredDvcFinalSnapshot, ...] | None = None
+    try:
+        validate_deferred_dvc_target_selection(
+            deferred_dvc_paths,
+            artifacts=artifacts,
+            changed_artifacts=changed_artifacts,
+            missing_pointer_artifacts=missing_pointer_artifacts,
+            manual_targets=manual_targets,
+        )
+        if deferred_dvc_paths:
+            deferred_final_snapshot = validate_deferred_dvc_models_state(
+                dvc_status_before
+            )
+    except DeferredDvcTargetError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
 
     if dvc_status_before and not changed_artifacts and not missing_pointer_artifacts and not manual_targets:
         print("DVC status reports changes, but no declared artifact could be matched.", file=sys.stderr)
@@ -2245,9 +3063,14 @@ def main() -> int:
     print_artifact_table("DVC-tracked artifacts changed according to dvc status:", changed_artifacts)
     print_artifact_table("Declared DVC artifacts missing pointer files:", missing_pointer_artifacts)
     print_path_table("Additional manual DVC targets:", manual_targets)
+    print_path_table("Deferred DVC targets (not added):", deferred_dvc_paths)
     print_path_table("Unmanaged ignored heavy paths:", unmanaged_paths)
 
-    selected_dvc_paths = [artifact.path for artifact in changed_artifacts]
+    deferred_set = set(deferred_dvc_paths)
+    changed_for_add = [
+        artifact for artifact in changed_artifacts if artifact.path not in deferred_set
+    ]
+    selected_dvc_paths = [artifact.path for artifact in changed_for_add]
     selected_dvc_paths.extend(artifact.path for artifact in missing_pointer_artifacts)
     selected_dvc_paths.extend(manual_targets)
 
@@ -2264,7 +3087,7 @@ def main() -> int:
 
     selected_dvc_paths = unique_paths(selected_dvc_paths)
 
-    if changed_artifacts and not args.yes:
+    if changed_for_add and not args.yes:
         if not prompt_yes_no("Run dvc add for the changed DVC-tracked artifacts?", default=True):
             print("DVC changes were detected but not accepted for dvc add.", file=sys.stderr)
             return 1
@@ -2272,6 +3095,10 @@ def main() -> int:
     if rejected_unmanaged and not args.allow_unmanaged:
         print("Unmanaged heavy paths were rejected. Use --allow-unmanaged only if this is intentional.", file=sys.stderr)
         return 1
+
+    if deferred_dvc_paths and selected_dvc_paths:
+        print("Deferred models mode forbids every DVC add target.", file=sys.stderr)
+        return 2
 
     print_path_table("Selected DVC add targets:", selected_dvc_paths)
 
@@ -2281,6 +3108,7 @@ def main() -> int:
     git_add_result: CommandResult | None = None
     publication_check_result: CommandResult | None = None
     reproducibility_findings: list[ReproducibilityFinding] = []
+    dvc_status_after: dict[str, Any] | None = None
 
     if args.dry_run:
         print()
@@ -2314,8 +3142,69 @@ def main() -> int:
                 print("Publication check failed; not staging changes.", file=sys.stderr)
                 return publication_check_result.returncode
 
-        git_add_result = run_command(["git", "add", "-A"])
+        if deferred_dvc_paths:
+            try:
+                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                    raise DeferredDvcTargetError(
+                        "Deferred models Git exclude file changed before staging"
+                    )
+                current_status = dvc_status_json(dvc_bin)
+                validate_deferred_dvc_models_state(
+                    current_status,
+                    expected_final_snapshot=deferred_final_snapshot,
+                )
+            except DeferredDvcTargetError as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
+
+        if deferred_dvc_paths:
+            selected_scope = (
+                DEFERRED_DVC_H_MV_STAGED_SCOPE
+                if deferred_stage_gate == "H-E0-MV"
+                else DEFERRED_DVC_P_MV_STAGED_SCOPE
+            )
+            git_add_command = ["git", "add", "-A", "--", *sorted(selected_scope)]
+        else:
+            git_add_command = ["git", "add", "-A"]
+        git_add_result = run_command(git_add_command)
         staged_status = run_command(["git", "diff", "--cached", "--name-status"]).stdout
+        if deferred_dvc_paths:
+            try:
+                if validate_deferred_dvc_staged_scope(staged_status) != deferred_stage_gate:
+                    raise DeferredDvcTargetError(
+                        "Deferred models H/P stage identity changed during git add"
+                    )
+                validate_deferred_dvc_staged_bindings(deferred_stage_gate)
+                expected_scope = (
+                    DEFERRED_DVC_H_MV_STAGED_SCOPE
+                    if deferred_stage_gate == "H-E0-MV"
+                    else DEFERRED_DVC_P_MV_STAGED_SCOPE
+                )
+                expected_short_status = [
+                    f"{status_code}  {path}"
+                    for path, status_code in sorted(expected_scope.items())
+                ]
+                if versionable_changes().splitlines() != expected_short_status:
+                    raise DeferredDvcTargetError(
+                        "Deferred models short Git status differs from the exact staged scope"
+                    )
+                if _git_output(Path("."), "diff", "--name-status").strip():
+                    raise DeferredDvcTargetError(
+                        "Deferred models mode left an unstaged tracked change"
+                    )
+                dvc_status_after = dvc_status_json(dvc_bin)
+                deferred_post_snapshot = validate_deferred_dvc_models_state(
+                    dvc_status_after,
+                    expected_final_snapshot=deferred_final_snapshot,
+                )
+                validate_deferred_dvc_staged_bindings(deferred_stage_gate)
+                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                    raise DeferredDvcTargetError(
+                        "Deferred models Git exclude file changed during staging"
+                    )
+            except DeferredDvcTargetError as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
         reproducibility_findings = reproducibility_checks(
             staged_status=staged_status,
             selected_dvc_paths=selected_dvc_paths,
@@ -2323,21 +3212,79 @@ def main() -> int:
             max_manifest_hash_bytes=args.max_manifest_hash_bytes,
             verify_manifest_inputs=args.verify_manifest_inputs,
         )
-        write_report(
-            report_path,
-            dry_run=args.dry_run,
-            selected_dvc_paths=selected_dvc_paths,
-            rejected_unmanaged_paths=rejected_unmanaged,
-            git_status_before=git_status_before,
-            dvc_status_before=dvc_status_before,
-            cloud_status_before=cloud_status_before,
-            dvc_add_results=dvc_add_results,
-            dvc_push_result=dvc_push_result,
-            git_add_result=git_add_result,
-            publication_check_result=publication_check_result,
-            reproducibility_findings=reproducibility_findings,
-            staged_status=staged_status,
-        )
+        if deferred_dvc_paths:
+            reproducibility_findings.append(
+                ReproducibilityFinding(
+                    "ok",
+                    "deferred_dvc",
+                    DEFERRED_DVC_MODELS_TARGET.as_posix(),
+                    (
+                        "Exact E0-MV A0/1729 models delta remains intentionally "
+                        f"unregistered under {deferred_stage_gate}; no DVC add or push ran."
+                    ),
+                )
+            )
+            try:
+                final_status = dvc_status_json(dvc_bin)
+                if final_status != dvc_status_after:
+                    raise DeferredDvcTargetError(
+                        "Deferred models DVC status changed during reproducibility checks"
+                    )
+                deferred_post_snapshot = validate_deferred_dvc_models_state(
+                    final_status,
+                    expected_final_snapshot=deferred_final_snapshot,
+                )
+                validate_deferred_dvc_staged_bindings(deferred_stage_gate)
+                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                    raise DeferredDvcTargetError(
+                        "Deferred models Git exclude file changed before reporting"
+                    )
+            except DeferredDvcTargetError as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
+        try:
+            write_report(
+                report_path,
+                dry_run=args.dry_run,
+                selected_dvc_paths=selected_dvc_paths,
+                deferred_dvc_paths=deferred_dvc_paths,
+                deferred_snapshot_before=deferred_final_snapshot,
+                deferred_snapshot_after=deferred_post_snapshot,
+                rejected_unmanaged_paths=rejected_unmanaged,
+                git_status_before=git_status_before,
+                dvc_status_before=dvc_status_before,
+                dvc_status_after=dvc_status_after,
+                cloud_status_before=cloud_status_before,
+                dvc_add_results=dvc_add_results,
+                dvc_push_result=dvc_push_result,
+                git_add_result=git_add_result,
+                publication_check_result=publication_check_result,
+                reproducibility_findings=reproducibility_findings,
+                staged_status=staged_status,
+                exclusive=bool(deferred_dvc_paths),
+            )
+        except DeferredDvcTargetError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+        if deferred_dvc_paths:
+            try:
+                reported_status = dvc_status_json(dvc_bin)
+                if reported_status != dvc_status_after:
+                    raise DeferredDvcTargetError(
+                        "Deferred models DVC status changed while writing the report"
+                    )
+                validate_deferred_dvc_models_state(
+                    reported_status,
+                    expected_final_snapshot=deferred_final_snapshot,
+                )
+                validate_deferred_dvc_staged_bindings(deferred_stage_gate)
+                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                    raise DeferredDvcTargetError(
+                        "Deferred models Git exclude file changed while writing the report"
+                    )
+            except DeferredDvcTargetError as exc:
+                print(str(exc), file=sys.stderr)
+                return 2
         if has_failing_findings(reproducibility_findings):
             print()
             print("Reproducibility checks failed; fix the findings and rerun the assistant.", file=sys.stderr)
@@ -2357,9 +3304,13 @@ def main() -> int:
             report_path,
             dry_run=args.dry_run,
             selected_dvc_paths=selected_dvc_paths,
+            deferred_dvc_paths=deferred_dvc_paths,
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
             rejected_unmanaged_paths=rejected_unmanaged,
             git_status_before=git_status_before,
             dvc_status_before=dvc_status_before,
+            dvc_status_after=None,
             cloud_status_before=None,
             dvc_add_results=[],
             dvc_push_result=None,

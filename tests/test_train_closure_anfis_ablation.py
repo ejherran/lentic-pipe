@@ -12,7 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 import yaml
 
-from src.experiments import closure_anfis_ablation_training_cohort_patch as authority_patch
+from src.experiments import closure_anfis_ablation_model_manifest_patch as authority_patch
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -379,6 +379,73 @@ def test_stable_input_rejects_symlink(tmp_path: Path) -> None:
         trainer._stable_file_record(linked, repo_root=tmp_path)
 
 
+def test_completed_prefix_hash_snapshot_detects_fit_and_publication_drift(
+    tmp_path: Path,
+) -> None:
+    ordered_slots = [
+        {"model_id": model_id, "base_seed": base_seed}
+        for base_seed in trainer.REGISTERED_SEEDS
+        for model_id in trainer.MODEL_IDS
+    ]
+    authority = {
+        "completed_prefix_count": 1,
+        "slot_creation_prefix_count": 1,
+        "ordered_slots": ordered_slots,
+    }
+    historical = trainer.slot_paths("A0", 1729, repo_root=tmp_path)
+    for index, path in enumerate(historical.finals):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(f"historical-{index:02d}".encode("ascii"))
+        path.chmod(0o644)
+    baseline = trainer._completed_prefix_snapshot(authority, repo_root=tmp_path)
+    assert len(baseline) == 8
+
+    mutated_path = historical.report
+    original = mutated_path.read_bytes()
+    metadata = mutated_path.stat()
+    mutated_path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+    os.utime(mutated_path, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+    with pytest.raises(
+        trainer.AnfisAblationTrainingError,
+        match="completed-prefix artifact changed",
+    ):
+        trainer._assert_completed_prefix_snapshot(
+            baseline, authority=authority, repo_root=tmp_path
+        )
+
+    mutated_path.write_bytes(original)
+    mutated_path.chmod(0o644)
+    mutated_path.chmod(0o600)
+    with pytest.raises(
+        trainer.AnfisAblationTrainingError,
+        match="artifact mode drifted",
+    ):
+        trainer._assert_completed_prefix_snapshot(
+            baseline, authority=authority, repo_root=tmp_path
+        )
+    mutated_path.chmod(0o644)
+    publication_baseline = trainer._completed_prefix_snapshot(
+        authority, repo_root=tmp_path
+    )
+    current = trainer.slot_paths("A1", 1729, repo_root=tmp_path).report
+    with pytest.raises(
+        trainer.AnfisAblationTrainingError,
+        match="completed-prefix artifact changed",
+    ):
+        with trainer.OutputTransaction(tmp_path) as transaction:
+            transaction.publish_bytes(b"current-output", current)
+            metadata = mutated_path.stat()
+            mutated_path.write_bytes(bytes([original[0] ^ 1]) + original[1:])
+            os.utime(
+                mutated_path,
+                ns=(metadata.st_atime_ns, metadata.st_mtime_ns),
+            )
+            trainer._assert_completed_prefix_snapshot(
+                publication_baseline, authority=authority, repo_root=tmp_path
+            )
+    assert not current.exists()
+
+
 def test_output_transaction_rolls_back_owned_inode_only(tmp_path: Path) -> None:
     output = tmp_path / "bundle" / "report.md"
     with pytest.raises(RuntimeError, match="abort"):
@@ -455,28 +522,49 @@ def test_importable_execute_cannot_bypass_gate(
     assert events == ["gate"]
 
 
-def test_effective_authority_is_routed_exclusively_through_e0_mu(
+def test_effective_authority_is_routed_exclusively_through_e0_mv(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    payload = {"gate": "E0-MU", "status": "effective_preflight_passed"}
+    binding = {
+        "gate": "E0-MV",
+        "status": "effective_preflight_passed",
+        "authorized_model_id": "A1",
+        "authorized_base_seed": 1729,
+        "completed_prefix_count": 1,
+        "slot_creation_prefix_count": 1,
+        "h_patch_head": "1" * 40,
+        "p_patch_head": "2" * 40,
+        "h_components_sha256": "3" * 64,
+        "physical_inputs_sha256": "4" * 64,
+        "runtime_sha256": "5" * 64,
+        "lock_sha256": "6" * 64,
+        "companion_sha256": "7" * 64,
+    }
+    payload = {**binding, "slot_manifest_authority": dict(binding)}
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_training_cohort_authority",
+        "require_anfis_ablation_model_manifest_authority",
         lambda *args, **kwargs: dict(payload),
     )
     assert trainer._require_effective_authority(
-        repo_root=tmp_path, model_id="A0", base_seed=1729
+        repo_root=tmp_path, model_id="A1", base_seed=1729
     ) == payload
+    assert trainer._authority_binding(payload) == binding
 
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_training_cohort_authority",
-        lambda *args, **kwargs: {**payload, "gate": "E0-MT"},
+        "require_anfis_ablation_model_manifest_authority",
+        lambda *args, **kwargs: {**payload, "gate": "E0-MU"},
     )
-    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MU"):
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MV"):
         trainer._require_effective_authority(
-            repo_root=tmp_path, model_id="A0", base_seed=1729
+            repo_root=tmp_path, model_id="A1", base_seed=1729
         )
+
+    incomplete = dict(payload)
+    incomplete.pop("slot_manifest_authority")
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="slot-manifest"):
+        trainer._authority_binding(incomplete)
 
 
 def test_main_calls_gate_before_check_only(

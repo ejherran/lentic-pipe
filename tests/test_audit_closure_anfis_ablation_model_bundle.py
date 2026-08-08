@@ -5,7 +5,7 @@ import hashlib
 import json
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -15,7 +15,7 @@ import pytest
 import yaml
 
 from src.experiments import audit_closure_anfis_ablation_model_bundle as auditor
-from src.experiments import closure_anfis_ablation_training_cohort_patch as authority_patch
+from src.experiments import closure_anfis_ablation_model_manifest_patch as authority_patch
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -38,8 +38,8 @@ def _authority(
     *, model_id: str = "A0", base_seed: int = 1729, prefix_count: int = 10
 ) -> dict[str, Any]:
     slot_index = auditor.BUNDLE_SLOTS.index((model_id, base_seed))
-    return {
-        "gate": "E0-MU",
+    authority: dict[str, Any] = {
+        "gate": "E0-MV",
         "status": "effective_preflight_passed",
         "authorized_model_id": model_id,
         "authorized_base_seed": base_seed,
@@ -70,6 +70,17 @@ def _authority(
         "outcome_access_authorized": False,
         "future_outcomes_accessed": False,
     }
+    authority["slot_manifest_authority"] = {
+        key: authority[key] for key in auditor.AUTHORITY_BINDING_KEYS
+    }
+    authority["slot_manifest_authority"]["completed_prefix_count"] = slot_index
+    authority["slot_source_record"] = {
+        "role": "trainer",
+        "path": "src/experiments/train_closure_anfis_ablation.py",
+        "bytes": 1,
+        "sha256": "a" * 64,
+    }
+    return authority
 
 
 def _runtime() -> dict[str, Any]:
@@ -225,6 +236,9 @@ def _prepare_bundle(
         record = _record(path, repo_root=repo_root, role=role)
         authority[key] = record
         authority[f"{key}_sha256"] = record["sha256"]
+        authority["slot_manifest_authority"][f"{key}_sha256"] = record[
+            "sha256"
+        ]
         authority_records.append(record)
     monkeypatch.setattr(
         auditor,
@@ -321,6 +335,7 @@ def _prepare_bundle(
         target_records["target_manifest"],
     ]
     source_code = [_record(source, repo_root=repo_root, role="trainer")]
+    authority["slot_source_record"] = copy.deepcopy(source_code[0])
 
     sequence_rows: list[dict[str, Any]] = []
     for origin_index in range(2):
@@ -612,13 +627,55 @@ def test_strict_json_and_canonicality_fail_closed() -> None:
     assert auditor._canonical_json({"a": 1}) == b'{\n  "a": 1\n}\n'
 
 
+def test_historical_slot_binding_and_source_record_are_preserved(
+    tmp_path: Path,
+) -> None:
+    authority = _authority(prefix_count=1)
+    historical = copy.deepcopy(authority["slot_manifest_authority"])
+    historical["gate"] = "E0-MU"
+    historical["h_patch_head"] = "8" * 40
+    historical["p_patch_head"] = "9" * 40
+    authority["slot_manifest_authority"] = historical
+    historical_source = {
+        "role": "trainer",
+        "path": "src/experiments/train_closure_anfis_ablation.py",
+        "bytes": 3,
+        "sha256": hashlib.sha256(b"old").hexdigest(),
+    }
+    authority["slot_source_record"] = historical_source
+
+    assert auditor._authority_manifest_binding(authority) == historical
+    assert auditor._authority_record_specs(historical) == (
+        auditor.HISTORICAL_AUTHORITY_RECORD_SPECS
+    )
+    assert auditor._slot_source_record(authority) == historical_source
+
+    physical = tmp_path / historical_source["path"]
+    _write(physical, b"current")
+    assert auditor._verify_source_records(
+        [historical_source],
+        repo_root=tmp_path,
+        slot_source_record=historical_source,
+        allow_historical_source=True,
+    ) == [historical_source]
+    with pytest.raises(
+        auditor.AnfisAblationModelAuditError, match="Physical source record"
+    ):
+        auditor._verify_source_records(
+            [historical_source],
+            repo_root=tmp_path,
+            slot_source_record=historical_source,
+            allow_historical_source=False,
+        )
+
+
 def test_audit_authority_requires_exact_read_only_flag_matrix(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     valid = _authority()
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_training_cohort_authority",
+        "require_anfis_ablation_model_manifest_authority",
         lambda *args, **kwargs: copy.deepcopy(valid),
     )
     assert auditor._require_audit_authority(
@@ -626,16 +683,32 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
     )["model_bundle_audit_authorized"] is True
 
     stale_gate = copy.deepcopy(valid)
-    stale_gate["gate"] = "E0-MT"
+    stale_gate["gate"] = "E0-MU"
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_training_cohort_authority",
+        "require_anfis_ablation_model_manifest_authority",
         lambda *args, **kwargs: copy.deepcopy(stale_gate),
     )
-    with pytest.raises(auditor.AnfisAblationModelAuditError, match="E0-MU"):
+    with pytest.raises(auditor.AnfisAblationModelAuditError, match="E0-MV"):
         auditor._require_audit_authority(
             tmp_path, model_id="A0", base_seed=1729
         )
+
+    for field in ("slot_manifest_authority", "slot_source_record"):
+        incomplete = copy.deepcopy(valid)
+        incomplete.pop(field)
+        monkeypatch.setattr(
+            authority_patch,
+            "require_anfis_ablation_model_manifest_authority",
+            lambda *args, payload=incomplete, **kwargs: copy.deepcopy(payload),
+        )
+        with pytest.raises(
+            auditor.AnfisAblationModelAuditError,
+            match="slot-manifest|slot_source_record",
+        ):
+            auditor._require_audit_authority(
+                tmp_path, model_id="A0", base_seed=1729
+            )
 
     for key in (
         "model_bundle_audit_authorized",
@@ -646,7 +719,7 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
         mutated[key] = False
         monkeypatch.setattr(
             authority_patch,
-            "require_anfis_ablation_training_cohort_authority",
+            "require_anfis_ablation_model_manifest_authority",
             lambda *args, payload=mutated, **kwargs: copy.deepcopy(payload),
         )
         with pytest.raises(auditor.AnfisAblationModelAuditError, match="matrix"):
@@ -663,7 +736,7 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
         mutated[key] = True
         monkeypatch.setattr(
             authority_patch,
-            "require_anfis_ablation_training_cohort_authority",
+            "require_anfis_ablation_model_manifest_authority",
             lambda *args, payload=mutated, **kwargs: copy.deepcopy(payload),
         )
         with pytest.raises(auditor.AnfisAblationModelAuditError, match="matrix"):
@@ -697,6 +770,74 @@ def test_full_synthetic_a0_bundle_passes_without_targets_or_writes(
     assert result["writes_performed"] is False
     assert (tmp_path / trainer.TARGET_ARTIFACT).read_bytes() == targets_before
     assert auditor._path_snapshot(namespace) == before
+
+
+@pytest.mark.parametrize(
+    ("artifact", "expected_error"),
+    (
+        ("report", "hash/size"),
+        ("development_target", "Sealed target record differs from disk"),
+    ),
+)
+def test_final_byte_reverification_rejects_late_same_size_mutation(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    artifact: str,
+    expected_error: str,
+) -> None:
+    paths, authority, runtime = _prepare_bundle(tmp_path, monkeypatch)
+    target = (
+        paths.report
+        if artifact == "report"
+        else tmp_path / trainer.TARGET_ARTIFACT
+    )
+    original_validate_pointer = auditor._validate_pointer
+
+    def mutate_at_final_boundary(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        result = original_validate_pointer(*args, **kwargs)
+        metadata = target.stat()
+        changed = bytearray(target.read_bytes())
+        changed[0] ^= 1
+        target.write_bytes(bytes(changed))
+        os.utime(target, ns=(metadata.st_atime_ns, metadata.st_mtime_ns))
+        return result
+
+    monkeypatch.setattr(auditor, "_validate_pointer", mutate_at_final_boundary)
+    with pytest.raises(auditor.AnfisAblationModelAuditError, match=expected_error):
+        auditor.audit_anfis_ablation_model_bundle(
+            model_id="A0",
+            base_seed=1729,
+            repo_root=tmp_path,
+            authority=authority,
+            runtime=runtime,
+        )
+
+
+def test_public_audit_rejects_forged_injected_target_frame(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, authority, runtime = _prepare_bundle(tmp_path, monkeypatch)
+    physical = auditor.load_cutoff_target_reference(repo_root=tmp_path)
+    forged_frame = physical.frame.copy(deep=True)
+    forged_frame.loc[0, "bloom_h"] = 1 - int(forged_frame.loc[0, "bloom_h"])
+    forged = auditor.CutoffTargetReference(
+        frame=forged_frame,
+        record=copy.deepcopy(physical.record),
+        identity=physical.identity,
+    )
+
+    with pytest.raises(
+        auditor.AnfisAblationModelAuditError,
+        match="Injected cutoff target reference",
+    ):
+        auditor.audit_anfis_ablation_model_bundle(
+            model_id="A0",
+            base_seed=1729,
+            repo_root=tmp_path,
+            authority=authority,
+            runtime=runtime,
+            target_reference=forged,
+        )
 
 
 @pytest.mark.parametrize(
@@ -1041,6 +1182,202 @@ def test_calibration_access_or_count_mutation_is_rejected(
         )
 
 
+def test_manifest_scalar_dialect_requires_recursive_exact_types(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths, _, runtime = _prepare_bundle(tmp_path, monkeypatch)
+    manifest = json.loads(paths.manifest.read_text(encoding="utf-8"))
+    pairing = manifest["pairing"]
+    mutations: list[tuple[str, Any]] = [
+        *[
+            (field, lambda payload, key=field: payload.__setitem__(key, 0))
+            for field in (
+                "future_outcomes_accessed",
+                "calibration_authorized",
+                "calibration_target_accessed",
+                "evaluation_authorized",
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "dvc_command_executed",
+            )
+        ],
+        (
+            "completion_marker_written_last",
+            lambda payload: payload.__setitem__(
+                "completion_marker_written_last", 1
+            ),
+        ),
+        ("base_seed", lambda payload: payload.__setitem__("base_seed", 1729.0)),
+        (
+            "target_contract",
+            lambda payload: payload["target_contract"].__setitem__(
+                "calibration_target_values_opened", 0
+            ),
+        ),
+        (
+            "role_counts",
+            lambda payload: payload["role_counts"].__setitem__(
+                "calibration_target_rows_read", False
+            ),
+        ),
+        (
+            "architecture",
+            lambda payload: payload["architecture"].__setitem__(
+                "history_length_months", 12.0
+            ),
+        ),
+        (
+            "pairing",
+            lambda payload: payload["pairing"].__setitem__(
+                "base_seed", 1729.0
+            ),
+        ),
+    ]
+    for label, mutate in mutations:
+        mutated = copy.deepcopy(manifest)
+        mutate(mutated)
+        with pytest.raises(auditor.AnfisAblationModelAuditError, match=label):
+            auditor._validate_manifest_semantics(
+                mutated,
+                model_id="A0",
+                base_seed=1729,
+                runtime=runtime,
+                authority_binding=manifest["authority"],
+                training_identity_sha256=pairing["training_identity_sha256"],
+                selection_identity_sha256=pairing["selection_identity_sha256"],
+                selection_target_sha256=pairing["selection_target_sha256"],
+            )
+
+
+def test_preprocessor_and_torch_scalar_dialects_reject_numeric_aliases(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths, _, _ = _prepare_bundle(tmp_path, monkeypatch)
+    preprocessor = json.loads(paths.preprocessor.read_text(encoding="utf-8"))
+    preprocessor_mutations: list[tuple[str, Any]] = [
+        (
+            "calibration_used",
+            lambda payload: payload.__setitem__("calibration_used", 0),
+        ),
+        ("base_seed", lambda payload: payload.__setitem__("base_seed", 1729.0)),
+        (
+            "missing_transport_after_transform",
+            lambda payload: payload.__setitem__(
+                "missing_transport_after_transform", 0
+            ),
+        ),
+        (
+            "raw statistic",
+            lambda payload: payload["columns"][0].__setitem__(
+                "observed_count",
+                float(payload["columns"][0]["observed_count"]),
+            ),
+        ),
+    ]
+    for label, mutate in preprocessor_mutations:
+        changed = copy.deepcopy(preprocessor)
+        mutate(changed)
+        with pytest.raises(auditor.AnfisAblationModelAuditError, match=label):
+            auditor._validate_preprocessor_json(
+                auditor._canonical_json(changed), model_id="A0", base_seed=1729
+            )
+
+    torch = pytest.importorskip("torch")
+    artifact = torch.load(paths.model, map_location="cpu", weights_only=True)
+    torch_mutations: list[tuple[str, Any]] = [
+        ("base_seed", lambda payload: payload.__setitem__("base_seed", 1729.0)),
+        (
+            "upstream_state_seed",
+            lambda payload: payload.__setitem__("upstream_state_seed", False),
+        ),
+        (
+            "config",
+            lambda payload: payload["config"].__setitem__("add_last", 0),
+        ),
+        (
+            "config",
+            lambda payload: payload["config"].__setitem__(
+                "history_length_months", 12.0
+            ),
+        ),
+        (
+            "checkpoint selection",
+            lambda payload: payload.__setitem__(
+                "best_model_selection_objective", 1
+            ),
+        ),
+    ]
+    for label, mutate in torch_mutations:
+        changed = copy.deepcopy(artifact)
+        mutate(changed)
+        with pytest.raises(auditor.AnfisAblationModelAuditError, match=label):
+            auditor._load_torch_artifact(
+                trainer._torch_bytes(changed),
+                artifact_role="final_restored_model",
+                model_id="A0",
+                base_seed=1729,
+            )
+
+
+def test_csv_scalar_dialects_require_exact_integer_and_float_columns(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths, _, _ = _prepare_bundle(tmp_path, monkeypatch)
+    torch = pytest.importorskip("torch")
+    artifact = torch.load(paths.model, map_location="cpu", weights_only=True)
+    training_metadata = auditor._reconstruct_training_metadata(repo_root=tmp_path)
+    curve = pd.read_csv(paths.training_curve, float_precision="round_trip")
+    for column in ("epoch", "best_epoch", "epochs_without_improvement"):
+        changed = curve.copy(deep=True)
+        changed[column] = changed[column].astype(float)
+        with pytest.raises(
+            auditor.AnfisAblationModelAuditError,
+            match=f"integer field drifted: {column}",
+        ):
+            auditor._validate_training_curve(
+                trainer._csv_bytes(changed),
+                training_metadata=training_metadata,
+                base_seed=1729,
+                best_epoch=artifact["best_epoch"],
+                best_objective=artifact["best_model_selection_objective"],
+            )
+    integer_loss = curve.copy(deep=True)
+    integer_loss["training_loss"] = 1
+    with pytest.raises(
+        auditor.AnfisAblationModelAuditError,
+        match="floating field drifted: training_loss",
+    ):
+        auditor._validate_training_curve(
+            trainer._csv_bytes(integer_loss),
+            training_metadata=training_metadata,
+            base_seed=1729,
+            best_epoch=artifact["best_epoch"],
+            best_objective=artifact["best_model_selection_objective"],
+        )
+
+    preprocessor = auditor._validate_preprocessor_json(
+        paths.preprocessor.read_bytes(), model_id="A0", base_seed=1729
+    )
+    _, _, _, predictions = auditor._validate_selection_predictions(
+        paths.selection_predictions.read_bytes(), model_id="A0", base_seed=1729
+    )
+    metrics = pd.read_csv(paths.selection_metrics, float_precision="round_trip")
+    for column in ("base_seed", "horizon_months", "rows", "bloom_positive"):
+        changed = metrics.copy(deep=True)
+        changed[column] = changed[column].astype(float)
+        with pytest.raises(
+            auditor.AnfisAblationModelAuditError,
+            match=f"integer field drifted: {column}",
+        ):
+            auditor._validate_selection_metrics(
+                trainer._csv_bytes(changed),
+                model_id="A0",
+                base_seed=1729,
+                predictions=predictions,
+                preprocessor=preprocessor,
+            )
+
+
 @pytest.mark.parametrize(
     ("origin", "target"),
     (("2020-12", "2021-01"), ("2018-11", "2018-12")),
@@ -1088,6 +1425,37 @@ def test_temporary_guard_or_symlinked_final_is_rejected(
     snapshot = auditor._path_snapshot(auditor._namespace_paths(paths))
     with pytest.raises(auditor.AnfisAblationModelAuditError, match="non-regular"):
         auditor._validate_namespace(snapshot, paths)
+
+
+def test_namespace_requires_exact_mode_0644_for_finals_and_pointer(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    paths, _, _ = _prepare_bundle(tmp_path, monkeypatch)
+    paths.report.chmod(0o640)
+    snapshot = auditor._path_snapshot(auditor._namespace_paths(paths))
+    with pytest.raises(auditor.AnfisAblationModelAuditError, match="mode 0644"):
+        auditor._validate_namespace(snapshot, paths)
+
+    paths.report.chmod(0o644)
+    _write(paths.pointer, b"outs: []\n")
+    paths.pointer.chmod(0o600)
+    snapshot = auditor._path_snapshot(auditor._namespace_paths(paths))
+    with pytest.raises(auditor.AnfisAblationModelAuditError, match="mode 0644"):
+        auditor._validate_namespace(snapshot, paths)
+
+
+def test_semantic_core_requires_exact_boolean_pointer_policy(tmp_path: Path) -> None:
+    with pytest.raises(
+        auditor.AnfisAblationModelAuditError, match="exact boolean"
+    ):
+        auditor.validate_anfis_ablation_model_bundle_semantics(
+            model_id="A0",
+            base_seed=1729,
+            authority_binding={},
+            runtime={},
+            repo_root=tmp_path,
+            allow_pointer=cast(Any, 1),
+        )
 
 
 def test_pairing_requires_exact_A0_A1_and_cross_seed_target_identity() -> None:

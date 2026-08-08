@@ -103,7 +103,7 @@ AUTHORITY_BINDING_KEYS = (
     "companion_sha256",
 )
 SEALED_TARGET_ROLES = frozenset({"development_targets", "target_manifest"})
-AUTHORITY_RECORD_SPECS = (
+HISTORICAL_AUTHORITY_RECORD_SPECS = (
     (
         "anfis_ablation_training_runtime_contract",
         DEFAULT_RUNTIME,
@@ -122,6 +122,29 @@ AUTHORITY_RECORD_SPECS = (
         Path(
             "reports/closure_v1/00_protocol/"
             "anfis_ablation_training_cohort_patch_lock_manifest.json"
+        ),
+        "companion_sha256",
+    ),
+)
+AUTHORITY_RECORD_SPECS = (
+    (
+        "anfis_ablation_training_runtime_contract",
+        DEFAULT_RUNTIME,
+        "runtime_sha256",
+    ),
+    (
+        "anfis_ablation_model_manifest_patch_lock",
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "anfis_ablation_model_manifest_patch_lock.json"
+        ),
+        "lock_sha256",
+    ),
+    (
+        "anfis_ablation_model_manifest_patch_lock_manifest",
+        Path(
+            "reports/closure_v1/00_protocol/"
+            "anfis_ablation_model_manifest_patch_lock_manifest.json"
         ),
         "companion_sha256",
     ),
@@ -301,6 +324,24 @@ def _canonical_json(payload: Mapping[str, Any]) -> bytes:
     return (encoded + "\n").encode("utf-8")
 
 
+def _exact_typed_equal(observed: Any, expected: Any) -> bool:
+    """Compare a decoded value without Python's bool/int/float aliases."""
+
+    if type(observed) is not type(expected):
+        return False
+    if isinstance(expected, dict):
+        return set(observed) == set(expected) and all(
+            _exact_typed_equal(observed[key], value)
+            for key, value in expected.items()
+        )
+    if isinstance(expected, (list, tuple)):
+        return len(observed) == len(expected) and all(
+            _exact_typed_equal(item, reference)
+            for item, reference in zip(observed, expected, strict=True)
+        )
+    return bool(observed == expected)
+
+
 def _entry_snapshot(path: Path) -> tuple[int, ...] | None:
     try:
         metadata = path.lstat()
@@ -330,17 +371,25 @@ def _validate_namespace(
 ) -> bool:
     for final in paths.finals:
         metadata = snapshot.get(final.as_posix())
-        if metadata is None or not stat.S_ISREG(metadata[2]):
+        if (
+            metadata is None
+            or not stat.S_ISREG(metadata[2])
+            or stat.S_IMODE(metadata[2]) != 0o644
+        ):
             raise AnfisAblationModelAuditError(
-                f"Bundle final is absent or non-regular: {final.as_posix()}"
+                f"Bundle final is absent, non-regular, or not mode 0644: {final.as_posix()}"
             )
     forbidden = (*paths.temporaries, Path(f"{paths.pointer}.tmp"), paths.guard)
     residue = [path.as_posix() for path in forbidden if snapshot.get(path.as_posix()) is not None]
     if residue:
         raise AnfisAblationModelAuditError(f"Bundle has temporary/guard residue: {residue}")
     pointer = snapshot.get(paths.pointer.as_posix())
-    if pointer is not None and not stat.S_ISREG(pointer[2]):
-        raise AnfisAblationModelAuditError("Selection DVC pointer is non-regular")
+    if pointer is not None and (
+        not stat.S_ISREG(pointer[2]) or stat.S_IMODE(pointer[2]) != 0o644
+    ):
+        raise AnfisAblationModelAuditError(
+            "Selection DVC pointer is non-regular or not mode 0644"
+        )
     manifest_metadata = snapshot.get(paths.manifest.as_posix())
     output_metadata = [
         snapshot.get(path.as_posix())
@@ -390,21 +439,22 @@ def _load_runtime_contract(repo_root: Path) -> tuple[dict[str, Any], dict[str, A
 def _require_audit_authority(
     repo_root: Path, *, model_id: str, base_seed: int
 ) -> dict[str, Any]:
-    from src.experiments.closure_anfis_ablation_training_cohort_patch import (
-        require_anfis_ablation_training_cohort_authority,
+    from src.experiments.closure_anfis_ablation_model_manifest_patch import (
+        require_anfis_ablation_model_manifest_authority,
     )
 
-    authority = require_anfis_ablation_training_cohort_authority(
+    authority = require_anfis_ablation_model_manifest_authority(
         model_id,
         base_seed,
         audit_current_unpublished=True,
         repo_root=repo_root,
     )
-    if authority.get("gate") != "E0-MU" or authority.get("status") != "effective_preflight_passed":
-        raise AnfisAblationModelAuditError("Effective E0-MU audit authority drifted")
+    if authority.get("gate") != "E0-MV" or authority.get("status") != "effective_preflight_passed":
+        raise AnfisAblationModelAuditError("Effective E0-MV audit authority drifted")
     if (
         authority.get("authorized_model_id") != model_id
         or authority.get("authorized_base_seed") != base_seed
+        or type(authority.get("authorized_base_seed")) is not int
         or type(authority.get("completed_prefix_count")) is not int
         or type(authority.get("slot_creation_prefix_count")) is not int
         or (model_id, base_seed) not in BUNDLE_SLOTS
@@ -414,7 +464,7 @@ def _require_audit_authority(
         < int(authority["completed_prefix_count"])
         <= len(BUNDLE_SLOTS)
     ):
-        raise AnfisAblationModelAuditError("E0-MU audit target/prefix binding drifted")
+        raise AnfisAblationModelAuditError("E0-MV audit target/prefix binding drifted")
     required_true = (
         "model_bundle_audit_authorized",
         "target_access_through_2020_authorized",
@@ -439,17 +489,61 @@ def _require_audit_authority(
     if any(authority.get(key) is not True for key in required_true) or any(
         authority.get(key) is not False for key in forbidden
     ):
-        raise AnfisAblationModelAuditError("E0-MU audit authority matrix drifted")
+        raise AnfisAblationModelAuditError("E0-MV audit authority matrix drifted")
+    _authority_manifest_binding(authority)
+    _slot_source_record(authority)
     return authority
 
 
 def _authority_manifest_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
-    missing = [key for key in AUTHORITY_BINDING_KEYS if key not in authority]
-    if missing:
-        raise AnfisAblationModelAuditError(f"E0-MU authority binding is incomplete: {missing}")
-    binding = {key: authority[key] for key in AUTHORITY_BINDING_KEYS}
-    binding["completed_prefix_count"] = int(authority["slot_creation_prefix_count"])
+    raw = authority.get("slot_manifest_authority")
+    if not isinstance(raw, Mapping) or set(raw) != set(AUTHORITY_BINDING_KEYS):
+        raise AnfisAblationModelAuditError(
+            "E0-MV slot-manifest authority binding is incomplete"
+        )
+    binding = dict(raw)
+    if (
+        binding.get("gate") not in {"E0-MU", "E0-MV"}
+        or binding.get("status") != "effective_preflight_passed"
+        or binding.get("authorized_model_id") != authority.get("authorized_model_id")
+        or binding.get("authorized_base_seed") != authority.get("authorized_base_seed")
+        or type(binding.get("authorized_base_seed")) is not int
+        or type(binding.get("completed_prefix_count")) is not int
+        or type(binding.get("slot_creation_prefix_count")) is not int
+        or binding.get("completed_prefix_count")
+        != binding.get("slot_creation_prefix_count")
+    ):
+        raise AnfisAblationModelAuditError(
+            "E0-MV slot-manifest authority binding drifted"
+        )
     return binding
+
+
+def _authority_record_specs(
+    authority_binding: Mapping[str, Any],
+) -> tuple[tuple[str, Path, str], ...]:
+    gate = authority_binding.get("gate")
+    if gate == "E0-MU":
+        return HISTORICAL_AUTHORITY_RECORD_SPECS
+    if gate == "E0-MV":
+        return AUTHORITY_RECORD_SPECS
+    raise AnfisAblationModelAuditError(
+        "Slot-manifest authority record gate is unsupported"
+    )
+
+
+def _slot_source_record(authority: Mapping[str, Any]) -> dict[str, Any]:
+    record = _validate_record_dialect(
+        authority.get("slot_source_record"), label="slot_source_record"
+    )
+    if (
+        record.get("role") != "trainer"
+        or record.get("path") != "src/experiments/train_closure_anfis_ablation.py"
+    ):
+        raise AnfisAblationModelAuditError(
+            "E0-MV slot source record path/role drifted"
+        )
+    return record
 
 
 def _expected_contract_sections(
@@ -605,11 +699,24 @@ def _verify_input_records(
                 "Manifest input role/path ordering drifted"
             )
         if role in SEALED_TARGET_ROLES:
-            if record != sealed[role]:
+            if not _exact_typed_equal(record, sealed[role]):
                 raise AnfisAblationModelAuditError(f"Sealed target record drifted: {role}")
+            try:
+                physical = {
+                    "role": role,
+                    **trainer._stable_file_record(
+                        repo_root / expected_path, repo_root=repo_root
+                    ),
+                }
+            except trainer.AnfisAblationTrainingError as error:
+                raise AnfisAblationModelAuditError(str(error)) from error
+            if not _exact_typed_equal(record, physical):
+                raise AnfisAblationModelAuditError(
+                    f"Sealed target record differs from disk: {role}"
+                )
         else:
             _, physical = _read_regular_bytes(path, repo_root=repo_root, role=role)
-            if physical != record:
+            if not _exact_typed_equal(physical, record):
                 raise AnfisAblationModelAuditError(f"Physical input record drifted: {path}")
         verified.append(record)
     return verified
@@ -621,17 +728,18 @@ def _verify_authority_records(
     authority_binding: Mapping[str, Any],
     repo_root: Path,
 ) -> list[dict[str, Any]]:
+    specs = _authority_record_specs(authority_binding)
     if (
         not isinstance(records, Sequence)
         or isinstance(records, (str, bytes))
-        or len(records) != len(AUTHORITY_RECORD_SPECS)
+        or len(records) != len(specs)
     ):
         raise AnfisAblationModelAuditError(
             "Manifest authority_records must bind runtime, lock, and companion"
         )
     verified: list[dict[str, Any]] = []
     for index, ((role, path, digest_key), raw) in enumerate(
-        zip(AUTHORITY_RECORD_SPECS, records, strict=True)
+        zip(specs, records, strict=True)
     ):
         record = _validate_record_dialect(raw, label=f"authority_records[{index}]")
         expected_path = path.as_posix()
@@ -640,7 +748,7 @@ def _verify_authority_records(
                 "Manifest authority record role/path ordering drifted"
             )
         _, physical = _read_regular_bytes(path, repo_root=repo_root, role=role)
-        if record != physical:
+        if not _exact_typed_equal(record, physical):
             raise AnfisAblationModelAuditError(
                 f"Physical authority record drifted: {expected_path}"
             )
@@ -652,7 +760,13 @@ def _verify_authority_records(
     return verified
 
 
-def _verify_source_records(records: Any, *, repo_root: Path) -> list[dict[str, Any]]:
+def _verify_source_records(
+    records: Any,
+    *,
+    repo_root: Path,
+    slot_source_record: Mapping[str, Any] | None = None,
+    allow_historical_source: bool = False,
+) -> list[dict[str, Any]]:
     if not isinstance(records, Sequence) or isinstance(records, (str, bytes)) or not records:
         raise AnfisAblationModelAuditError("Manifest source_code must be a non-empty array")
     verified: list[dict[str, Any]] = []
@@ -662,13 +776,32 @@ def _verify_source_records(records: Any, *, repo_root: Path) -> list[dict[str, A
         if record["path"] in seen:
             raise AnfisAblationModelAuditError("Manifest source_code paths must be unique")
         seen.add(str(record["path"]))
-        _, physical = _read_regular_bytes(
-            str(record["path"]), repo_root=repo_root, role=str(record["role"])
-        )
-        if physical != record:
-            raise AnfisAblationModelAuditError(
-                f"Physical source record drifted: {record['path']}"
+        if slot_source_record is not None:
+            expected = _validate_record_dialect(
+                slot_source_record, label="slot_source_record"
             )
+            if not _exact_typed_equal(record, expected):
+                raise AnfisAblationModelAuditError(
+                    "Manifest source_code differs from its slot source record"
+                )
+            if not allow_historical_source:
+                _, physical = _read_regular_bytes(
+                    str(record["path"]),
+                    repo_root=repo_root,
+                    role=str(record["role"]),
+                )
+                if not _exact_typed_equal(physical, record):
+                    raise AnfisAblationModelAuditError(
+                        f"Physical source record drifted: {record['path']}"
+                    )
+        else:
+            _, physical = _read_regular_bytes(
+                str(record["path"]), repo_root=repo_root, role=str(record["role"])
+            )
+            if not _exact_typed_equal(physical, record):
+                raise AnfisAblationModelAuditError(
+                    f"Physical source record drifted: {record['path']}"
+                )
         verified.append(record)
     return verified
 
@@ -697,7 +830,7 @@ def _verify_output_records(
         payload, physical = _read_regular_bytes(
             expected[expected_role], repo_root=repo_root, role=expected_role
         )
-        if physical != record:
+        if not _exact_typed_equal(physical, record):
             raise AnfisAblationModelAuditError(
                 f"Manifest output hash/size drifted: {expected_role}"
             )
@@ -760,7 +893,7 @@ def _load_torch_artifact(
         "artifact_role": artifact_role,
     }
     for key, expected in expected_scalars.items():
-        if decoded.get(key) != expected:
+        if not _exact_typed_equal(decoded.get(key), expected):
             raise AnfisAblationModelAuditError(
                 f"{artifact_role} field drifted: {key}"
             )
@@ -772,7 +905,7 @@ def _load_torch_artifact(
         if not isinstance(observed, list) or len(observed) != len(expected):
             raise AnfisAblationModelAuditError(f"{artifact_role} priors drifted: {key}")
         if any(
-            not isinstance(value, (int, float))
+            type(value) is not float
             or not math.isclose(
                 float(value), float(reference), rel_tol=0.0, abs_tol=1e-15
             )
@@ -784,8 +917,7 @@ def _load_torch_artifact(
     if (
         type(best_epoch) is not int
         or not 1 <= best_epoch <= trainer.MAXIMUM_EPOCHS
-        or not isinstance(objective, (int, float))
-        or isinstance(objective, bool)
+        or type(objective) is not float
         or not math.isfinite(float(objective))
         or float(objective) < 0.0
     ):
@@ -859,7 +991,10 @@ def _validate_model_and_checkpoint(
         base_seed=base_seed,
     )
     metadata_keys = set(model) - {"artifact_role", "model_state_dict"}
-    if any(model[key] != checkpoint[key] for key in metadata_keys):
+    if any(
+        not _exact_typed_equal(model[key], checkpoint[key])
+        for key in metadata_keys
+    ):
         raise AnfisAblationModelAuditError(
             "Model/checkpoint metadata differ beyond artifact_role"
         )
@@ -1037,16 +1172,18 @@ def _validate_training_curve(
         raise AnfisAblationModelAuditError("Training curve dialect/canonical bytes drifted")
     integer_columns = ("epoch", "best_epoch", "epochs_without_improvement")
     for column in integer_columns:
-        numeric = pd.to_numeric(frame[column], errors="coerce")
-        if numeric.isna().any() or not np.equal(numeric, np.floor(numeric)).all():
+        if not pd.api.types.is_integer_dtype(frame[column].dtype):
             raise AnfisAblationModelAuditError(
                 f"Training curve integer field drifted: {column}"
             )
-        frame[column] = numeric.astype(int)
     if frame["epoch"].tolist() != list(range(1, len(frame) + 1)):
         raise AnfisAblationModelAuditError("Training curve epochs are not contiguous")
     numeric_columns = ("training_loss", "model_selection_objective", "best_objective")
     for column in numeric_columns:
+        if not pd.api.types.is_float_dtype(frame[column].dtype):
+            raise AnfisAblationModelAuditError(
+                f"Training curve floating field drifted: {column}"
+            )
         values = pd.to_numeric(frame[column], errors="coerce").to_numpy(dtype=np.float64)
         if not np.isfinite(values).all():
             raise AnfisAblationModelAuditError(
@@ -1054,7 +1191,10 @@ def _validate_training_curve(
             )
     if bool((frame["model_selection_objective"].astype(float) < 0.0).any()):
         raise AnfisAblationModelAuditError("Training curve objective is negative")
-    digests = frame["batch_order_sha256"].astype(str).tolist()
+    raw_digests = frame["batch_order_sha256"].tolist()
+    if any(type(value) is not str for value in raw_digests):
+        raise AnfisAblationModelAuditError("Training curve batch digests drifted")
+    digests = cast(list[str], raw_digests)
     if any(SHA256_PATTERN.fullmatch(value) is None for value in digests) or len(
         set(digests)
     ) != len(digests):
@@ -1476,7 +1616,7 @@ def _validate_preprocessor_json(
         "calibration_used": False,
     }
     for key, expected in expected_scalars.items():
-        if decoded.get(key) != expected:
+        if not _exact_typed_equal(decoded.get(key), expected):
             raise AnfisAblationModelAuditError(f"Preprocessor field drifted: {key}")
     for key, expected_values in (
         ("bloom_training_priors", trainer.EXPECTED_TRAINING_BLOOM_PRIORS),
@@ -1488,7 +1628,7 @@ def _validate_preprocessor_json(
         ):
             raise AnfisAblationModelAuditError(f"Preprocessor field drifted: {key}")
         for value, reference in zip(observed_values, expected_values, strict=True):
-            if not isinstance(value, (int, float)) or not math.isclose(
+            if type(value) is not float or not math.isclose(
                 float(value), float(reference), rel_tol=0.0, abs_tol=1e-15
             ):
                 raise AnfisAblationModelAuditError(f"Preprocessor field drifted: {key}")
@@ -1505,13 +1645,18 @@ def _validate_preprocessor_json(
         }:
             raise AnfisAblationModelAuditError("Preprocessor raw statistic dialect drifted")
         normalized_row = cast(Mapping[str, Any], row)
+        count_value = normalized_row.get("observed_count")
         mean_value = normalized_row.get("mean")
         std_value = normalized_row.get("standard_deviation")
-        if not isinstance(mean_value, (int, float)) or not isinstance(std_value, (int, float)):
+        if (
+            type(count_value) is not int
+            or type(mean_value) is not float
+            or type(std_value) is not float
+        ):
             raise AnfisAblationModelAuditError("Preprocessor raw statistic is nonnumeric")
         if (
-            normalized_row.get("column") != column
-            or normalized_row.get("observed_count") != expected_count
+            not _exact_typed_equal(normalized_row.get("column"), column)
+            or count_value != expected_count
             or not math.isclose(float(mean_value), expected_mean, rel_tol=0.0, abs_tol=1e-12)
             or not math.isclose(
                 float(std_value), expected_std, rel_tol=0.0, abs_tol=1e-12
@@ -1558,6 +1703,39 @@ def _validate_selection_metrics(
     ]
     if frame.columns.tolist() != expected_columns or len(frame) != len(trainer.HORIZONS):
         raise AnfisAblationModelAuditError("Selection metrics columns/rows drifted")
+    integer_columns = ("base_seed", "horizon_months", "rows", "bloom_positive")
+    for column in integer_columns:
+        if not pd.api.types.is_integer_dtype(frame[column].dtype):
+            raise AnfisAblationModelAuditError(
+                f"Selection metrics integer field drifted: {column}"
+            )
+    floating_columns = (
+        "brier",
+        "pr_auc",
+        "rmse",
+        "mae",
+        "prior_brier",
+        "prior_rmse",
+        "prior_mae",
+        "brier_ratio",
+        "rmse_ratio",
+        "mae_ratio",
+        "checkpoint_objective",
+    )
+    for column in floating_columns:
+        if not pd.api.types.is_float_dtype(frame[column].dtype):
+            raise AnfisAblationModelAuditError(
+                f"Selection metrics floating field drifted: {column}"
+            )
+        values = frame[column].to_numpy(dtype=np.float64)
+        if not np.isfinite(values).all():
+            raise AnfisAblationModelAuditError(
+                f"Selection metrics contains nonfinite {column}"
+            )
+    if any(type(value) is not str for value in frame["model_id"].tolist()) or any(
+        type(value) is not str for value in frame["time_role"].tolist()
+    ):
+        raise AnfisAblationModelAuditError("Selection metrics string field drifted")
     if not frame["model_id"].eq(model_id).all() or not frame["base_seed"].eq(base_seed).all():
         raise AnfisAblationModelAuditError("Selection metrics slot identity drifted")
     if not frame["time_role"].eq("model_selection").all() or frame[
@@ -1608,8 +1786,13 @@ def _validate_selection_metrics(
     for index, expected in enumerate(recomputed):
         row = frame.iloc[index]
         for key, value in expected.items():
-            observed = float(row[key])
-            if not math.isclose(observed, float(value), rel_tol=0.0, abs_tol=1e-12):
+            if type(value) is int:
+                valid = int(row[key]) == value
+            else:
+                valid = math.isclose(
+                    float(row[key]), value, rel_tol=0.0, abs_tol=1e-12
+                )
+            if not valid:
                 raise AnfisAblationModelAuditError(f"Selection metric drifted: {key}")
         if not math.isclose(
             float(row["checkpoint_objective"]), objective, rel_tol=0.0, abs_tol=1e-12
@@ -1677,7 +1860,7 @@ def _validate_manifest_semantics(
         "completion_marker_written_last": True,
     }
     for key, expected in expected_scalars.items():
-        if manifest.get(key) != expected:
+        if not _exact_typed_equal(manifest.get(key), expected):
             raise AnfisAblationModelAuditError(f"Model manifest field drifted: {key}")
     _validate_timestamp(manifest.get("generated_at_utc"))
     target, roles, architecture, preprocessing = _expected_contract_sections(
@@ -1691,7 +1874,7 @@ def _validate_manifest_semantics(
         "authority": dict(authority_binding),
     }
     for key, expected in expected_sections.items():
-        if manifest.get(key) != expected:
+        if not _exact_typed_equal(manifest.get(key), expected):
             raise AnfisAblationModelAuditError(f"Model manifest section drifted: {key}")
     pairing = manifest.get("pairing")
     if not isinstance(pairing, Mapping) or set(pairing) != PAIRING_KEYS:
@@ -1702,7 +1885,7 @@ def _validate_manifest_semantics(
         "base_seed": base_seed,
     }
     for key, expected in expected_pairing.items():
-        if pairing.get(key) != expected:
+        if not _exact_typed_equal(pairing.get(key), expected):
             raise AnfisAblationModelAuditError(f"Model pairing field drifted: {key}")
     for key in (
         "training_identity_sha256",
@@ -1731,6 +1914,7 @@ def validate_anfis_ablation_model_bundle_semantics(
     repo_root: Path = PROJECT_ROOT,
     allow_pointer: bool,
     target_reference: CutoffTargetReference | None = None,
+    slot_source_record: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Validate one physical bundle without consulting the effective loader.
 
@@ -1738,14 +1922,25 @@ def validate_anfis_ablation_model_bundle_semantics(
     deliberately free of Git, remote, DVC-command and authority-loader calls.
     """
 
+    if type(allow_pointer) is not bool:
+        raise AnfisAblationModelAuditError(
+            "Selection DVC pointer policy must be an exact boolean"
+        )
     trainer.validate_model_seed(model_id, base_seed)
     live_runtime, runtime_record = _load_runtime_contract(repo_root)
-    if dict(runtime) != live_runtime:
+    if not _exact_typed_equal(dict(runtime), live_runtime):
         raise AnfisAblationModelAuditError(
             "Supplied runtime differs from physical E0-MT runtime"
         )
     if set(authority_binding) != set(AUTHORITY_BINDING_KEYS):
         raise AnfisAblationModelAuditError("Supplied authority binding key set drifted")
+    authority_gate = authority_binding.get("gate")
+    if authority_gate not in {"E0-MU", "E0-MV"}:
+        raise AnfisAblationModelAuditError("Supplied authority binding gate drifted")
+    if authority_gate == "E0-MU" and slot_source_record is None:
+        raise AnfisAblationModelAuditError(
+            "Historical slot source record is required"
+        )
     paths = trainer.slot_paths(model_id, base_seed, repo_root=repo_root)
     namespace = _namespace_paths(paths)
     before = _path_snapshot(namespace)
@@ -1787,7 +1982,12 @@ def validate_anfis_ablation_model_bundle_semantics(
         authority_binding=authority_binding,
         repo_root=repo_root,
     )
-    verified_source = _verify_source_records(manifest.get("source_code"), repo_root=repo_root)
+    verified_source = _verify_source_records(
+        manifest.get("source_code"),
+        repo_root=repo_root,
+        slot_source_record=slot_source_record,
+        allow_historical_source=authority_gate == "E0-MU",
+    )
     script_record = _validate_record_dialect(manifest.get("script"), label="script")
     if len(verified_source) != 1 or script_record != verified_source[0] or script_record.get(
         "role"
@@ -1795,6 +1995,11 @@ def validate_anfis_ablation_model_bundle_semantics(
         "src/experiments/train_closure_anfis_ablation.py"
     ):
         raise AnfisAblationModelAuditError("Manifest script/source_code binding drifted")
+    _, live_source_record = _read_regular_bytes(
+        str(script_record["path"]),
+        repo_root=repo_root,
+        role=str(script_record["role"]),
+    )
     verified_outputs, output_payloads = _verify_output_records(
         manifest.get("outputs"), paths=paths, repo_root=repo_root
     )
@@ -1867,8 +2072,71 @@ def validate_anfis_ablation_model_bundle_semantics(
         prediction_payload=output_payloads["selection_predictions"],
         prediction_name=paths.selection_predictions.name,
     )
+    post_manifest_payload, post_manifest_record = _read_regular_bytes(
+        paths.manifest, repo_root=repo_root, role="manifest"
+    )
+    if post_manifest_payload != manifest_payload or not _exact_typed_equal(
+        post_manifest_record, manifest_record
+    ):
+        raise AnfisAblationModelAuditError("Model manifest changed during audit")
+    post_inputs = _verify_input_records(
+        manifest.get("inputs"),
+        runtime=live_runtime,
+        model_id=model_id,
+        base_seed=base_seed,
+        repo_root=repo_root,
+    )
+    if not _exact_typed_equal(post_inputs, verified_inputs):
+        raise AnfisAblationModelAuditError("Model inputs changed during audit")
+    post_target = next(
+        (
+            record
+            for record in post_inputs
+            if record.get("role") == "development_targets"
+        ),
+        None,
+    )
+    if not _exact_typed_equal(post_target, reference.record):
+        raise AnfisAblationModelAuditError(
+            "Development target digest changed during audit"
+        )
+    post_authority = _verify_authority_records(
+        manifest.get("authority_records"),
+        authority_binding=authority_binding,
+        repo_root=repo_root,
+    )
+    if not _exact_typed_equal(post_authority, verified_authority):
+        raise AnfisAblationModelAuditError("Model authority records changed during audit")
+    post_source = _verify_source_records(
+        manifest.get("source_code"),
+        repo_root=repo_root,
+        slot_source_record=slot_source_record,
+        allow_historical_source=authority_gate == "E0-MU",
+    )
+    if not _exact_typed_equal(post_source, verified_source):
+        raise AnfisAblationModelAuditError("Model source records changed during audit")
+    _, post_live_source_record = _read_regular_bytes(
+        str(script_record["path"]),
+        repo_root=repo_root,
+        role=str(script_record["role"]),
+    )
+    if not _exact_typed_equal(post_live_source_record, live_source_record):
+        raise AnfisAblationModelAuditError("Physical trainer source changed during audit")
+    post_outputs, _ = _verify_output_records(
+        manifest.get("outputs"), paths=paths, repo_root=repo_root
+    )
+    if not _exact_typed_equal(post_outputs, verified_outputs):
+        raise AnfisAblationModelAuditError("Model outputs changed during audit")
+    if pointer_present:
+        post_pointer_payload, _ = _read_regular_bytes(
+            paths.pointer, repo_root=repo_root
+        )
+        if post_pointer_payload != pointer_payload:
+            raise AnfisAblationModelAuditError(
+                "Selection DVC pointer changed during audit"
+            )
     _, post_runtime = _read_regular_bytes(DEFAULT_RUNTIME, repo_root=repo_root)
-    if post_runtime != runtime_record:
+    if not _exact_typed_equal(post_runtime, runtime_record):
         raise AnfisAblationModelAuditError("E0-MT runtime changed during audit")
     if os.path.lexists(repo_root / OUTCOME_ACCESS_LOG):
         raise AnfisAblationModelAuditError("Outcome access log appeared during audit")
@@ -1919,14 +2187,28 @@ def audit_anfis_ablation_model_bundle(
     effective = _require_audit_authority(
         repo_root, model_id=model_id, base_seed=base_seed
     )
-    if authority is not None and dict(authority) != effective:
+    if authority is not None and not _exact_typed_equal(dict(authority), effective):
         raise AnfisAblationModelAuditError(
-            "Injected authority differs from live E0-MU authority"
+            "Injected authority differs from live E0-MV authority"
         )
     live_runtime, _ = _load_runtime_contract(repo_root)
-    if runtime is not None and dict(runtime) != live_runtime:
+    if runtime is not None and not _exact_typed_equal(dict(runtime), live_runtime):
         raise AnfisAblationModelAuditError(
             "Injected runtime differs from physical E0-MT runtime"
+        )
+    live_target_reference = load_cutoff_target_reference(repo_root=repo_root)
+    if target_reference is not None and (
+        type(target_reference) is not CutoffTargetReference
+        or not _exact_typed_equal(
+            target_reference.record, live_target_reference.record
+        )
+        or not _exact_typed_equal(
+            target_reference.identity, live_target_reference.identity
+        )
+        or not target_reference.frame.equals(live_target_reference.frame)
+    ):
+        raise AnfisAblationModelAuditError(
+            "Injected cutoff target reference differs from physical targets"
         )
     return validate_anfis_ablation_model_bundle_semantics(
         model_id=model_id,
@@ -1935,7 +2217,8 @@ def audit_anfis_ablation_model_bundle(
         runtime=live_runtime,
         repo_root=repo_root,
         allow_pointer=True,
-        target_reference=target_reference,
+        target_reference=live_target_reference,
+        slot_source_record=_slot_source_record(effective),
     )
 
 
