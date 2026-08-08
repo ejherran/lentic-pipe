@@ -1,0 +1,4 @@
+horizons_months,time_role,sequence_status,failure_reason,rows
+"1,2,3",calibration_threshold,success,,319
+"1,2,3",model_selection,success,,1061
+"1,2,3",training,success,,8352

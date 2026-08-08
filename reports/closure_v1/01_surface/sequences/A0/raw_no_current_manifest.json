@@ -1,0 +1,239 @@
+{
+  "manifest_version": "closure_anfis_ablation_sequence_manifest_v1",
+  "status": "completed",
+  "generated_at_utc": "2026-08-08T13:33:50.886087+00:00",
+  "experiment_id": "closure_v1",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "model_id": "A0",
+  "base_seed": null,
+  "upstream_state_seed": null,
+  "future_outcomes_accessed": false,
+  "targets_read": false,
+  "evaluation_authorized": false,
+  "e0_m_authorized": false,
+  "e0_u_authorized": false,
+  "dvc_command_executed": false,
+  "horizons_months": [
+    1,
+    2,
+    3
+  ],
+  "tensor_contract": {
+    "history_length_months": 12,
+    "input_only": true,
+    "target_columns": [],
+    "input_columns": [
+      "x_mean_TP_ugL",
+      "x_mean_TN_ugL",
+      "x_mean_DO_mgL",
+      "x_mean_pH",
+      "x_mean_turbidity_NTU",
+      "x_mean_secchi_depth_m",
+      "x_mean_temperature_C",
+      "mask_mean_TP_ugL",
+      "mask_mean_TN_ugL",
+      "mask_mean_DO_mgL",
+      "mask_mean_pH",
+      "mask_mean_turbidity_NTU",
+      "mask_mean_secchi_depth_m",
+      "mask_mean_temperature_C",
+      "season_sin_annual",
+      "season_cos_annual",
+      "season_sin_semiannual",
+      "season_cos_semiannual"
+    ],
+    "input_dimension": 18,
+    "physical_type": "fixed_size_list<float32>[12]",
+    "raw_mean_columns": [
+      "mean_TP_ugL",
+      "mean_TN_ugL",
+      "mean_DO_mgL",
+      "mean_pH",
+      "mean_turbidity_NTU",
+      "mean_secchi_depth_m",
+      "mean_temperature_C"
+    ],
+    "raw_n_obs_columns": [
+      "n_obs_TP_ugL",
+      "n_obs_TN_ugL",
+      "n_obs_DO_mgL",
+      "n_obs_pH",
+      "n_obs_turbidity_NTU",
+      "n_obs_secchi_depth_m",
+      "n_obs_temperature_C"
+    ],
+    "raw_value_columns": [
+      "x_mean_TP_ugL",
+      "x_mean_TN_ugL",
+      "x_mean_DO_mgL",
+      "x_mean_pH",
+      "x_mean_turbidity_NTU",
+      "x_mean_secchi_depth_m",
+      "x_mean_temperature_C"
+    ],
+    "raw_mask_columns": [
+      "mask_mean_TP_ugL",
+      "mask_mean_TN_ugL",
+      "mask_mean_DO_mgL",
+      "mask_mean_pH",
+      "mask_mean_turbidity_NTU",
+      "mask_mean_secchi_depth_m",
+      "mask_mean_temperature_C"
+    ],
+    "raw_observed_rule": "finite_mean_and_finite_n_obs_greater_than_zero",
+    "raw_missing_transport_value": 0.0,
+    "raw_missing_transport_semantics": "transport_only_not_imputation",
+    "raw_mask_values": [
+      0.0,
+      1.0
+    ],
+    "adaptive_state_source_mapping": {},
+    "adaptive_state_fallback": "forbidden",
+    "failed_row_tensor_parent": "null"
+  },
+  "identity_columns": [
+    "sequence_version",
+    "surface_id",
+    "model_id",
+    "base_seed",
+    "upstream_state_seed",
+    "source_id",
+    "site_id",
+    "common_origin_id",
+    "holdout_group_id",
+    "assignment_role",
+    "time_role",
+    "origin_year_month",
+    "history_start_year_month",
+    "history_end_year_month",
+    "history_length_months",
+    "sequence_status",
+    "failure_reason"
+  ],
+  "canonical_sort": [
+    "source_id",
+    "site_id",
+    "origin_year_month",
+    "common_origin_id"
+  ],
+  "counts": {
+    "common_rows": 29196,
+    "intent_origins": 9732,
+    "development_locations": 353,
+    "source_ids": [
+      "wqp"
+    ],
+    "successful_origins": 9732,
+    "failed_origins": 0,
+    "role_counts": {
+      "training": 8352,
+      "model_selection": 1061,
+      "calibration_threshold": 319
+    },
+    "status_counts": {
+      "success": 9732
+    },
+    "failure_reason_counts": {},
+    "observed_raw_value_counts": {
+      "mean_TP_ugL": 95403,
+      "mean_TN_ugL": 41062,
+      "mean_DO_mgL": 115491,
+      "mean_pH": 115033,
+      "mean_turbidity_NTU": 66238,
+      "mean_secchi_depth_m": 83118,
+      "mean_temperature_C": 116784
+    },
+    "masked_raw_value_counts": {
+      "mean_TP_ugL": 21381,
+      "mean_TN_ugL": 75722,
+      "mean_DO_mgL": 1293,
+      "mean_pH": 1751,
+      "mean_turbidity_NTU": 50546,
+      "mean_secchi_depth_m": 33666,
+      "mean_temperature_C": 0
+    }
+  },
+  "authority": {
+    "gate": "E0-MS",
+    "status": "effective_preflight_passed",
+    "h_patch_head": "0847a948e47cb6b9bffa9d1551d1c28164dfe3f1",
+    "p_patch_head": "c50bb1bc3e69df817a87522c61daf13cfbda9d10",
+    "runtime": {
+      "bytes": 21827,
+      "path": "configs/closure_v1/anfis_ablation_sequence_development_runtime.yaml",
+      "role": "anfis_ablation_sequence_development_runtime",
+      "sha256": "49d1a3f562f2cd68ff65f29c92ac4e028b3ad407f30a9960ea0d29260df7d56b"
+    },
+    "lock": {
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock.json",
+      "role": "anfis_ablation_sequence_development_patch_lock",
+      "bytes": 40836,
+      "sha256": "50af5f6ada06454c060c23d14dfab319ce902c59ae6eec610bf80e2f6907da29"
+    },
+    "companion": {
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock_manifest.json",
+      "role": "anfis_ablation_sequence_development_patch_lock_manifest",
+      "bytes": 13809,
+      "sha256": "d89c3a29cc570cbce5e3ef049cf14fc77dd1ee099d76bfd57b52d958293bcb5d"
+    },
+    "h_components_sha256": "5957487ae6368abade0bc5074f21e325df1a69dfa54e6bcc9370bebbfbb22229",
+    "physical_inputs_sha256": "342d7e236e057aaebb64a0ce3b5bbfb512322cd6cd9efeaa0e1b145af32eeaaf",
+    "builder_sha256": "7fbf5dea26410ce8e1ea6b9e7f37f5fc5fb3e807476e605210d0dcf5c4ecd97a",
+    "auditor_sha256": "60e3644f2993d9cfd763b1d9602e50959c4c8b01dc391156af6223c9846f9f22",
+    "authorized_model_id": "A0",
+    "authorized_base_seed": null,
+    "completed_prefix_count": 0
+  },
+  "script": {
+    "path": "src/experiments/build_closure_anfis_ablation_sequences.py",
+    "bytes": 63806,
+    "sha256": "7fbf5dea26410ce8e1ea6b9e7f37f5fc5fb3e807476e605210d0dcf5c4ecd97a"
+  },
+  "inputs": [
+    {
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "bytes": 2763097,
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "bytes": 113,
+      "sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "bytes": 11524,
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "bytes": 103469973,
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "path": "data/panel/panel_monthly_v0.parquet.dvc",
+      "bytes": 109,
+      "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c"
+    }
+  ],
+  "source_code": [
+    {
+      "path": "src/experiments/build_closure_anfis_ablation_sequences.py",
+      "bytes": 63806,
+      "sha256": "7fbf5dea26410ce8e1ea6b9e7f37f5fc5fb3e807476e605210d0dcf5c4ecd97a"
+    }
+  ],
+  "outputs": [
+    {
+      "path": "data/closure_v1/development/sequences/A0/raw_no_current.parquet",
+      "bytes": 713811,
+      "sha256": "8988fce08378424d742b3825f11cfda658ac84cdf5e5e24f497ce1d2ebf01b3d"
+    },
+    {
+      "path": "reports/closure_v1/01_surface/sequences/A0/raw_no_current_summary.csv",
+      "bytes": 174,
+      "sha256": "fc815625e357b0c331b3fd65b5cdd2932e3481d4231d7c38e615daad610665bb"
+    }
+  ],
+  "completion_marker_written_last": true
+}
