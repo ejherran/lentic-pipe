@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure_anfis_ablation_training_development_patch_lock.schema.json",
+  "title": "Closure V1 E0-MT ANFIS ablation training development patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "gate",
+    "created_at_utc",
+    "repository",
+    "h_patch",
+    "upstream_authority",
+    "runtime_contract",
+    "prelock",
+    "verification",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_anfis_ablation_training_development_patch_lock_v1"},
+    "status": {"const": "locked_unpublished"},
+    "gate": {"const": "E0-MT"},
+    "created_at_utc": {"type": "string"},
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["branch", "head", "parent", "tracking_head", "remote_head", "remote_verification_mode", "worktree_scope"],
+      "properties": {
+        "branch": {"const": "main"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "parent": {"const": "e22fd44d8a1e13c5587237d9f7a38856ae262864"},
+        "tracking_head": {"$ref": "#/$defs/sha1"},
+        "remote_head": {"$ref": "#/$defs/sha1"},
+        "remote_verification_mode": {"const": "live_remote_main_verified"},
+        "worktree_scope": {"const": "exact_h_patch_components_only"}
+      }
+    },
+    "h_patch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_commit", "head", "parent", "component_count", "components", "components_sha256", "scope"],
+      "properties": {
+        "base_commit": {"const": "e22fd44d8a1e13c5587237d9f7a38856ae262864"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "parent": {"const": "e22fd44d8a1e13c5587237d9f7a38856ae262864"},
+        "component_count": {"const": 10},
+        "components": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "components_sha256": {"$ref": "#/$defs/sha256"},
+        "scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["added", "modified", "deleted"],
+          "properties": {"added": {"const": 10}, "modified": {"const": 0}, "deleted": {"const": 0}}
+        }
+      }
+    },
+    "upstream_authority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sequence_patch_head", "sequence_lock_head", "sequence_bundle_head", "sequence_bundle_parent", "sequence_bundle_scope", "bundle_records", "bundle_records_sha256"],
+      "properties": {
+        "sequence_patch_head": {"const": "0847a948e47cb6b9bffa9d1551d1c28164dfe3f1"},
+        "sequence_lock_head": {"const": "c50bb1bc3e69df817a87522c61daf13cfbda9d10"},
+        "sequence_bundle_head": {"const": "e22fd44d8a1e13c5587237d9f7a38856ae262864"},
+        "sequence_bundle_parent": {"const": "c50bb1bc3e69df817a87522c61daf13cfbda9d10"},
+        "sequence_bundle_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["added", "modified", "deleted"],
+          "properties": {"added": {"const": 18}, "modified": {"const": 0}, "deleted": {"const": 0}}
+        },
+        "bundle_records": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "bundle_records_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runtime_contract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["runtime", "runtime_sha256", "physical_input_count", "physical_inputs", "physical_inputs_sha256", "target_contract", "preprocessing", "model", "slots", "outputs"],
+      "properties": {
+        "runtime": {"$ref": "#/$defs/roleFileRecord"},
+        "runtime_sha256": {"$ref": "#/$defs/sha256"},
+        "physical_input_count": {"const": 47},
+        "physical_inputs": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "target_contract": {"type": "object"},
+        "preprocessing": {"type": "object"},
+        "model": {"type": "object"},
+        "slots": {"type": "object"},
+        "outputs": {"type": "object"}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["completed_prefix_count", "final_paths_present", "temporary_paths_present", "guard_paths_present", "prediction_pointers_present", "output_namespace_sha256", "control_paths", "prohibited_namespaces"],
+      "properties": {
+        "completed_prefix_count": {"const": 0},
+        "final_paths_present": {"const": []},
+        "temporary_paths_present": {"const": []},
+        "guard_paths_present": {"const": []},
+        "prediction_pointers_present": {"const": []},
+        "output_namespace_sha256": {"$ref": "#/$defs/sha256"},
+        "control_paths": {"type": "object"},
+        "prohibited_namespaces": {"type": "object"}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_preflight", "full_type_check", "focused_tests", "poetry_check", "publication_guard", "git_diff_check"],
+      "properties": {
+        "schema_preflight": {"type": "object"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "authorizations": {"$ref": "#/$defs/closedAuthorizations"},
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["target_access_end", "calibration_2021_closed", "holdout_and_post_2021_closed", "add_last_forbidden", "ten_slots_individual_only", "dvc_absent", "outcomes_absent", "manifest_written_last"],
+      "properties": {
+        "target_access_end": {"const": "2020-12"},
+        "calibration_2021_closed": {"const": true},
+        "holdout_and_post_2021_closed": {"const": true},
+        "add_last_forbidden": {"const": true},
+        "ten_slots_individual_only": {"const": true},
+        "dvc_absent": {"const": true},
+        "outcomes_absent": {"const": true},
+        "manifest_written_last": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"type": "string"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "roleFileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "role"],
+      "properties": {
+        "path": {"type": "string"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "role": {"type": "string"}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "test_count", "skipped_count", "deselected_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 74},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "closedAuthorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["a0_development_fit_authorized", "a1_development_fit_authorized", "target_access_through_2020_authorized", "selection_diagnostics_authorized", "calibration_authorized", "calibration_target_access_authorized", "final_e7_metrics_authorized", "rollout_authorized", "e0_m_authorized", "evaluation_authorized", "e0_u_authorized", "dvc_commands_authorized", "scientific_network_authorized", "outcome_access_authorized", "future_outcomes_accessed", "batch_slot_execution_authorized", "effective_in_payload", "publication_required"],
+      "properties": {
+        "a0_development_fit_authorized": {"const": false},
+        "a1_development_fit_authorized": {"const": false},
+        "target_access_through_2020_authorized": {"const": false},
+        "selection_diagnostics_authorized": {"const": false},
+        "calibration_authorized": {"const": false},
+        "calibration_target_access_authorized": {"const": false},
+        "final_e7_metrics_authorized": {"const": false},
+        "rollout_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "batch_slot_execution_authorized": {"const": false},
+        "effective_in_payload": {"const": false},
+        "publication_required": {"const": true}
+      }
+    }
+  }
+}
