@@ -1,0 +1,577 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure_anfis_ablation_model_publication_patch_lock.schema.json",
+  "title": "Closure V1 E0-MW ANFIS ablation model-publication patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "gate",
+    "created_at_utc",
+    "repository",
+    "h_patch",
+    "base_mv_authority",
+    "blocked_p_mv_attempt",
+    "adopted_a0_bundle",
+    "manifest_dialect",
+    "companion_contract",
+    "prelock",
+    "verification",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "closure_anfis_ablation_model_publication_patch_lock_v1"
+    },
+    "status": {"const": "locked_unpublished"},
+    "gate": {"const": "E0-MW"},
+    "created_at_utc": {"type": "string"},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "base_mv_authority": {"$ref": "#/$defs/baseMvAuthority"},
+    "blocked_p_mv_attempt": {"$ref": "#/$defs/blockedAttempt"},
+    "adopted_a0_bundle": {"$ref": "#/$defs/adoptedA0"},
+    "manifest_dialect": {"$ref": "#/$defs/manifestDialect"},
+    "companion_contract": {"$ref": "#/$defs/companionContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/closedAuthorizations"},
+    "seals": {"$ref": "#/$defs/seals"}
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "roleFileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256", "role"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "role": {"type": "string"}
+      }
+    },
+    "historicalFileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "role",
+        "commit",
+        "hash_source",
+        "current_bytes_required_to_match_historical"
+      ],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "role": {"type": "string"},
+        "commit": {"const": "455f593fc276dc0b74565e34aea4a09342badb30"},
+        "hash_source": {"const": "git_blob_at_commit"},
+        "current_bytes_required_to_match_historical": {"const": false}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted"],
+      "properties": {
+        "added": {"type": "integer", "const": 5},
+        "modified": {"type": "integer", "const": 5},
+        "deleted": {"type": "integer", "const": 0}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "head",
+        "parent",
+        "tracking_head",
+        "remote_head",
+        "remote_verification_mode",
+        "worktree_scope"
+      ],
+      "properties": {
+        "branch": {"const": "main"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "parent": {"const": "455f593fc276dc0b74565e34aea4a09342badb30"},
+        "tracking_head": {"$ref": "#/$defs/sha1"},
+        "remote_head": {"$ref": "#/$defs/sha1"},
+        "remote_verification_mode": {"const": "live_remote_main_verified"},
+        "worktree_scope": {"const": "exact_historical_a0_light_outputs_only"}
+      }
+    },
+    "hComponentGitModes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "configs/closure_v1/anfis_ablation_model_publication_patch_lock.schema.json",
+        "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_PUBLICATION_PATCH_1.md",
+        "src/data/prepare_commit_artifacts.py",
+        "src/experiments/audit_closure_anfis_ablation_model_bundle.py",
+        "src/experiments/closure_anfis_ablation_model_publication_patch.py",
+        "src/experiments/lock_closure_anfis_ablation_model_publication_patch.py",
+        "src/experiments/train_closure_anfis_ablation.py",
+        "tests/test_audit_closure_anfis_ablation_model_bundle.py",
+        "tests/test_closure_anfis_ablation_model_publication_patch.py",
+        "tests/test_train_closure_anfis_ablation.py"
+      ],
+      "properties": {
+        "configs/closure_v1/anfis_ablation_model_publication_patch_lock.schema.json": {"const": "100644"},
+        "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_PUBLICATION_PATCH_1.md": {"const": "100644"},
+        "src/data/prepare_commit_artifacts.py": {"const": "100755"},
+        "src/experiments/audit_closure_anfis_ablation_model_bundle.py": {"const": "100644"},
+        "src/experiments/closure_anfis_ablation_model_publication_patch.py": {"const": "100644"},
+        "src/experiments/lock_closure_anfis_ablation_model_publication_patch.py": {"const": "100644"},
+        "src/experiments/train_closure_anfis_ablation.py": {"const": "100644"},
+        "tests/test_audit_closure_anfis_ablation_model_bundle.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_model_publication_patch.py": {"const": "100644"},
+        "tests/test_train_closure_anfis_ablation.py": {"const": "100644"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "head",
+        "parent",
+        "component_count",
+        "components",
+        "components_sha256",
+        "components_git_modes",
+        "scope"
+      ],
+      "properties": {
+        "base_commit": {"const": "455f593fc276dc0b74565e34aea4a09342badb30"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "parent": {"const": "455f593fc276dc0b74565e34aea4a09342badb30"},
+        "component_count": {"type": "integer", "const": 10},
+        "components": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/roleFileRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"},
+        "components_git_modes": {"$ref": "#/$defs/hComponentGitModes"},
+        "scope": {"$ref": "#/$defs/scope"}
+      }
+    },
+    "baseMvAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "h_head",
+        "h_parent",
+        "h_scope",
+        "component_count",
+        "components",
+        "components_sha256",
+        "preserved_component_count",
+        "preserved_components",
+        "preserved_components_sha256",
+        "superseded_component_count",
+        "superseded_components",
+        "superseded_components_sha256",
+        "p_mu_authority",
+        "p_mv_publication_status",
+        "p_mv_is_authority"
+      ],
+      "properties": {
+        "h_head": {"const": "455f593fc276dc0b74565e34aea4a09342badb30"},
+        "h_parent": {"const": "404983e3dfc511d982b2641aa4aea769dcbc6beb"},
+        "h_scope": {"$ref": "#/$defs/scope"},
+        "component_count": {"type": "integer", "const": 10},
+        "components": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "components_sha256": {"$ref": "#/$defs/sha256"},
+        "preserved_component_count": {"type": "integer", "const": 5},
+        "preserved_components": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "preserved_components_sha256": {"$ref": "#/$defs/sha256"},
+        "superseded_component_count": {"type": "integer", "const": 5},
+        "superseded_components": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "superseded_components_sha256": {"$ref": "#/$defs/sha256"},
+        "p_mu_authority": {"type": "object"},
+        "p_mv_publication_status": {"const": "blocked_unpublished"},
+        "p_mv_is_authority": {"const": false}
+      }
+    },
+    "blockedArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "bytes", "sha256"],
+      "properties": {
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "blockedAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "status",
+        "lock",
+        "companion",
+        "precommit_report",
+        "failure_classification",
+        "published",
+        "authoritative",
+        "physical_input",
+        "historical_input",
+        "retry_forbidden",
+        "local_archive",
+        "archive_required_for_effective_authority"
+      ],
+      "properties": {
+        "gate": {"const": "E0-MV"},
+        "status": {"const": "blocked_unpublished_precommit_failed"},
+        "lock": {"$ref": "#/$defs/blockedArtifact"},
+        "companion": {"$ref": "#/$defs/blockedArtifact"},
+        "precommit_report": {"$ref": "#/$defs/blockedArtifact"},
+        "failure_classification": {"const": "generic_experiment_manifest_filename_classifier"},
+        "published": {"const": false},
+        "authoritative": {"const": false},
+        "physical_input": {"const": false},
+        "historical_input": {"const": false},
+        "retry_forbidden": {"const": true},
+        "local_archive": {"const": "tmp/p_e0_mv_blocked_20260808T195750Z"},
+        "archive_required_for_effective_authority": {"const": false}
+      }
+    },
+    "slotAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "status",
+        "h_patch_head",
+        "p_patch_head",
+        "h_components_sha256",
+        "physical_inputs_sha256",
+        "runtime_sha256",
+        "lock_sha256",
+        "companion_sha256",
+        "authorized_model_id",
+        "authorized_base_seed",
+        "completed_prefix_count",
+        "slot_creation_prefix_count"
+      ],
+      "properties": {
+        "gate": {"const": "E0-MU"},
+        "status": {"const": "effective_preflight_passed"},
+        "h_patch_head": {"const": "3fff3f272eb6f6ba8e644dd49436bc39ecbed1f8"},
+        "p_patch_head": {"const": "404983e3dfc511d982b2641aa4aea769dcbc6beb"},
+        "h_components_sha256": {"$ref": "#/$defs/sha256"},
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "runtime_sha256": {"$ref": "#/$defs/sha256"},
+        "lock_sha256": {"const": "8d574acf03abe92a5d759f9e0ff65c37e7455c3e24235dc8c1a60f3c6fe00a36"},
+        "companion_sha256": {"const": "e36ee7be07d659a93da0b5b13ef5ef9bd37ea1ee7df20928999fa7cba7e9f511"},
+        "authorized_model_id": {"const": "A0"},
+        "authorized_base_seed": {"type": "integer", "const": 1729},
+        "completed_prefix_count": {"type": "integer", "const": 0},
+        "slot_creation_prefix_count": {"type": "integer", "const": 0}
+      }
+    },
+    "adoptedA0": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model_id",
+        "base_seed",
+        "final_count",
+        "output_count",
+        "finals",
+        "finals_sha256",
+        "manifest",
+        "manifest_dialect",
+        "manifest_completion_marker_last",
+        "manifest_published_last",
+        "historical_authority",
+        "rewrite_forbidden",
+        "dvc_pointer_present"
+      ],
+      "properties": {
+        "model_id": {"const": "A0"},
+        "base_seed": {"type": "integer", "const": 1729},
+        "final_count": {"type": "integer", "const": 8},
+        "output_count": {"type": "integer", "const": 8},
+        "finals": {"type": "array", "items": {"$ref": "#/$defs/roleFileRecord"}},
+        "finals_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest": {"$ref": "#/$defs/roleFileRecord"},
+        "manifest_dialect": {"const": "pretty_indent_2_insertion_order_newline"},
+        "manifest_completion_marker_last": {"const": true},
+        "manifest_published_last": {"const": true},
+        "historical_authority": {"$ref": "#/$defs/slotAuthority"},
+        "rewrite_forbidden": {"const": true},
+        "dvc_pointer_present": {"const": false}
+      }
+    },
+    "manifestDialect": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "encoding",
+        "indent",
+        "ensure_ascii",
+        "allow_nan",
+        "sort_keys",
+        "trailing_newline",
+        "completion_marker_last",
+        "historical_manifest_bytes",
+        "historical_manifest_sha256",
+        "legacy_compact_sorted_bytes",
+        "legacy_compact_sorted_sha256",
+        "legacy_first_difference_offset",
+        "historical_rewrite_required"
+      ],
+      "properties": {
+        "encoding": {"const": "utf-8"},
+        "indent": {"type": "integer", "const": 2},
+        "ensure_ascii": {"const": false},
+        "allow_nan": {"const": false},
+        "sort_keys": {"const": false},
+        "trailing_newline": {"const": true},
+        "completion_marker_last": {"const": true},
+        "historical_manifest_bytes": {"type": "integer", "const": 11231},
+        "historical_manifest_sha256": {"const": "406bf44de3ecdc49ff3d5797cbca1ec0c11ebfbdc70ba262130b85a2e58e31e2"},
+        "legacy_compact_sorted_bytes": {"type": "integer", "const": 9019},
+        "legacy_compact_sorted_sha256": {"const": "25c70685524a8c7688e726466276c26a7823c53bd5aefa2087f20a7c8cfd35ce"},
+        "legacy_first_difference_offset": {"type": "integer", "const": 1},
+        "historical_rewrite_required": {"const": false}
+      }
+    },
+    "companionContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "physical_input_count",
+        "historical_input_count",
+        "output_count",
+        "script_path",
+        "physical_inputs_sha256",
+        "historical_inputs_sha256",
+        "blocked_p_mv_in_inputs",
+        "historical_a0_outputs_in_inputs",
+        "manifest_written_last"
+      ],
+      "properties": {
+        "physical_input_count": {"type": "integer", "const": 77},
+        "historical_input_count": {"type": "integer", "const": 5},
+        "output_count": {"type": "integer", "const": 1},
+        "script_path": {"const": "src/experiments/lock_closure_anfis_ablation_model_publication_patch.py"},
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "historical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "blocked_p_mv_in_inputs": {"const": false},
+        "historical_a0_outputs_in_inputs": {"const": false},
+        "manifest_written_last": {"const": true}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "completed_prefix_count",
+        "final_paths_present",
+        "temporary_paths_present",
+        "guard_paths_present",
+        "prediction_pointers_present",
+        "prediction_pointer_temporaries_present",
+        "output_namespace_sha256",
+        "historical_a0_finals_sha256",
+        "control_paths",
+        "prohibited_namespaces"
+      ],
+      "properties": {
+        "completed_prefix_count": {"type": "integer", "const": 1},
+        "final_paths_present": {"type": "array", "items": {"$ref": "#/$defs/path"}},
+        "temporary_paths_present": {"const": []},
+        "guard_paths_present": {"const": []},
+        "prediction_pointers_present": {"const": []},
+        "prediction_pointer_temporaries_present": {"const": []},
+        "output_namespace_sha256": {"$ref": "#/$defs/sha256"},
+        "historical_a0_finals_sha256": {"$ref": "#/$defs/sha256"},
+        "control_paths": {"type": "object"},
+        "prohibited_namespaces": {"type": "object"}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"type": "integer", "const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "stdout_text",
+        "test_count",
+        "skipped_count",
+        "deselected_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"type": "integer", "const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "stdout_text": {"type": "string"},
+        "test_count": {"type": "integer", "const": 74},
+        "skipped_count": {"type": "integer", "const": 0},
+        "deselected_count": {"type": "integer", "const": 0}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_preflight",
+        "full_type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "git_diff_check",
+        "historical_a0_semantic_audit",
+        "execution_boundaries"
+      ],
+      "properties": {
+        "schema_preflight": {"type": "object"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"},
+        "historical_a0_semantic_audit": {"type": "object"},
+        "execution_boundaries": {"type": "object"}
+      }
+    },
+    "closedAuthorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "a0_development_fit_authorized",
+        "a1_development_fit_authorized",
+        "target_access_through_2020_authorized",
+        "selection_diagnostics_authorized",
+        "model_bundle_audit_authorized",
+        "calibration_authorized",
+        "calibration_target_access_authorized",
+        "final_e7_metrics_authorized",
+        "rollout_authorized",
+        "e0_m_authorized",
+        "evaluation_authorized",
+        "e0_u_authorized",
+        "dvc_commands_authorized",
+        "scientific_network_authorized",
+        "outcome_access_authorized",
+        "future_outcomes_accessed",
+        "batch_slot_execution_authorized",
+        "effective_in_payload",
+        "publication_required"
+      ],
+      "properties": {
+        "a0_development_fit_authorized": {"const": false},
+        "a1_development_fit_authorized": {"const": false},
+        "target_access_through_2020_authorized": {"const": false},
+        "selection_diagnostics_authorized": {"const": false},
+        "model_bundle_audit_authorized": {"const": false},
+        "calibration_authorized": {"const": false},
+        "calibration_target_access_authorized": {"const": false},
+        "final_e7_metrics_authorized": {"const": false},
+        "rollout_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "batch_slot_execution_authorized": {"const": false},
+        "effective_in_payload": {"const": false},
+        "publication_required": {"const": true}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "historical_a0_bundle_preserved",
+        "historical_a0_bundle_rewrite_forbidden",
+        "historical_mu_authority_preserved",
+        "published_h_mv_preserved",
+        "blocked_p_mv_rejected_as_authority",
+        "blocked_p_mv_not_required",
+        "model_manifest_dialect",
+        "completion_marker_written_last",
+        "compact_sorted_manifest_dialect_rejected",
+        "next_slot",
+        "target_access_end",
+        "calibration_2021_closed",
+        "holdout_and_post_2021_closed",
+        "ten_slots_individual_only",
+        "dvc_absent",
+        "outcomes_absent",
+        "historical_inputs_compared_to_current_paths"
+      ],
+      "properties": {
+        "historical_a0_bundle_preserved": {"const": true},
+        "historical_a0_bundle_rewrite_forbidden": {"const": true},
+        "historical_mu_authority_preserved": {"const": true},
+        "published_h_mv_preserved": {"const": true},
+        "blocked_p_mv_rejected_as_authority": {"const": true},
+        "blocked_p_mv_not_required": {"const": true},
+        "model_manifest_dialect": {"const": "pretty_indent_2_insertion_order_newline"},
+        "completion_marker_written_last": {"const": true},
+        "compact_sorted_manifest_dialect_rejected": {"const": true},
+        "next_slot": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["model_id", "base_seed"],
+          "properties": {
+            "model_id": {"const": "A1"},
+            "base_seed": {"type": "integer", "const": 1729}
+          }
+        },
+        "target_access_end": {"const": "2020-12"},
+        "calibration_2021_closed": {"const": true},
+        "holdout_and_post_2021_closed": {"const": true},
+        "ten_slots_individual_only": {"const": true},
+        "dvc_absent": {"const": true},
+        "outcomes_absent": {"const": true},
+        "historical_inputs_compared_to_current_paths": {"const": false}
+      }
+    }
+  }
+}

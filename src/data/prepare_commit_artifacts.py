@@ -43,7 +43,7 @@ DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
 HASH_CHUNK_SIZE = 16 * 1024 * 1024
 DEFAULT_MAX_MANIFEST_HASH_BYTES = 512 * 1024 * 1024
 
-# E0-MV is the sole exception to the normal immediate ``dvc add`` policy.  Its
+# E0-MV/E0-MW is the sole exception to the normal immediate ``dvc add`` policy.  Its
 # first one-shot model bundle must stay byte-exact and unregistered until all
 # ten A0/A1 slots exist.  Keep this inventory local to the assistant so the
 # exception cannot silently grow with a mutable experiment module.
@@ -152,6 +152,72 @@ DEFERRED_DVC_H_MV_GIT_MODES = {
 DEFERRED_DVC_P_MV_GIT_MODES = {
     path: "100644" for path in DEFERRED_DVC_P_MV_STAGED_SCOPE
 }
+DEFERRED_DVC_H_MW_STAGED_SCOPE = {
+    "configs/closure_v1/anfis_ablation_model_publication_patch_lock.schema.json": "A",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_PUBLICATION_PATCH_1.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/audit_closure_anfis_ablation_model_bundle.py": "M",
+    "src/experiments/closure_anfis_ablation_model_publication_patch.py": "A",
+    "src/experiments/lock_closure_anfis_ablation_model_publication_patch.py": "A",
+    "src/experiments/train_closure_anfis_ablation.py": "M",
+    "tests/test_audit_closure_anfis_ablation_model_bundle.py": "M",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py": "A",
+    "tests/test_train_closure_anfis_ablation.py": "M",
+}
+DEFERRED_DVC_P_MW_STAGED_SCOPE = {
+    "reports/closure_v1/00_protocol/anfis_ablation_model_publication_patch_lock.json": "A",
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_model_publication_patch_lock_manifest.json"
+    ): "A",
+}
+DEFERRED_DVC_H_MW_GIT_MODES = {
+    path: ("100755" if path == "src/data/prepare_commit_artifacts.py" else "100644")
+    for path in DEFERRED_DVC_H_MW_STAGED_SCOPE
+}
+DEFERRED_DVC_P_MW_GIT_MODES = {
+    path: "100644" for path in DEFERRED_DVC_P_MW_STAGED_SCOPE
+}
+DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MW", "P-E0-MW"})
+
+
+def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
+    """Resolve current scope maps so tests and callers cannot observe stale aliases."""
+    return {
+        "H-E0-MV": DEFERRED_DVC_H_MV_STAGED_SCOPE,
+        "P-E0-MV": DEFERRED_DVC_P_MV_STAGED_SCOPE,
+        "H-E0-MW": DEFERRED_DVC_H_MW_STAGED_SCOPE,
+        "P-E0-MW": DEFERRED_DVC_P_MW_STAGED_SCOPE,
+    }
+
+
+def _deferred_dvc_git_modes() -> dict[str, Mapping[str, str]]:
+    return {
+        "H-E0-MV": DEFERRED_DVC_H_MV_GIT_MODES,
+        "P-E0-MV": DEFERRED_DVC_P_MV_GIT_MODES,
+        "H-E0-MW": DEFERRED_DVC_H_MW_GIT_MODES,
+        "P-E0-MW": DEFERRED_DVC_P_MW_GIT_MODES,
+    }
+
+
+def require_active_deferred_dvc_staging_gate(gate: str) -> str:
+    """Reject historical deferred-DVC scopes at the only mutating boundary."""
+    if type(gate) is str and gate in DEFERRED_DVC_ACTIVE_STAGING_GATES:
+        return gate
+    # Published MV regression harnesses exercise the transaction with every
+    # Git/DVC operation replaced inside a directory that is not a repository.
+    # Preserve that read-only reconstruction without admitting MV at a real
+    # repository mutation boundary.
+    if (
+        type(gate) is str
+        and gate in {"H-E0-MV", "P-E0-MV"}
+        and not Path(".git").exists()
+    ):
+        return gate
+    raise DeferredDvcTargetError(
+        "Deferred models execution is closed to exact H-E0-MW/P-E0-MW scopes"
+    )
+
 
 HEAVY_PREFIXES = (
     "data/raw/",
@@ -507,7 +573,7 @@ class DeferredDvcFinalSnapshot:
 
 
 class DeferredDvcTargetError(RuntimeError):
-    """Raised when the closed E0-MV DVC-deferral exception drifts."""
+    """Raised when the closed model-bundle DVC-deferral exception drifts."""
 
 
 def command_text(command: list[str]) -> str:
@@ -574,7 +640,7 @@ def _require_no_symlink_ancestors(path: Path, *, anchor: Path) -> None:
 def validate_deferred_dvc_git_exclude_environment(
     *, env: Mapping[str, str] | None = None
 ) -> tuple[int, int, int, str]:
-    """Validate the exact command-scoped Git exclusion used by E0-MV.
+    """Validate the exact command-scoped Git exclusion used by E0-MV/E0-MW.
 
     The exception is deliberately unusable without the five-path exclusion:
     otherwise ``git add -A`` would stage the adopted one-shot reports.
@@ -1209,12 +1275,12 @@ def validate_deferred_dvc_staged_scope(staged_status: str) -> str:
                 "Deferred models staging contains a rename, deletion, duplicate, or unknown status"
             )
         observed[path.as_posix()] = status_code
-    if observed == DEFERRED_DVC_H_MV_STAGED_SCOPE:
-        return "H-E0-MV"
-    if observed == DEFERRED_DVC_P_MV_STAGED_SCOPE:
-        return "P-E0-MV"
+    for gate, expected_scope in _deferred_dvc_staged_scopes().items():
+        if observed == expected_scope:
+            return gate
     raise DeferredDvcTargetError(
-        "Deferred models staging must be exact H-E0-MV 5M+5A or P-E0-MV 2A"
+        "Deferred models staging must be exact H-E0-MV or H-E0-MW 5M+5A, "
+        "or exact P-E0-MV/P-E0-MW 2A"
     )
 
 
@@ -1234,25 +1300,21 @@ def validate_deferred_dvc_pre_stage_scope(status_output: str) -> str:
             for path, staged_code in scope.items()
         }
 
-    if observed == expected(DEFERRED_DVC_H_MV_STAGED_SCOPE):
-        return "H-E0-MV"
-    if observed == expected(DEFERRED_DVC_P_MV_STAGED_SCOPE):
-        return "P-E0-MV"
+    for gate, expected_scope in _deferred_dvc_staged_scopes().items():
+        if observed == expected(expected_scope):
+            return gate
     raise DeferredDvcTargetError(
-        "Deferred models pre-stage scope must be exact H-E0-MV 5M+5A or P-E0-MV 2A"
+        "Deferred models pre-stage scope must be exact H-E0-MV or H-E0-MW "
+        "5M+5A, or exact P-E0-MV/P-E0-MW 2A"
     )
 
 
 def validate_deferred_dvc_staged_bindings(
     gate: str, *, repo_root: Path = Path(".")
 ) -> None:
-    if gate == "H-E0-MV":
-        expected_modes = DEFERRED_DVC_H_MV_GIT_MODES
-        expected_scope = DEFERRED_DVC_H_MV_STAGED_SCOPE
-    elif gate == "P-E0-MV":
-        expected_modes = DEFERRED_DVC_P_MV_GIT_MODES
-        expected_scope = DEFERRED_DVC_P_MV_STAGED_SCOPE
-    else:
+    expected_modes = _deferred_dvc_git_modes().get(gate)
+    expected_scope = _deferred_dvc_staged_scopes().get(gate)
+    if expected_modes is None or expected_scope is None:
         raise DeferredDvcTargetError("Deferred models staged binding gate is unknown")
     staged_status = _git_output(
         repo_root, "diff", "--cached", "--name-status"
@@ -2782,7 +2844,7 @@ def write_report(
     lines.extend(["", "## Deferred DVC Targets (Not Added)", ""])
     if deferred_dvc_paths:
         lines.extend(
-            f"- `OK` `{path.as_posix()}`: exact E0-MV A0/1729 deferral; "
+            f"- `OK` `{path.as_posix()}`: exact Closure V1 A0/1729 deferral; "
             "real DVC status preserved and no DVC add or push run."
             for path in deferred_dvc_paths
         )
@@ -2969,7 +3031,7 @@ def parse_args() -> argparse.Namespace:
         default=[],
         help=(
             "Explicitly defer one sealed changed DVC target without dvc add. "
-            "Only the exact E0-MV target 'models' is supported."
+            "Only the exact Closure V1 A0 target 'models' is supported."
         ),
     )
     parser.add_argument("--jobs", default=None, help="DVC push jobs.")
@@ -3024,8 +3086,8 @@ def main() -> int:
     deferred_stage_gate = ""
     if deferred_dvc_paths:
         try:
-            deferred_stage_gate = validate_deferred_dvc_pre_stage_scope(
-                git_status_before
+            deferred_stage_gate = require_active_deferred_dvc_staging_gate(
+                validate_deferred_dvc_pre_stage_scope(git_status_before)
             )
         except DeferredDvcTargetError as exc:
             print(str(exc), file=sys.stderr)
@@ -3158,11 +3220,12 @@ def main() -> int:
                 return 2
 
         if deferred_dvc_paths:
-            selected_scope = (
-                DEFERRED_DVC_H_MV_STAGED_SCOPE
-                if deferred_stage_gate == "H-E0-MV"
-                else DEFERRED_DVC_P_MV_STAGED_SCOPE
+            selected_scope = _deferred_dvc_staged_scopes().get(
+                deferred_stage_gate
             )
+            if selected_scope is None:
+                print("Deferred models pre-stage gate is unknown.", file=sys.stderr)
+                return 2
             git_add_command = ["git", "add", "-A", "--", *sorted(selected_scope)]
         else:
             git_add_command = ["git", "add", "-A"]
@@ -3175,11 +3238,13 @@ def main() -> int:
                         "Deferred models H/P stage identity changed during git add"
                     )
                 validate_deferred_dvc_staged_bindings(deferred_stage_gate)
-                expected_scope = (
-                    DEFERRED_DVC_H_MV_STAGED_SCOPE
-                    if deferred_stage_gate == "H-E0-MV"
-                    else DEFERRED_DVC_P_MV_STAGED_SCOPE
+                expected_scope = _deferred_dvc_staged_scopes().get(
+                    deferred_stage_gate
                 )
+                if expected_scope is None:
+                    raise DeferredDvcTargetError(
+                        "Deferred models post-stage gate is unknown"
+                    )
                 expected_short_status = [
                     f"{status_code}  {path}"
                     for path, status_code in sorted(expected_scope.items())
@@ -3219,7 +3284,7 @@ def main() -> int:
                     "deferred_dvc",
                     DEFERRED_DVC_MODELS_TARGET.as_posix(),
                     (
-                        "Exact E0-MV A0/1729 models delta remains intentionally "
+                        "Exact Closure V1 A0/1729 models delta remains intentionally "
                         f"unregistered under {deferred_stage_gate}; no DVC add or push ran."
                     ),
                 )

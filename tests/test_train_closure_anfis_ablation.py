@@ -12,7 +12,7 @@ import pyarrow.parquet as pq
 import pytest
 import yaml
 
-from src.experiments import closure_anfis_ablation_model_manifest_patch as authority_patch
+from src.experiments import closure_anfis_ablation_model_publication_patch as authority_patch
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -522,11 +522,34 @@ def test_importable_execute_cannot_bypass_gate(
     assert events == ["gate"]
 
 
-def test_effective_authority_is_routed_exclusively_through_e0_mv(
+def test_effective_authority_is_routed_exclusively_through_e0_mw(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    assert trainer.AUTHORITY_RECORD_SPECS == (
+        (
+            "runtime",
+            "anfis_ablation_training_runtime_contract",
+            Path("configs/closure_v1/anfis_ablation_training_development_runtime.yaml"),
+        ),
+        (
+            "lock",
+            "anfis_ablation_model_publication_patch_lock",
+            Path(
+                "reports/closure_v1/00_protocol/"
+                "anfis_ablation_model_publication_patch_lock.json"
+            ),
+        ),
+        (
+            "companion",
+            "anfis_ablation_model_publication_patch_lock_manifest",
+            Path(
+                "reports/closure_v1/00_protocol/"
+                "anfis_ablation_model_publication_patch_lock_manifest.json"
+            ),
+        ),
+    )
     binding = {
-        "gate": "E0-MV",
+        "gate": "E0-MW",
         "status": "effective_preflight_passed",
         "authorized_model_id": "A1",
         "authorized_base_seed": 1729,
@@ -543,7 +566,7 @@ def test_effective_authority_is_routed_exclusively_through_e0_mv(
     payload = {**binding, "slot_manifest_authority": dict(binding)}
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_model_manifest_authority",
+        "require_anfis_ablation_model_publication_authority",
         lambda *args, **kwargs: dict(payload),
     )
     assert trainer._require_effective_authority(
@@ -553,10 +576,10 @@ def test_effective_authority_is_routed_exclusively_through_e0_mv(
 
     monkeypatch.setattr(
         authority_patch,
-        "require_anfis_ablation_model_manifest_authority",
-        lambda *args, **kwargs: {**payload, "gate": "E0-MU"},
+        "require_anfis_ablation_model_publication_authority",
+        lambda *args, **kwargs: {**payload, "gate": "E0-MV"},
     )
-    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MV"):
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MW"):
         trainer._require_effective_authority(
             repo_root=tmp_path, model_id="A1", base_seed=1729
         )

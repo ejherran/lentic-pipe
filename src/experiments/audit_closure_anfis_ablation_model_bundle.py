@@ -133,18 +133,18 @@ AUTHORITY_RECORD_SPECS = (
         "runtime_sha256",
     ),
     (
-        "anfis_ablation_model_manifest_patch_lock",
+        "anfis_ablation_model_publication_patch_lock",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_model_manifest_patch_lock.json"
+            "anfis_ablation_model_publication_patch_lock.json"
         ),
         "lock_sha256",
     ),
     (
-        "anfis_ablation_model_manifest_patch_lock_manifest",
+        "anfis_ablation_model_publication_patch_lock_manifest",
         Path(
             "reports/closure_v1/00_protocol/"
-            "anfis_ablation_model_manifest_patch_lock_manifest.json"
+            "anfis_ablation_model_publication_patch_lock_manifest.json"
         ),
         "companion_sha256",
     ),
@@ -439,18 +439,21 @@ def _load_runtime_contract(repo_root: Path) -> tuple[dict[str, Any], dict[str, A
 def _require_audit_authority(
     repo_root: Path, *, model_id: str, base_seed: int
 ) -> dict[str, Any]:
-    from src.experiments.closure_anfis_ablation_model_manifest_patch import (
-        require_anfis_ablation_model_manifest_authority,
+    from src.experiments.closure_anfis_ablation_model_publication_patch import (
+        require_anfis_ablation_model_publication_authority,
     )
 
-    authority = require_anfis_ablation_model_manifest_authority(
+    authority = require_anfis_ablation_model_publication_authority(
         model_id,
         base_seed,
         audit_current_unpublished=True,
         repo_root=repo_root,
     )
-    if authority.get("gate") != "E0-MV" or authority.get("status") != "effective_preflight_passed":
-        raise AnfisAblationModelAuditError("Effective E0-MV audit authority drifted")
+    if (
+        authority.get("gate") != "E0-MW"
+        or authority.get("status") != "effective_preflight_passed"
+    ):
+        raise AnfisAblationModelAuditError("Effective E0-MW audit authority drifted")
     if (
         authority.get("authorized_model_id") != model_id
         or authority.get("authorized_base_seed") != base_seed
@@ -464,7 +467,7 @@ def _require_audit_authority(
         < int(authority["completed_prefix_count"])
         <= len(BUNDLE_SLOTS)
     ):
-        raise AnfisAblationModelAuditError("E0-MV audit target/prefix binding drifted")
+        raise AnfisAblationModelAuditError("E0-MW audit target/prefix binding drifted")
     required_true = (
         "model_bundle_audit_authorized",
         "target_access_through_2020_authorized",
@@ -489,7 +492,7 @@ def _require_audit_authority(
     if any(authority.get(key) is not True for key in required_true) or any(
         authority.get(key) is not False for key in forbidden
     ):
-        raise AnfisAblationModelAuditError("E0-MV audit authority matrix drifted")
+        raise AnfisAblationModelAuditError("E0-MW audit authority matrix drifted")
     _authority_manifest_binding(authority)
     _slot_source_record(authority)
     return authority
@@ -499,11 +502,11 @@ def _authority_manifest_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
     raw = authority.get("slot_manifest_authority")
     if not isinstance(raw, Mapping) or set(raw) != set(AUTHORITY_BINDING_KEYS):
         raise AnfisAblationModelAuditError(
-            "E0-MV slot-manifest authority binding is incomplete"
+            "E0-MW slot-manifest authority binding is incomplete"
         )
     binding = dict(raw)
     if (
-        binding.get("gate") not in {"E0-MU", "E0-MV"}
+        binding.get("gate") not in {"E0-MU", "E0-MW"}
         or binding.get("status") != "effective_preflight_passed"
         or binding.get("authorized_model_id") != authority.get("authorized_model_id")
         or binding.get("authorized_base_seed") != authority.get("authorized_base_seed")
@@ -514,7 +517,7 @@ def _authority_manifest_binding(authority: Mapping[str, Any]) -> dict[str, Any]:
         != binding.get("slot_creation_prefix_count")
     ):
         raise AnfisAblationModelAuditError(
-            "E0-MV slot-manifest authority binding drifted"
+            "E0-MW slot-manifest authority binding drifted"
         )
     return binding
 
@@ -525,7 +528,7 @@ def _authority_record_specs(
     gate = authority_binding.get("gate")
     if gate == "E0-MU":
         return HISTORICAL_AUTHORITY_RECORD_SPECS
-    if gate == "E0-MV":
+    if gate == "E0-MW":
         return AUTHORITY_RECORD_SPECS
     raise AnfisAblationModelAuditError(
         "Slot-manifest authority record gate is unsupported"
@@ -541,7 +544,7 @@ def _slot_source_record(authority: Mapping[str, Any]) -> dict[str, Any]:
         or record.get("path") != "src/experiments/train_closure_anfis_ablation.py"
     ):
         raise AnfisAblationModelAuditError(
-            "E0-MV slot source record path/role drifted"
+            "E0-MW slot source record path/role drifted"
         )
     return record
 
@@ -1935,7 +1938,7 @@ def validate_anfis_ablation_model_bundle_semantics(
     if set(authority_binding) != set(AUTHORITY_BINDING_KEYS):
         raise AnfisAblationModelAuditError("Supplied authority binding key set drifted")
     authority_gate = authority_binding.get("gate")
-    if authority_gate not in {"E0-MU", "E0-MV"}:
+    if authority_gate not in {"E0-MU", "E0-MW"}:
         raise AnfisAblationModelAuditError("Supplied authority binding gate drifted")
     if authority_gate == "E0-MU" and slot_source_record is None:
         raise AnfisAblationModelAuditError(
@@ -2189,7 +2192,7 @@ def audit_anfis_ablation_model_bundle(
     )
     if authority is not None and not _exact_typed_equal(dict(authority), effective):
         raise AnfisAblationModelAuditError(
-            "Injected authority differs from live E0-MV authority"
+            "Injected authority differs from live E0-MW authority"
         )
     live_runtime, _ = _load_runtime_contract(repo_root)
     if runtime is not None and not _exact_typed_equal(dict(runtime), live_runtime):
