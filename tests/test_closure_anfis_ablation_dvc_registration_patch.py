@@ -18,7 +18,7 @@ from src.experiments import (
     closure_anfis_ablation_dvc_registration_patch as patch,
 )
 from src.experiments import (
-    closure_anfis_ablation_dvc_registration_adoption_patch as mz_patch,
+    closure_anfis_ablation_dvc_registration_order_patch as mza_patch,
 )
 from src.experiments import (
     lock_closure_anfis_ablation_dvc_registration_patch as locker,
@@ -200,16 +200,17 @@ def test_patch_identity_and_h_p_r_scopes_are_exact() -> None:
         "models.dvc": "M",
     }
     assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r_mz
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE == expected_r_mz
     assert len(expected_r_mz) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZ", "P-E0-MZ"}
+        {"H-E0-MZA", "P-E0-MZA"}
     )
-    for gate in ("H-E0-MZ", "P-E0-MZ"):
+    for gate in ("H-E0-MZA", "P-E0-MZA"):
         assert precommit_artifacts.require_active_deferred_dvc_staging_gate(gate) == gate
-    for gate in ("H-E0-MY", "P-E0-MY"):
+    for gate in ("H-E0-MY", "P-E0-MY", "H-E0-MZ", "P-E0-MZ"):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZ/P-E0-MZ",
+            match="closed to exact H-E0-MZA/P-E0-MZA",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
@@ -249,6 +250,36 @@ def test_registration_inventory_is_separate_exact_and_ordered(
         inventory_path
     )
     assert [artifact.path.as_posix() for artifact in loaded] == expected_paths
+    lexical_missing = sorted(loaded, key=lambda artifact: artifact.path.as_posix())
+    assert precommit_artifacts.validate_anfis_ablation_registration_missing_pointer_set(
+        lexical_missing
+    ) == lexical_missing
+    reversed_missing = list(reversed(lexical_missing))
+    assert precommit_artifacts.validate_anfis_ablation_registration_missing_pointer_set(
+        reversed_missing
+    ) == reversed_missing
+    foreign = precommit_artifacts.DvcArtifact(
+        artifact_id="closure_anfis_ablation_selection_predictions_forged",
+        path=Path(
+            "data/closure_v1/development/anfis_ablation/"
+            "A2/seed_1729_selection_predictions.parquet"
+        ),
+        artifact_type=lexical_missing[-1].artifact_type,
+        source_id=lexical_missing[-1].source_id,
+        dvc=True,
+    )
+    for malformed in (
+        lexical_missing[:-1],
+        [*lexical_missing[:-1], lexical_missing[0]],
+        [*lexical_missing, foreign],
+    ):
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="missing-pointer set is not the exact ten predictions",
+        ):
+            precommit_artifacts.validate_anfis_ablation_registration_missing_pointer_set(
+                malformed
+            )
     assert [path.as_posix() for path in precommit_artifacts.ANFIS_ABLATION_REGISTRATION_DVC_TARGETS[:-1]] == expected_paths
     assert precommit_artifacts.ANFIS_ABLATION_REGISTRATION_DVC_TARGETS[-1] == Path(
         "models"
@@ -378,17 +409,17 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
 
     def load(**kwargs: Any) -> dict[str, Any]:
         observed.append(kwargs)
-        return {"gate": "E0-MZ", "status": "effective_preflight_passed"}
+        return {"gate": "E0-MZA", "status": "effective_preflight_passed"}
 
     monkeypatch.setattr(
-        mz_patch,
-        "load_effective_anfis_ablation_dvc_registration_adoption_patch_authority",
+        mza_patch,
+        "load_effective_anfis_ablation_dvc_registration_order_patch_authority",
         load,
     )
     authority = precommit_artifacts._load_effective_anfis_ablation_dvc_registration_authority(
         audit_current_unpublished=False, repo_root=ROOT
     )
-    assert authority == {"gate": "E0-MZ", "status": "effective_preflight_passed"}
+    assert authority == {"gate": "E0-MZA", "status": "effective_preflight_passed"}
     assert observed == [
         {
             "audit_current_unpublished": False,
@@ -459,7 +490,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
         ],
         check=True,
     )
@@ -470,7 +501,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
         capture_output=True,
         text=True,
     ).stdout.splitlines() == sorted(
-        precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE
+        precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE
     )
 
     synthetic_failure = RuntimeError("post-git-add failure")
@@ -489,7 +520,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "ls-files",
             "-s",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
         ],
         check=True,
         capture_output=True,

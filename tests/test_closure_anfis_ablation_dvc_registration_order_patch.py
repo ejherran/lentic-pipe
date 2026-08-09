@@ -7,6 +7,7 @@ import os
 import stat
 import subprocess
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -14,48 +15,34 @@ import yaml
 
 from src.data import prepare_commit_artifacts as precommit_artifacts
 from src.experiments import (
-    closure_anfis_ablation_dvc_registration_adoption_patch as patch,
+    closure_anfis_ablation_dvc_registration_order_patch as patch,
 )
 from src.experiments import (
-    closure_anfis_ablation_dvc_registration_order_patch as mza_patch,
+    closure_anfis_ablation_dvc_registration_adoption_patch as mz,
 )
-from src.experiments import closure_anfis_ablation_dvc_registration_patch as my
 from src.experiments import (
-    lock_closure_anfis_ablation_dvc_registration_adoption_patch as locker,
+    lock_closure_anfis_ablation_dvc_registration_order_patch as locker,
 )
 
 
 ROOT = Path(__file__).resolve().parents[1]
-P_MX_COMMIT = "c73b8ebe11d942631d24e43b0eac2f4b2e72e400"
-H_MY_COMMIT = "af233a89e22ce380f7b1f2094cdf4a92eb95b83d"
+H_MZ_COMMIT = "ab1d7189ab8ce549a2517a71fef61ea66e2dcf7f"
+P_MZ_COMMIT = "74410ceb42cbea471b4a3cf8d1bd4e2f197ad058"
 ADOPTED_LIGHT_COMMIT = "2f0643ab6f634fdcce71f0ee0d847c448d2c61f5"
 FAMILY_RECORDS_SHA256 = (
     "e625add8f8af1746f7deda9ff13a84a4d4f4c27b47e3b6312922db419508dd8e"
 )
 EXPECTED_ADDITIONS = {
-    "configs/closure_v1/anfis_ablation_dvc_registration_adoption_patch_lock.schema.json",
-    "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ADOPTION_PATCH_1.md",
-    "src/experiments/closure_anfis_ablation_dvc_registration_adoption_patch.py",
-    "src/experiments/lock_closure_anfis_ablation_dvc_registration_adoption_patch.py",
-    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
-}
-EXPECTED_MODIFICATIONS = {
-    "src/data/prepare_commit_artifacts.py",
-    "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
-    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
-    "tests/test_closure_anfis_ablation_model_publication_patch.py",
-}
-EXPECTED_MZA_ADDITIONS = {
     "configs/closure_v1/anfis_ablation_dvc_registration_order_patch_lock.schema.json",
     "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ORDER_PATCH_1.md",
     "src/experiments/closure_anfis_ablation_dvc_registration_order_patch.py",
     "src/experiments/lock_closure_anfis_ablation_dvc_registration_order_patch.py",
     "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py",
 }
-EXPECTED_MZA_MODIFICATIONS = {
+EXPECTED_MODIFICATIONS = {
     "src/data/prepare_commit_artifacts.py",
-    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
     "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
     "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
     "tests/test_closure_anfis_ablation_model_publication_patch.py",
 }
@@ -91,40 +78,26 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
         },
         "models.dvc": "M",
     }
-    current_h = {
-        path: ("A" if path in EXPECTED_MZA_ADDITIONS else "M")
-        for path in EXPECTED_MZA_ADDITIONS | EXPECTED_MZA_MODIFICATIONS
-    }
-    current_p = {
-        "reports/closure_v1/00_protocol/"
-        "anfis_ablation_dvc_registration_order_patch_lock.json": "A",
-        "reports/closure_v1/00_protocol/"
-        "anfis_ablation_dvc_registration_order_patch_lock_manifest.json": "A",
-    }
 
-    assert patch.PATCH_GATE == "E0-MZ"
-    assert patch.P_MX_COMMIT == P_MX_COMMIT
-    assert patch.H_MY_COMMIT == H_MY_COMMIT
-    assert patch.ADOPTED_LIGHT_COMMIT == ADOPTED_LIGHT_COMMIT
-    assert patch.BASE_COMMIT == ADOPTED_LIGHT_COMMIT
+    assert patch.PATCH_GATE == "E0-MZA"
+    assert patch.H_MZ_COMMIT == H_MZ_COMMIT
+    assert patch.P_MZ_COMMIT == P_MZ_COMMIT
+    assert patch.BASE_COMMIT == P_MZ_COMMIT
     assert set(patch.PATCH_ADDED_PATHS) == EXPECTED_ADDITIONS
     assert set(patch.PATCH_MODIFIED_PATHS) == EXPECTED_MODIFICATIONS
     assert set(patch.PATCH_PATHS) == EXPECTED_ADDITIONS | EXPECTED_MODIFICATIONS
-    assert len(patch.PATCH_PATHS) == 9
+    assert len(patch.PATCH_PATHS) == 10
     assert patch.PATCH_COMPONENT_GIT_MODES == {
         path: ("100755" if path == "src/data/prepare_commit_artifacts.py" else "100644")
         for path in patch.PATCH_PATHS
     }
-    assert patch.ANFIS_ABLATION_H_MZ_STAGED_SCOPE == expected_h
-    assert patch.ANFIS_ABLATION_P_MZ_STAGED_SCOPE == expected_p
-    assert patch.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r
-    assert precommit_artifacts.DEFERRED_DVC_H_MZ_STAGED_SCOPE == expected_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MZ_STAGED_SCOPE == expected_p
-    assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r
-    assert precommit_artifacts.DEFERRED_DVC_H_MZA_STAGED_SCOPE == current_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MZA_STAGED_SCOPE == current_p
+    assert patch.ANFIS_ABLATION_H_MZA_STAGED_SCOPE == expected_h
+    assert patch.ANFIS_ABLATION_P_MZA_STAGED_SCOPE == expected_p
+    assert patch.ANFIS_ABLATION_R_MZA_STAGED_SCOPE == expected_r
+    assert precommit_artifacts.DEFERRED_DVC_H_MZA_STAGED_SCOPE == expected_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZA_STAGED_SCOPE == expected_p
     assert precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE == expected_r
-    assert len(expected_h) == 9
+    assert len(expected_h) == 10
     assert len(expected_p) == 2
     assert len(expected_r) == 11
     assert list(expected_r.values()).count("A") == 10
@@ -132,82 +105,87 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
         {"H-E0-MZA", "P-E0-MZA"}
     )
-    assert len(current_h) == 10
-    assert len(current_p) == 2
-    for gate in ("H-E0-MZA", "P-E0-MZA"):
-        assert precommit_artifacts.require_active_deferred_dvc_staging_gate(gate) == gate
-    for gate in ("H-E0-MZ", "P-E0-MZ"):
-        with pytest.raises(
-            precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZA/P-E0-MZA",
-        ):
-            precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
 
-def test_historical_my_partition_and_adopted_light_commit_are_exact() -> None:
-    history = patch._historical_h_my_authority(ROOT)
-    adopted = patch._adopted_light_publication(ROOT)
+def test_p_mz_authority_and_historical_mz_partition_are_exact() -> None:
+    base = patch._base_mz_authority(ROOT)
+    history = patch._historical_h_mz_authority(ROOT)
+    historical_inputs = patch._historical_inputs(ROOT)
 
-    assert history["gate"] == "E0-MY"
-    assert history["head"] == H_MY_COMMIT
-    assert history["parent"] == P_MX_COMMIT
+    assert base["gate"] == "E0-MZ"
+    assert base["p_head"] == P_MZ_COMMIT
+    assert base["h_head"] == H_MZ_COMMIT
+    assert base["publication_reconstructed_from_git"] is True
+    assert base["effective_loader_called"] is False
+    assert base["lock"]["path"] == patch.BASE_MZ_LOCK_PATH.as_posix()
+    assert base["companion"]["path"] == patch.BASE_MZ_COMPANION_PATH.as_posix()
+    assert len(base["historical_inputs"]) == mz.EXPECTED_HISTORICAL_INPUT_COUNT == 8
+
+    assert history["gate"] == "E0-MZ"
+    assert history["head"] == H_MZ_COMMIT
+    assert history["parent"] == mz.BASE_COMMIT == ADOPTED_LIGHT_COMMIT
     assert history["scope"] == {"added": 5, "modified": 4, "deleted": 0}
-    assert history["paths"] == list(my.PATCH_PATHS)
-    assert history["preserved_component_count"] == 5
-    assert history["superseded_component_count"] == 4
+    assert history["paths"] == list(mz.PATCH_PATHS)
+    assert history["preserved_component_count"] == 4
+    assert history["superseded_component_count"] == 5
     assert {record["path"] for record in history["preserved_components"]} == set(
-        patch.PRESERVED_MY_PATHS
+        patch.PRESERVED_MZ_PATHS
     )
     assert {record["path"] for record in history["superseded_components"]} == set(
-        patch.SUPERSEDED_MY_PATHS
+        patch.SUPERSEDED_MZ_PATHS
     )
-    assert adopted["commit"] == ADOPTED_LIGHT_COMMIT
-    assert adopted["parent"] == H_MY_COMMIT
-    assert adopted["scope"] == {"added": 45, "modified": 0, "deleted": 0}
-    assert adopted["path_count"] == 45
-    assert adopted["paths"] == list(patch.ADOPTED_LIGHT_PATHS)
-    assert len(adopted["records"]) == 45
-    assert adopted["is_valid_r_my"] is False
-    assert adopted["adoption_only"] is True
+
+    assert len(historical_inputs) == patch.EXPECTED_HISTORICAL_INPUT_COUNT == 13
+    assert len(
+        {(record["commit"], record["path"], record["role"]) for record in historical_inputs}
+    ) == 13
+    assert historical_inputs[:8] == base["historical_inputs"]
+    assert sum(record["commit"] == H_MZ_COMMIT for record in historical_inputs) == 5
+    assert all(
+        record["role"].startswith("superseded_h_mz_")
+        for record in historical_inputs[8:]
+    )
 
 
 def test_companion_physical_and_historical_partitions_are_exact(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    history = patch._historical_h_my_authority(ROOT)
-    base_mx = patch._base_mx_authority(ROOT)
+    history = patch._historical_h_mz_authority(ROOT)
+    base_mz = patch._base_mz_authority(ROOT)
     h_components = [
         {"path": path, "role": patch.PATCH_COMPONENT_ROLES[path]}
         for path in patch.PATCH_PATHS
     ]
     physical = patch._companion_physical_inputs(
         h_components=h_components,
-        base_mx=base_mx,
-        historical_h_my=history,
+        base_mz=base_mz,
+        historical_h_mz=history,
     )
     historical = patch._historical_inputs(ROOT)
 
     assert len(physical) == patch.EXPECTED_COMPANION_INPUT_COUNT == 16
     assert len({(record["path"], record["role"]) for record in physical}) == 16
-    assert len(historical) == patch.EXPECTED_HISTORICAL_INPUT_COUNT == 8
+    assert len(historical) == patch.EXPECTED_HISTORICAL_INPUT_COUNT == 13
     assert len(
         {(record["commit"], record["path"], record["role"]) for record in historical}
-    ) == 8
-    assert sum(record["commit"] == P_MX_COMMIT for record in historical) == 4
-    assert sum(record["commit"] == H_MY_COMMIT for record in historical) == 4
-    assert not set(patch.ADOPTED_LIGHT_PATHS).intersection(
-        record["path"] for record in physical
-    )
+    ) == 13
+    assert sum(record["commit"] == H_MZ_COMMIT for record in historical) == 5
+    assert {record["path"] for record in physical} == {
+        patch.BASE_MZ_LOCK_PATH.as_posix(),
+        patch.BASE_MZ_COMPANION_PATH.as_posix(),
+        *patch.PRESERVED_MZ_PATHS,
+        *patch.PATCH_PATHS,
+    }
 
-    forged_root = tmp_path / "forged-p-mx"
+    forged_root = tmp_path / "forged-p-mz"
     forged_root.mkdir()
-    for path in (patch.BASE_MX_LOCK_PATH, patch.BASE_MX_COMPANION_PATH):
+    for path in (patch.BASE_MZ_LOCK_PATH, patch.BASE_MZ_COMPANION_PATH):
         candidate = forged_root / path
         candidate.parent.mkdir(parents=True, exist_ok=True)
         candidate.write_bytes(b"forged-physical-authority\n")
         candidate.chmod(0o644)
     monkeypatch.setattr(
-        patch, "_single_parent", lambda *args, **kwargs: patch.BASE_H_MX_COMMIT
+        patch, "_single_parent", lambda *args, **kwargs: H_MZ_COMMIT
     )
     monkeypatch.setattr(
         patch,
@@ -218,8 +196,8 @@ def test_companion_physical_and_historical_partitions_are_exact(
             "deleted": 0,
             "paths": sorted(
                 (
-                    patch.BASE_MX_LOCK_PATH.as_posix(),
-                    patch.BASE_MX_COMPANION_PATH.as_posix(),
+                    patch.BASE_MZ_LOCK_PATH.as_posix(),
+                    patch.BASE_MZ_COMPANION_PATH.as_posix(),
                 )
             ),
         },
@@ -231,13 +209,13 @@ def test_companion_physical_and_historical_partitions_are_exact(
         patch, "_git_blob_bytes", lambda *args, **kwargs: b"canonical-git-authority\n"
     )
     with pytest.raises(
-        patch.AnfisAblationDvcRegistrationAdoptionPatchError,
-        match="P-E0-MX physical input differs from Git",
+        patch.AnfisAblationDvcRegistrationOrderPatchError,
+        match="P-E0-MZ physical input differs from Git",
     ):
-        patch._base_mx_authority(forged_root)
+        patch._base_mz_authority(forged_root)
 
 
-def test_registration_inventory_and_exact_no_relink_commands_are_closed() -> None:
+def test_registration_inventory_set_validation_and_canonical_commands_are_closed() -> None:
     inventory = yaml.safe_load(
         (ROOT / patch.DVC_INVENTORY_PATH).read_text(encoding="utf-8")
     )
@@ -263,6 +241,46 @@ def test_registration_inventory_and_exact_no_relink_commands_are_closed() -> Non
         and record["github_policy"] == patch.REGISTRATION_GITHUB_POLICY
         for record in records
     )
+
+    configured = precommit_artifacts.load_configured_dvc_artifacts(
+        precommit_artifacts.DEFAULT_DVC_MANIFEST
+    )
+    registration = precommit_artifacts.load_anfis_ablation_registration_artifacts()
+    discovered = precommit_artifacts.declared_artifacts_missing_pointers(
+        [*configured, *registration]
+    )
+    discovered_paths = [artifact.path.as_posix() for artifact in discovered]
+    assert discovered_paths == sorted(expected_payloads)
+    assert discovered_paths != expected_payloads
+    assert (
+        precommit_artifacts.validate_anfis_ablation_registration_missing_pointer_set(
+            discovered
+        )
+        == discovered
+    )
+
+    extra = precommit_artifacts.DvcArtifact(
+        artifact_id="synthetic_extra",
+        path=Path("data/closure_v1/development/anfis_ablation/A2/extra.parquet"),
+        artifact_type=patch.REGISTRATION_ARTIFACT_TYPE,
+        source_id="wqp",
+        dvc=True,
+    )
+    malformed = (
+        discovered[:-1],
+        [*discovered[:-1], discovered[0]],
+        [*discovered[:-1], extra],
+        [*discovered, discovered[0]],
+    )
+    for candidate in malformed:
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="missing-pointer set is not the exact ten predictions",
+        ):
+            precommit_artifacts.validate_anfis_ablation_registration_missing_pointer_set(
+                candidate
+            )
+
     assert patch._dvc_add_commands() == [
         ["dvc", "add", "--no-relink", path]
         for path in (*expected_payloads, "models")
@@ -271,6 +289,52 @@ def test_registration_inventory_and_exact_no_relink_commands_are_closed() -> Non
         *expected_payloads,
         "models",
     ]
+    registration_source = inspect.getsource(
+        precommit_artifacts._run_anfis_ablation_model_family_registration
+    )
+    assert "validate_anfis_ablation_registration_missing_pointer_set(missing)" in (
+        registration_source
+    )
+    assert (
+        "selected_dvc_paths = list(ANFIS_ABLATION_REGISTRATION_DVC_TARGETS)"
+        in registration_source
+    )
+
+    args = SimpleNamespace(
+        register_anfis_ablation_model_family=True,
+        allow_unmanaged=False,
+        no_push=True,
+        yes=False,
+        dry_run=False,
+        skip_publication_check=False,
+        jobs=None,
+        dvc_bin=None,
+        manifest=precommit_artifacts.DEFAULT_DVC_MANIFEST,
+        report=None,
+        target=[],
+        defer_dvc_target=[],
+    )
+    invocation_env = {
+        "PATH": "/usr/bin:/bin",
+        "HOME": precommit_artifacts.ANFIS_ABLATION_EXPECTED_HOME.as_posix(),
+        "XDG_CONFIG_HOME": (
+            precommit_artifacts.ANFIS_ABLATION_EXPECTED_XDG_CONFIG_HOME.as_posix()
+        ),
+        "XDG_CONFIG_DIRS": (
+            precommit_artifacts.ANFIS_ABLATION_EXPECTED_XDG_CONFIG_DIRS
+        ),
+        "DVC_NO_ANALYTICS": "1",
+        "GIT_PAGER": "cat",
+    }
+    with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+        precommit_artifacts.validate_anfis_ablation_registration_invocation(
+            args, env=invocation_env
+        )
+    del invocation_env["GIT_PAGER"]
+    precommit_artifacts.validate_anfis_ablation_registration_invocation(
+        args, env=invocation_env
+    )
+
     configuration = patch._dvc_configuration_contract(ROOT)
     assert configuration["cache_type"] == "reflink,hardlink,copy"
     assert configuration["no_relink_required"] is True
@@ -418,19 +482,19 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
 ) -> None:
     assert set(
         inspect.signature(
-            patch.load_effective_anfis_ablation_dvc_registration_adoption_patch_authority
+            patch.load_effective_anfis_ablation_dvc_registration_order_patch_authority
         ).parameters
     ) == {"audit_current_unpublished", "verify_remote", "repo_root"}
     assert set(
         inspect.signature(
-            patch._load_effective_anfis_ablation_dvc_registration_adoption_patch_during_registration
+            patch._load_effective_anfis_ablation_dvc_registration_order_patch_during_registration
         ).parameters
     ) == {"transaction_record", "verify_remote", "repo_root"}
     assert set(
         inspect.signature(patch.require_anfis_ablation_dvc_registration_authority).parameters
     ) == {"verify_remote", "repo_root"}
     assert (
-        "_load_effective_anfis_ablation_dvc_registration_adoption_patch_during_registration"
+        "_load_effective_anfis_ablation_dvc_registration_order_patch_during_registration"
         not in patch.__all__
     )
 
@@ -441,7 +505,7 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
 
         translated_git.setattr(patch.mx, "_git", fail_nested_git)
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="nested MX failure",
         ):
             patch._git(ROOT, "status")
@@ -453,14 +517,14 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
 
         translated_public.setattr(
             patch,
-            "_load_effective_anfis_ablation_dvc_registration_adoption_patch_authority",
+            "_load_effective_anfis_ablation_dvc_registration_order_patch_authority",
             fail_public_loader,
         )
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="synthetic public boundary failure",
         ):
-            patch.load_effective_anfis_ablation_dvc_registration_adoption_patch_authority(
+            patch.load_effective_anfis_ablation_dvc_registration_order_patch_authority(
                 repo_root=tmp_path
             )
 
@@ -470,10 +534,10 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
     malformed_lock.write_bytes(b"\xff")
     malformed_lock.chmod(0o644)
     with pytest.raises(
-        patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+        patch.AnfisAblationDvcRegistrationOrderPatchError,
         match="lock is not valid UTF-8 JSON",
     ):
-        patch.load_effective_anfis_ablation_dvc_registration_adoption_patch_authority(
+        patch.load_effective_anfis_ablation_dvc_registration_order_patch_authority(
             repo_root=malformed_lock_root
         )
 
@@ -488,14 +552,14 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
     with monkeypatch.context() as malformed_companion:
         malformed_companion.setattr(
             patch,
-            "_validate_anfis_ablation_dvc_registration_adoption_patch_lock_payload",
+            "_validate_anfis_ablation_dvc_registration_order_patch_lock_payload",
             lambda *args, **kwargs: None,
         )
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="companion is not valid UTF-8 JSON",
         ):
-            patch.load_effective_anfis_ablation_dvc_registration_adoption_patch_authority(
+            patch.load_effective_anfis_ablation_dvc_registration_order_patch_authority(
                 repo_root=malformed_companion_root
             )
 
@@ -510,7 +574,7 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
         return {"gate": "E0-MZA", "mode": "private"}
 
     monkeypatch.setattr(
-        mza_patch,
+        patch,
         "load_effective_anfis_ablation_dvc_registration_order_patch_authority",
         public,
     )
@@ -519,7 +583,7 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
     ) == {"gate": "E0-MZA", "mode": "public"}
     transaction = {"mode": "atomic_replace"}
     monkeypatch.setattr(
-        mza_patch,
+        patch,
         "_load_effective_anfis_ablation_dvc_registration_order_patch_during_registration",
         private,
     )
@@ -548,7 +612,7 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
     ]
 
 
-def test_schema_closes_adoption_history_family_and_registration_scope() -> None:
+def test_schema_closes_order_incident_history_family_and_registration_scope() -> None:
     schema = json.loads(
         (ROOT / patch.DEFAULT_PATCH_LOCK_SCHEMA).read_text(encoding="utf-8")
     )
@@ -558,19 +622,44 @@ def test_schema_closes_adoption_history_family_and_registration_scope() -> None:
         reference = schema["properties"][name]["$ref"]
         return definitions[reference.removeprefix("#/$defs/")]
 
-    assert schema["properties"]["gate"]["const"] == "E0-MZ"
-    assert {"historical_h_my", "adopted_light_publication"} <= set(
+    assert schema["properties"]["gate"]["const"] == "E0-MZA"
+    assert {"base_mz_authority", "historical_h_mz", "ordering_correction"} <= set(
         schema["required"]
     )
     repository = resolved_property("repository")["properties"]
-    assert repository["parent"]["const"] == ADOPTED_LIGHT_COMMIT
+    assert repository["parent"]["const"] == P_MZ_COMMIT
     assert repository["worktree_scope"]["const"] == "clean_all_50_light_outputs_tracked"
     h_patch = resolved_property("h_patch")["properties"]
-    assert h_patch["base_commit"]["const"] == ADOPTED_LIGHT_COMMIT
-    assert h_patch["parent"]["const"] == ADOPTED_LIGHT_COMMIT
-    assert h_patch["component_count"]["const"] == 9
+    assert h_patch["base_commit"]["const"] == P_MZ_COMMIT
+    assert h_patch["parent"]["const"] == P_MZ_COMMIT
+    assert h_patch["component_count"]["const"] == 10
     modes_ref = h_patch["components_git_modes"]["$ref"].removeprefix("#/$defs/")
     assert set(definitions[modes_ref]["required"]) == set(patch.PATCH_PATHS)
+
+    base = resolved_property("base_mz_authority")["properties"]
+    assert base["gate"]["const"] == "E0-MZ"
+    assert base["p_head"]["const"] == P_MZ_COMMIT
+    assert base["h_head"]["const"] == H_MZ_COMMIT
+    assert base["effective_loader_called"]["const"] is False
+    history = resolved_property("historical_h_mz")["properties"]
+    assert history["gate"]["const"] == "E0-MZ"
+    assert history["head"]["const"] == H_MZ_COMMIT
+    assert history["parent"]["const"] == ADOPTED_LIGHT_COMMIT
+    assert history["preserved_component_count"]["const"] == 4
+    assert history["superseded_component_count"]["const"] == 5
+    ordering = resolved_property("ordering_correction")["properties"]
+    assert ordering["blocked_gate"]["const"] == "E0-MZ"
+    assert ordering["published_p_mz_head"]["const"] == P_MZ_COMMIT
+    assert ordering["status"]["const"] == "blocked_pre_dvc_order_only"
+    assert ordering["missing_pointer_count"]["const"] == 10
+    assert ordering["missing_pointer_unique_count"]["const"] == 10
+    assert ordering["missing_pointer_set_exact"]["const"] is True
+    assert ordering["discovery_order"]["const"] == "lexical_path"
+    assert ordering["execution_order"]["const"] == (
+        "alternating_a0_a1_within_seed"
+    )
+    assert ordering["dvc_commands_run"]["const"] is False
+    assert ordering["writes_performed"]["const"] is False
     family = resolved_property("completed_family")["properties"]
     assert family["slot_count"]["const"] == 10
     assert family["final_count"]["const"] == 80
@@ -602,16 +691,27 @@ def test_schema_closes_adoption_history_family_and_registration_scope() -> None:
             with pytest.raises(patch.ClosureContractError):
                 patch.validate_json_schema(drifted, probe_schema)
     assert "_expected_ordered_slots()" in inspect.getsource(
-        patch._validate_anfis_ablation_dvc_registration_adoption_patch_lock_payload
+        patch._validate_anfis_ablation_dvc_registration_order_patch_lock_payload
     )
     assert "_expected_ordered_slots()" in inspect.getsource(
         patch._validate_verification
     )
     companion = resolved_property("companion_contract")["properties"]
     assert companion["physical_input_count"]["const"] == 16
-    assert companion["historical_input_count"]["const"] == 8
+    assert companion["historical_input_count"]["const"] == 13
     assert companion["output_count"]["const"] == 1
     plan = resolved_property("registration_plan")["properties"]
+    missing_ref = plan["missing_pointer_validation"]["$ref"].removeprefix(
+        "#/$defs/"
+    )
+    missing = definitions[missing_ref]["properties"]
+    assert missing["count"]["const"] == 10
+    assert missing["unique_count"]["const"] == 10
+    assert missing["set_exact"]["const"] is True
+    assert missing["discovery_order"]["const"] == "lexical_path"
+    assert missing["canonical_execution_order"]["const"] == (
+        "alternating_a0_a1_within_seed"
+    )
     scope_ref = plan["registration_git_scope"]["$ref"].removeprefix("#/$defs/")
     registration = definitions[scope_ref]["properties"]
     assert registration["added"]["const"] == 10
@@ -622,7 +722,7 @@ def test_schema_closes_adoption_history_family_and_registration_scope() -> None:
     assert definitions["focusedTests"]["properties"]["test_count"]["const"] == (
         patch.FOCUSED_TEST_COUNT
     )
-    patch.preflight_anfis_ablation_dvc_registration_adoption_patch_schema(
+    patch.preflight_anfis_ablation_dvc_registration_order_patch_schema(
         repo_root=ROOT
     )
 
@@ -633,19 +733,19 @@ def test_generic_precommit_manifest_dialect_is_one_one_one(
     monkeypatch.chdir(tmp_path)
     lock = patch.DEFAULT_PATCH_LOCK_PATH
     companion = patch.DEFAULT_PATCH_LOCK_MANIFEST_PATH
-    script = Path("src/synthetic_e0_mz_locker.py")
-    source = Path("configs/synthetic_e0_mz_input.json")
+    script = Path("src/synthetic_e0_mza_locker.py")
+    source = Path("configs/synthetic_e0_mza_input.json")
     for path in (lock, companion, script, source):
         path.parent.mkdir(parents=True, exist_ok=True)
-    script.write_bytes(b"# synthetic E0-MZ locker\n")
+    script.write_bytes(b"# synthetic E0-MZA locker\n")
     source.write_bytes(b"{}\n")
-    lock.write_bytes(b'{"gate":"E0-MZ","status":"locked_unpublished"}\n')
+    lock.write_bytes(b'{"gate":"E0-MZA","status":"locked_unpublished"}\n')
     companion.write_text(
         json.dumps(
             {
-                "manifest_version": "synthetic_e0_mz_lock_manifest_v1",
+                "manifest_version": "synthetic_e0_mza_lock_manifest_v1",
                 "status": "completed",
-                "gate": "E0-MZ",
+                "gate": "E0-MZA",
                 "script": _record(script, role="synthetic_locker"),
                 "inputs": [_record(source, role="synthetic_input")],
                 "outputs": [_record(lock, role="synthetic_lock")],
@@ -674,25 +774,25 @@ def test_generic_precommit_manifest_dialect_is_one_one_one(
     ]
 
 
-def test_check_only_is_a_nonwriting_adoption_summary(
+def test_check_only_is_a_nonwriting_order_summary(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     schema = {"status": "schema_preflight_passed"}
     repository = {"head": "f" * 40}
     monkeypatch.setattr(
         patch,
-        "preflight_anfis_ablation_dvc_registration_adoption_patch_schema",
+        "preflight_anfis_ablation_dvc_registration_order_patch_schema",
         lambda: schema,
     )
     monkeypatch.setattr(
         patch,
-        "collect_anfis_ablation_dvc_registration_adoption_patch_prelock_state",
+        "collect_anfis_ablation_dvc_registration_order_patch_prelock_state",
         lambda **kwargs: {
             "repository": repository,
-            "h_patch": {"component_count": 9},
+            "h_patch": {"component_count": 10},
             "companion_contract": {
                 "physical_input_count": 16,
-                "historical_input_count": 8,
+                "historical_input_count": 13,
             },
             "completed_family": {
                 "slot_count": 10,
@@ -706,17 +806,44 @@ def test_check_only_is_a_nonwriting_adoption_summary(
                 "registration_artifact_count": 10,
                 "general_artifact_count": 23,
             },
-            "registration_plan": {"registration_git_scope": {"path_count": 11}},
+            "registration_plan": {
+                "registration_git_scope": {"path_count": 11},
+                "missing_pointer_validation": {
+                    "count": 10,
+                    "unique_count": 10,
+                    "set_exact": True,
+                    "discovery_order": "lexical_path",
+                    "canonical_execution_order": (
+                        "alternating_a0_a1_within_seed"
+                    ),
+                },
+            },
             "prelock": {"selection_pointer_present_count": 0},
         },
     )
     result = locker.check_only()
     assert result["status"] == "ready_to_lock"
-    assert result["gate"] == "E0-MZ"
+    assert result["gate"] == "E0-MZA"
     assert result["schema_preflight"] == schema
     assert result["repository"] == repository
-    assert result["adopted_light_commit"] == ADOPTED_LIGHT_COMMIT
-    assert result["adopted_light_count"] == 45
+    assert result["base_p_mz_commit"] == P_MZ_COMMIT
+    assert result["missing_pointer_validation"] == {
+        "count": 10,
+        "unique_count": 10,
+        "set_exact": True,
+        "discovery_order": "lexical_path",
+        "canonical_execution_order": "alternating_a0_a1_within_seed",
+    }
+    for drifted in (
+        {**result["missing_pointer_validation"], "count": True},
+        {**result["missing_pointer_validation"], "set_exact": 1},
+        {**result["missing_pointer_validation"], "unexpected": False},
+    ):
+        with pytest.raises(
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
+            match="missing-pointer validation contract drifted",
+        ):
+            locker._missing_pointer_validation(drifted)
     assert {
         key: result[key]
         for key in (
@@ -735,9 +862,9 @@ def test_check_only_is_a_nonwriting_adoption_summary(
             "prediction_pointer_count",
         )
     } == {
-        "component_count": 9,
+        "component_count": 10,
         "physical_input_count": 16,
-        "historical_input_count": 8,
+        "historical_input_count": 13,
         "completed_slot_count": 10,
         "family_final_count": 80,
         "lightweight_final_count": 50,
@@ -772,30 +899,30 @@ def test_execute_lock_and_effective_checks_delegate_once(
 
     def publish(**kwargs: Any) -> tuple[dict[str, Any], dict[str, Any]]:
         calls.append(("publish", kwargs))
-        return {"gate": "E0-MZ"}, {"status": "completed"}
+        return {"gate": "E0-MZA"}, {"status": "completed"}
 
     def load(**kwargs: Any) -> dict[str, Any]:
         calls.append(("load", kwargs))
-        return {"gate": "E0-MZ", "status": "effective"}
+        return {"gate": "E0-MZA", "status": "effective"}
 
     monkeypatch.setattr(
         patch,
-        "publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle",
+        "publish_anfis_ablation_dvc_registration_order_patch_lock_bundle",
         publish,
     )
     monkeypatch.setattr(
         patch,
-        "load_effective_anfis_ablation_dvc_registration_adoption_patch_authority",
+        "load_effective_anfis_ablation_dvc_registration_order_patch_authority",
         load,
     )
     locked = locker.execute_lock()
     effective = locker.check_effective()
     assert calls == [("publish", {}), ("load", {"verify_remote": True})]
     assert locked["status"] == "locked_unpublished"
-    assert locked["gate"] == "E0-MZ"
-    assert locked["lock"] == {"gate": "E0-MZ"}
+    assert locked["gate"] == "E0-MZA"
+    assert locked["lock"] == {"gate": "E0-MZA"}
     assert locked["companion"] == {"status": "completed"}
-    assert effective == {"gate": "E0-MZ", "status": "effective"}
+    assert effective == {"gate": "E0-MZA", "status": "effective"}
 
 
 def test_locker_cli_is_closed_and_translates_only_patch_errors(
@@ -813,7 +940,7 @@ def test_locker_cli_is_closed_and_translates_only_patch_errors(
         locker,
         "check_only",
         lambda: (_ for _ in ()).throw(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError("closed")
+            patch.AnfisAblationDvcRegistrationOrderPatchError("closed")
         ),
     )
     assert locker.main(["--check-only"]) == 2
@@ -821,13 +948,21 @@ def test_locker_cli_is_closed_and_translates_only_patch_errors(
     assert captured.out == ""
     assert captured.err == "closed\n"
 
+    monkeypatch.setattr(
+        locker,
+        "check_only",
+        lambda: (_ for _ in ()).throw(RuntimeError("foreign")),
+    )
+    with pytest.raises(RuntimeError, match="foreign"):
+        locker.main(["--check-only"])
+
 
 def test_locker_publisher_surface_and_p_git_binding_are_closed(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     assert set(
         inspect.signature(
-            patch.publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle
+            patch.publish_anfis_ablation_dvc_registration_order_patch_lock_bundle
         ).parameters
     ) == {"repo_root"}
     assert set(inspect.signature(locker.execute_lock).parameters) == set()
@@ -856,7 +991,7 @@ def test_locker_publisher_surface_and_p_git_binding_are_closed(
     assert len(tampered_payload) == len(owned_payload)
     (owned_root / owned_path).write_bytes(tampered_payload)
     with pytest.raises(
-        patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+        patch.AnfisAblationDvcRegistrationOrderPatchError,
         match="owned output bytes drifted",
     ):
         patch._validate_owned_output_bytes(
@@ -900,7 +1035,7 @@ def test_locker_publisher_surface_and_p_git_binding_are_closed(
         assert rollback_calls == [second.path, first.path]
         assert isinstance(
             rollback_error,
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
         )
         assert "synthetic-second.json" in str(rollback_error)
 
@@ -914,7 +1049,7 @@ def test_locker_publisher_surface_and_p_git_binding_are_closed(
 
         best_effort_close.setattr(patch.mt, "_close_owned_output", close)
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="synthetic-first.json",
         ):
             patch._close_published_outputs_best_effort([first, second])
@@ -960,7 +1095,7 @@ def test_locker_publisher_surface_and_p_git_binding_are_closed(
     ) == {"h_patch_head": h_head, "p_patch_head": p_head, "remote_head": p_head}
     (repo_root / patch.DEFAULT_PATCH_LOCK_MANIFEST_PATH).write_bytes(b"drift\n")
     with pytest.raises(
-        patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+        patch.AnfisAblationDvcRegistrationOrderPatchError,
         match="physical bytes differ from Git",
     ):
         patch._validate_p_publication(
@@ -978,15 +1113,15 @@ def _install_synthetic_publisher(
     ):
         (repo_root / parent).mkdir(parents=True, exist_ok=True)
     prelock = {"repository": {"head": "h"}, "prelock": {"writes_performed": False}}
-    payload = {"gate": "E0-MZ", "status": "locked_unpublished"}
+    payload = {"gate": "E0-MZA", "status": "locked_unpublished"}
     companion = {
-        "manifest_version": "synthetic_e0_mz_lock_manifest_v1",
+        "manifest_version": "synthetic_e0_mza_lock_manifest_v1",
         "status": "completed",
         "completion_marker_written_last": True,
     }
     monkeypatch.setattr(
         patch,
-        "collect_anfis_ablation_dvc_registration_adoption_patch_prelock_state",
+        "collect_anfis_ablation_dvc_registration_order_patch_prelock_state",
         lambda **kwargs: prelock,
     )
     monkeypatch.setattr(
@@ -1012,17 +1147,17 @@ def _install_synthetic_publisher(
     )
     monkeypatch.setattr(
         patch,
-        "run_anfis_ablation_dvc_registration_adoption_patch_verification",
+        "run_anfis_ablation_dvc_registration_order_patch_verification",
         lambda **kwargs: {"status": "passed"},
     )
     monkeypatch.setattr(
         patch,
-        "build_anfis_ablation_dvc_registration_adoption_patch_lock_payload",
+        "build_anfis_ablation_dvc_registration_order_patch_lock_payload",
         lambda *args, **kwargs: payload,
     )
     monkeypatch.setattr(
         patch,
-        "validate_anfis_ablation_dvc_registration_adoption_patch_lock_payload",
+        "validate_anfis_ablation_dvc_registration_order_patch_lock_payload",
         lambda *args, **kwargs: None,
     )
     monkeypatch.setattr(patch, "_expected_companion", lambda *args, **kwargs: companion)
@@ -1046,10 +1181,10 @@ def test_publisher_is_no_clobber_and_rolls_back_only_owned_outputs(
 
         transaction.setattr(patch.mt, "_publish_bytes_no_clobber", fail_companion)
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="synthetic companion failure",
         ):
-            patch.publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle(
+            patch.publish_anfis_ablation_dvc_registration_order_patch_lock_bundle(
                 repo_root=repo_root
             )
         for relative in (
@@ -1070,10 +1205,10 @@ def test_publisher_is_no_clobber_and_rolls_back_only_owned_outputs(
         foreign.chmod(0o644)
         before = foreign.stat()
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="lock namespace is occupied",
         ):
-            patch.publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle(
+            patch.publish_anfis_ablation_dvc_registration_order_patch_lock_bundle(
                 repo_root=repo_root
             )
         after = foreign.stat()
@@ -1107,14 +1242,14 @@ def test_publisher_revalidates_guarded_state_and_post_lock_family(
 
         guarded.setattr(
             patch,
-            "collect_anfis_ablation_dvc_registration_adoption_patch_prelock_state",
+            "collect_anfis_ablation_dvc_registration_order_patch_prelock_state",
             collect,
         )
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="guarded prelock state drifted",
         ):
-            patch.publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle(
+            patch.publish_anfis_ablation_dvc_registration_order_patch_lock_bundle(
                 repo_root=repo_root
             )
         assert calls == 3
@@ -1138,17 +1273,17 @@ def test_publisher_revalidates_guarded_state_and_post_lock_family(
         def require_snapshot(expected: Any, *, repo_root: Path, context: str) -> None:
             del expected, repo_root
             if drifted:
-                raise patch.AnfisAblationDvcRegistrationAdoptionPatchError(
-                    f"E0-MZ family physical snapshot drifted {context}"
+                raise patch.AnfisAblationDvcRegistrationOrderPatchError(
+                    f"E0-MZA family physical snapshot drifted {context}"
                 )
 
         post_lock.setattr(patch.mt, "_publish_bytes_no_clobber", publish_then_drift)
         post_lock.setattr(patch, "_require_family_physical_snapshot", require_snapshot)
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="after lock publication",
         ):
-            patch.publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle(
+            patch.publish_anfis_ablation_dvc_registration_order_patch_lock_bundle(
                 repo_root=repo_root
             )
         for relative in (
@@ -1181,10 +1316,10 @@ def test_publisher_revalidates_guarded_state_and_post_lock_family(
             patch.mt, "_publish_bytes_no_clobber", publish_then_mutate_lock
         )
         with pytest.raises(
-            patch.AnfisAblationDvcRegistrationAdoptionPatchError,
+            patch.AnfisAblationDvcRegistrationOrderPatchError,
             match="owned output bytes drifted after companion publication",
         ):
-            patch.publish_anfis_ablation_dvc_registration_adoption_patch_lock_bundle(
+            patch.publish_anfis_ablation_dvc_registration_order_patch_lock_bundle(
                 repo_root=repo_root
             )
         for relative in (
@@ -1197,25 +1332,27 @@ def test_publisher_revalidates_guarded_state_and_post_lock_family(
             assert not (repo_root / relative).exists()
 
 
-def test_document_closes_adoption_registration_and_external_barriers() -> None:
+def test_document_closes_order_registration_and_external_barriers() -> None:
     document = (
         ROOT
-        / "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ADOPTION_PATCH_1.md"
+        / "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ORDER_PATCH_1.md"
     ).read_text(encoding="utf-8")
     for token in (
-        P_MX_COMMIT,
-        H_MY_COMMIT,
+        P_MZ_COMMIT,
+        H_MZ_COMMIT,
         ADOPTED_LIGHT_COMMIT,
-        "exact 45A lightweight-family adoption",
-        "`4M+5A`",
+        "unordered exact set of ten unique payloads",
+        "`5M+5A`",
         "`10A+1M`",
         "80 regular `0644`, single-link finals",
-        "50 lightweight Git files",
-        "16 current physical inputs and eight",
-        "five preserved H-E0-MY",
-        "four inherited P-E0-MX blobs",
+        "50 lightweight files tracked in Git",
+        "16 current physical inputs and 13",
+        "four H-E0-MZ components",
+        "five H-E0-MZ blobs",
+        "missing, extra, duplicated",
         "dvc add --no-relink",
         "commit_ready",
+        "GIT_PAGER",
         "DVC push",
     ):
         assert token in document

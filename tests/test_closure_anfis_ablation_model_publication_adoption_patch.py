@@ -110,6 +110,30 @@ EXPECTED_MZ_P_PATHS = {
         "anfis_ablation_dvc_registration_adoption_patch_lock_manifest.json"
     ),
 }
+EXPECTED_MZA_ADDITIONS = {
+    "configs/closure_v1/anfis_ablation_dvc_registration_order_patch_lock.schema.json",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ORDER_PATCH_1.md",
+    "src/experiments/closure_anfis_ablation_dvc_registration_order_patch.py",
+    "src/experiments/lock_closure_anfis_ablation_dvc_registration_order_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py",
+}
+EXPECTED_MZA_MODIFICATIONS = {
+    "src/data/prepare_commit_artifacts.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py",
+}
+EXPECTED_MZA_P_PATHS = {
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_order_patch_lock.json"
+    ),
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_order_patch_lock_manifest.json"
+    ),
+}
 
 
 def _record(path: Path, *, role: str) -> dict[str, Any]:
@@ -337,33 +361,45 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         },
         "models.dvc": "M",
     }
-    expected_h = {
+    historical_mz_h = {
         path: ("A" if path in EXPECTED_MZ_ADDITIONS else "M")
         for path in EXPECTED_MZ_ADDITIONS | EXPECTED_MZ_MODIFICATIONS
     }
-    expected_p = {path: "A" for path in EXPECTED_MZ_P_PATHS}
-    expected_r = {
+    historical_mz_p = {path: "A" for path in EXPECTED_MZ_P_PATHS}
+    historical_mz_r = {
         **{
             path: "A"
             for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
         },
         "models.dvc": "M",
     }
+    current_h = {
+        path: ("A" if path in EXPECTED_MZA_ADDITIONS else "M")
+        for path in EXPECTED_MZA_ADDITIONS | EXPECTED_MZA_MODIFICATIONS
+    }
+    current_p = {path: "A" for path in EXPECTED_MZA_P_PATHS}
+    current_r = dict(historical_mz_r)
     assert precommit_artifacts.DEFERRED_DVC_H_MX_STAGED_SCOPE == historical_mx_h
     assert precommit_artifacts.DEFERRED_DVC_P_MX_STAGED_SCOPE == historical_mx_p
     assert precommit_artifacts.DEFERRED_DVC_H_MY_STAGED_SCOPE == historical_my_h
     assert precommit_artifacts.DEFERRED_DVC_P_MY_STAGED_SCOPE == historical_my_p
     assert precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE == historical_my_r
-    assert precommit_artifacts.DEFERRED_DVC_H_MZ_STAGED_SCOPE == expected_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MZ_STAGED_SCOPE == expected_p
-    assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r
-    assert len(expected_h) == 9
-    assert len(expected_p) == 2
-    assert len(expected_r) == 11
+    assert precommit_artifacts.DEFERRED_DVC_H_MZ_STAGED_SCOPE == historical_mz_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZ_STAGED_SCOPE == historical_mz_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == historical_mz_r
+    assert precommit_artifacts.DEFERRED_DVC_H_MZA_STAGED_SCOPE == current_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZA_STAGED_SCOPE == current_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE == current_r
+    assert len(historical_mz_h) == 9
+    assert len(historical_mz_p) == 2
+    assert len(historical_mz_r) == 11
+    assert len(current_h) == 10
+    assert len(current_p) == 2
+    assert len(current_r) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZ", "P-E0-MZ"}
+        {"H-E0-MZA", "P-E0-MZA"}
     )
-    for current_gate in ("H-E0-MZ", "P-E0-MZ"):
+    for current_gate in ("H-E0-MZA", "P-E0-MZA"):
         assert (
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 current_gate
@@ -379,57 +415,59 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         "P-E0-MX",
         "H-E0-MY",
         "P-E0-MY",
+        "H-E0-MZ",
+        "P-E0-MZ",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZ/P-E0-MZ",
+            match="closed to exact H-E0-MZA/P-E0-MZA",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 historical_gate
             )
 
     h_staged = "".join(
-        f"{status}\t{path}\n" for path, status in sorted(expected_h.items())
+        f"{status}\t{path}\n" for path, status in sorted(current_h.items())
     )
     p_staged = "".join(
-        f"{status}\t{path}\n" for path, status in sorted(expected_p.items())
+        f"{status}\t{path}\n" for path, status in sorted(current_p.items())
     )
     h_pre_stage = "".join(
         f"{'??' if status == 'A' else ' M'} {path}\n"
-        for path, status in sorted(expected_h.items())
+        for path, status in sorted(current_h.items())
     )
-    p_pre_stage = "".join(f"?? {path}\n" for path in sorted(expected_p))
+    p_pre_stage = "".join(f"?? {path}\n" for path in sorted(current_p))
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(h_staged) == (
-        "H-E0-MZ"
+        "H-E0-MZA"
     )
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(p_staged) == (
-        "P-E0-MZ"
+        "P-E0-MZA"
     )
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         h_pre_stage
-    ) == "H-E0-MZ"
+    ) == "H-E0-MZA"
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         p_pre_stage
-    ) == "P-E0-MZ"
+    ) == "P-E0-MZA"
 
     r_pre_stage = "".join(
         f"{'??' if status == 'A' else ' M'} {path}\n"
-        for path, status in sorted(expected_r.items())
+        for path, status in sorted(current_r.items())
     )
     r_staged = "".join(
-        f"{status}\t{path}\n" for path, status in sorted(expected_r.items())
+        f"{status}\t{path}\n" for path, status in sorted(current_r.items())
     )
     assert (
         precommit_artifacts.validate_anfis_ablation_registration_pre_stage_scope(
             r_pre_stage
         )
-        == "R-E0-MZ"
+        == "R-E0-MZA"
     )
     assert (
         precommit_artifacts.validate_anfis_ablation_registration_staged_scope(
             r_staged
         )
-        == "R-E0-MZ"
+        == "R-E0-MZA"
     )
 
 
@@ -1138,7 +1176,7 @@ def test_mz_registration_transaction_restores_owned_partial_metadata(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
         ]
     )
     transaction.mark_staging_owned()
@@ -1169,7 +1207,7 @@ def test_mz_registration_transaction_restores_owned_partial_metadata(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
         ]
     )
     audit_transaction.mark_staging_owned()
@@ -1252,7 +1290,7 @@ def test_mz_registration_transaction_restores_owned_partial_metadata(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
         ]
     )
     commit_transaction.mark_staging_owned()
@@ -1300,7 +1338,7 @@ def test_mz_registration_transaction_restores_owned_partial_metadata(
     ).splitlines() == [
         f"{status}\t{path}"
         for path, status in sorted(
-            precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE.items()
+            precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE.items()
         )
     ]
 
