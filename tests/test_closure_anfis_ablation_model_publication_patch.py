@@ -144,7 +144,7 @@ def test_generic_precommit_dialect_covers_exactly_one_manifest_and_report(
     ]
 
 
-def test_deferred_precommit_scopes_are_exact_h_mw_and_p_mw() -> None:
+def test_deferred_precommit_preserves_mw_scopes_behind_the_mx_boundary() -> None:
     expected_h = {
         path: ("A" if path in EXPECTED_ADDITIONS else "M")
         for path in EXPECTED_ADDITIONS | EXPECTED_MODIFICATIONS
@@ -153,20 +153,24 @@ def test_deferred_precommit_scopes_are_exact_h_mw_and_p_mw() -> None:
     assert precommit_artifacts.DEFERRED_DVC_H_MW_STAGED_SCOPE == expected_h
     assert precommit_artifacts.DEFERRED_DVC_P_MW_STAGED_SCOPE == expected_p
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MW", "P-E0-MW"}
+        {"H-E0-MX", "P-E0-MX"}
     )
-    assert (
-        precommit_artifacts.require_active_deferred_dvc_staging_gate("H-E0-MW")
-        == "H-E0-MW"
-    )
-    assert (
-        precommit_artifacts.require_active_deferred_dvc_staging_gate("P-E0-MW")
-        == "P-E0-MW"
-    )
-    for historical_gate in ("H-E0-MV", "P-E0-MV"):
+    for current_gate in ("H-E0-MX", "P-E0-MX"):
+        assert (
+            precommit_artifacts.require_active_deferred_dvc_staging_gate(
+                current_gate
+            )
+            == current_gate
+        )
+    for historical_gate in (
+        "H-E0-MV",
+        "P-E0-MV",
+        "H-E0-MW",
+        "P-E0-MW",
+    ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MW/P-E0-MW",
+            match="closed to exact H-E0-MX/P-E0-MX",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 historical_gate

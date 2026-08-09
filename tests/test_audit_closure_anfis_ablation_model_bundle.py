@@ -15,7 +15,9 @@ import pytest
 import yaml
 
 from src.experiments import audit_closure_anfis_ablation_model_bundle as auditor
-from src.experiments import closure_anfis_ablation_model_publication_patch as authority_patch
+from src.experiments import (
+    closure_anfis_ablation_model_publication_adoption_patch as authority_patch,
+)
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -39,7 +41,7 @@ def _authority(
 ) -> dict[str, Any]:
     slot_index = auditor.BUNDLE_SLOTS.index((model_id, base_seed))
     authority: dict[str, Any] = {
-        "gate": "E0-MW",
+        "gate": "E0-MX",
         "status": "effective_preflight_passed",
         "authorized_model_id": model_id,
         "authorized_base_seed": base_seed,
@@ -630,6 +632,32 @@ def test_strict_json_and_canonicality_fail_closed() -> None:
 def test_historical_slot_binding_and_source_record_are_preserved(
     tmp_path: Path,
 ) -> None:
+    assert auditor.AUTHORITY_RECORD_SPECS == (
+        (
+            "anfis_ablation_training_runtime_contract",
+            Path(
+                "configs/closure_v1/"
+                "anfis_ablation_training_development_runtime.yaml"
+            ),
+            "runtime_sha256",
+        ),
+        (
+            "anfis_ablation_model_publication_adoption_patch_lock",
+            Path(
+                "reports/closure_v1/00_protocol/"
+                "anfis_ablation_model_publication_adoption_patch_lock.json"
+            ),
+            "lock_sha256",
+        ),
+        (
+            "anfis_ablation_model_publication_adoption_patch_lock_manifest",
+            Path(
+                "reports/closure_v1/00_protocol/"
+                "anfis_ablation_model_publication_adoption_patch_lock_manifest.json"
+            ),
+            "companion_sha256",
+        ),
+    )
     authority = _authority(prefix_count=1)
     current = copy.deepcopy(authority["slot_manifest_authority"])
     assert auditor._authority_record_specs(current) == auditor.AUTHORITY_RECORD_SPECS
@@ -671,7 +699,7 @@ def test_historical_slot_binding_and_source_record_are_preserved(
         )
 
     stale = copy.deepcopy(current)
-    stale["gate"] = "E0-MV"
+    stale["gate"] = "E0-MW"
     with pytest.raises(
         auditor.AnfisAblationModelAuditError,
         match="unsupported",
@@ -708,13 +736,13 @@ def test_audit_authority_requires_exact_read_only_flag_matrix(
     )["gate"] == "E0-MU"
 
     stale_gate = copy.deepcopy(valid)
-    stale_gate["gate"] = "E0-MV"
+    stale_gate["gate"] = "E0-MW"
     monkeypatch.setattr(
         authority_patch,
         "require_anfis_ablation_model_publication_authority",
         lambda *args, **kwargs: copy.deepcopy(stale_gate),
     )
-    with pytest.raises(auditor.AnfisAblationModelAuditError, match="E0-MW"):
+    with pytest.raises(auditor.AnfisAblationModelAuditError, match="E0-MX"):
         auditor._require_audit_authority(
             tmp_path, model_id="A0", base_seed=1729
         )

@@ -12,7 +12,9 @@ import pyarrow.parquet as pq
 import pytest
 import yaml
 
-from src.experiments import closure_anfis_ablation_model_publication_patch as authority_patch
+from src.experiments import (
+    closure_anfis_ablation_model_publication_adoption_patch as authority_patch,
+)
 from src.experiments import train_closure_anfis_ablation as trainer
 
 
@@ -399,6 +401,22 @@ def test_completed_prefix_hash_snapshot_detects_fit_and_publication_drift(
         path.chmod(0o644)
     baseline = trainer._completed_prefix_snapshot(authority, repo_root=tmp_path)
     assert len(baseline) == 8
+    assert all(
+        set(record)
+        == {
+            "path",
+            "bytes",
+            "sha256",
+            "mode",
+            "device",
+            "inode",
+            "nlink",
+            "mtime_ns",
+            "ctime_ns",
+        }
+        and record["nlink"] == 1
+        for record in baseline
+    )
 
     mutated_path = historical.report
     original = mutated_path.read_bytes()
@@ -424,6 +442,30 @@ def test_completed_prefix_hash_snapshot_detects_fit_and_publication_drift(
             baseline, authority=authority, repo_root=tmp_path
         )
     mutated_path.chmod(0o644)
+    linked = tmp_path / "historical-hardlink"
+    os.link(mutated_path, linked)
+    with pytest.raises(
+        trainer.AnfisAblationTrainingError,
+        match="link count drifted",
+    ):
+        trainer._completed_prefix_snapshot(authority, repo_root=tmp_path)
+    linked.unlink()
+
+    identity_baseline = trainer._completed_prefix_snapshot(
+        authority, repo_root=tmp_path
+    )
+    replacement = tmp_path / "identical-replacement"
+    replacement.write_bytes(mutated_path.read_bytes())
+    replacement.chmod(0o644)
+    replacement.replace(mutated_path)
+    with pytest.raises(
+        trainer.AnfisAblationTrainingError,
+        match="completed-prefix artifact changed",
+    ):
+        trainer._assert_completed_prefix_snapshot(
+            identity_baseline, authority=authority, repo_root=tmp_path
+        )
+
     publication_baseline = trainer._completed_prefix_snapshot(
         authority, repo_root=tmp_path
     )
@@ -522,7 +564,7 @@ def test_importable_execute_cannot_bypass_gate(
     assert events == ["gate"]
 
 
-def test_effective_authority_is_routed_exclusively_through_e0_mw(
+def test_effective_authority_is_routed_exclusively_through_e0_mx(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     assert trainer.AUTHORITY_RECORD_SPECS == (
@@ -533,23 +575,23 @@ def test_effective_authority_is_routed_exclusively_through_e0_mw(
         ),
         (
             "lock",
-            "anfis_ablation_model_publication_patch_lock",
+            "anfis_ablation_model_publication_adoption_patch_lock",
             Path(
                 "reports/closure_v1/00_protocol/"
-                "anfis_ablation_model_publication_patch_lock.json"
+                "anfis_ablation_model_publication_adoption_patch_lock.json"
             ),
         ),
         (
             "companion",
-            "anfis_ablation_model_publication_patch_lock_manifest",
+            "anfis_ablation_model_publication_adoption_patch_lock_manifest",
             Path(
                 "reports/closure_v1/00_protocol/"
-                "anfis_ablation_model_publication_patch_lock_manifest.json"
+                "anfis_ablation_model_publication_adoption_patch_lock_manifest.json"
             ),
         ),
     )
     binding = {
-        "gate": "E0-MW",
+        "gate": "E0-MX",
         "status": "effective_preflight_passed",
         "authorized_model_id": "A1",
         "authorized_base_seed": 1729,
@@ -577,9 +619,9 @@ def test_effective_authority_is_routed_exclusively_through_e0_mw(
     monkeypatch.setattr(
         authority_patch,
         "require_anfis_ablation_model_publication_authority",
-        lambda *args, **kwargs: {**payload, "gate": "E0-MV"},
+        lambda *args, **kwargs: {**payload, "gate": "E0-MW"},
     )
-    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MW"):
+    with pytest.raises(trainer.AnfisAblationTrainingError, match="E0-MX"):
         trainer._require_effective_authority(
             repo_root=tmp_path, model_id="A1", base_seed=1729
         )

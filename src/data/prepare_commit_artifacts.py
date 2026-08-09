@@ -43,7 +43,7 @@ DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
 HASH_CHUNK_SIZE = 16 * 1024 * 1024
 DEFAULT_MAX_MANIFEST_HASH_BYTES = 512 * 1024 * 1024
 
-# E0-MV/E0-MW is the sole exception to the normal immediate ``dvc add`` policy.  Its
+# E0-MV/E0-MW/E0-MX is the sole exception to the normal immediate ``dvc add`` policy.  Its
 # first one-shot model bundle must stay byte-exact and unregistered until all
 # ten A0/A1 slots exist.  Keep this inventory local to the assistant so the
 # exception cannot silently grow with a mutable experiment module.
@@ -119,6 +119,29 @@ DEFERRED_DVC_A0_LIGHT_EXCLUDE_PATTERNS = tuple(
         if path.startswith("reports/")
     )
 )
+DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT = (
+    "5b24549f2d4791f6500e661f9ee404c0dc7a0866"
+)
+DEFERRED_DVC_A0_LIGHT_PUBLICATION_PARENT = (
+    "68107147c1a67c30ecfa64c862dd39531e574a9a"
+)
+DEFERRED_DVC_A0_LIGHT_GIT_OIDS = {
+    "reports/closure_v1/02_models/A0/seed_1729_manifest.json": (
+        "9d554bc0b560b2a4e817f2eb8d07ef48424dd51a"
+    ),
+    "reports/closure_v1/02_models/A0/seed_1729_preprocessor.json": (
+        "b59088160da3c8d36efb984260f021959d52dddb"
+    ),
+    "reports/closure_v1/02_models/A0/seed_1729_report.md": (
+        "740ef989b27bcbb44c22b81d4d90f9722d8f55b3"
+    ),
+    "reports/closure_v1/02_models/A0/seed_1729_selection_metrics.csv": (
+        "90ee68a227fd02d5554b6a256f8bde6927ec36a6"
+    ),
+    "reports/closure_v1/02_models/A0/seed_1729_training_curve.csv": (
+        "6b0a676116a34a41d36956696ba945c9632abecd"
+    ),
+}
 DEFERRED_DVC_A0_PREDICTION_POINTER = Path(
     "data/closure_v1/development/anfis_ablation/A0/"
     "seed_1729_selection_predictions.parquet.dvc"
@@ -178,7 +201,34 @@ DEFERRED_DVC_H_MW_GIT_MODES = {
 DEFERRED_DVC_P_MW_GIT_MODES = {
     path: "100644" for path in DEFERRED_DVC_P_MW_STAGED_SCOPE
 }
-DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MW", "P-E0-MW"})
+DEFERRED_DVC_H_MX_STAGED_SCOPE = {
+    "configs/closure_v1/anfis_ablation_model_publication_adoption_patch_lock.schema.json": "A",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_PUBLICATION_ADOPTION_PATCH_1.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/audit_closure_anfis_ablation_model_bundle.py": "M",
+    "src/experiments/closure_anfis_ablation_model_publication_adoption_patch.py": "A",
+    "src/experiments/lock_closure_anfis_ablation_model_publication_adoption_patch.py": "A",
+    "src/experiments/train_closure_anfis_ablation.py": "M",
+    "tests/test_audit_closure_anfis_ablation_model_bundle.py": "M",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py": "A",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py": "M",
+    "tests/test_train_closure_anfis_ablation.py": "M",
+}
+DEFERRED_DVC_P_MX_STAGED_SCOPE = {
+    "reports/closure_v1/00_protocol/anfis_ablation_model_publication_adoption_patch_lock.json": "A",
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_model_publication_adoption_patch_lock_manifest.json"
+    ): "A",
+}
+DEFERRED_DVC_H_MX_GIT_MODES = {
+    path: ("100755" if path == "src/data/prepare_commit_artifacts.py" else "100644")
+    for path in DEFERRED_DVC_H_MX_STAGED_SCOPE
+}
+DEFERRED_DVC_P_MX_GIT_MODES = {
+    path: "100644" for path in DEFERRED_DVC_P_MX_STAGED_SCOPE
+}
+DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MX", "P-E0-MX"})
 
 
 def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
@@ -188,6 +238,8 @@ def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
         "P-E0-MV": DEFERRED_DVC_P_MV_STAGED_SCOPE,
         "H-E0-MW": DEFERRED_DVC_H_MW_STAGED_SCOPE,
         "P-E0-MW": DEFERRED_DVC_P_MW_STAGED_SCOPE,
+        "H-E0-MX": DEFERRED_DVC_H_MX_STAGED_SCOPE,
+        "P-E0-MX": DEFERRED_DVC_P_MX_STAGED_SCOPE,
     }
 
 
@@ -197,6 +249,8 @@ def _deferred_dvc_git_modes() -> dict[str, Mapping[str, str]]:
         "P-E0-MV": DEFERRED_DVC_P_MV_GIT_MODES,
         "H-E0-MW": DEFERRED_DVC_H_MW_GIT_MODES,
         "P-E0-MW": DEFERRED_DVC_P_MW_GIT_MODES,
+        "H-E0-MX": DEFERRED_DVC_H_MX_GIT_MODES,
+        "P-E0-MX": DEFERRED_DVC_P_MX_GIT_MODES,
     }
 
 
@@ -204,18 +258,18 @@ def require_active_deferred_dvc_staging_gate(gate: str) -> str:
     """Reject historical deferred-DVC scopes at the only mutating boundary."""
     if type(gate) is str and gate in DEFERRED_DVC_ACTIVE_STAGING_GATES:
         return gate
-    # Published MV regression harnesses exercise the transaction with every
+    # Published MV/MW regression harnesses exercise the transaction with every
     # Git/DVC operation replaced inside a directory that is not a repository.
-    # Preserve that read-only reconstruction without admitting MV at a real
-    # repository mutation boundary.
+    # Preserve that read-only reconstruction without admitting MV/MW at a
+    # real repository mutation boundary.
     if (
         type(gate) is str
-        and gate in {"H-E0-MV", "P-E0-MV"}
+        and gate in {"H-E0-MV", "P-E0-MV", "H-E0-MW", "P-E0-MW"}
         and not Path(".git").exists()
     ):
         return gate
     raise DeferredDvcTargetError(
-        "Deferred models execution is closed to exact H-E0-MW/P-E0-MW scopes"
+        "Deferred models execution is closed to exact H-E0-MX/P-E0-MX scopes"
     )
 
 
@@ -570,6 +624,8 @@ class DeferredDvcFinalSnapshot:
     size: int
     sha256: str
     mode: int
+    nlink: int = 1
+    ctime_ns: int = 0
 
 
 class DeferredDvcTargetError(RuntimeError):
@@ -640,10 +696,11 @@ def _require_no_symlink_ancestors(path: Path, *, anchor: Path) -> None:
 def validate_deferred_dvc_git_exclude_environment(
     *, env: Mapping[str, str] | None = None
 ) -> tuple[int, int, int, str]:
-    """Validate the exact command-scoped Git exclusion used by E0-MV/E0-MW.
+    """Validate the exact command-scoped Git exclusion used through E0-MX.
 
-    The exception is deliberately unusable without the five-path exclusion:
-    otherwise ``git add -A`` would stage the adopted one-shot reports.
+    E0-MX retains the five-path file to neutralize ambient global excludes and
+    preserve the inherited command shape.  The five reports are now tracked,
+    so their HEAD/index/worktree bindings are validated independently.
     """
     source = os.environ if env is None else env
     expected_names = {"GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0"}
@@ -778,6 +835,114 @@ def validate_deferred_dvc_target_selection(
 
 def _git_output(repo_root: Path, *args: str) -> str:
     return run_command(["git", "-C", repo_root.as_posix(), *args]).stdout
+
+
+def _validate_deferred_a0_git_tracking(repo_root: Path) -> None:
+    """Bind the adopted lightweight A0 files to their exact publication commit."""
+    light_paths = set(DEFERRED_DVC_A0_LIGHT_GIT_OIDS)
+    expected_light_paths = {
+        path
+        for _, path, _, _ in DEFERRED_DVC_A0_FINAL_RECORDS
+        if path.startswith("reports/")
+    }
+    if light_paths != expected_light_paths or len(light_paths) != 5:
+        raise DeferredDvcTargetError(
+            "Deferred A0 tracked-light inventory drifted from the exact five reports"
+        )
+
+    ancestry = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT,
+    ).strip()
+    if ancestry != (
+        f"{DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT} "
+        f"{DEFERRED_DVC_A0_LIGHT_PUBLICATION_PARENT}"
+    ):
+        raise DeferredDvcTargetError(
+            "Deferred A0 lightweight publication commit topology drifted"
+        )
+    merge_base = _git_output(
+        repo_root,
+        "merge-base",
+        "HEAD",
+        DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT,
+    ).strip()
+    if merge_base != DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT:
+        raise DeferredDvcTargetError(
+            "Deferred A0 lightweight publication commit is not a HEAD ancestor"
+        )
+
+    publication_scope: dict[str, str] = {}
+    for line in _git_output(
+        repo_root,
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "-r",
+        DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT,
+    ).splitlines():
+        fields = line.split("\t")
+        if len(fields) != 2 or fields[1] in publication_scope:
+            raise DeferredDvcTargetError(
+                "Deferred A0 lightweight publication commit scope is malformed"
+            )
+        publication_scope[fields[1]] = fields[0]
+    if publication_scope != {path: "A" for path in light_paths}:
+        raise DeferredDvcTargetError(
+            "Deferred A0 lightweight publication commit is not the exact five additions"
+        )
+
+    for raw_path, expected_oid in sorted(DEFERRED_DVC_A0_LIGHT_GIT_OIDS.items()):
+        publication_line = _git_output(
+            repo_root,
+            "ls-tree",
+            DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT,
+            "--",
+            raw_path,
+        ).strip()
+        expected_line = f"100644 blob {expected_oid}\t{raw_path}"
+        head_oid = _git_output(repo_root, "rev-parse", f"HEAD:{raw_path}").strip()
+        index_line = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip()
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            publication_line != expected_line
+            or head_oid != expected_oid
+            or index_line != f"100644 {expected_oid} 0\t{raw_path}"
+            or worktree_oid != expected_oid
+        ):
+            raise DeferredDvcTargetError(
+                f"Deferred A0 lightweight Git binding drifted: {raw_path}"
+            )
+
+    ordered_light_paths = sorted(light_paths)
+    if _git_output(
+        repo_root, "diff", "--name-only", "--", *ordered_light_paths
+    ).strip() or _git_output(
+        repo_root, "diff", "--cached", "--name-only", "--", *ordered_light_paths
+    ).strip():
+        raise DeferredDvcTargetError(
+            "Deferred A0 lightweight reports must be clean in index and worktree"
+        )
+
+    heavy_paths = sorted(
+        path
+        for _, path, _, _ in DEFERRED_DVC_A0_FINAL_RECORDS
+        if path not in light_paths
+    )
+    if _git_output(
+        repo_root, "ls-files", "--stage", "--", *heavy_paths
+    ).strip():
+        raise DeferredDvcTargetError(
+            "Deferred A0 heavyweight finals must remain outside Git"
+        )
 
 
 def _validate_deferred_models_pointer(repo_root: Path) -> None:
@@ -939,6 +1104,8 @@ def snapshot_deferred_dvc_models_bundle(
                 size=metadata.st_size,
                 sha256=digest,
                 mode=stat.S_IMODE(metadata.st_mode),
+                nlink=metadata.st_nlink,
+                ctime_ns=metadata.st_ctime_ns,
             )
         )
         temporary = Path(f"{path}.tmp")
@@ -993,6 +1160,7 @@ def validate_deferred_dvc_models_state(
     snapshot = snapshot_deferred_dvc_models_bundle(repo_root=repo_root)
     if expected_final_snapshot is not None and snapshot != expected_final_snapshot:
         raise DeferredDvcTargetError("Deferred A0 inode/mtime/hash snapshot drifted")
+    _validate_deferred_a0_git_tracking(repo_root)
     staged = _git_output(
         repo_root,
         "diff",
@@ -1279,8 +1447,8 @@ def validate_deferred_dvc_staged_scope(staged_status: str) -> str:
         if observed == expected_scope:
             return gate
     raise DeferredDvcTargetError(
-        "Deferred models staging must be exact H-E0-MV or H-E0-MW 5M+5A, "
-        "or exact P-E0-MV/P-E0-MW 2A"
+        "Deferred models staging must be exact H-E0-MV/P-E0-MV, exact "
+        "H-E0-MW/P-E0-MW, or current H-E0-MX 6M+5A/P-E0-MX 2A"
     )
 
 
@@ -1304,8 +1472,8 @@ def validate_deferred_dvc_pre_stage_scope(status_output: str) -> str:
         if observed == expected(expected_scope):
             return gate
     raise DeferredDvcTargetError(
-        "Deferred models pre-stage scope must be exact H-E0-MV or H-E0-MW "
-        "5M+5A, or exact P-E0-MV/P-E0-MW 2A"
+        "Deferred models pre-stage scope must be exact H-E0-MV/P-E0-MV, exact "
+        "H-E0-MW/P-E0-MW, or current H-E0-MX 6M+5A/P-E0-MX 2A"
     )
 
 
@@ -2824,6 +2992,8 @@ def write_report(
                     "bytes": record.size,
                     "sha256": record.sha256,
                     "mode": f"{record.mode:04o}",
+                    "nlink": record.nlink,
+                    "ctime_ns": record.ctime_ns,
                 }
                 for record in records
             ]
