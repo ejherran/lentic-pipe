@@ -7,7 +7,9 @@ import argparse
 import hashlib
 import json
 import os
+import pwd
 import shlex
+import shutil
 import stat
 import subprocess
 import sys
@@ -21,6 +23,11 @@ import yaml
 
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
+ANFIS_ABLATION_EXPECTED_HOME = Path(pwd.getpwuid(os.getuid()).pw_dir)
+ANFIS_ABLATION_EXPECTED_XDG_CONFIG_HOME = (
+    ANFIS_ABLATION_EXPECTED_HOME / ".config"
+)
+ANFIS_ABLATION_EXPECTED_XDG_CONFIG_DIRS = "/etc/xdg"
 
 
 def _ensure_project_root_importable() -> None:
@@ -43,10 +50,11 @@ DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
 HASH_CHUNK_SIZE = 16 * 1024 * 1024
 DEFAULT_MAX_MANIFEST_HASH_BYTES = 512 * 1024 * 1024
 
-# E0-MV/E0-MW/E0-MX is the sole exception to the normal immediate ``dvc add`` policy.  Its
-# first one-shot model bundle must stay byte-exact and unregistered until all
-# ten A0/A1 slots exist.  Keep this inventory local to the assistant so the
-# exception cannot silently grow with a mutable experiment module.
+# E0-MV through E0-MY are the sole exception to the normal immediate
+# ``dvc add`` policy.  The model family must stay byte-exact and unregistered
+# until all ten A0/A1 slots exist and exact P-E0-MY is effective.  Keep the
+# closed path inventory local to the assistant so the exception cannot grow
+# through a mutable experiment module or the generic DVC inventory.
 DEFERRED_DVC_MODELS_TARGET = Path("models")
 DEFERRED_DVC_MODELS_POINTER = Path("models.dvc")
 DEFERRED_DVC_MODELS_POINTER_SHA256 = (
@@ -149,6 +157,126 @@ DEFERRED_DVC_A0_PREDICTION_POINTER = Path(
 DEFERRED_DVC_A0_GUARD = Path(
     "tmp/closure_v1_anfis_ablation_training/A0_seed_1729.guard"
 )
+ANFIS_ABLATION_REGISTRATION_INVENTORY_KEY = (
+    "anfis_ablation_registration_artifacts"
+)
+ANFIS_ABLATION_MODEL_IDS = ("A0", "A1")
+ANFIS_ABLATION_BASE_SEEDS = (1729, 20260612, 20260613, 20260614, 314159)
+ANFIS_ABLATION_ORDERED_SLOTS = tuple(
+    (model_id, base_seed)
+    for base_seed in ANFIS_ABLATION_BASE_SEEDS
+    for model_id in ANFIS_ABLATION_MODEL_IDS
+)
+ANFIS_ABLATION_MODEL_PATHS = tuple(
+    path
+    for model_id, base_seed in ANFIS_ABLATION_ORDERED_SLOTS
+    for path in (
+        f"models/closure_v1/anfis_ablation/{model_id}/seed_{base_seed}.pt",
+        (
+            "models/closure_v1/anfis_ablation/"
+            f"{model_id}/seed_{base_seed}.checkpoint.pt"
+        ),
+    )
+)
+ANFIS_ABLATION_SELECTION_PREDICTION_PATHS = tuple(
+    (
+        "data/closure_v1/development/anfis_ablation/"
+        f"{model_id}/seed_{base_seed}_selection_predictions.parquet"
+    )
+    for model_id, base_seed in ANFIS_ABLATION_ORDERED_SLOTS
+)
+ANFIS_ABLATION_SELECTION_ROOT = Path(
+    "data/closure_v1/development/anfis_ablation"
+)
+ANFIS_ABLATION_SELECTION_POINTER_PATHS = tuple(
+    f"{path}.dvc" for path in ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
+)
+ANFIS_ABLATION_LIGHT_REPORT_PATHS = tuple(
+    path
+    for model_id, base_seed in ANFIS_ABLATION_ORDERED_SLOTS
+    for path in (
+        f"reports/closure_v1/02_models/{model_id}/seed_{base_seed}_preprocessor.json",
+        f"reports/closure_v1/02_models/{model_id}/seed_{base_seed}_training_curve.csv",
+        f"reports/closure_v1/02_models/{model_id}/seed_{base_seed}_selection_metrics.csv",
+        f"reports/closure_v1/02_models/{model_id}/seed_{base_seed}_report.md",
+        f"reports/closure_v1/02_models/{model_id}/seed_{base_seed}_manifest.json",
+    )
+)
+ANFIS_ABLATION_MANIFEST_PATHS = tuple(
+    (
+        "reports/closure_v1/02_models/"
+        f"{model_id}/seed_{base_seed}_manifest.json"
+    )
+    for model_id, base_seed in ANFIS_ABLATION_ORDERED_SLOTS
+)
+ANFIS_ABLATION_TRACKED_LIGHT_PATHS = tuple(
+    sorted(DEFERRED_DVC_A0_LIGHT_GIT_OIDS)
+)
+ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS = tuple(
+    path
+    for path in ANFIS_ABLATION_LIGHT_REPORT_PATHS
+    if path not in DEFERRED_DVC_A0_LIGHT_GIT_OIDS
+)
+ANFIS_ABLATION_LIGHT_EXCLUDE_PATTERNS = tuple(
+    f"/{path}" for path in sorted(ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS)
+)
+ANFIS_ABLATION_REGISTRATION_DVC_TARGETS = (
+    *tuple(Path(path) for path in ANFIS_ABLATION_SELECTION_PREDICTION_PATHS),
+    DEFERRED_DVC_MODELS_TARGET,
+)
+ANFIS_ABLATION_DVC_ADD_FLAG = "--no-relink"
+ANFIS_ABLATION_DVC_WRAPPER = Path(".venv/bin/dvc")
+ANFIS_ABLATION_DVC_WRAPPER_BODY = (
+    b"# -*- coding: utf-8 -*-\n"
+    b"import re\n"
+    b"import sys\n"
+    b"from dvc.cli import main\n"
+    b'if __name__ == "__main__":\n'
+    b'    sys.argv[0] = re.sub(r"(-script\\.pyw|\\.exe)?$", "", sys.argv[0])\n'
+    b"    sys.exit(main())\n"
+)
+ANFIS_ABLATION_DVC_PYTHON_LINK = Path(".venv/bin/python")
+ANFIS_ABLATION_DVC_PYTHON_TARGET = Path("/usr/bin/python3.14")
+ANFIS_ABLATION_DVC_PYTHON_BYTES = 14_424
+ANFIS_ABLATION_DVC_PYTHON_SHA256 = (
+    "2700be1aabe3687bd597f21b0eac3b9bbdf7417e93035255a9286c67935b59bd"
+)
+ANFIS_ABLATION_GIT_BIN = Path("/usr/bin/git")
+ANFIS_ABLATION_GIT_BYTES = 4_899_632
+ANFIS_ABLATION_GIT_SHA256 = (
+    "93473c28694fd72bd889364107cd2770514de59780885a6a4aafca4d602e30ad"
+)
+ANFIS_ABLATION_REPO_DVC_CONFIG = Path(".dvc/config")
+ANFIS_ABLATION_REPO_DVC_CONFIG_BYTES = 43
+ANFIS_ABLATION_REPO_DVC_CONFIG_SHA256 = (
+    "cb08c869a906d07c5b1ccf593299a0f253e0ce03303c43070b6a68124b27fda0"
+)
+ANFIS_ABLATION_LOCAL_DVC_CONFIG = Path(".dvc/config.local")
+ANFIS_ABLATION_LOCAL_DVC_CONFIG_BYTES = 211
+ANFIS_ABLATION_LOCAL_DVC_CONFIG_SHA256 = (
+    "a912c374690215c7753070f68d7dfdaff8c1224b01c336aa887d6731a3bb2287"
+)
+ANFIS_ABLATION_REGISTRATION_GUARD = Path(
+    "tmp/closure_v1_anfis_ablation_dvc_registration.guard"
+)
+ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD = (
+    b"E0-MY exact ANFIS-ablation DVC registration\n"
+)
+ANFIS_ABLATION_REGISTRATION_COMMIT_READY_PAYLOAD = (
+    b"E0-MY exact ANFIS-ablation DVC registration commit_ready\n"
+)
+ANFIS_ABLATION_MODELS_DVC_BACKUP = Path(
+    "tmp/closure_v1_anfis_ablation_models_dvc_baseline"
+)
+ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP = Path(
+    "tmp/closure_v1_anfis_ablation_models_dvc_baseline_bytes"
+)
+ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR = Path(
+    "tmp/closure_v1_anfis_ablation_dvc_global_config"
+)
+ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR = Path(
+    "tmp/closure_v1_anfis_ablation_dvc_system_config"
+)
 DEFERRED_DVC_H_MV_STAGED_SCOPE = {
     "configs/closure_v1/anfis_ablation_model_manifest_patch_lock.schema.json": "A",
     "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_MANIFEST_PATCH_1.md": "A",
@@ -228,7 +356,40 @@ DEFERRED_DVC_H_MX_GIT_MODES = {
 DEFERRED_DVC_P_MX_GIT_MODES = {
     path: "100644" for path in DEFERRED_DVC_P_MX_STAGED_SCOPE
 }
-DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MX", "P-E0-MX"})
+DEFERRED_DVC_H_MY_STAGED_SCOPE = {
+    "configs/closure_v1/anfis_ablation_dvc_registration_patch_lock.schema.json": "A",
+    "configs/closure_v1/dvc_artifacts_post_lock.yaml": "M",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_PATCH_1.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/closure_anfis_ablation_dvc_registration_patch.py": "A",
+    "src/experiments/lock_closure_anfis_ablation_dvc_registration_patch.py": "A",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py": "A",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py": "M",
+}
+DEFERRED_DVC_P_MY_STAGED_SCOPE = {
+    "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_patch_lock.json": "A",
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_patch_lock_manifest.json"
+    ): "A",
+}
+ANFIS_ABLATION_R_MY_STAGED_SCOPE = {
+    **{path: "A" for path in ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS},
+    **{path: "A" for path in ANFIS_ABLATION_SELECTION_POINTER_PATHS},
+    DEFERRED_DVC_MODELS_POINTER.as_posix(): "M",
+}
+DEFERRED_DVC_H_MY_GIT_MODES = {
+    path: ("100755" if path == "src/data/prepare_commit_artifacts.py" else "100644")
+    for path in DEFERRED_DVC_H_MY_STAGED_SCOPE
+}
+DEFERRED_DVC_P_MY_GIT_MODES = {
+    path: "100644" for path in DEFERRED_DVC_P_MY_STAGED_SCOPE
+}
+ANFIS_ABLATION_R_MY_GIT_MODES = {
+    path: "100644" for path in ANFIS_ABLATION_R_MY_STAGED_SCOPE
+}
+DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MY", "P-E0-MY"})
 
 
 def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
@@ -240,9 +401,9 @@ def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
         "P-E0-MW": DEFERRED_DVC_P_MW_STAGED_SCOPE,
         "H-E0-MX": DEFERRED_DVC_H_MX_STAGED_SCOPE,
         "P-E0-MX": DEFERRED_DVC_P_MX_STAGED_SCOPE,
+        "H-E0-MY": DEFERRED_DVC_H_MY_STAGED_SCOPE,
+        "P-E0-MY": DEFERRED_DVC_P_MY_STAGED_SCOPE,
     }
-
-
 def _deferred_dvc_git_modes() -> dict[str, Mapping[str, str]]:
     return {
         "H-E0-MV": DEFERRED_DVC_H_MV_GIT_MODES,
@@ -251,6 +412,8 @@ def _deferred_dvc_git_modes() -> dict[str, Mapping[str, str]]:
         "P-E0-MW": DEFERRED_DVC_P_MW_GIT_MODES,
         "H-E0-MX": DEFERRED_DVC_H_MX_GIT_MODES,
         "P-E0-MX": DEFERRED_DVC_P_MX_GIT_MODES,
+        "H-E0-MY": DEFERRED_DVC_H_MY_GIT_MODES,
+        "P-E0-MY": DEFERRED_DVC_P_MY_GIT_MODES,
     }
 
 
@@ -258,18 +421,26 @@ def require_active_deferred_dvc_staging_gate(gate: str) -> str:
     """Reject historical deferred-DVC scopes at the only mutating boundary."""
     if type(gate) is str and gate in DEFERRED_DVC_ACTIVE_STAGING_GATES:
         return gate
-    # Published MV/MW regression harnesses exercise the transaction with every
+    # Published MV/MW/MX regression harnesses exercise the transaction with every
     # Git/DVC operation replaced inside a directory that is not a repository.
-    # Preserve that read-only reconstruction without admitting MV/MW at a
+    # Preserve that read-only reconstruction without admitting MV/MW/MX at a
     # real repository mutation boundary.
     if (
         type(gate) is str
-        and gate in {"H-E0-MV", "P-E0-MV", "H-E0-MW", "P-E0-MW"}
+        and gate
+        in {
+            "H-E0-MV",
+            "P-E0-MV",
+            "H-E0-MW",
+            "P-E0-MW",
+            "H-E0-MX",
+            "P-E0-MX",
+        }
         and not Path(".git").exists()
     ):
         return gate
     raise DeferredDvcTargetError(
-        "Deferred models execution is closed to exact H-E0-MX/P-E0-MX scopes"
+        "Deferred models execution is closed to exact H-E0-MY/P-E0-MY scopes"
     )
 
 
@@ -628,8 +799,79 @@ class DeferredDvcFinalSnapshot:
     ctime_ns: int = 0
 
 
+@dataclass(frozen=True)
+class RegistrationFileIdentity:
+    path: str
+    device: int
+    inode: int
+    mode: int
+    nlink: int
+    size: int
+    sha256: str
+    mtime_ns: int
+    ctime_ns: int
+
+
+@dataclass(frozen=True)
+class RegistrationDirectoryIdentity:
+    path: str
+    device: int
+    inode: int
+    mode: int
+    nlink: int
+    entry_count: int
+    mtime_ns: int
+    ctime_ns: int
+
+
+@dataclass(frozen=True)
+class RegistrationOwnedNode:
+    """Stable ownership captured immediately after one exclusive creation."""
+
+    path: str
+    device: int
+    inode: int
+    mode: int
+    nlink: int
+
+
+@dataclass(frozen=True)
+class RegistrationSymlinkIdentity:
+    path: str
+    target: str
+    device: int
+    inode: int
+    mode: int
+    nlink: int
+    size: int
+    mtime_ns: int
+    ctime_ns: int
+
+
+@dataclass(frozen=True)
+class AnfisAblationDvcRuntimeIdentity:
+    wrapper: RegistrationFileIdentity
+    python_link: RegistrationSymlinkIdentity
+    python_target: RegistrationFileIdentity
+    git: RegistrationFileIdentity
+
+
 class DeferredDvcTargetError(RuntimeError):
     """Raised when the closed model-bundle DVC-deferral exception drifts."""
+
+
+def anfis_ablation_registration_dvc_add_command(
+    dvc_bin: str, target: Path
+) -> list[str]:
+    """Build one exact no-relink command from the closed ordered target set."""
+    if (
+        dvc_bin != DEFAULT_DVC_BIN.as_posix()
+        or target not in ANFIS_ABLATION_REGISTRATION_DVC_TARGETS
+    ):
+        raise DeferredDvcTargetError(
+            "E0-MY DVC add command received a non-closed binary or target"
+        )
+    return [dvc_bin, "add", ANFIS_ABLATION_DVC_ADD_FLAG, target.as_posix()]
 
 
 def command_text(command: list[str]) -> str:
@@ -693,15 +935,13 @@ def _require_no_symlink_ancestors(path: Path, *, anchor: Path) -> None:
             )
 
 
-def validate_deferred_dvc_git_exclude_environment(
-    *, env: Mapping[str, str] | None = None
+def _validate_closed_git_exclude_environment(
+    *,
+    expected_patterns: tuple[str, ...],
+    expected_description: str,
+    env: Mapping[str, str] | None = None,
 ) -> tuple[int, int, int, str]:
-    """Validate the exact command-scoped Git exclusion used through E0-MX.
-
-    E0-MX retains the five-path file to neutralize ambient global excludes and
-    preserve the inherited command shape.  The five reports are now tracked,
-    so their HEAD/index/worktree bindings are validated independently.
-    """
+    """Validate one exact command-scoped Git exclusion file."""
     source = os.environ if env is None else env
     expected_names = {"GIT_CONFIG_COUNT", "GIT_CONFIG_KEY_0", "GIT_CONFIG_VALUE_0"}
     observed_names = {
@@ -744,16 +984,41 @@ def validate_deferred_dvc_git_exclude_environment(
         raise DeferredDvcTargetError(
             "Deferred models DVC exclude file must have exactly one hard link"
         )
-    expected = "".join(f"{pattern}\n" for pattern in DEFERRED_DVC_A0_LIGHT_EXCLUDE_PATTERNS)
+    expected = "".join(f"{pattern}\n" for pattern in expected_patterns)
     try:
         payload = exclude_path.read_text(encoding="utf-8")
     except UnicodeDecodeError as exc:
         raise DeferredDvcTargetError("Deferred models DVC exclude file is not UTF-8") from exc
     if payload != expected:
         raise DeferredDvcTargetError(
-            "Deferred models DVC exclude file must contain the exact five rooted A0 paths"
+            "Deferred models DVC exclude file must contain "
+            f"{expected_description}"
         )
     return (metadata.st_dev, metadata.st_ino, metadata.st_mtime_ns, sha256_file(exclude_path))
+
+
+def validate_deferred_dvc_git_exclude_environment(
+    *, env: Mapping[str, str] | None = None
+) -> tuple[int, int, int, str]:
+    """Validate the historical exact five-path exclusion through E0-MX."""
+    return _validate_closed_git_exclude_environment(
+        expected_patterns=DEFERRED_DVC_A0_LIGHT_EXCLUDE_PATTERNS,
+        expected_description="the exact five rooted A0 paths",
+        env=env,
+    )
+
+
+def validate_anfis_ablation_family_git_exclude_environment(
+    *, env: Mapping[str, str] | None = None
+) -> tuple[int, int, int, str]:
+    """Validate the E0-MY exclusion for exactly 45 untracked light reports."""
+    return _validate_closed_git_exclude_environment(
+        expected_patterns=ANFIS_ABLATION_LIGHT_EXCLUDE_PATTERNS,
+        expected_description=(
+            "the exact 45 rooted untracked A0/A1 lightweight-report paths"
+        ),
+        env=env,
+    )
 
 
 def normalize_deferred_dvc_targets(
@@ -1009,7 +1274,11 @@ def _walk_regular_tree(root: Path) -> dict[str, Path]:
     return result
 
 
-def _validate_deferred_models_tree(repo_root: Path) -> None:
+def _validate_deferred_models_tree(
+    repo_root: Path,
+    *,
+    exact_extra_model_paths: tuple[str, ...] | None = None,
+) -> None:
     descriptor_path = (
         repo_root
         / ".dvc/cache/files/md5"
@@ -1055,14 +1324,23 @@ def _validate_deferred_models_tree(repo_root: Path) -> None:
         raise DeferredDvcTargetError("Deferred models DVC .dir records are not canonically sorted")
 
     model_files = _walk_regular_tree(repo_root / DEFERRED_DVC_MODELS_TARGET)
+    selected_extra_paths = (
+        tuple(
+            path
+            for _, path, _, _ in DEFERRED_DVC_A0_FINAL_RECORDS
+            if path.startswith("models/")
+        )
+        if exact_extra_model_paths is None
+        else exact_extra_model_paths
+    )
     exact_extras = {
         Path(path).relative_to(DEFERRED_DVC_MODELS_TARGET).as_posix()
-        for _, path, _, _ in DEFERRED_DVC_A0_FINAL_RECORDS
-        if path.startswith("models/")
+        for path in selected_extra_paths
     }
     if set(model_files) != set(baseline) | exact_extras:
         raise DeferredDvcTargetError(
-            "Deferred models DVC tree differs from 248 baseline files plus two exact A0 files"
+            "Deferred models DVC tree differs from its 248-file baseline plus "
+            f"the exact {len(exact_extras)} deferred model files"
         )
     total_bytes = 0
     for relative, digest in baseline.items():
@@ -1174,6 +1452,277 @@ def validate_deferred_dvc_models_state(
     return snapshot
 
 
+def _anfis_ablation_slot_final_paths(
+    model_id: str, base_seed: int
+) -> tuple[str, ...]:
+    report_root = f"reports/closure_v1/02_models/{model_id}/seed_{base_seed}"
+    return (
+        f"models/closure_v1/anfis_ablation/{model_id}/seed_{base_seed}.pt",
+        (
+            "models/closure_v1/anfis_ablation/"
+            f"{model_id}/seed_{base_seed}.checkpoint.pt"
+        ),
+        f"{report_root}_preprocessor.json",
+        f"{report_root}_training_curve.csv",
+        (
+            "data/closure_v1/development/anfis_ablation/"
+            f"{model_id}/seed_{base_seed}_selection_predictions.parquet"
+        ),
+        f"{report_root}_selection_metrics.csv",
+        f"{report_root}_report.md",
+        f"{report_root}_manifest.json",
+    )
+
+
+def _snapshot_anfis_ablation_final(
+    raw_path: str,
+    *,
+    expected_bytes: int,
+    expected_sha256: str,
+    repo_root: Path,
+) -> DeferredDvcFinalSnapshot:
+    path = repo_root / raw_path
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    metadata = _require_regular_file(path, mode=0o644)
+    if metadata.st_nlink != 1:
+        raise DeferredDvcTargetError(
+            f"ANFIS-ablation final must have one hard link: {raw_path}"
+        )
+    digest = sha256_file(path)
+    if metadata.st_size != expected_bytes or digest != expected_sha256:
+        raise DeferredDvcTargetError(
+            f"ANFIS-ablation final bytes drifted: {raw_path}"
+        )
+    if os.path.lexists(Path(f"{path}.tmp")):
+        raise DeferredDvcTargetError(
+            f"ANFIS-ablation temporary is present: {path}.tmp"
+        )
+    return DeferredDvcFinalSnapshot(
+        path=raw_path,
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+        mtime_ns=metadata.st_mtime_ns,
+        size=metadata.st_size,
+        sha256=digest,
+        mode=stat.S_IMODE(metadata.st_mode),
+        nlink=metadata.st_nlink,
+        ctime_ns=metadata.st_ctime_ns,
+    )
+
+
+def snapshot_anfis_ablation_family_bundle(
+    *,
+    repo_root: Path = Path("."),
+    expected_pointer_count: int = 0,
+    _allow_in_progress_prefix: bool = False,
+) -> tuple[DeferredDvcFinalSnapshot, ...]:
+    """Snapshot all 80 immutable A0/A1 finals before family registration."""
+    allowed_pointer_counts = (
+        set(range(11)) if _allow_in_progress_prefix else {0, 10}
+    )
+    if (
+        type(expected_pointer_count) is not int
+        or expected_pointer_count not in allowed_pointer_counts
+    ):
+        raise DeferredDvcTargetError(
+            "ANFIS-ablation snapshot requires an exact pre/post registration "
+            "pointer set"
+        )
+    snapshots: list[DeferredDvcFinalSnapshot] = []
+    expected_output_roles = (
+        "model",
+        "checkpoint",
+        "preprocessor",
+        "training_curve",
+        "selection_predictions",
+        "selection_metrics",
+        "report",
+    )
+    for slot_index, (model_id, base_seed) in enumerate(
+        ANFIS_ABLATION_ORDERED_SLOTS
+    ):
+        final_paths = _anfis_ablation_slot_final_paths(model_id, base_seed)
+        manifest_path = repo_root / final_paths[-1]
+        _require_no_symlink_ancestors(manifest_path, anchor=repo_root)
+        manifest_metadata = _require_regular_file(manifest_path, mode=0o644)
+        try:
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            raise DeferredDvcTargetError(
+                f"ANFIS-ablation manifest is invalid JSON: {manifest_path}"
+            ) from exc
+        outputs = manifest.get("outputs") if isinstance(manifest, dict) else None
+        if (
+            not isinstance(manifest, dict)
+            or manifest.get("status") != "completed"
+            or manifest.get("slot_status") != "available"
+            or manifest.get("fit_status") != "passed"
+            or manifest.get("model_id") != model_id
+            or manifest.get("base_seed") != base_seed
+            or manifest.get("dvc_command_executed") is not False
+            or manifest.get("completion_marker_written_last") is not True
+            or not isinstance(outputs, list)
+            or len(outputs) != 7
+        ):
+            raise DeferredDvcTargetError(
+                f"ANFIS-ablation manifest identity/status drifted: {manifest_path}"
+            )
+        slot_snapshots: list[DeferredDvcFinalSnapshot] = []
+        for role, expected_path, raw_record in zip(
+            expected_output_roles, final_paths[:-1], outputs, strict=True
+        ):
+            if not isinstance(raw_record, dict):
+                raise DeferredDvcTargetError(
+                    f"ANFIS-ablation output record drifted: {manifest_path}"
+                )
+            record = cast(dict[str, Any], raw_record)
+            if (
+                set(record) != {"role", "path", "bytes", "sha256"}
+                or record.get("role") != role
+                or record.get("path") != expected_path
+                or type(record.get("bytes")) is not int
+                or not isinstance(record.get("sha256"), str)
+                or len(record["sha256"]) != 64
+            ):
+                raise DeferredDvcTargetError(
+                    f"ANFIS-ablation output record drifted: {manifest_path}"
+                )
+            slot_snapshots.append(
+                _snapshot_anfis_ablation_final(
+                    expected_path,
+                    expected_bytes=int(record["bytes"]),
+                    expected_sha256=str(record["sha256"]),
+                    repo_root=repo_root,
+                )
+            )
+        manifest_digest = sha256_file(manifest_path)
+        manifest_snapshot = _snapshot_anfis_ablation_final(
+            final_paths[-1],
+            expected_bytes=manifest_metadata.st_size,
+            expected_sha256=manifest_digest,
+            repo_root=repo_root,
+        )
+        if manifest_snapshot.mtime_ns <= max(
+            record.mtime_ns for record in slot_snapshots
+        ):
+            raise DeferredDvcTargetError(
+                f"ANFIS-ablation manifest is not physically last: {manifest_path}"
+            )
+        snapshots.extend((*slot_snapshots, manifest_snapshot))
+
+        pointer = repo_root / (
+            "data/closure_v1/development/anfis_ablation/"
+            f"{model_id}/seed_{base_seed}_selection_predictions.parquet.dvc"
+        )
+        guard = repo_root / (
+            "tmp/closure_v1_anfis_ablation_training/"
+            f"{model_id}_seed_{base_seed}.guard"
+        )
+        prohibited_paths = (Path(f"{pointer}.tmp"), guard)
+        pointer_expected = slot_index < expected_pointer_count
+        if pointer_expected and os.path.lexists(pointer):
+            _require_no_symlink_ancestors(pointer, anchor=repo_root)
+            _require_regular_file(pointer, mode=0o644)
+        elif pointer_expected:
+            raise DeferredDvcTargetError(
+                f"ANFIS-ablation post-registration pointer is absent: {pointer}"
+            )
+        elif os.path.lexists(pointer):
+            raise DeferredDvcTargetError(
+                f"ANFIS-ablation out-of-prefix pointer is present: {pointer}"
+            )
+        for prohibited in prohibited_paths:
+            if os.path.lexists(prohibited):
+                raise DeferredDvcTargetError(
+                    f"ANFIS-ablation pre-registration path is present: {prohibited}"
+                )
+
+    if len(snapshots) != 80 or len({record.path for record in snapshots}) != 80:
+        raise DeferredDvcTargetError(
+            "ANFIS-ablation family snapshot is not exactly 80 unique finals"
+        )
+    expected_reports = {
+        Path(path).relative_to("reports/closure_v1/02_models").as_posix()
+        for path in ANFIS_ABLATION_LIGHT_REPORT_PATHS
+    }
+    observed_reports = {
+        path
+        for path in _walk_regular_tree(repo_root / "reports/closure_v1/02_models")
+        if path.startswith(("A0/", "A1/"))
+    }
+    if observed_reports != expected_reports:
+        raise DeferredDvcTargetError(
+            "ANFIS-ablation report namespace is not the exact 50-file family"
+        )
+    prediction_root = repo_root / "data/closure_v1/development/anfis_ablation"
+    expected_predictions = {
+        Path(path).relative_to(prediction_root.relative_to(repo_root)).as_posix()
+        for path in ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
+    }
+    if set(_walk_regular_tree(prediction_root)) != expected_predictions:
+        raise DeferredDvcTargetError(
+            "ANFIS-ablation prediction namespace is not the exact ten payloads"
+        )
+    model_root = repo_root / "models/closure_v1/anfis_ablation"
+    expected_models = {
+        Path(path).relative_to("models/closure_v1/anfis_ablation").as_posix()
+        for path in ANFIS_ABLATION_MODEL_PATHS
+    }
+    if set(_walk_regular_tree(model_root)) != expected_models:
+        raise DeferredDvcTargetError(
+            "ANFIS-ablation model namespace is not the exact twenty files"
+        )
+    return tuple(snapshots)
+
+
+def validate_deferred_dvc_anfis_ablation_family_state(
+    dvc_status: Mapping[str, Any],
+    *,
+    repo_root: Path = Path("."),
+    expected_final_snapshot: tuple[DeferredDvcFinalSnapshot, ...] | None = None,
+) -> tuple[DeferredDvcFinalSnapshot, ...]:
+    """Validate the complete pre-registration family under H/P-E0-MY."""
+    if dict(dvc_status) != DEFERRED_DVC_MODELS_STATUS:
+        raise DeferredDvcTargetError(
+            "Deferred family DVC status must be the exact modified models output"
+        )
+    _validate_deferred_models_pointer(repo_root)
+    _validate_deferred_models_tree(
+        repo_root, exact_extra_model_paths=ANFIS_ABLATION_MODEL_PATHS
+    )
+    snapshot = snapshot_anfis_ablation_family_bundle(repo_root=repo_root)
+    if expected_final_snapshot is not None and snapshot != expected_final_snapshot:
+        raise DeferredDvcTargetError(
+            "Deferred ANFIS-ablation family inode/ctime/mtime/hash snapshot drifted"
+        )
+    _validate_deferred_a0_git_tracking(repo_root)
+    tracked_family = _git_output(
+        repo_root,
+        "ls-files",
+        "--",
+        *ANFIS_ABLATION_LIGHT_REPORT_PATHS,
+    ).splitlines()
+    if tracked_family != sorted(ANFIS_ABLATION_TRACKED_LIGHT_PATHS):
+        raise DeferredDvcTargetError(
+            "Deferred ANFIS-ablation lightweight Git prefix drifted"
+        )
+    staged = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-only",
+        "--",
+        *(record.path for record in snapshot),
+        DEFERRED_DVC_MODELS_POINTER.as_posix(),
+        *ANFIS_ABLATION_SELECTION_POINTER_PATHS,
+    ).strip()
+    if staged:
+        raise DeferredDvcTargetError(
+            "Deferred ANFIS-ablation finals or DVC pointers must not be staged"
+        )
+    return snapshot
+
+
 def sha256_directory(path: Path) -> tuple[int, str]:
     digest = hashlib.sha256()
     total_bytes = 0
@@ -1257,6 +1806,59 @@ def load_dvc_artifacts(manifest_path: Path) -> list[DvcArtifact]:
             )
         )
     return artifacts
+
+
+def load_anfis_ablation_registration_artifacts(
+    overlay_path: Path = DEFAULT_CLOSURE_DVC_MANIFEST,
+) -> list[DvcArtifact]:
+    """Load only the closed ten-payload E0-MY registration inventory."""
+    with overlay_path.open("r", encoding="utf-8") as handle:
+        overlay = yaml.safe_load(handle)
+    if not isinstance(overlay, dict):
+        raise ValueError(f"{overlay_path} must contain a YAML mapping")
+    raw_records = overlay.get(ANFIS_ABLATION_REGISTRATION_INVENTORY_KEY)
+    if not isinstance(raw_records, list) or len(raw_records) != 10:
+        raise ValueError(
+            f"{overlay_path} must declare exactly ten "
+            f"{ANFIS_ABLATION_REGISTRATION_INVENTORY_KEY} records"
+        )
+
+    expected_records = [
+        {
+            "artifact_id": (
+                "closure_v1_anfis_ablation_"
+                f"{model_id.lower()}_seed_{base_seed}_selection_predictions"
+            ),
+            "path": prediction_path,
+            "type": "closure_anfis_ablation_selection_predictions",
+            "source_id": "wqp",
+            "model_id": model_id,
+            "base_seed": base_seed,
+            "dvc": True,
+            "github_policy": (
+                "pointer_only_keep_manifest_and_lightweight_reports_in_git"
+            ),
+        }
+        for (model_id, base_seed), prediction_path in zip(
+            ANFIS_ABLATION_ORDERED_SLOTS,
+            ANFIS_ABLATION_SELECTION_PREDICTION_PATHS,
+            strict=True,
+        )
+    ]
+    if raw_records != expected_records:
+        raise ValueError(
+            "Closure ANFIS-ablation registration inventory order or dialect drifted"
+        )
+    return [
+        DvcArtifact(
+            artifact_id=str(record["artifact_id"]),
+            path=Path(str(record["path"])),
+            artifact_type=str(record["type"]),
+            source_id=str(record["source_id"]),
+            dvc=True,
+        )
+        for record in expected_records
+    ]
 
 
 def validate_closure_dvc_overlay_anchor(
@@ -1374,8 +1976,13 @@ def collect_strings(value: Any) -> set[str]:
     return strings
 
 
-def dvc_status_json(dvc_bin: str) -> dict[str, Any]:
-    result = run_command([dvc_bin, "status", "--json"], env=dvc_environment())
+def dvc_status_json(
+    dvc_bin: str, *, env: Mapping[str, str] | None = None
+) -> dict[str, Any]:
+    result = run_command(
+        [dvc_bin, "status", "--json"],
+        env=dvc_environment() if env is None else dict(env),
+    )
     if not result.stdout.strip():
         return {}
     payload = json.loads(result.stdout)
@@ -1447,8 +2054,8 @@ def validate_deferred_dvc_staged_scope(staged_status: str) -> str:
         if observed == expected_scope:
             return gate
     raise DeferredDvcTargetError(
-        "Deferred models staging must be exact H-E0-MV/P-E0-MV, exact "
-        "H-E0-MW/P-E0-MW, or current H-E0-MX 6M+5A/P-E0-MX 2A"
+        "Deferred models staging must match one exact historical H/P scope or "
+        "current H-E0-MY 4M+5A/P-E0-MY 2A"
     )
 
 
@@ -1472,8 +2079,8 @@ def validate_deferred_dvc_pre_stage_scope(status_output: str) -> str:
         if observed == expected(expected_scope):
             return gate
     raise DeferredDvcTargetError(
-        "Deferred models pre-stage scope must be exact H-E0-MV/P-E0-MV, exact "
-        "H-E0-MW/P-E0-MW, or current H-E0-MX 6M+5A/P-E0-MX 2A"
+        "Deferred models pre-stage scope must match one exact historical H/P "
+        "scope or current H-E0-MY 4M+5A/P-E0-MY 2A"
     )
 
 
@@ -1487,9 +2094,15 @@ def validate_deferred_dvc_staged_bindings(
     staged_status = _git_output(
         repo_root, "diff", "--cached", "--name-status"
     )
-    if validate_deferred_dvc_staged_scope(staged_status) != gate:
+    try:
+        observed_gate = validate_deferred_dvc_staged_scope(staged_status)
+    except DeferredDvcTargetError as exc:
         raise DeferredDvcTargetError(
-            "Deferred models staged scope changed after the initial Git add"
+            f"Deferred models staging must remain exact {gate}"
+        ) from exc
+    if observed_gate != gate:
+        raise DeferredDvcTargetError(
+            f"Deferred models staging must remain exact {gate}"
         )
     expected_short_status = [
         f"{status_code}  {path}"
@@ -1531,6 +2144,109 @@ def validate_deferred_dvc_staged_bindings(
         if index_oid != worktree_oid or len(index_oid) != 40:
             raise DeferredDvcTargetError(
                 f"Deferred models staged blob differs from worktree: {raw_path}"
+            )
+
+
+def _expected_short_scope(
+    scope: Mapping[str, str], *, staged: bool
+) -> list[str]:
+    return [
+        (
+            f"{status_code}  {path}"
+            if staged
+            else f"{'??' if status_code == 'A' else ' M'} {path}"
+        )
+        for path, status_code in sorted(scope.items())
+    ]
+
+
+def validate_anfis_ablation_registration_initial_scope(
+    status_output: str,
+) -> None:
+    expected = [f"?? {path}" for path in sorted(ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS)]
+    if status_output.splitlines() != expected:
+        raise DeferredDvcTargetError(
+            "E0-MY registration must begin with exactly 45 untracked light reports"
+        )
+
+
+def validate_anfis_ablation_registration_pre_stage_scope(
+    status_output: str,
+) -> str:
+    if status_output.splitlines() != _expected_short_scope(
+        ANFIS_ABLATION_R_MY_STAGED_SCOPE, staged=False
+    ):
+        raise DeferredDvcTargetError(
+            "E0-MY post-DVC pre-stage scope must be exact R-E0-MY 1M+55A"
+        )
+    return "R-E0-MY"
+
+
+def validate_anfis_ablation_registration_staged_scope(
+    staged_status: str,
+) -> str:
+    rows = parse_git_name_status(staged_status)
+    observed: dict[str, str] = {}
+    for status_code, path in rows:
+        if status_code not in {"A", "M"} or path.as_posix() in observed:
+            raise DeferredDvcTargetError(
+                "R-E0-MY staging contains a rename, deletion, or duplicate"
+            )
+        observed[path.as_posix()] = status_code
+    if observed != ANFIS_ABLATION_R_MY_STAGED_SCOPE:
+        raise DeferredDvcTargetError(
+            "E0-MY registration staging must be exact R-E0-MY 1M+55A"
+        )
+    return "R-E0-MY"
+
+
+def validate_anfis_ablation_registration_staged_bindings(
+    *, repo_root: Path = Path(".")
+) -> None:
+    staged_status = _git_output(
+        repo_root, "diff", "--cached", "--name-status"
+    )
+    validate_anfis_ablation_registration_staged_scope(staged_status)
+    observed_short = _git_output(
+        repo_root, "status", "--short", "--untracked-files=normal"
+    ).splitlines()
+    if observed_short != _expected_short_scope(
+        ANFIS_ABLATION_R_MY_STAGED_SCOPE, staged=True
+    ):
+        raise DeferredDvcTargetError(
+            "R-E0-MY short Git status differs from exact staged scope"
+        )
+    if _git_output(repo_root, "diff", "--name-status").strip():
+        raise DeferredDvcTargetError(
+            "R-E0-MY left an unstaged tracked change"
+        )
+    for raw_path, git_mode in sorted(ANFIS_ABLATION_R_MY_GIT_MODES.items()):
+        path = repo_root / raw_path
+        _require_no_symlink_ancestors(path, anchor=repo_root)
+        metadata = _require_regular_file(path, mode=0o644)
+        if metadata.st_nlink != 1:
+            raise DeferredDvcTargetError(
+                f"R-E0-MY staged metadata must have one hard link: {raw_path}"
+            )
+        index_line = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip()
+        parts = index_line.split(maxsplit=3)
+        if (
+            len(parts) != 4
+            or parts[0] != git_mode
+            or parts[2] != "0"
+            or parts[3] != raw_path
+        ):
+            raise DeferredDvcTargetError(
+                f"R-E0-MY staged mode/stage binding drifted: {raw_path}"
+            )
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if parts[1] != worktree_oid or len(worktree_oid) != 40:
+            raise DeferredDvcTargetError(
+                f"R-E0-MY staged blob differs from worktree: {raw_path}"
             )
 
 
@@ -1837,6 +2553,17 @@ def verify_manifest_file_record(
 
 def discover_relevant_manifest_paths(staged_paths: set[Path]) -> list[Path]:
     manifest_paths = {path for path in staged_paths if is_experiment_manifest_path(path)}
+    pointer_to_manifest = {
+        Path(pointer): Path(manifest)
+        for pointer, manifest in zip(
+            ANFIS_ABLATION_SELECTION_POINTER_PATHS,
+            ANFIS_ABLATION_MANIFEST_PATHS,
+            strict=True,
+        )
+    }
+    for pointer, manifest in pointer_to_manifest.items():
+        if pointer in staged_paths:
+            manifest_paths.add(manifest)
     if dvc_pointer_path(CLOSURE_COMMON_ORIGIN_OUTPUT_PATH) in staged_paths:
         manifest_paths.add(CLOSURE_COMMON_ORIGIN_MANIFEST_PATH)
     if dvc_pointer_path(CLOSURE_EXPERT_STATE_OUTPUT_PATH) in staged_paths:
@@ -3184,6 +3911,2516 @@ def write_report(
         os.close(parent_fd)
 
 
+def _registration_file_identity(
+    path: Path,
+    *,
+    repo_root: Path,
+    mode: int,
+) -> RegistrationFileIdentity:
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    metadata = _require_regular_file(path, mode=mode)
+    digest = sha256_file(path)
+    after = _require_regular_file(path, mode=mode)
+    if (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mode,
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+    ) != (
+        after.st_dev,
+        after.st_ino,
+        after.st_mode,
+        after.st_nlink,
+        after.st_size,
+        after.st_mtime_ns,
+        after.st_ctime_ns,
+    ):
+        raise DeferredDvcTargetError(
+            f"E0-MY file identity changed while hashing: {path}"
+        )
+    return RegistrationFileIdentity(
+        path=path.relative_to(repo_root).as_posix(),
+        device=after.st_dev,
+        inode=after.st_ino,
+        mode=stat.S_IMODE(after.st_mode),
+        nlink=after.st_nlink,
+        size=after.st_size,
+        sha256=digest,
+        mtime_ns=after.st_mtime_ns,
+        ctime_ns=after.st_ctime_ns,
+    )
+
+
+def _registration_directory_identity(
+    path: Path, *, repo_root: Path
+) -> RegistrationDirectoryIdentity:
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    directory_fd = os.open(
+        path,
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0),
+    )
+    try:
+        metadata = os.fstat(directory_fd)
+        entries = os.listdir(directory_fd)
+        after = os.fstat(directory_fd)
+    finally:
+        os.close(directory_fd)
+    if (
+        (
+            metadata.st_dev,
+            metadata.st_ino,
+            metadata.st_mode,
+            metadata.st_nlink,
+            metadata.st_mtime_ns,
+            metadata.st_ctime_ns,
+        )
+        != (
+            after.st_dev,
+            after.st_ino,
+            after.st_mode,
+            after.st_nlink,
+            after.st_mtime_ns,
+            after.st_ctime_ns,
+        )
+        or
+        not stat.S_ISDIR(metadata.st_mode)
+        or stat.S_IMODE(metadata.st_mode) != 0o700
+        or metadata.st_nlink != 2
+        or entries
+    ):
+        raise DeferredDvcTargetError(
+            f"E0-MY config isolation directory is not exact empty 0700: {path}"
+        )
+    return RegistrationDirectoryIdentity(
+        path=path.relative_to(repo_root).as_posix(),
+        device=after.st_dev,
+        inode=after.st_ino,
+        mode=stat.S_IMODE(after.st_mode),
+        nlink=after.st_nlink,
+        entry_count=0,
+        mtime_ns=after.st_mtime_ns,
+        ctime_ns=after.st_ctime_ns,
+    )
+
+
+def snapshot_anfis_ablation_dvc_configuration(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, RegistrationFileIdentity]:
+    """Seal exact repo/local DVC config without publishing local contents."""
+    for inherited_path in (
+        Path("/etc/xdg/dvc/config"),
+        ANFIS_ABLATION_EXPECTED_XDG_CONFIG_HOME / "dvc/config",
+    ):
+        if os.path.lexists(inherited_path):
+            raise DeferredDvcTargetError(
+                f"E0-MY forbids inherited DVC configuration: {inherited_path}"
+            )
+    records: list[RegistrationFileIdentity] = []
+    for path, expected_bytes, expected_sha256 in (
+        (
+            ANFIS_ABLATION_REPO_DVC_CONFIG,
+            ANFIS_ABLATION_REPO_DVC_CONFIG_BYTES,
+            ANFIS_ABLATION_REPO_DVC_CONFIG_SHA256,
+        ),
+        (
+            ANFIS_ABLATION_LOCAL_DVC_CONFIG,
+            ANFIS_ABLATION_LOCAL_DVC_CONFIG_BYTES,
+            ANFIS_ABLATION_LOCAL_DVC_CONFIG_SHA256,
+        ),
+    ):
+        identity = _registration_file_identity(
+            repo_root / path, repo_root=repo_root, mode=0o644
+        )
+        if (
+            identity.nlink != 1
+            or identity.size != expected_bytes
+            or identity.sha256 != expected_sha256
+        ):
+            raise DeferredDvcTargetError(
+                f"E0-MY DVC configuration drifted: {path}"
+            )
+        records.append(identity)
+    return (records[0], records[1])
+
+
+def expected_anfis_ablation_dvc_wrapper_bytes(repo_root: Path) -> bytes:
+    """Build the exact console-script bytes without embedding a local root."""
+    interpreter = (
+        repo_root.resolve() / ANFIS_ABLATION_DVC_PYTHON_LINK
+    ).as_posix()
+    return (
+        f"#!{interpreter}\n".encode()
+        + ANFIS_ABLATION_DVC_WRAPPER_BODY
+    )
+
+
+def snapshot_anfis_ablation_dvc_runtime(
+    *, repo_root: Path = Path(".")
+) -> AnfisAblationDvcRuntimeIdentity:
+    """Seal the exact DVC wrapper, Python symlink, and final interpreter."""
+    if shutil.which("git") != ANFIS_ABLATION_GIT_BIN.as_posix():
+        raise DeferredDvcTargetError("E0-MY Git executable resolution drifted")
+    wrapper_path = repo_root / ANFIS_ABLATION_DVC_WRAPPER
+    expected_wrapper = expected_anfis_ablation_dvc_wrapper_bytes(repo_root)
+    wrapper = _registration_file_identity(
+        wrapper_path, repo_root=repo_root, mode=0o755
+    )
+    wrapper_payload = wrapper_path.read_bytes()
+    wrapper_after = _registration_file_identity(
+        wrapper_path, repo_root=repo_root, mode=0o755
+    )
+    if (
+        wrapper_after != wrapper
+        or
+        wrapper.nlink != 1
+        or wrapper.size != len(expected_wrapper)
+        or wrapper.sha256 != hashlib.sha256(expected_wrapper).hexdigest()
+        or wrapper_payload != expected_wrapper
+    ):
+        raise DeferredDvcTargetError("E0-MY DVC wrapper identity drifted")
+
+    link_path = repo_root / ANFIS_ABLATION_DVC_PYTHON_LINK
+    _require_no_symlink_ancestors(link_path.parent / "anchor", anchor=repo_root)
+    link_before = link_path.lstat()
+    link_target = os.readlink(link_path)
+    link_after = link_path.lstat()
+    if (
+        not stat.S_ISLNK(link_before.st_mode)
+        or (
+            link_before.st_dev,
+            link_before.st_ino,
+            link_before.st_mode,
+            link_before.st_nlink,
+            link_before.st_size,
+            link_before.st_mtime_ns,
+            link_before.st_ctime_ns,
+        )
+        != (
+            link_after.st_dev,
+            link_after.st_ino,
+            link_after.st_mode,
+            link_after.st_nlink,
+            link_after.st_size,
+            link_after.st_mtime_ns,
+            link_after.st_ctime_ns,
+        )
+        or stat.S_IMODE(link_after.st_mode) != 0o777
+        or link_after.st_nlink != 1
+        or link_target != ANFIS_ABLATION_DVC_PYTHON_TARGET.as_posix()
+    ):
+        raise DeferredDvcTargetError("E0-MY DVC Python symlink identity drifted")
+    python_link = RegistrationSymlinkIdentity(
+        path=ANFIS_ABLATION_DVC_PYTHON_LINK.as_posix(),
+        target=link_target,
+        device=link_after.st_dev,
+        inode=link_after.st_ino,
+        mode=stat.S_IMODE(link_after.st_mode),
+        nlink=link_after.st_nlink,
+        size=link_after.st_size,
+        mtime_ns=link_after.st_mtime_ns,
+        ctime_ns=link_after.st_ctime_ns,
+    )
+
+    target_path = ANFIS_ABLATION_DVC_PYTHON_TARGET
+    target_before = target_path.lstat()
+    target_digest = sha256_file(target_path)
+    target_after = target_path.lstat()
+    if (
+        not stat.S_ISREG(target_before.st_mode)
+        or (
+            target_before.st_dev,
+            target_before.st_ino,
+            target_before.st_mode,
+            target_before.st_nlink,
+            target_before.st_size,
+            target_before.st_mtime_ns,
+            target_before.st_ctime_ns,
+        )
+        != (
+            target_after.st_dev,
+            target_after.st_ino,
+            target_after.st_mode,
+            target_after.st_nlink,
+            target_after.st_size,
+            target_after.st_mtime_ns,
+            target_after.st_ctime_ns,
+        )
+        or stat.S_IMODE(target_after.st_mode) != 0o755
+        or target_after.st_nlink != 1
+        or target_after.st_size != ANFIS_ABLATION_DVC_PYTHON_BYTES
+        or target_digest != ANFIS_ABLATION_DVC_PYTHON_SHA256
+    ):
+        raise DeferredDvcTargetError("E0-MY DVC Python interpreter drifted")
+    python_target = RegistrationFileIdentity(
+        path=target_path.as_posix(),
+        device=target_after.st_dev,
+        inode=target_after.st_ino,
+        mode=stat.S_IMODE(target_after.st_mode),
+        nlink=target_after.st_nlink,
+        size=target_after.st_size,
+        sha256=target_digest,
+        mtime_ns=target_after.st_mtime_ns,
+        ctime_ns=target_after.st_ctime_ns,
+    )
+
+    git_path = ANFIS_ABLATION_GIT_BIN
+    git_before = git_path.lstat()
+    git_digest = sha256_file(git_path)
+    git_after = git_path.lstat()
+    if (
+        not stat.S_ISREG(git_before.st_mode)
+        or (
+            git_before.st_dev,
+            git_before.st_ino,
+            git_before.st_mode,
+            git_before.st_nlink,
+            git_before.st_size,
+            git_before.st_mtime_ns,
+            git_before.st_ctime_ns,
+        )
+        != (
+            git_after.st_dev,
+            git_after.st_ino,
+            git_after.st_mode,
+            git_after.st_nlink,
+            git_after.st_size,
+            git_after.st_mtime_ns,
+            git_after.st_ctime_ns,
+        )
+        or stat.S_IMODE(git_after.st_mode) != 0o755
+        or git_after.st_nlink != 1
+        or git_after.st_size != ANFIS_ABLATION_GIT_BYTES
+        or git_digest != ANFIS_ABLATION_GIT_SHA256
+    ):
+        raise DeferredDvcTargetError("E0-MY Git executable drifted")
+    git = RegistrationFileIdentity(
+        path=git_path.as_posix(),
+        device=git_after.st_dev,
+        inode=git_after.st_ino,
+        mode=stat.S_IMODE(git_after.st_mode),
+        nlink=git_after.st_nlink,
+        size=git_after.st_size,
+        sha256=git_digest,
+        mtime_ns=git_after.st_mtime_ns,
+        ctime_ns=git_after.st_ctime_ns,
+    )
+    if shutil.which("git") != ANFIS_ABLATION_GIT_BIN.as_posix():
+        raise DeferredDvcTargetError("E0-MY Git executable resolution drifted")
+    return AnfisAblationDvcRuntimeIdentity(
+        wrapper=wrapper,
+        python_link=python_link,
+        python_target=python_target,
+        git=git,
+    )
+
+
+def _same_registration_payload_inode(
+    observed: RegistrationFileIdentity,
+    expected: RegistrationFileIdentity,
+) -> bool:
+    return (
+        observed.device,
+        observed.inode,
+        observed.mode,
+        observed.size,
+        observed.sha256,
+    ) == (
+        expected.device,
+        expected.inode,
+        expected.mode,
+        expected.size,
+        expected.sha256,
+    )
+
+
+def _same_registration_exact(
+    observed: RegistrationFileIdentity,
+    expected: RegistrationFileIdentity,
+) -> bool:
+    return observed == expected
+
+
+def _same_registration_physical(
+    observed: RegistrationFileIdentity,
+    expected: RegistrationFileIdentity,
+) -> bool:
+    """Compare one inode through two names, excluding only lexical path."""
+    return (
+        observed.device,
+        observed.inode,
+        observed.mode,
+        observed.nlink,
+        observed.size,
+        observed.sha256,
+        observed.mtime_ns,
+        observed.ctime_ns,
+    ) == (
+        expected.device,
+        expected.inode,
+        expected.mode,
+        expected.nlink,
+        expected.size,
+        expected.sha256,
+        expected.mtime_ns,
+        expected.ctime_ns,
+    )
+
+
+def _same_registration_node(
+    observed: RegistrationFileIdentity,
+    expected: RegistrationFileIdentity,
+) -> bool:
+    return (observed.device, observed.inode) == (
+        expected.device,
+        expected.inode,
+    )
+
+
+def _registration_identity_record(
+    identity: RegistrationFileIdentity,
+) -> dict[str, str | int]:
+    return {
+        "path": identity.path,
+        "device": identity.device,
+        "inode": identity.inode,
+        "mode": identity.mode,
+        "nlink": identity.nlink,
+        "size": identity.size,
+        "sha256": identity.sha256,
+        "mtime_ns": identity.mtime_ns,
+        "ctime_ns": identity.ctime_ns,
+    }
+
+
+def _registration_directory_record(
+    identity: RegistrationDirectoryIdentity,
+) -> dict[str, str | int]:
+    return {
+        "path": identity.path,
+        "device": identity.device,
+        "inode": identity.inode,
+        "mode": identity.mode,
+        "nlink": identity.nlink,
+        "entry_count": identity.entry_count,
+        "mtime_ns": identity.mtime_ns,
+        "ctime_ns": identity.ctime_ns,
+    }
+
+
+def _registration_owned_node(
+    path: Path,
+    metadata: os.stat_result,
+    *,
+    repo_root: Path,
+    expected_mode: int,
+    expected_nlink: int,
+    directory: bool,
+) -> RegistrationOwnedNode:
+    expected_kind = stat.S_ISDIR if directory else stat.S_ISREG
+    if (
+        not expected_kind(metadata.st_mode)
+        or stat.S_IMODE(metadata.st_mode) != expected_mode
+        or metadata.st_nlink != expected_nlink
+    ):
+        raise DeferredDvcTargetError(
+            f"E0-MY exclusively created node identity drifted: {path}"
+        )
+    return RegistrationOwnedNode(
+        path=path.relative_to(repo_root).as_posix(),
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+        mode=stat.S_IMODE(metadata.st_mode),
+        nlink=metadata.st_nlink,
+    )
+
+
+def _registration_owned_file_from_fd(
+    path: Path,
+    file_fd: int,
+    *,
+    repo_root: Path,
+    expected_mode: int,
+    expected_nlink: int = 1,
+) -> RegistrationOwnedNode:
+    """Capture stable ownership before any payload write can fail."""
+    return _registration_owned_node(
+        path,
+        os.fstat(file_fd),
+        repo_root=repo_root,
+        expected_mode=expected_mode,
+        expected_nlink=expected_nlink,
+        directory=False,
+    )
+
+
+def _registration_owned_path_from_dirfd(
+    path: Path,
+    name: str,
+    parent_fd: int,
+    *,
+    repo_root: Path,
+    expected_mode: int,
+    expected_nlink: int,
+    directory: bool,
+) -> RegistrationOwnedNode:
+    """Capture a just-created directory or hardlink through its anchored parent."""
+    metadata = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
+    return _registration_owned_node(
+        path,
+        metadata,
+        repo_root=repo_root,
+        expected_mode=expected_mode,
+        expected_nlink=expected_nlink,
+        directory=directory,
+    )
+
+
+def _refresh_owned_registration_file(
+    path: Path,
+    file_fd: int,
+    ownership: RegistrationOwnedNode,
+    *,
+    repo_root: Path,
+    mode: int,
+) -> RegistrationFileIdentity:
+    """Promote a stable creation token to an exact post-write identity."""
+    opened = os.fstat(file_fd)
+    if (
+        not stat.S_ISREG(opened.st_mode)
+        or (opened.st_dev, opened.st_ino)
+        != (ownership.device, ownership.inode)
+        or stat.S_IMODE(opened.st_mode) != ownership.mode
+        or opened.st_nlink != ownership.nlink
+    ):
+        raise DeferredDvcTargetError(
+            f"E0-MY exclusively created file descriptor drifted: {path}"
+        )
+    observed = _registration_file_identity(path, repo_root=repo_root, mode=mode)
+    if (
+        (observed.device, observed.inode)
+        != (ownership.device, ownership.inode)
+        or observed.mode != ownership.mode
+        or observed.nlink != ownership.nlink
+    ):
+        raise DeferredDvcTargetError(
+            f"E0-MY exclusively created file name was replaced: {path}"
+        )
+    return observed
+
+
+def _unlink_owned_registration_node(
+    path: Path,
+    ownership: RegistrationOwnedNode,
+    *,
+    repo_root: Path,
+    expected_nlink: int | None = None,
+) -> None:
+    """Unlink a partially initialized owned file without trusting mutable bytes."""
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    parent_fd = os.open(
+        path.parent,
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0),
+    )
+    try:
+        named = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(named.st_mode)
+            or (named.st_dev, named.st_ino)
+            != (ownership.device, ownership.inode)
+            or stat.S_IMODE(named.st_mode) != ownership.mode
+            or named.st_nlink
+            != (
+                ownership.nlink
+                if expected_nlink is None
+                else expected_nlink
+            )
+        ):
+            raise DeferredDvcTargetError(
+                f"E0-MY rollback preserved a foreign replacement: {path}"
+            )
+        os.unlink(path.name, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+    finally:
+        os.close(parent_fd)
+
+
+def _remove_owned_registration_directory_node(
+    path: Path,
+    ownership: RegistrationOwnedNode,
+    *,
+    repo_root: Path,
+) -> None:
+    """Remove a partially initialized owned directory iff it is still empty."""
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    parent_fd = os.open(
+        path.parent,
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0),
+    )
+    directory_fd = -1
+    try:
+        directory_fd = os.open(
+            path.name,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=parent_fd,
+        )
+        observed = os.fstat(directory_fd)
+        if (
+            not stat.S_ISDIR(observed.st_mode)
+            or (observed.st_dev, observed.st_ino)
+            != (ownership.device, ownership.inode)
+            or stat.S_IMODE(observed.st_mode) != ownership.mode
+            or observed.st_nlink != ownership.nlink
+            or os.listdir(directory_fd)
+        ):
+            raise DeferredDvcTargetError(
+                f"E0-MY preserved a foreign config isolation directory: {path}"
+            )
+        os.close(directory_fd)
+        directory_fd = -1
+        os.rmdir(path.name, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+    finally:
+        if directory_fd >= 0:
+            os.close(directory_fd)
+        os.close(parent_fd)
+
+
+def _remove_owned_registration_directory(
+    path: Path,
+    identity: RegistrationDirectoryIdentity,
+    *,
+    repo_root: Path,
+) -> None:
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    parent_fd = os.open(
+        path.parent,
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0),
+    )
+    directory_fd = -1
+    try:
+        directory_fd = os.open(
+            path.name,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=parent_fd,
+        )
+        observed = os.fstat(directory_fd)
+        if (
+            not stat.S_ISDIR(observed.st_mode)
+            or (observed.st_dev, observed.st_ino)
+            != (identity.device, identity.inode)
+            or stat.S_IMODE(observed.st_mode) != identity.mode
+            or observed.st_nlink != identity.nlink
+            or observed.st_mtime_ns != identity.mtime_ns
+            or observed.st_ctime_ns != identity.ctime_ns
+            or os.listdir(directory_fd)
+        ):
+            raise DeferredDvcTargetError(
+                f"E0-MY preserved a foreign config isolation directory: {path}"
+            )
+        os.close(directory_fd)
+        directory_fd = -1
+        os.rmdir(path.name, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+    finally:
+        if directory_fd >= 0:
+            os.close(directory_fd)
+        os.close(parent_fd)
+
+
+def _unlink_owned_registration_path(
+    path: Path,
+    identity: RegistrationFileIdentity,
+    *,
+    repo_root: Path,
+    expected_nlink: int | None = None,
+) -> None:
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    parent = path.parent
+    parent_flags = (
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0)
+    )
+    parent_fd = os.open(parent, parent_flags)
+    try:
+        named = os.stat(path.name, dir_fd=parent_fd, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(named.st_mode)
+            or (named.st_dev, named.st_ino) != (identity.device, identity.inode)
+            or stat.S_IMODE(named.st_mode) != identity.mode
+            or named.st_size != identity.size
+            or named.st_mtime_ns != identity.mtime_ns
+            or named.st_ctime_ns != identity.ctime_ns
+            or named.st_nlink
+            != (identity.nlink if expected_nlink is None else expected_nlink)
+        ):
+            raise DeferredDvcTargetError(
+                f"E0-MY rollback preserved a foreign replacement: {path}"
+            )
+        os.unlink(path.name, dir_fd=parent_fd)
+        os.fsync(parent_fd)
+    finally:
+        os.close(parent_fd)
+
+
+def _overwrite_owned_registration_path(
+    path: Path,
+    identity: RegistrationFileIdentity,
+    payload: bytes,
+    *,
+    repo_root: Path,
+    expected_nlink: int = 1,
+) -> RegistrationFileIdentity:
+    """Restore bytes only through the exact owned regular inode."""
+    _require_no_symlink_ancestors(path, anchor=repo_root)
+    parent_fd = os.open(
+        path.parent,
+        os.O_RDONLY
+        | getattr(os, "O_DIRECTORY", 0)
+        | getattr(os, "O_NOFOLLOW", 0),
+    )
+    file_fd = -1
+    try:
+        file_fd = os.open(
+            path.name,
+            os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
+            dir_fd=parent_fd,
+        )
+        opened = os.fstat(file_fd)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or stat.S_IMODE(opened.st_mode) != identity.mode
+            or opened.st_nlink != expected_nlink
+            or (opened.st_dev, opened.st_ino)
+            != (identity.device, identity.inode)
+            or opened.st_size != identity.size
+            or opened.st_mtime_ns != identity.mtime_ns
+            or opened.st_ctime_ns != identity.ctime_ns
+        ):
+            raise DeferredDvcTargetError(
+                f"E0-MY rollback preserved a foreign overwrite target: {path}"
+            )
+        os.ftruncate(file_fd, 0)
+        written = 0
+        while written < len(payload):
+            count = os.write(file_fd, payload[written:])
+            if count <= 0:
+                raise DeferredDvcTargetError(
+                    f"Short write restoring E0-MY metadata: {path}"
+                )
+            written += count
+        os.fsync(file_fd)
+        os.fsync(parent_fd)
+    finally:
+        if file_fd >= 0:
+            os.close(file_fd)
+        os.close(parent_fd)
+    return _registration_file_identity(path, repo_root=repo_root, mode=identity.mode)
+
+
+class _AnfisAblationRegistrationTransaction:
+    """Own and roll back only metadata created by exact E0-MY registration."""
+
+    def __init__(self, *, repo_root: Path, manage_git_index: bool = False) -> None:
+        self.repo_root = repo_root
+        self.manage_git_index = manage_git_index
+        self.root_fd = -1
+        self.tmp_fd = -1
+        self.guard_ownership: RegistrationOwnedNode | None = None
+        self.guard_identity: RegistrationFileIdentity | None = None
+        self.baseline_models: RegistrationFileIdentity | None = None
+        self.baseline_models_bytes = b""
+        self.backup_ownership: RegistrationOwnedNode | None = None
+        self.backup_identity: RegistrationFileIdentity | None = None
+        self.bytes_backup_ownership: RegistrationOwnedNode | None = None
+        self.bytes_backup_identity: RegistrationFileIdentity | None = None
+        self.global_config_ownership: RegistrationOwnedNode | None = None
+        self.global_config_identity: RegistrationDirectoryIdentity | None = None
+        self.system_config_ownership: RegistrationOwnedNode | None = None
+        self.system_config_identity: RegistrationDirectoryIdentity | None = None
+        self.pointer_identities: dict[Path, RegistrationFileIdentity] = {}
+        self.registered_models: RegistrationFileIdentity | None = None
+        self.models_overwritten_in_place = False
+        self.models_registration_prepared = False
+        self.index_baseline: tuple[str, ...] | None = None
+        self.staging_owned = False
+        self.staged_owned_paths: tuple[str, ...] = ()
+        self.dvc_started = False
+        self.committed = False
+
+    def __enter__(self) -> _AnfisAblationRegistrationTransaction:
+        tmp_root = self.repo_root / "tmp"
+        if not os.path.lexists(tmp_root):
+            os.mkdir(tmp_root, 0o700)
+        _require_no_symlink_ancestors(tmp_root / "anchor", anchor=self.repo_root)
+        if not stat.S_ISDIR(tmp_root.lstat().st_mode):
+            raise DeferredDvcTargetError("E0-MY tmp root is not a directory")
+        for path in (
+            self.repo_root / ANFIS_ABLATION_REGISTRATION_GUARD,
+            self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP,
+            self.repo_root / ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP,
+            self.repo_root / ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR,
+            self.repo_root / ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR,
+            *(self.repo_root / path for path in ANFIS_ABLATION_SELECTION_POINTER_PATHS),
+        ):
+            if os.path.lexists(path):
+                raise DeferredDvcTargetError(
+                    f"E0-MY transaction requires absent coordination/pointer path: {path}"
+                )
+        models_pointer = self.repo_root / DEFERRED_DVC_MODELS_POINTER
+        self.baseline_models = _registration_file_identity(
+            models_pointer, repo_root=self.repo_root, mode=0o644
+        )
+        if self.baseline_models.nlink != 1:
+            raise DeferredDvcTargetError(
+                "E0-MY baseline models.dvc must have exactly one hard link"
+            )
+        self.baseline_models_bytes = models_pointer.read_bytes()
+        if (
+            len(self.baseline_models_bytes) != self.baseline_models.size
+            or hashlib.sha256(self.baseline_models_bytes).hexdigest()
+            != self.baseline_models.sha256
+            or _registration_file_identity(
+                models_pointer, repo_root=self.repo_root, mode=0o644
+            )
+            != self.baseline_models
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY baseline models.dvc changed while being captured"
+            )
+        if self.manage_git_index:
+            if _git_output(
+                self.repo_root,
+                "diff",
+                "--cached",
+                "--name-only",
+            ).strip():
+                raise DeferredDvcTargetError(
+                    "E0-MY registration requires an initially clean Git index"
+                )
+            self.index_baseline = tuple(
+                _git_output(
+                    self.repo_root,
+                    "ls-files",
+                    "-s",
+                    "--",
+                    *sorted(ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+                ).splitlines()
+            )
+            if (
+                len(self.index_baseline) != 1
+                or not self.index_baseline[0].endswith(" 0\tmodels.dvc")
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY initial index is not exact tracked models.dvc only"
+                )
+
+        directory_flags = (
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0)
+        )
+        try:
+            self.root_fd = os.open(self.repo_root, directory_flags)
+            self.tmp_fd = os.open(tmp_root, directory_flags)
+        except BaseException:
+            self._close_directory_descriptors()
+            raise
+        guard_fd = -1
+        bytes_backup_fd = -1
+        try:
+            guard_fd = os.open(
+                ANFIS_ABLATION_REGISTRATION_GUARD.name,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=self.tmp_fd,
+            )
+            guard_path = self.repo_root / ANFIS_ABLATION_REGISTRATION_GUARD
+            self.guard_ownership = _registration_owned_file_from_fd(
+                guard_path,
+                guard_fd,
+                repo_root=self.repo_root,
+                expected_mode=0o600,
+            )
+            try:
+                if os.write(
+                    guard_fd, ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD
+                ) != len(ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD):
+                    raise DeferredDvcTargetError(
+                        "Short write creating E0-MY guard"
+                    )
+                os.fsync(guard_fd)
+            finally:
+                self.guard_identity = _refresh_owned_registration_file(
+                    guard_path,
+                    guard_fd,
+                    self.guard_ownership,
+                    repo_root=self.repo_root,
+                    mode=0o600,
+                )
+            if (
+                self.guard_identity.size
+                != len(ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD)
+                or self.guard_identity.sha256
+                != hashlib.sha256(
+                    ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD
+                ).hexdigest()
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY transaction guard payload drifted during creation"
+                )
+
+            for attribute_prefix, directory_path in (
+                ("global_config", ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR),
+                ("system_config", ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR),
+            ):
+                try:
+                    os.mkdir(directory_path.name, 0o700, dir_fd=self.tmp_fd)
+                except BaseException:
+                    physical_directory = self.repo_root / directory_path
+                    if os.path.lexists(physical_directory):
+                        ownership = _registration_owned_path_from_dirfd(
+                            physical_directory,
+                            directory_path.name,
+                            self.tmp_fd,
+                            repo_root=self.repo_root,
+                            expected_mode=0o700,
+                            expected_nlink=2,
+                            directory=True,
+                        )
+                        setattr(
+                            self,
+                            f"{attribute_prefix}_ownership",
+                            ownership,
+                        )
+                    raise
+                ownership = _registration_owned_path_from_dirfd(
+                    self.repo_root / directory_path,
+                    directory_path.name,
+                    self.tmp_fd,
+                    repo_root=self.repo_root,
+                    expected_mode=0o700,
+                    expected_nlink=2,
+                    directory=True,
+                )
+                setattr(self, f"{attribute_prefix}_ownership", ownership)
+                identity = _registration_directory_identity(
+                    self.repo_root / directory_path,
+                    repo_root=self.repo_root,
+                )
+                setattr(self, f"{attribute_prefix}_identity", identity)
+
+            bytes_backup_fd = os.open(
+                ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP.name,
+                os.O_WRONLY
+                | os.O_CREAT
+                | os.O_EXCL
+                | getattr(os, "O_NOFOLLOW", 0),
+                0o600,
+                dir_fd=self.tmp_fd,
+            )
+            bytes_backup_path = (
+                self.repo_root / ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP
+            )
+            self.bytes_backup_ownership = _registration_owned_file_from_fd(
+                bytes_backup_path,
+                bytes_backup_fd,
+                repo_root=self.repo_root,
+                expected_mode=0o600,
+            )
+            try:
+                written = 0
+                while written < len(self.baseline_models_bytes):
+                    count = os.write(
+                        bytes_backup_fd, self.baseline_models_bytes[written:]
+                    )
+                    if count <= 0:
+                        raise DeferredDvcTargetError(
+                            "Short write creating E0-MY independent "
+                            "models.dvc backup"
+                        )
+                    written += count
+                os.fsync(bytes_backup_fd)
+            finally:
+                self.bytes_backup_identity = _refresh_owned_registration_file(
+                    bytes_backup_path,
+                    bytes_backup_fd,
+                    self.bytes_backup_ownership,
+                    repo_root=self.repo_root,
+                    mode=0o600,
+                )
+        except BaseException:
+            try:
+                self._rollback()
+            finally:
+                self._close_directory_descriptors()
+            raise
+        finally:
+            if guard_fd >= 0:
+                os.close(guard_fd)
+            if bytes_backup_fd >= 0:
+                os.close(bytes_backup_fd)
+
+        try:
+            if (
+                self.guard_identity is None
+                or self.bytes_backup_identity is None
+                or self.global_config_identity is None
+                or self.system_config_identity is None
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY transaction coordination records are incomplete"
+                )
+            self._require_bytes_backup()
+        except BaseException:
+            try:
+                self._rollback()
+            finally:
+                self._close_directory_descriptors()
+            raise
+        return self
+
+    def _close_directory_descriptors(self) -> None:
+        if self.tmp_fd >= 0:
+            os.close(self.tmp_fd)
+            self.tmp_fd = -1
+        if self.root_fd >= 0:
+            os.close(self.root_fd)
+            self.root_fd = -1
+
+    def _require_guard(self) -> RegistrationFileIdentity:
+        if self.guard_identity is None:
+            raise DeferredDvcTargetError("E0-MY transaction guard is not owned")
+        observed = _registration_file_identity(
+            self.repo_root / ANFIS_ABLATION_REGISTRATION_GUARD,
+            repo_root=self.repo_root,
+            mode=0o600,
+        )
+        if observed.nlink != 1 or not _same_registration_exact(
+            observed, self.guard_identity
+        ):
+            raise DeferredDvcTargetError("E0-MY transaction guard changed")
+        return observed
+
+    def _write_guard_state(self, payload: bytes) -> RegistrationFileIdentity:
+        """Durably rewrite only the exact owned guard inode and recapture it."""
+        current = self._require_guard()
+        if self.guard_ownership is None:
+            raise DeferredDvcTargetError(
+                "E0-MY transaction guard creation ownership is absent"
+            )
+        guard_path = self.repo_root / ANFIS_ABLATION_REGISTRATION_GUARD
+        parent_fd = os.open(
+            guard_path.parent,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        guard_fd = -1
+        try:
+            guard_fd = os.open(
+                guard_path.name,
+                os.O_WRONLY | getattr(os, "O_NOFOLLOW", 0),
+                dir_fd=parent_fd,
+            )
+            opened = os.fstat(guard_fd)
+            if (
+                not stat.S_ISREG(opened.st_mode)
+                or (opened.st_dev, opened.st_ino)
+                != (current.device, current.inode)
+                or stat.S_IMODE(opened.st_mode) != current.mode
+                or opened.st_nlink != 1
+                or opened.st_size != current.size
+                or opened.st_mtime_ns != current.mtime_ns
+                or opened.st_ctime_ns != current.ctime_ns
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY transaction guard changed before state transition"
+                )
+            try:
+                os.ftruncate(guard_fd, 0)
+                written = 0
+                while written < len(payload):
+                    count = os.write(guard_fd, payload[written:])
+                    if count <= 0:
+                        raise DeferredDvcTargetError(
+                            "Short write transitioning E0-MY transaction guard"
+                        )
+                    written += count
+                os.fsync(guard_fd)
+                os.fsync(parent_fd)
+            finally:
+                self.guard_identity = _refresh_owned_registration_file(
+                    guard_path,
+                    guard_fd,
+                    self.guard_ownership,
+                    repo_root=self.repo_root,
+                    mode=0o600,
+                )
+        finally:
+            if guard_fd >= 0:
+                os.close(guard_fd)
+            os.close(parent_fd)
+        if (
+            self.guard_identity is None
+            or self.guard_identity.size != len(payload)
+            or self.guard_identity.sha256
+            != hashlib.sha256(payload).hexdigest()
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY transaction guard state transition drifted"
+            )
+        return self.guard_identity
+
+    def _require_config_isolation(
+        self,
+    ) -> tuple[RegistrationDirectoryIdentity, RegistrationDirectoryIdentity]:
+        if self.global_config_identity is None or self.system_config_identity is None:
+            raise DeferredDvcTargetError(
+                "E0-MY DVC config-isolation directories are not owned"
+            )
+        observed_global = _registration_directory_identity(
+            self.repo_root / ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR,
+            repo_root=self.repo_root,
+        )
+        observed_system = _registration_directory_identity(
+            self.repo_root / ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR,
+            repo_root=self.repo_root,
+        )
+        if (
+            observed_global != self.global_config_identity
+            or observed_system != self.system_config_identity
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY DVC config-isolation directory identity drifted"
+            )
+        return observed_global, observed_system
+
+    def registration_dvc_environment(
+        self,
+        expected_config: tuple[
+            RegistrationFileIdentity, RegistrationFileIdentity
+        ],
+        expected_runtime: AnfisAblationDvcRuntimeIdentity,
+    ) -> dict[str, str]:
+        """Revalidate all DVC config layers and return isolated child env."""
+        self._require_guard()
+        self._require_config_isolation()
+        if snapshot_anfis_ablation_dvc_configuration(
+            repo_root=self.repo_root
+        ) != expected_config:
+            raise DeferredDvcTargetError(
+                "E0-MY repo/local DVC configuration identity drifted"
+            )
+        if snapshot_anfis_ablation_dvc_runtime(
+            repo_root=self.repo_root
+        ) != expected_runtime:
+            raise DeferredDvcTargetError(
+                "E0-MY DVC wrapper/interpreter identity drifted"
+            )
+        environment = dvc_environment()
+        for name in tuple(environment):
+            if (
+                name.startswith("GIT_")
+                or name.startswith("PYTHON")
+                or name.startswith("LD_")
+                or (
+                    name.startswith("DVC_")
+                    and name not in {"DVC_NO_ANALYTICS", "DVC_SITE_CACHE_DIR"}
+                )
+            ):
+                environment.pop(name)
+        environment["PYTHONNOUSERSITE"] = "1"
+        environment["PYTHONSAFEPATH"] = "1"
+        environment["PATH"] = "/usr/bin:/bin"
+        environment["HOME"] = ANFIS_ABLATION_EXPECTED_HOME.as_posix()
+        environment["XDG_CONFIG_HOME"] = (
+            ANFIS_ABLATION_EXPECTED_XDG_CONFIG_HOME.as_posix()
+        )
+        environment["XDG_CONFIG_DIRS"] = ANFIS_ABLATION_EXPECTED_XDG_CONFIG_DIRS
+        environment["DVC_GLOBAL_CONFIG_DIR"] = (
+            self.repo_root / ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR
+        ).resolve().as_posix()
+        environment["DVC_SYSTEM_CONFIG_DIR"] = (
+            self.repo_root / ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR
+        ).resolve().as_posix()
+        return environment
+
+    def _require_bytes_backup(self) -> RegistrationFileIdentity:
+        if (
+            self.baseline_models is None
+            or self.bytes_backup_identity is None
+            or not self.baseline_models_bytes
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY independent models.dvc backup is not owned"
+            )
+        observed = _registration_file_identity(
+            self.repo_root / ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP,
+            repo_root=self.repo_root,
+            mode=0o600,
+        )
+        if (
+            observed.nlink != 1
+            or not _same_registration_exact(
+                observed, self.bytes_backup_identity
+            )
+            or observed.size != len(self.baseline_models_bytes)
+            or observed.sha256 != self.baseline_models.sha256
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY independent models.dvc backup identity drifted"
+            )
+        return observed
+
+    def begin_dvc_mutation(self) -> None:
+        """Cross the pre-DVC boundary only with complete durable recovery state."""
+        if self.dvc_started:
+            return
+        self._require_guard()
+        self._require_config_isolation()
+        self._require_bytes_backup()
+        self.dvc_started = True
+
+    def prepare_models_registration(self) -> None:
+        """Create the models.dvc recovery anchor only after ten payload adds."""
+        if not self.dvc_started or self.models_registration_prepared:
+            raise DeferredDvcTargetError(
+                "E0-MY models registration boundary is out of order"
+            )
+        self._require_guard()
+        self._require_config_isolation()
+        self._require_bytes_backup()
+        if self.baseline_models is None or self.root_fd < 0 or self.tmp_fd < 0:
+            raise DeferredDvcTargetError(
+                "E0-MY models registration baseline/descriptors are absent"
+            )
+        models_pointer = self.repo_root / DEFERRED_DVC_MODELS_POINTER
+        observed_baseline = _registration_file_identity(
+            models_pointer, repo_root=self.repo_root, mode=0o644
+        )
+        if observed_baseline.nlink != 1 or not _same_registration_exact(
+            observed_baseline, self.baseline_models
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY models.dvc changed before its registration boundary"
+            )
+        backup_path = self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP
+        if os.path.lexists(backup_path):
+            raise DeferredDvcTargetError(
+                "E0-MY models.dvc recovery anchor already exists"
+            )
+        try:
+            os.link(
+                DEFERRED_DVC_MODELS_POINTER.as_posix(),
+                ANFIS_ABLATION_MODELS_DVC_BACKUP.name,
+                src_dir_fd=self.root_fd,
+                dst_dir_fd=self.tmp_fd,
+                follow_symlinks=False,
+            )
+            self.backup_ownership = _registration_owned_path_from_dirfd(
+                backup_path,
+                ANFIS_ABLATION_MODELS_DVC_BACKUP.name,
+                self.tmp_fd,
+                repo_root=self.repo_root,
+                expected_mode=0o644,
+                expected_nlink=2,
+                directory=False,
+            )
+            if (
+                self.backup_ownership.device,
+                self.backup_ownership.inode,
+            ) != (
+                self.baseline_models.device,
+                self.baseline_models.inode,
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY hardlink anchor is not the baseline models.dvc inode"
+                )
+            os.fsync(self.tmp_fd)
+            self.backup_identity = _registration_file_identity(
+                backup_path,
+                repo_root=self.repo_root,
+                mode=0o644,
+            )
+            if not _same_registration_payload_inode(
+                self.backup_identity, self.baseline_models
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY models.dvc backup is not the baseline inode"
+                )
+        except BaseException:
+            # A wrapper may raise after the kernel completed link(2).  Adopt
+            # only the exact baseline inode under the still-active guard.
+            if self.backup_ownership is None and os.path.lexists(backup_path):
+                candidate = _registration_owned_path_from_dirfd(
+                    backup_path,
+                    ANFIS_ABLATION_MODELS_DVC_BACKUP.name,
+                    self.tmp_fd,
+                    repo_root=self.repo_root,
+                    expected_mode=0o644,
+                    expected_nlink=2,
+                    directory=False,
+                )
+                if (candidate.device, candidate.inode) != (
+                    self.baseline_models.device,
+                    self.baseline_models.inode,
+                ):
+                    raise DeferredDvcTargetError(
+                        "E0-MY preserved a foreign post-link anchor"
+                    )
+                self.backup_ownership = candidate
+            raise
+        self.models_registration_prepared = True
+
+    def capture_target(self, target: Path) -> None:
+        """Capture metadata even when the just-finished DVC command failed."""
+        self._require_guard()
+        if target == DEFERRED_DVC_MODELS_TARGET:
+            models_pointer = self.repo_root / DEFERRED_DVC_MODELS_POINTER
+            if not os.path.lexists(models_pointer):
+                self.registered_models = None
+                return
+            observed = _registration_file_identity(
+                models_pointer, repo_root=self.repo_root, mode=0o644
+            )
+            if self.baseline_models is None:
+                raise DeferredDvcTargetError(
+                    "E0-MY baseline models.dvc identity is absent"
+                )
+            if _same_registration_payload_inode(observed, self.baseline_models):
+                self.registered_models = None
+                return
+            self._require_bytes_backup()
+            if _same_registration_node(observed, self.baseline_models):
+                if self.models_overwritten_in_place:
+                    if (
+                        self.registered_models is None
+                        or observed.nlink != 1
+                        or not _same_registration_exact(
+                            observed, self.registered_models
+                        )
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY in-place models.dvc registration drifted"
+                        )
+                    return
+                if observed.nlink != 2 or self.backup_identity is None:
+                    raise DeferredDvcTargetError(
+                        "E0-MY in-place models.dvc overwrite lost its exact anchor"
+                    )
+                hardlink_observed = _registration_file_identity(
+                    self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP,
+                    repo_root=self.repo_root,
+                    mode=0o644,
+                )
+                if (
+                    hardlink_observed.nlink != 2
+                    or not _same_registration_node(
+                        hardlink_observed, self.baseline_models
+                    )
+                    or not _same_registration_physical(
+                        hardlink_observed, observed
+                    )
+                ):
+                    raise DeferredDvcTargetError(
+                        "E0-MY in-place models.dvc anchor identity drifted"
+                    )
+                _unlink_owned_registration_path(
+                    self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP,
+                    hardlink_observed,
+                    repo_root=self.repo_root,
+                    expected_nlink=2,
+                )
+                self.backup_identity = None
+                self.backup_ownership = None
+                self.models_overwritten_in_place = True
+                observed = _registration_file_identity(
+                    models_pointer, repo_root=self.repo_root, mode=0o644
+                )
+            elif self.backup_identity is not None:
+                refreshed_anchor = _registration_file_identity(
+                    self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP,
+                    repo_root=self.repo_root,
+                    mode=0o644,
+                )
+                if (
+                    refreshed_anchor.nlink != 1
+                    or not _same_registration_payload_inode(
+                        refreshed_anchor, self.baseline_models
+                    )
+                ):
+                    raise DeferredDvcTargetError(
+                        "E0-MY atomic models.dvc anchor identity drifted"
+                    )
+                self.backup_identity = refreshed_anchor
+            else:
+                raise DeferredDvcTargetError(
+                    "E0-MY atomic models.dvc registration lost its anchor"
+                )
+            if observed.nlink != 1:
+                raise DeferredDvcTargetError(
+                    "E0-MY registered models.dvc must have one hard link"
+                )
+            self.registered_models = observed
+            return
+        try:
+            index = tuple(Path(path) for path in ANFIS_ABLATION_SELECTION_PREDICTION_PATHS).index(
+                target
+            )
+        except ValueError as exc:
+            raise DeferredDvcTargetError(
+                f"E0-MY transaction received an unknown DVC target: {target}"
+            ) from exc
+        pointer = self.repo_root / ANFIS_ABLATION_SELECTION_POINTER_PATHS[index]
+        if not os.path.lexists(pointer):
+            return
+        observed = _registration_file_identity(
+            pointer, repo_root=self.repo_root, mode=0o644
+        )
+        if observed.nlink != 1:
+            raise DeferredDvcTargetError(
+                f"E0-MY registered DVC pointer must have one hard link: {pointer}"
+            )
+        previous = self.pointer_identities.get(pointer)
+        if previous is not None and not _same_registration_exact(observed, previous):
+            raise DeferredDvcTargetError(
+                f"E0-MY DVC pointer was replaced after creation: {pointer}"
+            )
+        self.pointer_identities[pointer] = observed
+
+    def verify_family(
+        self,
+        expected_pointer_count: int,
+        expected_snapshot: tuple[DeferredDvcFinalSnapshot, ...],
+    ) -> None:
+        self._require_guard()
+        observed = snapshot_anfis_ablation_family_bundle(
+            repo_root=self.repo_root,
+            expected_pointer_count=expected_pointer_count,
+            _allow_in_progress_prefix=True,
+        )
+        if observed != expected_snapshot:
+            raise DeferredDvcTargetError(
+                "ANFIS-ablation family changed during E0-MY DVC registration"
+            )
+
+    def verify_progress_scope(
+        self, *, pointer_count: int, models_registered: bool
+    ) -> None:
+        self._require_guard()
+        expected_scope = {
+            path: "??" for path in ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS
+        }
+        expected_scope.update(
+            {
+                path: "??"
+                for path in ANFIS_ABLATION_SELECTION_POINTER_PATHS[:pointer_count]
+            }
+        )
+        if models_registered:
+            expected_scope[DEFERRED_DVC_MODELS_POINTER.as_posix()] = " M"
+        expected_lines = [
+            f"{status} {path}" for path, status in sorted(expected_scope.items())
+        ]
+        observed_status = _git_output(
+            self.repo_root,
+            "status",
+            "--short",
+            "--untracked-files=all",
+        )
+        if observed_status.splitlines() != expected_lines:
+            raise DeferredDvcTargetError(
+                "E0-MY registration progress scope drifted; possible .gitignore "
+                "or concurrent Git mutation"
+            )
+
+    def capture_staging_owned(self, *, require_complete: bool) -> None:
+        """Capture only the exact R paths staged by this transaction."""
+        if not self.manage_git_index or self.index_baseline is None:
+            raise DeferredDvcTargetError(
+                "E0-MY transaction did not capture a Git-index baseline"
+            )
+        staged_status = _git_output(
+            self.repo_root, "diff", "--cached", "--name-status"
+        )
+        rows = parse_git_name_status(staged_status)
+        observed = {path.as_posix(): status for status, path in rows}
+        if len(observed) != len(rows) or any(
+            ANFIS_ABLATION_R_MY_STAGED_SCOPE.get(path) != status
+            for path, status in observed.items()
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY Git add produced foreign or malformed staged paths"
+            )
+        if not observed:
+            if require_complete:
+                raise DeferredDvcTargetError(
+                    "E0-MY Git add did not stage the registration scope"
+                )
+            return
+        self.staging_owned = True
+        self.staged_owned_paths = tuple(sorted(observed))
+        if require_complete:
+            validate_anfis_ablation_registration_staged_scope(staged_status)
+
+    def mark_staging_owned(self) -> None:
+        self.capture_staging_owned(require_complete=True)
+
+    def _verify_registered_metadata(self) -> None:
+        if len(self.pointer_identities) != 10 or self.registered_models is None:
+            raise DeferredDvcTargetError(
+                "E0-MY transaction has incomplete registered metadata"
+            )
+        for pointer, expected in self.pointer_identities.items():
+            observed = _registration_file_identity(
+                pointer, repo_root=self.repo_root, mode=0o644
+            )
+            if observed.nlink != 1 or not _same_registration_exact(
+                observed, expected
+            ):
+                raise DeferredDvcTargetError(
+                    f"E0-MY registered DVC pointer identity drifted: {pointer}"
+                )
+        observed_models = _registration_file_identity(
+            self.repo_root / DEFERRED_DVC_MODELS_POINTER,
+            repo_root=self.repo_root,
+            mode=0o644,
+        )
+        if observed_models.nlink != 1 or not _same_registration_exact(
+            observed_models, self.registered_models
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY registered models.dvc identity drifted"
+            )
+
+    def _require_baseline_backup(
+        self, *, allowed_nlinks: frozenset[int]
+    ) -> RegistrationFileIdentity:
+        if self.baseline_models is None or self.backup_identity is None:
+            raise DeferredDvcTargetError(
+                "E0-MY baseline models.dvc backup is not owned"
+            )
+        observed = _registration_file_identity(
+            self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP,
+            repo_root=self.repo_root,
+            mode=0o644,
+        )
+        if (
+            observed.nlink not in allowed_nlinks
+            or not _same_registration_payload_inode(
+                observed, self.baseline_models
+            )
+            or not _same_registration_exact(observed, self.backup_identity)
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY baseline models.dvc backup identity drifted"
+            )
+        return observed
+
+    def effective_audit_record(
+        self,
+    ) -> dict[
+        str,
+        str | dict[str, str | int] | None,
+    ]:
+        """Seal the exact live coordination identities for the post-R loader."""
+        guard = self._require_guard()
+        self._verify_registered_metadata()
+        bytes_backup = self._require_bytes_backup()
+        global_config, system_config = self._require_config_isolation()
+        if self.models_overwritten_in_place:
+            if self.backup_identity is not None or os.path.lexists(
+                self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY in-place audit retained its hardlink anchor"
+                )
+            anchor: RegistrationFileIdentity | None = None
+            mode = "in_place"
+        else:
+            anchor = self._require_baseline_backup(
+                allowed_nlinks=frozenset({1})
+            )
+            mode = "atomic_replace"
+        return {
+            "mode": mode,
+            "guard": _registration_identity_record(guard),
+            "bytes_backup": _registration_identity_record(bytes_backup),
+            "anchor": (
+                None if anchor is None else _registration_identity_record(anchor)
+            ),
+            "global_config_dir": _registration_directory_record(global_config),
+            "system_config_dir": _registration_directory_record(system_config),
+        }
+
+    def commit(self) -> None:
+        """Linearize R durably, then remove recovery metadata with guard last."""
+        self._require_guard()
+        if not self.dvc_started or not self.models_registration_prepared:
+            raise DeferredDvcTargetError(
+                "E0-MY cannot commit before the models registration boundary"
+            )
+        self._verify_registered_metadata()
+        self._require_bytes_backup()
+        if self.models_overwritten_in_place:
+            if self.backup_identity is not None or os.path.lexists(
+                self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP
+            ):
+                raise DeferredDvcTargetError(
+                    "E0-MY in-place registration retained its hardlink anchor"
+                )
+        else:
+            self._require_baseline_backup(allowed_nlinks=frozenset({1}))
+        if self.manage_git_index:
+            self.capture_staging_owned(require_complete=True)
+        self._require_config_isolation()
+        if (
+            self.guard_identity is None
+            or self.bytes_backup_identity is None
+            or self.global_config_identity is None
+            or self.system_config_identity is None
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY transaction ownership records are incomplete"
+            )
+
+        # This file+directory fsync is the commit linearization point.  Before
+        # it, every exception rolls R back.  After it, R remains complete and
+        # only recognizable coordination cleanup may still be pending.
+        self._write_guard_state(
+            ANFIS_ABLATION_REGISTRATION_COMMIT_READY_PAYLOAD
+        )
+        self.committed = True
+
+        _unlink_owned_registration_path(
+            self.repo_root / ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP,
+            self.bytes_backup_identity,
+            repo_root=self.repo_root,
+        )
+        self.bytes_backup_identity = None
+        self.bytes_backup_ownership = None
+        if not self.models_overwritten_in_place:
+            if self.backup_identity is None:
+                raise DeferredDvcTargetError(
+                    "E0-MY atomic registration lost its hardlink anchor"
+                )
+            _unlink_owned_registration_path(
+                self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP,
+                self.backup_identity,
+                repo_root=self.repo_root,
+                expected_nlink=1,
+            )
+            self.backup_identity = None
+            self.backup_ownership = None
+        _remove_owned_registration_directory(
+            self.repo_root / ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR,
+            self.global_config_identity,
+            repo_root=self.repo_root,
+        )
+        self.global_config_identity = None
+        self.global_config_ownership = None
+        _remove_owned_registration_directory(
+            self.repo_root / ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR,
+            self.system_config_identity,
+            repo_root=self.repo_root,
+        )
+        self.system_config_identity = None
+        self.system_config_ownership = None
+        if self.guard_identity is None:
+            raise DeferredDvcTargetError(
+                "E0-MY commit-ready guard identity is absent"
+            )
+        _unlink_owned_registration_path(
+            self.repo_root / ANFIS_ABLATION_REGISTRATION_GUARD,
+            self.guard_identity,
+            repo_root=self.repo_root,
+        )
+        self.guard_identity = None
+        self.guard_ownership = None
+
+    def _rollback(self) -> None:
+        errors: list[Exception] = []
+        if self.manage_git_index and not self.staging_owned:
+            try:
+                # DVC may be configured to autostage, or ``git add`` may fail
+                # after writing only a prefix.  The initial index was sealed
+                # clean, so any exact R subset is transaction-owned.
+                self.capture_staging_owned(require_complete=False)
+            except Exception as exc:
+                errors.append(exc)
+        if self.staging_owned:
+            try:
+                staged_status = _git_output(
+                    self.repo_root, "diff", "--cached", "--name-status"
+                )
+                rows = parse_git_name_status(staged_status)
+                observed = {path.as_posix(): status for status, path in rows}
+                expected_owned = {
+                    path: ANFIS_ABLATION_R_MY_STAGED_SCOPE[path]
+                    for path in self.staged_owned_paths
+                }
+                if (
+                    not expected_owned
+                    or len(observed) != len(rows)
+                    or observed != expected_owned
+                ):
+                    raise DeferredDvcTargetError(
+                        "E0-MY rollback preserved foreign staged paths"
+                    )
+                reset_result = run_command(
+                    [
+                        "git",
+                        "-C",
+                        self.repo_root.as_posix(),
+                        "reset",
+                        "--quiet",
+                        "HEAD",
+                        "--",
+                        *self.staged_owned_paths,
+                    ],
+                    check=False,
+                )
+                if reset_result.returncode != 0:
+                    raise DeferredDvcTargetError(
+                        "E0-MY exact Git-index rollback command failed"
+                    )
+                observed_index = tuple(
+                    _git_output(
+                        self.repo_root,
+                        "ls-files",
+                        "-s",
+                        "--",
+                        *sorted(ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+                    ).splitlines()
+                )
+                if observed_index != self.index_baseline or _git_output(
+                    self.repo_root, "diff", "--cached", "--name-only"
+                ).strip():
+                    raise DeferredDvcTargetError(
+                        "E0-MY Git index did not return to its exact baseline"
+                    )
+                self.staging_owned = False
+                self.staged_owned_paths = ()
+            except Exception as exc:
+                errors.append(exc)
+        for pointer, identity in reversed(tuple(self.pointer_identities.items())):
+            try:
+                if os.path.lexists(pointer):
+                    _unlink_owned_registration_path(
+                        pointer, identity, repo_root=self.repo_root
+                    )
+            except Exception as exc:
+                errors.append(exc)
+
+        models_pointer = self.repo_root / DEFERRED_DVC_MODELS_POINTER
+        if self.baseline_models is not None:
+            try:
+                if not self.models_registration_prepared:
+                    backup = self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP
+                    if os.path.lexists(backup):
+                        observed_models = _registration_file_identity(
+                            models_pointer,
+                            repo_root=self.repo_root,
+                            mode=0o644,
+                        )
+                        if (
+                            observed_models.nlink != 2
+                            or not _same_registration_payload_inode(
+                                observed_models, self.baseline_models
+                            )
+                        ):
+                            raise DeferredDvcTargetError(
+                                "E0-MY pre-model rollback found models.dvc drift"
+                            )
+                        if self.backup_identity is not None:
+                            observed_backup = _registration_file_identity(
+                                backup, repo_root=self.repo_root, mode=0o644
+                            )
+                            if not _same_registration_node(
+                                observed_backup, self.baseline_models
+                            ):
+                                raise DeferredDvcTargetError(
+                                    "E0-MY pre-model anchor inode drifted"
+                                )
+                            _unlink_owned_registration_path(
+                                backup,
+                                observed_backup,
+                                repo_root=self.repo_root,
+                                expected_nlink=2,
+                            )
+                        elif self.backup_ownership is not None:
+                            _unlink_owned_registration_node(
+                                backup,
+                                self.backup_ownership,
+                                repo_root=self.repo_root,
+                                expected_nlink=2,
+                            )
+                        else:
+                            raise DeferredDvcTargetError(
+                                "E0-MY pre-model rollback preserved an unowned anchor"
+                            )
+                        self.backup_identity = None
+                        self.backup_ownership = None
+                    restored_baseline = _registration_file_identity(
+                        models_pointer,
+                        repo_root=self.repo_root,
+                        mode=0o644,
+                    )
+                    if (
+                        restored_baseline.nlink != 1
+                        or not _same_registration_payload_inode(
+                            restored_baseline, self.baseline_models
+                        )
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY pre-model rollback did not restore models.dvc"
+                        )
+                elif self.models_overwritten_in_place:
+                    self._require_bytes_backup()
+                    if self.backup_identity is not None or os.path.lexists(
+                        self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY in-place rollback found a foreign hardlink anchor"
+                        )
+                    if self.registered_models is None:
+                        raise DeferredDvcTargetError(
+                            "E0-MY in-place rollback lacks registered ownership"
+                        )
+                    observed = _registration_file_identity(
+                        models_pointer, repo_root=self.repo_root, mode=0o644
+                    )
+                    if (
+                        observed.nlink != 1
+                        or not _same_registration_exact(
+                            observed, self.registered_models
+                        )
+                        or not _same_registration_node(
+                            observed, self.baseline_models
+                        )
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY in-place rollback preserved foreign models.dvc"
+                        )
+                    restored = _overwrite_owned_registration_path(
+                        models_pointer,
+                        self.registered_models,
+                        self.baseline_models_bytes,
+                        repo_root=self.repo_root,
+                    )
+                    if (
+                        restored.nlink != 1
+                        or not _same_registration_payload_inode(
+                            restored, self.baseline_models
+                        )
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY in-place models.dvc restoration drifted"
+                        )
+                elif self.backup_identity is not None:
+                    backup = self.repo_root / ANFIS_ABLATION_MODELS_DVC_BACKUP
+                    if not os.path.lexists(backup):
+                        raise DeferredDvcTargetError(
+                            "E0-MY atomic rollback lost its hardlink anchor"
+                        )
+                    hardlink_observed = _registration_file_identity(
+                        backup, repo_root=self.repo_root, mode=0o644
+                    )
+                    if not _same_registration_node(
+                        hardlink_observed, self.baseline_models
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY hardlink anchor inode drifted"
+                        )
+                    if os.path.lexists(models_pointer):
+                        observed = _registration_file_identity(
+                            models_pointer,
+                            repo_root=self.repo_root,
+                            mode=0o644,
+                        )
+                        if _same_registration_node(
+                            observed, self.baseline_models
+                        ):
+                            if observed.nlink != 2:
+                                raise DeferredDvcTargetError(
+                                    "E0-MY baseline hardlink count drifted"
+                                )
+                            if not _same_registration_payload_inode(
+                                observed, self.baseline_models
+                            ):
+                                self._require_bytes_backup()
+                                observed = _overwrite_owned_registration_path(
+                                    models_pointer,
+                                    observed,
+                                    self.baseline_models_bytes,
+                                    repo_root=self.repo_root,
+                                    expected_nlink=2,
+                                )
+                                if not _same_registration_payload_inode(
+                                    observed, self.baseline_models
+                                ):
+                                    raise DeferredDvcTargetError(
+                                        "E0-MY anchored models.dvc restoration drifted"
+                                    )
+                        elif (
+                            self.registered_models is not None
+                            and _same_registration_exact(
+                                observed, self.registered_models
+                            )
+                        ):
+                            _unlink_owned_registration_path(
+                                models_pointer,
+                                self.registered_models,
+                                repo_root=self.repo_root,
+                            )
+                        else:
+                            raise DeferredDvcTargetError(
+                                "E0-MY rollback preserved a foreign models.dvc replacement"
+                            )
+                    if not os.path.lexists(models_pointer):
+                        if self.root_fd < 0 or self.tmp_fd < 0:
+                            raise DeferredDvcTargetError(
+                                "E0-MY rollback lost anchored directory descriptors"
+                            )
+                        os.link(
+                            ANFIS_ABLATION_MODELS_DVC_BACKUP.name,
+                            DEFERRED_DVC_MODELS_POINTER.as_posix(),
+                            src_dir_fd=self.tmp_fd,
+                            dst_dir_fd=self.root_fd,
+                            follow_symlinks=False,
+                        )
+                        os.fsync(self.root_fd)
+                    restored = _registration_file_identity(
+                        models_pointer, repo_root=self.repo_root, mode=0o644
+                    )
+                    if (
+                        restored.nlink != 2
+                        or not _same_registration_payload_inode(
+                            restored, self.baseline_models
+                        )
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY atomic models.dvc restoration drifted"
+                        )
+                    refreshed_anchor = _registration_file_identity(
+                        backup, repo_root=self.repo_root, mode=0o644
+                    )
+                    if (
+                        not _same_registration_node(
+                            refreshed_anchor, self.backup_identity
+                        )
+                        or not _same_registration_physical(
+                            refreshed_anchor, restored
+                        )
+                    ):
+                        raise DeferredDvcTargetError(
+                            "E0-MY restored hardlink anchor identity drifted"
+                        )
+                    _unlink_owned_registration_path(
+                        backup,
+                        refreshed_anchor,
+                        repo_root=self.repo_root,
+                        expected_nlink=2,
+                    )
+                    self.backup_identity = None
+                    self.backup_ownership = None
+                else:
+                    raise DeferredDvcTargetError(
+                        "E0-MY rollback has no models.dvc restoration strategy"
+                    )
+            except Exception as exc:
+                errors.append(exc)
+
+        if (
+            self.bytes_backup_identity is not None
+            or self.bytes_backup_ownership is not None
+        ):
+            bytes_backup = (
+                self.repo_root / ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP
+            )
+            try:
+                if os.path.lexists(bytes_backup):
+                    if self.bytes_backup_identity is not None:
+                        if self.dvc_started:
+                            self._require_bytes_backup()
+                        _unlink_owned_registration_path(
+                            bytes_backup,
+                            self.bytes_backup_identity,
+                            repo_root=self.repo_root,
+                        )
+                    elif self.bytes_backup_ownership is not None:
+                        _unlink_owned_registration_node(
+                            bytes_backup,
+                            self.bytes_backup_ownership,
+                            repo_root=self.repo_root,
+                        )
+                self.bytes_backup_identity = None
+                self.bytes_backup_ownership = None
+            except Exception as exc:
+                errors.append(exc)
+        for identity_attribute, ownership_attribute, directory_path in (
+            (
+                "global_config_identity",
+                "global_config_ownership",
+                ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR,
+            ),
+            (
+                "system_config_identity",
+                "system_config_ownership",
+                ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR,
+            ),
+        ):
+            identity = getattr(self, identity_attribute)
+            ownership = getattr(self, ownership_attribute)
+            if identity is None and ownership is None:
+                continue
+            try:
+                path = self.repo_root / directory_path
+                if os.path.lexists(path):
+                    if identity is not None:
+                        _remove_owned_registration_directory(
+                            path, identity, repo_root=self.repo_root
+                        )
+                    elif ownership is not None:
+                        _remove_owned_registration_directory_node(
+                            path, ownership, repo_root=self.repo_root
+                        )
+                setattr(self, identity_attribute, None)
+                setattr(self, ownership_attribute, None)
+            except Exception as exc:
+                errors.append(exc)
+        if self.guard_identity is not None or self.guard_ownership is not None:
+            guard = self.repo_root / ANFIS_ABLATION_REGISTRATION_GUARD
+            try:
+                if os.path.lexists(guard):
+                    if self.guard_identity is not None:
+                        _unlink_owned_registration_path(
+                            guard,
+                            self.guard_identity,
+                            repo_root=self.repo_root,
+                        )
+                    elif self.guard_ownership is not None:
+                        _unlink_owned_registration_node(
+                            guard,
+                            self.guard_ownership,
+                            repo_root=self.repo_root,
+                        )
+                self.guard_identity = None
+                self.guard_ownership = None
+            except Exception as exc:
+                errors.append(exc)
+        if self.manage_git_index:
+            try:
+                final_status = _git_output(
+                    self.repo_root,
+                    "status",
+                    "--short",
+                    "--untracked-files=all",
+                )
+                validate_anfis_ablation_registration_initial_scope(final_status)
+                if _git_output(
+                    self.repo_root, "diff", "--cached", "--name-only"
+                ).strip():
+                    raise DeferredDvcTargetError(
+                        "E0-MY rollback left the Git index staged"
+                    )
+            except Exception as exc:
+                errors.append(exc)
+        if errors:
+            cleanup = DeferredDvcTargetError(
+                "E0-MY registration rollback could not be completed safely"
+            )
+            cleanup.add_note(
+                "; ".join(f"{type(exc).__name__}: {exc}" for exc in errors)
+            )
+            raise cleanup from errors[0]
+
+    def __exit__(self, exc_type: Any, exc: Any, traceback: Any) -> bool:
+        del exc_type, traceback
+        active_error = exc
+        try:
+            if not self.committed:
+                self._rollback()
+        except Exception as cleanup_error:
+            if active_error is not None:
+                raise cleanup_error from active_error
+            raise
+        finally:
+            self._close_directory_descriptors()
+        return False
+
+
+def validate_anfis_ablation_registration_invocation(
+    args: Any, *, env: Mapping[str, str] | None = None
+) -> None:
+    """Close the E0-MY helper CLI before authority or DVC inspection."""
+    source = os.environ if env is None else env
+    redirected_git_names = {
+        name
+        for name in source
+        if name.startswith("GIT_")
+    }
+    redirected_dvc_names = {
+        name
+        for name in source
+        if name.startswith("DVC_")
+        and name not in {"DVC_NO_ANALYTICS", "DVC_SITE_CACHE_DIR"}
+    }
+    redirected_runtime_names = {
+        name
+        for name in source
+        if name.startswith("PYTHON") or name.startswith("LD_")
+    }
+    host_config_environment_is_exact = (
+        source.get("HOME") in {None, ANFIS_ABLATION_EXPECTED_HOME.as_posix()}
+        and source.get("XDG_CONFIG_HOME")
+        in {None, ANFIS_ABLATION_EXPECTED_XDG_CONFIG_HOME.as_posix()}
+        and source.get("XDG_CONFIG_DIRS")
+        in {None, ANFIS_ABLATION_EXPECTED_XDG_CONFIG_DIRS}
+    )
+    dvc_site_cache = source.get("DVC_SITE_CACHE_DIR")
+    resolved_git = shutil.which("git", path=source.get("PATH"))
+    if (
+        not args.register_anfis_ablation_model_family
+        or args.allow_unmanaged
+        or not args.no_push
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or args.target
+        or args.defer_dvc_target
+        or "DVC_BIN" in source
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or redirected_git_names
+        or redirected_dvc_names
+        or redirected_runtime_names
+        or resolved_git != ANFIS_ABLATION_GIT_BIN.as_posix()
+        or not host_config_environment_is_exact
+        or (
+            dvc_site_cache is not None
+            and dvc_site_cache != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise DeferredDvcTargetError(
+            "E0-MY registration requires only --no-push "
+            "--register-anfis-ablation-model-family, default Git/DVC state, "
+            "DVC_NO_ANALYTICS=1, and no custom targets, reports, or binaries"
+        )
+
+
+def _load_effective_anfis_ablation_dvc_registration_authority(
+    *,
+    audit_current_unpublished: bool,
+    repo_root: Path,
+    registration_transaction: Mapping[str, Any] | None = None,
+) -> Mapping[str, Any]:
+    """Lazy import keeps the generic helper independent before H-E0-MY exists."""
+    from src.experiments.closure_anfis_ablation_dvc_registration_patch import (
+        load_effective_anfis_ablation_dvc_registration_patch_authority,
+    )
+
+    if registration_transaction is None:
+        authority = load_effective_anfis_ablation_dvc_registration_patch_authority(
+            audit_current_unpublished=audit_current_unpublished,
+            verify_remote=True,
+            repo_root=repo_root,
+        )
+    else:
+        from src.experiments.closure_anfis_ablation_dvc_registration_patch import (
+            _load_effective_anfis_ablation_dvc_registration_patch_during_registration,
+        )
+
+        if not audit_current_unpublished:
+            raise DeferredDvcTargetError(
+                "E0-MY transaction record is valid only for post-registration audit"
+            )
+        authority = (
+            _load_effective_anfis_ablation_dvc_registration_patch_during_registration(
+                transaction_record=registration_transaction,
+                verify_remote=True,
+                repo_root=repo_root,
+            )
+        )
+    if not isinstance(authority, Mapping):
+        raise DeferredDvcTargetError(
+            "Effective E0-MY loader returned a non-mapping authority"
+        )
+    return authority
+
+
+def _abort_anfis_ablation_registration_transaction(
+    transaction: _AnfisAblationRegistrationTransaction,
+    error: BaseException,
+    *,
+    returncode: int = 2,
+) -> int:
+    try:
+        transaction.__exit__(type(error), error, error.__traceback__)
+    except Exception as cleanup_error:
+        print(str(cleanup_error), file=sys.stderr)
+        return 2
+    print(str(error), file=sys.stderr)
+    return returncode
+
+
+def _run_anfis_ablation_model_family_registration(args: Any) -> int:
+    """Register the exact family, never push, and stage exact R-E0-MY."""
+    try:
+        validate_anfis_ablation_registration_invocation(args)
+    except DeferredDvcTargetError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    repo_root = Path(".")
+    report_path = default_report_path()
+    dvc_bin = resolve_dvc_bin(args.dvc_bin)
+    if dvc_bin != DEFAULT_DVC_BIN.as_posix():
+        print(
+            "E0-MY registration requires the repository .venv/bin/dvc.",
+            file=sys.stderr,
+        )
+        return 2
+    try:
+        dvc_runtime_snapshot = snapshot_anfis_ablation_dvc_runtime(
+            repo_root=repo_root
+        )
+        registration_artifacts = load_anfis_ablation_registration_artifacts()
+        configured_artifacts = load_configured_dvc_artifacts(args.manifest)
+        model_records = [
+            artifact
+            for artifact in configured_artifacts
+            if artifact.dvc and artifact.path == DEFERRED_DVC_MODELS_TARGET
+        ]
+        if len(model_records) != 1:
+            raise DeferredDvcTargetError(
+                "E0-MY requires one exact configured monolithic models target"
+            )
+        artifacts = [*configured_artifacts, *registration_artifacts]
+        git_status_before = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        validate_anfis_ablation_registration_initial_scope(git_status_before)
+        dvc_config_snapshot = snapshot_anfis_ablation_dvc_configuration(
+            repo_root=repo_root
+        )
+        missing = declared_artifacts_missing_pointers(artifacts)
+        if [artifact.path for artifact in missing] != [
+            Path(path) for path in ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
+        ]:
+            raise DeferredDvcTargetError(
+                "E0-MY missing-pointer set is not the exact ten predictions"
+            )
+        family_snapshot = validate_deferred_dvc_anfis_ablation_family_state(
+            DEFERRED_DVC_MODELS_STATUS, repo_root=repo_root
+        )
+        _load_effective_anfis_ablation_dvc_registration_authority(
+            audit_current_unpublished=False, repo_root=repo_root
+        )
+    except (DeferredDvcTargetError, ValueError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    unmanaged_paths = [
+        path
+        for path in unmanaged_ignored_heavy_paths(artifacts)
+        if path != ANFIS_ABLATION_SELECTION_ROOT
+    ]
+    selected_dvc_paths = list(ANFIS_ABLATION_REGISTRATION_DVC_TARGETS)
+    print("Pre-commit artifact assistant — exact E0-MY registration")
+    print_path_table("Selected DVC add targets:", selected_dvc_paths)
+    print_path_table("Rejected unrelated unmanaged ignored paths:", unmanaged_paths)
+
+    try:
+        if snapshot_anfis_ablation_dvc_runtime(
+            repo_root=repo_root
+        ) != dvc_runtime_snapshot:
+            raise DeferredDvcTargetError(
+                "E0-MY Git/DVC runtime changed during preflight"
+            )
+    except DeferredDvcTargetError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    transaction = _AnfisAblationRegistrationTransaction(
+        repo_root=repo_root, manage_git_index=True
+    )
+    try:
+        transaction.__enter__()
+    except BaseException as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    try:
+        registration_dvc_env = transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        dvc_status_before = dvc_status_json(
+            dvc_bin, env=registration_dvc_env
+        )
+        transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        changed = dvc_status_candidates(dvc_status_before, artifacts)
+        if [artifact.path for artifact in changed] != [
+            DEFERRED_DVC_MODELS_TARGET
+        ]:
+            raise DeferredDvcTargetError(
+                "E0-MY pre-registration DVC status must select only models"
+            )
+        validate_deferred_dvc_anfis_ablation_family_state(
+            dvc_status_before,
+            repo_root=repo_root,
+            expected_final_snapshot=family_snapshot,
+        )
+    except BaseException as exc:
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+
+    dvc_add_results: list[CommandResult] = []
+    for target_index, path in enumerate(selected_dvc_paths):
+        if not path.exists():
+            return _abort_anfis_ablation_registration_transaction(
+                transaction,
+                DeferredDvcTargetError(
+                    f"Selected E0-MY DVC target does not exist: {path}"
+                ),
+            )
+        if path == DEFERRED_DVC_MODELS_TARGET:
+            try:
+                transaction.prepare_models_registration()
+            except BaseException as exc:
+                return _abort_anfis_ablation_registration_transaction(
+                    transaction, exc
+                )
+        command_error: BaseException | None = None
+        result: CommandResult | None = None
+        try:
+            registration_dvc_env = transaction.registration_dvc_environment(
+                dvc_config_snapshot, dvc_runtime_snapshot
+            )
+            transaction.begin_dvc_mutation()
+            result = run_command(
+                anfis_ablation_registration_dvc_add_command(dvc_bin, path),
+                env=registration_dvc_env,
+            )
+        except BaseException as exc:
+            command_error = exc
+        try:
+            transaction.registration_dvc_environment(
+                dvc_config_snapshot, dvc_runtime_snapshot
+            )
+            transaction.capture_target(path)
+            transaction.verify_family(
+                min(target_index + 1, 10), family_snapshot
+            )
+            transaction.verify_progress_scope(
+                pointer_count=min(target_index + 1, 10),
+                models_registered=target_index >= 10,
+            )
+        except BaseException as verification_error:
+            if command_error is not None:
+                verification_error.add_note(
+                    f"DVC command also failed: {command_error}"
+                )
+            return _abort_anfis_ablation_registration_transaction(
+                transaction, verification_error
+            )
+        if command_error is not None:
+            return _abort_anfis_ablation_registration_transaction(
+                transaction,
+                command_error,
+                returncode=(
+                    int(command_error.code)
+                    if isinstance(command_error, SystemExit)
+                    and isinstance(command_error.code, int)
+                    else 2
+                ),
+            )
+        if result is None:
+            return _abort_anfis_ablation_registration_transaction(
+                transaction,
+                DeferredDvcTargetError("E0-MY DVC command produced no result"),
+            )
+        dvc_add_results.append(result)
+
+    try:
+        registration_dvc_env = transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        dvc_status_after = dvc_status_json(
+            dvc_bin, env=registration_dvc_env
+        )
+        transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        if dvc_status_after:
+            raise DeferredDvcTargetError(
+                "E0-MY DVC status is not clean after exact registration"
+            )
+        post_snapshot = snapshot_anfis_ablation_family_bundle(
+            repo_root=repo_root, expected_pointer_count=10
+        )
+        if post_snapshot != family_snapshot:
+            raise DeferredDvcTargetError(
+                "ANFIS-ablation final inode/ctime/mtime/hash snapshot changed during DVC add"
+            )
+        validate_anfis_ablation_registration_pre_stage_scope(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            )
+        )
+    except BaseException as exc:
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+
+    try:
+        publication_check_result = run_command(
+            ["scripts/check_repo_publication_ready.sh"], check=False
+        )
+    except BaseException as exc:
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+    if publication_check_result.returncode != 0:
+        print(publication_check_result.stdout)
+        print(publication_check_result.stderr, file=sys.stderr)
+        return _abort_anfis_ablation_registration_transaction(
+            transaction,
+            DeferredDvcTargetError("Publication check failed; R-E0-MY not staged"),
+            returncode=publication_check_result.returncode,
+        )
+    try:
+        git_add_result = run_command(
+            [
+                "git",
+                "add",
+                "-A",
+                "--",
+                *sorted(ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+            ]
+        )
+        transaction.mark_staging_owned()
+        staged_status = run_command(
+            ["git", "diff", "--cached", "--name-status"]
+        ).stdout
+    except BaseException as exc:
+        try:
+            transaction.capture_staging_owned(require_complete=False)
+        except BaseException as capture_error:
+            capture_error.add_note(f"Git add also failed: {exc}")
+            return _abort_anfis_ablation_registration_transaction(
+                transaction, capture_error
+            )
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+    try:
+        validate_anfis_ablation_registration_staged_scope(staged_status)
+        validate_anfis_ablation_registration_staged_bindings(repo_root=repo_root)
+    except BaseException as exc:
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+
+    try:
+        reproducibility_findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=selected_dvc_paths,
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        reproducibility_findings.append(
+            ReproducibilityFinding(
+                "ok",
+                "anfis_ablation_registration",
+                "R-E0-MY",
+                (
+                    "Exact ten-slot family retained 80 immutable finals; ten "
+                    "prediction pointers and models.dvc were registered without push."
+                ),
+            )
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=selected_dvc_paths,
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_paths,
+            git_status_before=git_status_before,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=dvc_add_results,
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=reproducibility_findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if has_failing_findings(reproducibility_findings):
+            raise DeferredDvcTargetError(
+                "E0-MY registration reproducibility checks failed"
+            )
+        registration_dvc_env = transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        if dvc_status_json(dvc_bin, env=registration_dvc_env):
+            raise DeferredDvcTargetError(
+                "E0-MY DVC status changed while writing the report"
+            )
+        transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        if snapshot_anfis_ablation_family_bundle(
+            repo_root=repo_root, expected_pointer_count=10
+        ) != family_snapshot:
+            raise DeferredDvcTargetError(
+                "ANFIS-ablation family changed while writing the report"
+        )
+        validate_anfis_ablation_registration_staged_bindings(repo_root=repo_root)
+        _load_effective_anfis_ablation_dvc_registration_authority(
+            audit_current_unpublished=True,
+            repo_root=repo_root,
+            registration_transaction=transaction.effective_audit_record(),
+        )
+        transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+    except BaseException as exc:
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+
+    try:
+        transaction.registration_dvc_environment(
+            dvc_config_snapshot, dvc_runtime_snapshot
+        )
+        transaction.commit()
+        transaction.__exit__(None, None, None)
+    except BaseException as exc:
+        return _abort_anfis_ablation_registration_transaction(transaction, exc)
+
+    print()
+    print(f"Report written: {report_path}")
+    print("Exact R-E0-MY changes are staged; no DVC push was run.")
+    return 0
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare Git and DVC artifacts before a manual commit.")
     parser.add_argument("--manifest", type=Path, default=DEFAULT_DVC_MANIFEST)
@@ -3202,6 +6439,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Explicitly defer one sealed changed DVC target without dvc add. "
             "Only the exact Closure V1 A0 target 'models' is supported."
+        ),
+    )
+    parser.add_argument(
+        "--register-anfis-ablation-model-family",
+        action="store_true",
+        help=(
+            "Run the exact effective E0-MY registration: ten selection "
+            "prediction payloads plus the monolithic models target."
         ),
     )
     parser.add_argument("--jobs", default=None, help="DVC push jobs.")
@@ -3227,6 +6472,8 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     ensure_repo_root()
+    if bool(getattr(args, "register_anfis_ablation_model_family", False)):
+        return _run_anfis_ablation_model_family_registration(args)
     try:
         deferred_dvc_paths = normalize_deferred_dvc_targets(
             list(args.defer_dvc_target), no_push=bool(args.no_push)
@@ -3234,7 +6481,6 @@ def main() -> int:
         exclude_snapshot: tuple[int, int, int, str] | None = None
         if deferred_dvc_paths:
             validate_deferred_dvc_invocation(args, deferred_dvc_paths)
-            exclude_snapshot = validate_deferred_dvc_git_exclude_environment()
     except DeferredDvcTargetError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -3254,11 +6500,21 @@ def main() -> int:
 
     git_status_before = versionable_changes()
     deferred_stage_gate = ""
+    deferred_exclude_validator = validate_deferred_dvc_git_exclude_environment
+    deferred_state_validator = validate_deferred_dvc_models_state
     if deferred_dvc_paths:
         try:
             deferred_stage_gate = require_active_deferred_dvc_staging_gate(
                 validate_deferred_dvc_pre_stage_scope(git_status_before)
             )
+            if deferred_stage_gate in {"H-E0-MY", "P-E0-MY"}:
+                deferred_exclude_validator = (
+                    validate_anfis_ablation_family_git_exclude_environment
+                )
+                deferred_state_validator = (
+                    validate_deferred_dvc_anfis_ablation_family_state
+                )
+            exclude_snapshot = deferred_exclude_validator()
         except DeferredDvcTargetError as exc:
             print(str(exc), file=sys.stderr)
             return 2
@@ -3279,9 +6535,7 @@ def main() -> int:
             manual_targets=manual_targets,
         )
         if deferred_dvc_paths:
-            deferred_final_snapshot = validate_deferred_dvc_models_state(
-                dvc_status_before
-            )
+            deferred_final_snapshot = deferred_state_validator(dvc_status_before)
     except DeferredDvcTargetError as exc:
         print(str(exc), file=sys.stderr)
         return 2
@@ -3376,12 +6630,12 @@ def main() -> int:
 
         if deferred_dvc_paths:
             try:
-                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                if deferred_exclude_validator() != exclude_snapshot:
                     raise DeferredDvcTargetError(
                         "Deferred models Git exclude file changed before staging"
                     )
                 current_status = dvc_status_json(dvc_bin)
-                validate_deferred_dvc_models_state(
+                deferred_state_validator(
                     current_status,
                     expected_final_snapshot=deferred_final_snapshot,
                 )
@@ -3428,12 +6682,12 @@ def main() -> int:
                         "Deferred models mode left an unstaged tracked change"
                     )
                 dvc_status_after = dvc_status_json(dvc_bin)
-                deferred_post_snapshot = validate_deferred_dvc_models_state(
+                deferred_post_snapshot = deferred_state_validator(
                     dvc_status_after,
                     expected_final_snapshot=deferred_final_snapshot,
                 )
                 validate_deferred_dvc_staged_bindings(deferred_stage_gate)
-                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                if deferred_exclude_validator() != exclude_snapshot:
                     raise DeferredDvcTargetError(
                         "Deferred models Git exclude file changed during staging"
                     )
@@ -3465,12 +6719,12 @@ def main() -> int:
                     raise DeferredDvcTargetError(
                         "Deferred models DVC status changed during reproducibility checks"
                     )
-                deferred_post_snapshot = validate_deferred_dvc_models_state(
+                deferred_post_snapshot = deferred_state_validator(
                     final_status,
                     expected_final_snapshot=deferred_final_snapshot,
                 )
                 validate_deferred_dvc_staged_bindings(deferred_stage_gate)
-                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                if deferred_exclude_validator() != exclude_snapshot:
                     raise DeferredDvcTargetError(
                         "Deferred models Git exclude file changed before reporting"
                     )
@@ -3508,12 +6762,12 @@ def main() -> int:
                     raise DeferredDvcTargetError(
                         "Deferred models DVC status changed while writing the report"
                     )
-                validate_deferred_dvc_models_state(
+                deferred_state_validator(
                     reported_status,
                     expected_final_snapshot=deferred_final_snapshot,
                 )
                 validate_deferred_dvc_staged_bindings(deferred_stage_gate)
-                if validate_deferred_dvc_git_exclude_environment() != exclude_snapshot:
+                if deferred_exclude_validator() != exclude_snapshot:
                     raise DeferredDvcTargetError(
                         "Deferred models Git exclude file changed while writing the report"
                     )

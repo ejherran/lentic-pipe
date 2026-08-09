@@ -7,6 +7,7 @@ import inspect
 import json
 import os
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any
 
 import pytest
@@ -64,6 +65,26 @@ EXPECTED_LIGHT_GIT_OIDS = {
     ),
     "reports/closure_v1/02_models/A0/seed_1729_training_curve.csv": (
         "6b0a676116a34a41d36956696ba945c9632abecd"
+    ),
+}
+EXPECTED_MY_ADDITIONS = {
+    "configs/closure_v1/anfis_ablation_dvc_registration_patch_lock.schema.json",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_PATCH_1.md",
+    "src/experiments/closure_anfis_ablation_dvc_registration_patch.py",
+    "src/experiments/lock_closure_anfis_ablation_dvc_registration_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+}
+EXPECTED_MY_MODIFICATIONS = {
+    "configs/closure_v1/dvc_artifacts_post_lock.yaml",
+    "src/data/prepare_commit_artifacts.py",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
+}
+EXPECTED_MY_P_PATHS = {
+    "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_patch_lock.json",
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_patch_lock_manifest.json"
     ),
 }
 
@@ -272,17 +293,39 @@ def test_generic_precommit_dialect_is_exactly_one_one_one(
 
 
 def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
-    expected_h = {
+    historical_mx_h = {
         path: ("A" if path in EXPECTED_ADDITIONS else "M")
         for path in EXPECTED_ADDITIONS | EXPECTED_MODIFICATIONS
     }
-    expected_p = {path: "A" for path in EXPECTED_P_PATHS}
-    assert precommit_artifacts.DEFERRED_DVC_H_MX_STAGED_SCOPE == expected_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MX_STAGED_SCOPE == expected_p
+    historical_mx_p = {path: "A" for path in EXPECTED_P_PATHS}
+    expected_h = {
+        path: ("A" if path in EXPECTED_MY_ADDITIONS else "M")
+        for path in EXPECTED_MY_ADDITIONS | EXPECTED_MY_MODIFICATIONS
+    }
+    expected_p = {path: "A" for path in EXPECTED_MY_P_PATHS}
+    expected_r = {
+        **{
+            path: "A"
+            for path in precommit_artifacts.ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS
+        },
+        **{
+            path: "A"
+            for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
+        },
+        "models.dvc": "M",
+    }
+    assert precommit_artifacts.DEFERRED_DVC_H_MX_STAGED_SCOPE == historical_mx_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MX_STAGED_SCOPE == historical_mx_p
+    assert precommit_artifacts.DEFERRED_DVC_H_MY_STAGED_SCOPE == expected_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MY_STAGED_SCOPE == expected_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE == expected_r
+    assert len(expected_h) == 9
+    assert len(expected_p) == 2
+    assert len(expected_r) == 56
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MX", "P-E0-MX"}
+        {"H-E0-MY", "P-E0-MY"}
     )
-    for current_gate in ("H-E0-MX", "P-E0-MX"):
+    for current_gate in ("H-E0-MY", "P-E0-MY"):
         assert (
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 current_gate
@@ -294,10 +337,12 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         "P-E0-MV",
         "H-E0-MW",
         "P-E0-MW",
+        "H-E0-MX",
+        "P-E0-MX",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MX/P-E0-MX",
+            match="closed to exact H-E0-MY/P-E0-MY",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 historical_gate
@@ -315,17 +360,37 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
     )
     p_pre_stage = "".join(f"?? {path}\n" for path in sorted(expected_p))
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(h_staged) == (
-        "H-E0-MX"
+        "H-E0-MY"
     )
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(p_staged) == (
-        "P-E0-MX"
+        "P-E0-MY"
     )
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         h_pre_stage
-    ) == "H-E0-MX"
+    ) == "H-E0-MY"
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         p_pre_stage
-    ) == "P-E0-MX"
+    ) == "P-E0-MY"
+
+    r_pre_stage = "".join(
+        f"{'??' if status == 'A' else ' M'} {path}\n"
+        for path, status in sorted(expected_r.items())
+    )
+    r_staged = "".join(
+        f"{status}\t{path}\n" for path, status in sorted(expected_r.items())
+    )
+    assert (
+        precommit_artifacts.validate_anfis_ablation_registration_pre_stage_scope(
+            r_pre_stage
+        )
+        == "R-E0-MY"
+    )
+    assert (
+        precommit_artifacts.validate_anfis_ablation_registration_staged_scope(
+            r_staged
+        )
+        == "R-E0-MY"
+    )
 
 
 def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not() -> None:
@@ -344,13 +409,855 @@ def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not() -> No
         f"/{path}" for path in sorted(EXPECTED_LIGHT_GIT_OIDS)
     )
     precommit_artifacts._validate_deferred_a0_git_tracking(ROOT)
-    snapshot = precommit_artifacts.snapshot_deferred_dvc_models_bundle(
-        repo_root=ROOT
+    pointer_count = sum(
+        os.path.lexists(ROOT / path)
+        for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
     )
-    assert len(snapshot) == 8
+    assert pointer_count in {0, 10}
+    snapshot = precommit_artifacts.snapshot_anfis_ablation_family_bundle(
+        repo_root=ROOT, expected_pointer_count=pointer_count
+    )
+    assert len(snapshot) == 80
     assert all(record.nlink == 1 and record.ctime_ns > 0 for record in snapshot)
     assert replace(snapshot[0], nlink=2) != snapshot[0]
     assert replace(snapshot[0], ctime_ns=snapshot[0].ctime_ns + 1) != snapshot[0]
+    with pytest.raises(
+        precommit_artifacts.DeferredDvcTargetError,
+        match="exact pre/post registration pointer set",
+    ):
+        precommit_artifacts.snapshot_anfis_ablation_family_bundle(
+            repo_root=ROOT, expected_pointer_count=1
+        )
+
+
+def test_my_registration_inventory_is_closed_without_expanding_general_inventory() -> None:
+    registration = precommit_artifacts.load_anfis_ablation_registration_artifacts()
+    assert len(registration) == 10
+    assert tuple(artifact.path for artifact in registration) == tuple(
+        Path(path)
+        for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
+    )
+    assert len({artifact.artifact_id for artifact in registration}) == 10
+    general = precommit_artifacts.load_configured_dvc_artifacts(
+        precommit_artifacts.DEFAULT_DVC_MANIFEST
+    )
+    closure_general = [
+        artifact
+        for artifact in general
+        if artifact.artifact_id.startswith("closure_v1_")
+    ]
+    assert len(closure_general) == 23
+    assert not set(registration) & set(general)
+
+
+def test_my_family_exclude_and_registration_cli_are_exact(tmp_path: Path) -> None:
+    exclude = tmp_path / "family-excludes"
+    payload = "".join(
+        f"{pattern}\n"
+        for pattern in precommit_artifacts.ANFIS_ABLATION_LIGHT_EXCLUDE_PATTERNS
+    )
+    exclude.write_text(payload, encoding="utf-8")
+    exclude.chmod(0o600)
+    environment = {
+        "GIT_CONFIG_COUNT": "1",
+        "GIT_CONFIG_KEY_0": "core.excludesFile",
+        "GIT_CONFIG_VALUE_0": exclude.as_posix(),
+    }
+    metadata = exclude.lstat()
+    assert len(precommit_artifacts.ANFIS_ABLATION_LIGHT_EXCLUDE_PATTERNS) == 45
+    assert precommit_artifacts.validate_anfis_ablation_family_git_exclude_environment(
+        env=environment
+    ) == (
+        metadata.st_dev,
+        metadata.st_ino,
+        metadata.st_mtime_ns,
+        hashlib.sha256(payload.encode("utf-8")).hexdigest(),
+    )
+
+    args = SimpleNamespace(
+        register_anfis_ablation_model_family=True,
+        allow_unmanaged=False,
+        no_push=True,
+        yes=False,
+        dry_run=False,
+        skip_publication_check=False,
+        jobs=None,
+        dvc_bin=None,
+        manifest=precommit_artifacts.DEFAULT_DVC_MANIFEST,
+        report=None,
+        target=[],
+        defer_dvc_target=[],
+    )
+    valid_registration_environment = {
+        "DVC_NO_ANALYTICS": "1",
+        "HOME": precommit_artifacts.ANFIS_ABLATION_EXPECTED_HOME.as_posix(),
+        "XDG_CONFIG_HOME": (
+            precommit_artifacts.ANFIS_ABLATION_EXPECTED_XDG_CONFIG_HOME.as_posix()
+        ),
+        "XDG_CONFIG_DIRS": (
+            precommit_artifacts.ANFIS_ABLATION_EXPECTED_XDG_CONFIG_DIRS
+        ),
+    }
+    precommit_artifacts.validate_anfis_ablation_registration_invocation(
+        args, env=valid_registration_environment
+    )
+    precommit_artifacts.validate_anfis_ablation_registration_invocation(
+        args, env={"DVC_NO_ANALYTICS": "1"}
+    )
+    precommit_artifacts.validate_anfis_ablation_registration_invocation(
+        args,
+        env={
+            **valid_registration_environment,
+            "DVC_SITE_CACHE_DIR": (
+                precommit_artifacts.DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+            ),
+        },
+    )
+    for field, value in (
+        ("allow_unmanaged", True),
+        ("no_push", False),
+        ("yes", True),
+        ("target", ["models"]),
+        ("defer_dvc_target", ["models"]),
+    ):
+        invalid = SimpleNamespace(**vars(args))
+        setattr(invalid, field, value)
+        with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+            precommit_artifacts.validate_anfis_ablation_registration_invocation(
+                invalid, env=valid_registration_environment
+            )
+    for redirected_name in (
+        "DVC_ROOT",
+        "DVC_GLOBAL_CONFIG_DIR",
+        "DVC_SYSTEM_CONFIG_DIR",
+        "DVC_DIR",
+    ):
+        with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+            precommit_artifacts.validate_anfis_ablation_registration_invocation(
+                args,
+                env={
+                    **valid_registration_environment,
+                    redirected_name: "/tmp/redirected-dvc",
+                },
+            )
+    for redirected_name in (
+        "PYTHONPATH",
+        "PYTHONFAKE",
+        "LD_PRELOAD",
+        "GIT_EXEC_PATH",
+    ):
+        with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+            precommit_artifacts.validate_anfis_ablation_registration_invocation(
+                args,
+                env={
+                    **valid_registration_environment,
+                    redirected_name: "/tmp/redirected-runtime",
+                },
+            )
+    with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+        precommit_artifacts.validate_anfis_ablation_registration_invocation(
+            args,
+            env={
+                **valid_registration_environment,
+                "PATH": "/tmp/fake-bin",
+            },
+        )
+    for redirected_name in ("HOME", "XDG_CONFIG_HOME", "XDG_CONFIG_DIRS"):
+        redirected_environment = dict(valid_registration_environment)
+        redirected_environment[redirected_name] = "/tmp/redirected-config"
+        with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+            precommit_artifacts.validate_anfis_ablation_registration_invocation(
+                args, env=redirected_environment
+            )
+
+    dvc_add_commands = tuple(
+        precommit_artifacts.anfis_ablation_registration_dvc_add_command(
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(), target
+        )
+        for target in precommit_artifacts.ANFIS_ABLATION_REGISTRATION_DVC_TARGETS
+    )
+    assert len(dvc_add_commands) == 11
+    assert dvc_add_commands == tuple(
+        [
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            "add",
+            "--no-relink",
+            target.as_posix(),
+        ]
+        for target in precommit_artifacts.ANFIS_ABLATION_REGISTRATION_DVC_TARGETS
+    )
+    with pytest.raises(precommit_artifacts.DeferredDvcTargetError):
+        precommit_artifacts.anfis_ablation_registration_dvc_add_command(
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(), Path("data")
+        )
+
+    repo_config, local_config = (
+        precommit_artifacts.snapshot_anfis_ablation_dvc_configuration(
+            repo_root=ROOT
+        )
+    )
+    assert (repo_config.size, repo_config.sha256, repo_config.nlink) == (
+        43,
+        "cb08c869a906d07c5b1ccf593299a0f253e0ce03303c43070b6a68124b27fda0",
+        1,
+    )
+    assert (local_config.size, local_config.sha256, local_config.nlink) == (
+        211,
+        "a912c374690215c7753070f68d7dfdaff8c1224b01c336aa887d6731a3bb2287",
+        1,
+    )
+    runtime_identity = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+        repo_root=ROOT
+    )
+    expected_wrapper = (
+        precommit_artifacts.expected_anfis_ablation_dvc_wrapper_bytes(ROOT)
+    )
+    assert (
+        runtime_identity.wrapper.size,
+        runtime_identity.wrapper.sha256,
+        runtime_identity.wrapper.nlink,
+    ) == (
+        len(expected_wrapper),
+        hashlib.sha256(expected_wrapper).hexdigest(),
+        1,
+    )
+    assert runtime_identity.python_link.target == "/usr/bin/python3.14"
+    assert (
+        runtime_identity.python_target.size,
+        runtime_identity.python_target.sha256,
+        runtime_identity.git.size,
+        runtime_identity.git.sha256,
+    ) == (
+        14_424,
+        "2700be1aabe3687bd597f21b0eac3b9bbdf7417e93035255a9286c67935b59bd",
+        4_899_632,
+        "93473c28694fd72bd889364107cd2770514de59780885a6a4aafca4d602e30ad",
+    )
+    registration_source = inspect.getsource(
+        precommit_artifacts._run_anfis_ablation_model_family_registration
+    )
+    assert registration_source.index("transaction.__enter__()") < (
+        registration_source.index("dvc_status_before = dvc_status_json")
+    )
+    assert "dvc_status_json(dvc_bin)" not in registration_source
+    runtime_probe = tmp_path / "runtime-probe"
+    runtime_bin = runtime_probe / ".venv/bin"
+    runtime_bin.mkdir(parents=True)
+    runtime_wrapper = runtime_bin / "dvc"
+    runtime_wrapper.write_bytes(
+        precommit_artifacts.expected_anfis_ablation_dvc_wrapper_bytes(
+            runtime_probe
+        )
+    )
+    runtime_wrapper.chmod(0o755)
+    (runtime_bin / "python").symlink_to(
+        precommit_artifacts.ANFIS_ABLATION_DVC_PYTHON_TARGET
+    )
+    runtime_before = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+        repo_root=runtime_probe
+    )
+    wrapper_metadata = runtime_wrapper.stat()
+    os.utime(
+        runtime_wrapper,
+        ns=(wrapper_metadata.st_atime_ns, wrapper_metadata.st_mtime_ns + 1_000_000),
+    )
+    runtime_after = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+        repo_root=runtime_probe
+    )
+    assert runtime_after != runtime_before
+    runtime_wrapper.write_bytes(b"#!/bin/false\n")
+    runtime_wrapper.chmod(0o755)
+    with pytest.raises(
+        precommit_artifacts.DeferredDvcTargetError,
+        match="DVC wrapper identity drifted",
+    ):
+        precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+            repo_root=runtime_probe
+        )
+    config_probe = tmp_path / "config-probe"
+    (config_probe / ".dvc").mkdir(parents=True)
+    for raw_path in (
+        precommit_artifacts.ANFIS_ABLATION_REPO_DVC_CONFIG,
+        precommit_artifacts.ANFIS_ABLATION_LOCAL_DVC_CONFIG,
+    ):
+        target = config_probe / raw_path
+        target.write_bytes((ROOT / raw_path).read_bytes())
+        target.chmod(0o644)
+    config_before = precommit_artifacts.snapshot_anfis_ablation_dvc_configuration(
+        repo_root=config_probe
+    )
+    touched_config = config_probe / precommit_artifacts.ANFIS_ABLATION_LOCAL_DVC_CONFIG
+    touched_metadata = touched_config.stat()
+    os.utime(
+        touched_config,
+        ns=(touched_metadata.st_atime_ns, touched_metadata.st_mtime_ns + 1_000_000),
+    )
+    config_after = precommit_artifacts.snapshot_anfis_ablation_dvc_configuration(
+        repo_root=config_probe
+    )
+    assert config_after != config_before
+
+    directory_probe = tmp_path / "empty-config-dir"
+    directory_probe.mkdir(mode=0o700)
+    directory_before = precommit_artifacts._registration_directory_identity(
+        directory_probe, repo_root=tmp_path
+    )
+    transient = directory_probe / "config"
+    transient.write_bytes(b"transient\n")
+    transient.unlink()
+    directory_after = precommit_artifacts._registration_directory_identity(
+        directory_probe, repo_root=tmp_path
+    )
+    assert directory_after != directory_before
+
+    guard_probe = tmp_path / "guard-probe"
+    guard_probe.write_bytes(b"guard\n")
+    guard_probe.chmod(0o600)
+    guard_before = precommit_artifacts._registration_file_identity(
+        guard_probe, repo_root=tmp_path, mode=0o600
+    )
+    guard_alias = tmp_path / "guard-alias"
+    os.link(guard_probe, guard_alias)
+    guard_after = precommit_artifacts._registration_file_identity(
+        guard_probe, repo_root=tmp_path, mode=0o600
+    )
+    assert guard_after.nlink == 2
+    assert not precommit_artifacts._same_registration_exact(
+        guard_after, guard_before
+    )
+    guard_alias.unlink()
+
+    deferred_args = SimpleNamespace(**vars(args))
+    deferred_args.allow_unmanaged = True
+    precommit_artifacts.validate_deferred_dvc_invocation(
+        deferred_args,
+        [precommit_artifacts.DEFERRED_DVC_MODELS_TARGET],
+        env={"DVC_NO_ANALYTICS": "1"},
+    )
+    deferred_args.allow_unmanaged = False
+    with pytest.raises(
+        precommit_artifacts.DeferredDvcTargetError,
+        match="requires --allow-unmanaged",
+    ):
+        precommit_artifacts.validate_deferred_dvc_invocation(
+            deferred_args,
+            [precommit_artifacts.DEFERRED_DVC_MODELS_TARGET],
+            env={"DVC_NO_ANALYTICS": "1"},
+        )
+
+
+def test_my_registration_transaction_restores_owned_partial_metadata(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    models_pointer = tmp_path / "models.dvc"
+    models_pointer.write_bytes(b"baseline models pointer\n")
+    models_pointer.chmod(0o644)
+    gitignore = tmp_path / ".gitignore"
+    gitignore.write_text("/tmp/\n", encoding="utf-8")
+    gitignore.chmod(0o644)
+    precommit_artifacts.run_command(
+        ["git", "-C", tmp_path.as_posix(), "init", "--quiet"]
+    )
+    precommit_artifacts.run_command(
+        [
+            "git",
+            "-C",
+            tmp_path.as_posix(),
+            "add",
+            "--",
+            ".gitignore",
+            "models.dvc",
+        ]
+    )
+    precommit_artifacts.run_command(
+        [
+            "git",
+            "-C",
+            tmp_path.as_posix(),
+            "-c",
+            "user.name=E0-MY Test",
+            "-c",
+            "user.email=e0-my@example.invalid",
+            "commit",
+            "--quiet",
+            "-m",
+            "baseline",
+        ]
+    )
+    baseline = models_pointer.lstat()
+    baseline_gitignore = gitignore.read_bytes()
+    for raw_path in precommit_artifacts.ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS:
+        report = tmp_path / raw_path
+        report.parent.mkdir(parents=True, exist_ok=True)
+        report.write_bytes(f"{raw_path}\n".encode())
+        report.chmod(0o644)
+    selected_payloads = tuple(
+        Path(path)
+        for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
+    )
+    selected_pointers = tuple(
+        tmp_path / path
+        for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
+    )
+    for pointer in selected_pointers:
+        pointer.parent.mkdir(parents=True, exist_ok=True)
+
+    coordination_paths = (
+        precommit_artifacts.ANFIS_ABLATION_REGISTRATION_GUARD,
+        precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BACKUP,
+        precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP,
+        precommit_artifacts.ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR,
+        precommit_artifacts.ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR,
+    )
+
+    def assert_coordination_absent() -> None:
+        assert not any(
+            os.path.lexists(tmp_path / path) for path in coordination_paths
+        )
+
+    real_write = os.write
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            precommit_artifacts.os,
+            "write",
+            lambda file_fd, data: (
+                0
+                if data
+                == precommit_artifacts.ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD
+                else real_write(file_fd, data)
+            ),
+        )
+        guard_failure = precommit_artifacts._AnfisAblationRegistrationTransaction(
+            repo_root=tmp_path, manage_git_index=True
+        )
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="Short write creating E0-MY guard",
+        ):
+            guard_failure.__enter__()
+    assert_coordination_absent()
+
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            precommit_artifacts.os,
+            "write",
+            lambda file_fd, data: (
+                0
+                if data == b"baseline models pointer\n"
+                else real_write(file_fd, data)
+            ),
+        )
+        bytes_failure = precommit_artifacts._AnfisAblationRegistrationTransaction(
+            repo_root=tmp_path, manage_git_index=True
+        )
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="Short write creating E0-MY independent",
+        ):
+            bytes_failure.__enter__()
+    assert_coordination_absent()
+
+    real_directory_identity = (
+        precommit_artifacts._registration_directory_identity
+    )
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            precommit_artifacts,
+            "_registration_directory_identity",
+            lambda path, *, repo_root: (
+                (_ for _ in ()).throw(RuntimeError("injected directory capture"))
+                if path.name
+                == precommit_artifacts.ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR.name
+                else real_directory_identity(path, repo_root=repo_root)
+            ),
+        )
+        capture_failure = precommit_artifacts._AnfisAblationRegistrationTransaction(
+            repo_root=tmp_path, manage_git_index=True
+        )
+        with pytest.raises(RuntimeError, match="directory capture"):
+            capture_failure.__enter__()
+    assert_coordination_absent()
+
+    real_mkdir = os.mkdir
+    with monkeypatch.context() as patcher:
+        def mkdir_then_fail(
+            path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+            mode: int = 0o777,
+            *,
+            dir_fd: int | None = None,
+        ) -> None:
+            real_mkdir(path, mode, dir_fd=dir_fd)
+            if path == precommit_artifacts.ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR.name:
+                raise RuntimeError("injected post-mkdir failure")
+
+        patcher.setattr(precommit_artifacts.os, "mkdir", mkdir_then_fail)
+        mkdir_failure = precommit_artifacts._AnfisAblationRegistrationTransaction(
+            repo_root=tmp_path, manage_git_index=True
+        )
+        with pytest.raises(RuntimeError, match="post-mkdir"):
+            mkdir_failure.__enter__()
+    assert_coordination_absent()
+
+    for link_failure_kind in ("post-link", "anchor-capture"):
+        link_failure = precommit_artifacts._AnfisAblationRegistrationTransaction(
+            repo_root=tmp_path, manage_git_index=True
+        )
+        link_failure.__enter__()
+        link_failure.begin_dvc_mutation()
+        with monkeypatch.context() as patcher:
+            if link_failure_kind == "post-link":
+                real_link = os.link
+
+                def link_then_fail(
+                    src: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+                    dst: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+                    *,
+                    src_dir_fd: int | None = None,
+                    dst_dir_fd: int | None = None,
+                    follow_symlinks: bool = True,
+                ) -> None:
+                    real_link(
+                        src,
+                        dst,
+                        src_dir_fd=src_dir_fd,
+                        dst_dir_fd=dst_dir_fd,
+                        follow_symlinks=follow_symlinks,
+                    )
+                    raise RuntimeError("injected post-link failure")
+
+                patcher.setattr(precommit_artifacts.os, "link", link_then_fail)
+            else:
+                real_file_identity = precommit_artifacts._registration_file_identity
+
+                def fail_anchor_capture(
+                    path: Path, *, repo_root: Path, mode: int
+                ) -> precommit_artifacts.RegistrationFileIdentity:
+                    if path.name == precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BACKUP.name:
+                        raise RuntimeError("injected anchor capture failure")
+                    return real_file_identity(path, repo_root=repo_root, mode=mode)
+
+                patcher.setattr(
+                    precommit_artifacts,
+                    "_registration_file_identity",
+                    fail_anchor_capture,
+                )
+            with pytest.raises(RuntimeError, match="link|anchor capture"):
+                link_failure.prepare_models_registration()
+        injected_link = RuntimeError(f"injected {link_failure_kind}")
+        link_failure.__exit__(
+            type(injected_link), injected_link, injected_link.__traceback__
+        )
+        assert_coordination_absent()
+        assert models_pointer.read_bytes() == b"baseline models pointer\n"
+        assert models_pointer.lstat().st_nlink == 1
+
+    foreign_guard_transaction = (
+        precommit_artifacts._AnfisAblationRegistrationTransaction(
+            repo_root=tmp_path, manage_git_index=True
+        )
+    )
+    foreign_guard_transaction.__enter__()
+    foreign_guard = (
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_REGISTRATION_GUARD
+    )
+    foreign_guard.unlink()
+    foreign_guard.write_bytes(b"foreign guard replacement\n")
+    foreign_guard.chmod(0o600)
+    foreign_error = RuntimeError("injected foreign guard replacement")
+    with pytest.raises(
+        precommit_artifacts.DeferredDvcTargetError,
+        match="rollback could not be completed safely",
+    ):
+        foreign_guard_transaction.__exit__(
+            type(foreign_error), foreign_error, foreign_error.__traceback__
+        )
+    assert foreign_guard.read_bytes() == b"foreign guard replacement\n"
+    foreign_guard.unlink()
+    assert_coordination_absent()
+
+    partial = precommit_artifacts._AnfisAblationRegistrationTransaction(
+        repo_root=tmp_path, manage_git_index=True
+    )
+    partial.__enter__()
+    sealed_config = precommit_artifacts.snapshot_anfis_ablation_dvc_configuration(
+        repo_root=ROOT
+    )
+    sealed_runtime = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+        repo_root=ROOT
+    )
+    with monkeypatch.context() as patcher:
+        patcher.setattr(
+            precommit_artifacts,
+            "snapshot_anfis_ablation_dvc_configuration",
+            lambda *, repo_root: sealed_config,
+        )
+        patcher.setattr(
+            precommit_artifacts,
+            "snapshot_anfis_ablation_dvc_runtime",
+            lambda *, repo_root: sealed_runtime,
+        )
+        patcher.setattr(
+            precommit_artifacts,
+            "dvc_environment",
+            lambda: {
+                "DVC_NO_ANALYTICS": "1",
+                "DVC_ROOT": "/tmp/forged-root",
+                "GIT_EXEC_PATH": "/tmp/forged-git",
+                "PYTHONPATH": "/tmp/forged-python",
+                "LD_PRELOAD": "/tmp/forged-library",
+            },
+        )
+        isolated_environment = partial.registration_dvc_environment(
+            sealed_config, sealed_runtime
+        )
+    assert isolated_environment["PATH"] == "/usr/bin:/bin"
+    assert isolated_environment["PYTHONNOUSERSITE"] == "1"
+    assert isolated_environment["PYTHONSAFEPATH"] == "1"
+    assert not {
+        "DVC_ROOT",
+        "GIT_EXEC_PATH",
+        "PYTHONPATH",
+        "LD_PRELOAD",
+    }.intersection(isolated_environment)
+    assert isolated_environment["DVC_GLOBAL_CONFIG_DIR"].endswith(
+        precommit_artifacts.ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR.as_posix()
+    )
+    assert isolated_environment["DVC_SYSTEM_CONFIG_DIR"].endswith(
+        precommit_artifacts.ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR.as_posix()
+    )
+    partial.begin_dvc_mutation()
+    for payload, pointer in zip(
+        selected_payloads[:2], selected_pointers[:2], strict=True
+    ):
+        pointer.write_bytes(b"outs: []\n")
+        pointer.chmod(0o644)
+        partial.capture_target(payload)
+    precommit_artifacts.run_command(
+        [
+            "git",
+            "-C",
+            tmp_path.as_posix(),
+            "add",
+            "-A",
+            "--",
+            *(path.relative_to(tmp_path).as_posix() for path in selected_pointers[:2]),
+        ]
+    )
+    injected_partial = RuntimeError("injected partial Git add failure")
+    partial.__exit__(
+        type(injected_partial), injected_partial, injected_partial.__traceback__
+    )
+    assert not any(pointer.exists() for pointer in selected_pointers)
+    assert not precommit_artifacts._git_output(
+        tmp_path, "diff", "--cached", "--name-only"
+    ).strip()
+
+    transaction = precommit_artifacts._AnfisAblationRegistrationTransaction(
+        repo_root=tmp_path, manage_git_index=True
+    )
+    transaction.__enter__()
+    transaction.begin_dvc_mutation()
+    for payload, pointer in zip(
+        selected_payloads, selected_pointers, strict=True
+    ):
+        pointer.write_bytes(b"outs: []\n")
+        pointer.chmod(0o644)
+        transaction.capture_target(payload)
+    transaction.prepare_models_registration()
+    models_pointer.write_bytes(b"registered models pointer\n")
+    transaction.capture_target(Path("models"))
+    registered = models_pointer.lstat()
+    assert (registered.st_dev, registered.st_ino) == (
+        baseline.st_dev,
+        baseline.st_ino,
+    )
+    assert registered.st_nlink == 1
+    precommit_artifacts.run_command(
+        [
+            "git",
+            "-C",
+            tmp_path.as_posix(),
+            "add",
+            "-A",
+            "--",
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+        ]
+    )
+    transaction.mark_staging_owned()
+    post_stage_report = tmp_path / "tmp" / "post-stage-report.md"
+    post_stage_report.write_text("diagnostic report\n", encoding="utf-8")
+    injected = RuntimeError("injected post-report failure")
+    transaction.__exit__(type(injected), injected, injected.__traceback__)
+
+    audit_transaction = precommit_artifacts._AnfisAblationRegistrationTransaction(
+        repo_root=tmp_path, manage_git_index=True
+    )
+    audit_transaction.__enter__()
+    audit_transaction.begin_dvc_mutation()
+    for payload, pointer in zip(
+        selected_payloads, selected_pointers, strict=True
+    ):
+        pointer.write_bytes(b"outs: []\n")
+        pointer.chmod(0o644)
+        audit_transaction.capture_target(payload)
+    audit_transaction.prepare_models_registration()
+    models_pointer.write_bytes(b"registered models pointer\n")
+    audit_transaction.capture_target(Path("models"))
+    precommit_artifacts.run_command(
+        [
+            "git",
+            "-C",
+            tmp_path.as_posix(),
+            "add",
+            "-A",
+            "--",
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+        ]
+    )
+    audit_transaction.mark_staging_owned()
+    audit_record = audit_transaction.effective_audit_record()
+    assert set(audit_record) == {
+        "mode",
+        "guard",
+        "bytes_backup",
+        "anchor",
+        "global_config_dir",
+        "system_config_dir",
+    }
+    assert audit_record["mode"] == "in_place"
+    assert audit_record["anchor"] is None
+    global_config_record = audit_record["global_config_dir"]
+    system_config_record = audit_record["system_config_dir"]
+    assert isinstance(global_config_record, dict)
+    assert isinstance(system_config_record, dict)
+    assert global_config_record["entry_count"] == 0
+    assert system_config_record["entry_count"] == 0
+    assert os.path.lexists(
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_REGISTRATION_GUARD
+    )
+    assert os.path.lexists(
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP
+    )
+    assert not os.path.lexists(
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BACKUP
+    )
+    injected_audit = RuntimeError("injected effective-authority failure")
+    audit_transaction.__exit__(
+        type(injected_audit), injected_audit, injected_audit.__traceback__
+    )
+
+    restored = models_pointer.lstat()
+    assert models_pointer.read_bytes() == b"baseline models pointer\n"
+    assert (restored.st_dev, restored.st_ino) == (baseline.st_dev, baseline.st_ino)
+    assert restored.st_nlink == 1
+    assert not any(pointer.exists() for pointer in selected_pointers)
+    assert gitignore.read_bytes() == baseline_gitignore
+    assert not precommit_artifacts._git_output(
+        tmp_path, "diff", "--cached", "--name-only"
+    ).strip()
+    precommit_artifacts.validate_anfis_ablation_registration_initial_scope(
+        precommit_artifacts._git_output(
+            tmp_path, "status", "--short", "--untracked-files=all"
+        )
+    )
+    assert not (tmp_path / precommit_artifacts.ANFIS_ABLATION_REGISTRATION_GUARD).exists()
+    assert not (tmp_path / precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BACKUP).exists()
+    assert not (
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP
+    ).exists()
+    assert not (
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_DVC_GLOBAL_CONFIG_DIR
+    ).exists()
+    assert not (
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_DVC_SYSTEM_CONFIG_DIR
+    ).exists()
+
+    commit_transaction = precommit_artifacts._AnfisAblationRegistrationTransaction(
+        repo_root=tmp_path, manage_git_index=True
+    )
+    commit_transaction.__enter__()
+    commit_transaction.begin_dvc_mutation()
+    for payload, pointer in zip(
+        selected_payloads, selected_pointers, strict=True
+    ):
+        pointer.write_bytes(b"outs: []\n")
+        pointer.chmod(0o644)
+        commit_transaction.capture_target(payload)
+    commit_transaction.prepare_models_registration()
+    models_pointer.write_bytes(b"registered models pointer\n")
+    commit_transaction.capture_target(Path("models"))
+    precommit_artifacts.run_command(
+        [
+            "git",
+            "-C",
+            tmp_path.as_posix(),
+            "add",
+            "-A",
+            "--",
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+        ]
+    )
+    commit_transaction.mark_staging_owned()
+    real_owned_unlink = precommit_artifacts._unlink_owned_registration_path
+    with monkeypatch.context() as patcher:
+        def unlink_then_fail(
+            path: Path,
+            identity: precommit_artifacts.RegistrationFileIdentity,
+            *,
+            repo_root: Path,
+            expected_nlink: int | None = None,
+        ) -> None:
+            real_owned_unlink(
+                path,
+                identity,
+                repo_root=repo_root,
+                expected_nlink=expected_nlink,
+            )
+            if path.name == (
+                precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP.name
+            ):
+                raise RuntimeError("injected failure after backup unlink")
+
+        patcher.setattr(
+            precommit_artifacts,
+            "_unlink_owned_registration_path",
+            unlink_then_fail,
+        )
+        with pytest.raises(RuntimeError, match="after backup unlink"):
+            commit_transaction.commit()
+    assert commit_transaction.committed is True
+    commit_transaction.__exit__(None, None, None)
+    assert models_pointer.read_bytes() == b"registered models pointer\n"
+    assert all(pointer.exists() for pointer in selected_pointers)
+    assert not (
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_MODELS_DVC_BYTES_BACKUP
+    ).exists()
+    assert (
+        tmp_path / precommit_artifacts.ANFIS_ABLATION_REGISTRATION_GUARD
+    ).read_bytes() == (
+        precommit_artifacts.ANFIS_ABLATION_REGISTRATION_COMMIT_READY_PAYLOAD
+    )
+    assert precommit_artifacts._git_output(
+        tmp_path, "diff", "--cached", "--name-status"
+    ).splitlines() == [
+        f"{status}\t{path}"
+        for path, status in sorted(
+            precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE.items()
+        )
+    ]
+
+
+def test_my_prediction_pointer_staging_discovers_all_ten_manifests() -> None:
+    staged = {
+        Path(path)
+        for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
+    }
+    manifests = precommit_artifacts.discover_relevant_manifest_paths(staged)
+    assert manifests == sorted(
+        (Path(path) for path in precommit_artifacts.ANFIS_ABLATION_MANIFEST_PATHS),
+        key=lambda path: path.as_posix(),
+    )
 
 
 def test_tracked_light_binding_fails_closed_on_head_drift(

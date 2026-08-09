@@ -11,6 +11,97 @@ sealed_base_inventory:
   sha256: 3304fd61978604ecfba5f99f1a9b3d04e4655f45f97f92954081751346143605
   authority: reports/closure_v1/00_protocol/protocol_lock.json
 
+anfis_ablation_registration_artifacts:
+  - artifact_id: closure_v1_anfis_ablation_a0_seed_1729_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A0/seed_1729_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A0
+    base_seed: 1729
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a1_seed_1729_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A1/seed_1729_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A1
+    base_seed: 1729
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a0_seed_20260612_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A0/seed_20260612_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A0
+    base_seed: 20260612
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a1_seed_20260612_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A1/seed_20260612_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A1
+    base_seed: 20260612
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a0_seed_20260613_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A0/seed_20260613_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A0
+    base_seed: 20260613
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a1_seed_20260613_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A1/seed_20260613_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A1
+    base_seed: 20260613
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a0_seed_20260614_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A0/seed_20260614_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A0
+    base_seed: 20260614
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a1_seed_20260614_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A1/seed_20260614_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A1
+    base_seed: 20260614
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a0_seed_314159_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A0/seed_314159_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A0
+    base_seed: 314159
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
+  - artifact_id: closure_v1_anfis_ablation_a1_seed_314159_selection_predictions
+    path: data/closure_v1/development/anfis_ablation/A1/seed_314159_selection_predictions.parquet
+    type: closure_anfis_ablation_selection_predictions
+    source_id: wqp
+    model_id: A1
+    base_seed: 314159
+    dvc: true
+    github_policy: pointer_only_keep_manifest_and_lightweight_reports_in_git
+
 artifacts:
   - artifact_id: closure_v1_common_origin_manifest
     path: data/closure_v1/common_origin_manifest.parquet
