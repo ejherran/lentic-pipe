@@ -50,9 +50,9 @@ DEFAULT_DVC_SITE_CACHE_DIR = Path(".dvc/tmp/site-cache")
 HASH_CHUNK_SIZE = 16 * 1024 * 1024
 DEFAULT_MAX_MANIFEST_HASH_BYTES = 512 * 1024 * 1024
 
-# E0-MV through E0-MZA are the sole exception to the normal immediate
+# E0-MV through E0-MZB are the sole exception to the normal immediate
 # ``dvc add`` policy.  The model family must stay byte-exact and unregistered
-# until all ten A0/A1 slots exist and exact P-E0-MZA is effective.  Keep the
+# until all ten A0/A1 slots exist and exact P-E0-MZB is effective.  Keep the
 # closed path inventory local to the assistant so the exception cannot grow
 # through a mutable experiment module or the generic DVC inventory.
 DEFERRED_DVC_MODELS_TARGET = Path("models")
@@ -276,10 +276,10 @@ ANFIS_ABLATION_REGISTRATION_MY_COMMIT_READY_PAYLOAD = (
     b"E0-MY exact ANFIS-ablation DVC registration commit_ready\n"
 )
 ANFIS_ABLATION_REGISTRATION_ACTIVE_PAYLOAD = (
-    b"E0-MZA exact ANFIS-ablation DVC registration\n"
+    b"E0-MZB exact ANFIS-ablation DVC registration\n"
 )
 ANFIS_ABLATION_REGISTRATION_COMMIT_READY_PAYLOAD = (
-    b"E0-MZA exact ANFIS-ablation DVC registration commit_ready\n"
+    b"E0-MZB exact ANFIS-ablation DVC registration commit_ready\n"
 )
 ANFIS_ABLATION_MODELS_DVC_BACKUP = Path(
     "tmp/closure_v1_anfis_ablation_models_dvc_baseline"
@@ -503,7 +503,62 @@ DEFERRED_DVC_P_MZA_GIT_MODES = {
 ANFIS_ABLATION_R_MZA_GIT_MODES = {
     path: "100644" for path in ANFIS_ABLATION_R_MZA_STAGED_SCOPE
 }
-DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MZA", "P-E0-MZA"})
+DEFERRED_DVC_H_MZB_STAGED_SCOPE = {
+    (
+        "configs/closure_v1/"
+        "anfis_ablation_dvc_registration_namespace_patch_lock.schema.json"
+    ): "A",
+    (
+        "docs/closure_v1/"
+        "E0_M_ANFIS_ABLATION_DVC_REGISTRATION_NAMESPACE_PATCH_1.md"
+    ): "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    (
+        "src/experiments/"
+        "closure_anfis_ablation_dvc_registration_namespace_patch.py"
+    ): "A",
+    (
+        "src/experiments/"
+        "lock_closure_anfis_ablation_dvc_registration_namespace_patch.py"
+    ): "A",
+    "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py": "A",
+    "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py": "M",
+    (
+        "tests/"
+        "test_closure_anfis_ablation_dvc_registration_adoption_patch.py"
+    ): "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py": "M",
+    (
+        "tests/"
+        "test_closure_anfis_ablation_model_publication_adoption_patch.py"
+    ): "M",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py": "M",
+}
+DEFERRED_DVC_P_MZB_STAGED_SCOPE = {
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_namespace_patch_lock.json"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_namespace_patch_lock_manifest.json"
+    ): "A",
+}
+ANFIS_ABLATION_R_MZB_STAGED_SCOPE = {
+    **{path: "A" for path in ANFIS_ABLATION_SELECTION_POINTER_PATHS},
+    DEFERRED_DVC_MODELS_POINTER.as_posix(): "M",
+}
+DEFERRED_DVC_H_MZB_GIT_MODES = {
+    path: ("100755" if path == "src/data/prepare_commit_artifacts.py" else "100644")
+    for path in DEFERRED_DVC_H_MZB_STAGED_SCOPE
+}
+DEFERRED_DVC_P_MZB_GIT_MODES = {
+    path: "100644" for path in DEFERRED_DVC_P_MZB_STAGED_SCOPE
+}
+ANFIS_ABLATION_R_MZB_GIT_MODES = {
+    path: "100644" for path in ANFIS_ABLATION_R_MZB_STAGED_SCOPE
+}
+DEFERRED_DVC_ACTIVE_STAGING_GATES = frozenset({"H-E0-MZB", "P-E0-MZB"})
 
 
 def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
@@ -521,6 +576,8 @@ def _deferred_dvc_staged_scopes() -> dict[str, Mapping[str, str]]:
         "P-E0-MZ": DEFERRED_DVC_P_MZ_STAGED_SCOPE,
         "H-E0-MZA": DEFERRED_DVC_H_MZA_STAGED_SCOPE,
         "P-E0-MZA": DEFERRED_DVC_P_MZA_STAGED_SCOPE,
+        "H-E0-MZB": DEFERRED_DVC_H_MZB_STAGED_SCOPE,
+        "P-E0-MZB": DEFERRED_DVC_P_MZB_STAGED_SCOPE,
     }
 
 
@@ -538,6 +595,8 @@ def _deferred_dvc_git_modes() -> dict[str, Mapping[str, str]]:
         "P-E0-MZ": DEFERRED_DVC_P_MZ_GIT_MODES,
         "H-E0-MZA": DEFERRED_DVC_H_MZA_GIT_MODES,
         "P-E0-MZA": DEFERRED_DVC_P_MZA_GIT_MODES,
+        "H-E0-MZB": DEFERRED_DVC_H_MZB_GIT_MODES,
+        "P-E0-MZB": DEFERRED_DVC_P_MZB_GIT_MODES,
     }
 
 
@@ -547,7 +606,7 @@ def require_active_deferred_dvc_staging_gate(gate: str) -> str:
         return gate
     # Published MV/MW/MX regression harnesses exercise the transaction with every
     # Git/DVC operation replaced inside a directory that is not a repository.
-    # Preserve that read-only reconstruction without admitting MV/MW/MX/MY/MZ
+    # Preserve that read-only reconstruction without admitting historical gates
     # at a real repository mutation boundary.
     if (
         type(gate) is str
@@ -563,12 +622,14 @@ def require_active_deferred_dvc_staging_gate(gate: str) -> str:
             "P-E0-MY",
             "H-E0-MZ",
             "P-E0-MZ",
+            "H-E0-MZA",
+            "P-E0-MZA",
         }
         and not Path(".git").exists()
     ):
         return gate
     raise DeferredDvcTargetError(
-        "Deferred models execution is closed to exact H-E0-MZA/P-E0-MZA scopes"
+        "Deferred models execution is closed to exact H-E0-MZB/P-E0-MZB scopes"
     )
 
 
@@ -1168,7 +1229,7 @@ def validate_anfis_ablation_adoption_git_environment(
     )
     if config_names or redirected_names:
         raise DeferredDvcTargetError(
-            "E0-MZA deferred models mode requires default Git visibility"
+            "E0-MZB deferred models mode requires default Git visibility"
         )
     return (0, 0, 0, hashlib.sha256(b"").hexdigest())
 
@@ -1367,7 +1428,7 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
     light_paths = set(ANFIS_ABLATION_MZ_TRACKED_LIGHT_PATHS)
     if light_paths != set(ANFIS_ABLATION_LIGHT_REPORT_PATHS) or len(light_paths) != 50:
         raise DeferredDvcTargetError(
-            "E0-MZA tracked-light inventory is not the exact fifty reports"
+            "E0-MZB tracked-light inventory is not the exact fifty reports"
         )
     ancestry = _git_output(
         repo_root,
@@ -1381,7 +1442,7 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
         f"{ANFIS_ABLATION_MZ_LIGHT_PUBLICATION_COMMIT} "
         f"{ANFIS_ABLATION_MZ_LIGHT_PUBLICATION_PARENT}"
     ):
-        raise DeferredDvcTargetError("E0-MZA light publication topology drifted")
+        raise DeferredDvcTargetError("E0-MZB light publication topology drifted")
     if _git_output(
         repo_root,
         "merge-base",
@@ -1389,7 +1450,7 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
         ANFIS_ABLATION_MZ_LIGHT_PUBLICATION_COMMIT,
     ).strip() != ANFIS_ABLATION_MZ_LIGHT_PUBLICATION_COMMIT:
         raise DeferredDvcTargetError(
-            "E0-MZA light publication is not an ancestor of HEAD"
+            "E0-MZB light publication is not an ancestor of HEAD"
         )
 
     publication_scope: dict[str, str] = {}
@@ -1403,13 +1464,13 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
     ).splitlines():
         fields = line.split("\t")
         if len(fields) != 2 or fields[1] in publication_scope:
-            raise DeferredDvcTargetError("E0-MZA light publication scope is malformed")
+            raise DeferredDvcTargetError("E0-MZB light publication scope is malformed")
         publication_scope[fields[1]] = fields[0]
     if publication_scope != {
         path: "A" for path in ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS
     }:
         raise DeferredDvcTargetError(
-            "E0-MZA light publication must be the exact forty-five additions"
+            "E0-MZB light publication must be the exact forty-five additions"
         )
 
     publication_records: dict[str, str] = {}
@@ -1432,12 +1493,12 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
             or raw_path in publication_records
         ):
             raise DeferredDvcTargetError(
-                "E0-MZA tracked-light Git tree record is malformed"
+                "E0-MZB tracked-light Git tree record is malformed"
             )
         publication_records[raw_path] = fields[2]
     if set(publication_records) != light_paths:
         raise DeferredDvcTargetError(
-            "E0-MZA tracked-light Git tree is not the exact fifty reports"
+            "E0-MZB tracked-light Git tree is not the exact fifty reports"
         )
 
     for raw_path, expected_oid in sorted(publication_records.items()):
@@ -1458,7 +1519,7 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
             or worktree_oid != expected_oid
         ):
             raise DeferredDvcTargetError(
-                f"E0-MZA tracked-light Git binding drifted: {raw_path}"
+                f"E0-MZB tracked-light Git binding drifted: {raw_path}"
             )
 
     ordered_light_paths = sorted(light_paths)
@@ -1468,7 +1529,7 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
         repo_root, "diff", "--cached", "--name-only", "--", *ordered_light_paths
     ).strip():
         raise DeferredDvcTargetError(
-            "E0-MZA tracked-light reports must be clean in index and worktree"
+            "E0-MZB tracked-light reports must be clean in index and worktree"
         )
 
     heavy_paths = sorted(
@@ -1479,7 +1540,7 @@ def _validate_anfis_ablation_mz_git_tracking(repo_root: Path) -> None:
         repo_root, "ls-files", "--stage", "--", *heavy_paths
     ).strip():
         raise DeferredDvcTargetError(
-            "E0-MZA exact thirty heavyweight finals must remain outside Git"
+            "E0-MZB exact thirty heavyweight finals must remain outside Git"
         )
 
 
@@ -1790,6 +1851,10 @@ def snapshot_anfis_ablation_family_bundle(
     _allow_in_progress_prefix: bool = False,
 ) -> tuple[DeferredDvcFinalSnapshot, ...]:
     """Snapshot all 80 immutable A0/A1 finals before family registration."""
+    if type(_allow_in_progress_prefix) is not bool:
+        raise DeferredDvcTargetError(
+            "ANFIS-ablation snapshot requires an exact boolean in-progress policy"
+        )
     allowed_pointer_counts = (
         set(range(11)) if _allow_in_progress_prefix else {0, 10}
     )
@@ -1895,7 +1960,11 @@ def snapshot_anfis_ablation_family_bundle(
         pointer_expected = slot_index < expected_pointer_count
         if pointer_expected and os.path.lexists(pointer):
             _require_no_symlink_ancestors(pointer, anchor=repo_root)
-            _require_regular_file(pointer, mode=0o644)
+            pointer_metadata = _require_regular_file(pointer, mode=0o644)
+            if pointer_metadata.st_nlink != 1:
+                raise DeferredDvcTargetError(
+                    f"ANFIS-ablation pointer must have one hard link: {pointer}"
+                )
         elif pointer_expected:
             raise DeferredDvcTargetError(
                 f"ANFIS-ablation post-registration pointer is absent: {pointer}"
@@ -1927,14 +1996,22 @@ def snapshot_anfis_ablation_family_bundle(
         raise DeferredDvcTargetError(
             "ANFIS-ablation report namespace is not the exact 50-file family"
         )
-    prediction_root = repo_root / "data/closure_v1/development/anfis_ablation"
+    prediction_root = repo_root / ANFIS_ABLATION_SELECTION_ROOT
+    prediction_relative_root = prediction_root.relative_to(repo_root)
     expected_predictions = {
-        Path(path).relative_to(prediction_root.relative_to(repo_root)).as_posix()
+        Path(path).relative_to(prediction_relative_root).as_posix()
         for path in ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
     }
+    expected_predictions.update(
+        Path(path).relative_to(prediction_relative_root).as_posix()
+        for path in ANFIS_ABLATION_SELECTION_POINTER_PATHS[
+            :expected_pointer_count
+        ]
+    )
     if set(_walk_regular_tree(prediction_root)) != expected_predictions:
         raise DeferredDvcTargetError(
-            "ANFIS-ablation prediction namespace is not the exact ten payloads"
+            "ANFIS-ablation prediction namespace is not the exact ten payloads "
+            "plus canonical pointer prefix"
         )
     model_root = repo_root / "models/closure_v1/anfis_ablation"
     expected_models = {
@@ -2005,7 +2082,7 @@ def validate_deferred_dvc_anfis_ablation_adoption_family_state(
     """Validate the MZ family: fifty Git-bound lights and thirty heavy finals."""
     if dict(dvc_status) != DEFERRED_DVC_MODELS_STATUS:
         raise DeferredDvcTargetError(
-            "E0-MZA deferred family DVC status must be the exact modified models output"
+            "E0-MZB deferred family DVC status must be the exact modified models output"
         )
     _validate_deferred_models_pointer(repo_root)
     _validate_deferred_models_tree(
@@ -2016,7 +2093,7 @@ def validate_deferred_dvc_anfis_ablation_adoption_family_state(
     )
     if expected_final_snapshot is not None and snapshot != expected_final_snapshot:
         raise DeferredDvcTargetError(
-            "E0-MZA ANFIS-ablation family physical snapshot drifted"
+            "E0-MZB ANFIS-ablation family physical snapshot drifted"
         )
     _validate_anfis_ablation_mz_git_tracking(repo_root)
     tracked_family = _git_output(
@@ -2027,7 +2104,7 @@ def validate_deferred_dvc_anfis_ablation_adoption_family_state(
     ).splitlines()
     if tracked_family != sorted(ANFIS_ABLATION_MZ_TRACKED_LIGHT_PATHS):
         raise DeferredDvcTargetError(
-            "E0-MZA lightweight Git inventory is not the exact fifty reports"
+            "E0-MZB lightweight Git inventory is not the exact fifty reports"
         )
     staged = _git_output(
         repo_root,
@@ -2041,7 +2118,7 @@ def validate_deferred_dvc_anfis_ablation_adoption_family_state(
     ).strip()
     if staged:
         raise DeferredDvcTargetError(
-            "E0-MZA finals or DVC pointers must not be staged before registration"
+            "E0-MZB finals or DVC pointers must not be staged before registration"
         )
     return snapshot
 
@@ -2357,7 +2434,7 @@ def validate_anfis_ablation_registration_missing_pointer_set(
         or set(observed_paths) != expected_paths
     ):
         raise DeferredDvcTargetError(
-            "E0-MZA missing-pointer set is not the exact ten predictions"
+            "E0-MZB missing-pointer set is not the exact ten predictions"
         )
     return list(missing)
 
@@ -2397,7 +2474,7 @@ def validate_deferred_dvc_staged_scope(staged_status: str) -> str:
             return gate
     raise DeferredDvcTargetError(
         "Deferred models staging must match one exact historical H/P scope or "
-        "current H-E0-MZA 5M+5A/P-E0-MZA 2A"
+        "current H-E0-MZB 6M+5A/P-E0-MZB 2A"
     )
 
 
@@ -2422,7 +2499,7 @@ def validate_deferred_dvc_pre_stage_scope(status_output: str) -> str:
             return gate
     raise DeferredDvcTargetError(
         "Deferred models pre-stage scope must match one exact historical H/P "
-        "scope or current H-E0-MZA 5M+5A/P-E0-MZA 2A"
+        "scope or current H-E0-MZB 6M+5A/P-E0-MZB 2A"
     )
 
 
@@ -2507,7 +2584,7 @@ def validate_anfis_ablation_registration_initial_scope(
 ) -> None:
     if status_output.splitlines():
         raise DeferredDvcTargetError(
-            "E0-MZA registration must begin from the exact clean published-light state"
+            "E0-MZB registration must begin from the exact clean published-light state"
         )
 
 
@@ -2515,12 +2592,12 @@ def validate_anfis_ablation_registration_pre_stage_scope(
     status_output: str,
 ) -> str:
     if status_output.splitlines() != _expected_short_scope(
-        ANFIS_ABLATION_R_MZA_STAGED_SCOPE, staged=False
+        ANFIS_ABLATION_R_MZB_STAGED_SCOPE, staged=False
     ):
         raise DeferredDvcTargetError(
-            "E0-MZA post-DVC pre-stage scope must be exact R-E0-MZA 1M+10A"
+            "E0-MZB post-DVC pre-stage scope must be exact R-E0-MZB 1M+10A"
         )
-    return "R-E0-MZA"
+    return "R-E0-MZB"
 
 
 def validate_anfis_ablation_registration_staged_scope(
@@ -2531,14 +2608,14 @@ def validate_anfis_ablation_registration_staged_scope(
     for status_code, path in rows:
         if status_code not in {"A", "M"} or path.as_posix() in observed:
             raise DeferredDvcTargetError(
-                "R-E0-MZA staging contains a rename, deletion, or duplicate"
+                "R-E0-MZB staging contains a rename, deletion, or duplicate"
             )
         observed[path.as_posix()] = status_code
-    if observed != ANFIS_ABLATION_R_MZA_STAGED_SCOPE:
+    if observed != ANFIS_ABLATION_R_MZB_STAGED_SCOPE:
         raise DeferredDvcTargetError(
-            "E0-MZA registration staging must be exact R-E0-MZA 1M+10A"
+            "E0-MZB registration staging must be exact R-E0-MZB 1M+10A"
         )
-    return "R-E0-MZA"
+    return "R-E0-MZB"
 
 
 def validate_anfis_ablation_registration_staged_bindings(
@@ -2552,22 +2629,22 @@ def validate_anfis_ablation_registration_staged_bindings(
         repo_root, "status", "--short", "--untracked-files=normal"
     ).splitlines()
     if observed_short != _expected_short_scope(
-        ANFIS_ABLATION_R_MZA_STAGED_SCOPE, staged=True
+        ANFIS_ABLATION_R_MZB_STAGED_SCOPE, staged=True
     ):
         raise DeferredDvcTargetError(
-            "R-E0-MZA short Git status differs from exact staged scope"
+            "R-E0-MZB short Git status differs from exact staged scope"
         )
     if _git_output(repo_root, "diff", "--name-status").strip():
         raise DeferredDvcTargetError(
-            "R-E0-MZA left an unstaged tracked change"
+            "R-E0-MZB left an unstaged tracked change"
         )
-    for raw_path, git_mode in sorted(ANFIS_ABLATION_R_MZA_GIT_MODES.items()):
+    for raw_path, git_mode in sorted(ANFIS_ABLATION_R_MZB_GIT_MODES.items()):
         path = repo_root / raw_path
         _require_no_symlink_ancestors(path, anchor=repo_root)
         metadata = _require_regular_file(path, mode=0o644)
         if metadata.st_nlink != 1:
             raise DeferredDvcTargetError(
-                f"R-E0-MZA staged metadata must have one hard link: {raw_path}"
+                f"R-E0-MZB staged metadata must have one hard link: {raw_path}"
             )
         index_line = _git_output(
             repo_root, "ls-files", "-s", "--", raw_path
@@ -2580,14 +2657,14 @@ def validate_anfis_ablation_registration_staged_bindings(
             or parts[3] != raw_path
         ):
             raise DeferredDvcTargetError(
-                f"R-E0-MZA staged mode/stage binding drifted: {raw_path}"
+                f"R-E0-MZB staged mode/stage binding drifted: {raw_path}"
             )
         worktree_oid = _git_output(
             repo_root, "hash-object", "--no-filters", "--", raw_path
         ).strip()
         if parts[1] != worktree_oid or len(worktree_oid) != 40:
             raise DeferredDvcTargetError(
-                f"R-E0-MZA staged blob differs from worktree: {raw_path}"
+                f"R-E0-MZB staged blob differs from worktree: {raw_path}"
             )
 
 
@@ -5060,7 +5137,7 @@ class _AnfisAblationRegistrationTransaction:
                     "ls-files",
                     "-s",
                     "--",
-                    *sorted(ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
+                    *sorted(ANFIS_ABLATION_R_MZB_STAGED_SCOPE),
                 ).splitlines()
             )
             if (
@@ -5654,6 +5731,33 @@ class _AnfisAblationRegistrationTransaction:
         expected_snapshot: tuple[DeferredDvcFinalSnapshot, ...],
     ) -> None:
         self._require_guard()
+        if (
+            type(expected_pointer_count) is not int
+            or not 0 <= expected_pointer_count <= 10
+        ):
+            raise DeferredDvcTargetError(
+                "E0-MY transaction pointer prefix count is invalid"
+            )
+        expected_pointer_paths = tuple(
+            self.repo_root / path
+            for path in ANFIS_ABLATION_SELECTION_POINTER_PATHS[
+                :expected_pointer_count
+            ]
+        )
+        if set(self.pointer_identities) != set(expected_pointer_paths):
+            raise DeferredDvcTargetError(
+                "E0-MY transaction does not own the exact pointer prefix"
+            )
+        for pointer in expected_pointer_paths:
+            observed_pointer = _registration_file_identity(
+                pointer, repo_root=self.repo_root, mode=0o644
+            )
+            if not _same_registration_exact(
+                observed_pointer, self.pointer_identities[pointer]
+            ):
+                raise DeferredDvcTargetError(
+                    f"E0-MY transaction pointer identity drifted: {pointer}"
+                )
         observed = snapshot_anfis_ablation_family_bundle(
             repo_root=self.repo_root,
             expected_pointer_count=expected_pointer_count,
@@ -5701,7 +5805,7 @@ class _AnfisAblationRegistrationTransaction:
         rows = parse_git_name_status(staged_status)
         observed = {path.as_posix(): status for status, path in rows}
         if len(observed) != len(rows) or any(
-            ANFIS_ABLATION_R_MZA_STAGED_SCOPE.get(path) != status
+            ANFIS_ABLATION_R_MZB_STAGED_SCOPE.get(path) != status
             for path, status in observed.items()
         ):
             raise DeferredDvcTargetError(
@@ -5911,7 +6015,7 @@ class _AnfisAblationRegistrationTransaction:
                 rows = parse_git_name_status(staged_status)
                 observed = {path.as_posix(): status for status, path in rows}
                 expected_owned = {
-                    path: ANFIS_ABLATION_R_MZA_STAGED_SCOPE[path]
+                    path: ANFIS_ABLATION_R_MZB_STAGED_SCOPE[path]
                     for path in self.staged_owned_paths
                 }
                 if (
@@ -5945,7 +6049,7 @@ class _AnfisAblationRegistrationTransaction:
                         "ls-files",
                         "-s",
                         "--",
-                        *sorted(ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
+                        *sorted(ANFIS_ABLATION_R_MZB_STAGED_SCOPE),
                     ).splitlines()
                 )
                 if observed_index != self.index_baseline or _git_output(
@@ -6308,7 +6412,7 @@ class _AnfisAblationRegistrationTransaction:
 def validate_anfis_ablation_registration_invocation(
     args: Any, *, env: Mapping[str, str] | None = None
 ) -> None:
-    """Close the E0-MZA helper CLI before authority or DVC inspection."""
+    """Close the E0-MZB helper CLI before authority or DVC inspection."""
     source = os.environ if env is None else env
     redirected_git_names = {
         name
@@ -6361,7 +6465,7 @@ def validate_anfis_ablation_registration_invocation(
         )
     ):
         raise DeferredDvcTargetError(
-            "E0-MZA registration requires only --no-push "
+            "E0-MZB registration requires only --no-push "
             "--register-anfis-ablation-model-family, default Git/DVC state, "
             "DVC_NO_ANALYTICS=1, and no custom targets, reports, or binaries"
         )
@@ -6373,30 +6477,30 @@ def _load_effective_anfis_ablation_dvc_registration_authority(
     repo_root: Path,
     registration_transaction: Mapping[str, Any] | None = None,
 ) -> Mapping[str, Any]:
-    """Lazy import keeps the generic helper independent before H-E0-MZA exists."""
-    from src.experiments.closure_anfis_ablation_dvc_registration_order_patch import (
-        load_effective_anfis_ablation_dvc_registration_order_patch_authority,
+    """Lazy import keeps the generic helper independent before H-E0-MZB exists."""
+    from src.experiments.closure_anfis_ablation_dvc_registration_namespace_patch import (
+        load_effective_anfis_ablation_dvc_registration_namespace_patch_authority,
     )
 
     if registration_transaction is None:
         authority = (
-            load_effective_anfis_ablation_dvc_registration_order_patch_authority(
+            load_effective_anfis_ablation_dvc_registration_namespace_patch_authority(
                 audit_current_unpublished=audit_current_unpublished,
                 verify_remote=True,
                 repo_root=repo_root,
             )
         )
     else:
-        from src.experiments.closure_anfis_ablation_dvc_registration_order_patch import (
-            _load_effective_anfis_ablation_dvc_registration_order_patch_during_registration,
+        from src.experiments.closure_anfis_ablation_dvc_registration_namespace_patch import (
+            _load_effective_anfis_ablation_dvc_registration_namespace_patch_during_registration,
         )
 
         if not audit_current_unpublished:
             raise DeferredDvcTargetError(
-                "E0-MZA transaction record is valid only for post-registration audit"
+                "E0-MZB transaction record is valid only for post-registration audit"
             )
         authority = (
-            _load_effective_anfis_ablation_dvc_registration_order_patch_during_registration(
+            _load_effective_anfis_ablation_dvc_registration_namespace_patch_during_registration(
                 transaction_record=registration_transaction,
                 verify_remote=True,
                 repo_root=repo_root,
@@ -6404,19 +6508,20 @@ def _load_effective_anfis_ablation_dvc_registration_authority(
         )
     if not isinstance(authority, Mapping):
         raise DeferredDvcTargetError(
-            "Effective E0-MZA loader returned a non-mapping authority"
+            "Effective E0-MZB loader returned a non-mapping authority"
         )
     return authority
 
 
 def _anfis_ablation_registration_user_message(value: BaseException) -> str:
     message = str(value)
-    active_marker = "__E0_MZA_ACTIVE_GATE__"
+    active_marker = "__E0_MZB_ACTIVE_GATE__"
     return (
-        message.replace("E0-MZA", active_marker)
-        .replace("E0-MZ", "E0-MZA")
-        .replace("E0-MY", "E0-MZA")
-        .replace(active_marker, "E0-MZA")
+        message.replace("E0-MZB", active_marker)
+        .replace("E0-MZA", active_marker)
+        .replace("E0-MZ", active_marker)
+        .replace("E0-MY", active_marker)
+        .replace(active_marker, "E0-MZB")
     )
 
 
@@ -6436,7 +6541,7 @@ def _abort_anfis_ablation_registration_transaction(
 
 
 def _run_anfis_ablation_model_family_registration(args: Any) -> int:
-    """Register the adopted family, never push, and stage exact R-E0-MZA."""
+    """Register the adopted family, never push, and stage exact R-E0-MZB."""
     try:
         validate_anfis_ablation_registration_invocation(args)
     except DeferredDvcTargetError as exc:
@@ -6447,7 +6552,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
     if dvc_bin != DEFAULT_DVC_BIN.as_posix():
         print(
-            "E0-MZA registration requires the repository .venv/bin/dvc.",
+            "E0-MZB registration requires the repository .venv/bin/dvc.",
             file=sys.stderr,
         )
         return 2
@@ -6464,7 +6569,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
         ]
         if len(model_records) != 1:
             raise DeferredDvcTargetError(
-                "E0-MZA requires one exact configured monolithic models target"
+                "E0-MZB requires one exact configured monolithic models target"
             )
         artifacts = [*configured_artifacts, *registration_artifacts]
         git_status_before = _git_output(
@@ -6494,7 +6599,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
         if path != ANFIS_ABLATION_SELECTION_ROOT
     ]
     selected_dvc_paths = list(ANFIS_ABLATION_REGISTRATION_DVC_TARGETS)
-    print("Pre-commit artifact assistant — exact E0-MZA registration")
+    print("Pre-commit artifact assistant — exact E0-MZB registration")
     print_path_table("Selected DVC add targets:", selected_dvc_paths)
     print_path_table("Rejected unrelated unmanaged ignored paths:", unmanaged_paths)
 
@@ -6503,7 +6608,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
             repo_root=repo_root
         ) != dvc_runtime_snapshot:
             raise DeferredDvcTargetError(
-                "E0-MZA Git/DVC runtime changed during preflight"
+                "E0-MZB Git/DVC runtime changed during preflight"
             )
     except DeferredDvcTargetError as exc:
         print(str(exc), file=sys.stderr)
@@ -6535,7 +6640,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
             DEFERRED_DVC_MODELS_TARGET
         ]:
             raise DeferredDvcTargetError(
-                "E0-MZA pre-registration DVC status must select only models"
+                "E0-MZB pre-registration DVC status must select only models"
             )
         validate_deferred_dvc_anfis_ablation_adoption_family_state(
             dvc_status_before,
@@ -6551,7 +6656,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
             return _abort_anfis_ablation_registration_transaction(
                 transaction,
                 DeferredDvcTargetError(
-                    f"Selected E0-MZA DVC target does not exist: {path}"
+                    f"Selected E0-MZB DVC target does not exist: {path}"
                 ),
             )
         if path == DEFERRED_DVC_MODELS_TARGET:
@@ -6608,7 +6713,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
         if result is None:
             return _abort_anfis_ablation_registration_transaction(
                 transaction,
-                DeferredDvcTargetError("E0-MZA DVC command produced no result"),
+                DeferredDvcTargetError("E0-MZB DVC command produced no result"),
             )
         dvc_add_results.append(result)
 
@@ -6624,7 +6729,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
         )
         if dvc_status_after:
             raise DeferredDvcTargetError(
-                "E0-MZA DVC status is not clean after exact registration"
+                "E0-MZB DVC status is not clean after exact registration"
             )
         post_snapshot = snapshot_anfis_ablation_family_bundle(
             repo_root=repo_root, expected_pointer_count=10
@@ -6652,7 +6757,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
         print(publication_check_result.stderr, file=sys.stderr)
         return _abort_anfis_ablation_registration_transaction(
             transaction,
-            DeferredDvcTargetError("Publication check failed; R-E0-MZA not staged"),
+            DeferredDvcTargetError("Publication check failed; R-E0-MZB not staged"),
             returncode=publication_check_result.returncode,
         )
     try:
@@ -6662,7 +6767,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
                 "add",
                 "-A",
                 "--",
-                *sorted(ANFIS_ABLATION_R_MZA_STAGED_SCOPE),
+                *sorted(ANFIS_ABLATION_R_MZB_STAGED_SCOPE),
             ]
         )
         transaction.mark_staging_owned()
@@ -6696,7 +6801,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
             ReproducibilityFinding(
                 "ok",
                 "anfis_ablation_registration",
-                "R-E0-MZA",
+                "R-E0-MZB",
                 (
                     "Exact ten-slot family retained 80 immutable finals; ten "
                     "prediction pointers and models.dvc were registered without push."
@@ -6725,14 +6830,14 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
         )
         if has_failing_findings(reproducibility_findings):
             raise DeferredDvcTargetError(
-                "E0-MZA registration reproducibility checks failed"
+                "E0-MZB registration reproducibility checks failed"
             )
         registration_dvc_env = transaction.registration_dvc_environment(
             dvc_config_snapshot, dvc_runtime_snapshot
         )
         if dvc_status_json(dvc_bin, env=registration_dvc_env):
             raise DeferredDvcTargetError(
-                "E0-MZA DVC status changed while writing the report"
+                "E0-MZB DVC status changed while writing the report"
             )
         transaction.registration_dvc_environment(
             dvc_config_snapshot, dvc_runtime_snapshot
@@ -6766,7 +6871,7 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
 
     print()
     print(f"Report written: {report_path}")
-    print("Exact R-E0-MZA changes are staged; no DVC push was run.")
+    print("Exact R-E0-MZB changes are staged; no DVC push was run.")
     return 0
 
 
@@ -6794,7 +6899,7 @@ def parse_args() -> argparse.Namespace:
         "--register-anfis-ablation-model-family",
         action="store_true",
         help=(
-            "Run the exact effective E0-MZA registration: ten selection "
+            "Run the exact effective E0-MZB registration: ten selection "
             "prediction payloads plus the monolithic models target."
         ),
     )
@@ -6856,7 +6961,7 @@ def main() -> int:
             deferred_stage_gate = require_active_deferred_dvc_staging_gate(
                 validate_deferred_dvc_pre_stage_scope(git_status_before)
             )
-            if deferred_stage_gate in {"H-E0-MZA", "P-E0-MZA"}:
+            if deferred_stage_gate in {"H-E0-MZB", "P-E0-MZB"}:
                 deferred_exclude_validator = (
                     validate_anfis_ablation_adoption_git_environment
                 )
