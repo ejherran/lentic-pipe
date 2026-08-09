@@ -1,0 +1,117 @@
+{
+  "version": "closure_mask_aware_training_standardization_v1",
+  "fit_role": "training",
+  "calculation_dtype": "float64",
+  "serialization_dtype": "float32",
+  "variance_ddof": 0,
+  "epsilon": 1e-12,
+  "missing_transport_after_transform": 0.0,
+  "columns": [
+    {
+      "column": "x_mean_TP_ugL",
+      "observed_count": 80271,
+      "mean": 102.19372735397918,
+      "standard_deviation": 249.83330218123442
+    },
+    {
+      "column": "x_mean_TN_ugL",
+      "observed_count": 32025,
+      "mean": 1419.576595240287,
+      "standard_deviation": 1225.5516584420247
+    },
+    {
+      "column": "x_mean_DO_mgL",
+      "observed_count": 99243,
+      "mean": 8.122428498098321,
+      "standard_deviation": 2.549042261454089
+    },
+    {
+      "column": "x_mean_pH",
+      "observed_count": 98507,
+      "mean": 7.641494805707286,
+      "standard_deviation": 0.7481343450382449
+    },
+    {
+      "column": "x_mean_turbidity_NTU",
+      "observed_count": 50202,
+      "mean": 10.181264076249539,
+      "standard_deviation": 12.316825628634959
+    },
+    {
+      "column": "x_mean_secchi_depth_m",
+      "observed_count": 71310,
+      "mean": 1.005517772835204,
+      "standard_deviation": 0.9782501366160937
+    },
+    {
+      "column": "x_mean_temperature_C",
+      "observed_count": 100224,
+      "mean": 20.878958889975785,
+      "standard_deviation": 7.80482185246841
+    }
+  ],
+  "model_id": "A1",
+  "base_seed": 20260613,
+  "input_columns": [
+    "x_mean_TP_ugL",
+    "x_mean_TN_ugL",
+    "x_mean_DO_mgL",
+    "x_mean_pH",
+    "x_mean_turbidity_NTU",
+    "x_mean_secchi_depth_m",
+    "x_mean_temperature_C",
+    "mask_mean_TP_ugL",
+    "mask_mean_TN_ugL",
+    "mask_mean_DO_mgL",
+    "mask_mean_pH",
+    "mask_mean_turbidity_NTU",
+    "mask_mean_secchi_depth_m",
+    "mask_mean_temperature_C",
+    "season_sin_annual",
+    "season_cos_annual",
+    "season_sin_semiannual",
+    "season_cos_semiannual",
+    "x_yN",
+    "x_yF",
+    "x_yT",
+    "x_sigma_N",
+    "x_sigma_F",
+    "x_sigma_T",
+    "x_delta_yN",
+    "x_delta_yF",
+    "x_delta_yT"
+  ],
+  "identity_channels": [
+    "mask_mean_TP_ugL",
+    "mask_mean_TN_ugL",
+    "mask_mean_DO_mgL",
+    "mask_mean_pH",
+    "mask_mean_turbidity_NTU",
+    "mask_mean_secchi_depth_m",
+    "mask_mean_temperature_C",
+    "season_sin_annual",
+    "season_cos_annual",
+    "season_sin_semiannual",
+    "season_cos_semiannual",
+    "x_yN",
+    "x_yF",
+    "x_yT",
+    "x_sigma_N",
+    "x_sigma_F",
+    "x_sigma_T",
+    "x_delta_yN",
+    "x_delta_yF",
+    "x_delta_yT"
+  ],
+  "bloom_training_priors": [
+    0.3004045853000674,
+    0.30377612946729604,
+    0.3105192178017532
+  ],
+  "risk_training_priors": [
+    0.5889835052483106,
+    0.5918203351433469,
+    0.5957344105135749
+  ],
+  "calibration_used": false
+}

@@ -1,0 +1,332 @@
+{
+  "manifest_version": "closure_anfis_ablation_model_manifest_v1",
+  "status": "completed",
+  "slot_status": "available",
+  "fit_status": "passed",
+  "generated_at_utc": "2026-08-09T15:49:03.153775+00:00",
+  "experiment_id": "closure_v1",
+  "surface_id": "closure_v1_wqp_adaptive_no_current_chla",
+  "model_id": "A0",
+  "base_seed": 314159,
+  "device": "cpu",
+  "future_outcomes_accessed": false,
+  "calibration_authorized": false,
+  "calibration_target_accessed": false,
+  "evaluation_authorized": false,
+  "e0_m_authorized": false,
+  "e0_u_authorized": false,
+  "dvc_command_executed": false,
+  "target_contract": {
+    "join_columns": [
+      "source_id",
+      "site_id",
+      "origin_year_month",
+      "target_year_month",
+      "horizon_months"
+    ],
+    "exact_projection": [
+      "source_id",
+      "site_id",
+      "origin_year_month",
+      "target_year_month",
+      "horizon_months",
+      "bloom_h",
+      "target_risk_chla_h"
+    ],
+    "horizons_months": [
+      1,
+      2,
+      3
+    ],
+    "development_target_access_end": "2020-12",
+    "calibration_target_values_opened": false,
+    "raw_chlorophyll_projection": "forbidden"
+  },
+  "role_counts": {
+    "training": {
+      "origins": 5932,
+      "rows": 17796
+    },
+    "model_selection": {
+      "origins": 658,
+      "rows": 1974
+    },
+    "calibration_threshold_metadata_only": {
+      "origins": 224,
+      "rows": 672
+    },
+    "calibration_target_rows_read": 0,
+    "test_target_rows_read": 0,
+    "holdout_target_rows_read": 0,
+    "post_2020_target_rows_read": 0
+  },
+  "architecture": {
+    "history_length_months": 12,
+    "input_dimension": 18,
+    "family": "direct_multitask_probabilistic_gru",
+    "common_architecture": {
+      "hidden_dimension": 96,
+      "recurrent_layers": 1,
+      "dropout": 0.0,
+      "add_last": false,
+      "residual_mode": "training_only_horizon_priors",
+      "bloom_head": "three_residual_logits_over_training_prevalence",
+      "risk_head": "three_residual_logits_over_training_mean_risk",
+      "risk_uncertainty_head": "three_log_variances",
+      "risk_logvar_clamp": [
+        -10.0,
+        2.0
+      ]
+    },
+    "loss": {
+      "bloom": "binary_cross_entropy_with_logits",
+      "risk": "gaussian_nll_plus_unit_weight_mse",
+      "bloom_weight": 1.0,
+      "risk_gaussian_nll_weight": 1.0,
+      "risk_mse_weight": 1.0,
+      "reduction": "equal_mean_across_horizons_and_observations"
+    },
+    "selection": {
+      "role": "model_selection",
+      "checkpoint_objective": "mean_across_horizons_of_brier_over_prior_brier_rmse_over_prior_rmse_and_mae_over_prior_mae",
+      "pr_auc": "diagnostic_not_optimized",
+      "calibration_applied": false
+    },
+    "optimization": {
+      "optimizer": "AdamW",
+      "learning_rate": 0.001,
+      "weight_decay": 1e-05,
+      "gradient_clip_norm": 1.0,
+      "batch_size": 2048,
+      "maximum_epochs": 20,
+      "early_stopping_patience_epochs": 5,
+      "early_stopping_minimum_delta": 0.0
+    },
+    "execution": {
+      "device": "cpu",
+      "threadpool_limit": 1,
+      "deterministic_algorithms": true,
+      "seed_before_model_construction": true,
+      "epoch_seed_formula": "base_seed_plus_one_based_epoch",
+      "dataloader_num_workers": 0,
+      "drop_last": false
+    }
+  },
+  "preprocessing": {
+    "fit_role": "training",
+    "computation_dtype": "float64",
+    "model_input_dtype": "float32",
+    "raw_values": "mask_aware_training_standard_scaler_ddof0",
+    "raw_missing_after_transform": "reset_to_zero_where_mask_is_zero",
+    "zero_variance_scale": 1.0,
+    "masks": "identity_binary_float32",
+    "seasonality": "identity_float32",
+    "adaptive_state": "identity_float32",
+    "fit_outside_training": "forbidden",
+    "shared_raw_statistics_required_across_all_slots": true,
+    "raw_training_statistics": {
+      "x_mean_TP_ugL": {
+        "observed_cells": 80271,
+        "mean": 102.19372735397918,
+        "std": 249.83330218123442
+      },
+      "x_mean_TN_ugL": {
+        "observed_cells": 32025,
+        "mean": 1419.576595240287,
+        "std": 1225.5516584420247
+      },
+      "x_mean_DO_mgL": {
+        "observed_cells": 99243,
+        "mean": 8.122428498098321,
+        "std": 2.549042261454089
+      },
+      "x_mean_pH": {
+        "observed_cells": 98507,
+        "mean": 7.641494805707285,
+        "std": 0.7481343450382449
+      },
+      "x_mean_turbidity_NTU": {
+        "observed_cells": 50202,
+        "mean": 10.181264076249539,
+        "std": 12.316825628634959
+      },
+      "x_mean_secchi_depth_m": {
+        "observed_cells": 71310,
+        "mean": 1.005517772835204,
+        "std": 0.9782501366160937
+      },
+      "x_mean_temperature_C": {
+        "observed_cells": 100224,
+        "mean": 20.878958889975785,
+        "std": 7.80482185246841
+      }
+    }
+  },
+  "pairing": {
+    "policy": "same_model_seed_pair_A0_then_A1",
+    "paired_model_ids": [
+      "A0",
+      "A1"
+    ],
+    "base_seed": 314159,
+    "training_identity_sha256": "c6585a05911f6357baf9613c5ab57847c2981c4eac8b506200eb65392b77e900",
+    "selection_identity_sha256": "eaef9526aec4878ab1fb93551de57102257025200e25359f17232c1aa8aeb8f7",
+    "selection_target_sha256": "f0503b519142538a998381cbec0aa49a2819a98aadc9a8ef997c5cee7f6c7190"
+  },
+  "authority": {
+    "gate": "E0-MX",
+    "status": "effective_preflight_passed",
+    "authorized_model_id": "A0",
+    "authorized_base_seed": 314159,
+    "completed_prefix_count": 8,
+    "slot_creation_prefix_count": 8,
+    "h_patch_head": "8b4452bdca930a7b1ac1a7094f0c2b36e7d5d559",
+    "p_patch_head": "c73b8ebe11d942631d24e43b0eac2f4b2e72e400",
+    "h_components_sha256": "9c1ff8540568ad8f0adb97862984e342eee71d7813fa99f8954a993b3374a0a3",
+    "physical_inputs_sha256": "86c84e6309866df64697ebb112fd00d32eaff469116d6a0d46d59bc3ef6a04e9",
+    "runtime_sha256": "cf2cec52d9027db895e8859c7ffb321c831b66510132e137759e567b363f6a50",
+    "lock_sha256": "868939119e05ad747902213669bdc4284bf296d7dd32f8ccb6d2b9a515e7a2ba",
+    "companion_sha256": "a466414a74ba62642ae530d9507b6e4619bb70caf8cb3dc401c0c755f4f30d68"
+  },
+  "authority_records": [
+    {
+      "role": "anfis_ablation_training_runtime_contract",
+      "path": "configs/closure_v1/anfis_ablation_training_development_runtime.yaml",
+      "bytes": 22694,
+      "sha256": "cf2cec52d9027db895e8859c7ffb321c831b66510132e137759e567b363f6a50"
+    },
+    {
+      "role": "anfis_ablation_model_publication_adoption_patch_lock",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_model_publication_adoption_patch_lock.json",
+      "bytes": 42460,
+      "sha256": "868939119e05ad747902213669bdc4284bf296d7dd32f8ccb6d2b9a515e7a2ba"
+    },
+    {
+      "role": "anfis_ablation_model_publication_adoption_patch_lock_manifest",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_model_publication_adoption_patch_lock_manifest.json",
+      "bytes": 23179,
+      "sha256": "a466414a74ba62642ae530d9507b6e4619bb70caf8cb3dc401c0c755f4f30d68"
+    }
+  ],
+  "script": {
+    "role": "trainer",
+    "path": "src/experiments/train_closure_anfis_ablation.py",
+    "bytes": 112554,
+    "sha256": "738bf8a5dd4fba09e4238d2b9a2f436081410e4ab998fc4b8b822ff9c402e0a9"
+  },
+  "inputs": [
+    {
+      "role": "a0_sequence",
+      "path": "data/closure_v1/development/sequences/A0/raw_no_current.parquet",
+      "bytes": 713811,
+      "sha256": "8988fce08378424d742b3825f11cfda658ac84cdf5e5e24f497ce1d2ebf01b3d"
+    },
+    {
+      "role": "a0_sequence_pointer",
+      "path": "data/closure_v1/development/sequences/A0/raw_no_current.parquet.dvc",
+      "bytes": 104,
+      "sha256": "4c248db4aa632b205d13d99473c75bcd19ebe58a83e2102a34a36d05655fc636"
+    },
+    {
+      "role": "a0_sequence_summary",
+      "path": "reports/closure_v1/01_surface/sequences/A0/raw_no_current_summary.csv",
+      "bytes": 174,
+      "sha256": "fc815625e357b0c331b3fd65b5cdd2932e3481d4231d7c38e615daad610665bb"
+    },
+    {
+      "role": "a0_sequence_manifest",
+      "path": "reports/closure_v1/01_surface/sequences/A0/raw_no_current_manifest.json",
+      "bytes": 7270,
+      "sha256": "23b89740b4473718dbd00dcb33698525e1b99c0881d1a1f369d37d626aa9acf0"
+    },
+    {
+      "role": "common_origin",
+      "path": "data/closure_v1/common_origin_manifest.parquet",
+      "bytes": 2763097,
+      "sha256": "eb658a55ef6d3b8c0d909a8cf5e40f6bf6fff431997941056560b24cbf76f2f0"
+    },
+    {
+      "role": "common_origin_pointer",
+      "path": "data/closure_v1/common_origin_manifest.parquet.dvc",
+      "bytes": 113,
+      "sha256": "707726f1a64c6345694ac3c91e88e1aff62dcf1b09ee2b57dd19227017e92ec3"
+    },
+    {
+      "role": "common_origin_manifest",
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json",
+      "bytes": 11524,
+      "sha256": "19ef692b1efb05d45339e492db9459a234c4af1501e31ef4fc56e5a4dbc04b05"
+    },
+    {
+      "role": "development_targets",
+      "path": "data/targets/monthly_targets_model_v0.parquet",
+      "bytes": 35541493,
+      "sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799"
+    },
+    {
+      "role": "targets_pointer",
+      "path": "data/targets.dvc",
+      "bytes": 108,
+      "sha256": "2288bca25d34ae58f103c6033b47a366f8e1254214c2a10627ceb3dfb3af2f98"
+    },
+    {
+      "role": "target_manifest",
+      "path": "data/targets/target_manifest_v0.json",
+      "bytes": 5955,
+      "sha256": "5c082cf12aa4f9c6350f4e44eb2b41c7f0dc52cb041c3a67c09cd8e286f17ca4"
+    }
+  ],
+  "source_code": [
+    {
+      "role": "trainer",
+      "path": "src/experiments/train_closure_anfis_ablation.py",
+      "bytes": 112554,
+      "sha256": "738bf8a5dd4fba09e4238d2b9a2f436081410e4ab998fc4b8b822ff9c402e0a9"
+    }
+  ],
+  "outputs": [
+    {
+      "role": "model",
+      "path": "models/closure_v1/anfis_ablation/A0/seed_314159.pt",
+      "bytes": 142911,
+      "sha256": "f5471644e9dc9aeaa047ae65f782bd894d5b430a91869ae539626bf7cf099eb1"
+    },
+    {
+      "role": "checkpoint",
+      "path": "models/closure_v1/anfis_ablation/A0/seed_314159.checkpoint.pt",
+      "bytes": 142911,
+      "sha256": "17262bca9a63fd61daef3c4afca5352831fc3930cc566fe8130e56bc4aa7587c"
+    },
+    {
+      "role": "preprocessor",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_preprocessor.json",
+      "bytes": 2474,
+      "sha256": "27c48b5cf762c54b5e9dd3558ae0e96f479f86b8aab43c852f4e660ce6c3bf21"
+    },
+    {
+      "role": "training_curve",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_training_curve.csv",
+      "bytes": 2703,
+      "sha256": "46414f04995722ff94690ef507564beabb149c43e9e8de6ba586e2eeb1fe8d63"
+    },
+    {
+      "role": "selection_predictions",
+      "path": "data/closure_v1/development/anfis_ablation/A0/seed_314159_selection_predictions.parquet",
+      "bytes": 64906,
+      "sha256": "4a2bf71562d7105f1a87af6048afcb4c2c48e26d091bdebb9a6ab45b73cb96fe"
+    },
+    {
+      "role": "selection_metrics",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_selection_metrics.csv",
+      "bytes": 918,
+      "sha256": "6af8ff45ea675f4cd59506a2b4eacd3a4c98bce0518128173e98497a7dc9d0da"
+    },
+    {
+      "role": "report",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_report.md",
+      "bytes": 322,
+      "sha256": "9a799e9297c5691ec4c5f77ca7ec3debd3bfe007ee169f55aac773bd3e35bbab"
+    }
+  ],
+  "completion_marker_written_last": true
+}
