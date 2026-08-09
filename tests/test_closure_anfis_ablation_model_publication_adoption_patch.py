@@ -87,6 +87,29 @@ EXPECTED_MY_P_PATHS = {
         "anfis_ablation_dvc_registration_patch_lock_manifest.json"
     ),
 }
+EXPECTED_MZ_ADDITIONS = {
+    "configs/closure_v1/anfis_ablation_dvc_registration_adoption_patch_lock.schema.json",
+    "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ADOPTION_PATCH_1.md",
+    "src/experiments/closure_anfis_ablation_dvc_registration_adoption_patch.py",
+    "src/experiments/lock_closure_anfis_ablation_dvc_registration_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
+}
+EXPECTED_MZ_MODIFICATIONS = {
+    "src/data/prepare_commit_artifacts.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py",
+}
+EXPECTED_MZ_P_PATHS = {
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_adoption_patch_lock.json"
+    ),
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_adoption_patch_lock_manifest.json"
+    ),
+}
 
 
 def _record(path: Path, *, role: str) -> dict[str, Any]:
@@ -298,12 +321,12 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         for path in EXPECTED_ADDITIONS | EXPECTED_MODIFICATIONS
     }
     historical_mx_p = {path: "A" for path in EXPECTED_P_PATHS}
-    expected_h = {
+    historical_my_h = {
         path: ("A" if path in EXPECTED_MY_ADDITIONS else "M")
         for path in EXPECTED_MY_ADDITIONS | EXPECTED_MY_MODIFICATIONS
     }
-    expected_p = {path: "A" for path in EXPECTED_MY_P_PATHS}
-    expected_r = {
+    historical_my_p = {path: "A" for path in EXPECTED_MY_P_PATHS}
+    historical_my_r = {
         **{
             path: "A"
             for path in precommit_artifacts.ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS
@@ -314,18 +337,33 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         },
         "models.dvc": "M",
     }
+    expected_h = {
+        path: ("A" if path in EXPECTED_MZ_ADDITIONS else "M")
+        for path in EXPECTED_MZ_ADDITIONS | EXPECTED_MZ_MODIFICATIONS
+    }
+    expected_p = {path: "A" for path in EXPECTED_MZ_P_PATHS}
+    expected_r = {
+        **{
+            path: "A"
+            for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
+        },
+        "models.dvc": "M",
+    }
     assert precommit_artifacts.DEFERRED_DVC_H_MX_STAGED_SCOPE == historical_mx_h
     assert precommit_artifacts.DEFERRED_DVC_P_MX_STAGED_SCOPE == historical_mx_p
-    assert precommit_artifacts.DEFERRED_DVC_H_MY_STAGED_SCOPE == expected_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MY_STAGED_SCOPE == expected_p
-    assert precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE == expected_r
+    assert precommit_artifacts.DEFERRED_DVC_H_MY_STAGED_SCOPE == historical_my_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MY_STAGED_SCOPE == historical_my_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE == historical_my_r
+    assert precommit_artifacts.DEFERRED_DVC_H_MZ_STAGED_SCOPE == expected_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZ_STAGED_SCOPE == expected_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r
     assert len(expected_h) == 9
     assert len(expected_p) == 2
-    assert len(expected_r) == 56
+    assert len(expected_r) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MY", "P-E0-MY"}
+        {"H-E0-MZ", "P-E0-MZ"}
     )
-    for current_gate in ("H-E0-MY", "P-E0-MY"):
+    for current_gate in ("H-E0-MZ", "P-E0-MZ"):
         assert (
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 current_gate
@@ -339,10 +377,12 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         "P-E0-MW",
         "H-E0-MX",
         "P-E0-MX",
+        "H-E0-MY",
+        "P-E0-MY",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MY/P-E0-MY",
+            match="closed to exact H-E0-MZ/P-E0-MZ",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 historical_gate
@@ -360,17 +400,17 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
     )
     p_pre_stage = "".join(f"?? {path}\n" for path in sorted(expected_p))
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(h_staged) == (
-        "H-E0-MY"
+        "H-E0-MZ"
     )
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(p_staged) == (
-        "P-E0-MY"
+        "P-E0-MZ"
     )
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         h_pre_stage
-    ) == "H-E0-MY"
+    ) == "H-E0-MZ"
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         p_pre_stage
-    ) == "P-E0-MY"
+    ) == "P-E0-MZ"
 
     r_pre_stage = "".join(
         f"{'??' if status == 'A' else ' M'} {path}\n"
@@ -383,13 +423,13 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         precommit_artifacts.validate_anfis_ablation_registration_pre_stage_scope(
             r_pre_stage
         )
-        == "R-E0-MY"
+        == "R-E0-MZ"
     )
     assert (
         precommit_artifacts.validate_anfis_ablation_registration_staged_scope(
             r_staged
         )
-        == "R-E0-MY"
+        == "R-E0-MZ"
     )
 
 
@@ -409,6 +449,18 @@ def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not() -> No
         f"/{path}" for path in sorted(EXPECTED_LIGHT_GIT_OIDS)
     )
     precommit_artifacts._validate_deferred_a0_git_tracking(ROOT)
+    assert precommit_artifacts.ANFIS_ABLATION_MZ_LIGHT_PUBLICATION_COMMIT == (
+        "2f0643ab6f634fdcce71f0ee0d847c448d2c61f5"
+    )
+    assert precommit_artifacts.ANFIS_ABLATION_MZ_LIGHT_PUBLICATION_PARENT == (
+        "af233a89e22ce380f7b1f2094cdf4a92eb95b83d"
+    )
+    assert set(precommit_artifacts.ANFIS_ABLATION_MZ_TRACKED_LIGHT_PATHS) == set(
+        precommit_artifacts.ANFIS_ABLATION_LIGHT_REPORT_PATHS
+    )
+    assert len(precommit_artifacts.ANFIS_ABLATION_MZ_TRACKED_LIGHT_PATHS) == 50
+    assert precommit_artifacts.ANFIS_ABLATION_MZ_UNTRACKED_LIGHT_PATHS == ()
+    precommit_artifacts._validate_anfis_ablation_mz_git_tracking(ROOT)
     pointer_count = sum(
         os.path.lexists(ROOT / path)
         for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
@@ -473,6 +525,16 @@ def test_my_family_exclude_and_registration_cli_are_exact(tmp_path: Path) -> Non
         metadata.st_mtime_ns,
         hashlib.sha256(payload.encode("utf-8")).hexdigest(),
     )
+    assert precommit_artifacts.validate_anfis_ablation_adoption_git_environment(
+        env={}
+    ) == (0, 0, 0, hashlib.sha256(b"").hexdigest())
+    with pytest.raises(
+        precommit_artifacts.DeferredDvcTargetError,
+        match="default Git visibility",
+    ):
+        precommit_artifacts.validate_anfis_ablation_adoption_git_environment(
+            env=environment
+        )
 
     args = SimpleNamespace(
         register_anfis_ablation_model_family=True,
@@ -746,7 +808,7 @@ def test_my_family_exclude_and_registration_cli_are_exact(tmp_path: Path) -> Non
         )
 
 
-def test_my_registration_transaction_restores_owned_partial_metadata(
+def test_mz_registration_transaction_restores_owned_partial_metadata(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     (tmp_path / "tmp").mkdir()
@@ -787,11 +849,6 @@ def test_my_registration_transaction_restores_owned_partial_metadata(
     )
     baseline = models_pointer.lstat()
     baseline_gitignore = gitignore.read_bytes()
-    for raw_path in precommit_artifacts.ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS:
-        report = tmp_path / raw_path
-        report.parent.mkdir(parents=True, exist_ok=True)
-        report.write_bytes(f"{raw_path}\n".encode())
-        report.chmod(0o644)
     selected_payloads = tuple(
         Path(path)
         for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_PREDICTION_PATHS
@@ -1081,7 +1138,7 @@ def test_my_registration_transaction_restores_owned_partial_metadata(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
         ]
     )
     transaction.mark_staging_owned()
@@ -1112,7 +1169,7 @@ def test_my_registration_transaction_restores_owned_partial_metadata(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
         ]
     )
     audit_transaction.mark_staging_owned()
@@ -1195,7 +1252,7 @@ def test_my_registration_transaction_restores_owned_partial_metadata(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
         ]
     )
     commit_transaction.mark_staging_owned()
@@ -1243,7 +1300,7 @@ def test_my_registration_transaction_restores_owned_partial_metadata(
     ).splitlines() == [
         f"{status}\t{path}"
         for path, status in sorted(
-            precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE.items()
+            precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE.items()
         )
     ]
 

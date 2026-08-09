@@ -18,6 +18,9 @@ from src.experiments import (
     closure_anfis_ablation_dvc_registration_patch as patch,
 )
 from src.experiments import (
+    closure_anfis_ablation_dvc_registration_adoption_patch as mz_patch,
+)
+from src.experiments import (
     lock_closure_anfis_ablation_dvc_registration_patch as locker,
 )
 
@@ -189,15 +192,26 @@ def test_patch_identity_and_h_p_r_scopes_are_exact() -> None:
     assert len(expected_r) == 56
     assert list(expected_r.values()).count("A") == 55
     assert list(expected_r.values()).count("M") == 1
+    expected_r_mz = {
+        **{
+            path: "A"
+            for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
+        },
+        "models.dvc": "M",
+    }
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r_mz
+    assert len(expected_r_mz) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MY", "P-E0-MY"}
+        {"H-E0-MZ", "P-E0-MZ"}
     )
-    assert precommit_artifacts.require_active_deferred_dvc_staging_gate(
-        "H-E0-MY"
-    ) == "H-E0-MY"
-    assert precommit_artifacts.require_active_deferred_dvc_staging_gate(
-        "P-E0-MY"
-    ) == "P-E0-MY"
+    for gate in ("H-E0-MZ", "P-E0-MZ"):
+        assert precommit_artifacts.require_active_deferred_dvc_staging_gate(gate) == gate
+    for gate in ("H-E0-MY", "P-E0-MY"):
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="closed to exact H-E0-MZ/P-E0-MZ",
+        ):
+            precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
 
 def test_registration_inventory_is_separate_exact_and_ordered(
@@ -364,17 +378,17 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
 
     def load(**kwargs: Any) -> dict[str, Any]:
         observed.append(kwargs)
-        return {"gate": "E0-MY", "status": "effective_preflight_passed"}
+        return {"gate": "E0-MZ", "status": "effective_preflight_passed"}
 
     monkeypatch.setattr(
-        patch,
-        "load_effective_anfis_ablation_dvc_registration_patch_authority",
+        mz_patch,
+        "load_effective_anfis_ablation_dvc_registration_adoption_patch_authority",
         load,
     )
     authority = precommit_artifacts._load_effective_anfis_ablation_dvc_registration_authority(
         audit_current_unpublished=False, repo_root=ROOT
     )
-    assert authority == {"gate": "E0-MY", "status": "effective_preflight_passed"}
+    assert authority == {"gate": "E0-MZ", "status": "effective_preflight_passed"}
     assert observed == [
         {
             "audit_current_unpublished": False,
@@ -424,11 +438,6 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
     )
     transaction.__enter__()
     transaction.begin_dvc_mutation()
-    for raw_path in precommit_artifacts.ANFIS_ABLATION_UNTRACKED_LIGHT_PATHS:
-        path = Path(raw_path)
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_bytes(f"light:{raw_path}\n".encode("utf-8"))
-        path.chmod(0o644)
     for payload_path, raw_pointer in zip(
         precommit_artifacts.ANFIS_ABLATION_SELECTION_PREDICTION_PATHS,
         precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS,
@@ -450,7 +459,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
         ],
         check=True,
     )
@@ -461,7 +470,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
         capture_output=True,
         text=True,
     ).stdout.splitlines() == sorted(
-        precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE
+        precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE
     )
 
     synthetic_failure = RuntimeError("post-git-add failure")
@@ -480,7 +489,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "ls-files",
             "-s",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MY_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE),
         ],
         check=True,
         capture_output=True,
