@@ -153,9 +153,9 @@ def test_deferred_precommit_preserves_mw_scopes_behind_the_mx_boundary() -> None
     assert precommit_artifacts.DEFERRED_DVC_H_MW_STAGED_SCOPE == expected_h
     assert precommit_artifacts.DEFERRED_DVC_P_MW_STAGED_SCOPE == expected_p
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZD", "P-E0-MZD"}
+        {"H-E0-MZE", "P-E0-MZE"}
     )
-    for current_gate in ("H-E0-MZD", "P-E0-MZD"):
+    for current_gate in ("H-E0-MZE", "P-E0-MZE"):
         assert (
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 current_gate
@@ -179,10 +179,12 @@ def test_deferred_precommit_preserves_mw_scopes_behind_the_mx_boundary() -> None
         "P-E0-MZB",
         "H-E0-MZC",
         "P-E0-MZC",
+        "H-E0-MZD",
+        "P-E0-MZD",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZD/P-E0-MZD",
+            match="closed to exact H-E0-MZE/P-E0-MZE",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 historical_gate

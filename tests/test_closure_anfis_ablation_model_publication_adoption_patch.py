@@ -213,6 +213,34 @@ EXPECTED_MZD_P_PATHS = {
         "anfis_ablation_dvc_registration_status_patch_lock_manifest.json"
     ),
 }
+EXPECTED_MZE_ADDITIONS = {
+    "configs/closure_v1/anfis_ablation_dvc_registration_reproducibility_patch.schema.json",
+    "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_REPRODUCIBILITY_PATCH.md",
+    "src/experiments/closure_anfis_ablation_dvc_registration_reproducibility_patch.py",
+    "src/experiments/lock_closure_anfis_ablation_dvc_registration_reproducibility_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_reproducibility_patch.py",
+}
+EXPECTED_MZE_MODIFICATIONS = {
+    "src/data/prepare_commit_artifacts.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_status_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_gitignore_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py",
+}
+EXPECTED_MZE_P_PATHS = {
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_reproducibility_patch_lock.json"
+    ),
+    (
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_reproducibility_patch_lock_manifest.json"
+    ),
+}
 
 
 def _record(path: Path, *, role: str) -> dict[str, Any]:
@@ -467,11 +495,16 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         for path in EXPECTED_MZC_ADDITIONS | EXPECTED_MZC_MODIFICATIONS
     }
     historical_mzc_p = {path: "A" for path in EXPECTED_MZC_P_PATHS}
-    current_h = {
+    historical_mzd_h = {
         path: ("A" if path in EXPECTED_MZD_ADDITIONS else "M")
         for path in EXPECTED_MZD_ADDITIONS | EXPECTED_MZD_MODIFICATIONS
     }
-    current_p = {path: "A" for path in EXPECTED_MZD_P_PATHS}
+    historical_mzd_p = {path: "A" for path in EXPECTED_MZD_P_PATHS}
+    current_h = {
+        path: ("A" if path in EXPECTED_MZE_ADDITIONS else "M")
+        for path in EXPECTED_MZE_ADDITIONS | EXPECTED_MZE_MODIFICATIONS
+    }
+    current_p = {path: "A" for path in EXPECTED_MZE_P_PATHS}
     current_r = dict(historical_mz_r)
     assert precommit_artifacts.DEFERRED_DVC_H_MX_STAGED_SCOPE == historical_mx_h
     assert precommit_artifacts.DEFERRED_DVC_P_MX_STAGED_SCOPE == historical_mx_p
@@ -494,9 +527,18 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         precommit_artifacts.DEFERRED_DVC_P_MZC_STAGED_SCOPE == historical_mzc_p
     )
     assert precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE == current_r
-    assert precommit_artifacts.DEFERRED_DVC_H_MZD_STAGED_SCOPE == current_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MZD_STAGED_SCOPE == current_p
+    assert (
+        precommit_artifacts.DEFERRED_DVC_H_MZD_STAGED_SCOPE
+        == historical_mzd_h
+    )
+    assert (
+        precommit_artifacts.DEFERRED_DVC_P_MZD_STAGED_SCOPE
+        == historical_mzd_p
+    )
     assert precommit_artifacts.ANFIS_ABLATION_R_MZD_STAGED_SCOPE == current_r
+    assert precommit_artifacts.DEFERRED_DVC_H_MZE_STAGED_SCOPE == current_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZE_STAGED_SCOPE == current_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZE_STAGED_SCOPE == current_r
     assert len(historical_mz_h) == 9
     assert len(historical_mz_p) == 2
     assert len(historical_mz_r) == 11
@@ -506,13 +548,15 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
     assert len(historical_mzb_p) == 2
     assert len(historical_mzc_h) == 13
     assert len(historical_mzc_p) == 2
-    assert len(current_h) == 13
+    assert len(historical_mzd_h) == 13
+    assert len(historical_mzd_p) == 2
+    assert len(current_h) == 14
     assert len(current_p) == 2
     assert len(current_r) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZD", "P-E0-MZD"}
+        {"H-E0-MZE", "P-E0-MZE"}
     )
-    for current_gate in ("H-E0-MZD", "P-E0-MZD"):
+    for current_gate in ("H-E0-MZE", "P-E0-MZE"):
         assert (
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 current_gate
@@ -536,10 +580,12 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         "P-E0-MZB",
         "H-E0-MZC",
         "P-E0-MZC",
+        "H-E0-MZD",
+        "P-E0-MZD",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZD/P-E0-MZD",
+            match="closed to exact H-E0-MZE/P-E0-MZE",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(
                 historical_gate
@@ -557,17 +603,17 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
     )
     p_pre_stage = "".join(f"?? {path}\n" for path in sorted(current_p))
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(h_staged) == (
-        "H-E0-MZD"
+        "H-E0-MZE"
     )
     assert precommit_artifacts.validate_deferred_dvc_staged_scope(p_staged) == (
-        "P-E0-MZD"
+        "P-E0-MZE"
     )
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         h_pre_stage
-    ) == "H-E0-MZD"
+    ) == "H-E0-MZE"
     assert precommit_artifacts.validate_deferred_dvc_pre_stage_scope(
         p_pre_stage
-    ) == "P-E0-MZD"
+    ) == "P-E0-MZE"
 
     r_pre_stage = "".join(
         f"{'??' if status == 'A' else ' M'} {path}\n"
@@ -580,13 +626,13 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
         precommit_artifacts.validate_anfis_ablation_registration_pre_stage_scope(
             r_pre_stage
         )
-        == "R-E0-MZD"
+        == "R-E0-MZE"
     )
     assert (
         precommit_artifacts.validate_anfis_ablation_registration_staged_scope(
             r_staged
         )
-        == "R-E0-MZD"
+        == "R-E0-MZE"
     )
 
 

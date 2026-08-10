@@ -17,7 +17,7 @@ from src.experiments import (
     closure_anfis_ablation_dvc_registration_adoption_patch as patch,
 )
 from src.experiments import (
-    closure_anfis_ablation_dvc_registration_status_patch as mzd_patch,
+    closure_anfis_ablation_dvc_registration_reproducibility_patch as mze_patch,
 )
 from src.experiments import closure_anfis_ablation_dvc_registration_patch as my
 from src.experiments import (
@@ -108,6 +108,24 @@ EXPECTED_MZD_MODIFICATIONS = {
     "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
     "tests/test_closure_anfis_ablation_model_publication_patch.py",
 }
+EXPECTED_MZE_ADDITIONS = {
+    "configs/closure_v1/anfis_ablation_dvc_registration_reproducibility_patch.schema.json",
+    "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_REPRODUCIBILITY_PATCH.md",
+    "src/experiments/closure_anfis_ablation_dvc_registration_reproducibility_patch.py",
+    "src/experiments/lock_closure_anfis_ablation_dvc_registration_reproducibility_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_reproducibility_patch.py",
+}
+EXPECTED_MZE_MODIFICATIONS = {
+    "src/data/prepare_commit_artifacts.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_status_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_gitignore_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py",
+    "tests/test_closure_anfis_ablation_model_publication_patch.py",
+}
 
 
 def _sha256(path: Path) -> str:
@@ -170,15 +188,25 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
         "reports/closure_v1/00_protocol/"
         "anfis_ablation_dvc_registration_gitignore_patch_lock_manifest.json": "A",
     }
-    current_h = {
+    historical_mzd_h = {
         path: ("A" if path in EXPECTED_MZD_ADDITIONS else "M")
         for path in EXPECTED_MZD_ADDITIONS | EXPECTED_MZD_MODIFICATIONS
     }
-    current_p = {
+    historical_mzd_p = {
         "reports/closure_v1/00_protocol/"
         "anfis_ablation_dvc_registration_status_patch_lock.json": "A",
         "reports/closure_v1/00_protocol/"
         "anfis_ablation_dvc_registration_status_patch_lock_manifest.json": "A",
+    }
+    current_h = {
+        path: ("A" if path in EXPECTED_MZE_ADDITIONS else "M")
+        for path in EXPECTED_MZE_ADDITIONS | EXPECTED_MZE_MODIFICATIONS
+    }
+    current_p = {
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_reproducibility_patch_lock.json": "A",
+        "reports/closure_v1/00_protocol/"
+        "anfis_ablation_dvc_registration_reproducibility_patch_lock_manifest.json": "A",
     }
 
     assert patch.PATCH_GATE == "E0-MZ"
@@ -213,16 +241,19 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
         precommit_artifacts.DEFERRED_DVC_P_MZC_STAGED_SCOPE == historical_mzc_p
     )
     assert precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE == expected_r
-    assert precommit_artifacts.DEFERRED_DVC_H_MZD_STAGED_SCOPE == current_h
-    assert precommit_artifacts.DEFERRED_DVC_P_MZD_STAGED_SCOPE == current_p
+    assert precommit_artifacts.DEFERRED_DVC_H_MZD_STAGED_SCOPE == historical_mzd_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZD_STAGED_SCOPE == historical_mzd_p
     assert precommit_artifacts.ANFIS_ABLATION_R_MZD_STAGED_SCOPE == expected_r
+    assert precommit_artifacts.DEFERRED_DVC_H_MZE_STAGED_SCOPE == current_h
+    assert precommit_artifacts.DEFERRED_DVC_P_MZE_STAGED_SCOPE == current_p
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZE_STAGED_SCOPE == expected_r
     assert len(expected_h) == 9
     assert len(expected_p) == 2
     assert len(expected_r) == 11
     assert list(expected_r.values()).count("A") == 10
     assert list(expected_r.values()).count("M") == 1
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZD", "P-E0-MZD"}
+        {"H-E0-MZE", "P-E0-MZE"}
     )
     assert len(historical_mza_h) == 10
     assert len(historical_mza_p) == 2
@@ -230,9 +261,11 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
     assert len(historical_mzb_p) == 2
     assert len(historical_mzc_h) == 13
     assert len(historical_mzc_p) == 2
-    assert len(current_h) == 13
+    assert len(historical_mzd_h) == 13
+    assert len(historical_mzd_p) == 2
+    assert len(current_h) == 14
     assert len(current_p) == 2
-    for gate in ("H-E0-MZD", "P-E0-MZD"):
+    for gate in ("H-E0-MZE", "P-E0-MZE"):
         assert precommit_artifacts.require_active_deferred_dvc_staging_gate(gate) == gate
     for gate in (
         "H-E0-MZ",
@@ -243,10 +276,12 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
         "P-E0-MZB",
         "H-E0-MZC",
         "P-E0-MZC",
+        "H-E0-MZD",
+        "P-E0-MZD",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZD/P-E0-MZD",
+            match="closed to exact H-E0-MZE/P-E0-MZE",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
@@ -610,31 +645,31 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
 
     def public(**kwargs: Any) -> dict[str, Any]:
         calls.append(("public", kwargs))
-        return {"gate": "E0-MZD", "mode": "public"}
+        return {"gate": "E0-MZE", "mode": "public"}
 
     def private(**kwargs: Any) -> dict[str, Any]:
         calls.append(("private", kwargs))
-        return {"gate": "E0-MZD", "mode": "private"}
+        return {"gate": "E0-MZE", "mode": "private"}
 
     monkeypatch.setattr(
-        mzd_patch,
-        "load_effective_anfis_ablation_dvc_registration_status_patch_authority",
+        mze_patch,
+        "load_effective_anfis_ablation_dvc_registration_reproducibility_patch_authority",
         public,
     )
     assert precommit_artifacts._load_effective_anfis_ablation_dvc_registration_authority(
         audit_current_unpublished=False, repo_root=ROOT
-    ) == {"gate": "E0-MZD", "mode": "public"}
+    ) == {"gate": "E0-MZE", "mode": "public"}
     transaction = {"mode": "atomic_replace"}
     monkeypatch.setattr(
-        mzd_patch,
-        "_load_effective_anfis_ablation_dvc_registration_status_patch_during_registration",
+        mze_patch,
+        "_load_effective_anfis_ablation_dvc_registration_reproducibility_patch_during_registration",
         private,
     )
     assert precommit_artifacts._load_effective_anfis_ablation_dvc_registration_authority(
         audit_current_unpublished=True,
         repo_root=ROOT,
         registration_transaction=transaction,
-    ) == {"gate": "E0-MZD", "mode": "private"}
+    ) == {"gate": "E0-MZE", "mode": "private"}
     assert calls == [
         (
             "public",

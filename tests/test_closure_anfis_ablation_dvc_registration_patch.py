@@ -18,7 +18,7 @@ from src.experiments import (
     closure_anfis_ablation_dvc_registration_patch as patch,
 )
 from src.experiments import (
-    closure_anfis_ablation_dvc_registration_status_patch as mzd_patch,
+    closure_anfis_ablation_dvc_registration_reproducibility_patch as mze_patch,
 )
 from src.experiments import (
     lock_closure_anfis_ablation_dvc_registration_patch as locker,
@@ -204,11 +204,12 @@ def test_patch_identity_and_h_p_r_scopes_are_exact() -> None:
     assert precommit_artifacts.ANFIS_ABLATION_R_MZB_STAGED_SCOPE == expected_r_mz
     assert precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE == expected_r_mz
     assert precommit_artifacts.ANFIS_ABLATION_R_MZD_STAGED_SCOPE == expected_r_mz
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZE_STAGED_SCOPE == expected_r_mz
     assert len(expected_r_mz) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZD", "P-E0-MZD"}
+        {"H-E0-MZE", "P-E0-MZE"}
     )
-    for gate in ("H-E0-MZD", "P-E0-MZD"):
+    for gate in ("H-E0-MZE", "P-E0-MZE"):
         assert precommit_artifacts.require_active_deferred_dvc_staging_gate(gate) == gate
     for gate in (
         "H-E0-MY",
@@ -221,10 +222,12 @@ def test_patch_identity_and_h_p_r_scopes_are_exact() -> None:
         "P-E0-MZB",
         "H-E0-MZC",
         "P-E0-MZC",
+        "H-E0-MZD",
+        "P-E0-MZD",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZD/P-E0-MZD",
+            match="closed to exact H-E0-MZE/P-E0-MZE",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
@@ -423,17 +426,17 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
 
     def load(**kwargs: Any) -> dict[str, Any]:
         observed.append(kwargs)
-        return {"gate": "E0-MZD", "status": "effective_preflight_passed"}
+        return {"gate": "E0-MZE", "status": "effective_preflight_passed"}
 
     monkeypatch.setattr(
-        mzd_patch,
-        "load_effective_anfis_ablation_dvc_registration_status_patch_authority",
+        mze_patch,
+        "load_effective_anfis_ablation_dvc_registration_reproducibility_patch_authority",
         load,
     )
     authority = precommit_artifacts._load_effective_anfis_ablation_dvc_registration_authority(
         audit_current_unpublished=False, repo_root=ROOT
     )
-    assert authority == {"gate": "E0-MZD", "status": "effective_preflight_passed"}
+    assert authority == {"gate": "E0-MZE", "status": "effective_preflight_passed"}
     assert observed == [
         {
             "audit_current_unpublished": False,
@@ -506,7 +509,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZD_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZE_STAGED_SCOPE),
         ],
         check=True,
     )
@@ -517,7 +520,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
         capture_output=True,
         text=True,
     ).stdout.splitlines() == sorted(
-            precommit_artifacts.ANFIS_ABLATION_R_MZD_STAGED_SCOPE
+            precommit_artifacts.ANFIS_ABLATION_R_MZE_STAGED_SCOPE
     )
 
     synthetic_failure = RuntimeError("post-git-add failure")
@@ -536,7 +539,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "ls-files",
             "-s",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZD_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZE_STAGED_SCOPE),
         ],
         check=True,
         capture_output=True,
