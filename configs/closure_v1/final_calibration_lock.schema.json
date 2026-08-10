@@ -1,0 +1,581 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/final_calibration_lock.schema.json",
+  "title": "Closure V1 E0-MCAL final calibration lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate",
+    "status",
+    "generated_at_utc",
+    "repository",
+    "h_patch",
+    "runtime",
+    "scientific_input_inventory",
+    "scientific_boundary",
+    "model_matrix",
+    "calibration_group_matrix",
+    "e7_terminal_record",
+    "output_contract",
+    "prelock",
+    "verification",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_final_calibration_lock_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-MCAL"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runtime": {"$ref": "#/$defs/runtimeBinding"},
+    "scientific_input_inventory": {"$ref": "#/$defs/scientificInputInventory"},
+    "scientific_boundary": {"$ref": "#/$defs/scientificBoundary"},
+    "model_matrix": {"$ref": "#/$defs/modelMatrix"},
+    "calibration_group_matrix": {"$ref": "#/$defs/groupMatrix"},
+    "e7_terminal_record": {"$ref": "#/$defs/e7TerminalRecord"},
+    "output_contract": {"$ref": "#/$defs/outputContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "gitArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "git_mode": {"enum": ["100644", "100755"]}
+      }
+    },
+    "payloadBindingRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "binding_source"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "binding_source": {"type": "string", "minLength": 1}
+      }
+    },
+    "scientificInputInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version", "authority_record_count", "payload_binding_count", "calibration_payload_binding_count", "calibration_lineage_binding_count", "f1_availability_binding_count", "e7_runtime_binding_count", "unavailable_temporal_report_binding_count", "authority_records", "payload_bindings", "authority_records_sha256", "payload_bindings_sha256", "payload_physical_validation_count", "payload_physical_records_sha256", "payload_physical_validation_complete", "payload_materialization_policy", "dvc_cache_hardlink_second_name_required", "dvc_cache_hardlink_third_name_allowed", "payload_materialization_class_counts_serialized", "calibration_required_input_count", "e7_required_input_count", "calibration_required_inputs", "e7_required_inputs", "calibration_required_inputs_sha256", "e7_required_inputs_sha256", "payload_bytes_same_fd_required", "git_dvc_manifest_chain_verified", "runtime_input_selection_allowed", "holdout_or_post_2021_access_authorized", "unavailable_model_evidence"],
+      "properties": {
+        "schema_version": {"const": "closure_final_calibration_scientific_input_inventory_v1"},
+        "authority_record_count": {"const": 66, "type": "integer"},
+        "payload_binding_count": {"const": 94, "type": "integer"},
+        "calibration_payload_binding_count": {"const": 53, "type": "integer"},
+        "calibration_lineage_binding_count": {"const": 2, "type": "integer"},
+        "f1_availability_binding_count": {"const": 20, "type": "integer"},
+        "e7_runtime_binding_count": {"const": 9, "type": "integer"},
+        "unavailable_temporal_report_binding_count": {"const": 10, "type": "integer"},
+        "authority_records": {"type": "array", "items": {"$ref": "#/$defs/gitArtifactRecord"}, "minItems": 66, "maxItems": 66},
+        "payload_bindings": {"type": "array", "items": {"$ref": "#/$defs/payloadBindingRecord"}, "minItems": 94, "maxItems": 94},
+        "authority_records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "payload_bindings_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "payload_physical_validation_count": {"const": 94, "type": "integer"},
+        "payload_physical_records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "payload_physical_validation_complete": {"const": true},
+        "payload_materialization_policy": {"const": "regular_0644_nlink1_or_verified_dvc_cache_hardlink_0444_nlink2"},
+        "dvc_cache_hardlink_second_name_required": {"const": true},
+        "dvc_cache_hardlink_third_name_allowed": {"const": false},
+        "payload_materialization_class_counts_serialized": {"const": false},
+        "calibration_required_input_count": {"const": 97, "type": "integer"},
+        "e7_required_input_count": {"const": 15, "type": "integer"},
+        "calibration_required_inputs": {"type": "array", "items": {"$ref": "#/$defs/artifactRecord"}, "minItems": 97, "maxItems": 97},
+        "e7_required_inputs": {"type": "array", "items": {"$ref": "#/$defs/artifactRecord"}, "minItems": 15, "maxItems": 15},
+        "calibration_required_inputs_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "e7_required_inputs_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "payload_bytes_same_fd_required": {"const": true},
+        "git_dvc_manifest_chain_verified": {"const": true},
+        "runtime_input_selection_allowed": {"const": false},
+        "holdout_or_post_2021_access_authorized": {"const": false},
+        "unavailable_model_evidence": {"$ref": "#/$defs/unavailableModelEvidence"}
+      }
+    },
+    "unavailableModelRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "base_seed", "manifest_path", "report_path", "slot_status", "fit_status", "failure_reason", "model_artifact_emitted"],
+      "properties": {
+        "model_id": {"enum": ["P0", "P1"]},
+        "base_seed": {"enum": [1729, 20260612, 20260613, 20260614, 314159], "type": "integer"},
+        "manifest_path": {"type": "string", "minLength": 1},
+        "report_path": {"type": "string", "minLength": 1},
+        "slot_status": {"const": "model_unavailable"},
+        "fit_status": {"const": "not_attempted"},
+        "failure_reason": {"const": "sequence_fit_rows_unavailable"},
+        "model_artifact_emitted": {"const": false}
+      }
+    },
+    "unavailableModelEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p0_p1_manifest_count", "p0_p1_report_binding_count", "p0_p1_publication_commits", "p0_p1_publication_history_linear", "p0_p1_records", "p0_p1_namespace_path_count", "p0_p1_namespace_present_path_count", "p0_p1_namespace_absent_path_count", "p0_p1_namespace_absent_paths", "p0_p1_namespace_absent_paths_sha256", "p0_p1_namespace_exact", "a2_namespace_paths", "a2_namespace_present_count", "a2_substitute_allowed"],
+      "properties": {
+        "p0_p1_manifest_count": {"const": 10, "type": "integer"},
+        "p0_p1_report_binding_count": {"const": 10, "type": "integer"},
+        "p0_p1_publication_commits": {"const": ["f4a6c3367d20deeb7416e9f0d4cbc9c3a9446a3f", "118b404cdc98a144fe392aa6085c49f0eb97348d", "f27ee8a105a623611220e7c10630efe1a676599a", "8d776ce31a13ebb6cc0e6c219de89f5356aed2fd", "1a4aa4836548756e74008fb934f56b5251d22491", "5d8bbef0fe58e57cd2180570bd6aef5f07923781", "5b2c5d6b4f4c296c9485d1cb22561086aeeb6b85", "fea057b808e2e454c47da1256a5ec8f68dd9bb80", "46daf1e2dd97a3d7e36ad187d4ae1510dfc14fc2", "a9aa51aaa1566d0b8e7154697fae69c458c5019f"]},
+        "p0_p1_publication_history_linear": {"const": true},
+        "p0_p1_records": {"type": "array", "items": {"$ref": "#/$defs/unavailableModelRecord"}, "minItems": 10, "maxItems": 10},
+        "p0_p1_namespace_path_count": {"const": 190, "type": "integer"},
+        "p0_p1_namespace_present_path_count": {"const": 20, "type": "integer"},
+        "p0_p1_namespace_absent_path_count": {"const": 170, "type": "integer"},
+        "p0_p1_namespace_absent_paths": {"type": "array", "items": {"type": "string", "minLength": 1}, "minItems": 170, "maxItems": 170, "uniqueItems": true},
+        "p0_p1_namespace_absent_paths_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "p0_p1_namespace_exact": {"const": true},
+        "a2_namespace_paths": {"const": ["data/closure_v1/development/sequences/A2", "data/closure_v1/development/anfis_ablation/A2", "models/closure_v1/pipe/A2", "models/closure_v1/anfis_ablation/A2", "reports/closure_v1/01_surface/sequences/A2", "reports/closure_v1/02_models/A2"]},
+        "a2_namespace_present_count": {"const": 0, "type": "integer"},
+        "a2_substitute_allowed": {"const": false}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted", "path_count", "paths"],
+      "properties": {
+        "added": {"const": 12, "type": "integer"},
+        "modified": {"const": 0, "type": "integer"},
+        "deleted": {"const": 0, "type": "integer"},
+        "path_count": {"const": 12, "type": "integer"},
+        "paths": {"type": "array", "items": {"type": "string"}, "minItems": 12, "maxItems": 12, "uniqueItems": true}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_commit", "h_patch_head", "branch", "remote_head", "scope"],
+      "properties": {
+        "base_commit": {"const": "2f46d3e258195315e2473be6cf7d62db22c55bcf"},
+        "h_patch_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "branch": {"const": "main"},
+        "remote_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "scope": {"$ref": "#/$defs/scope"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "component_count", "added_count", "modified_count", "components", "components_sha256"],
+      "properties": {
+        "gate": {"const": "H-E0-MCAL"},
+        "component_count": {"const": 12, "type": "integer"},
+        "added_count": {"const": 12, "type": "integer"},
+        "modified_count": {"const": 0, "type": "integer"},
+        "components": {"type": "array", "items": {"$ref": "#/$defs/gitArtifactRecord"}, "minItems": 12, "maxItems": 12},
+        "components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "runtimeBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["physical_input_count", "historical_input_count", "runtime", "runtime_schema", "lock_schema", "runtime_payload_sha256", "scientific_authority_record_count", "scientific_payload_binding_count", "scientific_authority_records_sha256", "scientific_payload_bindings_sha256", "supported_schema_subset_verified"],
+      "properties": {
+        "physical_input_count": {"const": 12, "type": "integer"},
+        "historical_input_count": {"const": 0, "type": "integer"},
+        "runtime": {"$ref": "#/$defs/gitArtifactRecord"},
+        "runtime_schema": {"$ref": "#/$defs/gitArtifactRecord"},
+        "lock_schema": {"$ref": "#/$defs/gitArtifactRecord"},
+        "runtime_payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "scientific_authority_record_count": {"const": 66, "type": "integer"},
+        "scientific_payload_binding_count": {"const": 94, "type": "integer"},
+        "scientific_authority_records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "scientific_payload_bindings_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "supported_schema_subset_verified": {"const": true}
+      }
+    },
+    "registeredRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "git_mode": {"const": "100644"}
+      }
+    },
+    "baseAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "commit", "parent_p_mze", "registration_scope", "family_final_count", "family_records_sha256", "family_records", "selection_pointer_count", "registered_paths", "models_dvc", "gitignore"],
+      "properties": {
+        "gate": {"const": "R-E0-MZE"},
+        "commit": {"const": "2f46d3e258195315e2473be6cf7d62db22c55bcf"},
+        "parent_p_mze": {"const": "e4312b403a4be729051ce2809fb5dcb4c505c509"},
+        "registration_scope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["added", "modified", "deleted", "path_count"],
+          "properties": {
+            "added": {"const": 10, "type": "integer"},
+            "modified": {"const": 1, "type": "integer"},
+            "deleted": {"const": 0, "type": "integer"},
+            "path_count": {"const": 11, "type": "integer"}
+          }
+        },
+        "family_final_count": {"const": 80, "type": "integer"},
+        "family_records_sha256": {"const": "e625add8f8af1746f7deda9ff13a84a4d4f4c27b47e3b6312922db419508dd8e"},
+        "family_records": {"type": "array", "items": {"$ref": "#/$defs/artifactRecord"}, "minItems": 80, "maxItems": 80},
+        "selection_pointer_count": {"const": 10, "type": "integer"},
+        "registered_paths": {"type": "array", "items": {"$ref": "#/$defs/registeredRecord"}, "minItems": 11, "maxItems": 11},
+        "models_dvc": {"$ref": "#/$defs/registeredRecord"},
+        "gitignore": {"$ref": "#/$defs/registeredRecord"}
+      }
+    },
+    "scientificBoundary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_ids", "method_selection_period", "method_assessment_period", "calibration_threshold_period", "calibration_period_axis", "target_identity_join_key", "target_projection_scan_predicate", "target_projection_scan_enforcement", "target_projection_post_filter_allowed", "raw_label_join_policy", "development_roles", "holdout_locations_allowed", "post_2021_rows_allowed", "locked_evaluation_rows_allowed", "outcome_log_access_allowed", "e0_m_allowed", "e0_u_allowed", "scientific_network_allowed", "dvc_commands_allowed", "calibration_protocol", "holdout_row_count", "post_2021_row_count", "outcome_path_count", "evaluation_batch_authorized"],
+      "properties": {
+        "source_ids": {"const": ["wqp"]},
+        "method_selection_period": {"const": {"start": "2019-01", "end": "2019-12"}},
+        "method_assessment_period": {"const": {"start": "2020-01", "end": "2020-12"}},
+        "calibration_threshold_period": {"const": {"start": "2021-01", "end": "2021-12"}},
+        "calibration_period_axis": {"const": "target_year_month"},
+        "target_identity_join_key": {"const": ["source_id", "site_id", "origin_year_month", "target_year_month", "horizon_months"]},
+        "target_projection_scan_predicate": {"const": "target_year_month_lte_2021_12_and_origin_year_month_lte_2021_12"},
+        "target_projection_scan_enforcement": {"const": "same_fd_pyarrow_dataset_scanner_predicate_pushdown_before_materialization"},
+        "target_projection_post_filter_allowed": {"const": false},
+        "raw_label_join_policy": {"const": "baseline_and_m0_exact_target_identity"},
+        "development_roles": {"const": ["training", "model_selection", "calibration_threshold"]},
+        "holdout_locations_allowed": {"const": false},
+        "post_2021_rows_allowed": {"const": false},
+        "locked_evaluation_rows_allowed": {"const": false},
+        "outcome_log_access_allowed": {"const": false},
+        "e0_m_allowed": {"const": false},
+        "e0_u_allowed": {"const": false},
+        "scientific_network_allowed": {"const": false},
+        "dvc_commands_allowed": {"const": false},
+        "calibration_protocol": {"$ref": "#/$defs/calibrationProtocol"},
+        "holdout_row_count": {"const": 0, "type": "integer"},
+        "post_2021_row_count": {"const": 0, "type": "integer"},
+        "outcome_path_count": {"const": 0, "type": "integer"},
+        "evaluation_batch_authorized": {"const": false}
+      }
+    },
+    "calibrationProtocol": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bloom_method_candidates", "bloom_score_source_by_model", "bloom_score_value_policy", "fixed_identity_model_ids", "fixed_identity_calibrator_fit_policy", "fixed_identity_calibrator_fit_rows", "fixed_identity_calibrator_refit_year", "fixed_identity_metrics_period", "fixed_identity_alert_threshold_period", "bloom_method_selection_metric", "bloom_method_tie_tolerance", "bloom_method_secondary_metric", "bloom_method_secondary_metric_bins", "bloom_method_secondary_metric_binning", "bloom_method_simplicity_order", "bloom_method_selection_rule", "selected_method_refit_role", "alert_threshold_objective", "alert_threshold_beta", "alert_threshold_candidate_rule", "alert_threshold_tie_break_order", "ordinal_cutpoint_objective", "ordinal_cutpoint_tie_break_order", "evaluation_refit", "conformal_method", "conformal_scale_floor", "conformal_minimum_finite_rows_per_group", "conformal_insufficient_group_policy", "conformal_quantile_interpolation"],
+      "properties": {
+        "bloom_method_candidates": {"const": ["identity", "platt_logistic", "isotonic_regression"]},
+        "bloom_score_source_by_model": {"const": {"B0": "predicted_bloom_probability", "B1": "predicted_bloom_probability", "B2": "predicted_bloom_probability", "M0": "raw_score", "A0": "predicted_bloom_probability", "A1": "predicted_bloom_probability"}},
+        "bloom_score_value_policy": {"const": "finite_closed_unit_interval_reject_nan_no_normalization"},
+        "fixed_identity_model_ids": {"const": ["B0"]},
+        "fixed_identity_calibrator_fit_policy": {"const": "no_fit_fixed_transform"},
+        "fixed_identity_calibrator_fit_rows": {"const": 0, "type": "integer"},
+        "fixed_identity_calibrator_refit_year": {"const": null},
+        "fixed_identity_metrics_period": {"const": "calibration_threshold"},
+        "fixed_identity_alert_threshold_period": {"const": "calibration_threshold"},
+        "bloom_method_selection_metric": {"const": "brier"},
+        "bloom_method_tie_tolerance": {"const": 0.001, "type": "number"},
+        "bloom_method_secondary_metric": {"const": "expected_calibration_error"},
+        "bloom_method_secondary_metric_bins": {"const": 10, "type": "integer"},
+        "bloom_method_secondary_metric_binning": {"const": "equal_width"},
+        "bloom_method_simplicity_order": {"const": ["identity", "platt_logistic", "isotonic_regression"]},
+        "bloom_method_selection_rule": {"const": "within_0_001_of_minimum_brier_then_lowest_ECE_then_simplicity_order"},
+        "selected_method_refit_role": {"const": "calibration_threshold"},
+        "alert_threshold_objective": {"const": "maximize_f2"},
+        "alert_threshold_beta": {"const": 2.0, "type": "number"},
+        "alert_threshold_candidate_rule": {"const": "unique_finite_calibrated_probabilities_plus_0_0_5_1"},
+        "alert_threshold_tie_break_order": {"const": ["higher_recall", "higher_precision", "lower_threshold"]},
+        "ordinal_cutpoint_objective": {"const": "maximize_macro_f1"},
+        "ordinal_cutpoint_tie_break_order": {"const": ["lower_ordinal_mae", "lexicographically_smaller_cutpoints"]},
+        "evaluation_refit": {"const": "forbidden"},
+        "conformal_method": {"const": "symmetric_scaled_sigma_split_conformal"},
+        "conformal_scale_floor": {"const": 0.000001, "type": "number"},
+        "conformal_minimum_finite_rows_per_group": {"const": 30, "type": "integer"},
+        "conformal_insufficient_group_policy": {"const": "report_not_available_without_fallback_pooling"},
+        "conformal_quantile_interpolation": {"const": "higher_order_statistic_no_interpolation"}
+      }
+    },
+    "modelMatrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ordered_model_ids", "model_count", "available_calibrable_count", "available_not_applicable_count", "unavailable_count", "records"],
+      "properties": {
+        "ordered_model_ids": {"const": ["B0", "B1", "B2", "F0", "F1", "P0", "P1", "M0", "A0", "A1", "A2"]},
+        "model_count": {"const": 11, "type": "integer"},
+        "available_calibrable_count": {"const": 6, "type": "integer"},
+        "available_not_applicable_count": {"const": 2, "type": "integer"},
+        "unavailable_count": {"const": 3, "type": "integer"},
+        "records": {"type": "array", "items": {"$ref": "#/$defs/modelRecord"}, "minItems": 11, "maxItems": 11}
+      }
+    },
+    "modelRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "availability", "availability_reason", "seed_policy", "calibration_seed_source", "selected_family", "seeds", "horizons_months", "bloom_score_source", "bloom_calibration", "ordinal_calibration", "uncertainty_calibration"],
+      "properties": {
+        "model_id": {"enum": ["B0", "B1", "B2", "F0", "F1", "P0", "P1", "M0", "A0", "A1", "A2"]},
+        "availability": {"enum": ["available", "unavailable"]},
+        "availability_reason": {"type": "string", "minLength": 1},
+        "seed_policy": {"enum": ["deterministic_technical_seed", "exact_five_prespecified_seeds", "no_slots"]},
+        "calibration_seed_source": {"enum": ["technical_seed", "upstream_state_seed", "model_seed", "base_seed", "not_applicable"]},
+        "selected_family": {"type": "boolean"},
+        "seeds": {"type": "array", "items": {"type": "integer"}, "minItems": 0, "maxItems": 5, "uniqueItems": true},
+        "horizons_months": {"const": [1, 2, 3]},
+        "bloom_score_source": {"enum": ["predicted_bloom_probability", "raw_score", "not_applicable", "not_attempted_upstream_model_unavailable"]},
+        "bloom_calibration": {"enum": ["fixed_identity_no_refit", "select_then_refit", "not_applicable", "not_attempted_upstream_model_unavailable"]},
+        "ordinal_calibration": {"enum": ["select_cutpoints", "record_not_available_degenerate_constant_score", "not_applicable", "not_attempted_upstream_model_unavailable"]},
+        "uncertainty_calibration": {"enum": ["symmetric_scaled_sigma_split_conformal", "not_applicable", "not_attempted_upstream_model_unavailable"]}
+      }
+    },
+    "groupMatrix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["horizons_months", "bloom_group_key", "bloom_group_count", "ordinal_group_key", "ordinal_group_count", "ordinal_completed_group_count", "ordinal_unavailable_group_count", "ordinal_unavailable_model_ids", "ordinal_unavailable_status", "ordinal_unavailable_cutpoints", "uncertainty_group_key", "uncertainty_group_count", "uncertainty_model_ids", "q_c_levels", "q_c_record_count", "cross_group_pooling", "complete_target_identity_key", "complete_target_counts_by_target_year_horizon", "complete_target_count", "bloom_groups_with_exact_complete_target_universe", "bloom_group_target_universe_policy"],
+      "properties": {
+        "horizons_months": {"const": [1, 2, 3]},
+        "bloom_group_key": {"const": ["model_id", "model_seed", "horizon_months"]},
+        "bloom_group_count": {"const": 66, "type": "integer"},
+        "ordinal_group_key": {"const": ["model_id", "model_seed", "horizon_months"]},
+        "ordinal_group_count": {"const": 33, "type": "integer"},
+        "ordinal_completed_group_count": {"const": 30, "type": "integer"},
+        "ordinal_unavailable_group_count": {"const": 3, "type": "integer"},
+        "ordinal_unavailable_model_ids": {"const": ["B0"]},
+        "ordinal_unavailable_status": {"const": "not_available_degenerate_constant_score"},
+        "ordinal_unavailable_cutpoints": {"const": null},
+        "uncertainty_group_key": {"const": ["model_id", "model_seed", "horizon_months"]},
+        "uncertainty_group_count": {"const": 30, "type": "integer"},
+        "uncertainty_model_ids": {"const": ["A0", "A1"]},
+        "q_c_levels": {"const": [0.8, 0.9, 0.95]},
+        "q_c_record_count": {"const": 90, "type": "integer"},
+        "cross_group_pooling": {"const": "no_pooling"},
+        "complete_target_identity_key": {"const": ["source_id", "site_id", "origin_year_month", "target_year_month", "horizon_months"]},
+        "complete_target_counts_by_target_year_horizon": {"const": {"2019": {"1": 397, "2": 371, "3": 344}, "2020": {"1": 261, "2": 287, "3": 314}, "2021": {"1": 224, "2": 224, "3": 224}}},
+        "complete_target_count": {"const": 2646, "type": "integer"},
+        "bloom_groups_with_exact_complete_target_universe": {"const": 66, "type": "integer"},
+        "bloom_group_target_universe_policy": {"const": "exact_identity_set_equality_no_partial_groups"}
+      }
+    },
+    "e7TerminalRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["experiment_id", "prelock_status", "historical_blockers_adopted", "historical_e7_blocker_adopted", "supersession_scope", "required_training_rows_per_module", "base_seeds", "sampling_strata", "holdout_group_id_derivation", "temporal_period_derivation", "temporal_period_target_scope", "temporal_period_labels", "expert_anchor_band_target_scope", "expert_anchor_band_boundaries", "expert_anchor_band_labels", "stratum_derivation_evidence", "eligible_rows_by_module", "expected_slot_count", "preflight_module_count_per_slot", "expected_preflight_record_count", "expected_completed_slot_count", "expected_completed_module_fit_count", "new_e7_fit_count", "primary_fit_reuse_count", "primary_4096_hash_rank_reuse_forbidden", "primary_fit_scope", "e7_fit_identity_key", "checkpoint_or_model_write_count", "family80_no_touch", "completed_semantics", "completed_metric_ids", "computational_cost_proxy", "wall_clock_metric_authoritative", "downstream_metrics_status", "downstream_blockers", "expected_resource_failure_record_count", "completed_training_rows_per_module", "resource_failure_training_rows_per_module", "resource_failure_timing", "terminal_statuses", "exact_record_per_required_size", "silent_omission_allowed", "saturation_claim_authorized_if_incomplete", "retain_completed_sizes_without_post_hoc_substitution"],
+      "properties": {
+        "experiment_id": {"const": "E7"},
+        "prelock_status": {"const": "pending_authorized_terminalization"},
+        "historical_blockers_adopted": {"const": [{"path": "configs/closure_v1/development_runtime.yaml", "bytes": 46105, "sha256": "0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d", "git_oid": "5970ab73eedb20f464f804a185a3057daba93ab3", "git_mode": "100644", "e7_learning_curve_status": "blocked_pending_sampling_strata_contract", "e7_learning_curve_sizes_authorized": "not_declared"}, {"path": "configs/closure_v1/anfis_ablation_training_development_runtime.yaml", "bytes": 22694, "sha256": "cf2cec52d9027db895e8859c7ffb321c831b66510132e137759e567b363f6a50", "git_oid": "94f84be4346fd4e01fd52d207b932e21022fc436", "git_mode": "100644", "e7_learning_curve_status": "blocked_for_separate_gate", "e7_learning_curve_sizes_authorized": "not_declared"}, {"path": "configs/closure_v1/anfis_ablation_sequence_development_runtime.yaml", "bytes": 21827, "sha256": "49d1a3f562f2cd68ff65f29c92ac4e028b3ad407f30a9960ea0d29260df7d56b", "git_oid": "f9956fb51a8b0a742831c3400cc9624f4369fe90", "git_mode": "100644", "e7_learning_curve_status": "blocked_for_separate_gate", "e7_learning_curve_sizes_authorized": false}]},
+        "historical_e7_blocker_adopted": {"const": true},
+        "supersession_scope": {"const": "e7_only_additive_authority"},
+        "required_training_rows_per_module": {"const": [4096, 16384, 65536]},
+        "base_seeds": {"const": [1729, 20260612, 20260613, 20260614, 314159]},
+        "sampling_strata": {"const": ["holdout_group_id", "temporal_period", "expert_anchor_band"]},
+        "holdout_group_id_derivation": {"const": "source_id_double_colon_site_id_verified_against_assignment"},
+        "temporal_period_derivation": {"const": "ordered_unique_eligible_month_index_floor_3i_over_n"},
+        "temporal_period_target_scope": {"const": "per_target_module_after_eligibility_filter"},
+        "temporal_period_labels": {"const": ["early", "middle", "late"]},
+        "expert_anchor_band_target_scope": {"const": "per_target_module"},
+        "expert_anchor_band_boundaries": {"const": [0.0, 0.3333333333333333, 0.6666666666666666, 1.0]},
+        "expert_anchor_band_labels": {"const": ["low", "middle", "high"]},
+        "stratum_derivation_evidence": {"const": "boundaries_maps_and_sha256_digests_required"},
+        "eligible_rows_by_module": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ANFIS-N", "ANFIS-F", "ANFIS-T-no-current"],
+          "properties": {"ANFIS-N": {"const": 4757, "type": "integer"}, "ANFIS-F": {"const": 35273, "type": "integer"}, "ANFIS-T-no-current": {"const": 35419, "type": "integer"}}
+        },
+        "expected_slot_count": {"const": 15, "type": "integer"},
+        "preflight_module_count_per_slot": {"const": 3, "type": "integer"},
+        "expected_preflight_record_count": {"const": 45, "type": "integer"},
+        "expected_completed_slot_count": {"const": 5, "type": "integer"},
+        "expected_completed_module_fit_count": {"const": 15, "type": "integer"},
+        "new_e7_fit_count": {"const": 15, "type": "integer"},
+        "primary_fit_reuse_count": {"const": 0, "type": "integer"},
+        "primary_4096_hash_rank_reuse_forbidden": {"const": true},
+        "primary_fit_scope": {"const": "hash_rank_not_reused"},
+        "e7_fit_identity_key": {"const": ["experiment_id", "training_rows_per_module", "base_seed", "module_id"]},
+        "checkpoint_or_model_write_count": {"const": 0, "type": "integer"},
+        "family80_no_touch": {"const": true},
+        "completed_semantics": {"const": "anfis_module_fit_only_not_downstream_ablation"},
+        "completed_metric_ids": {"const": ["expert_anchor_fidelity", "membership_stability", "deterministic_computational_cost_proxy"]},
+        "computational_cost_proxy": {"const": "deterministic_update_count_and_sample_count_no_wall_clock"},
+        "wall_clock_metric_authoritative": {"const": false},
+        "downstream_metrics_status": {"const": "not_estimable_without_separate_temporal_consumers"},
+        "downstream_blockers": {"const": ["P0_model_unavailable", "P1_model_unavailable"]},
+        "expected_resource_failure_record_count": {"const": 10, "type": "integer"},
+        "completed_training_rows_per_module": {"const": [4096]},
+        "resource_failure_training_rows_per_module": {"const": [16384, 65536]},
+        "resource_failure_timing": {"const": "pre_fit_exact_eligibility_check"},
+        "terminal_statuses": {"const": ["completed", "resource_failure_recorded"]},
+        "exact_record_per_required_size": {"const": true},
+        "silent_omission_allowed": {"const": false},
+        "saturation_claim_authorized_if_incomplete": {"const": false},
+        "retain_completed_sizes_without_post_hoc_substitution": {"const": true}
+      }
+    },
+    "outputContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["p_lock_paths", "calibration_paths", "e7_paths", "r_output_count", "prediction_parquet_count", "dvc_pointer_count", "calibration_manifest_written_last", "e7_manifest_written_last", "registration_execution_order", "rerun_policy", "calibration_pre_io_dependency", "e7_pre_io_dependency", "allowed_intermediate_state", "failed_e7_retry_policy", "r_final_required_state", "final_staged_scope_count", "calibration_manifest_last_path", "e7_manifest_last_path", "manifest_last_policy"],
+      "properties": {
+        "p_lock_paths": {"const": ["reports/closure_v1/00_protocol/final_calibration_lock.json", "reports/closure_v1/00_protocol/final_calibration_lock_manifest.json"]},
+        "calibration_paths": {"const": ["reports/closure_v1/03_calibration/calibrator_specs.json", "reports/closure_v1/03_calibration/calibration_metrics.csv", "reports/closure_v1/03_calibration/alert_thresholds.csv", "reports/closure_v1/03_calibration/ordinal_cutpoints.csv", "reports/closure_v1/03_calibration/model_availability.csv", "reports/closure_v1/03_calibration/final_calibration_manifest.json"]},
+        "e7_paths": {"const": ["reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv", "reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json"]},
+        "r_output_count": {"const": 8, "type": "integer"},
+        "prediction_parquet_count": {"const": 0, "type": "integer"},
+        "dvc_pointer_count": {"const": 0, "type": "integer"},
+        "calibration_manifest_written_last": {"const": true},
+        "e7_manifest_written_last": {"const": true},
+        "registration_execution_order": {"const": ["calibration_bundle", "e7_bundle"]},
+        "rerun_policy": {"const": "fail_closed_if_own_bundle_present_or_partial"},
+        "calibration_pre_io_dependency": {"const": "all_eight_r_outputs_absent"},
+        "e7_pre_io_dependency": {"const": "exact_six_complete_canonical_calibration_outputs"},
+        "allowed_intermediate_state": {"const": "calibration_completed_unpublished_e7_absent"},
+        "failed_e7_retry_policy": {"const": "new_audit_and_authority_required"},
+        "r_final_required_state": {"const": "both_bundles_complete_canonical_manifest_last"},
+        "final_staged_scope_count": {"const": 8, "type": "integer"},
+        "calibration_manifest_last_path": {"const": "reports/closure_v1/03_calibration/final_calibration_manifest.json"},
+        "e7_manifest_last_path": {"const": "reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json"},
+        "manifest_last_policy": {"const": "two_independent_atomic_bundles_manifest_last"}
+      }
+    },
+    "companionContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["physical_input_count", "historical_input_count", "output_count", "script_path", "manifest_written_last"],
+      "properties": {
+        "physical_input_count": {"const": 12, "type": "integer"},
+        "historical_input_count": {"const": 0, "type": "integer"},
+        "output_count": {"const": 1, "type": "integer"},
+        "script_path": {"const": "src/experiments/lock_closure_final_calibration.py"},
+        "manifest_written_last": {"const": true}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["git_status_clean", "p_output_present_count", "r_output_present_count", "temporary_present_count", "coordination_present_count", "family_final_count", "selection_pointer_count", "models_dvc_sha256", "outcome_access_log_absent", "holdout_rows_opened", "post_2021_rows_opened", "dvc_commands_run", "scientific_writes_performed", "scientific_authority_record_count", "scientific_payload_binding_count", "scientific_authority_records_sha256", "scientific_payload_bindings_sha256", "base_r_mze_authority", "calibration_protocol", "companion_contract"],
+      "properties": {
+        "git_status_clean": {"const": true},
+        "p_output_present_count": {"const": 0, "type": "integer"},
+        "r_output_present_count": {"const": 0, "type": "integer"},
+        "temporary_present_count": {"const": 0, "type": "integer"},
+        "coordination_present_count": {"const": 0, "type": "integer"},
+        "family_final_count": {"const": 80, "type": "integer"},
+        "selection_pointer_count": {"const": 10, "type": "integer"},
+        "models_dvc_sha256": {"const": "5fbe07e09ddae260b9fa395b8bfaf15a7b71445e3e179e2734bfa4b345964b74"},
+        "outcome_access_log_absent": {"const": true},
+        "holdout_rows_opened": {"const": false},
+        "post_2021_rows_opened": {"const": false},
+        "dvc_commands_run": {"const": false},
+        "scientific_writes_performed": {"const": false},
+        "scientific_authority_record_count": {"const": 66, "type": "integer"},
+        "scientific_payload_binding_count": {"const": 94, "type": "integer"},
+        "scientific_authority_records_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "scientific_payload_bindings_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "base_r_mze_authority": {"$ref": "#/$defs/baseAuthority"},
+        "calibration_protocol": {"type": "object"},
+        "companion_contract": {"$ref": "#/$defs/companionContract"}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "returncode": {"const": 0, "type": "integer"},
+        "stdout_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "stderr_sha256": {"const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"const": 0, "type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "test_count", "skipped_count", "deselected_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}, "minItems": 1},
+        "returncode": {"const": 0, "type": "integer"},
+        "stdout_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "stderr_sha256": {"const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"const": 0, "type": "integer"},
+        "test_count": {"const": 64, "type": "integer"},
+        "skipped_count": {"const": 0, "type": "integer"},
+        "deselected_count": {"const": 0, "type": "integer"}
+      }
+    },
+    "unrunVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "commands_run", "scientific_execution_run", "dvc_commands_run", "outcome_paths_opened"],
+      "properties": {
+        "status": {"const": "not_run_by_payload_builder"},
+        "commands_run": {"const": false},
+        "scientific_execution_run": {"const": false},
+        "dvc_commands_run": {"const": false},
+        "outcome_paths_opened": {"const": false}
+      }
+    },
+    "runVerification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_preflight", "full_type_check", "focused_tests", "poetry_check", "publication_guard", "git_diff_check"],
+      "properties": {
+        "schema_preflight": {"type": "object"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "verification": {
+      "oneOf": [
+        {"$ref": "#/$defs/unrunVerification"},
+        {"$ref": "#/$defs/runVerification"}
+      ]
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["calibration_development_run_authorized", "e7_learning_curve_run_authorized", "holdout_access_authorized", "post_2021_access_authorized", "locked_evaluation_authorized", "outcome_access_authorized", "e0_m_authorized", "e0_u_authorized", "dvc_commands_authorized", "dvc_push_authorized", "git_commit_authorized", "git_push_authorized", "scientific_network_authorized", "effective_in_payload"],
+      "properties": {
+        "calibration_development_run_authorized": {"const": false},
+        "e7_learning_curve_run_authorized": {"const": false},
+        "holdout_access_authorized": {"const": false},
+        "post_2021_access_authorized": {"const": false},
+        "locked_evaluation_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "dvc_push_authorized": {"const": false},
+        "git_commit_authorized": {"const": false},
+        "git_push_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "effective_in_payload": {"const": false}
+      }
+    }
+  }
+}

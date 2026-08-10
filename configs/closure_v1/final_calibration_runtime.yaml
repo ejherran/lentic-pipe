@@ -1,0 +1,344 @@
+schema_version: closure_final_calibration_runtime_v1
+experiment_id: closure_v1
+gate: E0-MCAL
+status: ready_to_lock
+base_commit: 2f46d3e258195315e2473be6cf7d62db22c55bcf
+
+scientific_boundary:
+  source_ids: [wqp]
+  method_selection_period: {start: "2019-01", end: "2019-12"}
+  method_assessment_period: {start: "2020-01", end: "2020-12"}
+  calibration_threshold_period: {start: "2021-01", end: "2021-12"}
+  calibration_period_axis: target_year_month
+  target_identity_join_key: [source_id, site_id, origin_year_month, target_year_month, horizon_months]
+  target_projection_scan_predicate: target_year_month_lte_2021_12_and_origin_year_month_lte_2021_12
+  target_projection_scan_enforcement: same_fd_pyarrow_dataset_scanner_predicate_pushdown_before_materialization
+  target_projection_post_filter_allowed: false
+  raw_label_join_policy: baseline_and_m0_exact_target_identity
+  development_roles: [training, model_selection, calibration_threshold]
+  holdout_locations_allowed: false
+  post_2021_rows_allowed: false
+  locked_evaluation_rows_allowed: false
+  outcome_log_access_allowed: false
+  e0_m_allowed: false
+  e0_u_allowed: false
+  scientific_network_allowed: false
+  dvc_commands_allowed: false
+
+model_matrix:
+  ordered_model_ids: [B0, B1, B2, F0, F1, P0, P1, M0, A0, A1, A2]
+  model_count: 11
+  available_calibrable_count: 6
+  available_not_applicable_count: 2
+  unavailable_count: 3
+  records:
+    - model_id: B0
+      availability: available
+      availability_reason: published_deterministic_baseline
+      seed_policy: deterministic_technical_seed
+      calibration_seed_source: technical_seed
+      selected_family: false
+      seeds: [1729]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: predicted_bloom_probability
+      bloom_calibration: fixed_identity_no_refit
+      ordinal_calibration: record_not_available_degenerate_constant_score
+      uncertainty_calibration: not_applicable
+    - model_id: B1
+      availability: available
+      availability_reason: published_seeded_baseline_family
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: upstream_state_seed
+      selected_family: false
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: predicted_bloom_probability
+      bloom_calibration: select_then_refit
+      ordinal_calibration: select_cutpoints
+      uncertainty_calibration: not_applicable
+    - model_id: B2
+      availability: available
+      availability_reason: published_seeded_baseline_family
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: model_seed
+      selected_family: true
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: predicted_bloom_probability
+      bloom_calibration: select_then_refit
+      ordinal_calibration: select_cutpoints
+      uncertainty_calibration: not_applicable
+    - model_id: F0
+      availability: available
+      availability_reason: published_static_fuzzy_state
+      seed_policy: deterministic_technical_seed
+      calibration_seed_source: not_applicable
+      selected_family: false
+      seeds: [1729]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: not_applicable
+      bloom_calibration: not_applicable
+      ordinal_calibration: not_applicable
+      uncertainty_calibration: not_applicable
+    - model_id: F1
+      availability: available
+      availability_reason: published_exact_five_seed_adaptive_state_family
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: not_applicable
+      selected_family: false
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: not_applicable
+      bloom_calibration: not_applicable
+      ordinal_calibration: not_applicable
+      uncertainty_calibration: not_applicable
+    - model_id: P0
+      availability: unavailable
+      availability_reason: exact_five_slots_model_unavailable_not_attempted
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: not_applicable
+      selected_family: false
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: not_attempted_upstream_model_unavailable
+      bloom_calibration: not_attempted_upstream_model_unavailable
+      ordinal_calibration: not_attempted_upstream_model_unavailable
+      uncertainty_calibration: not_attempted_upstream_model_unavailable
+    - model_id: P1
+      availability: unavailable
+      availability_reason: exact_five_slots_model_unavailable_not_attempted
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: not_applicable
+      selected_family: false
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: not_attempted_upstream_model_unavailable
+      bloom_calibration: not_attempted_upstream_model_unavailable
+      ordinal_calibration: not_attempted_upstream_model_unavailable
+      uncertainty_calibration: not_attempted_upstream_model_unavailable
+    - model_id: M0
+      availability: available
+      availability_reason: published_raw_uncalibrated_mifal_score
+      seed_policy: deterministic_technical_seed
+      calibration_seed_source: technical_seed
+      selected_family: false
+      seeds: [1729]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: raw_score
+      bloom_calibration: select_then_refit
+      ordinal_calibration: not_applicable
+      uncertainty_calibration: not_applicable
+    - model_id: A0
+      availability: available
+      availability_reason: registered_exact_five_seed_anfis_family
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: base_seed
+      selected_family: false
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: predicted_bloom_probability
+      bloom_calibration: select_then_refit
+      ordinal_calibration: not_applicable
+      uncertainty_calibration: symmetric_scaled_sigma_split_conformal
+    - model_id: A1
+      availability: available
+      availability_reason: registered_exact_five_seed_anfis_family
+      seed_policy: exact_five_prespecified_seeds
+      calibration_seed_source: base_seed
+      selected_family: false
+      seeds: [1729, 20260612, 20260613, 20260614, 314159]
+      horizons_months: [1, 2, 3]
+      bloom_score_source: predicted_bloom_probability
+      bloom_calibration: select_then_refit
+      ordinal_calibration: not_applicable
+      uncertainty_calibration: symmetric_scaled_sigma_split_conformal
+    - model_id: A2
+      availability: unavailable
+      availability_reason: model_absent_no_substitute
+      seed_policy: no_slots
+      calibration_seed_source: not_applicable
+      selected_family: false
+      seeds: []
+      horizons_months: [1, 2, 3]
+      bloom_score_source: not_attempted_upstream_model_unavailable
+      bloom_calibration: not_attempted_upstream_model_unavailable
+      ordinal_calibration: not_attempted_upstream_model_unavailable
+      uncertainty_calibration: not_attempted_upstream_model_unavailable
+
+calibration_group_matrix:
+  horizons_months: [1, 2, 3]
+  bloom_group_key: [model_id, model_seed, horizon_months]
+  bloom_group_count: 66
+  ordinal_group_key: [model_id, model_seed, horizon_months]
+  ordinal_group_count: 33
+  ordinal_completed_group_count: 30
+  ordinal_unavailable_group_count: 3
+  ordinal_unavailable_model_ids: [B0]
+  ordinal_unavailable_status: not_available_degenerate_constant_score
+  ordinal_unavailable_cutpoints: null
+  uncertainty_group_key: [model_id, model_seed, horizon_months]
+  uncertainty_group_count: 30
+  uncertainty_model_ids: [A0, A1]
+  q_c_levels: [0.80, 0.90, 0.95]
+  q_c_record_count: 90
+  cross_group_pooling: no_pooling
+  complete_target_identity_key: [source_id, site_id, origin_year_month, target_year_month, horizon_months]
+  complete_target_counts_by_target_year_horizon:
+    "2019": {"1": 397, "2": 371, "3": 344}
+    "2020": {"1": 261, "2": 287, "3": 314}
+    "2021": {"1": 224, "2": 224, "3": 224}
+  complete_target_count: 2646
+  bloom_groups_with_exact_complete_target_universe: 66
+  bloom_group_target_universe_policy: exact_identity_set_equality_no_partial_groups
+
+calibration_protocol:
+  bloom_method_candidates: [identity, platt_logistic, isotonic_regression]
+  bloom_score_source_by_model: {B0: predicted_bloom_probability, B1: predicted_bloom_probability, B2: predicted_bloom_probability, M0: raw_score, A0: predicted_bloom_probability, A1: predicted_bloom_probability}
+  bloom_score_value_policy: finite_closed_unit_interval_reject_nan_no_normalization
+  fixed_identity_model_ids: [B0]
+  fixed_identity_calibrator_fit_policy: no_fit_fixed_transform
+  fixed_identity_calibrator_fit_rows: 0
+  fixed_identity_calibrator_refit_year: null
+  fixed_identity_metrics_period: calibration_threshold
+  fixed_identity_alert_threshold_period: calibration_threshold
+  bloom_method_selection_metric: brier
+  bloom_method_tie_tolerance: 0.001
+  bloom_method_secondary_metric: expected_calibration_error
+  bloom_method_secondary_metric_bins: 10
+  bloom_method_secondary_metric_binning: equal_width
+  bloom_method_simplicity_order: [identity, platt_logistic, isotonic_regression]
+  bloom_method_selection_rule: within_0_001_of_minimum_brier_then_lowest_ECE_then_simplicity_order
+  selected_method_refit_role: calibration_threshold
+  alert_threshold_objective: maximize_f2
+  alert_threshold_beta: 2.0
+  alert_threshold_candidate_rule: unique_finite_calibrated_probabilities_plus_0_0_5_1
+  alert_threshold_tie_break_order: [higher_recall, higher_precision, lower_threshold]
+  ordinal_cutpoint_objective: maximize_macro_f1
+  ordinal_cutpoint_tie_break_order: [lower_ordinal_mae, lexicographically_smaller_cutpoints]
+  evaluation_refit: forbidden
+  conformal_method: symmetric_scaled_sigma_split_conformal
+  conformal_scale_floor: 0.000001  # 1e-6, fixed before calibration
+  conformal_minimum_finite_rows_per_group: 30
+  conformal_insufficient_group_policy: report_not_available_without_fallback_pooling
+  conformal_quantile_interpolation: higher_order_statistic_no_interpolation
+
+e7_terminal_record:
+  experiment_id: E7
+  prelock_status: pending_authorized_terminalization
+  historical_blockers_adopted:
+    - path: configs/closure_v1/development_runtime.yaml
+      bytes: 46105
+      sha256: 0b2588248ee006f7d8e8843291b6a5847201a36fed35422473c9c0aa9492b10d
+      git_oid: 5970ab73eedb20f464f804a185a3057daba93ab3
+      git_mode: "100644"
+      e7_learning_curve_status: blocked_pending_sampling_strata_contract
+      e7_learning_curve_sizes_authorized: not_declared
+    - path: configs/closure_v1/anfis_ablation_training_development_runtime.yaml
+      bytes: 22694
+      sha256: cf2cec52d9027db895e8859c7ffb321c831b66510132e137759e567b363f6a50
+      git_oid: 94f84be4346fd4e01fd52d207b932e21022fc436
+      git_mode: "100644"
+      e7_learning_curve_status: blocked_for_separate_gate
+      e7_learning_curve_sizes_authorized: not_declared
+    - path: configs/closure_v1/anfis_ablation_sequence_development_runtime.yaml
+      bytes: 21827
+      sha256: 49d1a3f562f2cd68ff65f29c92ac4e028b3ad407f30a9960ea0d29260df7d56b
+      git_oid: f9956fb51a8b0a742831c3400cc9624f4369fe90
+      git_mode: "100644"
+      e7_learning_curve_status: blocked_for_separate_gate
+      e7_learning_curve_sizes_authorized: false
+  historical_e7_blocker_adopted: true
+  supersession_scope: e7_only_additive_authority
+  required_training_rows_per_module: [4096, 16384, 65536]
+  base_seeds: [1729, 20260612, 20260613, 20260614, 314159]
+  sampling_strata: [holdout_group_id, temporal_period, expert_anchor_band]
+  holdout_group_id_derivation: source_id_double_colon_site_id_verified_against_assignment
+  temporal_period_derivation: ordered_unique_eligible_month_index_floor_3i_over_n
+  temporal_period_target_scope: per_target_module_after_eligibility_filter
+  temporal_period_labels: [early, middle, late]
+  expert_anchor_band_target_scope: per_target_module
+  expert_anchor_band_boundaries: [0.0, 0.3333333333333333, 0.6666666666666666, 1.0]
+  expert_anchor_band_labels: [low, middle, high]
+  stratum_derivation_evidence: boundaries_maps_and_sha256_digests_required
+  eligible_rows_by_module: {ANFIS-N: 4757, ANFIS-F: 35273, ANFIS-T-no-current: 35419}
+  expected_slot_count: 15
+  preflight_module_count_per_slot: 3
+  expected_preflight_record_count: 45
+  expected_completed_slot_count: 5
+  expected_completed_module_fit_count: 15
+  new_e7_fit_count: 15
+  primary_fit_reuse_count: 0
+  primary_4096_hash_rank_reuse_forbidden: true
+  primary_fit_scope: hash_rank_not_reused
+  e7_fit_identity_key: [experiment_id, training_rows_per_module, base_seed, module_id]
+  checkpoint_or_model_write_count: 0
+  family80_no_touch: true
+  completed_semantics: anfis_module_fit_only_not_downstream_ablation
+  completed_metric_ids: [expert_anchor_fidelity, membership_stability, deterministic_computational_cost_proxy]
+  computational_cost_proxy: deterministic_update_count_and_sample_count_no_wall_clock
+  wall_clock_metric_authoritative: false
+  downstream_metrics_status: not_estimable_without_separate_temporal_consumers
+  downstream_blockers: [P0_model_unavailable, P1_model_unavailable]
+  expected_resource_failure_record_count: 10
+  completed_training_rows_per_module: [4096]
+  resource_failure_training_rows_per_module: [16384, 65536]
+  resource_failure_timing: pre_fit_exact_eligibility_check
+  terminal_statuses: [completed, resource_failure_recorded]
+  exact_record_per_required_size: true
+  silent_omission_allowed: false
+  saturation_claim_authorized_if_incomplete: false
+  retain_completed_sizes_without_post_hoc_substitution: true
+
+outputs:
+  p_lock_paths:
+    - reports/closure_v1/00_protocol/final_calibration_lock.json
+    - reports/closure_v1/00_protocol/final_calibration_lock_manifest.json
+  calibration_paths:
+    - reports/closure_v1/03_calibration/calibrator_specs.json
+    - reports/closure_v1/03_calibration/calibration_metrics.csv
+    - reports/closure_v1/03_calibration/alert_thresholds.csv
+    - reports/closure_v1/03_calibration/ordinal_cutpoints.csv
+    - reports/closure_v1/03_calibration/model_availability.csv
+    - reports/closure_v1/03_calibration/final_calibration_manifest.json
+  e7_paths:
+    - reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv
+    - reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json
+  r_output_count: 8
+  prediction_parquet_count: 0
+  dvc_pointer_count: 0
+  calibration_manifest_written_last: true
+  e7_manifest_written_last: true
+  registration_execution_order: [calibration_bundle, e7_bundle]
+  rerun_policy: fail_closed_if_own_bundle_present_or_partial
+  calibration_pre_io_dependency: all_eight_r_outputs_absent
+  e7_pre_io_dependency: exact_six_complete_canonical_calibration_outputs
+  allowed_intermediate_state: calibration_completed_unpublished_e7_absent
+  failed_e7_retry_policy: new_audit_and_authority_required
+  r_final_required_state: both_bundles_complete_canonical_manifest_last
+  final_staged_scope_count: 8
+
+publication:
+  parent_walk: dirfd_no_follow
+  exclusive_guard: true
+  temporary_sibling: true
+  final_publication: hardlink_no_clobber
+  rollback: owned_inode_only_best_effort_all_outputs
+  lock_manifest_written_last: true
+  regular_mode: "0644"
+  nlink: 1
+
+authorizations:
+  calibration_development_run_authorized_after_p_publication: true
+  e7_learning_curve_run_authorized_after_p_publication: true
+  holdout_access_authorized: false
+  post_2021_access_authorized: false
+  locked_evaluation_authorized: false
+  outcome_access_authorized: false
+  e0_m_authorized: false
+  e0_u_authorized: false
+  dvc_commands_authorized: false
+  dvc_push_authorized: false
+  git_commit_authorized: false
+  git_push_authorized: false
+  scientific_network_authorized: false
+  effective_in_payload: false
