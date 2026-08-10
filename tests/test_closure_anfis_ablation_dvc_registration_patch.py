@@ -18,7 +18,7 @@ from src.experiments import (
     closure_anfis_ablation_dvc_registration_patch as patch,
 )
 from src.experiments import (
-    closure_anfis_ablation_dvc_registration_namespace_patch as mzb_patch,
+    closure_anfis_ablation_dvc_registration_gitignore_patch as mzc_patch,
 )
 from src.experiments import (
     lock_closure_anfis_ablation_dvc_registration_patch as locker,
@@ -202,11 +202,12 @@ def test_patch_identity_and_h_p_r_scopes_are_exact() -> None:
     assert precommit_artifacts.ANFIS_ABLATION_R_MZ_STAGED_SCOPE == expected_r_mz
     assert precommit_artifacts.ANFIS_ABLATION_R_MZA_STAGED_SCOPE == expected_r_mz
     assert precommit_artifacts.ANFIS_ABLATION_R_MZB_STAGED_SCOPE == expected_r_mz
+    assert precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE == expected_r_mz
     assert len(expected_r_mz) == 11
     assert precommit_artifacts.DEFERRED_DVC_ACTIVE_STAGING_GATES == frozenset(
-        {"H-E0-MZB", "P-E0-MZB"}
+        {"H-E0-MZC", "P-E0-MZC"}
     )
-    for gate in ("H-E0-MZB", "P-E0-MZB"):
+    for gate in ("H-E0-MZC", "P-E0-MZC"):
         assert precommit_artifacts.require_active_deferred_dvc_staging_gate(gate) == gate
     for gate in (
         "H-E0-MY",
@@ -215,10 +216,12 @@ def test_patch_identity_and_h_p_r_scopes_are_exact() -> None:
         "P-E0-MZ",
         "H-E0-MZA",
         "P-E0-MZA",
+        "H-E0-MZB",
+        "P-E0-MZB",
     ):
         with pytest.raises(
             precommit_artifacts.DeferredDvcTargetError,
-            match="closed to exact H-E0-MZB/P-E0-MZB",
+            match="closed to exact H-E0-MZC/P-E0-MZC",
         ):
             precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
@@ -417,17 +420,17 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
 
     def load(**kwargs: Any) -> dict[str, Any]:
         observed.append(kwargs)
-        return {"gate": "E0-MZB", "status": "effective_preflight_passed"}
+        return {"gate": "E0-MZC", "status": "effective_preflight_passed"}
 
     monkeypatch.setattr(
-        mzb_patch,
-        "load_effective_anfis_ablation_dvc_registration_namespace_patch_authority",
+        mzc_patch,
+        "load_effective_anfis_ablation_dvc_registration_gitignore_patch_authority",
         load,
     )
     authority = precommit_artifacts._load_effective_anfis_ablation_dvc_registration_authority(
         audit_current_unpublished=False, repo_root=ROOT
     )
-    assert authority == {"gate": "E0-MZB", "status": "effective_preflight_passed"}
+    assert authority == {"gate": "E0-MZC", "status": "effective_preflight_passed"}
     assert observed == [
         {
             "audit_current_unpublished": False,
@@ -450,7 +453,9 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
     ).encode("utf-8")
     Path("models.dvc").write_bytes(baseline_models)
     Path("models.dvc").chmod(0o644)
-    subprocess.run(["git", "add", "models.dvc"], check=True)
+    Path(".gitignore").write_bytes(b"/models\n")
+    Path(".gitignore").chmod(0o644)
+    subprocess.run(["git", "add", ".gitignore", "models.dvc"], check=True)
     subprocess.run(
         [
             "git",
@@ -498,7 +503,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZB_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE),
         ],
         check=True,
     )
@@ -509,7 +514,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
         capture_output=True,
         text=True,
     ).stdout.splitlines() == sorted(
-        precommit_artifacts.ANFIS_ABLATION_R_MZB_STAGED_SCOPE
+            precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE
     )
 
     synthetic_failure = RuntimeError("post-git-add failure")
@@ -528,7 +533,7 @@ def test_registration_helper_cli_and_lazy_authority_loader_are_exact(
             "ls-files",
             "-s",
             "--",
-            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZB_STAGED_SCOPE),
+            *sorted(precommit_artifacts.ANFIS_ABLATION_R_MZC_STAGED_SCOPE),
         ],
         check=True,
         capture_output=True,

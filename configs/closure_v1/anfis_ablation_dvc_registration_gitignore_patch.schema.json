@@ -1,0 +1,1095 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure_anfis_ablation_dvc_registration_gitignore_patch.schema.json",
+  "title": "Closure V1 E0-MZC ANFIS ablation DVC registration gitignore patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "status",
+    "gate",
+    "created_at_utc",
+    "repository",
+    "h_patch",
+    "base_mzb_authority",
+    "historical_h_mzb",
+    "gitignore_correction",
+    "artifact_inventory",
+    "completed_family",
+    "models_owner_transition",
+    "registration_plan",
+    "companion_contract",
+    "prelock",
+    "verification",
+    "authorizations",
+    "seals"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "closure_anfis_ablation_dvc_registration_gitignore_patch_lock_v1"
+    },
+    "status": {"const": "locked_unpublished"},
+    "gate": {"const": "E0-MZC"},
+    "created_at_utc": {"type": "string"},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "base_mzb_authority": {"$ref": "#/$defs/baseMzbAuthority"},
+    "historical_h_mzb": {"$ref": "#/$defs/historicalHMzb"},
+    "gitignore_correction": {"$ref": "#/$defs/gitignoreCorrection"},
+    "artifact_inventory": {"$ref": "#/$defs/artifactInventory"},
+    "completed_family": {"$ref": "#/$defs/completedFamily"},
+    "models_owner_transition": {"$ref": "#/$defs/modelsOwnerTransition"},
+    "registration_plan": {"$ref": "#/$defs/registrationPlan"},
+    "companion_contract": {"$ref": "#/$defs/companionContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"},
+    "seals": {"$ref": "#/$defs/seals"}
+  },
+  "$defs": {
+    "sha1": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "md5": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+    "path": {
+      "type": "string",
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.(?:/|$)).+$"
+    },
+    "fileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256"],
+      "properties": {
+        "role": {"type": "string"},
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "historicalFileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "path",
+        "bytes",
+        "sha256",
+        "commit",
+        "hash_source",
+        "current_bytes_required_to_match_historical"
+      ],
+      "properties": {
+        "role": {"type": "string"},
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "commit": {"$ref": "#/$defs/sha1"},
+        "hash_source": {"const": "git_blob_at_commit"},
+        "current_bytes_required_to_match_historical": {"const": false}
+      }
+    },
+    "scope6m5a": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted"],
+      "properties": {
+        "added": {"type": "integer", "const": 5},
+        "modified": {"type": "integer", "const": 6},
+        "deleted": {"type": "integer", "const": 0}
+      }
+    },
+    "scope8m5a": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted"],
+      "properties": {
+        "added": {"type": "integer", "const": 5},
+        "modified": {"type": "integer", "const": 8},
+        "deleted": {"type": "integer", "const": 0}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "branch",
+        "head",
+        "parent",
+        "tracking_head",
+        "remote_head",
+        "remote_verification_mode",
+        "worktree_scope"
+      ],
+      "properties": {
+        "branch": {"const": "main"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "parent": {"const": "d202dead382fb42f9388e2a280240eaf59030ced"},
+        "tracking_head": {"$ref": "#/$defs/sha1"},
+        "remote_head": {"$ref": "#/$defs/sha1"},
+        "remote_verification_mode": {"const": "live_remote_main_verified"},
+        "worktree_scope": {"const": "clean_all_50_light_outputs_tracked"}
+      }
+    },
+    "componentModes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        ".gitignore",
+        "configs/closure_v1/anfis_ablation_dvc_registration_gitignore_patch.schema.json",
+        "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_GITIGNORE_PATCH.md",
+        "src/data/prepare_commit_artifacts.py",
+        "src/experiments/closure_anfis_ablation_dvc_registration_gitignore_patch.py",
+        "src/experiments/lock_closure_anfis_ablation_dvc_registration_gitignore_patch.py",
+        "tests/test_closure_anfis_ablation_dvc_registration_gitignore_patch.py",
+        "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py",
+        "tests/test_closure_anfis_ablation_dvc_registration_patch.py",
+        "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py",
+        "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py",
+        "tests/test_closure_anfis_ablation_model_publication_patch.py",
+        "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py"
+      ],
+      "properties": {
+        ".gitignore": {"const": "100644"},
+        "configs/closure_v1/anfis_ablation_dvc_registration_gitignore_patch.schema.json": {"const": "100644"},
+        "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_GITIGNORE_PATCH.md": {"const": "100644"},
+        "src/data/prepare_commit_artifacts.py": {"const": "100755"},
+        "src/experiments/closure_anfis_ablation_dvc_registration_gitignore_patch.py": {"const": "100644"},
+        "src/experiments/lock_closure_anfis_ablation_dvc_registration_gitignore_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_dvc_registration_gitignore_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_dvc_registration_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_model_publication_patch.py": {"const": "100644"},
+        "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py": {"const": "100644"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_commit",
+        "head",
+        "parent",
+        "component_count",
+        "components",
+        "components_sha256",
+        "components_git_modes",
+        "scope"
+      ],
+      "properties": {
+        "base_commit": {"const": "d202dead382fb42f9388e2a280240eaf59030ced"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "parent": {"const": "d202dead382fb42f9388e2a280240eaf59030ced"},
+        "component_count": {"type": "integer", "const": 13},
+        "components": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"},
+        "components_git_modes": {"$ref": "#/$defs/componentModes"},
+        "scope": {"$ref": "#/$defs/scope8m5a"}
+      }
+    },
+    "baseMzbAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "p_head",
+        "h_head",
+        "lock",
+        "companion",
+        "historical_inputs",
+        "publication_reconstructed_from_git",
+        "effective_loader_called"
+      ],
+      "properties": {
+        "gate": {"const": "E0-MZB"},
+        "p_head": {"const": "d202dead382fb42f9388e2a280240eaf59030ced"},
+        "h_head": {"const": "233e9d4b89f8bcc58742c0d95c51ea2ec3e5049d"},
+        "lock": {"$ref": "#/$defs/fileRecord"},
+        "companion": {"$ref": "#/$defs/fileRecord"},
+        "historical_inputs": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/historicalFileRecord"}
+        },
+        "publication_reconstructed_from_git": {"const": true},
+        "effective_loader_called": {"const": false}
+      }
+    },
+    "historicalHMzb": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "head",
+        "parent",
+        "scope",
+        "paths",
+        "preserved_component_count",
+        "preserved_components",
+        "preserved_components_sha256",
+        "superseded_component_count",
+        "superseded_components",
+        "superseded_components_sha256"
+      ],
+      "properties": {
+        "gate": {"const": "E0-MZB"},
+        "head": {"const": "233e9d4b89f8bcc58742c0d95c51ea2ec3e5049d"},
+        "parent": {"const": "b1f346f7191349901635fa7fa52807ea7031c39c"},
+        "scope": {"$ref": "#/$defs/scope6m5a"},
+        "paths": {"type": "array", "items": {"$ref": "#/$defs/path"}},
+        "preserved_component_count": {"type": "integer", "const": 4},
+        "preserved_components": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "preserved_components_sha256": {"$ref": "#/$defs/sha256"},
+        "superseded_component_count": {"type": "integer", "const": 7},
+        "superseded_components": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/historicalFileRecord"}
+        },
+        "superseded_components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "gitignoreCorrection": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "blocked_gate",
+        "published_p_mzb_head",
+        "status",
+        "registration_attempted",
+        "dvc_add_command_count",
+        "completed_target_count",
+        "models_add_command_completed",
+        "last_target",
+        "pointer_count_at_failure",
+        "models_dvc_registered_at_failure",
+        "failure_phase",
+        "root_cause",
+        "rollback_owned_state_completed",
+        "rollback_completed_except_gitignore",
+        "rollback_error",
+        "residual_git_status",
+        "base_gitignore",
+        "adopted_gitignore",
+        "base_git_oid",
+        "adopted_git_oid",
+        "dvc_ignore_entry",
+        "dvc_ignore_suffix",
+        "dvc_ignore_entry_occurrences",
+        "exact_base_plus_suffix",
+        "git_mode",
+        "physical_mode",
+        "physical_nlink",
+        "gitignore_in_registration_scope",
+        "gitignore_must_remain_untouched",
+        "final_pointer_count",
+        "final_models_dvc_sha256",
+        "final_git_index_clean",
+        "family_records_sha256",
+        "family_physical_identity_restored",
+        "dvc_push_run",
+        "local_dvc_cache_may_contain_registration_objects",
+        "local_dvc_cache_authoritative",
+        "local_dvc_cache_absence_required",
+        "local_dvc_cache_cleanup_authorized",
+        "rollback_scope_excludes_local_dvc_cache"
+      ],
+      "properties": {
+        "blocked_gate": {"const": "R-E0-MZB"},
+        "published_p_mzb_head": {"const": "d202dead382fb42f9388e2a280240eaf59030ced"},
+        "status": {"const": "adopted_exact_unowned_gitignore_residue"},
+        "registration_attempted": {"const": true},
+        "dvc_add_command_count": {"type": "integer", "const": 11},
+        "completed_target_count": {"type": "integer", "const": 10},
+        "models_add_command_completed": {"const": true},
+        "last_target": {"const": "models"},
+        "pointer_count_at_failure": {"type": "integer", "const": 10},
+        "models_dvc_registered_at_failure": {"const": true},
+        "failure_phase": {"const": "post_models_add_git_scope_validation"},
+        "root_cause": {"const": "dvc_add_models_appended_missing_root_gitignore_entry"},
+        "rollback_owned_state_completed": {"const": true},
+        "rollback_completed_except_gitignore": {"const": true},
+        "rollback_error": {
+          "const": "E0-MZB registration rollback could not be completed safely"
+        },
+        "residual_git_status": {
+          "type": "array",
+          "const": [" M .gitignore"],
+          "items": {"const": " M .gitignore"}
+        },
+        "base_gitignore": {"$ref": "#/$defs/historicalFileRecord"},
+        "adopted_gitignore": {"$ref": "#/$defs/fileRecord"},
+        "base_git_oid": {"const": "04f1ec817111eb3bc617c5392380fcaa7f449d3d"},
+        "adopted_git_oid": {"const": "8a9ff4adac268b770f93ab7333beaf3029745429"},
+        "dvc_ignore_entry": {"const": "/models"},
+        "dvc_ignore_suffix": {"const": "/models\n"},
+        "dvc_ignore_entry_occurrences": {"type": "integer", "const": 1},
+        "exact_base_plus_suffix": {"const": true},
+        "git_mode": {"const": "100644"},
+        "physical_mode": {"const": "0644"},
+        "physical_nlink": {"type": "integer", "const": 1},
+        "gitignore_in_registration_scope": {"const": false},
+        "gitignore_must_remain_untouched": {"const": true},
+        "final_pointer_count": {"type": "integer", "const": 0},
+        "final_models_dvc_sha256": {
+          "const": "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"
+        },
+        "final_git_index_clean": {"const": true},
+        "family_records_sha256": {
+          "const": "e625add8f8af1746f7deda9ff13a84a4d4f4c27b47e3b6312922db419508dd8e"
+        },
+        "family_physical_identity_restored": {"const": true},
+        "dvc_push_run": {"const": false},
+        "local_dvc_cache_may_contain_registration_objects": {"const": true},
+        "local_dvc_cache_authoritative": {"const": false},
+        "local_dvc_cache_absence_required": {"const": false},
+        "local_dvc_cache_cleanup_authorized": {"const": false},
+        "rollback_scope_excludes_local_dvc_cache": {"const": true}
+      }
+    },
+    "registrationArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "artifact_id",
+        "path",
+        "type",
+        "source_id",
+        "model_id",
+        "base_seed",
+        "dvc",
+        "github_policy"
+      ],
+      "properties": {
+        "artifact_id": {"type": "string"},
+        "path": {"$ref": "#/$defs/path"},
+        "type": {"const": "closure_anfis_ablation_selection_predictions"},
+        "source_id": {"const": "wqp"},
+        "model_id": {"enum": ["A0", "A1"]},
+        "base_seed": {
+          "type": "integer",
+          "enum": [1729, 20260612, 20260613, 20260614, 314159]
+        },
+        "dvc": {"const": true},
+        "github_policy": {
+          "const": "pointer_only_keep_manifest_and_lightweight_reports_in_git"
+        }
+      }
+    },
+    "artifactInventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "overlay",
+        "general_artifact_count",
+        "registration_artifact_count",
+        "registration_artifacts",
+        "registration_artifacts_sha256",
+        "separate_top_level_registration_inventory"
+      ],
+      "properties": {
+        "overlay": {"$ref": "#/$defs/fileRecord"},
+        "general_artifact_count": {"type": "integer", "const": 23},
+        "registration_artifact_count": {"type": "integer", "const": 10},
+        "registration_artifacts": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/registrationArtifact"}
+        },
+        "registration_artifacts_sha256": {"$ref": "#/$defs/sha256"},
+        "separate_top_level_registration_inventory": {"const": true}
+      }
+    },
+    "slot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["model_id", "base_seed"],
+      "properties": {
+        "model_id": {"enum": ["A0", "A1"]},
+        "base_seed": {
+          "type": "integer",
+          "enum": [1729, 20260612, 20260613, 20260614, 314159]
+        }
+      }
+    },
+    "completedFamily": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "slot_count",
+        "final_count",
+        "light_final_count",
+        "tracked_light_count",
+        "untracked_light_count",
+        "heavy_final_count",
+        "records",
+        "records_sha256",
+        "ordered_slots",
+        "role_order",
+        "manifest_last_verified"
+      ],
+      "properties": {
+        "slot_count": {"type": "integer", "const": 10},
+        "final_count": {"type": "integer", "const": 80},
+        "light_final_count": {"type": "integer", "const": 50},
+        "tracked_light_count": {"type": "integer", "const": 50},
+        "untracked_light_count": {"type": "integer", "const": 0},
+        "heavy_final_count": {"type": "integer", "const": 30},
+        "records": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/fileRecord"}
+        },
+        "records_sha256": {
+          "const": "e625add8f8af1746f7deda9ff13a84a4d4f4c27b47e3b6312922db419508dd8e"
+        },
+        "ordered_slots": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/slot"},
+          "const": [
+            {"model_id": "A0", "base_seed": 1729},
+            {"model_id": "A1", "base_seed": 1729},
+            {"model_id": "A0", "base_seed": 20260612},
+            {"model_id": "A1", "base_seed": 20260612},
+            {"model_id": "A0", "base_seed": 20260613},
+            {"model_id": "A1", "base_seed": 20260613},
+            {"model_id": "A0", "base_seed": 20260614},
+            {"model_id": "A1", "base_seed": 20260614},
+            {"model_id": "A0", "base_seed": 314159},
+            {"model_id": "A1", "base_seed": 314159}
+          ]
+        },
+        "role_order": {
+          "const": [
+            "model",
+            "checkpoint",
+            "preprocessor",
+            "training_curve",
+            "selection_predictions",
+            "selection_metrics",
+            "report",
+            "manifest"
+          ]
+        },
+        "manifest_last_verified": {"const": true}
+      }
+    },
+    "modelsOwnerBefore": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "path",
+        "bytes",
+        "sha256",
+        "directory_md5",
+        "size",
+        "nfiles"
+      ],
+      "properties": {
+        "role": {"const": "models_dvc_owner_before_registration"},
+        "path": {"const": "models.dvc"},
+        "bytes": {"type": "integer", "const": 109},
+        "sha256": {"const": "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"},
+        "directory_md5": {"const": "fc60851634c1345cc5dc2c9169be9e1c"},
+        "size": {"type": "integer", "const": 124717666},
+        "nfiles": {"type": "integer", "const": 248}
+      }
+    },
+    "modelsOwnerAfter": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "path",
+        "bytes",
+        "sha256",
+        "directory_md5",
+        "size",
+        "nfiles"
+      ],
+      "properties": {
+        "role": {"const": "models_dvc_owner_after_registration"},
+        "path": {"const": "models.dvc"},
+        "bytes": {"type": "integer", "const": 109},
+        "sha256": {"const": "5fbe07e09ddae260b9fa395b8bfaf15a7b71445e3e179e2734bfa4b345964b74"},
+        "directory_md5": {"const": "6b8d7c0a8efcd8de2888d684a0cb285b"},
+        "size": {"type": "integer", "const": 127680846},
+        "nfiles": {"type": "integer", "const": 268}
+      }
+    },
+    "modelsOwnerTransition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "before",
+        "added_model_file_count",
+        "added_model_bytes",
+        "after",
+        "strictly_additive"
+      ],
+      "properties": {
+        "before": {"$ref": "#/$defs/modelsOwnerBefore"},
+        "added_model_file_count": {"type": "integer", "const": 20},
+        "added_model_bytes": {"type": "integer", "const": 2963180},
+        "after": {"$ref": "#/$defs/modelsOwnerAfter"},
+        "strictly_additive": {"const": true}
+      }
+    },
+    "pointerRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "path",
+        "bytes",
+        "sha256",
+        "payload_path",
+        "payload_md5"
+      ],
+      "properties": {
+        "role": {"const": "selection_predictions_dvc_pointer"},
+        "path": {"$ref": "#/$defs/path"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "payload_path": {"$ref": "#/$defs/path"},
+        "payload_md5": {"$ref": "#/$defs/md5"}
+      }
+    },
+    "expectedRegistration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pointer_count",
+        "pointers",
+        "pointers_sha256",
+        "models_dvc"
+      ],
+      "properties": {
+        "pointer_count": {"type": "integer", "const": 10},
+        "pointers": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/pointerRecord"}
+        },
+        "pointers_sha256": {"$ref": "#/$defs/sha256"},
+        "models_dvc": {"$ref": "#/$defs/modelsOwnerAfter"}
+      }
+    },
+    "registrationGitScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted", "path_count"],
+      "properties": {
+        "added": {"type": "integer", "const": 10},
+        "modified": {"type": "integer", "const": 1},
+        "deleted": {"type": "integer", "const": 0},
+        "path_count": {"type": "integer", "const": 11}
+      }
+    },
+    "dvcConfiguration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repository_config",
+        "local_config",
+        "cache_type",
+        "no_relink_required",
+        "local_cache_override_absent",
+        "autostage_override_absent"
+      ],
+      "properties": {
+        "repository_config": {"$ref": "#/$defs/fileRecord"},
+        "local_config": {"$ref": "#/$defs/fileRecord"},
+        "cache_type": {"const": "reflink,hardlink,copy"},
+        "no_relink_required": {"const": true},
+        "local_cache_override_absent": {"const": true},
+        "autostage_override_absent": {"const": true}
+      }
+    },
+    "missingPointerValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "count",
+        "unique_count",
+        "set_exact",
+        "discovery_order",
+        "canonical_execution_order"
+      ],
+      "properties": {
+        "count": {"type": "integer", "const": 10},
+        "unique_count": {"type": "integer", "const": 10},
+        "set_exact": {"const": true},
+        "discovery_order": {"const": "lexical_path"},
+        "canonical_execution_order": {
+          "const": "alternating_a0_a1_within_seed"
+        }
+      }
+    },
+    "inProgressNamespaceValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payload_count",
+        "public_pointer_counts",
+        "transaction_pointer_counts",
+        "tree_policy",
+        "pointer_prefix_order",
+        "transaction_guard_required",
+        "transaction_pointer_ownership_required",
+        "nonprefix_entries_rejected"
+      ],
+      "properties": {
+        "payload_count": {"type": "integer", "const": 10},
+        "public_pointer_counts": {"const": [0, 10]},
+        "transaction_pointer_counts": {
+          "const": [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+        },
+        "tree_policy": {
+          "const": "exact_ten_payloads_plus_canonical_pointer_prefix"
+        },
+        "pointer_prefix_order": {
+          "const": "alternating_a0_a1_within_seed"
+        },
+        "transaction_guard_required": {"const": true},
+        "transaction_pointer_ownership_required": {"const": true},
+        "nonprefix_entries_rejected": {"const": true}
+      }
+    },
+    "gitignoreInvariance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "dvc_ignore_entry",
+        "bytes",
+        "sha256",
+        "git_oid",
+        "git_mode",
+        "physical_mode",
+        "nlink",
+        "entry_occurrence_count",
+        "entry_preexisting_before_dvc",
+        "scmrepo_ignore_result",
+        "transaction_record_required",
+        "must_remain_byte_and_identity_exact",
+        "staged_in_registration"
+      ],
+      "properties": {
+        "path": {"const": ".gitignore"},
+        "dvc_ignore_entry": {"const": "/models"},
+        "bytes": {"type": "integer", "const": 6630},
+        "sha256": {
+          "const": "406c174a073b9b41d610e1c434e94f4ab37b601dedd02b61cb8542bcc0eb7f52"
+        },
+        "git_oid": {"const": "8a9ff4adac268b770f93ab7333beaf3029745429"},
+        "git_mode": {"const": "100644"},
+        "physical_mode": {"const": "0644"},
+        "nlink": {"type": "integer", "const": 1},
+        "entry_occurrence_count": {"type": "integer", "const": 1},
+        "entry_preexisting_before_dvc": {"const": true},
+        "scmrepo_ignore_result": {"const": "already_ignored_no_write"},
+        "transaction_record_required": {"const": true},
+        "must_remain_byte_and_identity_exact": {"const": true},
+        "staged_in_registration": {"const": false}
+      }
+    },
+    "registrationPlan": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "payload_target_count",
+        "payload_targets",
+        "dvc_add_commands",
+        "missing_pointer_validation",
+        "in_progress_namespace_validation",
+        "gitignore_invariance",
+        "dvc_configuration",
+        "selection_payload_count",
+        "selection_pointer_count",
+        "expected_registration",
+        "registration_git_scope",
+        "light_report_addition_count",
+        "dvc_add_via_publication_assistant_only",
+        "dvc_push_separate"
+      ],
+      "properties": {
+        "payload_target_count": {"type": "integer", "const": 11},
+        "payload_targets": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "dvc_add_commands": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {"type": "string"}
+          }
+        },
+        "missing_pointer_validation": {
+          "$ref": "#/$defs/missingPointerValidation"
+        },
+        "in_progress_namespace_validation": {
+          "$ref": "#/$defs/inProgressNamespaceValidation"
+        },
+        "gitignore_invariance": {"$ref": "#/$defs/gitignoreInvariance"},
+        "dvc_configuration": {"$ref": "#/$defs/dvcConfiguration"},
+        "selection_payload_count": {"type": "integer", "const": 10},
+        "selection_pointer_count": {"type": "integer", "const": 10},
+        "expected_registration": {"$ref": "#/$defs/expectedRegistration"},
+        "registration_git_scope": {"$ref": "#/$defs/registrationGitScope"},
+        "light_report_addition_count": {"type": "integer", "const": 0},
+        "dvc_add_via_publication_assistant_only": {"const": true},
+        "dvc_push_separate": {"const": true}
+      }
+    },
+    "companionContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "physical_input_count",
+        "historical_input_count",
+        "output_count",
+        "script_path",
+        "physical_inputs_sha256",
+        "historical_inputs_sha256",
+        "family_finals_in_companion_inputs",
+        "family_finals_sealed_in_lock",
+        "manifest_written_last"
+      ],
+      "properties": {
+        "physical_input_count": {"type": "integer", "const": 19},
+        "historical_input_count": {"type": "integer", "const": 26},
+        "output_count": {"type": "integer", "const": 1},
+        "script_path": {
+          "const": "src/experiments/lock_closure_anfis_ablation_dvc_registration_gitignore_patch.py"
+        },
+        "physical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "historical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "family_finals_in_companion_inputs": {"const": false},
+        "family_finals_sealed_in_lock": {"const": true},
+        "manifest_written_last": {"const": true}
+      }
+    },
+    "scientificBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "e0_m_paths_absent",
+        "outcome_access_log_absent",
+        "calibration_outputs_absent",
+        "evaluation_outputs_absent"
+      ],
+      "properties": {
+        "e0_m_paths_absent": {"const": true},
+        "outcome_access_log_absent": {"const": true},
+        "calibration_outputs_absent": {"const": true},
+        "evaluation_outputs_absent": {"const": true}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete_slot_count",
+        "family_final_count",
+        "family_records_sha256",
+        "untracked_light_count",
+        "ignored_heavy_count",
+        "selection_pointer_present_count",
+        "models_dvc_before_sha256",
+        "general_inventory_count",
+        "registration_inventory_count",
+        "scientific_boundaries",
+        "dvc_commands_run",
+        "outcome_paths_opened",
+        "writes_performed"
+      ],
+      "properties": {
+        "complete_slot_count": {"type": "integer", "const": 10},
+        "family_final_count": {"type": "integer", "const": 80},
+        "family_records_sha256": {
+          "const": "e625add8f8af1746f7deda9ff13a84a4d4f4c27b47e3b6312922db419508dd8e"
+        },
+        "untracked_light_count": {"type": "integer", "const": 0},
+        "ignored_heavy_count": {"type": "integer", "const": 30},
+        "selection_pointer_present_count": {"type": "integer", "const": 0},
+        "models_dvc_before_sha256": {
+          "const": "fcb93f78cc3e60c1c7f5bcc94a1765080358e0a5176880f1efa6245fa5365e5d"
+        },
+        "general_inventory_count": {"type": "integer", "const": 23},
+        "registration_inventory_count": {"type": "integer", "const": 10},
+        "scientific_boundaries": {"$ref": "#/$defs/scientificBoundaries"},
+        "dvc_commands_run": {"const": false},
+        "outcome_paths_opened": {"const": false},
+        "writes_performed": {"const": false}
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_path",
+        "canonical_schema_bytes",
+        "canonical_schema_sha256",
+        "supported_subset_verified",
+        "unsupported_semantic_keywords"
+      ],
+      "properties": {
+        "schema_path": {
+          "const": "configs/closure_v1/anfis_ablation_dvc_registration_gitignore_patch.schema.json"
+        },
+        "canonical_schema_bytes": {"type": "integer"},
+        "canonical_schema_sha256": {"$ref": "#/$defs/sha256"},
+        "supported_subset_verified": {"const": true},
+        "unsupported_semantic_keywords": {"const": []}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"type": "integer", "const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedTests": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "stdout_text",
+        "test_count",
+        "warnings",
+        "skipped",
+        "deselected"
+      ],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"type": "integer", "const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "stdout_text": {"type": "string"},
+        "test_count": {"type": "integer", "const": 180},
+        "warnings": {"type": "integer", "const": 0},
+        "skipped": {"type": "integer", "const": 0},
+        "deselected": {"type": "integer", "const": 0}
+      }
+    },
+    "familyAudit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "slot_count",
+        "ordered_slots",
+        "dvc_command_executed",
+        "future_outcomes_accessed",
+        "writes_performed"
+      ],
+      "properties": {
+        "status": {"const": "passed"},
+        "slot_count": {"type": "integer", "const": 10},
+        "ordered_slots": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/slot"},
+          "const": [
+            {"model_id": "A0", "base_seed": 1729},
+            {"model_id": "A1", "base_seed": 1729},
+            {"model_id": "A0", "base_seed": 20260612},
+            {"model_id": "A1", "base_seed": 20260612},
+            {"model_id": "A0", "base_seed": 20260613},
+            {"model_id": "A1", "base_seed": 20260613},
+            {"model_id": "A0", "base_seed": 20260614},
+            {"model_id": "A1", "base_seed": 20260614},
+            {"model_id": "A0", "base_seed": 314159},
+            {"model_id": "A1", "base_seed": 314159}
+          ]
+        },
+        "dvc_command_executed": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "writes_performed": {"const": false}
+      }
+    },
+    "executionBoundaries": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dvc_commands_run",
+        "model_fit_run",
+        "calibration_targets_read",
+        "evaluation_run",
+        "e0_m_run",
+        "e0_u_run",
+        "outcome_paths_opened",
+        "scientific_network_run"
+        ,"pytest_environment"
+      ],
+      "properties": {
+        "dvc_commands_run": {"const": false},
+        "model_fit_run": {"const": false},
+        "calibration_targets_read": {"const": false},
+        "evaluation_run": {"const": false},
+        "e0_m_run": {"const": false},
+        "e0_u_run": {"const": false},
+        "outcome_paths_opened": {"const": false},
+        "scientific_network_run": {"const": false},
+        "pytest_environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "PYTEST_ADDOPTS",
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD",
+            "PYTEST_PLUGINS",
+            "PY_COLORS"
+          ],
+          "properties": {
+            "PYTEST_ADDOPTS": {"const": ""},
+            "PYTEST_DISABLE_PLUGIN_AUTOLOAD": {"const": "1"},
+            "PYTEST_PLUGINS": {"const": ""},
+            "PY_COLORS": {"const": "0"}
+          }
+        }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_preflight",
+        "type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "diff_check",
+        "family_semantic_audit",
+        "execution_boundaries"
+      ],
+      "properties": {
+        "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+        "type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedTests"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "diff_check": {"$ref": "#/$defs/commandEvidence"},
+        "family_semantic_audit": {"$ref": "#/$defs/familyAudit"},
+        "execution_boundaries": {"$ref": "#/$defs/executionBoundaries"}
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "dvc_add_models_and_selection_predictions_authorized",
+        "dvc_push_authorized",
+        "git_commit_authorized",
+        "git_push_authorized",
+        "model_fit_authorized",
+        "model_replay_or_replacement_authorized",
+        "calibration_authorized",
+        "calibration_target_access_authorized",
+        "evaluation_authorized",
+        "e0_m_authorized",
+        "e0_u_authorized",
+        "outcome_access_authorized",
+        "scientific_network_authorized"
+      ],
+      "properties": {
+        "dvc_add_models_and_selection_predictions_authorized": {"const": false},
+        "dvc_push_authorized": {"const": false},
+        "git_commit_authorized": {"const": false},
+        "git_push_authorized": {"const": false},
+        "model_fit_authorized": {"const": false},
+        "model_replay_or_replacement_authorized": {"const": false},
+        "calibration_authorized": {"const": false},
+        "calibration_target_access_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false}
+      }
+    },
+    "seals": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "complete_ten_slot_family_required",
+        "exact_eighty_finals_required",
+        "exact_ten_selection_pointers_absent_at_lock",
+        "models_dvc_base_pointer_unchanged_at_lock",
+        "registration_is_administrative_only",
+        "registration_target_set_closed",
+        "dvc_add_no_relink_required",
+        "dvc_config_isolation_required",
+        "registration_requires_published_p_mzb",
+        "published_p_mzb_reconstructed",
+        "historical_h_mzb_reconstructed",
+        "blocked_r_mzb_attempt_rolled_back",
+        "blocked_r_mzb_gitignore_residue_adopted",
+        "dvc_models_ignore_entry_exactly_once",
+        "gitignore_must_remain_untouched_during_registration",
+        "local_dvc_cache_is_not_authority",
+        "transaction_prefix_namespace_is_exact",
+        "missing_pointer_count_unique_set_exact",
+        "lexical_discovery_separate_from_canonical_execution",
+        "all_fifty_light_outputs_already_tracked",
+        "h_p_run_no_dvc_commands",
+        "h_p_run_no_model_fit",
+        "calibration_and_evaluation_closed",
+        "e0_m_and_e0_u_closed",
+        "outcomes_closed",
+        "manifest_written_last"
+      ],
+      "properties": {
+        "complete_ten_slot_family_required": {"const": true},
+        "exact_eighty_finals_required": {"const": true},
+        "exact_ten_selection_pointers_absent_at_lock": {"const": true},
+        "models_dvc_base_pointer_unchanged_at_lock": {"const": true},
+        "registration_is_administrative_only": {"const": true},
+        "registration_target_set_closed": {"const": true},
+        "dvc_add_no_relink_required": {"const": true},
+        "dvc_config_isolation_required": {"const": true},
+        "registration_requires_published_p_mzb": {"const": true},
+        "published_p_mzb_reconstructed": {"const": true},
+        "historical_h_mzb_reconstructed": {"const": true},
+        "blocked_r_mzb_attempt_rolled_back": {"const": true},
+        "blocked_r_mzb_gitignore_residue_adopted": {"const": true},
+        "dvc_models_ignore_entry_exactly_once": {"const": true},
+        "gitignore_must_remain_untouched_during_registration": {"const": true},
+        "local_dvc_cache_is_not_authority": {"const": true},
+        "transaction_prefix_namespace_is_exact": {"const": true},
+        "missing_pointer_count_unique_set_exact": {"const": true},
+        "lexical_discovery_separate_from_canonical_execution": {"const": true},
+        "all_fifty_light_outputs_already_tracked": {"const": true},
+        "h_p_run_no_dvc_commands": {"const": true},
+        "h_p_run_no_model_fit": {"const": true},
+        "calibration_and_evaluation_closed": {"const": true},
+        "e0_m_and_e0_u_closed": {"const": true},
+        "outcomes_closed": {"const": true},
+        "manifest_written_last": {"const": true}
+      }
+    }
+  }
+}
