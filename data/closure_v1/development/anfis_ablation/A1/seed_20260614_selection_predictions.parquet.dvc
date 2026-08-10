@@ -1,0 +1,5 @@
+outs:
+- md5: 77d465c9054ebb0367d5192ad3046962
+  size: 64906
+  hash: md5
+  path: seed_20260614_selection_predictions.parquet
