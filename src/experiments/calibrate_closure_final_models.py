@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALE authority; only after
+Every public mode first calls the effective E0-MCALF authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -37,7 +37,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_target_filter_evidence_patch as calibration,
+    closure_final_calibration_raw_exclusion_evidence_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -1584,31 +1584,34 @@ def _validate_input_filter_evidence(
         (
             "B0",
             "data/closure_v1/development/baselines/B0/raw_scores.parquet",
-            2931,
+            4140,
             2646,
-            285,
+            1494,
         ),
         (
             "B1",
             "data/closure_v1/development/baselines/B1/raw_scores.parquet",
-            14655,
+            20700,
             13230,
-            1425,
+            7470,
         ),
         (
             "B2",
             "data/closure_v1/development/baselines/B2/raw_scores.parquet",
-            14655,
+            20700,
             13230,
-            1425,
+            7470,
         ),
         (
             "M0",
             "data/closure_v1/development/mifal/M0/raw_scores.parquet",
-            2931,
+            4140,
             2646,
-            285,
+            1494,
         ),
+    )
+    expected_excluded_digest = (
+        "e56ce749c2787097b878fc7a44350797521d143cbb08322c9537cdd905c0dfd9"
     )
     raw_keys = {
         "model_id",
@@ -1623,7 +1626,9 @@ def _validate_input_filter_evidence(
     ):
         if (
             set(record) != raw_keys
+            or type(record.get("model_id")) is not str
             or record.get("model_id") != model_id
+            or type(record.get("source_path")) is not str
             or record.get("source_path") != path
             or type(record.get("candidate_row_count")) is not int
             or type(record.get("matched_target_row_count")) is not int
@@ -1631,8 +1636,12 @@ def _validate_input_filter_evidence(
             or record.get("candidate_row_count") != candidate
             or record.get("matched_target_row_count") != matched
             or record.get("excluded_incomplete_target_row_count") != excluded
-            or candidate != matched + excluded
+            or cast(int, record["candidate_row_count"])
+            != cast(int, record["matched_target_row_count"])
+            + cast(int, record["excluded_incomplete_target_row_count"])
             or type(record.get("excluded_target_keys_sha256")) is not str
+            or record.get("excluded_target_keys_sha256")
+            != expected_excluded_digest
             or re.fullmatch(
                 r"[0-9a-f]{64}",
                 cast(str, record["excluded_target_keys_sha256"]),

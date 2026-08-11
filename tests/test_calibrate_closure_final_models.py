@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_target_filter_evidence_patch as calibration,
+    closure_final_calibration_raw_exclusion_evidence_patch as calibration,
 )
 
 
@@ -132,14 +132,19 @@ def _synthetic_predictions() -> pd.DataFrame:
 
 
 def _input_filter_evidence() -> list[dict[str, Any]]:
-    evidence_digest = hashlib.sha256(
-        runner._canonical_json_bytes({"keys": ["synthetic-audited-exclusion"]})
-    ).hexdigest()
+    evidence_digest = (
+        "e56ce749c2787097b878fc7a44350797521d143cbb08322c9537cdd905c0dfd9"
+    )
+    rows_per_seed_horizon = 1380
+    matched_per_seed_horizon = 882
+    seed_counts = {"B0": 1, "B1": 5, "B2": 5, "M0": 1}
     counts = {
-        "B0": (2931, 2646, 285),
-        "B1": (14655, 13230, 1425),
-        "B2": (14655, 13230, 1425),
-        "M0": (2931, 2646, 285),
+        model_id: (
+            rows_per_seed_horizon * 3 * seed_count,
+            matched_per_seed_horizon * 3 * seed_count,
+            (rows_per_seed_horizon - matched_per_seed_horizon) * 3 * seed_count,
+        )
+        for model_id, seed_count in seed_counts.items()
     }
     paths = {
         "B0": "data/closure_v1/development/baselines/B0/raw_scores.parquet",
@@ -307,19 +312,35 @@ def _synthetic_raw_score_frames(
             unselected["selected_family"] = False
             raw = pd.concat([raw, unselected], ignore_index=True)
         extras: list[pd.DataFrame] = []
-        for (_, horizon), group in raw.loc[
-            raw["target_year_month"].astype(str).str.startswith("2021-")
-        ].groupby(["model_seed", "horizon_months"], sort=True):
-            extra = group.head(95).copy()
-            extra["site_id"] = [
-                f"extra-{model_id}-{horizon}-{index:03d}"
-                for index in range(len(extra))
-            ]
-            extra["common_origin_id"] = [
-                f"extra:{model_id}:{horizon}:{index:03d}"
-                for index in range(len(extra))
-            ]
-            extras.append(extra)
+        extra_source = (
+            raw.loc[raw["selected_family"].eq(True)]
+            if model_id == "B2"
+            else raw
+        )
+        for raw_key, group in extra_source.groupby(
+            ["model_seed", "horizon_months"], sort=True
+        ):
+            model_seed, horizon = cast(tuple[int, int], raw_key)
+            for time_role, extra_count, offset in (
+                ("model_selection", 403, 0),
+                ("calibration_threshold", 95, 403),
+            ):
+                role_group = group.loc[group["time_role"].eq(time_role)].reset_index(
+                    drop=True
+                )
+                assert not role_group.empty
+                extra = role_group.iloc[
+                    np.arange(extra_count) % len(role_group)
+                ].copy()
+                indexes = range(offset, offset + extra_count)
+                extra["site_id"] = [
+                    f"extra-site-{horizon}-{index:03d}" for index in indexes
+                ]
+                extra["common_origin_id"] = [
+                    f"extra:{horizon}:{index:03d}" for index in indexes
+                ]
+                assert set(extra["model_seed"]) == {model_seed}
+                extras.append(extra)
         frames[model_id] = pd.concat([raw, *extras], ignore_index=True)
     return frames
 
@@ -406,7 +427,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALE"
+    assert calibration.PATCH_GATE == "E0-MCALF"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -913,9 +934,12 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_target_filter_evidence_patch as calibration"
+        "closure_final_calibration_raw_exclusion_evidence_patch as calibration"
         in source
     )
+    evidence_parser_source = inspect.getsource(runner._validate_input_filter_evidence)
+    assert "calibration." not in evidence_parser_source
+    assert "target_filter_evidence_patch" not in evidence_parser_source
     execute_source = inspect.getsource(runner.execute_one_shot)
     require_offset = execute_source.index("require_final_calibration_authority")
     scientific_offsets = [
@@ -1136,6 +1160,17 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     monkeypatch.setattr(runner, "_read_parquet_frame", real_read_parquet)
     monkeypatch.setattr(runner, "stable_file_record", real_stable_record)
     raw_frames = _synthetic_raw_score_frames(predictions)
+    for model_id, raw_frame in raw_frames.items():
+        producer_rows = (
+            raw_frame.loc[raw_frame["selected_family"].eq(True)]
+            if model_id == "B2"
+            else raw_frame
+        )
+        producer_groups = producer_rows.groupby(
+            ["model_seed", "horizon_months"], sort=True
+        ).size()
+        assert producer_groups.eq(1380).all()
+        assert len(producer_groups) == 3 * len(runner.MODEL_SEEDS[model_id])
     raw_box: dict[str, dict[str, pd.DataFrame]] = {"value": raw_frames}
 
     def read_raw(
@@ -1174,17 +1209,20 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     assert len(m0) == 2646
     assert m0["bloom_probability"].notna().all()
     exclusion_by_model = {record["model_id"]: record for record in exclusion}
-    for model_id, matched, excluded in (
-        ("B0", 2646, 285),
-        ("B1", 13230, 1425),
-        ("B2", 13230, 1425),
-        ("M0", 2646, 285),
+    exclusion_digests: set[str] = set()
+    for model_id, candidate, matched, excluded in (
+        ("B0", 4140, 2646, 1494),
+        ("B1", 20700, 13230, 7470),
+        ("B2", 20700, 13230, 7470),
+        ("M0", 4140, 2646, 1494),
     ):
         record = exclusion_by_model[model_id]
-        assert record["candidate_row_count"] == matched + excluded
+        assert record["candidate_row_count"] == candidate == matched + excluded
         assert record["matched_target_row_count"] == matched
         assert record["excluded_incomplete_target_row_count"] == excluded
         assert len(record["excluded_target_keys_sha256"]) == 64
+        exclusion_digests.add(record["excluded_target_keys_sha256"])
+    assert len(exclusion_digests) == 1
     pristine_m0 = raw_frames["M0"]
     for poison in (float("nan"), float("inf"), -0.1, 1.1, True, "0.5"):
         poisoned_m0 = pristine_m0.copy()
@@ -1665,7 +1703,33 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     filter_evidence = _input_filter_evidence()
     assert len(filter_evidence[0]) == 16
     assert filter_evidence[0] == calibration.TARGET_FILTER_EVIDENCE_CONTRACT
+    assert filter_evidence[1:] == [
+        dict(record) for record in calibration.RAW_EXCLUSION_EVIDENCE_CONTRACT
+    ]
+    assert (
+        calibration.EXCLUDED_TARGET_KEYS_SHA256
+        == "e56ce749c2787097b878fc7a44350797521d143cbb08322c9537cdd905c0dfd9"
+    )
     assert runner._validate_input_filter_evidence(filter_evidence) == filter_evidence
+    assert [
+        (
+            record["model_id"],
+            record["candidate_row_count"],
+            record["matched_target_row_count"],
+            record["excluded_incomplete_target_row_count"],
+        )
+        for record in filter_evidence[1:]
+    ] == [
+        ("B0", 4140, 2646, 1494),
+        ("B1", 20700, 13230, 7470),
+        ("B2", 20700, 13230, 7470),
+        ("M0", 4140, 2646, 1494),
+    ]
+    assert {
+        record["excluded_target_keys_sha256"] for record in filter_evidence[1:]
+    } == {
+        "e56ce749c2787097b878fc7a44350797521d143cbb08322c9537cdd905c0dfd9"
+    }
     for field, value in (
         ("role", "target_predicate_scan"),
         ("materialized_row_count", 2646),
@@ -1685,7 +1749,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
             match="target filter evidence",
         ):
             runner._validate_input_filter_evidence(evidence_drift)
-    for digest_drift in (int("1" * 64), True):
+    for digest_drift in ("0" * 64, int("1" * 64), True):
         evidence_drift = [dict(record) for record in filter_evidence]
         evidence_drift[1]["excluded_target_keys_sha256"] = digest_drift
         with pytest.raises(
@@ -1693,6 +1757,53 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
             match="raw exclusion evidence",
         ):
             runner._validate_input_filter_evidence(evidence_drift)
+    for field, drift in (
+        ("candidate_row_count", 4140.0),
+        ("candidate_row_count", True),
+        ("matched_target_row_count", "2646"),
+        ("excluded_incomplete_target_row_count", 1494.0),
+        ("model_id", 0),
+        ("source_path", True),
+    ):
+        evidence_drift = [dict(record) for record in filter_evidence]
+        evidence_drift[1][field] = drift
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match="raw exclusion evidence",
+        ):
+            runner._validate_input_filter_evidence(evidence_drift)
+    historical = [dict(record) for record in filter_evidence]
+    historical[1].update(
+        {
+            "candidate_row_count": 2931,
+            "matched_target_row_count": 2646,
+            "excluded_incomplete_target_row_count": 285,
+        }
+    )
+    with pytest.raises(
+        calibration.FinalCalibrationError,
+        match="raw exclusion evidence drifted: B0",
+    ):
+        runner._validate_input_filter_evidence(historical)
+    for evidence_drift in (
+        filter_evidence[:-1],
+        [*filter_evidence, dict(filter_evidence[-1])],
+        [
+            filter_evidence[0],
+            filter_evidence[2],
+            filter_evidence[1],
+            *filter_evidence[3:],
+        ],
+    ):
+        with pytest.raises(calibration.FinalCalibrationError):
+            runner._validate_input_filter_evidence(evidence_drift)
+    extra_field = [dict(record) for record in filter_evidence]
+    extra_field[1]["unexpected"] = 0
+    with pytest.raises(
+        calibration.FinalCalibrationError,
+        match="raw exclusion evidence drifted: B0",
+    ):
+        runner._validate_input_filter_evidence(extra_field)
     availability = _model_availability()
     authority = {
         "gate": calibration.PATCH_GATE,
