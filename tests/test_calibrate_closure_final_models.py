@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_candidate_semantics_patch as calibration,
+    closure_final_calibration_inference_role_patch as calibration,
 )
 
 
@@ -397,7 +397,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALC"
+    assert calibration.PATCH_GATE == "E0-MCALD"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -904,7 +904,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_candidate_semantics_patch as calibration" in source
+        "closure_final_calibration_inference_role_patch as calibration" in source
     )
     execute_source = inspect.getsource(runner.execute_one_shot)
     require_offset = execute_source.index("require_final_calibration_authority")
@@ -1446,35 +1446,125 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         & projected["target_year_month"].between("2021-01", "2021-12")
     ].copy()
     assert len(calibration_targets) == 672
-
-    def selection_frame(
-        _bundle: Any,
-        *,
-        model_id: str,
-        base_seed: int,
-        bloom_probability: Any,
-        risk_mu: Any,
-        risk_logvar: Any,
-    ) -> pd.DataFrame:
-        del bloom_probability, risk_mu, risk_logvar
-        frame = calibration_targets.copy()
-        return pd.DataFrame(
-            {
-                "model_id": model_id,
-                "base_seed": base_seed,
-                "horizon_months": frame["horizon_months"].astype("int64"),
-                "source_id": frame["source_id"],
-                "site_id": frame["site_id"],
-                "common_origin_id": frame["common_origin_id"],
-                "origin_year_month": frame["origin_year_month"],
-                "time_role": frame["time_role"],
-                "target_year_month": frame["target_year_month"],
-                "predicted_bloom_probability": frame["target_risk_chla_h"],
-                "observed_bloom": frame["bloom_h"].astype("int8"),
-                "observed_risk": frame["target_risk_chla_h"],
-                "predicted_risk": frame["target_risk_chla_h"],
-                "predicted_risk_sigma": 0.1,
-            }
+    calibration_metadata = pd.DataFrame(
+        {
+            "source_id": ["wqp"] * 224,
+            "site_id": [f"calibration-site-{index:03d}" for index in range(224)],
+            "common_origin_id": [
+                f"calibration-origin-{index:03d}" for index in range(224)
+            ],
+            "assignment_role": ["development"] * 224,
+            "time_role": ["calibration_threshold"] * 224,
+            "origin_year_month": ["2020-12"] * 224,
+        }
+    )
+    synthetic_bloom = np.resize(np.array([0.0, 1.0], dtype=np.float32), (224, 3))
+    synthetic_risk = np.linspace(0.0, 1.0, 224 * 3, dtype=np.float32).reshape(
+        224, 3
+    )
+    calibration_bundle = runner.anfis_training.TrainingBundle(
+        metadata=calibration_metadata.reset_index(drop=True),
+        x=np.zeros((224, 3, 2), dtype=np.float32),
+        bloom=synthetic_bloom,
+        risk=synthetic_risk,
+    )
+    prediction_arrays = (
+        np.full((224, 3), 0.5),
+        np.full((224, 3), 0.5),
+        np.full((224, 3), -4.0),
+    )
+    with pytest.raises(
+        runner.anfis_training.AnfisAblationTrainingError,
+        match="another role",
+    ):
+        runner.anfis_training._selection_prediction_frame(
+            calibration_bundle,
+            model_id="A0",
+            base_seed=1729,
+            bloom_probability=prediction_arrays[0],
+            risk_mu=prediction_arrays[1],
+            risk_logvar=prediction_arrays[2],
+        )
+    direct_calibration_frame = runner._anfis_calibration_threshold_prediction_frame(
+        calibration_bundle,
+        model_id="A0",
+        base_seed=1729,
+        bloom_probability=prediction_arrays[0],
+        risk_mu=prediction_arrays[1],
+        risk_logvar=prediction_arrays[2],
+    )
+    assert len(direct_calibration_frame) == 672
+    assert set(direct_calibration_frame["time_role"]) == {"calibration_threshold"}
+    assert direct_calibration_frame["target_year_month"].between(
+        "2021-01", "2021-12"
+    ).all()
+    wrong_role = direct_calibration_frame.copy()
+    wrong_role["time_role"] = "model_selection"
+    with pytest.raises(calibration.FinalCalibrationError, match="another role"):
+        runner._canonical_anfis_calibration_threshold_prediction_frame(wrong_role)
+    for column, poison in (
+        ("model_id", np.str_("A0")),
+        ("base_seed", 1729.0),
+        ("base_seed", "1729"),
+        ("horizon_months", True),
+        ("observed_bloom", False),
+        ("predicted_risk", 1),
+        ("predicted_risk", "0.5"),
+    ):
+        poisoned_frame = direct_calibration_frame.copy()
+        poisoned_frame[column] = poisoned_frame[column].astype(object)
+        poisoned_frame.at[0, column] = poison
+        with pytest.raises(calibration.FinalCalibrationError, match="cell type"):
+            runner._canonical_anfis_calibration_threshold_prediction_frame(
+                poisoned_frame
+            )
+    empty_site = direct_calibration_frame.copy()
+    empty_site.at[0, "site_id"] = ""
+    with pytest.raises(calibration.FinalCalibrationError, match="identity is empty"):
+        runner._canonical_anfis_calibration_threshold_prediction_frame(empty_site)
+    invalid_seed: Any = 1729.0
+    with pytest.raises(calibration.FinalCalibrationError, match="unregistered"):
+        runner._anfis_calibration_threshold_prediction_frame(
+            calibration_bundle,
+            model_id="A0",
+            base_seed=invalid_seed,
+            bloom_probability=prediction_arrays[0],
+            risk_mu=prediction_arrays[1],
+            risk_logvar=prediction_arrays[2],
+        )
+    fractional_bloom = calibration_bundle.bloom.copy()
+    fractional_bloom[0, 0] = 0.5
+    invalid_bundle = runner.anfis_training.TrainingBundle(
+        metadata=calibration_bundle.metadata.copy(),
+        x=calibration_bundle.x.copy(),
+        bloom=fractional_bloom,
+        risk=calibration_bundle.risk.copy(),
+    )
+    with pytest.raises(calibration.FinalCalibrationError, match="tensor values"):
+        runner._anfis_calibration_threshold_prediction_frame(
+            invalid_bundle,
+            model_id="A0",
+            base_seed=1729,
+            bloom_probability=prediction_arrays[0],
+            risk_mu=prediction_arrays[1],
+            risk_logvar=prediction_arrays[2],
+        )
+    wrong_assignment = calibration_bundle.metadata.copy()
+    wrong_assignment.at[0, "assignment_role"] = "holdout"
+    invalid_bundle = runner.anfis_training.TrainingBundle(
+        metadata=wrong_assignment,
+        x=calibration_bundle.x.copy(),
+        bloom=calibration_bundle.bloom.copy(),
+        risk=calibration_bundle.risk.copy(),
+    )
+    with pytest.raises(calibration.FinalCalibrationError, match="metadata identity"):
+        runner._anfis_calibration_threshold_prediction_frame(
+            invalid_bundle,
+            model_id="A0",
+            base_seed=1729,
+            bloom_probability=prediction_arrays[0],
+            risk_mu=prediction_arrays[1],
+            risk_logvar=prediction_arrays[2],
         )
 
     class FakeModel:
@@ -1493,7 +1583,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     monkeypatch.setattr(
         runner,
         "_calibration_bundle_from_sequence",
-        lambda *_args, **_kwargs: SimpleNamespace(x=np.zeros((224, 3, 2))),
+        lambda *_args, **_kwargs: calibration_bundle,
     )
     monkeypatch.setattr(runner.anfis_training, "_require_torch", lambda: fake_torch)
     monkeypatch.setattr(
@@ -1504,14 +1594,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     monkeypatch.setattr(
         runner.anfis_training,
         "_predict_arrays",
-        lambda *_args, **_kwargs: (
-            np.full((224, 3), 0.5),
-            np.full((224, 3), 0.5),
-            np.full((224, 3), -4.0),
-        ),
-    )
-    monkeypatch.setattr(
-        runner.anfis_training, "_selection_prediction_frame", selection_frame
+        lambda *_args, **_kwargs: prediction_arrays,
     )
     anfis_rows, anfis_records, anfis_snapshot = (
         runner._anfis_calibration_predictions(

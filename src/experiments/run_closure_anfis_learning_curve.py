@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Run the closed, development-only E0-MCAL ANFIS learning curve.
 
-The effective E0-MCALC authority is always evaluated before scientific input
+The effective E0-MCALD authority is always evaluated before scientific input
 loading, fitting, directory creation, or publication.  The E0-MCAL learning-
 curve algorithm and output dialect remain unchanged.
 """
@@ -31,7 +31,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_candidate_semantics_patch as calibration,
+    closure_final_calibration_inference_role_patch as calibration,
 )
 from src.experiments.calibrate_closure_final_models import (  # noqa: E402
     _canonical_json_bytes,

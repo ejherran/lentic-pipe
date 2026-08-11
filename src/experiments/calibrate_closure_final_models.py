@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALC authority; only after
+Every public mode first calls the effective E0-MCALD authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -37,7 +37,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_candidate_semantics_patch as calibration,
+    closure_final_calibration_inference_role_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -2887,7 +2887,9 @@ def _calibration_bundle_from_sequence(
     )
     if len(origins) != 224:
         raise _error("E0-MCAL 2021 ANFIS origin denominator drifted")
-    sequence_index = sequence.set_index("common_origin_id", verify_integrity=True)
+    sequence_index = sequence.set_index("common_origin_id")
+    if not sequence_index.index.is_unique:
+        raise _error("E0-MCAL 2021 ANFIS sequence identity is duplicated")
     if not set(origins["common_origin_id"]).issubset(sequence_index.index):
         raise _error("E0-MCAL 2021 ANFIS sequences omit complete target origins")
     selected_sequence = sequence_index.loc[origins["common_origin_id"]].reset_index()
@@ -2895,8 +2897,10 @@ def _calibration_bundle_from_sequence(
         if selected_sequence[column].astype(str).tolist() != origins[column].astype(str).tolist():
             raise _error("E0-MCAL 2021 ANFIS sequence/target identity drifted")
     ordered_targets = selected_targets.set_index(
-        ["common_origin_id", "horizon_months"], verify_integrity=True
+        ["common_origin_id", "horizon_months"]
     )
+    if not ordered_targets.index.is_unique:
+        raise _error("E0-MCAL 2021 ANFIS target identity is duplicated")
     bloom = np.empty((len(origins), len(HORIZONS)), dtype=np.float32)
     risk = np.empty_like(bloom)
     for row_index, common_origin_id in enumerate(origins["common_origin_id"]):
@@ -2994,6 +2998,292 @@ def _mcal_sequence_frame(
         frame,
         [_portable_record(sequence_record, role=role), *extra_portable],
         [{"role": role, **sequence_record}, *extra_snapshot],
+    )
+
+
+def _canonical_anfis_calibration_threshold_prediction_frame(
+    frame: pd.DataFrame,
+) -> pd.DataFrame:
+    """Validate the closed 2021 inference dialect without selection semantics."""
+
+    if frame.columns.tolist() != list(anfis_training.PREDICTION_COLUMNS):
+        raise _error("E0-MCAL ANFIS calibration prediction columns/order drifted")
+    if len(frame) != 672:
+        raise _error("E0-MCAL ANFIS calibration prediction denominator drifted")
+    text_columns = (
+        "surface_id",
+        "model_id",
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "time_role",
+        "origin_year_month",
+        "target_year_month",
+        "availability_status",
+        "failure_reason",
+        "score_semantics",
+    )
+    if any(
+        any(type(value) is not str for value in frame[name].tolist())
+        for name in text_columns
+    ):
+        raise _error("E0-MCAL ANFIS calibration text cell type drifted")
+    if any(
+        any(value == "" for value in frame[name].tolist())
+        for name in text_columns
+        if name != "failure_reason"
+    ):
+        raise _error("E0-MCAL ANFIS calibration text identity is empty")
+    integer_columns = ("base_seed", "horizon_months", "observed_bloom")
+    if any(
+        any(type(value) is not int for value in frame[name].tolist())
+        for name in integer_columns
+    ):
+        raise _error("E0-MCAL ANFIS calibration integer cell type drifted")
+    numeric_names = (
+        "observed_risk",
+        "predicted_bloom_probability",
+        "predicted_risk",
+        "predicted_risk_sigma",
+    )
+    if any(
+        any(
+            type(value) is not float or not math.isfinite(value)
+            for value in frame[name].tolist()
+        )
+        for name in numeric_names
+    ):
+        raise _error("E0-MCAL ANFIS calibration numeric cell type drifted")
+    model_ids = set(frame["model_id"].tolist())
+    if len(model_ids) != 1 or not model_ids.issubset(UNCERTAINTY_MODELS):
+        raise _error("E0-MCAL ANFIS calibration table must contain one model")
+    model_id = next(iter(model_ids))
+    seeds = set(frame["base_seed"].tolist())
+    if len(seeds) != 1:
+        raise _error("E0-MCAL ANFIS calibration table must contain one seed")
+    base_seed = next(iter(seeds))
+    try:
+        anfis_training.validate_model_seed(model_id, base_seed)
+    except anfis_training.AnfisAblationTrainingError as exc:
+        raise _error("E0-MCAL ANFIS calibration model/seed identity drifted") from exc
+    if not frame["surface_id"].eq(anfis_training.SURFACE_ID).all() or not frame[
+        "source_id"
+    ].eq("wqp").all():
+        raise _error("E0-MCAL ANFIS calibration surface/source identity drifted")
+    if set(frame["time_role"].tolist()) != {"calibration_threshold"}:
+        raise _error("E0-MCAL ANFIS calibration table contains another role")
+    if not frame["availability_status"].eq("success").all() or not frame[
+        "failure_reason"
+    ].eq("").all():
+        raise _error("E0-MCAL ANFIS calibration rows must be successful")
+    if not frame["score_semantics"].eq(
+        "direct_bloom_probability_and_risk_distribution"
+    ).all():
+        raise _error("E0-MCAL ANFIS calibration score semantics drifted")
+    horizons = set(frame["horizon_months"].tolist())
+    if horizons != set(HORIZONS):
+        raise _error("E0-MCAL ANFIS calibration horizons drifted")
+    for origin_value, target_value, horizon_value in frame[
+        ["origin_year_month", "target_year_month", "horizon_months"]
+    ].itertuples(index=False, name=None):
+        try:
+            origin = cast(Any, pd.Period(origin_value, freq="M"))
+            target = cast(Any, pd.Period(target_value, freq="M"))
+        except (TypeError, ValueError) as exc:
+            raise _error("E0-MCAL ANFIS calibration month identity is malformed") from exc
+        if origin + horizon_value != target:
+            raise _error("E0-MCAL ANFIS calibration target month/horizon drifted")
+        if target.year != 2021:
+            raise _error("E0-MCAL ANFIS calibration target leaves 2021")
+    numeric = frame[["observed_bloom", *numeric_names]].to_numpy(dtype=np.float64)
+    if not np.isfinite(numeric).all():
+        raise _error("E0-MCAL ANFIS calibration predictions contain nonfinite values")
+    bounded = (
+        "observed_bloom",
+        "observed_risk",
+        "predicted_bloom_probability",
+        "predicted_risk",
+    )
+    if any(
+        bool(((frame[name] < 0.0) | (frame[name] > 1.0)).any())
+        for name in bounded
+    ):
+        raise _error("E0-MCAL ANFIS calibration values leave [0, 1]")
+    if not frame["observed_bloom"].isin((0, 1)).all():
+        raise _error("E0-MCAL ANFIS calibration bloom labels are not binary")
+    sigma_min = math.exp(anfis_training.LOGVAR_MIN / 2.0)
+    sigma_max = math.exp(anfis_training.LOGVAR_MAX / 2.0)
+    if bool(
+        (
+            (frame["predicted_risk_sigma"] < sigma_min)
+            | (frame["predicted_risk_sigma"] > sigma_max)
+        ).any()
+    ):
+        raise _error("E0-MCAL ANFIS calibration sigma leaves the sealed clamp")
+    ordered = frame.sort_values(
+        [
+            "source_id",
+            "site_id",
+            "origin_year_month",
+            "horizon_months",
+            "target_year_month",
+            "common_origin_id",
+        ],
+        kind="mergesort",
+    ).reset_index(drop=True)
+    identity = ["source_id", "site_id", "origin_year_month", "horizon_months"]
+    if ordered.duplicated(identity).any():
+        raise _error("E0-MCAL ANFIS calibration prediction identity is duplicated")
+    by_origin = ordered.groupby("common_origin_id", sort=False)
+    origin_horizons_exact = bool(
+        by_origin["horizon_months"]
+        .agg(set)
+        .map(lambda value: value == set(HORIZONS))
+        .all()
+    )
+    origin_identity_exact = bool(
+        (
+            by_origin[["source_id", "site_id", "origin_year_month"]]
+            .nunique()
+            .to_numpy(dtype=np.int64)
+            == 1
+        ).all()
+    )
+    if (
+        ordered["common_origin_id"].nunique() != 224
+        or not origin_horizons_exact
+        or not origin_identity_exact
+    ):
+        raise _error("E0-MCAL ANFIS calibration origin/horizon universe drifted")
+    return ordered
+
+
+def _anfis_calibration_threshold_prediction_frame(
+    bundle: anfis_training.TrainingBundle,
+    *,
+    model_id: str,
+    base_seed: int,
+    bloom_probability: np.ndarray,
+    risk_mu: np.ndarray,
+    risk_logvar: np.ndarray,
+) -> pd.DataFrame:
+    """Construct exact 2021 rows while leaving the trainer's selection helper intact."""
+
+    if (
+        type(model_id) is not str
+        or type(base_seed) is not int
+        or model_id not in UNCERTAINTY_MODELS
+        or base_seed not in REGISTERED_SEEDS
+    ):
+        raise _error("E0-MCAL ANFIS calibration model/seed is unregistered")
+    metadata = bundle.metadata.reset_index(drop=True)
+    required_metadata = {
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "assignment_role",
+        "time_role",
+        "origin_year_month",
+    }
+    if not required_metadata.issubset(metadata.columns) or len(metadata) != 224:
+        raise _error("E0-MCAL ANFIS calibration origin metadata drifted")
+    if any(
+        any(type(value) is not str for value in metadata[name].tolist())
+        for name in required_metadata
+    ):
+        raise _error("E0-MCAL ANFIS calibration metadata text type drifted")
+    if any(
+        any(value == "" for value in metadata[name].tolist())
+        for name in required_metadata
+    ):
+        raise _error("E0-MCAL ANFIS calibration metadata text is empty")
+    if (
+        not metadata["source_id"].eq("wqp").all()
+        or not metadata["assignment_role"].eq("development").all()
+        or not metadata["time_role"].eq("calibration_threshold").all()
+        or metadata["common_origin_id"].nunique() != 224
+    ):
+        raise _error("E0-MCAL ANFIS calibration metadata identity drifted")
+    expected_shape = (len(metadata), len(HORIZONS))
+    arrays = (bundle.bloom, bundle.risk, bloom_probability, risk_mu, risk_logvar)
+    if any(
+        type(array) is not np.ndarray or array.shape != expected_shape
+        for array in arrays
+    ):
+        raise _error("E0-MCAL ANFIS calibration tensor shape drifted")
+    if bundle.bloom.dtype != np.float32 or bundle.risk.dtype != np.float32:
+        raise _error("E0-MCAL ANFIS calibration target tensor dtype drifted")
+    if any(
+        array.dtype != np.float64
+        for array in (bloom_probability, risk_mu, risk_logvar)
+    ):
+        raise _error("E0-MCAL ANFIS calibration prediction tensor dtype drifted")
+    if (
+        not np.isfinite(bundle.bloom).all()
+        or not np.isin(bundle.bloom, (0.0, 1.0)).all()
+        or not np.isfinite(bundle.risk).all()
+        or np.any((bundle.risk < 0.0) | (bundle.risk > 1.0))
+        or not np.isfinite(bloom_probability).all()
+        or np.any((bloom_probability < 0.0) | (bloom_probability > 1.0))
+        or not np.isfinite(risk_mu).all()
+        or np.any((risk_mu < 0.0) | (risk_mu > 1.0))
+        or not np.isfinite(risk_logvar).all()
+    ):
+        raise _error("E0-MCAL ANFIS calibration tensor values drifted")
+    rows: list[dict[str, Any]] = []
+    for origin_index, raw_metadata in enumerate(
+        metadata.to_dict(orient="records")
+    ):
+        try:
+            origin = cast(
+                Any,
+                pd.Period(raw_metadata["origin_year_month"], freq="M"),
+            )
+        except (TypeError, ValueError) as exc:
+            raise _error("E0-MCAL ANFIS calibration origin month is malformed") from exc
+        for horizon_index, horizon in enumerate(HORIZONS):
+            target = origin + horizon
+            risk_prediction = risk_mu[origin_index, horizon_index].item()
+            rows.append(
+                {
+                    "surface_id": anfis_training.SURFACE_ID,
+                    "model_id": model_id,
+                    "base_seed": base_seed,
+                    "source_id": raw_metadata["source_id"],
+                    "site_id": raw_metadata["site_id"],
+                    "common_origin_id": raw_metadata["common_origin_id"],
+                    "time_role": raw_metadata["time_role"],
+                    "origin_year_month": f"{origin.year:04d}-{origin.month:02d}",
+                    "target_year_month": f"{target.year:04d}-{target.month:02d}",
+                    "horizon_months": horizon,
+                    "observed_bloom": (
+                        1 if bundle.bloom[origin_index, horizon_index] == 1.0 else 0
+                    ),
+                    "observed_risk": bundle.risk[
+                        origin_index, horizon_index
+                    ].item(),
+                    "predicted_bloom_probability": bloom_probability[
+                        origin_index, horizon_index
+                    ].item(),
+                    "predicted_risk": risk_prediction,
+                    "predicted_risk_sigma": math.sqrt(
+                        math.exp(
+                            np.clip(
+                                risk_logvar[origin_index, horizon_index],
+                                anfis_training.LOGVAR_MIN,
+                                anfis_training.LOGVAR_MAX,
+                            )
+                        )
+                    ),
+                    "availability_status": "success",
+                    "failure_reason": "",
+                    "score_semantics": (
+                        "direct_bloom_probability_and_risk_distribution"
+                    ),
+                }
+            )
+    return _canonical_anfis_calibration_threshold_prediction_frame(
+        pd.DataFrame(rows, columns=anfis_training.PREDICTION_COLUMNS)
     )
 
 
@@ -3119,7 +3409,7 @@ def _anfis_calibration_predictions(
                 bloom_probability, risk_mu, risk_logvar = anfis_training._predict_arrays(
                     model, bundle, device=device
                 )
-                predicted = anfis_training._selection_prediction_frame(
+                predicted = _anfis_calibration_threshold_prediction_frame(
                     bundle,
                     model_id=model_id,
                     base_seed=base_seed,

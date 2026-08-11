@@ -14,7 +14,7 @@ import pytest
 import yaml
 
 from src.experiments import (
-    closure_final_calibration_candidate_semantics_patch as calibration,
+    closure_final_calibration_inference_role_patch as calibration,
 )
 from src.experiments import run_closure_anfis_learning_curve as runner
 from src.experiments.closure_runtime_contract import (
@@ -405,7 +405,7 @@ def test_check_only_requires_effective_p_before_io_and_is_nonwriting(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALC"
+    assert calibration.PATCH_GATE == "E0-MCALD"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -474,7 +474,7 @@ def test_public_sampling_run_and_builder_signatures_are_closed(
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_candidate_semantics_patch as calibration" in source
+        "closure_final_calibration_inference_role_patch as calibration" in source
     )
     sample = inspect.signature(runner.select_learning_curve_sample).parameters
     assert list(sample) == [
