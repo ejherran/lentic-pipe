@@ -1,0 +1,265 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/final_calibration_candidate_semantics_patch_lock.schema.json",
+  "title": "Closure V1 E0-MCALC candidate-semantics patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate",
+    "status",
+    "generated_at_utc",
+    "repository",
+    "failed_attempt",
+    "p_mcalp_authority",
+    "h_patch",
+    "runtime",
+    "scientific_input_inventory",
+    "scientific_boundary",
+    "model_matrix",
+    "calibration_group_matrix",
+    "e7_terminal_record",
+    "output_contract",
+    "prelock",
+    "verification",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_final_calibration_candidate_semantics_patch_lock_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-MCALC"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "repository": {"$ref": "#/$defs/repository"},
+    "failed_attempt": {"$ref": "#/$defs/failedAttempt"},
+    "p_mcalp_authority": {"$ref": "#/$defs/pMcalpAuthority"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runtime": {"type": "object"},
+    "scientific_input_inventory": {"type": "object"},
+    "scientific_boundary": {"type": "object"},
+    "model_matrix": {"type": "object"},
+    "calibration_group_matrix": {"type": "object"},
+    "e7_terminal_record": {"type": "object"},
+    "output_contract": {"type": "object"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"type": "object"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "gitArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "git_mode": {"const": "100644"}
+      }
+    },
+    "historicalArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode", "commit"],
+      "properties": {
+        "role": {"const": "superseded_h_mcalp_component"},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "git_mode": {"const": "100644"},
+        "commit": {"const": "59225001a8b1c006213b6a3d963126a6b3f73ccf"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted", "path_count", "paths"],
+      "properties": {
+        "added": {"const": 5},
+        "modified": {"const": 4},
+        "deleted": {"const": 0},
+        "path_count": {"const": 9},
+        "paths": {
+          "const": [
+            "configs/closure_v1/final_calibration_candidate_semantics_patch_lock.schema.json",
+            "docs/closure_v1/E0_M_FINAL_CALIBRATION_CANDIDATE_SEMANTICS_PATCH_1.md",
+            "src/experiments/calibrate_closure_final_models.py",
+            "src/experiments/closure_final_calibration_candidate_semantics_patch.py",
+            "src/experiments/lock_closure_final_calibration_candidate_semantics_patch.py",
+            "src/experiments/run_closure_anfis_learning_curve.py",
+            "tests/test_calibrate_closure_final_models.py",
+            "tests/test_closure_anfis_learning_curve.py",
+            "tests/test_closure_final_calibration_candidate_semantics_patch.py"
+          ]
+        }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_p_mcalp_commit", "h_patch_head", "branch", "remote_head", "scope"],
+      "properties": {
+        "base_p_mcalp_commit": {"const": "6b74440e31d67a6b1a26609347639ae2ba33ec01"},
+        "h_patch_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "branch": {"const": "main"},
+        "remote_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "scope": {"$ref": "#/$defs/scope"}
+      }
+    },
+    "failedAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempted_gate",
+        "status",
+        "phase",
+        "failure_code",
+        "authorization_consumed",
+        "retry_authorized",
+        "final_output_count",
+        "temporary_output_count",
+        "active_guard_count",
+        "dvc_commands_run",
+        "outcome_paths_opened",
+        "holdout_rows_opened",
+        "post_2021_rows_opened",
+        "side_effect_count"
+      ],
+      "properties": {
+        "attempted_gate": {"const": "E0-MCALP"},
+        "status": {"const": "failed_closed_no_outputs"},
+        "phase": {"const": "development_input_validation"},
+        "failure_code": {"const": "raw_score_candidate_empty_sentinel_rejected"},
+        "authorization_consumed": {"const": true},
+        "retry_authorized": {"const": false},
+        "final_output_count": {"const": 0},
+        "temporary_output_count": {"const": 0},
+        "active_guard_count": {"const": 0},
+        "dvc_commands_run": {"const": false},
+        "outcome_paths_opened": {"const": false},
+        "holdout_rows_opened": {"const": false},
+        "post_2021_rows_opened": {"const": false},
+        "side_effect_count": {"const": 0}
+      }
+    },
+    "pMcalpAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate", "commit", "parent_h_mcalp", "h_mcalp_parent",
+        "h_scope", "p_scope", "h_component_count", "h_components",
+        "h_components_sha256", "preserved_count", "preserved_components",
+        "preserved_components_sha256", "superseded_count", "historical_inputs",
+        "historical_inputs_sha256", "p_component_count", "p_components",
+        "p_components_sha256", "lock_payload_sha256", "companion_sha256",
+        "manifest_written_last", "sealed_runtime"
+      ],
+      "properties": {
+        "gate": {"const": "P-E0-MCALP"},
+        "commit": {"const": "6b74440e31d67a6b1a26609347639ae2ba33ec01"},
+        "parent_h_mcalp": {"const": "59225001a8b1c006213b6a3d963126a6b3f73ccf"},
+        "h_mcalp_parent": {"const": "5d096e8ca560a592a65ab231ae173c4d3b5a4ff6"},
+        "h_scope": {"type": "object"},
+        "p_scope": {"type": "object"},
+        "h_component_count": {"const": 9},
+        "h_components": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "h_components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "preserved_count": {"const": 5},
+        "preserved_components": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "preserved_components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "superseded_count": {"const": 4},
+        "historical_inputs": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/historicalArtifactRecord"}},
+        "historical_inputs_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "p_component_count": {"const": 2},
+        "p_components": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "p_components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "lock_payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "companion_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "manifest_written_last": {"const": true},
+        "sealed_runtime": {"type": "object"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "component_count", "added_count", "modified_count", "components", "components_sha256"],
+      "properties": {
+        "gate": {"const": "H-E0-MCALC"},
+        "component_count": {"const": 9},
+        "added_count": {"const": 5},
+        "modified_count": {"const": 4},
+        "components": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "git_status_clean", "base_p_mcalp_output_present_count", "p_output_present_count",
+        "r_output_present_count", "temporary_present_count", "coordination_present_count",
+        "outcome_access_log_absent", "holdout_rows_opened", "post_2021_rows_opened",
+        "dvc_commands_run", "scientific_writes_performed",
+        "failed_attempt_retry_authorized", "companion_contract"
+      ],
+      "properties": {
+        "git_status_clean": {"const": true},
+        "base_p_mcalp_output_present_count": {"const": 2},
+        "p_output_present_count": {"const": 0},
+        "r_output_present_count": {"const": 0},
+        "temporary_present_count": {"const": 0},
+        "coordination_present_count": {"const": 0},
+        "outcome_access_log_absent": {"const": true},
+        "holdout_rows_opened": {"const": false},
+        "post_2021_rows_opened": {"const": false},
+        "dvc_commands_run": {"const": false},
+        "scientific_writes_performed": {"const": false},
+        "failed_attempt_retry_authorized": {"const": false},
+        "companion_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["physical_input_count", "historical_input_count", "output_count", "script_path", "manifest_written_last"],
+          "properties": {
+            "physical_input_count": {"const": 16},
+            "historical_input_count": {"const": 4},
+            "output_count": {"const": 1},
+            "script_path": {"const": "src/experiments/lock_closure_final_calibration_candidate_semantics_patch.py"},
+            "manifest_written_last": {"const": true}
+          }
+        }
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "calibration_development_run_authorized", "e7_learning_curve_run_authorized",
+        "holdout_access_authorized", "post_2021_access_authorized",
+        "locked_evaluation_authorized", "outcome_access_authorized",
+        "e0_m_authorized", "e0_u_authorized", "dvc_commands_authorized",
+        "dvc_push_authorized", "git_commit_authorized", "git_push_authorized",
+        "scientific_network_authorized", "effective_in_payload"
+      ],
+      "properties": {
+        "calibration_development_run_authorized": {"const": false},
+        "e7_learning_curve_run_authorized": {"const": false},
+        "holdout_access_authorized": {"const": false},
+        "post_2021_access_authorized": {"const": false},
+        "locked_evaluation_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "dvc_push_authorized": {"const": false},
+        "git_commit_authorized": {"const": false},
+        "git_push_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "effective_in_payload": {"const": false}
+      }
+    }
+  }
+}

@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALP authority; only after
+Every public mode first calls the effective E0-MCALC authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
-scientific E0-MCAL algorithms and output dialect remain unchanged.
+scientific E0-MCAL algorithms and output paths remain unchanged.
 """
 
 from __future__ import annotations
@@ -37,7 +37,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_publication_guard_patch as calibration,
+    closure_final_calibration_candidate_semantics_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -2371,7 +2371,10 @@ def _baseline_predictions(
                 "failure_reason",
             ),
             context=f"{model_id} raw scores",
-            allow_empty=("failure_reason",),
+            allow_empty=("candidate", "failure_reason"),
+        )
+        calibration.validate_raw_score_candidate_semantics(
+            model_id, frame["candidate"].tolist()
         )
         snapshot.append({"role": f"{model_id.lower()}_raw_scores", **record})
         portable.append(_portable_record(record, role=f"{model_id.lower()}_raw_scores"))

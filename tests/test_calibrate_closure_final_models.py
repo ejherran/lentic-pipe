@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_publication_guard_patch as calibration,
+    closure_final_calibration_candidate_semantics_patch as calibration,
 )
 
 
@@ -273,7 +273,9 @@ def _synthetic_raw_score_frames(
                 "candidate": (
                     "hist_gradient_boosting_classifier"
                     if model_id == "B2"
-                    else "registered"
+                    else (
+                        "mifal_ed_t2_v5_defaults" if model_id == "M0" else ""
+                    )
                 ),
                 "selected_family": model_id == "B2",
                 "availability_status": "success",
@@ -290,6 +292,11 @@ def _synthetic_raw_score_frames(
                 ),
             }
         ).reset_index(drop=True)
+        if model_id == "B2":
+            unselected = raw.copy()
+            unselected["candidate"] = "logistic_sgd"
+            unselected["selected_family"] = False
+            raw = pd.concat([raw, unselected], ignore_index=True)
         extras: list[pd.DataFrame] = []
         for (_, horizon), group in raw.loc[
             raw["target_year_month"].astype(str).str.startswith("2021-")
@@ -317,6 +324,53 @@ def test_constants_close_model_matrix_roles_and_exact_six_outputs() -> None:
     assert runner.REGISTERED_SEEDS == (1729, 20260612, 20260613, 20260614, 314159)
     assert tuple(path.relative_to(ROOT).as_posix() for path in runner.OUTPUT_PATHS) == EXPECTED_OUTPUTS
     assert runner.OUTPUT_PATHS[-1] == runner.MANIFEST_PATH
+    producer_candidates = {
+        "B0": ("",),
+        "B1": ("",),
+        "B2": ("logistic_sgd", "hist_gradient_boosting_classifier"),
+        "M0": ("mifal_ed_t2_v5_defaults",),
+    }
+    assert calibration.RAW_SCORE_CANDIDATE_VALUES == producer_candidates
+    for model_id, values in producer_candidates.items():
+        calibration.validate_raw_score_candidate_semantics(model_id, values)
+
+    baseline_manifest = json.loads(
+        (ROOT / "reports/closure_v1/02_models/baselines/manifest.json").read_bytes()
+    )
+    baseline_contract = baseline_manifest["raw_prediction_contract"]
+    candidate_column = next(
+        column
+        for column in baseline_contract["columns"]
+        if column["name"] == "candidate"
+    )
+    assert candidate_column == {
+        "name": "candidate",
+        "dtype": "string",
+        "nullable": False,
+    }
+    assert baseline_manifest["counts"] == {
+        "common_origin_rows": 29_196,
+        "intent_origins": 9_732,
+        "B0_raw_rows": 29_196,
+        "B1_raw_rows": 145_980,
+        "B2_candidate_raw_rows": 291_960,
+        "pipeline_records": 30,
+        "preprocessor_records": 30,
+    }
+    assert tuple(baseline_contract["candidate_order"]) == producer_candidates["B2"]
+    baseline_source = (ROOT / "src/experiments/fit_closure_baselines.py").read_text()
+    assert baseline_source.count('frame["candidate"].eq("")') == 2
+    assert 'set(frame["candidate"].astype(str)) != set(CANDIDATES)' in baseline_source
+
+    mifal_manifest = json.loads(
+        (ROOT / "reports/closure_v1/02_models/M0/manifest.json").read_bytes()
+    )
+    mifal_contract = mifal_manifest["raw_prediction_contract"]
+    assert mifal_manifest["counts"]["raw_rows"] == 29_196
+    assert (
+        mifal_contract["candidate_policy"]
+        == "constant_mifal_ed_t2_v5_defaults"
+    )
 
 
 def test_cli_is_one_shot_closed_and_translates_only_domain_errors(
@@ -343,7 +397,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALP"
+    assert calibration.PATCH_GATE == "E0-MCALC"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -850,7 +904,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_publication_guard_patch as calibration" in source
+        "closure_final_calibration_candidate_semantics_patch as calibration" in source
     )
     execute_source = inspect.getsource(runner.execute_one_shot)
     require_offset = execute_source.index("require_final_calibration_authority")
