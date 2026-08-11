@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALD authority; only after
+Every public mode first calls the effective E0-MCALE authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -37,7 +37,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_inference_role_patch as calibration,
+    closure_final_calibration_target_filter_evidence_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -1445,6 +1445,70 @@ def _availability_frame(records: Sequence[Mapping[str, Any]]) -> pd.DataFrame:
     return frame
 
 
+def _build_target_filter_evidence(
+    scanner_audit: Mapping[str, Any],
+    *,
+    projected_complete_target_row_count: int,
+) -> dict[str, Any]:
+    """Bind the broad target scan to the exact common-origin projection."""
+
+    scan = dict(scanner_audit)
+    scan_keys = {
+        "scanner",
+        "predicate",
+        "materialized_row_count",
+        "minimum_origin_year_month",
+        "maximum_origin_year_month",
+        "minimum_target_year_month",
+        "maximum_target_year_month",
+        "boundary_crossing_rows",
+        "holdout_rows_materialized",
+        "development_site_count",
+        "development_site_ids_sha256",
+    }
+    integer_keys = {
+        "materialized_row_count",
+        "boundary_crossing_rows",
+        "holdout_rows_materialized",
+        "development_site_count",
+    }
+    text_keys = scan_keys - integer_keys
+    if (
+        set(scan) != scan_keys
+        or any(type(scan.get(key)) is not int for key in integer_keys)
+        or any(type(scan.get(key)) is not str or not scan[key] for key in text_keys)
+        or type(projected_complete_target_row_count) is not int
+        or projected_complete_target_row_count <= 0
+        or cast(int, scan["materialized_row_count"])
+        < projected_complete_target_row_count
+        or cast(int, scan["boundary_crossing_rows"]) < 0
+        or cast(int, scan["holdout_rows_materialized"]) < 0
+        or cast(int, scan["development_site_count"]) <= 0
+        or re.fullmatch(
+            r"[0-9a-f]{64}", cast(str, scan["development_site_ids_sha256"])
+        )
+        is None
+    ):
+        raise _error("E0-MCAL target scan/projection evidence is malformed")
+    outside = (
+        cast(int, scan["materialized_row_count"])
+        - projected_complete_target_row_count
+    )
+    return {
+        "role": "target_predicate_scan_and_common_origin_projection",
+        **scan,
+        "projection": "exact_common_origin_key_inner_join",
+        "projected_complete_target_row_count": (
+            projected_complete_target_row_count
+        ),
+        "outside_common_origin_projection_row_count": outside,
+        "row_count_equation": (
+            "materialized_row_count=projected_complete_target_row_count+"
+            "outside_common_origin_projection_row_count"
+        ),
+    }
+
+
 def _validate_input_filter_evidence(
     records: Sequence[Mapping[str, Any]],
 ) -> list[dict[str, Any]]:
@@ -1467,30 +1531,52 @@ def _validate_input_filter_evidence(
         "holdout_rows_materialized",
         "development_site_count",
         "development_site_ids_sha256",
+        "projection",
+        "projected_complete_target_row_count",
+        "outside_common_origin_projection_row_count",
+        "row_count_equation",
+    }
+    expected_target = {
+        "role": "target_predicate_scan_and_common_origin_projection",
+        "scanner": "pyarrow_dataset_anchored_fd_predicate_pushdown",
+        "predicate": (
+            "source_id=wqp AND site_id IN development AND "
+            "origin<=2021-12 AND 2019-01<=target<=2021-12"
+        ),
+        "materialized_row_count": 8743,
+        "minimum_origin_year_month": "2018-10",
+        "maximum_origin_year_month": "2021-11",
+        "minimum_target_year_month": "2019-01",
+        "maximum_target_year_month": "2021-12",
+        "boundary_crossing_rows": 0,
+        "holdout_rows_materialized": 0,
+        "development_site_count": 121,
+        "development_site_ids_sha256": (
+            "42ece001484bdfa38ef8ac849e7b085ba14f244ee89f7a11474f377de721dea5"
+        ),
+        "projection": "exact_common_origin_key_inner_join",
+        "projected_complete_target_row_count": 2646,
+        "outside_common_origin_projection_row_count": 6097,
+        "row_count_equation": (
+            "materialized_row_count=projected_complete_target_row_count+"
+            "outside_common_origin_projection_row_count"
+        ),
+    }
+    integer_keys = {
+        "materialized_row_count",
+        "projected_complete_target_row_count",
+        "outside_common_origin_projection_row_count",
+        "boundary_crossing_rows",
+        "holdout_rows_materialized",
+        "development_site_count",
     }
     if (
         set(target) != target_keys
-        or target.get("role") != "target_predicate_scan"
-        or target.get("scanner")
-        != "pyarrow_dataset_anchored_fd_predicate_pushdown"
-        or target.get("predicate")
-        != (
-            "source_id=wqp AND site_id IN development AND "
-            "origin<=2021-12 AND 2019-01<=target<=2021-12"
-        )
-        or target.get("materialized_row_count") != 2646
-        or target.get("minimum_origin_year_month") != "2018-10"
-        or target.get("maximum_origin_year_month") != "2021-11"
-        or target.get("minimum_target_year_month") != "2019-01"
-        or target.get("maximum_target_year_month") != "2021-12"
-        or target.get("boundary_crossing_rows") != 0
-        or target.get("holdout_rows_materialized") != 0
-        or type(target.get("development_site_count")) is not int
-        or cast(int, target["development_site_count"]) <= 0
-        or re.fullmatch(
-            r"[0-9a-f]{64}", str(target.get("development_site_ids_sha256"))
-        )
-        is None
+        or any(type(target.get(key)) is not int for key in integer_keys)
+        or target != expected_target
+        or cast(int, target["materialized_row_count"])
+        != cast(int, target["projected_complete_target_row_count"])
+        + cast(int, target["outside_common_origin_projection_row_count"])
     ):
         raise _error("E0-MCAL target filter evidence drifted")
 
@@ -1539,12 +1625,17 @@ def _validate_input_filter_evidence(
             set(record) != raw_keys
             or record.get("model_id") != model_id
             or record.get("source_path") != path
+            or type(record.get("candidate_row_count")) is not int
+            or type(record.get("matched_target_row_count")) is not int
+            or type(record.get("excluded_incomplete_target_row_count")) is not int
             or record.get("candidate_row_count") != candidate
             or record.get("matched_target_row_count") != matched
             or record.get("excluded_incomplete_target_row_count") != excluded
             or candidate != matched + excluded
+            or type(record.get("excluded_target_keys_sha256")) is not str
             or re.fullmatch(
-                r"[0-9a-f]{64}", str(record.get("excluded_target_keys_sha256"))
+                r"[0-9a-f]{64}",
+                cast(str, record["excluded_target_keys_sha256"]),
             )
             is None
         ):
@@ -2255,10 +2346,14 @@ def _target_projection(
     frame = common.merge(
         targets,
         on=list(TARGET_JOIN_COLUMNS),
-        how="left",
+        how="inner",
         validate="one_to_one",
     )
-    if frame.empty or frame.duplicated(list(TARGET_JOIN_COLUMNS)).any():
+    if (
+        frame.empty
+        or len(frame) != len(common)
+        or frame.duplicated(list(TARGET_JOIN_COLUMNS)).any()
+    ):
         raise _error("E0-MCAL target projection is empty or duplicated")
     if (
         not pd.api.types.is_integer_dtype(frame["horizon_months"].dtype)
@@ -2279,6 +2374,10 @@ def _target_projection(
     frame["ordinal_label"] = frame["target_trophic_state_h"].map(trophic)
     if frame[["bloom_h", "target_risk_chla_h", "ordinal_label"]].isna().any().any():
         raise _error("E0-MCAL 2019-2021 development target labels are incomplete")
+    target_filter_evidence = _build_target_filter_evidence(
+        scanner_audit,
+        projected_complete_target_row_count=len(frame),
+    )
     authority_paths = (
         (
             "common_origin_pointer",
@@ -2304,7 +2403,7 @@ def _target_projection(
         {"role": "development_targets", **target_record},
         *extra_snapshot,
     ]
-    return frame, portable, snapshot, scanner_audit
+    return frame, portable, snapshot, target_filter_evidence
 
 
 def _baseline_predictions(
@@ -3555,9 +3654,11 @@ def _load_final_calibration_inputs(
 ) -> dict[str, Any]:
     """Load the closed development input surface after the effective P gate."""
     runtime = calibration.load_and_validate_final_calibration_runtime(repo_root=repo_root)
-    targets, target_records, target_snapshot, target_scan_audit = _target_projection(
-        authorized_dvc_pointers=authorized_dvc_pointers,
-        repo_root=repo_root,
+    targets, target_records, target_snapshot, target_filter_evidence = (
+        _target_projection(
+            authorized_dvc_pointers=authorized_dvc_pointers,
+            repo_root=repo_root,
+        )
     )
     baseline, baseline_records, baseline_snapshot, filter_evidence = _baseline_predictions(
         targets,
@@ -3611,7 +3712,7 @@ def _load_final_calibration_inputs(
         "input_records": records,
         "input_snapshot": snapshot,
         "input_filter_evidence": [
-            {"role": "target_predicate_scan", **target_scan_audit},
+            target_filter_evidence,
             *filter_evidence,
         ],
     }

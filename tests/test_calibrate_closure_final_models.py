@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_inference_role_patch as calibration,
+    closure_final_calibration_target_filter_evidence_patch as calibration,
 )
 
 
@@ -149,21 +149,30 @@ def _input_filter_evidence() -> list[dict[str, Any]]:
     }
     return [
         {
-            "role": "target_predicate_scan",
+            "role": "target_predicate_scan_and_common_origin_projection",
             "scanner": "pyarrow_dataset_anchored_fd_predicate_pushdown",
             "predicate": (
                 "source_id=wqp AND site_id IN development AND "
                 "origin<=2021-12 AND 2019-01<=target<=2021-12"
             ),
-            "materialized_row_count": 2646,
+            "materialized_row_count": 8743,
             "minimum_origin_year_month": "2018-10",
             "maximum_origin_year_month": "2021-11",
             "minimum_target_year_month": "2019-01",
             "maximum_target_year_month": "2021-12",
             "boundary_crossing_rows": 0,
             "holdout_rows_materialized": 0,
-            "development_site_count": 353,
-            "development_site_ids_sha256": "d" * 64,
+            "development_site_count": 121,
+            "development_site_ids_sha256": (
+                "42ece001484bdfa38ef8ac849e7b085ba14f244ee89f7a11474f377de721dea5"
+            ),
+            "projection": "exact_common_origin_key_inner_join",
+            "projected_complete_target_row_count": 2646,
+            "outside_common_origin_projection_row_count": 6097,
+            "row_count_equation": (
+                "materialized_row_count=projected_complete_target_row_count+"
+                "outside_common_origin_projection_row_count"
+            ),
         },
         *[
         {
@@ -397,7 +406,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALD"
+    assert calibration.PATCH_GATE == "E0-MCALE"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -904,7 +913,8 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_inference_role_patch as calibration" in source
+        "closure_final_calibration_target_filter_evidence_patch as calibration"
+        in source
     )
     execute_source = inspect.getsource(runner.execute_one_shot)
     require_offset = execute_source.index("require_final_calibration_authority")
@@ -951,8 +961,21 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     poison_2022 = target_frame.head(12).copy()
     poison_2022["origin_year_month"] = "2022-01"
     poison_2022["target_year_month"] = "2022-02"
+    outside_common = target_frame.head(1).copy()
+    outside_common["origin_year_month"] = "2019-01"
+    outside_common["target_year_month"] = "2019-02"
+    outside_common["horizon_months"] = 1
+    outside_key = tuple(
+        outside_common.loc[0, list(runner.TARGET_JOIN_COLUMNS)].tolist()
+    )
+    assert outside_key not in set(
+        common_frame.loc[:, list(runner.TARGET_JOIN_COLUMNS)].itertuples(
+            index=False,
+            name=None,
+        )
+    )
     physical_targets = pd.concat(
-        [target_frame, poison_2022], ignore_index=True
+        [target_frame, outside_common, poison_2022], ignore_index=True
     )
 
     def write_targets(frame: pd.DataFrame) -> None:
@@ -1050,7 +1073,22 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     assert len(projected) == 2646
     assert projected["origin_year_month"].max() <= "2021-12"
     assert projected["target_year_month"].max() <= "2021-12"
-    assert target_scan["materialized_row_count"] == 2646
+    assert target_scan["role"] == (
+        "target_predicate_scan_and_common_origin_projection"
+    )
+    assert target_scan["materialized_row_count"] == 2647
+    assert target_scan["projection"] == "exact_common_origin_key_inner_join"
+    assert target_scan["projected_complete_target_row_count"] == 2646
+    assert target_scan["outside_common_origin_projection_row_count"] == 1
+    assert target_scan["row_count_equation"] == (
+        "materialized_row_count=projected_complete_target_row_count+"
+        "outside_common_origin_projection_row_count"
+    )
+    assert len(target_scan) == 16
+    assert target_scan["materialized_row_count"] == (
+        target_scan["projected_complete_target_row_count"]
+        + target_scan["outside_common_origin_projection_row_count"]
+    )
     assert target_scan["boundary_crossing_rows"] == 0
     assert target_scan["maximum_target_year_month"] <= "2021-12"
     assert len(target_records) == len(target_snapshot) == 6
@@ -1625,6 +1663,36 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         )
 
     filter_evidence = _input_filter_evidence()
+    assert len(filter_evidence[0]) == 16
+    assert filter_evidence[0] == calibration.TARGET_FILTER_EVIDENCE_CONTRACT
+    assert runner._validate_input_filter_evidence(filter_evidence) == filter_evidence
+    for field, value in (
+        ("role", "target_predicate_scan"),
+        ("materialized_row_count", 2646),
+        ("materialized_row_count", 8743.0),
+        ("projected_complete_target_row_count", 8743),
+        ("outside_common_origin_projection_row_count", 6096),
+        ("outside_common_origin_projection_row_count", True),
+        ("row_count_equation", "8743=2646+6097"),
+        ("development_site_count", 353),
+        ("development_site_ids_sha256", "d" * 64),
+        ("development_site_ids_sha256", int("1" * 64)),
+    ):
+        evidence_drift = [dict(record) for record in filter_evidence]
+        evidence_drift[0][field] = value
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match="target filter evidence",
+        ):
+            runner._validate_input_filter_evidence(evidence_drift)
+    for digest_drift in (int("1" * 64), True):
+        evidence_drift = [dict(record) for record in filter_evidence]
+        evidence_drift[1]["excluded_target_keys_sha256"] = digest_drift
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match="raw exclusion evidence",
+        ):
+            runner._validate_input_filter_evidence(evidence_drift)
     availability = _model_availability()
     authority = {
         "gate": calibration.PATCH_GATE,
