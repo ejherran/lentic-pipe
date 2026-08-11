@@ -21,7 +21,9 @@ import pytest
 import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
-from src.experiments import closure_final_calibration as calibration
+from src.experiments import (
+    closure_final_calibration_publication_guard_patch as calibration,
+)
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -340,9 +342,11 @@ def test_cli_is_one_shot_closed_and_translates_only_domain_errors(
 def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    assert runner.calibration is calibration
+    assert calibration.PATCH_GATE == "E0-MCALP"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
-    authority = {"gate": "E0-MCAL", "status": "effective"}
+    authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
 
     def require(*, verify_remote: bool, repo_root: Path) -> dict[str, Any]:
         events.append("gate")
@@ -360,7 +364,9 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
         events.append("namespace")
         return namespace
 
-    monkeypatch.setattr(calibration, "require_final_calibration_authority", require)
+    monkeypatch.setattr(
+        calibration, "require_final_calibration_authority", require
+    )
     monkeypatch.setattr(
         calibration,
         "require_final_calibration_run_namespace",
@@ -843,6 +849,9 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     source = inspect.getsource(runner)
+    assert (
+        "closure_final_calibration_publication_guard_patch as calibration" in source
+    )
     execute_source = inspect.getsource(runner.execute_one_shot)
     require_offset = execute_source.index("require_final_calibration_authority")
     scientific_offsets = [
@@ -1481,7 +1490,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     filter_evidence = _input_filter_evidence()
     availability = _model_availability()
     authority = {
-        "gate": "E0-MCAL",
+        "gate": calibration.PATCH_GATE,
         "status": "effective",
         "nonce": "stable",
         "authority_binding_sha256": "a" * 64,
@@ -1964,7 +1973,9 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         assert records == [{"path": "synthetic", "sha256": "0" * 64}]
         events.append("inventory")
 
-    monkeypatch.setattr(calibration, "require_final_calibration_authority", require)
+    monkeypatch.setattr(
+        calibration, "require_final_calibration_authority", require
+    )
     monkeypatch.setattr(
         runner,
         "_authorized_scientific_dvc_pointers",

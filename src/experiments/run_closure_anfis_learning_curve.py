@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Run the closed, development-only E0-MCAL ANFIS learning curve.
 
-``require_final_calibration_authority`` is always evaluated before scientific
-input loading, fitting, directory creation, or publication.
+The effective E0-MCALP authority is always evaluated before scientific input
+loading, fitting, directory creation, or publication.  The E0-MCAL learning-
+curve algorithm and output dialect remain unchanged.
 """
 
 from __future__ import annotations
@@ -29,7 +30,9 @@ from threadpoolctl import threadpool_limits
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.experiments import closure_final_calibration as calibration  # noqa: E402
+from src.experiments import (  # noqa: E402
+    closure_final_calibration_publication_guard_patch as calibration,
+)
 from src.experiments.calibrate_closure_final_models import (  # noqa: E402
     _canonical_json_bytes,
     _csv_bytes,
@@ -1743,7 +1746,9 @@ def _configure_e7_cpu_policy(runtime: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _require_e7_run_namespace(*, repo_root: Path) -> Mapping[str, Any]:
-    require = getattr(calibration, "require_final_calibration_run_namespace", None)
+    require = getattr(
+        calibration, "require_final_calibration_run_namespace", None
+    )
     if not callable(require):
         raise _error("E0-MCAL run-namespace authority is unavailable")
     value = require(runner="e7", repo_root=repo_root)

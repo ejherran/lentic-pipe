@@ -13,7 +13,9 @@ import pandas as pd
 import pytest
 import yaml
 
-from src.experiments import closure_final_calibration as calibration
+from src.experiments import (
+    closure_final_calibration_publication_guard_patch as calibration,
+)
 from src.experiments import run_closure_anfis_learning_curve as runner
 from src.experiments.closure_runtime_contract import (
     anfis_hash_rank_sample,
@@ -88,7 +90,7 @@ def _e7_authority() -> dict[str, Any]:
         ).encode("utf-8")
     ).hexdigest()
     return {
-        "gate": "E0-MCAL",
+        "gate": calibration.PATCH_GATE,
         "status": "effective",
         "authority_binding_sha256": "a" * 64,
         "e7_terminal_record": _runtime()["e7_terminal_record"],
@@ -402,9 +404,11 @@ def test_cli_is_one_shot_closed_and_translates_domain_errors(
 def test_check_only_requires_effective_p_before_io_and_is_nonwriting(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
+    assert runner.calibration is calibration
+    assert calibration.PATCH_GATE == "E0-MCALP"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
-    authority = {"gate": "E0-MCAL", "status": "effective"}
+    authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
 
     def require(*, verify_remote: bool, repo_root: Path) -> dict[str, Any]:
         events.append("gate")
@@ -425,7 +429,9 @@ def test_check_only_requires_effective_p_before_io_and_is_nonwriting(
         events.append("namespace")
         return namespace
 
-    monkeypatch.setattr(calibration, "require_final_calibration_authority", require)
+    monkeypatch.setattr(
+        calibration, "require_final_calibration_authority", require
+    )
     monkeypatch.setattr(
         calibration,
         "require_final_calibration_run_namespace",
@@ -466,6 +472,10 @@ def test_check_only_requires_effective_p_before_io_and_is_nonwriting(
 def test_public_sampling_run_and_builder_signatures_are_closed(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    source = inspect.getsource(runner)
+    assert (
+        "closure_final_calibration_publication_guard_patch as calibration" in source
+    )
     sample = inspect.signature(runner.select_learning_curve_sample).parameters
     assert list(sample) == [
         "rows",
@@ -1293,7 +1303,9 @@ def test_execute_one_shot_gates_before_build_and_publishes_manifest_last(
             raise value
         return value
 
-    monkeypatch.setattr(calibration, "require_final_calibration_authority", require)
+    monkeypatch.setattr(
+        calibration, "require_final_calibration_authority", require
+    )
     authority_box["value"] = calibration.FinalCalibrationError("gate closed")
     with pytest.raises(calibration.FinalCalibrationError, match="gate closed"):
         runner.execute_one_shot(repo_root=tmp_path)

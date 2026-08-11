@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls ``require_final_calibration_authority``; only
-after that gate may a scientific reader or ``publish_ordered_bundle`` run.
+Every public mode first calls the effective E0-MCALP authority; only after
+that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
+scientific E0-MCAL algorithms and output dialect remain unchanged.
 """
 
 from __future__ import annotations
@@ -35,7 +36,9 @@ from threadpoolctl import threadpool_limits
 if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
-from src.experiments import closure_final_calibration as calibration  # noqa: E402
+from src.experiments import (  # noqa: E402
+    closure_final_calibration_publication_guard_patch as calibration,
+)
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
     configure_torch_cpu_execution_policy,
