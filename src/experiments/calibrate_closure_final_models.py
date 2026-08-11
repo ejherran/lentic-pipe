@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALF authority; only after
+Every public mode first calls the effective E0-MCALG authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -37,7 +37,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_raw_exclusion_evidence_patch as calibration,
+    closure_final_calibration_ordinal_label_representation_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -1174,6 +1174,86 @@ def _exact_integer_column(frame: pd.DataFrame, column: str) -> pd.Series:
     return values.astype("int64")
 
 
+def _exact_ordinal_label_array(
+    values: Iterable[Any], *, context: str
+) -> pd.arrays.IntegerArray:
+    """Build the sealed nullable-Int8 representation without coercion."""
+
+    observed = list(values)
+    if any(
+        isinstance(value, (bool, np.bool_))
+        or not isinstance(value, (int, np.integer))
+        or int(value) not in {0, 1, 2, 3}
+        for value in observed
+    ):
+        raise _error(
+            f"E0-MCAL {context} must contain exact integer classes 0..3"
+        )
+    return cast(pd.arrays.IntegerArray, pd.array(observed, dtype="Int8"))
+
+
+def _missing_ordinal_label_array(
+    row_count: int, *, context: str
+) -> pd.arrays.IntegerArray:
+    """Build the sealed nonordinal representation as nullable-Int8 NA."""
+
+    if isinstance(row_count, bool) or not isinstance(row_count, int) or row_count < 0:
+        raise _error(f"E0-MCAL {context} row count must be an exact nonnegative integer")
+    return cast(
+        pd.arrays.IntegerArray,
+        pd.array([pd.NA] * row_count, dtype="Int8"),
+    )
+
+
+def _require_ordinal_label_representation(
+    frame: pd.DataFrame, *, context: str
+) -> None:
+    """Require the exact model-applicable nullable-Int8 representation."""
+
+    if not isinstance(frame, pd.DataFrame) or not {
+        "model_id",
+        "ordinal_label",
+    }.issubset(frame.columns):
+        raise _error(f"E0-MCAL {context} ordinal label surface is absent")
+    model_ids = frame["model_id"]
+    if model_ids.isna().any() or any(
+        type(model_id) is not str for model_id in model_ids.tolist()
+    ):
+        raise _error(f"E0-MCAL {context} model identities must be exact text")
+    if set(model_ids.tolist()) - set(CALIBRATABLE_MODELS):
+        raise _error(f"E0-MCAL {context} model identities are outside the closed matrix")
+    labels = frame["ordinal_label"]
+    if not pd.api.types.is_dtype_equal(labels.dtype, pd.Int8Dtype()):
+        raise _error(
+            f"E0-MCAL {context} ordinal_label must have exact nullable Int8 dtype"
+        )
+    ordinal_mask = model_ids.isin(ORDINAL_MODELS)
+    if (
+        labels.loc[ordinal_mask].isna().any()
+        or not labels.loc[ordinal_mask].isin((0, 1, 2, 3)).all()
+        or labels.loc[~ordinal_mask].notna().any()
+    ):
+        raise _error(
+            f"E0-MCAL {context} ordinal_label applicability or classes drifted"
+        )
+
+
+def _concat_prediction_frames(
+    frames: Sequence[pd.DataFrame], *, context: str
+) -> pd.DataFrame:
+    """Concatenate producer frames while preserving the sealed Int8 dtype."""
+
+    if not frames:
+        raise _error(f"E0-MCAL {context} prediction frames are absent")
+    for index, frame in enumerate(frames):
+        _require_ordinal_label_representation(
+            frame, context=f"{context} input {index}"
+        )
+    combined = pd.concat(frames, ignore_index=True)
+    _require_ordinal_label_representation(combined, context=context)
+    return combined
+
+
 def _canonical_months(values: pd.Series, *, context: str) -> pd.PeriodIndex:
     strings = values.astype(str)
     if not strings.str.fullmatch(r"\d{4}-(?:0[1-9]|1[0-2])").all():
@@ -1229,6 +1309,9 @@ def _validate_calibration_frame(
         ),
         context="normalized predictions",
     )
+    _require_ordinal_label_representation(
+        value, context="normalized predictions"
+    )
     if (
         set(value["source_id"].astype(str)) != {"wqp"}
         or set(value["assignment_role"].astype(str)) != {"development"}
@@ -1277,11 +1360,8 @@ def _validate_calibration_frame(
     _binary_vector(value["bloom_label"].to_numpy(), context="normalized bloom labels")
     ordinal_mask = value["model_id"].isin(ORDINAL_MODELS)
     if (
-        value.loc[ordinal_mask, ["ordinal_score", "ordinal_label"]].isna().any().any()
-        or value.loc[~ordinal_mask, ["ordinal_score", "ordinal_label"]]
-        .notna()
-        .any()
-        .any()
+        value.loc[ordinal_mask, "ordinal_score"].isna().any()
+        or value.loc[~ordinal_mask, "ordinal_score"].notna().any()
     ):
         raise _error("E0-MCAL ordinal applicability columns drifted")
     if ordinal_mask.any():
@@ -1289,11 +1369,6 @@ def _validate_calibration_frame(
             value.loc[ordinal_mask, "ordinal_score"].to_numpy(),
             context="normalized ordinal score",
         )
-        ordinal_label = value.loc[ordinal_mask, "ordinal_label"]
-        if ordinal_label.dtype.kind == "b" or ordinal_label.dtype.kind not in {"i", "u"}:
-            raise _error("E0-MCAL ordinal labels must be exact integer classes")
-        if not ordinal_label.isin((0, 1, 2, 3)).all():
-            raise _error("E0-MCAL ordinal labels leave exact classes 0..3")
     uncertainty_mask = value["model_id"].isin(UNCERTAINTY_MODELS)
     uncertainty_columns = [
         "observed_risk",
@@ -1368,11 +1443,13 @@ def _validate_calibration_frame(
     )
     target_ordinal = reference["ordinal_label"]
     if (
-        target_ordinal.dtype.kind == "b"
-        or target_ordinal.dtype.kind not in {"i", "u"}
+        not pd.api.types.is_dtype_equal(target_ordinal.dtype, pd.Int8Dtype())
+        or target_ordinal.isna().any()
         or not target_ordinal.isin((0, 1, 2, 3)).all()
     ):
-        raise _error("E0-MCAL exact target ordinal labels drifted")
+        raise _error(
+            "E0-MCAL exact target ordinal labels must use non-null nullable Int8"
+        )
     expected_by_horizon = {
         horizon: _target_key_set(reference.loc[reference["horizon_months"].eq(horizon)])
         for horizon in HORIZONS
@@ -2380,7 +2457,10 @@ def _target_projection(
     if set(frame["target_trophic_state_h"].astype(str)) - set(TROPHIC_LABELS):
         raise _error("E0-MCAL target trophic labels drifted")
     trophic = {label: index for index, label in enumerate(TROPHIC_LABELS)}
-    frame["ordinal_label"] = frame["target_trophic_state_h"].map(trophic)
+    frame["ordinal_label"] = _exact_ordinal_label_array(
+        frame["target_trophic_state_h"].map(trophic),
+        context="target ordinal labels",
+    )
     if frame[["bloom_h", "target_risk_chla_h", "ordinal_label"]].isna().any().any():
         raise _error("E0-MCAL 2019-2021 development target labels are incomplete")
     target_filter_evidence = _build_target_filter_evidence(
@@ -2595,6 +2675,16 @@ def _baseline_predictions(
         )
         if joined[["bloom_h", "target_risk_chla_h", "ordinal_label"]].isna().any().any():
             raise _error(f"E0-MCAL {model_id} labels are incomplete")
+        normalized_ordinal_labels = (
+            _exact_ordinal_label_array(
+                joined["ordinal_label"],
+                context=f"{model_id} normalized ordinal labels",
+            )
+            if model_id in ORDINAL_MODELS
+            else _missing_ordinal_label_array(
+                len(joined), context=f"{model_id} normalized ordinal labels"
+            )
+        )
         normalized = pd.DataFrame(
             {
                 "model_id": model_id,
@@ -2621,15 +2711,14 @@ def _baseline_predictions(
                     if model_id in ORDINAL_MODELS
                     else np.nan
                 ),
-                "ordinal_label": (
-                    joined["ordinal_label"].astype("int8")
-                    if model_id in ORDINAL_MODELS
-                    else np.nan
-                ),
+                "ordinal_label": normalized_ordinal_labels,
                 "observed_risk": np.nan,
                 "predicted_risk": np.nan,
                 "predicted_risk_sigma": np.nan,
             }
+        )
+        _require_ordinal_label_representation(
+            normalized, context=f"{model_id} normalized producer"
         )
         rows.append(normalized)
     authority_paths = (
@@ -2642,7 +2731,7 @@ def _baseline_predictions(
         authority_paths, repo_root=repo_root
     )
     return (
-        pd.concat(rows, ignore_index=True),
+        _concat_prediction_frames(rows, context="baseline producer concatenation"),
         [*portable, *extra_portable],
         [*snapshot, *extra_snapshot],
         filter_evidence,
@@ -2800,29 +2889,34 @@ def _anfis_selection_predictions(
                 base_seed=base_seed,
                 observed_outputs={"selection_predictions": record},
             )
-            rows.append(
-                pd.DataFrame(
-                    {
-                        "model_id": joined["model_id"].astype(str),
-                        "model_seed": joined["base_seed"].astype("int64"),
-                        "horizon_months": joined["horizon_months"].astype("int64"),
-                        "source_id": joined["source_id"].astype(str),
-                        "site_id": joined["site_id"].astype(str),
-                        "common_origin_id": joined["common_origin_id"].astype(str),
-                        "origin_year_month": joined["origin_year_month"].astype(str),
-                        "assignment_role": joined["assignment_role"].astype(str),
-                        "time_role": joined["time_role_target"].astype(str),
-                        "target_year_month": joined["target_year_month"].astype(str),
-                        "bloom_probability": joined["predicted_bloom_probability"],
-                        "bloom_label": target_bloom,
-                        "ordinal_score": np.nan,
-                        "ordinal_label": np.nan,
-                        "observed_risk": target_risk,
-                        "predicted_risk": joined["predicted_risk"],
-                        "predicted_risk_sigma": joined["predicted_risk_sigma"],
-                    }
-                )
+            normalized = pd.DataFrame(
+                {
+                    "model_id": joined["model_id"].astype(str),
+                    "model_seed": joined["base_seed"].astype("int64"),
+                    "horizon_months": joined["horizon_months"].astype("int64"),
+                    "source_id": joined["source_id"].astype(str),
+                    "site_id": joined["site_id"].astype(str),
+                    "common_origin_id": joined["common_origin_id"].astype(str),
+                    "origin_year_month": joined["origin_year_month"].astype(str),
+                    "assignment_role": joined["assignment_role"].astype(str),
+                    "time_role": joined["time_role_target"].astype(str),
+                    "target_year_month": joined["target_year_month"].astype(str),
+                    "bloom_probability": joined["predicted_bloom_probability"],
+                    "bloom_label": target_bloom,
+                    "ordinal_score": np.nan,
+                    "ordinal_label": _missing_ordinal_label_array(
+                        len(joined),
+                        context=f"{model_id} selection ordinal labels",
+                    ),
+                    "observed_risk": target_risk,
+                    "predicted_risk": joined["predicted_risk"],
+                    "predicted_risk_sigma": joined["predicted_risk_sigma"],
+                }
             )
+            _require_ordinal_label_representation(
+                normalized, context=f"{model_id} selection producer"
+            )
+            rows.append(normalized)
             portable.append(_portable_record(record, role=f"{model_id.lower()}_selection_predictions"))
             snapshot.append({"role": f"{model_id.lower()}_selection_predictions", **record})
             portable.append(manifest_record)
@@ -2838,7 +2932,13 @@ def _anfis_selection_predictions(
             )
             portable.extend(pointer_portable)
             snapshot.extend(pointer_snapshot)
-    return pd.concat(rows, ignore_index=True), portable, snapshot
+    return (
+        _concat_prediction_frames(
+            rows, context="ANFIS selection producer concatenation"
+        ),
+        portable,
+        snapshot,
+    )
 
 
 def _json_input(
@@ -3529,34 +3629,45 @@ def _anfis_calibration_predictions(
                     "calibration_threshold"
                 }:
                     raise _error("E0-MCAL ANFIS 2021 inference denominator drifted")
-                rows.append(
-                    pd.DataFrame(
-                        {
-                            "model_id": predicted["model_id"].astype(str),
-                            "model_seed": predicted["base_seed"].astype("int64"),
-                            "horizon_months": predicted["horizon_months"].astype("int64"),
-                            "source_id": predicted["source_id"].astype(str),
-                            "site_id": predicted["site_id"].astype(str),
-                            "common_origin_id": predicted["common_origin_id"].astype(str),
-                            "origin_year_month": predicted["origin_year_month"].astype(str),
-                            "assignment_role": "development",
-                            "time_role": predicted["time_role"].astype(str),
-                            "target_year_month": predicted["target_year_month"].astype(str),
-                            "bloom_probability": predicted[
-                                "predicted_bloom_probability"
-                            ],
-                            "bloom_label": predicted["observed_bloom"].astype("int8"),
-                            "ordinal_score": np.nan,
-                            "ordinal_label": np.nan,
-                            "observed_risk": predicted["observed_risk"],
-                            "predicted_risk": predicted["predicted_risk"],
-                            "predicted_risk_sigma": predicted["predicted_risk_sigma"],
-                        }
-                    )
+                normalized = pd.DataFrame(
+                    {
+                        "model_id": predicted["model_id"].astype(str),
+                        "model_seed": predicted["base_seed"].astype("int64"),
+                        "horizon_months": predicted["horizon_months"].astype("int64"),
+                        "source_id": predicted["source_id"].astype(str),
+                        "site_id": predicted["site_id"].astype(str),
+                        "common_origin_id": predicted["common_origin_id"].astype(str),
+                        "origin_year_month": predicted["origin_year_month"].astype(str),
+                        "assignment_role": "development",
+                        "time_role": predicted["time_role"].astype(str),
+                        "target_year_month": predicted["target_year_month"].astype(str),
+                        "bloom_probability": predicted[
+                            "predicted_bloom_probability"
+                        ],
+                        "bloom_label": predicted["observed_bloom"].astype("int8"),
+                        "ordinal_score": np.nan,
+                        "ordinal_label": _missing_ordinal_label_array(
+                            len(predicted),
+                            context=f"{model_id} inference ordinal labels",
+                        ),
+                        "observed_risk": predicted["observed_risk"],
+                        "predicted_risk": predicted["predicted_risk"],
+                        "predicted_risk_sigma": predicted["predicted_risk_sigma"],
+                    }
                 )
+                _require_ordinal_label_representation(
+                    normalized, context=f"{model_id} inference producer"
+                )
+                rows.append(normalized)
     except anfis_training.AnfisAblationTrainingError as exc:
         raise _error(f"E0-MCAL ANFIS 2021 inference failed: {exc}") from exc
-    return pd.concat(rows, ignore_index=True), portable, snapshot
+    return (
+        _concat_prediction_frames(
+            rows, context="ANFIS inference producer concatenation"
+        ),
+        portable,
+        snapshot,
+    )
 
 
 def _deduplicate_records(
@@ -3690,7 +3801,10 @@ def _load_final_calibration_inputs(
         ),
         repo_root=repo_root,
     )
-    predictions = pd.concat([baseline, selection, inferred], ignore_index=True)
+    predictions = _concat_prediction_frames(
+        [baseline, selection, inferred],
+        context="complete calibration producer concatenation",
+    )
     records = _deduplicate_records(
         [
             *target_records,

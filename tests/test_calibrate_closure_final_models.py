@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_raw_exclusion_evidence_patch as calibration,
+    closure_final_calibration_ordinal_label_representation_patch as calibration,
 )
 
 
@@ -60,8 +60,9 @@ def _synthetic_predictions() -> pd.DataFrame:
         2: {2019: 371, 2020: 287, 2021: 224},
         3: {2019: 344, 2020: 314, 2021: 224},
     }
-    rows: list[dict[str, Any]] = []
+    producer_frames: list[pd.DataFrame] = []
     for model_id in runner.CALIBRATABLE_MODELS:
+        model_rows: list[dict[str, Any]] = []
         for model_seed in runner.MODEL_SEEDS[model_id]:
             for horizon in runner.HORIZONS:
                 for year in (2019, 2020, 2021):
@@ -73,7 +74,7 @@ def _synthetic_predictions() -> pd.DataFrame:
                         origin_month = target_month - horizon
                         bloom_label = index % 2
                         ordinal_label = index % 4
-                        rows.append(
+                        model_rows.append(
                             {
                                 "model_id": model_id,
                                 "model_seed": model_seed,
@@ -126,9 +127,24 @@ def _synthetic_predictions() -> pd.DataFrame:
                                 ),
                             }
                         )
-    frame = pd.DataFrame(rows)
-    frame["ordinal_label"] = pd.array(frame["ordinal_label"], dtype="Int8")
-    return frame
+        model_frame = pd.DataFrame(model_rows)
+        model_frame["ordinal_label"] = (
+            runner._exact_ordinal_label_array(
+                model_frame["ordinal_label"],
+                context=f"synthetic {model_id} producer",
+            )
+            if model_id in runner.ORDINAL_MODELS
+            else runner._missing_ordinal_label_array(
+                len(model_frame), context=f"synthetic {model_id} producer"
+            )
+        )
+        runner._require_ordinal_label_representation(
+            model_frame, context=f"synthetic {model_id} producer"
+        )
+        producer_frames.append(model_frame)
+    return runner._concat_prediction_frames(
+        producer_frames, context="synthetic producer-like composition"
+    )
 
 
 def _input_filter_evidence() -> list[dict[str, Any]]:
@@ -350,6 +366,15 @@ def test_constants_close_model_matrix_roles_and_exact_six_outputs() -> None:
     assert runner.CALIBRATABLE_MODELS == ("B0", "B1", "B2", "M0", "A0", "A1")
     assert runner.ORDINAL_MODELS == ("B0", "B1", "B2")
     assert runner.UNCERTAINTY_MODELS == ("A0", "A1")
+    ordinal_contract = calibration.ORDINAL_LABEL_REPRESENTATION_CONTRACT
+    assert ordinal_contract["normalized_column"] == "ordinal_label"
+    assert ordinal_contract["normalized_pandas_dtype"] == "Int8"
+    assert ordinal_contract["ordinal_model_ids"] == list(runner.ORDINAL_MODELS)
+    assert ordinal_contract["nonordinal_model_ids"] == ["M0", "A0", "A1"]
+    assert ordinal_contract["ordinal_values"] == [0, 1, 2, 3]
+    assert ordinal_contract["rejected_scalar_types"] == ["bool", "float", "string"]
+    assert ordinal_contract["fractional_values_authorized"] is False
+    assert ordinal_contract["data_rewrite_performed"] is False
     assert runner.HORIZONS == (1, 2, 3)
     assert runner.REGISTERED_SEEDS == (1729, 20260612, 20260613, 20260614, 314159)
     assert tuple(path.relative_to(ROOT).as_posix() for path in runner.OUTPUT_PATHS) == EXPECTED_OUTPUTS
@@ -427,7 +452,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALF"
+    assert calibration.PATCH_GATE == "E0-MCALG"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -934,7 +959,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_raw_exclusion_evidence_patch as calibration"
+        "closure_final_calibration_ordinal_label_representation_patch as calibration"
         in source
     )
     evidence_parser_source = inspect.getsource(runner._validate_input_filter_evidence)
@@ -949,6 +974,8 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     ]
     assert scientific_offsets
     assert all(require_offset < offset for offset in scientific_offsets)
+    assert source.count("_concat_prediction_frames(") == 5
+    assert '"ordinal_label": np.nan' not in source
     for name in (
         "fit_calibrator_spec",
         "apply_calibrator_spec",
@@ -965,6 +992,21 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 
     predictions = _synthetic_predictions()
     assert len(predictions) == 66 * 882
+    assert pd.api.types.is_dtype_equal(
+        predictions["ordinal_label"].dtype, pd.Int8Dtype()
+    )
+    ordinal_mask = predictions["model_id"].isin(runner.ORDINAL_MODELS)
+    assert predictions.loc[ordinal_mask, "ordinal_label"].notna().all()
+    assert predictions.loc[ordinal_mask, "ordinal_label"].isin((0, 1, 2, 3)).all()
+    assert predictions.loc[~ordinal_mask, "ordinal_label"].isna().all()
+    for malformed in ([1.0], [True], ["1"], [1.5]):
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match="exact integer classes 0\\.\\.3",
+        ):
+            runner._exact_ordinal_label_array(
+                malformed, context="synthetic malformed producer"
+            )
     target_counts = (
         predictions.assign(_year=predictions["target_year_month"].str[:4])
         .groupby(["model_id", "model_seed", "horizon_months", "_year"])
@@ -1095,6 +1137,9 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         ],
     ].copy()
     assert len(projected) == 2646
+    assert pd.api.types.is_dtype_equal(
+        projected["ordinal_label"].dtype, pd.Int8Dtype()
+    )
     assert projected["origin_year_month"].max() <= "2021-12"
     assert projected["target_year_month"].max() <= "2021-12"
     assert target_scan["role"] == (
@@ -1117,6 +1162,23 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     assert target_scan["maximum_target_year_month"] <= "2021-12"
     assert len(target_records) == len(target_snapshot) == 6
     assert len({record["path"] for record in target_records}) == 6
+    first_ordinal_index = predictions.index[ordinal_mask][0]
+    for malformed in (1.0, True, "1", 1.5):
+        malformed_predictions = predictions.copy()
+        malformed_predictions["ordinal_label"] = (
+            malformed_predictions["ordinal_label"].astype("Float64")
+            if type(malformed) is float
+            else malformed_predictions["ordinal_label"].astype(object)
+        )
+        malformed_predictions.loc[first_ordinal_index, "ordinal_label"] = malformed
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match="ordinal_label must have exact nullable Int8 dtype",
+        ):
+            runner._validate_calibration_frame(
+                malformed_predictions,
+                target_universe=target_universe,
+            )
     assert scanner_calls
     assert scanner_calls[-1]["source"].startswith("/proc/self/fd/")
     assert "target_year_month" in scanner_calls[-1]["filter"]
@@ -1202,6 +1264,9 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         repo_root=tmp_path,
     )
     assert len(baseline) == 31752
+    assert pd.api.types.is_dtype_equal(
+        baseline["ordinal_label"].dtype, pd.Int8Dtype()
+    )
     assert baseline.groupby(
         ["model_id", "model_seed", "horizon_months"]
     ).size().eq(882).all()
