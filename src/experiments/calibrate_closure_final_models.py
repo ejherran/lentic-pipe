@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALG authority; only after
+Every public mode first calls the effective E0-MCALH authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -37,7 +37,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_ordinal_label_representation_patch as calibration,
+    closure_final_calibration_observed_risk_precision_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -768,6 +768,42 @@ def _probability_vector(
     return array
 
 
+def _require_observed_risk_precision(
+    values: pd.Series | np.ndarray, *, context: str
+) -> np.ndarray:
+    """Return an exact float64 risk carrier without casting or repairing it."""
+
+    array = values.to_numpy(copy=False) if isinstance(values, pd.Series) else values
+    if (
+        type(array) is not np.ndarray
+        or array.dtype != np.dtype(np.float64)
+        or array.ndim != 1
+        or array.size == 0
+        or not np.isfinite(array).all()
+        or np.any((array < 0.0) | (array > 1.0))
+    ):
+        raise _error(
+            f"E0-MCAL {context} must be one exact nonempty float64 risk vector"
+        )
+    return array
+
+
+def _require_anfis_calibration_bundle_dtypes(
+    bundle: anfis_training.TrainingBundle, *, context: str
+) -> None:
+    """Require the sealed model-input, bloom, and observed-risk carriers."""
+
+    if type(bundle.x) is not np.ndarray or bundle.x.dtype != np.dtype(np.float32):
+        raise _error(f"E0-MCAL {context} model input must have exact float32 dtype")
+    if (
+        type(bundle.bloom) is not np.ndarray
+        or bundle.bloom.dtype != np.dtype(np.float32)
+    ):
+        raise _error(f"E0-MCAL {context} bloom must have exact float32 dtype")
+    if type(bundle.risk) is not np.ndarray or bundle.risk.dtype != np.dtype(np.float64):
+        raise _error(f"E0-MCAL {context} risk must have exact float64 dtype")
+
+
 def _binary_vector(values: Sequence[int] | np.ndarray, *, context: str) -> np.ndarray:
     array = np.asarray(values)
     if array.ndim != 1 or array.size == 0 or array.dtype.kind == "b":
@@ -1381,8 +1417,8 @@ def _validate_calibration_frame(
     ):
         raise _error("E0-MCAL uncertainty applicability columns drifted")
     if uncertainty_mask.any():
-        _probability_vector(
-            value.loc[uncertainty_mask, "observed_risk"].to_numpy(),
+        _require_observed_risk_precision(
+            value.loc[uncertainty_mask, "observed_risk"],
             context="normalized observed risk",
         )
         _probability_vector(
@@ -1437,8 +1473,8 @@ def _validate_calibration_frame(
     ):
         raise _error("E0-MCAL exact target universe is duplicated or malformed")
     reference["bloom_h"] = reference["bloom_h"].astype("int8")
-    _probability_vector(
-        reference["target_risk_chla_h"].to_numpy(),
+    _require_observed_risk_precision(
+        reference["target_risk_chla_h"],
         context="exact target risk",
     )
     target_ordinal = reference["ordinal_label"]
@@ -1486,11 +1522,15 @@ def _validate_calibration_frame(
             labeled["ordinal_label_y"].to_numpy(dtype=np.int8),
         ):
             raise _error(f"E0-MCAL group ordinal labels differ from targets: {key}")
-        if model_id in UNCERTAINTY_MODELS and not np.array_equal(
-            labeled["observed_risk"].to_numpy(dtype=np.float64),
-            labeled["target_risk_chla_h"].to_numpy(dtype=np.float64),
-        ):
-            raise _error(f"E0-MCAL group risks differ from targets: {key}")
+        if model_id in UNCERTAINTY_MODELS:
+            observed_risk = _require_observed_risk_precision(
+                labeled["observed_risk"], context=f"group {key} observed risk"
+            )
+            target_risk = _require_observed_risk_precision(
+                labeled["target_risk_chla_h"], context=f"group {key} target risk"
+            )
+            if not np.array_equal(observed_risk, target_risk):
+                raise _error(f"E0-MCAL group risks differ from targets: {key}")
     return value.sort_values(
         [
             "model_id",
@@ -2820,8 +2860,8 @@ def _anfis_selection_predictions(
                 frame["observed_bloom"].to_numpy(),
                 context="ANFIS selection observed bloom",
             )
-            _probability_vector(
-                frame["observed_risk"].to_numpy(),
+            _require_observed_risk_precision(
+                frame["observed_risk"],
                 context="ANFIS selection observed risk",
             )
             _probability_vector(
@@ -2863,8 +2903,12 @@ def _anfis_selection_predictions(
             )
             observed_bloom = joined["observed_bloom"].to_numpy(dtype=np.int8)
             target_bloom = joined["bloom_h"].to_numpy(dtype=np.int8)
-            observed_risk = joined["observed_risk"].to_numpy(dtype=np.float64)
-            target_risk = joined["target_risk_chla_h"].to_numpy(dtype=np.float64)
+            observed_risk = _require_observed_risk_precision(
+                joined["observed_risk"], context="ANFIS selection observed risk"
+            )
+            target_risk = _require_observed_risk_precision(
+                joined["target_risk_chla_h"], context="ANFIS selection target risk"
+            )
             if (
                 not joined["time_role_selection"].eq(
                     joined["time_role_target"]
@@ -3095,6 +3139,10 @@ def _calibration_bundle_from_sequence(
     )
     if len(origins) != 224:
         raise _error("E0-MCAL 2021 ANFIS origin denominator drifted")
+    _require_observed_risk_precision(
+        selected_targets["target_risk_chla_h"],
+        context="2021 ANFIS calibration target risk",
+    )
     sequence_index = sequence.set_index("common_origin_id")
     if not sequence_index.index.is_unique:
         raise _error("E0-MCAL 2021 ANFIS sequence identity is duplicated")
@@ -3110,19 +3158,23 @@ def _calibration_bundle_from_sequence(
     if not ordered_targets.index.is_unique:
         raise _error("E0-MCAL 2021 ANFIS target identity is duplicated")
     bloom = np.empty((len(origins), len(HORIZONS)), dtype=np.float32)
-    risk = np.empty_like(bloom)
+    risk = np.empty((len(origins), len(HORIZONS)), dtype=np.float64)
     for row_index, common_origin_id in enumerate(origins["common_origin_id"]):
         for horizon_index, horizon in enumerate(HORIZONS):
             record = ordered_targets.loc[(common_origin_id, horizon)]
             bloom[row_index, horizon_index] = float(record["bloom_h"])
-            risk[row_index, horizon_index] = float(record["target_risk_chla_h"])
+            risk[row_index, horizon_index] = record["target_risk_chla_h"]
     if not np.isin(bloom, (0.0, 1.0)).all() or not np.isfinite(risk).all() or np.any(
         (risk < 0.0) | (risk > 1.0)
     ):
         raise _error("E0-MCAL 2021 ANFIS targets drifted")
     raw_tensor = anfis_training._tensor_from_sequence(selected_sequence, model_id=model_id)
     tensor = anfis_training.apply_mask_aware_standardizer(raw_tensor, standardizer)
-    return anfis_training.TrainingBundle(origins, tensor, bloom, risk)
+    bundle = anfis_training.TrainingBundle(origins, tensor, bloom, risk)
+    _require_anfis_calibration_bundle_dtypes(
+        bundle, context="2021 ANFIS calibration bundle"
+    )
+    return bundle
 
 
 def _mcal_sequence_frame(
@@ -3262,6 +3314,9 @@ def _canonical_anfis_calibration_threshold_prediction_frame(
         for name in numeric_names
     ):
         raise _error("E0-MCAL ANFIS calibration numeric cell type drifted")
+    _require_observed_risk_precision(
+        frame["observed_risk"], context="ANFIS calibration observed risk"
+    )
     model_ids = set(frame["model_id"].tolist())
     if len(model_ids) != 1 or not model_ids.issubset(UNCERTAINTY_MODELS):
         raise _error("E0-MCAL ANFIS calibration table must contain one model")
@@ -3303,8 +3358,10 @@ def _canonical_anfis_calibration_threshold_prediction_frame(
             raise _error("E0-MCAL ANFIS calibration target month/horizon drifted")
         if target.year != 2021:
             raise _error("E0-MCAL ANFIS calibration target leaves 2021")
-    numeric = frame[["observed_bloom", *numeric_names]].to_numpy(dtype=np.float64)
-    if not np.isfinite(numeric).all():
+    if any(
+        not np.isfinite(frame[name].to_numpy(copy=False)).all()
+        for name in ("observed_bloom", *numeric_names)
+    ):
         raise _error("E0-MCAL ANFIS calibration predictions contain nonfinite values")
     bounded = (
         "observed_bloom",
@@ -3413,21 +3470,23 @@ def _anfis_calibration_threshold_prediction_frame(
     ):
         raise _error("E0-MCAL ANFIS calibration metadata identity drifted")
     expected_shape = (len(metadata), len(HORIZONS))
+    _require_anfis_calibration_bundle_dtypes(
+        bundle, context="ANFIS calibration bundle"
+    )
     arrays = (bundle.bloom, bundle.risk, bloom_probability, risk_mu, risk_logvar)
     if any(
         type(array) is not np.ndarray or array.shape != expected_shape
         for array in arrays
     ):
         raise _error("E0-MCAL ANFIS calibration tensor shape drifted")
-    if bundle.bloom.dtype != np.float32 or bundle.risk.dtype != np.float32:
-        raise _error("E0-MCAL ANFIS calibration target tensor dtype drifted")
     if any(
         array.dtype != np.float64
         for array in (bloom_probability, risk_mu, risk_logvar)
     ):
         raise _error("E0-MCAL ANFIS calibration prediction tensor dtype drifted")
     if (
-        not np.isfinite(bundle.bloom).all()
+        not np.isfinite(bundle.x).all()
+        or not np.isfinite(bundle.bloom).all()
         or not np.isin(bundle.bloom, (0.0, 1.0)).all()
         or not np.isfinite(bundle.risk).all()
         or np.any((bundle.risk < 0.0) | (bundle.risk > 1.0))

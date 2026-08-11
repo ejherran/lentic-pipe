@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/final_calibration_observed_risk_precision_patch_lock.schema.json",
+  "title": "Closure V1 E0-MCALH observed-risk-precision patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate",
+    "status",
+    "generated_at_utc",
+    "repository",
+    "failed_attempt",
+    "p_mcalg_authority",
+    "h_patch",
+    "runtime",
+    "observed_risk_precision_contract",
+    "scientific_input_inventory",
+    "scientific_boundary",
+    "model_matrix",
+    "calibration_group_matrix",
+    "e7_terminal_record",
+    "output_contract",
+    "prelock",
+    "verification",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_final_calibration_observed_risk_precision_patch_lock_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-MCALH"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "repository": {"$ref": "#/$defs/repository"},
+    "failed_attempt": {"$ref": "#/$defs/failedAttempt"},
+    "p_mcalg_authority": {"$ref": "#/$defs/pMcalgAuthority"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runtime": {"type": "object"},
+    "observed_risk_precision_contract": {"$ref": "#/$defs/observedRiskPrecisionContract"},
+    "scientific_input_inventory": {"type": "object"},
+    "scientific_boundary": {"type": "object"},
+    "model_matrix": {"type": "object"},
+    "calibration_group_matrix": {"type": "object"},
+    "e7_terminal_record": {"type": "object"},
+    "output_contract": {"type": "object"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "verification": {"type": "object"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "gitArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "git_mode": {"const": "100644"}
+      }
+    },
+    "historicalArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode", "commit"],
+      "properties": {
+        "role": {"const": "superseded_h_mcalg_component"},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "git_oid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "git_mode": {"const": "100644"},
+        "commit": {"const": "ba15b7647811bbef2b63b3eb904ba427788da048"}
+      }
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted", "path_count", "paths"],
+      "properties": {
+        "added": {"const": 5},
+        "modified": {"const": 4},
+        "deleted": {"const": 0},
+        "path_count": {"const": 9},
+        "paths": {
+          "const": [
+            "configs/closure_v1/final_calibration_observed_risk_precision_patch_lock.schema.json",
+            "docs/closure_v1/E0_M_FINAL_CALIBRATION_OBSERVED_RISK_PRECISION_PATCH_1.md",
+            "src/experiments/calibrate_closure_final_models.py",
+            "src/experiments/closure_final_calibration_observed_risk_precision_patch.py",
+            "src/experiments/lock_closure_final_calibration_observed_risk_precision_patch.py",
+            "src/experiments/run_closure_anfis_learning_curve.py",
+            "tests/test_calibrate_closure_final_models.py",
+            "tests/test_closure_anfis_learning_curve.py",
+            "tests/test_closure_final_calibration_observed_risk_precision_patch.py"
+          ]
+        }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_p_mcalg_commit", "h_patch_head", "branch", "remote_head", "scope"],
+      "properties": {
+        "base_p_mcalg_commit": {"const": "34a4578efa37d0ccf09e7fc45adf655d3b5a21c1"},
+        "h_patch_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "branch": {"const": "main"},
+        "remote_head": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+        "scope": {"$ref": "#/$defs/scope"}
+      }
+    },
+    "failedAttempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "attempted_gate", "status", "phase", "failure_code",
+        "first_failing_group", "compared_row_count",
+        "precision_drift_row_count", "precision_drift_by_horizon",
+        "authorization_consumed", "retry_authorized",
+        "scientific_input_reads_performed", "anfis_inference_slot_count",
+        "model_inference_performed", "calibration_fit_performed",
+        "bundle_payload_built", "final_output_count", "temporary_output_count",
+        "active_guard_count", "dvc_commands_run", "outcome_paths_opened",
+        "holdout_rows_opened", "post_2021_rows_opened", "filesystem_side_effect_count"
+      ],
+      "properties": {
+        "attempted_gate": {"const": "E0-MCALG"},
+        "status": {"const": "failed_closed_no_outputs"},
+        "phase": {"const": "normalized_calibration_frame_validation"},
+        "failure_code": {"const": "a0_seed_1729_horizon_1_observed_risk_float32_precision_loss"},
+        "first_failing_group": {
+          "const": {"model_id": "A0", "model_seed": 1729, "horizon_months": 1}
+        },
+        "compared_row_count": {"const": 672, "type": "integer"},
+        "precision_drift_row_count": {"const": 261, "type": "integer"},
+        "precision_drift_by_horizon": {
+          "const": {"1": 90, "2": 87, "3": 84}
+        },
+        "authorization_consumed": {"const": true},
+        "retry_authorized": {"const": false},
+        "scientific_input_reads_performed": {"const": true},
+        "anfis_inference_slot_count": {"const": 10, "type": "integer"},
+        "model_inference_performed": {"const": true},
+        "calibration_fit_performed": {"const": false},
+        "bundle_payload_built": {"const": false},
+        "final_output_count": {"const": 0},
+        "temporary_output_count": {"const": 0},
+        "active_guard_count": {"const": 0},
+        "dvc_commands_run": {"const": false},
+        "outcome_paths_opened": {"const": false},
+        "holdout_rows_opened": {"const": false},
+        "post_2021_rows_opened": {"const": false},
+        "filesystem_side_effect_count": {"const": 0}
+      }
+    },
+    "pMcalgAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate", "commit", "parent_h_mcalg", "h_mcalg_parent",
+        "h_scope", "p_scope", "h_component_count", "h_components",
+        "h_components_sha256", "preserved_count", "preserved_components",
+        "preserved_components_sha256", "superseded_count", "historical_inputs",
+        "historical_inputs_sha256", "p_component_count", "p_components",
+        "p_components_sha256", "lock_payload_sha256", "companion_sha256",
+        "manifest_written_last", "sealed_runtime"
+      ],
+      "properties": {
+        "gate": {"const": "P-E0-MCALG"},
+        "commit": {"const": "34a4578efa37d0ccf09e7fc45adf655d3b5a21c1"},
+        "parent_h_mcalg": {"const": "ba15b7647811bbef2b63b3eb904ba427788da048"},
+        "h_mcalg_parent": {"const": "11a130809c2ad5d37c100e681d1f7a03c611603d"},
+        "h_scope": {"type": "object"},
+        "p_scope": {"type": "object"},
+        "h_component_count": {"const": 9},
+        "h_components": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "h_components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "preserved_count": {"const": 5},
+        "preserved_components": {"type": "array", "minItems": 5, "maxItems": 5, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "preserved_components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "superseded_count": {"const": 4},
+        "historical_inputs": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"$ref": "#/$defs/historicalArtifactRecord"}},
+        "historical_inputs_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "p_component_count": {"const": 2},
+        "p_components": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "p_components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "lock_payload_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "companion_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+        "manifest_written_last": {"const": true},
+        "sealed_runtime": {"type": "object"}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "component_count", "added_count", "modified_count", "components", "components_sha256"],
+      "properties": {
+        "gate": {"const": "H-E0-MCALH"},
+        "component_count": {"const": 9},
+        "added_count": {"const": 5},
+        "modified_count": {"const": 4},
+        "components": {"type": "array", "minItems": 9, "maxItems": 9, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "components_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+      }
+    },
+    "observedRiskPrecisionContract": {
+      "const": {
+        "source_column": "target_risk_chla_h",
+        "source_arrow_type": "float64",
+        "source_value_domain": "closed_unit_interval",
+        "calibration_bundle_field": "risk",
+        "calibration_bundle_dtype": "float64",
+        "bloom_bundle_dtype": "float32",
+        "model_input_dtype": "float32",
+        "prediction_output_dtype": "float64",
+        "normalized_column": "observed_risk",
+        "normalized_scalar_type": "float",
+        "target_join_cardinality": "one_to_one",
+        "target_join_keys": ["source_id", "site_id", "origin_year_month", "target_year_month", "horizon_months"],
+        "target_comparison": "exact_float64_array_equality",
+        "absolute_tolerance": 0.0,
+        "relative_tolerance": 0.0,
+        "float32_roundtrip_authorized": false,
+        "data_rewrite_performed": false,
+        "model_rewrite_performed": false,
+        "prediction_rewrite_performed": false
+      }
+    },
+    "prelock": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "git_status_clean", "base_p_mcalg_output_present_count", "p_output_present_count",
+        "r_output_present_count", "temporary_present_count", "coordination_present_count",
+        "outcome_access_log_absent", "holdout_rows_opened", "post_2021_rows_opened",
+        "dvc_commands_run", "scientific_writes_performed",
+        "failed_attempt_retry_authorized", "companion_contract"
+      ],
+      "properties": {
+        "git_status_clean": {"const": true},
+        "base_p_mcalg_output_present_count": {"const": 2},
+        "p_output_present_count": {"const": 0},
+        "r_output_present_count": {"const": 0},
+        "temporary_present_count": {"const": 0},
+        "coordination_present_count": {"const": 0},
+        "outcome_access_log_absent": {"const": true},
+        "holdout_rows_opened": {"const": false},
+        "post_2021_rows_opened": {"const": false},
+        "dvc_commands_run": {"const": false},
+        "scientific_writes_performed": {"const": false},
+        "failed_attempt_retry_authorized": {"const": false},
+        "companion_contract": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["physical_input_count", "historical_input_count", "output_count", "script_path", "manifest_written_last"],
+          "properties": {
+            "physical_input_count": {"const": 16},
+            "historical_input_count": {"const": 4},
+            "output_count": {"const": 1},
+            "script_path": {"const": "src/experiments/lock_closure_final_calibration_observed_risk_precision_patch.py"},
+            "manifest_written_last": {"const": true}
+          }
+        }
+      }
+    },
+    "authorizations": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "calibration_development_run_authorized", "e7_learning_curve_run_authorized",
+        "holdout_access_authorized", "post_2021_access_authorized",
+        "locked_evaluation_authorized", "outcome_access_authorized",
+        "e0_m_authorized", "e0_u_authorized", "dvc_commands_authorized",
+        "dvc_push_authorized", "git_commit_authorized", "git_push_authorized",
+        "scientific_network_authorized", "effective_in_payload"
+      ],
+      "properties": {
+        "calibration_development_run_authorized": {"const": false},
+        "e7_learning_curve_run_authorized": {"const": false},
+        "holdout_access_authorized": {"const": false},
+        "post_2021_access_authorized": {"const": false},
+        "locked_evaluation_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "dvc_commands_authorized": {"const": false},
+        "dvc_push_authorized": {"const": false},
+        "git_commit_authorized": {"const": false},
+        "git_push_authorized": {"const": false},
+        "scientific_network_authorized": {"const": false},
+        "effective_in_payload": {"const": false}
+      }
+    }
+  }
+}

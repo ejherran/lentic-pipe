@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_ordinal_label_representation_patch as calibration,
+    closure_final_calibration_observed_risk_precision_patch as calibration,
 )
 
 
@@ -452,7 +452,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALG"
+    assert calibration.PATCH_GATE == "E0-MCALH"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -959,9 +959,30 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_ordinal_label_representation_patch as calibration"
+        "closure_final_calibration_observed_risk_precision_patch as calibration"
         in source
     )
+    precision_contract = calibration.OBSERVED_RISK_PRECISION_CONTRACT
+    assert precision_contract["calibration_bundle_dtype"] == "float64"
+    assert precision_contract["bloom_bundle_dtype"] == "float32"
+    assert precision_contract["model_input_dtype"] == "float32"
+    assert precision_contract["target_comparison"] == (
+        "exact_float64_array_equality"
+    )
+    assert precision_contract["absolute_tolerance"] == 0.0
+    assert precision_contract["relative_tolerance"] == 0.0
+    assert precision_contract["float32_roundtrip_authorized"] is False
+    precision_sources = (
+        inspect.getsource(runner._require_observed_risk_precision),
+        inspect.getsource(runner._calibration_bundle_from_sequence),
+        inspect.getsource(runner._validate_calibration_frame),
+    )
+    for forbidden in ("isclose(", "allclose(", "round("):
+        assert all(forbidden not in precision_source for precision_source in precision_sources)
+    bundle_source = precision_sources[1]
+    assert "np.empty_like(bloom)" not in bundle_source
+    assert "dtype=np.float64" in bundle_source
+    assert 'float(record["target_risk_chla_h"])' not in bundle_source
     evidence_parser_source = inspect.getsource(runner._validate_input_filter_evidence)
     assert "calibration." not in evidence_parser_source
     assert "target_filter_evidence_patch" not in evidence_parser_source
@@ -1600,7 +1621,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         }
     )
     synthetic_bloom = np.resize(np.array([0.0, 1.0], dtype=np.float32), (224, 3))
-    synthetic_risk = np.linspace(0.0, 1.0, 224 * 3, dtype=np.float32).reshape(
+    synthetic_risk = np.linspace(0.0, 1.0, 224 * 3, dtype=np.float64).reshape(
         224, 3
     )
     calibration_bundle = runner.anfis_training.TrainingBundle(
@@ -1639,6 +1660,269 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     assert direct_calibration_frame["target_year_month"].between(
         "2021-01", "2021-12"
     ).all()
+
+    precision_value = np.nextafter(np.float64(0.5), np.float64(1.0))
+    assert np.float64(np.float32(precision_value)) != precision_value
+    precision_target_rows: list[dict[str, Any]] = []
+    for origin_index in range(224):
+        origin = cast(pd.Period, pd.Period("2020-12", freq="M"))
+        for horizon in runner.HORIZONS:
+            target = origin + horizon
+            precision_target_rows.append(
+                {
+                    "source_id": "wqp",
+                    "site_id": f"precision-site-{origin_index:03d}",
+                    "common_origin_id": f"precision-origin-{origin_index:03d}",
+                    "assignment_role": "development",
+                    "time_role": "calibration_threshold",
+                    "origin_year_month": str(origin),
+                    "target_year_month": str(target),
+                    "horizon_months": horizon,
+                    "bloom_h": bool(origin_index % 2),
+                    "target_risk_chla_h": precision_value,
+                    "ordinal_label": origin_index % 4,
+                }
+            )
+    precision_targets = pd.DataFrame(precision_target_rows)
+    precision_targets["ordinal_label"] = pd.array(
+        precision_targets["ordinal_label"], dtype="Int8"
+    )
+    precision_metadata = (
+        precision_targets.loc[
+            precision_targets["time_role"].eq("calibration_threshold")
+            & precision_targets["target_year_month"].between(
+                "2021-01", "2021-12"
+            ),
+            [
+                "source_id",
+                "site_id",
+                "common_origin_id",
+                "assignment_role",
+                "time_role",
+                "origin_year_month",
+            ],
+        ]
+        .drop_duplicates()
+        .sort_values(
+            ["source_id", "site_id", "origin_year_month", "common_origin_id"],
+            kind="mergesort",
+        )
+        .reset_index(drop=True)
+    )
+    assert len(precision_metadata) == 224
+    precision_sequence = precision_metadata.copy()
+    for channel_index, column in enumerate(
+        runner.anfis_training.input_columns("A0")
+    ):
+        channel_value = (
+            1.0
+            if column in runner.anfis_training.RAW_MASK_COLUMNS
+            else 0.25 + channel_index / 100.0
+        )
+        precision_sequence[column] = [
+            np.full(
+                runner.anfis_training.HISTORY_LENGTH,
+                channel_value,
+                dtype=np.float32,
+            )
+            for _ in range(len(precision_sequence))
+        ]
+    standardization = runner.anfis_training.EXPECTED_RAW_STANDARDIZATION
+    raw_columns = runner.anfis_training.RAW_STANDARDIZATION_COLUMNS
+    precision_standardizer = runner.anfis_training.RawStandardizer(
+        columns=raw_columns,
+        counts=np.asarray(
+            [standardization[column][0] for column in raw_columns],
+            dtype=np.int64,
+        ),
+        means=np.asarray(
+            [standardization[column][1] for column in raw_columns],
+            dtype=np.float64,
+        ),
+        standard_deviations=np.asarray(
+            [standardization[column][2] for column in raw_columns],
+            dtype=np.float64,
+        ),
+    )
+    precision_bundle = runner._calibration_bundle_from_sequence(
+        precision_targets,
+        precision_sequence,
+        model_id="A0",
+        standardizer=precision_standardizer,
+    )
+    assert precision_bundle.x.dtype == np.dtype(np.float32)
+    assert precision_bundle.bloom.dtype == np.dtype(np.float32)
+    assert precision_bundle.risk.dtype == np.dtype(np.float64)
+    assert np.array_equal(
+        precision_bundle.risk,
+        np.full((224, 3), precision_value, dtype=np.float64),
+    )
+    precision_direct_frame = (
+        runner._anfis_calibration_threshold_prediction_frame(
+            precision_bundle,
+            model_id="A0",
+            base_seed=1729,
+            bloom_probability=prediction_arrays[0],
+            risk_mu=prediction_arrays[1],
+            risk_logvar=prediction_arrays[2],
+        )
+    )
+    assert precision_direct_frame["observed_risk"].dtype == np.dtype(np.float64)
+    assert np.array_equal(
+        precision_direct_frame["observed_risk"].to_numpy(copy=False),
+        np.full(672, precision_value, dtype=np.float64),
+    )
+    precision_target_universe = target_universe.loc[
+        target_universe["target_year_month"].lt("2021-01")
+    ].copy()
+    precision_target_universe["target_risk_chla_h"] = precision_value
+    precision_target_universe = pd.concat(
+        [
+            precision_target_universe,
+            precision_targets.loc[
+                :,
+                [
+                    *runner.TARGET_JOIN_COLUMNS,
+                    "bloom_h",
+                    "target_risk_chla_h",
+                    "ordinal_label",
+                ],
+            ],
+        ],
+        ignore_index=True,
+    )
+    assert len(precision_target_universe) == 2646
+    assert pd.api.types.is_dtype_equal(
+        precision_target_universe["ordinal_label"].dtype, pd.Int8Dtype()
+    )
+    precision_predictions = predictions.copy()
+    identity_columns = (
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "origin_year_month",
+        "target_year_month",
+        "horizon_months",
+    )
+    for model_id in runner.CALIBRATABLE_MODELS:
+        for model_seed in runner.MODEL_SEEDS[model_id]:
+            for horizon in runner.HORIZONS:
+                producer_rows = precision_targets.loc[
+                    precision_targets["horizon_months"].eq(horizon)
+                ].sort_values("site_id", kind="mergesort")
+                producer_mask = (
+                    precision_predictions["model_id"].eq(model_id)
+                    & precision_predictions["model_seed"].eq(model_seed)
+                    & precision_predictions["horizon_months"].eq(horizon)
+                    & precision_predictions["target_year_month"].between(
+                        "2021-01", "2021-12"
+                    )
+                )
+                producer_indices = precision_predictions.index[producer_mask]
+                assert len(producer_indices) == len(producer_rows) == 224
+                for column in identity_columns:
+                    precision_predictions.loc[producer_indices, column] = (
+                        producer_rows[column].to_numpy(copy=False)
+                    )
+                precision_predictions.loc[producer_indices, "bloom_label"] = (
+                    producer_rows["bloom_h"].astype("int8").to_numpy(copy=False)
+                )
+                if model_id in runner.ORDINAL_MODELS:
+                    precision_predictions.loc[
+                        producer_indices, "ordinal_label"
+                    ] = producer_rows["ordinal_label"].to_numpy(copy=False)
+    uncertainty_mask = precision_predictions["model_id"].isin(
+        runner.UNCERTAINTY_MODELS
+    )
+    precision_predictions.loc[uncertainty_mask, "observed_risk"] = precision_value
+    direct_mask = (
+        precision_predictions["model_id"].eq("A0")
+        & precision_predictions["model_seed"].eq(1729)
+        & precision_predictions["target_year_month"].between(
+            "2021-01", "2021-12"
+        )
+    )
+    direct_lookup = precision_direct_frame.set_index(
+        list(runner.TARGET_JOIN_COLUMNS)
+    )["observed_risk"]
+    assert direct_lookup.index.is_unique
+    direct_keys = pd.MultiIndex.from_frame(
+        precision_predictions.loc[direct_mask, list(runner.TARGET_JOIN_COLUMNS)]
+    )
+    direct_observed = direct_lookup.reindex(direct_keys).to_numpy(copy=False)
+    assert direct_observed.dtype == np.dtype(np.float64)
+    assert np.isfinite(direct_observed).all()
+    precision_predictions.loc[direct_mask, "observed_risk"] = direct_observed
+    validated_precision = runner._validate_calibration_frame(
+        precision_predictions,
+        target_universe=precision_target_universe,
+    )
+    assert len(validated_precision) == len(precision_predictions)
+
+    rounded_predictions = precision_predictions.copy()
+    rounded_observed = rounded_predictions.loc[
+        direct_mask, "observed_risk"
+    ].to_numpy(copy=True)
+    rounded_observed = rounded_observed.astype(np.float32).astype(np.float64)
+    assert not np.array_equal(rounded_observed, direct_observed)
+    rounded_predictions.loc[direct_mask, "observed_risk"] = rounded_observed
+    with pytest.raises(
+        calibration.FinalCalibrationError,
+        match=r"group risks differ from targets: \('A0', 1729, 1\)",
+    ):
+        runner._validate_calibration_frame(
+            rounded_predictions,
+            target_universe=precision_target_universe,
+        )
+
+    for source_drift in (
+        np.full(len(precision_targets), precision_value, dtype=np.float32),
+        np.full(len(precision_targets), True, dtype=bool),
+        np.full(len(precision_targets), "0.5", dtype=object),
+        np.full(len(precision_targets), np.inf, dtype=np.float64),
+    ):
+        drifted_targets = precision_targets.copy()
+        drifted_targets["target_risk_chla_h"] = source_drift
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match="exact nonempty float64 risk vector",
+        ):
+            runner._calibration_bundle_from_sequence(
+                drifted_targets,
+                precision_sequence,
+                model_id="A0",
+                standardizer=precision_standardizer,
+            )
+
+    for drifted_bundle in (
+        runner.anfis_training.TrainingBundle(
+            precision_bundle.metadata,
+            precision_bundle.x.astype(np.float64),
+            precision_bundle.bloom,
+            precision_bundle.risk,
+        ),
+        runner.anfis_training.TrainingBundle(
+            precision_bundle.metadata,
+            precision_bundle.x,
+            precision_bundle.bloom.astype(np.float64),
+            precision_bundle.risk,
+        ),
+        runner.anfis_training.TrainingBundle(
+            precision_bundle.metadata,
+            precision_bundle.x,
+            precision_bundle.bloom,
+            precision_bundle.risk.astype(np.float32),
+        ),
+    ):
+        with pytest.raises(calibration.FinalCalibrationError, match="exact float"):
+            runner._anfis_calibration_threshold_prediction_frame(
+                drifted_bundle,
+                model_id="A0",
+                base_seed=1729,
+                bloom_probability=prediction_arrays[0],
+                risk_mu=prediction_arrays[1],
+                risk_logvar=prediction_arrays[2],
+            )
     wrong_role = direct_calibration_frame.copy()
     wrong_role["time_role"] = "model_selection"
     with pytest.raises(calibration.FinalCalibrationError, match="another role"):
