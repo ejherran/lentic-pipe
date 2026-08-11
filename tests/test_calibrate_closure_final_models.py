@@ -22,7 +22,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_observed_risk_precision_patch as calibration,
+    closure_final_calibration_owned_run_guard_revalidation_patch as calibration,
 )
 
 
@@ -34,6 +34,19 @@ EXPECTED_OUTPUTS = (
     "reports/closure_v1/03_calibration/ordinal_cutpoints.csv",
     "reports/closure_v1/03_calibration/model_availability.csv",
     "reports/closure_v1/03_calibration/final_calibration_manifest.json",
+)
+EXPECTED_OWNED_CAPABILITY_KEYS = frozenset(
+    {
+        "path",
+        "device",
+        "inode",
+        "mode",
+        "nlink",
+        "size",
+        "mtime_ns",
+        "ctime_ns",
+        "sha256",
+    }
 )
 
 
@@ -452,7 +465,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALH"
+    assert calibration.PATCH_GATE == "E0-MCALI"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -774,6 +787,47 @@ def test_split_conformal_rejects_group_policy_and_numeric_type_drifts() -> None:
 def test_ordered_publisher_requires_unique_manifest_last_and_canonical_outputs(
     tmp_path: Path,
 ) -> None:
+    capability_guard = tmp_path / "tmp/capability.guard"
+    capability_output = tmp_path / "capability/output.bin"
+    capability_payload = b"immutable capability\n"
+    with runner.OrderedBundleTransaction(
+        guard_path=capability_guard, repo_root=tmp_path
+    ) as transaction:
+        guard_capability = transaction.owned_guard_capability()
+        assert guard_capability is not None
+        assert type(guard_capability).__name__ == "mappingproxy"
+        assert set(guard_capability) == EXPECTED_OWNED_CAPABILITY_KEYS
+        assert guard_capability["path"] == "tmp/capability.guard"
+        assert guard_capability["mode"] == 0o600
+        assert guard_capability["sha256"] == hashlib.sha256(
+            runner.GUARD_PAYLOAD
+        ).hexdigest()
+        with pytest.raises(TypeError):
+            cast(dict[str, Any], guard_capability)["path"] = "foreign"
+        transaction.publish(capability_output, capability_payload)
+        output_capabilities = transaction.owned_output_capabilities()
+        assert type(output_capabilities) is tuple and len(output_capabilities) == 1
+        output_capability = output_capabilities[0]
+        observed = capability_output.stat()
+        assert type(output_capability).__name__ == "mappingproxy"
+        assert set(output_capability) == EXPECTED_OWNED_CAPABILITY_KEYS
+        assert output_capability == {
+            "path": "capability/output.bin",
+            "device": observed.st_dev,
+            "inode": observed.st_ino,
+            "mode": 0o644,
+            "nlink": 1,
+            "size": len(capability_payload),
+            "mtime_ns": observed.st_mtime_ns,
+            "ctime_ns": observed.st_ctime_ns,
+            "sha256": hashlib.sha256(capability_payload).hexdigest(),
+        }
+        with pytest.raises(TypeError):
+            cast(dict[str, Any], output_capability)["size"] = 0
+        transaction.commit()
+    assert transaction.owned_guard_capability() is None
+    assert capability_output.read_bytes() == capability_payload
+
     outputs = _relative_outputs(tmp_path)
     payloads = [(path, f"payload-{index}\n".encode()) for index, path in enumerate(outputs)]
     records = runner.publish_ordered_bundle(
@@ -959,7 +1013,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_observed_risk_precision_patch as calibration"
+        "closure_final_calibration_owned_run_guard_revalidation_patch as calibration"
         in source
     )
     precision_contract = calibration.OBSERVED_RISK_PRECISION_CONTRACT
@@ -988,6 +1042,13 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     assert "target_filter_evidence_patch" not in evidence_parser_source
     execute_source = inspect.getsource(runner.execute_one_shot)
     require_offset = execute_source.index("require_final_calibration_authority")
+    assert execute_source.count("require_final_calibration_authority(") == 2
+    assert (
+        execute_source.count(
+            "revalidate_final_calibration_owned_run_publication("
+        )
+        == 2
+    )
     scientific_offsets = [
         execute_source.find(token)
         for token in ("read_parquet", "dataset(", "build_final_calibration_bundle(")
@@ -2638,6 +2699,64 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         assert records == [{"path": "synthetic", "sha256": "0" * 64}]
         events.append("inventory")
 
+    owned_failure_phase: dict[str, str | None] = {"value": None}
+    owned_calls: list[
+        tuple[str, Mapping[str, Any] | None, tuple[Mapping[str, Any], ...]]
+    ] = []
+
+    def revalidate_owned_publication(
+        captured: Mapping[str, Any],
+        *,
+        runner: str,
+        phase: str,
+        owned_guard: Mapping[str, Any] | None,
+        owned_outputs: Any,
+        verify_remote: bool,
+        repo_root: Path,
+    ) -> dict[str, Any]:
+        assert captured is authority
+        assert runner == "calibration"
+        assert phase in {"active_guard", "post_release"}
+        assert verify_remote is True and repo_root == tmp_path
+        outputs = tuple(owned_outputs)
+        assert len(outputs) == 6
+        expected_paths = tuple(EXPECTED_OUTPUTS)
+        assert tuple(record["path"] for record in outputs) == expected_paths
+        if phase == "active_guard":
+            assert owned_guard is not None
+            assert owned_guard["path"] == runner_module_guard
+            capabilities = (owned_guard, *outputs)
+        else:
+            assert owned_guard is None
+            assert not (tmp_path / runner_module_guard).exists()
+            capabilities = outputs
+        for capability in capabilities:
+            assert set(capability) == EXPECTED_OWNED_CAPABILITY_KEYS
+            assert type(capability).__name__ == "mappingproxy"
+            path = tmp_path / cast(str, capability["path"])
+            observed = path.stat()
+            assert capability["device"] == observed.st_dev
+            assert capability["inode"] == observed.st_ino
+            assert capability["mode"] == stat.S_IMODE(observed.st_mode)
+            assert capability["nlink"] == observed.st_nlink == 1
+            assert capability["size"] == observed.st_size
+            assert capability["mtime_ns"] == observed.st_mtime_ns
+            assert capability["ctime_ns"] == observed.st_ctime_ns
+            assert capability["sha256"] == hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+        events.append(f"owned:{phase}")
+        owned_calls.append((phase, owned_guard, outputs))
+        if owned_failure_phase["value"] == phase:
+            raise calibration.FinalCalibrationError(
+                f"owned publication rejected at {phase}"
+            )
+        return {"gate": calibration.PATCH_GATE, "phase": phase, "status": "valid"}
+
+    runner_module_guard = runner.GUARD_PATH.relative_to(
+        runner.PROJECT_ROOT
+    ).as_posix()
+
     monkeypatch.setattr(
         calibration, "require_final_calibration_authority", require
     )
@@ -2653,6 +2772,12 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     )
     monkeypatch.setattr(
         runner, "_revalidate_final_calibration_input_snapshot", revalidate
+    )
+    monkeypatch.setattr(
+        calibration,
+        "revalidate_final_calibration_owned_run_publication",
+        revalidate_owned_publication,
+        raising=False,
     )
     authority_box["value"] = calibration.FinalCalibrationError("gate")
     with pytest.raises(calibration.FinalCalibrationError, match="gate"):
@@ -2699,11 +2824,27 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 
     authority_box["value"] = authority
     snapshot_box["current"] = stable_snapshot
+    for rejected_phase in ("active_guard", "post_release"):
+        owned_failure_phase["value"] = rejected_phase
+        events.clear()
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match=f"owned publication rejected at {rejected_phase}",
+        ):
+            runner.execute_one_shot(repo_root=tmp_path)
+        assert all(not path.exists() for path in _relative_outputs(tmp_path))
+        assert not (tmp_path / runner_module_guard).exists()
+
+    owned_failure_phase["value"] = None
     events.clear()
     result = runner.execute_one_shot(repo_root=tmp_path)
     assert events[0:4] == ["gate", "cpu", "load", "inventory"]
     assert events.count("gate") >= 2
     assert events.count("snapshot") >= 2
+    assert [phase for phase, _, _ in owned_calls[-2:]] == [
+        "active_guard",
+        "post_release",
+    ]
     assert result["status"] == "completed_unpublished"
     assert result["output_count"] == 6
     assert [record["path"] for record in result["records"]] == list(EXPECTED_OUTPUTS)

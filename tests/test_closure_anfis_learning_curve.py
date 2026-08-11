@@ -4,6 +4,7 @@ import inspect
 import hashlib
 import json
 import os
+import stat
 from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
@@ -14,7 +15,7 @@ import pytest
 import yaml
 
 from src.experiments import (
-    closure_final_calibration_observed_risk_precision_patch as calibration,
+    closure_final_calibration_owned_run_guard_revalidation_patch as calibration,
 )
 from src.experiments import run_closure_anfis_learning_curve as runner
 from src.experiments.closure_runtime_contract import (
@@ -37,6 +38,19 @@ EXPECTED_OUTPUTS = (
     "reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json",
 )
 E7_DVC_POINTER_PATH = Path("inputs/e7/e7_payloads.dvc")
+EXPECTED_OWNED_CAPABILITY_KEYS = frozenset(
+    {
+        "path",
+        "device",
+        "inode",
+        "mode",
+        "nlink",
+        "size",
+        "mtime_ns",
+        "ctime_ns",
+        "sha256",
+    }
+)
 
 
 def _e7_input_payload(index: int) -> bytes:
@@ -405,7 +419,7 @@ def test_check_only_requires_effective_p_before_io_and_is_nonwriting(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALH"
+    assert calibration.PATCH_GATE == "E0-MCALI"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -474,8 +488,18 @@ def test_public_sampling_run_and_builder_signatures_are_closed(
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_observed_risk_precision_patch as calibration"
+        "closure_final_calibration_owned_run_guard_revalidation_patch as calibration"
         in source
+    )
+    execution_source = inspect.getsource(
+        runner._execute_one_shot_with_pinned_inputs
+    )
+    assert execution_source.count("require_final_calibration_authority(") == 1
+    assert (
+        execution_source.count(
+            "revalidate_final_calibration_owned_run_publication("
+        )
+        == 2
     )
     sample = inspect.signature(runner.select_learning_curve_sample).parameters
     assert list(sample) == [
@@ -1541,6 +1565,69 @@ def test_execute_one_shot_gates_before_build_and_publishes_manifest_last(
     monkeypatch.setattr(runner, "select_learning_curve_sample", sample)
     monkeypatch.setattr(runner, "_default_fit_slot", fit_slot)
 
+    owned_failure_phase: dict[str, str | None] = {"value": None}
+    owned_calls: list[
+        tuple[str, Mapping[str, Any] | None, tuple[Mapping[str, Any], ...]]
+    ] = []
+
+    def revalidate_owned_publication(
+        captured: Mapping[str, Any],
+        *,
+        runner: str,
+        phase: str,
+        owned_guard: Mapping[str, Any] | None,
+        owned_outputs: Any,
+        verify_remote: bool,
+        repo_root: Path,
+    ) -> dict[str, Any]:
+        assert captured is authority
+        assert runner == "e7"
+        assert phase in {"active_guard", "post_release"}
+        assert verify_remote is True and repo_root == tmp_path
+        outputs = tuple(owned_outputs)
+        assert len(outputs) == 2
+        assert tuple(record["path"] for record in outputs) == EXPECTED_OUTPUTS
+        if phase == "active_guard":
+            assert owned_guard is not None
+            assert owned_guard["path"] == runner_guard_path
+            capabilities = (owned_guard, *outputs)
+        else:
+            assert owned_guard is None
+            assert not (tmp_path / runner_guard_path).exists()
+            capabilities = outputs
+        for capability in capabilities:
+            assert set(capability) == EXPECTED_OWNED_CAPABILITY_KEYS
+            assert type(capability).__name__ == "mappingproxy"
+            path = tmp_path / cast(str, capability["path"])
+            observed = path.stat()
+            assert capability["device"] == observed.st_dev
+            assert capability["inode"] == observed.st_ino
+            assert capability["mode"] == stat.S_IMODE(observed.st_mode)
+            assert capability["nlink"] == observed.st_nlink == 1
+            assert capability["size"] == observed.st_size
+            assert capability["mtime_ns"] == observed.st_mtime_ns
+            assert capability["ctime_ns"] == observed.st_ctime_ns
+            assert capability["sha256"] == hashlib.sha256(
+                path.read_bytes()
+            ).hexdigest()
+        events.append(f"owned:{phase}")
+        owned_calls.append((phase, owned_guard, outputs))
+        if owned_failure_phase["value"] == phase:
+            raise calibration.FinalCalibrationError(
+                f"owned publication rejected at {phase}"
+            )
+        return {"gate": calibration.PATCH_GATE, "phase": phase, "status": "valid"}
+
+    runner_guard_path = runner.GUARD_PATH.relative_to(
+        runner.PROJECT_ROOT
+    ).as_posix()
+    monkeypatch.setattr(
+        calibration,
+        "revalidate_final_calibration_owned_run_publication",
+        revalidate_owned_publication,
+        raising=False,
+    )
+
     for occupied in ((output_paths[0],), output_paths, (guard_path,)):
         for path in occupied:
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -1614,12 +1701,28 @@ def test_execute_one_shot_gates_before_build_and_publishes_manifest_last(
     family_box["current"] = [dict(record) for record in family_before]
     mutation_phase.update(value="none", done=False)
     monkeypatch.setattr(transaction_type, "publish", real_publish)
+    for rejected_phase in ("active_guard", "post_release"):
+        owned_failure_phase["value"] = rejected_phase
+        events.clear()
+        with pytest.raises(
+            calibration.FinalCalibrationError,
+            match=f"owned publication rejected at {rejected_phase}",
+        ):
+            runner.execute_one_shot(repo_root=tmp_path)
+        assert all(not path.exists() for path in output_paths)
+        assert not guard_path.exists()
+
+    owned_failure_phase["value"] = None
     events.clear()
     stable_fit_start = len(fit_calls)
     result = runner.execute_one_shot(repo_root=tmp_path)
     assert len(fit_calls) - stable_fit_start == 15
     assert events.index("cpu") < events.index("fit")
     assert events.count("family_revalidate") >= 3
+    assert [phase for phase, _, _ in owned_calls[-2:]] == [
+        "active_guard",
+        "post_release",
+    ]
     assert result["status"] == "completed_unpublished"
     assert result["terminal_row_count"] == 15
     assert result["new_e7_fit_count"] == 15

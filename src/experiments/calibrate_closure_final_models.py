@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALH authority; only after
+Every public mode first calls the effective E0-MCALI authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -21,6 +21,7 @@ import sys
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Callable, Iterable, Mapping, Sequence, cast
 
 import numpy as np
@@ -37,7 +38,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_observed_risk_precision_patch as calibration,
+    closure_final_calibration_owned_run_guard_revalidation_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402
@@ -667,6 +668,35 @@ class OrderedBundleTransaction:
             "bytes": owned.identity.size,
             "sha256": owned.sha256,
         }
+
+    def _capability(self, owned: OwnedOutput) -> Mapping[str, Any]:
+        """Expose one immutable, inode-bound publication capability."""
+        identity = owned.identity
+        return MappingProxyType(
+            {
+                "path": Path(
+                    *_relative_parts(owned.path, repo_root=self.repo_root)
+                ).as_posix(),
+                "device": identity.device,
+                "inode": identity.inode,
+                "mode": identity.mode,
+                "nlink": identity.nlink,
+                "size": identity.size,
+                "mtime_ns": identity.mtime_ns,
+                "ctime_ns": identity.ctime_ns,
+                "sha256": owned.sha256,
+            }
+        )
+
+    def owned_guard_capability(self) -> Mapping[str, Any] | None:
+        """Return the exact active guard capability, never path-only authority."""
+        if self.guard is None:
+            return None
+        return self._capability(self.guard)
+
+    def owned_output_capabilities(self) -> tuple[Mapping[str, Any], ...]:
+        """Return the ordered immutable capabilities for provisional outputs."""
+        return tuple(self._capability(owned) for owned in self.outputs)
 
     def commit(
         self, *, post_release_validators: Sequence[Callable[[], None]] = ()
@@ -4070,19 +4100,6 @@ def execute_one_shot(*, repo_root: Path = PROJECT_ROOT) -> dict[str, Any]:
     records: list[dict[str, Any]] = []
     guard = repo_root / GUARD_PATH.relative_to(PROJECT_ROOT)
 
-    def revalidate_post_release() -> None:
-        _revalidate_final_calibration_input_snapshot(
-            input_snapshot,
-            authorized_dvc_pointers=authorized_dvc_pointers,
-            repo_root=repo_root,
-        )
-        if calibration.require_final_calibration_authority(
-            verify_remote=True, repo_root=repo_root
-        ) != authority:
-            raise _error(
-                "E0-MCAL authority changed after calibration guard release"
-            )
-
     with OrderedBundleTransaction(guard_path=guard, repo_root=repo_root) as transaction:
         for path, payload in payloads:
             records.append(transaction.publish(path, payload))
@@ -4091,10 +4108,32 @@ def execute_one_shot(*, repo_root: Path = PROJECT_ROOT) -> dict[str, Any]:
             authorized_dvc_pointers=authorized_dvc_pointers,
             repo_root=repo_root,
         )
-        if calibration.require_final_calibration_authority(
-            verify_remote=True, repo_root=repo_root
-        ) != authority:
-            raise _error("E0-MCAL authority changed during calibration publication")
+        calibration.revalidate_final_calibration_owned_run_publication(
+            authority,
+            runner="calibration",
+            phase="active_guard",
+            owned_guard=transaction.owned_guard_capability(),
+            owned_outputs=transaction.owned_output_capabilities(),
+            verify_remote=True,
+            repo_root=repo_root,
+        )
+
+        def revalidate_post_release() -> None:
+            _revalidate_final_calibration_input_snapshot(
+                input_snapshot,
+                authorized_dvc_pointers=authorized_dvc_pointers,
+                repo_root=repo_root,
+            )
+            calibration.revalidate_final_calibration_owned_run_publication(
+                authority,
+                runner="calibration",
+                phase="post_release",
+                owned_guard=transaction.owned_guard_capability(),
+                owned_outputs=transaction.owned_output_capabilities(),
+                verify_remote=True,
+                repo_root=repo_root,
+            )
+
         transaction.commit(post_release_validators=(revalidate_post_release,))
     return {
         "status": "completed_unpublished",

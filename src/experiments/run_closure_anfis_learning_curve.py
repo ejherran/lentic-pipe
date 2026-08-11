@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Run the closed, development-only E0-MCAL ANFIS learning curve.
 
-The effective E0-MCALH authority is always evaluated before scientific input
+The effective E0-MCALI authority is always evaluated before scientific input
 loading, fitting, directory creation, or publication.  The E0-MCAL learning-
 curve algorithm and output dialect remain unchanged.
 """
@@ -31,7 +31,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_observed_risk_precision_patch as calibration,
+    closure_final_calibration_owned_run_guard_revalidation_patch as calibration,
 )
 from src.experiments.calibrate_closure_final_models import (  # noqa: E402
     _canonical_json_bytes,
@@ -1832,16 +1832,6 @@ def _execute_one_shot_with_pinned_inputs(
     records: list[dict[str, Any]] = []
     guard = repo_root / GUARD_PATH.relative_to(PROJECT_ROOT)
 
-    def revalidate_post_release() -> None:
-        _revalidate_primary_anfis_family_snapshot(
-            primary_snapshot, repo_root=repo_root
-        )
-        pinned_inputs.revalidate()
-        if calibration.require_final_calibration_authority(
-            verify_remote=True, repo_root=repo_root
-        ) != authority:
-            raise _error("E0-MCAL authority changed after E7 guard release")
-
     with calibration_runner.OrderedBundleTransaction(
         guard_path=guard, repo_root=repo_root
     ) as transaction:
@@ -1851,10 +1841,31 @@ def _execute_one_shot_with_pinned_inputs(
             primary_snapshot, repo_root=repo_root
         )
         pinned_inputs.revalidate()
-        if calibration.require_final_calibration_authority(
-            verify_remote=True, repo_root=repo_root
-        ) != authority:
-            raise _error("E0-MCAL authority changed during E7 publication")
+        calibration.revalidate_final_calibration_owned_run_publication(
+            authority,
+            runner="e7",
+            phase="active_guard",
+            owned_guard=transaction.owned_guard_capability(),
+            owned_outputs=transaction.owned_output_capabilities(),
+            verify_remote=True,
+            repo_root=repo_root,
+        )
+
+        def revalidate_post_release() -> None:
+            _revalidate_primary_anfis_family_snapshot(
+                primary_snapshot, repo_root=repo_root
+            )
+            pinned_inputs.revalidate()
+            calibration.revalidate_final_calibration_owned_run_publication(
+                authority,
+                runner="e7",
+                phase="post_release",
+                owned_guard=transaction.owned_guard_capability(),
+                owned_outputs=transaction.owned_output_capabilities(),
+                verify_remote=True,
+                repo_root=repo_root,
+            )
+
         transaction.commit(post_release_validators=(revalidate_post_release,))
     completed_module_fit_count = evidence.get("completed_module_fit_count")
     if type(completed_module_fit_count) is not int:
