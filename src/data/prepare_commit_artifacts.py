@@ -1367,6 +1367,23 @@ class FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(RuntimeErr
     """Raised when the exact E0-MCALL precommit exception drifts."""
 
 
+class FinalCalibrationR8PostPublicationAuthorityAdapterError(RuntimeError):
+    """Raised when the exact E0-MCALM precommit exception drifts."""
+
+
+def _final_calibration_stage_adapter_error(
+    gate: str, message: str
+) -> RuntimeError:
+    """Preserve the owning adapter error boundary for each calibration gate."""
+    if gate.endswith("MCALM"):
+        return FinalCalibrationR8PostPublicationAuthorityAdapterError(message)
+    if gate.endswith("MCALL"):
+        return FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            message
+        )
+    return FinalCalibrationR8ManifestReproducibilityAdapterError(message)
+
+
 def anfis_ablation_registration_dvc_add_command(
     dvc_bin: str, target: Path
 ) -> list[str]:
@@ -3968,6 +3985,415 @@ def validate_final_calibration_r8_coordination_namespace_revalidation_workspace_
         ) from exc
 
 
+def final_calibration_r8_post_publication_authority_pre_stage_scope(
+    status_output: str,
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[str, tuple[str, ...]] | None:
+    """Select only exact H/P E0-MCALM paths with published R8 left untouched."""
+    patch = _final_calibration_r8_post_publication_authority_patch_module()
+
+    def short_map(scope: Mapping[str, str]) -> dict[str, str]:
+        return {
+            path: "??" if status == "A" else " M"
+            for path, status in scope.items()
+        }
+
+    candidates = (
+        (
+            "H-E0-MCALM",
+            short_map(patch.FINAL_CALIBRATION_H_STAGED_SCOPE),
+            patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+        ),
+        (
+            "P-E0-MCALM",
+            short_map(patch.FINAL_CALIBRATION_P_STAGED_SCOPE),
+            patch.FINAL_CALIBRATION_P_STAGED_SCOPE,
+        ),
+    )
+    candidate_paths = {path for _, expected, _ in candidates for path in expected}
+    observed: dict[str, str] = {}
+    anomaly = False
+    for line in status_output.splitlines():
+        if (
+            len(line) < 4
+            or line[2] != " "
+            or line[:2] not in {"??", " M"}
+            or not line[3:]
+        ):
+            if any(path in line for path in candidate_paths):
+                raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                    "E0-MCALM pre-stage scope contains a malformed candidate record"
+                )
+            anomaly = True
+            continue
+        path = line[3:]
+        if path in observed:
+            if path in candidate_paths:
+                raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                    "E0-MCALM pre-stage scope contains a duplicate path"
+                )
+            anomaly = True
+            continue
+        observed[path] = line[:2]
+    if anomaly and set(observed) & candidate_paths:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM candidate pre-stage scope contains an extra malformed record"
+        )
+    for gate, expected, stage_scope in candidates:
+        if observed == expected:
+            _require_final_calibration_r8_post_publication_authority_stage_base(
+                gate,
+                patch=patch,
+                repo_root=repo_root,
+            )
+            return gate, tuple(sorted(stage_scope))
+    if set(observed) & candidate_paths:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM candidate pre-stage scope is not exact"
+        )
+    return None
+
+
+def _require_final_calibration_r8_post_publication_authority_stage_base(
+    gate: str,
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> None:
+    head = _git_output(repo_root, "rev-parse", "HEAD").strip()
+    if gate == "H-E0-MCALM":
+        if head != patch.BASE_R_MCALL_COMMIT:
+            raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                "H-E0-MCALM staging requires exact published R-E0-MCALL HEAD"
+            )
+        _require_final_calibration_r8_post_publication_authority_readiness(
+            patch=patch,
+            repo_root=repo_root,
+            require_effective=False,
+        )
+        return
+    if gate == "P-E0-MCALM":
+        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
+        )
+        if parent != patch.BASE_R_MCALL_COMMIT:
+            raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                "P-E0-MCALM staging requires a direct H child of R-E0-MCALL"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                scope,
+                expected=patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+                context="published H-E0-MCALM scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                str(exc)
+            ) from exc
+        _require_final_calibration_r8_post_publication_authority_unpublished_p_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="untracked",
+        )
+        return
+    raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+        "Unknown E0-MCALM staging gate"
+    )
+
+
+def _require_final_calibration_r8_post_publication_authority_readiness(
+    *,
+    patch: Any,
+    repo_root: Path,
+    require_effective: bool,
+) -> dict[str, Any]:
+    try:
+        readiness = patch.validate_final_calibration_r8_post_publication_authority_model_lock_readiness(
+            repo_root=repo_root,
+            verify_remote=True,
+            require_effective=require_effective,
+        )
+    except patch.FinalCalibrationR8PostPublicationAuthorityPatchError as exc:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(str(exc)) from exc
+    if (
+        type(readiness) is not dict
+        or readiness.get("gate") != patch.PATCH_GATE
+        or readiness.get("status") != "formal_e0_m_static_readiness_validated"
+        or readiness.get("effective_p_mcalm_verified") is not require_effective
+        or readiness.get("terminal_r_commit") != patch.BASE_R_MCALL_COMMIT
+        or readiness.get("r8_published") is not True
+        or readiness.get("r8_output_count") != 8
+        or type(readiness.get("r8_outputs_sha256")) is not str
+        or len(readiness["r8_outputs_sha256"]) != 64
+        or readiness.get("e0_m_output_count") != 0
+        or readiness.get("outcome_access_log_state") != "absent"
+        or readiness.get("outcome_access_log_required_e0_m_state")
+        != "present_empty"
+        or readiness.get("formal_e0_m_entrypoint_present") is not False
+        or readiness.get("e0_m_authorized") is not False
+        or readiness.get("e0_u_authorized") is not False
+        or readiness.get("outcome_access_authorized") is not False
+        or readiness.get("scientific_rerun_authorized") is not False
+        or readiness.get("writes_performed") is not False
+    ):
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM static readiness result drifted"
+        )
+    return readiness
+
+
+def _require_final_calibration_r8_post_publication_authority_unpublished_p_validation(
+    *,
+    patch: Any,
+    repo_root: Path,
+    expected_stage_state: str,
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_final_calibration_r8_post_publication_authority_unpublished_lock_bundle(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.FinalCalibrationR8PostPublicationAuthorityPatchError as exc:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(str(exc)) from exc
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status") != "unpublished_p_mcalm_lock_bundle_validated"
+        or validation.get("p_stage_state") != expected_stage_state
+        or validation.get("p_output_count") != 2
+        or validation.get("physical_input_count") != 16
+        or validation.get("historical_input_count") != 6
+        or validation.get("companion_output_count") != 1
+        or validation.get("coordination_forbidden_count") != 49
+        or validation.get("coordination_present_count") != 0
+        or validation.get("r8_output_count") != 8
+        or type(validation.get("r8_outputs_sha256")) is not str
+        or len(validation["r8_outputs_sha256"]) != 64
+        or validation.get("r8_published") is not True
+        or validation.get("r8_staging_authorized") is not False
+        or validation.get("effective_authority") is not False
+        or validation.get("e0_m_authorized") is not False
+        or validation.get("scientific_rerun_authorized") is not False
+        or validation.get("dvc_commands_authorized") is not False
+        or validation.get("dvc_push_authorized") is not False
+        or validation.get("git_commit_authorized") is not False
+        or validation.get("git_push_authorized") is not False
+        or validation.get("writes_performed") is not False
+    ):
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM unpublished P semantic validation result drifted"
+        )
+    return validation
+
+
+def validate_final_calibration_r8_post_publication_authority_invocation(
+    args: Any,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Require the one closed, no-DVC E0-MCALM assistant invocation."""
+    source = os.environ if env is None else env
+    dvc_site_cache = source.get("DVC_SITE_CACHE_DIR")
+    if (
+        not args.no_push
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or not args.allow_unmanaged
+        or bool(args.target)
+        or bool(args.defer_dvc_target)
+        or bool(getattr(args, "register_anfis_ablation_model_family", False))
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            dvc_site_cache is not None
+            and dvc_site_cache != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM precommit requires exact --allow-unmanaged --no-push, "
+            "the mandatory publication guard, default paths, analytics-disabled "
+            "DVC, and no optional execution target or mode"
+        )
+
+
+def snapshot_final_calibration_r8_post_publication_outputs(
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[FinalCalibrationR8PhysicalIdentity, ...]:
+    """Capture published R8 inode and byte identity around MCALM actions."""
+    patch = _final_calibration_r8_post_publication_authority_patch_module()
+    records: list[FinalCalibrationR8PhysicalIdentity] = []
+    try:
+        for expected in patch.R8_OUTPUT_CONTRACT:
+            raw_path = expected.get("path")
+            if type(raw_path) is not str:
+                raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                    "E0-MCALM R8 output contract path drifted"
+                )
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=0o644,
+            )
+            if (
+                identity.nlink != 1
+                or identity.size != expected.get("bytes")
+                or identity.sha256 != expected.get("sha256")
+            ):
+                raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+                    f"E0-MCALM published R8 identity drifted: {raw_path}"
+                )
+            records.append(
+                FinalCalibrationR8PhysicalIdentity(
+                    path=raw_path,
+                    device=identity.device,
+                    inode=identity.inode,
+                    mode=identity.mode,
+                    nlink=identity.nlink,
+                    bytes=identity.size,
+                    sha256=identity.sha256,
+                    mtime_ns=identity.mtime_ns,
+                    ctime_ns=identity.ctime_ns,
+                )
+            )
+    except (
+        OSError,
+        DeferredDvcTargetError,
+        FinalCalibrationR8PostPublicationAuthorityAdapterError,
+    ) as exc:
+        if isinstance(exc, FinalCalibrationR8PostPublicationAuthorityAdapterError):
+            raise
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            f"E0-MCALM R8 physical snapshot failed: {exc}"
+        ) from exc
+    if len(records) != 8 or len({record.path for record in records}) != 8:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM R8 physical snapshot is not exact8"
+        )
+    return tuple(records)
+
+
+def validate_final_calibration_r8_post_publication_authority_staged_scope(
+    staged_status: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _final_calibration_r8_post_publication_authority_patch_module()
+    scopes = {
+        "H-E0-MCALM": patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+        "P-E0-MCALM": patch.FINAL_CALIBRATION_P_STAGED_SCOPE,
+    }
+    expected = scopes.get(gate)
+    if expected is None:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "Unknown E0-MCALM staged scope"
+        )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=expected,
+            context=f"{gate} staged scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(str(exc)) from exc
+
+
+def validate_final_calibration_r8_post_publication_authority_workspace_scope(
+    status_output: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _final_calibration_r8_post_publication_authority_patch_module()
+    scopes = {
+        "H-E0-MCALM": patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+        "P-E0-MCALM": patch.FINAL_CALIBRATION_P_STAGED_SCOPE,
+    }
+    stage_scope = scopes.get(gate)
+    if stage_scope is None:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "Unknown E0-MCALM workspace scope"
+        )
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_expected_short_scope(stage_scope, staged=True),
+            context=f"{gate} workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(str(exc)) from exc
+
+
+def revalidate_final_calibration_r8_post_publication_authority_transaction(
+    *,
+    gate: str,
+    staged_status: str,
+    expected_snapshot: tuple[FinalCalibrationR8PhysicalIdentity, ...],
+    repo_root: Path = Path("."),
+) -> None:
+    """Close MCALM scope, semantic, R8 identity, namespace, and ref races."""
+    validate_final_calibration_r8_post_publication_authority_staged_scope(
+        staged_status,
+        gate=gate,
+    )
+    current_staged_status = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+    )
+    validate_final_calibration_r8_post_publication_authority_staged_scope(
+        current_staged_status,
+        gate=gate,
+    )
+    workspace_status = _git_output(
+        repo_root, "status", "--short", "--untracked-files=all"
+    )
+    validate_final_calibration_r8_post_publication_authority_workspace_scope(
+        workspace_status,
+        gate=gate,
+    )
+    if (
+        snapshot_final_calibration_r8_post_publication_outputs(repo_root=repo_root)
+        != expected_snapshot
+    ):
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "E0-MCALM published R8 identity changed during precommit"
+        )
+    patch = _final_calibration_r8_post_publication_authority_patch_module()
+    if gate == "H-E0-MCALM":
+        _require_final_calibration_r8_post_publication_authority_readiness(
+            patch=patch,
+            repo_root=repo_root,
+            require_effective=False,
+        )
+    elif gate == "P-E0-MCALM":
+        _require_final_calibration_r8_post_publication_authority_unpublished_p_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="staged",
+        )
+    else:
+        raise FinalCalibrationR8PostPublicationAuthorityAdapterError(
+            "Unknown E0-MCALM transaction gate"
+        )
+
+
 def normalize_repo_path(raw_path: str) -> Path:
     path = Path(raw_path)
     if not path.is_absolute():
@@ -5312,6 +5738,15 @@ def _final_calibration_r8_coordination_namespace_revalidation_patch_module() -> 
     """Import E0-MCALL lazily so the generic assistant stays independent."""
     from src.experiments import (
         closure_final_calibration_r8_coordination_namespace_revalidation_patch as patch,
+    )
+
+    return patch
+
+
+def _final_calibration_r8_post_publication_authority_patch_module() -> Any:
+    """Import E0-MCALM lazily so the generic assistant stays independent."""
+    from src.experiments import (
+        closure_final_calibration_r8_post_publication_authority_patch as patch,
     )
 
     return patch
@@ -8963,10 +9398,16 @@ def main() -> int:
         )
         try:
             final_calibration_scope = (
-                final_calibration_r8_coordination_namespace_revalidation_pre_stage_scope(
+                final_calibration_r8_post_publication_authority_pre_stage_scope(
                     final_calibration_git_status_before
                 )
             )
+            if final_calibration_scope is None:
+                final_calibration_scope = (
+                    final_calibration_r8_coordination_namespace_revalidation_pre_stage_scope(
+                        final_calibration_git_status_before
+                    )
+                )
             if final_calibration_scope is None:
                 final_calibration_scope = (
                     final_calibration_r8_manifest_reproducibility_pre_stage_scope(
@@ -8975,6 +9416,7 @@ def main() -> int:
                 )
         except (
             DeferredDvcTargetError,
+            FinalCalibrationR8PostPublicationAuthorityAdapterError,
             FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
             FinalCalibrationR8ManifestReproducibilityAdapterError,
         ) as exc:
@@ -8986,7 +9428,14 @@ def main() -> int:
             )
             git_status_before = final_calibration_git_status_before
             try:
-                if final_calibration_stage_gate.endswith("MCALL"):
+                if final_calibration_stage_gate.endswith("MCALM"):
+                    validate_final_calibration_r8_post_publication_authority_invocation(
+                        args
+                    )
+                    final_calibration_r8_snapshot = (
+                        snapshot_final_calibration_r8_post_publication_outputs()
+                    )
+                elif final_calibration_stage_gate.endswith("MCALL"):
                     validate_final_calibration_r8_coordination_namespace_revalidation_invocation(
                         args
                     )
@@ -8999,6 +9448,7 @@ def main() -> int:
                     )
                     final_calibration_r8_snapshot = snapshot_final_calibration_r8_outputs()
             except (
+                FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
             ) as exc:
@@ -9029,7 +9479,8 @@ def main() -> int:
         or manual_targets
     ):
         print(
-            "E0-MCALL precommit requires a closed empty DVC and unmanaged target set.",
+            f"{final_calibration_stage_gate[2:]} precommit requires a closed "
+            "empty DVC and unmanaged target set.",
             file=sys.stderr,
         )
         return 2
@@ -9084,7 +9535,10 @@ def main() -> int:
     selected_dvc_paths = unique_paths(selected_dvc_paths)
 
     if final_calibration_stage_gate and selected_dvc_paths:
-        print("E0-MCALL precommit forbids every DVC add target.", file=sys.stderr)
+        print(
+            f"{final_calibration_stage_gate[2:]} precommit forbids every DVC add target.",
+            file=sys.stderr,
+        )
         return 2
 
     if changed_for_add and not args.yes:
@@ -9239,7 +9693,16 @@ def main() -> int:
                     "--short",
                     "--untracked-files=all",
                 )
-                if final_calibration_stage_gate.endswith("MCALL"):
+                if final_calibration_stage_gate.endswith("MCALM"):
+                    validate_final_calibration_r8_post_publication_authority_staged_scope(
+                        staged_status,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_final_calibration_r8_post_publication_authority_workspace_scope(
+                        workspace_scope,
+                        gate=final_calibration_stage_gate,
+                    )
+                elif final_calibration_stage_gate.endswith("MCALL"):
                     validate_final_calibration_r8_coordination_namespace_revalidation_staged_scope(
                         staged_status,
                         gate=final_calibration_stage_gate,
@@ -9258,6 +9721,7 @@ def main() -> int:
                         gate=final_calibration_stage_gate,
                     )
             except (
+                FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
             ) as exc:
@@ -9293,10 +9757,19 @@ def main() -> int:
             )
         if final_calibration_stage_gate:
             if final_calibration_r8_snapshot is None:
-                print("E0-MCALL immutable R8 snapshot is absent.", file=sys.stderr)
+                print(
+                    f"{final_calibration_stage_gate[2:]} immutable R8 snapshot is absent.",
+                    file=sys.stderr,
+                )
                 return 2
             try:
-                if final_calibration_stage_gate.endswith("MCALL"):
+                if final_calibration_stage_gate.endswith("MCALM"):
+                    revalidate_final_calibration_r8_post_publication_authority_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_snapshot=final_calibration_r8_snapshot,
+                    )
+                elif final_calibration_stage_gate.endswith("MCALL"):
                     revalidate_final_calibration_r8_coordination_namespace_revalidation_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -9310,10 +9783,13 @@ def main() -> int:
                     )
                 dvc_status_after = dvc_status_json(dvc_bin)
                 if dvc_status_after != dvc_status_before:
-                    raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
-                        "E0-MCALL DVC status changed during precommit"
+                    raise _final_calibration_stage_adapter_error(
+                        final_calibration_stage_gate,
+                        f"{final_calibration_stage_gate[2:]} DVC status changed "
+                        "during precommit",
                     )
             except (
+                FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
             ) as exc:
@@ -9396,10 +9872,19 @@ def main() -> int:
                 return 2
         if final_calibration_stage_gate:
             if final_calibration_r8_snapshot is None:
-                print("E0-MCALL immutable R8 snapshot is absent.", file=sys.stderr)
+                print(
+                    f"{final_calibration_stage_gate[2:]} immutable R8 snapshot is absent.",
+                    file=sys.stderr,
+                )
                 return 2
             try:
-                if final_calibration_stage_gate.endswith("MCALL"):
+                if final_calibration_stage_gate.endswith("MCALM"):
+                    revalidate_final_calibration_r8_post_publication_authority_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_snapshot=final_calibration_r8_snapshot,
+                    )
+                elif final_calibration_stage_gate.endswith("MCALL"):
                     revalidate_final_calibration_r8_coordination_namespace_revalidation_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -9412,10 +9897,13 @@ def main() -> int:
                         expected_snapshot=final_calibration_r8_snapshot,
                     )
                 if dvc_status_json(dvc_bin) != dvc_status_before:
-                    raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
-                        "E0-MCALL DVC status changed while writing the report"
+                    raise _final_calibration_stage_adapter_error(
+                        final_calibration_stage_gate,
+                        f"{final_calibration_stage_gate[2:]} DVC status changed "
+                        "while writing the report",
                     )
             except (
+                FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
             ) as exc:

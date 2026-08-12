@@ -1,0 +1,317 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/final_calibration_r8_post_publication_authority_patch_lock.schema.json",
+  "title": "Closure V1 E0-MCALM R8 post-publication authority patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate",
+    "status",
+    "generated_at_utc",
+    "repository",
+    "terminal_r_mcall_authority",
+    "p_mcall_authority",
+    "historical_h_mcall_authority",
+    "h_patch",
+    "coordination_namespace_contract",
+    "coordination_namespace",
+    "historical_inputs",
+    "historical_inputs_sha256",
+    "r8_bundle",
+    "formal_e0_m_boundary",
+    "prelock",
+    "schema_preflight",
+    "verification",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_final_calibration_r8_post_publication_authority_patch_lock_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-MCALM"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "repository": {"type": "object"},
+    "terminal_r_mcall_authority": {"type": "object"},
+    "p_mcall_authority": {"type": "object"},
+    "historical_h_mcall_authority": {"type": "object"},
+    "h_patch": {"type": "object"},
+    "coordination_namespace_contract": {"$ref": "#/$defs/coordinationNamespaceContract"},
+    "coordination_namespace": {"$ref": "#/$defs/coordinationNamespace"},
+    "historical_inputs": {
+      "type": "array",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {"type": "object"}
+    },
+    "historical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+    "r8_bundle": {"type": "object"},
+    "formal_e0_m_boundary": {"$ref": "#/$defs/formalE0MBoundary"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "coordinationNamespaceContract": {
+      "const": {
+        "historical_published_lock_count": 20,
+        "historical_published_lock_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock_manifest.json"
+        ],
+        "never_published_lock_count": 4,
+        "never_published_lock_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock_manifest.json"
+        ],
+        "current_lock_count": 2,
+        "current_lock_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock_manifest.json"
+        ],
+        "lock_temporary_count": 26,
+        "lock_temporary_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock_manifest.json.tmp"
+        ],
+        "locker_guard_count": 13,
+        "locker_guard_paths": [
+          "tmp/closure_v1_e0_mcal/final_calibration_lock.guard",
+          "tmp/closure_v1_e0_mcalc/final_calibration_candidate_semantics_patch_lock.guard",
+          "tmp/closure_v1_e0_mcald/final_calibration_inference_role_patch_lock.guard",
+          "tmp/closure_v1_e0_mcale/final_calibration_target_filter_evidence_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalf/final_calibration_raw_exclusion_evidence_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalg/final_calibration_ordinal_label_representation_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalh/final_calibration_observed_risk_precision_patch_lock.guard",
+          "tmp/closure_v1_e0_mcali/final_calibration_owned_run_guard_revalidation_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalj/final_calibration_platt_parameter_dialect_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalk/final_calibration_r8_manifest_reproducibility_patch_lock.guard",
+          "tmp/closure_v1_e0_mcall/final_calibration_r8_coordination_namespace_revalidation_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalm/final_calibration_r8_post_publication_authority_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalp/final_calibration_publication_guard_patch_lock.guard"
+        ],
+        "r8_temporary_count": 8,
+        "r8_temporary_paths": [
+          "reports/closure_v1/03_calibration/alert_thresholds.csv.tmp",
+          "reports/closure_v1/03_calibration/calibration_metrics.csv.tmp",
+          "reports/closure_v1/03_calibration/calibrator_specs.json.tmp",
+          "reports/closure_v1/03_calibration/final_calibration_manifest.json.tmp",
+          "reports/closure_v1/03_calibration/model_availability.csv.tmp",
+          "reports/closure_v1/03_calibration/ordinal_cutpoints.csv.tmp",
+          "reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv.tmp",
+          "reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json.tmp"
+        ],
+        "scientific_run_guard_count": 2,
+        "scientific_run_guard_paths": [
+          "tmp/closure_v1_e0_mcal/anfis_learning_curve.guard",
+          "tmp/closure_v1_e0_mcal/final_calibration.guard"
+        ],
+        "coordination_forbidden_count": 49,
+        "terminal_r_commit": "09309c2d16820f5d93fe9fd38dadef92377fd005",
+        "terminal_r_clean_loader_required": true,
+        "post_release_revalidation_required": true,
+        "effective_loader_revalidation_required": true
+      }
+    },
+    "coordinationNamespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "historical_published_lock_count",
+        "historical_published_locks",
+        "historical_published_locks_sha256",
+        "never_published_lock_present_count",
+        "current_lock_present_count",
+        "coordination_present_count",
+        "coordination_forbidden_count",
+        "owned_current_guard_present",
+        "formal_e0_m_output_present_count",
+        "outcome_access_log_absent"
+      ],
+      "properties": {
+        "historical_published_lock_count": {"const": 20},
+        "historical_published_locks": {"type": "array", "minItems": 20, "maxItems": 20, "items": {"type": "object"}},
+        "historical_published_locks_sha256": {"$ref": "#/$defs/sha256"},
+        "never_published_lock_present_count": {"const": 0},
+        "current_lock_present_count": {"const": 0},
+        "coordination_present_count": {"const": 0},
+        "coordination_forbidden_count": {"const": 49},
+        "owned_current_guard_present": {"const": false},
+        "formal_e0_m_output_present_count": {"const": 0},
+        "outcome_access_log_absent": {"const": true}
+      }
+    },
+    "formalE0MBoundary": {
+      "const": {
+        "e0_m_output_count": 0,
+        "outcome_access_log_state": "absent",
+        "outcome_access_log_required_e0_m_state": "present_empty",
+        "formal_e0_m_entrypoint_present": false,
+        "formal_e0_m_execution_authorized": false,
+        "e0_u_authorized": false,
+        "holdout_access_authorized": false,
+        "post_2021_access_authorized": false,
+        "outcome_access_authorized": false
+      }
+    },
+    "prelock": {
+      "const": {
+        "terminal_r_commit": "09309c2d16820f5d93fe9fd38dadef92377fd005",
+        "historical_published_lock_count": 20,
+        "never_published_lock_present_count": 0,
+        "p_output_present_count": 0,
+        "r8_output_present_count": 8,
+        "r8_committed_output_count": 8,
+        "coordination_present_count": 0,
+        "coordination_forbidden_count": 49,
+        "r8_bytes_preserved": true,
+        "scientific_writes_performed": false,
+        "dvc_commands_run": false,
+        "outcome_paths_opened": false,
+        "companion_contract": {
+          "physical_input_count": 16,
+          "historical_input_count": 6,
+          "output_count": 1,
+          "script_path": "src/experiments/lock_closure_final_calibration_r8_post_publication_authority_patch.py",
+          "manifest_written_last": true
+        }
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "gate", "schema_count", "schemas", "supported_subset_verified"],
+      "properties": {
+        "status": {"const": "schema_ready"},
+        "gate": {"const": "E0-MCALM"},
+        "schema_count": {"const": 1},
+        "schemas": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"$ref": "#/$defs/artifactRecord"}},
+        "supported_subset_verified": {"const": true}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedTestEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "test_count", "skipped_count", "deselected_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 48},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "verification": {
+      "oneOf": [
+        {"const": {"status": "not_run_by_payload_builder", "commands_run": false, "scientific_execution_run": false, "r8_files_touched": false, "r8_files_staged": false, "dvc_commands_run": false, "outcome_paths_opened": false}},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schema_preflight", "full_type_check", "focused_tests", "poetry_check", "publication_guard", "git_diff_check"],
+          "properties": {
+            "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+            "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+            "focused_tests": {"$ref": "#/$defs/focusedTestEvidence"},
+            "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+            "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+            "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+          }
+        }
+      ]
+    },
+    "authorizations": {
+      "const": {
+        "calibration_development_run_authorized": false,
+        "dvc_commands_authorized": false,
+        "dvc_push_authorized": false,
+        "e0_m_authorized": false,
+        "e0_u_authorized": false,
+        "e7_learning_curve_run_authorized": false,
+        "effective_in_payload": false,
+        "git_commit_authorized": false,
+        "git_push_authorized": false,
+        "holdout_access_authorized": false,
+        "locked_evaluation_authorized": false,
+        "outcome_access_authorized": false,
+        "post_2021_access_authorized": false,
+        "r8_staging_authorized": false,
+        "scientific_network_authorized": false
+      }
+    }
+  }
+}
