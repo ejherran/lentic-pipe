@@ -1363,6 +1363,10 @@ class FinalCalibrationR8ManifestReproducibilityAdapterError(RuntimeError):
     """Raised when the exact E0-MCALK precommit exception drifts."""
 
 
+class FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(RuntimeError):
+    """Raised when the exact E0-MCALL precommit exception drifts."""
+
+
 def anfis_ablation_registration_dvc_add_command(
     dvc_bin: str, target: Path
 ) -> list[str]:
@@ -3517,6 +3521,453 @@ def validate_final_calibration_r8_manifest_reproducibility_workspace_scope(
         raise FinalCalibrationR8ManifestReproducibilityAdapterError(str(exc)) from exc
 
 
+def final_calibration_r8_coordination_namespace_revalidation_pre_stage_scope(
+    status_output: str,
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[str, tuple[str, ...]] | None:
+    """Select only exact H/P/R E0-MCALL paths while R8 remains immutable."""
+    patch = _final_calibration_r8_coordination_namespace_revalidation_patch_module()
+
+    def short_map(scope: Mapping[str, str]) -> dict[str, str]:
+        return {
+            path: "??" if status == "A" else " M"
+            for path, status in scope.items()
+        }
+
+    h_with_r8 = {
+        **short_map(patch.FINAL_CALIBRATION_H_STAGED_SCOPE),
+        **short_map(patch.R8_STAGED_SCOPE),
+    }
+    candidates = (
+        ("H-E0-MCALL", h_with_r8, patch.FINAL_CALIBRATION_H_STAGED_SCOPE),
+        (
+            "P-E0-MCALL",
+            {
+                **short_map(patch.FINAL_CALIBRATION_P_STAGED_SCOPE),
+                **short_map(patch.R8_STAGED_SCOPE),
+            },
+            patch.FINAL_CALIBRATION_P_STAGED_SCOPE,
+        ),
+        ("R-E0-MCALL", short_map(patch.R8_STAGED_SCOPE), patch.R8_STAGED_SCOPE),
+    )
+    candidate_paths = {path for _, expected, _ in candidates for path in expected}
+    observed: dict[str, str] = {}
+    anomaly = False
+    for line in status_output.splitlines():
+        if (
+            len(line) < 4
+            or line[2] != " "
+            or line[:2] not in {"??", " M"}
+            or not line[3:]
+        ):
+            if any(path in line for path in candidate_paths):
+                raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                    "E0-MCALL pre-stage scope contains a malformed candidate record"
+                )
+            anomaly = True
+            continue
+        path = line[3:]
+        if path in observed:
+            if path in candidate_paths:
+                raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                    "E0-MCALL pre-stage scope contains a duplicate path"
+                )
+            anomaly = True
+            continue
+        observed[path] = line[:2]
+    if anomaly and set(observed) & candidate_paths:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL candidate pre-stage scope contains an extra malformed record"
+        )
+    for gate, expected, stage_scope in candidates:
+        if observed == expected:
+            _require_final_calibration_r8_coordination_namespace_revalidation_stage_base(
+                gate,
+                patch=patch,
+                repo_root=repo_root,
+            )
+            return gate, tuple(sorted(stage_scope))
+    if set(observed) & candidate_paths:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL candidate pre-stage scope is not exact"
+        )
+    return None
+
+
+def _require_final_calibration_r8_coordination_namespace_revalidation_stage_base(
+    gate: str,
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> None:
+    head = _git_output(repo_root, "rev-parse", "HEAD").strip()
+    if gate == "H-E0-MCALL":
+        if head != patch.BASE_H_MCALK_COMMIT:
+            raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                "H-E0-MCALL staging requires exact published H-E0-MCALK HEAD"
+            )
+        return
+    if gate == "P-E0-MCALL":
+        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
+        )
+        if parent != patch.BASE_H_MCALK_COMMIT:
+            raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                "P-E0-MCALL staging requires a direct H child of H-E0-MCALK"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                scope,
+                expected=patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+                context="published H-E0-MCALL scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                str(exc)
+            ) from exc
+        _require_final_calibration_r8_coordination_namespace_revalidation_unpublished_p_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="untracked",
+        )
+        return
+    if gate == "R-E0-MCALL":
+        try:
+            authority = patch.require_final_calibration_r8_coordination_namespace_revalidation_patch_authority(
+                repo_root=repo_root,
+                verify_remote=True,
+            )
+        except patch.FinalCalibrationR8CoordinationNamespaceRevalidationPatchError as exc:
+            raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                str(exc)
+            ) from exc
+        _require_final_calibration_r8_coordination_namespace_revalidation_effective_result(
+            authority,
+            patch=patch,
+            context="staging",
+        )
+        return
+    raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+        "Unknown E0-MCALL staging gate"
+    )
+
+
+def _require_final_calibration_r8_coordination_namespace_revalidation_effective_result(
+    authority: Any,
+    *,
+    patch: Any,
+    context: str,
+) -> None:
+    if (
+        type(authority) is not dict
+        or authority.get("gate") != patch.PATCH_GATE
+        or authority.get("status") != "effective"
+        or authority.get("coordination_namespace_revalidation")
+        != patch.COORDINATION_NAMESPACE_CONTRACT
+        or authority.get("r_output_present_count") != 8
+        or authority.get("r_lifecycle_state")
+        != "both_bundles_completed_unpublished"
+        or authority.get("effective_authority") is not True
+        or authority.get("r8_staging_authorized") is not True
+        or authority.get("writes_performed") is not False
+    ):
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            f"R-E0-MCALL {context} requires exact effective P-E0-MCALL authority"
+        )
+
+
+def _require_final_calibration_r8_coordination_namespace_revalidation_unpublished_p_validation(
+    *,
+    patch: Any,
+    repo_root: Path,
+    expected_stage_state: str,
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_final_calibration_r8_coordination_namespace_revalidation_unpublished_lock_bundle(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.FinalCalibrationR8CoordinationNamespaceRevalidationPatchError as exc:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            str(exc)
+        ) from exc
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status")
+        != "unpublished_p_mcall_lock_bundle_validated"
+        or validation.get("p_stage_state") != expected_stage_state
+        or validation.get("p_output_count") != 2
+        or validation.get("physical_input_count") != 16
+        or validation.get("historical_input_count") != 6
+        or validation.get("companion_output_count") != 1
+        or validation.get("coordination_forbidden_count") != 46
+        or validation.get("coordination_present_count") != 0
+        or validation.get("r8_output_count") != 8
+        or type(validation.get("r8_outputs_sha256")) is not str
+        or len(validation["r8_outputs_sha256"]) != 64
+        or validation.get("r8_staging_authorized") is not False
+        or validation.get("effective_authority") is not False
+        or validation.get("scientific_rerun_authorized") is not False
+        or validation.get("writes_performed") is not False
+    ):
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL unpublished P semantic validation result drifted"
+        )
+    return validation
+
+
+def validate_final_calibration_r8_coordination_namespace_revalidation_invocation(
+    args: Any,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Require the one closed, no-DVC E0-MCALL assistant invocation."""
+    source = os.environ if env is None else env
+    dvc_site_cache = source.get("DVC_SITE_CACHE_DIR")
+    if (
+        not args.no_push
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or not args.allow_unmanaged
+        or bool(args.target)
+        or bool(args.defer_dvc_target)
+        or bool(getattr(args, "register_anfis_ablation_model_family", False))
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            dvc_site_cache is not None
+            and dvc_site_cache != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL precommit requires exact --allow-unmanaged --no-push, "
+            "the mandatory publication guard, default paths, analytics-disabled "
+            "DVC, and no optional execution target or mode"
+        )
+
+
+def snapshot_final_calibration_r8_coordination_namespace_outputs(
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[FinalCalibrationR8PhysicalIdentity, ...]:
+    """Capture immutable R8 inode and byte identity around MCALL actions."""
+    patch = _final_calibration_r8_coordination_namespace_revalidation_patch_module()
+    records: list[FinalCalibrationR8PhysicalIdentity] = []
+    try:
+        for expected in patch.R8_OUTPUT_CONTRACT:
+            raw_path = expected.get("path")
+            if type(raw_path) is not str:
+                raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                    "E0-MCALL R8 output contract path drifted"
+                )
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=0o644,
+            )
+            if (
+                identity.nlink != 1
+                or identity.size != expected.get("bytes")
+                or identity.sha256 != expected.get("sha256")
+            ):
+                raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                    f"E0-MCALL R8 physical identity drifted: {raw_path}"
+                )
+            records.append(
+                FinalCalibrationR8PhysicalIdentity(
+                    path=raw_path,
+                    device=identity.device,
+                    inode=identity.inode,
+                    mode=identity.mode,
+                    nlink=identity.nlink,
+                    bytes=identity.size,
+                    sha256=identity.sha256,
+                    mtime_ns=identity.mtime_ns,
+                    ctime_ns=identity.ctime_ns,
+                )
+            )
+    except (
+        OSError,
+        DeferredDvcTargetError,
+        FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
+    ) as exc:
+        if isinstance(
+            exc, FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError
+        ):
+            raise
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            f"E0-MCALL R8 physical snapshot failed: {exc}"
+        ) from exc
+    if len(records) != 8 or len({record.path for record in records}) != 8:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL R8 physical snapshot is not exact8"
+        )
+    return tuple(records)
+
+
+def revalidate_final_calibration_r8_coordination_namespace_revalidation_transaction(
+    *,
+    gate: str,
+    staged_status: str,
+    expected_snapshot: tuple[FinalCalibrationR8PhysicalIdentity, ...],
+    repo_root: Path = Path("."),
+) -> None:
+    """Close MCALL scope, semantic, byte, inode, and remote-ref races."""
+    validate_final_calibration_r8_coordination_namespace_revalidation_staged_scope(
+        staged_status,
+        gate=gate,
+    )
+    current_staged_status = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+    )
+    validate_final_calibration_r8_coordination_namespace_revalidation_staged_scope(
+        current_staged_status,
+        gate=gate,
+    )
+    workspace_status = _git_output(
+        repo_root, "status", "--short", "--untracked-files=all"
+    )
+    validate_final_calibration_r8_coordination_namespace_revalidation_workspace_scope(
+        workspace_status,
+        gate=gate,
+    )
+    if (
+        snapshot_final_calibration_r8_coordination_namespace_outputs(
+            repo_root=repo_root
+        )
+        != expected_snapshot
+    ):
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL immutable R8 identity changed during precommit"
+        )
+    patch = _final_calibration_r8_coordination_namespace_revalidation_patch_module()
+    try:
+        if gate == "P-E0-MCALL":
+            _require_final_calibration_r8_coordination_namespace_revalidation_unpublished_p_validation(
+                patch=patch,
+                repo_root=repo_root,
+                expected_stage_state="staged",
+            )
+        elif gate == "R-E0-MCALL":
+            authority = patch.require_final_calibration_r8_coordination_namespace_revalidation_patch_authority(
+                repo_root=repo_root,
+                verify_remote=True,
+            )
+            _require_final_calibration_r8_coordination_namespace_revalidation_effective_result(
+                authority,
+                patch=patch,
+                context="remote revalidation",
+            )
+        validation = patch.validate_final_calibration_r8_coordination_namespace_revalidation_adoption(
+            repo_root=repo_root,
+            require_staged=gate == "R-E0-MCALL",
+        )
+    except patch.FinalCalibrationR8CoordinationNamespaceRevalidationPatchError as exc:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            str(exc)
+        ) from exc
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status")
+        != "r8_coordination_namespace_revalidation_adoption_validated"
+        or validation.get("r8_output_count") != 8
+        or validation.get("calibration_output_count") != 6
+        or validation.get("e7_output_count") != 2
+        or validation.get("r_lifecycle_state")
+        != "both_bundles_completed_unpublished"
+        or validation.get("r8_outputs") != list(patch.R8_OUTPUT_CONTRACT)
+        or validation.get("coordination_forbidden_count") != 46
+        or validation.get("coordination_present_count") != 0
+        or validation.get("effective_p_mcall_verified")
+        is not (gate == "R-E0-MCALL")
+        or validation.get("staged_scope_verified")
+        is not (gate == "R-E0-MCALL")
+    ):
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "E0-MCALL transaction validation result drifted"
+        )
+
+
+def validate_final_calibration_r8_coordination_namespace_revalidation_staged_scope(
+    staged_status: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _final_calibration_r8_coordination_namespace_revalidation_patch_module()
+    scopes = {
+        "H-E0-MCALL": patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+        "P-E0-MCALL": patch.FINAL_CALIBRATION_P_STAGED_SCOPE,
+        "R-E0-MCALL": patch.R8_STAGED_SCOPE,
+    }
+    expected = scopes.get(gate)
+    if expected is None:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "Unknown E0-MCALL staged scope"
+        )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=expected,
+            context=f"{gate} staged scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            str(exc)
+        ) from exc
+
+
+def validate_final_calibration_r8_coordination_namespace_revalidation_workspace_scope(
+    status_output: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _final_calibration_r8_coordination_namespace_revalidation_patch_module()
+    scopes = {
+        "H-E0-MCALL": patch.FINAL_CALIBRATION_H_STAGED_SCOPE,
+        "P-E0-MCALL": patch.FINAL_CALIBRATION_P_STAGED_SCOPE,
+        "R-E0-MCALL": patch.R8_STAGED_SCOPE,
+    }
+    stage_scope = scopes.get(gate)
+    if stage_scope is None:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            "Unknown E0-MCALL workspace scope"
+        )
+    expected = _expected_short_scope(stage_scope, staged=True)
+    if gate != "R-E0-MCALL":
+        expected.update(_expected_short_scope(patch.R8_STAGED_SCOPE, staged=False))
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=expected,
+            context=f"{gate} workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+            str(exc)
+        ) from exc
+
+
 def normalize_repo_path(raw_path: str) -> Path:
     path = Path(raw_path)
     if not path.is_absolute():
@@ -4857,6 +5308,15 @@ def _final_calibration_r8_manifest_reproducibility_patch_module() -> Any:
     return patch
 
 
+def _final_calibration_r8_coordination_namespace_revalidation_patch_module() -> Any:
+    """Import E0-MCALL lazily so the generic assistant stays independent."""
+    from src.experiments import (
+        closure_final_calibration_r8_coordination_namespace_revalidation_patch as patch,
+    )
+
+    return patch
+
+
 def _exact_finding_multiset(
     observed: list[ReproducibilityFinding],
     expected: tuple[ReproducibilityFinding, ...],
@@ -4966,6 +5426,125 @@ def final_calibration_r8_manifest_reproducibility_checks(
         verify_manifest_inputs=verify_manifest_inputs,
     )
     return adopt_final_calibration_r8_manifest_reproducibility_findings(
+        generic,
+        staged_status=staged_status,
+        repo_root=repo_root,
+    )
+
+
+def adopt_final_calibration_r8_coordination_namespace_revalidation_findings(
+    findings: list[ReproducibilityFinding],
+    *,
+    staged_status: str,
+    repo_root: Path = Path("."),
+) -> list[ReproducibilityFinding]:
+    """Adopt only the exact four generic R8 findings under E0-MCALL."""
+    patch = _final_calibration_r8_coordination_namespace_revalidation_patch_module()
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=patch.R8_STAGED_SCOPE,
+            context="R-E0-MCALL staged scope",
+        )
+    except DeferredDvcTargetError as exc:
+        return [
+            *findings,
+            ReproducibilityFinding(
+                "fail",
+                "final_calibration_r8_coordination_namespace_revalidation",
+                "R-E0-MCALL",
+                str(exc),
+            ),
+        ]
+    expected = tuple(
+        ReproducibilityFinding(**record)
+        for record in patch.GENERIC_MANIFEST_FINDINGS_CONTRACT
+    )
+    observed_non_ok = [finding for finding in findings if finding.level != "ok"]
+    if not _exact_finding_multiset(observed_non_ok, expected):
+        return [
+            *findings,
+            ReproducibilityFinding(
+                "fail",
+                "final_calibration_r8_coordination_namespace_revalidation",
+                "R-E0-MCALL",
+                "E0-MCALL generic manifest findings were not the exact four-finding multiset.",
+            ),
+        ]
+    try:
+        validation = patch.validate_final_calibration_r8_coordination_namespace_revalidation_adoption(
+            repo_root=repo_root,
+            require_staged=True,
+        )
+    except patch.FinalCalibrationR8CoordinationNamespaceRevalidationPatchError as exc:
+        return [
+            *findings,
+            ReproducibilityFinding(
+                "fail",
+                "final_calibration_r8_coordination_namespace_revalidation",
+                "R-E0-MCALL",
+                str(exc),
+            ),
+        ]
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status")
+        != "r8_coordination_namespace_revalidation_adoption_validated"
+        or validation.get("r8_output_count") != 8
+        or validation.get("calibration_output_count") != 6
+        or validation.get("e7_output_count") != 2
+        or validation.get("r_lifecycle_state")
+        != "both_bundles_completed_unpublished"
+        or validation.get("r8_outputs") != list(patch.R8_OUTPUT_CONTRACT)
+        or validation.get("expected_non_ok_findings")
+        != list(patch.GENERIC_MANIFEST_FINDINGS_CONTRACT)
+        or validation.get("coordination_forbidden_count") != 46
+        or validation.get("coordination_present_count") != 0
+        or validation.get("effective_p_mcall_verified") is not True
+        or validation.get("staged_scope_verified") is not True
+        or validation.get("scientific_rerun_performed") is not False
+        or validation.get("r8_rewrite_performed") is not False
+    ):
+        return [
+            *findings,
+            ReproducibilityFinding(
+                "fail",
+                "final_calibration_r8_coordination_namespace_revalidation",
+                "R-E0-MCALL",
+                "E0-MCALL strict R8 adoption result drifted.",
+            ),
+        ]
+    adopted = [finding for finding in findings if finding.level == "ok"]
+    adopted.append(
+        ReproducibilityFinding(
+            "ok",
+            "final_calibration_r8_coordination_namespace_revalidation",
+            "R-E0-MCALL",
+            "Adopted the exact two status failures and two script warnings after strict MCALL R8 validation.",
+        )
+    )
+    return adopted
+
+
+def final_calibration_r8_coordination_namespace_revalidation_checks(
+    *,
+    staged_status: str,
+    selected_dvc_paths: list[Path],
+    artifacts: list[DvcArtifact],
+    max_manifest_hash_bytes: int,
+    verify_manifest_inputs: bool,
+    repo_root: Path = Path("."),
+) -> list[ReproducibilityFinding]:
+    """Run unchanged generic checks, then the exact R-E0-MCALL adapter."""
+    generic = reproducibility_checks(
+        staged_status=staged_status,
+        selected_dvc_paths=selected_dvc_paths,
+        artifacts=artifacts,
+        max_manifest_hash_bytes=max_manifest_hash_bytes,
+        verify_manifest_inputs=verify_manifest_inputs,
+    )
+    return adopt_final_calibration_r8_coordination_namespace_revalidation_findings(
         generic,
         staged_status=staged_status,
         repo_root=repo_root,
@@ -8384,12 +8963,19 @@ def main() -> int:
         )
         try:
             final_calibration_scope = (
-                final_calibration_r8_manifest_reproducibility_pre_stage_scope(
+                final_calibration_r8_coordination_namespace_revalidation_pre_stage_scope(
                     final_calibration_git_status_before
                 )
             )
+            if final_calibration_scope is None:
+                final_calibration_scope = (
+                    final_calibration_r8_manifest_reproducibility_pre_stage_scope(
+                        final_calibration_git_status_before
+                    )
+                )
         except (
             DeferredDvcTargetError,
+            FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
             FinalCalibrationR8ManifestReproducibilityAdapterError,
         ) as exc:
             print(str(exc), file=sys.stderr)
@@ -8400,13 +8986,22 @@ def main() -> int:
             )
             git_status_before = final_calibration_git_status_before
             try:
-                validate_final_calibration_r8_manifest_reproducibility_invocation(
-                    args
-                )
-                final_calibration_r8_snapshot = (
-                    snapshot_final_calibration_r8_outputs()
-                )
-            except FinalCalibrationR8ManifestReproducibilityAdapterError as exc:
+                if final_calibration_stage_gate.endswith("MCALL"):
+                    validate_final_calibration_r8_coordination_namespace_revalidation_invocation(
+                        args
+                    )
+                    final_calibration_r8_snapshot = (
+                        snapshot_final_calibration_r8_coordination_namespace_outputs()
+                    )
+                else:
+                    validate_final_calibration_r8_manifest_reproducibility_invocation(
+                        args
+                    )
+                    final_calibration_r8_snapshot = snapshot_final_calibration_r8_outputs()
+            except (
+                FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
+                FinalCalibrationR8ManifestReproducibilityAdapterError,
+            ) as exc:
                 print(str(exc), file=sys.stderr)
                 return 2
     report_path = args.report or default_report_path()
@@ -8434,7 +9029,7 @@ def main() -> int:
         or manual_targets
     ):
         print(
-            "E0-MCALK precommit requires a closed empty DVC and unmanaged target set.",
+            "E0-MCALL precommit requires a closed empty DVC and unmanaged target set.",
             file=sys.stderr,
         )
         return 2
@@ -8489,7 +9084,7 @@ def main() -> int:
     selected_dvc_paths = unique_paths(selected_dvc_paths)
 
     if final_calibration_stage_gate and selected_dvc_paths:
-        print("E0-MCALK precommit forbids every DVC add target.", file=sys.stderr)
+        print("E0-MCALL precommit forbids every DVC add target.", file=sys.stderr)
         return 2
 
     if changed_for_add and not args.yes:
@@ -8638,23 +9233,47 @@ def main() -> int:
                 return 2
         if final_calibration_stage_gate:
             try:
-                validate_final_calibration_r8_manifest_reproducibility_staged_scope(
-                    staged_status,
-                    gate=final_calibration_stage_gate,
+                workspace_scope = _git_output(
+                    Path("."),
+                    "status",
+                    "--short",
+                    "--untracked-files=all",
                 )
-                validate_final_calibration_r8_manifest_reproducibility_workspace_scope(
-                    _git_output(
-                        Path("."),
-                        "status",
-                        "--short",
-                        "--untracked-files=all",
-                    ),
-                    gate=final_calibration_stage_gate,
-                )
-            except FinalCalibrationR8ManifestReproducibilityAdapterError as exc:
+                if final_calibration_stage_gate.endswith("MCALL"):
+                    validate_final_calibration_r8_coordination_namespace_revalidation_staged_scope(
+                        staged_status,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_final_calibration_r8_coordination_namespace_revalidation_workspace_scope(
+                        workspace_scope,
+                        gate=final_calibration_stage_gate,
+                    )
+                else:
+                    validate_final_calibration_r8_manifest_reproducibility_staged_scope(
+                        staged_status,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_final_calibration_r8_manifest_reproducibility_workspace_scope(
+                        workspace_scope,
+                        gate=final_calibration_stage_gate,
+                    )
+            except (
+                FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
+                FinalCalibrationR8ManifestReproducibilityAdapterError,
+            ) as exc:
                 print(str(exc), file=sys.stderr)
                 return 2
-        if final_calibration_stage_gate == "R-E0-MCALK":
+        if final_calibration_stage_gate == "R-E0-MCALL":
+            reproducibility_findings = (
+                final_calibration_r8_coordination_namespace_revalidation_checks(
+                    staged_status=staged_status,
+                    selected_dvc_paths=selected_dvc_paths,
+                    artifacts=artifacts,
+                    max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+                    verify_manifest_inputs=args.verify_manifest_inputs,
+                )
+            )
+        elif final_calibration_stage_gate == "R-E0-MCALK":
             reproducibility_findings = (
                 final_calibration_r8_manifest_reproducibility_checks(
                     staged_status=staged_status,
@@ -8674,20 +9293,30 @@ def main() -> int:
             )
         if final_calibration_stage_gate:
             if final_calibration_r8_snapshot is None:
-                print("E0-MCALK immutable R8 snapshot is absent.", file=sys.stderr)
+                print("E0-MCALL immutable R8 snapshot is absent.", file=sys.stderr)
                 return 2
             try:
-                revalidate_final_calibration_r8_manifest_reproducibility_transaction(
-                    gate=final_calibration_stage_gate,
-                    staged_status=staged_status,
-                    expected_snapshot=final_calibration_r8_snapshot,
-                )
+                if final_calibration_stage_gate.endswith("MCALL"):
+                    revalidate_final_calibration_r8_coordination_namespace_revalidation_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_snapshot=final_calibration_r8_snapshot,
+                    )
+                else:
+                    revalidate_final_calibration_r8_manifest_reproducibility_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_snapshot=final_calibration_r8_snapshot,
+                    )
                 dvc_status_after = dvc_status_json(dvc_bin)
                 if dvc_status_after != dvc_status_before:
-                    raise FinalCalibrationR8ManifestReproducibilityAdapterError(
-                        "E0-MCALK DVC status changed during precommit"
+                    raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                        "E0-MCALL DVC status changed during precommit"
                     )
-            except FinalCalibrationR8ManifestReproducibilityAdapterError as exc:
+            except (
+                FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
+                FinalCalibrationR8ManifestReproducibilityAdapterError,
+            ) as exc:
                 print(str(exc), file=sys.stderr)
                 return 2
         if deferred_dvc_paths:
@@ -8767,19 +9396,29 @@ def main() -> int:
                 return 2
         if final_calibration_stage_gate:
             if final_calibration_r8_snapshot is None:
-                print("E0-MCALK immutable R8 snapshot is absent.", file=sys.stderr)
+                print("E0-MCALL immutable R8 snapshot is absent.", file=sys.stderr)
                 return 2
             try:
-                revalidate_final_calibration_r8_manifest_reproducibility_transaction(
-                    gate=final_calibration_stage_gate,
-                    staged_status=staged_status,
-                    expected_snapshot=final_calibration_r8_snapshot,
-                )
-                if dvc_status_json(dvc_bin) != dvc_status_before:
-                    raise FinalCalibrationR8ManifestReproducibilityAdapterError(
-                        "E0-MCALK DVC status changed while writing the report"
+                if final_calibration_stage_gate.endswith("MCALL"):
+                    revalidate_final_calibration_r8_coordination_namespace_revalidation_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_snapshot=final_calibration_r8_snapshot,
                     )
-            except FinalCalibrationR8ManifestReproducibilityAdapterError as exc:
+                else:
+                    revalidate_final_calibration_r8_manifest_reproducibility_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_snapshot=final_calibration_r8_snapshot,
+                    )
+                if dvc_status_json(dvc_bin) != dvc_status_before:
+                    raise FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError(
+                        "E0-MCALL DVC status changed while writing the report"
+                    )
+            except (
+                FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
+                FinalCalibrationR8ManifestReproducibilityAdapterError,
+            ) as exc:
                 print(str(exc), file=sys.stderr)
                 return 2
         if has_failing_findings(reproducibility_findings):

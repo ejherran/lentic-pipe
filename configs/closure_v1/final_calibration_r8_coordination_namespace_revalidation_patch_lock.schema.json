@@ -1,0 +1,432 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/final_calibration_r8_coordination_namespace_revalidation_patch_lock.schema.json",
+  "title": "Closure V1 E0-MCALL R8 coordination-namespace revalidation patch lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "experiment_id", "gate", "status", "generated_at_utc",
+    "repository", "superseded_check_only", "historical_h_mcalk_authority",
+    "p_mcalj_authority", "h_patch", "coordination_namespace_contract",
+    "coordination_namespace", "manifest_reproducibility_contract",
+    "generic_manifest_findings_contract", "historical_inputs",
+    "historical_inputs_sha256", "r8_bundle", "scientific_boundary", "prelock",
+    "schema_preflight", "verification", "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_final_calibration_r8_coordination_namespace_revalidation_patch_lock_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-MCALL"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "repository": {"$ref": "#/$defs/repository"},
+    "superseded_check_only": {"$ref": "#/$defs/supersededCheckOnly"},
+    "historical_h_mcalk_authority": {"$ref": "#/$defs/historicalHMcalkAuthority"},
+    "p_mcalj_authority": {"$ref": "#/$defs/pMcaljAuthority"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "coordination_namespace_contract": {"$ref": "#/$defs/coordinationNamespaceContract"},
+    "coordination_namespace": {"$ref": "#/$defs/coordinationNamespace"},
+    "manifest_reproducibility_contract": {"type": "object"},
+    "generic_manifest_findings_contract": {"type": "array", "minItems": 4, "maxItems": 4, "items": {"type": "object"}},
+    "historical_inputs": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/historicalArtifactRecord"}},
+    "historical_inputs_sha256": {"$ref": "#/$defs/sha256"},
+    "r8_bundle": {"$ref": "#/$defs/r8Bundle"},
+    "scientific_boundary": {"$ref": "#/$defs/scientificBoundary"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "gitOid": {"type": "string", "pattern": "^[0-9a-f]{40}$"},
+    "artifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "gitArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "git_oid": {"$ref": "#/$defs/gitOid"},
+        "git_mode": {"enum": ["100644", "100755"]}
+      }
+    },
+    "historicalArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode", "commit"],
+      "properties": {
+        "role": {"const": "superseded_h_mcalk_component"},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "git_oid": {"$ref": "#/$defs/gitOid"},
+        "git_mode": {"enum": ["100644", "100755"]},
+        "commit": {"const": "6f078da52c5dd699ea312df209bfef5a8d120d00"}
+      }
+    },
+    "hScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["added", "modified", "deleted", "path_count", "paths"],
+      "properties": {
+        "added": {"const": 5},
+        "modified": {"const": 1},
+        "deleted": {"const": 0},
+        "path_count": {"const": 6},
+        "paths": {
+          "const": [
+            "configs/closure_v1/final_calibration_r8_coordination_namespace_revalidation_patch_lock.schema.json",
+            "docs/closure_v1/E0_M_FINAL_CALIBRATION_R8_COORDINATION_NAMESPACE_REVALIDATION_PATCH_1.md",
+            "src/data/prepare_commit_artifacts.py",
+            "src/experiments/closure_final_calibration_r8_coordination_namespace_revalidation_patch.py",
+            "src/experiments/lock_closure_final_calibration_r8_coordination_namespace_revalidation_patch.py",
+            "tests/test_closure_final_calibration_r8_coordination_namespace_revalidation_patch.py"
+          ]
+        }
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["base_h_mcalk_commit", "historical_p_mcalj_commit", "h_patch_head", "branch", "remote_head", "scope"],
+      "properties": {
+        "base_h_mcalk_commit": {"const": "6f078da52c5dd699ea312df209bfef5a8d120d00"},
+        "historical_p_mcalj_commit": {"const": "97f12b00b952829474a2937dccba6add783df074"},
+        "h_patch_head": {"$ref": "#/$defs/gitOid"},
+        "branch": {"const": "main"},
+        "remote_head": {"$ref": "#/$defs/gitOid"},
+        "scope": {"$ref": "#/$defs/hScope"}
+      }
+    },
+    "supersededCheckOnly": {
+      "const": {
+        "attempted_gate": "P-E0-MCALK",
+        "mode": "check_only",
+        "status": "superseded_check_only_interrupted_after_static_blocker_detected",
+        "interruption": "KeyboardInterrupt",
+        "phase": "read_only_historical_input_rehash",
+        "last_observed_path": "data/fuzzy/state_vector_v0.parquet",
+        "static_blocker": "predecessor_coordination_guard_race_and_loader_omission",
+        "publication_started": false,
+        "authorization_consumed": false,
+        "writes_performed": false,
+        "guard_created": false,
+        "guard_removed": false,
+        "p_output_count": 0,
+        "temporary_output_count": 0,
+        "coordination_present_count": 0,
+        "r8_output_count": 8,
+        "r8_bytes_changed": false,
+        "r8_rewrite_performed": false,
+        "scientific_rerun_performed": false,
+        "dvc_commands_run": false,
+        "outcome_paths_opened": false
+      }
+    },
+    "historicalHMcalkAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "commit", "parent_p_mcalj", "scope", "component_count", "components", "components_sha256", "p_mcalk_published", "p_mcalk_lock_present", "r8_rewrite_performed"],
+      "properties": {
+        "gate": {"const": "H-E0-MCALK"},
+        "commit": {"const": "6f078da52c5dd699ea312df209bfef5a8d120d00"},
+        "parent_p_mcalj": {"const": "97f12b00b952829474a2937dccba6add783df074"},
+        "scope": {"type": "object"},
+        "component_count": {"const": 6},
+        "components": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/historicalArtifactRecord"}},
+        "components_sha256": {"$ref": "#/$defs/sha256"},
+        "p_mcalk_published": {"const": false},
+        "p_mcalk_lock_present": {"const": false},
+        "r8_rewrite_performed": {"const": false}
+      }
+    },
+    "pMcaljAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "commit", "parent_h_mcalj", "p_component_count", "p_components", "p_components_sha256", "lock_payload_sha256", "companion_sha256", "manifest_written_last", "historical_scientific_inputs_rehashed", "science_payloads_opened"],
+      "properties": {
+        "gate": {"const": "P-E0-MCALJ"},
+        "commit": {"const": "97f12b00b952829474a2937dccba6add783df074"},
+        "parent_h_mcalj": {"const": "05e846cfc3804a35f7550d6a2de9687b4450568d"},
+        "p_component_count": {"const": 2},
+        "p_components": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "p_components_sha256": {"$ref": "#/$defs/sha256"},
+        "lock_payload_sha256": {"const": "149944e42c75d40f77f3cfb58c4f844c2e274cf53b02d020e0c98f083a972ba5"},
+        "companion_sha256": {"const": "86a2527c35df3de48c543542794d99bf182a8dd04a9540049f9eb6fe69c15079"},
+        "manifest_written_last": {"const": true},
+        "historical_scientific_inputs_rehashed": {"const": false},
+        "science_payloads_opened": {"const": false}
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "component_count", "added_count", "modified_count", "components", "components_sha256"],
+      "properties": {
+        "gate": {"const": "H-E0-MCALL"},
+        "component_count": {"const": 6},
+        "added_count": {"const": 5},
+        "modified_count": {"const": 1},
+        "components": {"type": "array", "minItems": 6, "maxItems": 6, "items": {"$ref": "#/$defs/gitArtifactRecord"}},
+        "components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "coordinationNamespaceContract": {
+      "const": {
+        "historical_published_lock_count": 18,
+        "historical_published_lock_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock_manifest.json"
+        ],
+        "never_published_lock_count": 4,
+        "never_published_lock_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_lock_manifest.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock_manifest.json"
+        ],
+        "current_lock_count": 2,
+        "current_lock_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock.json",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock_manifest.json"
+        ],
+        "lock_temporary_count": 24,
+        "lock_temporary_paths": [
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_r8_manifest_reproducibility_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock_manifest.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock.json.tmp",
+          "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock_manifest.json.tmp"
+        ],
+        "locker_guard_count": 12,
+        "locker_guard_paths": [
+          "tmp/closure_v1_e0_mcal/final_calibration_lock.guard",
+          "tmp/closure_v1_e0_mcalc/final_calibration_candidate_semantics_patch_lock.guard",
+          "tmp/closure_v1_e0_mcald/final_calibration_inference_role_patch_lock.guard",
+          "tmp/closure_v1_e0_mcale/final_calibration_target_filter_evidence_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalf/final_calibration_raw_exclusion_evidence_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalg/final_calibration_ordinal_label_representation_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalh/final_calibration_observed_risk_precision_patch_lock.guard",
+          "tmp/closure_v1_e0_mcali/final_calibration_owned_run_guard_revalidation_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalj/final_calibration_platt_parameter_dialect_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalk/final_calibration_r8_manifest_reproducibility_patch_lock.guard",
+          "tmp/closure_v1_e0_mcall/final_calibration_r8_coordination_namespace_revalidation_patch_lock.guard",
+          "tmp/closure_v1_e0_mcalp/final_calibration_publication_guard_patch_lock.guard"
+        ],
+        "r8_temporary_count": 8,
+        "r8_temporary_paths": [
+          "reports/closure_v1/03_calibration/alert_thresholds.csv.tmp",
+          "reports/closure_v1/03_calibration/calibration_metrics.csv.tmp",
+          "reports/closure_v1/03_calibration/calibrator_specs.json.tmp",
+          "reports/closure_v1/03_calibration/final_calibration_manifest.json.tmp",
+          "reports/closure_v1/03_calibration/model_availability.csv.tmp",
+          "reports/closure_v1/03_calibration/ordinal_cutpoints.csv.tmp",
+          "reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv.tmp",
+          "reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json.tmp"
+        ],
+        "scientific_run_guard_count": 2,
+        "scientific_run_guard_paths": [
+          "tmp/closure_v1_e0_mcal/anfis_learning_curve.guard",
+          "tmp/closure_v1_e0_mcal/final_calibration.guard"
+        ],
+        "coordination_forbidden_count": 46,
+        "predecessor_guard_race_path": "tmp/closure_v1_e0_mcalj/final_calibration_platt_parameter_dialect_patch_lock.guard",
+        "post_release_revalidation_required": true,
+        "effective_loader_revalidation_required": true
+      }
+    },
+    "historicalLockRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"const": "historical_published_final_calibration_lock"},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "git_oid": {"$ref": "#/$defs/gitOid"},
+        "git_mode": {"const": "100644"}
+      }
+    },
+    "coordinationNamespace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["historical_published_lock_count", "historical_published_locks", "historical_published_locks_sha256", "never_published_lock_present_count", "current_lock_present_count", "coordination_present_count", "coordination_forbidden_count", "owned_current_guard_present", "outcome_access_log_absent"],
+      "properties": {
+        "historical_published_lock_count": {"const": 18},
+        "historical_published_locks": {"type": "array", "minItems": 18, "maxItems": 18, "items": {"$ref": "#/$defs/historicalLockRecord"}},
+        "historical_published_locks_sha256": {"$ref": "#/$defs/sha256"},
+        "never_published_lock_present_count": {"const": 0},
+        "current_lock_present_count": {"const": 0},
+        "coordination_present_count": {"const": 0},
+        "coordination_forbidden_count": {"const": 46},
+        "owned_current_guard_present": {"const": false},
+        "outcome_access_log_absent": {"const": true}
+      }
+    },
+    "r8Bundle": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["gate", "status", "r8_output_count", "calibration_output_count", "e7_output_count", "r_lifecycle_state", "authority_sha256", "r8_outputs", "r8_outputs_sha256", "producer_provenance", "producer_provenance_sha256", "manifest_reproducibility_contract"],
+      "properties": {
+        "gate": {"const": "E0-MCALK"},
+        "status": {"const": "immutable_r8_validated"},
+        "r8_output_count": {"const": 8},
+        "calibration_output_count": {"const": 6},
+        "e7_output_count": {"const": 2},
+        "r_lifecycle_state": {"const": "both_bundles_completed_unpublished"},
+        "authority_sha256": {"const": "8da4f1bc20916c91a083dad2e12bf0976b36390ad6eddf313f03726ed529fc3a"},
+        "r8_outputs": {"type": "array", "minItems": 8, "maxItems": 8, "items": {"type": "object"}},
+        "r8_outputs_sha256": {"$ref": "#/$defs/sha256"},
+        "producer_provenance": {"type": "array", "minItems": 2, "maxItems": 2, "items": {"type": "object"}},
+        "producer_provenance_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest_reproducibility_contract": {"type": "object"}
+      }
+    },
+    "scientificBoundary": {
+      "const": {"development_only": true, "holdout_row_count": 0, "post_2021_row_count": 0, "outcome_path_count": 0, "outcome_access_authorized": false, "scientific_rerun_authorized": false}
+    },
+    "prelock": {
+      "const": {
+        "historical_published_lock_count": 18,
+        "never_published_lock_present_count": 0,
+        "p_output_present_count": 0,
+        "r8_output_present_count": 8,
+        "coordination_present_count": 0,
+        "coordination_forbidden_count": 46,
+        "r8_bytes_preserved": true,
+        "scientific_writes_performed": false,
+        "dvc_commands_run": false,
+        "outcome_paths_opened": false,
+        "companion_contract": {"physical_input_count": 16, "historical_input_count": 6, "output_count": 1, "script_path": "src/experiments/lock_closure_final_calibration_r8_coordination_namespace_revalidation_patch.py", "manifest_written_last": true}
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "gate", "schema_count", "schemas", "supported_subset_verified"],
+      "properties": {
+        "status": {"const": "schema_ready"},
+        "gate": {"const": "E0-MCALL"},
+        "schema_count": {"const": 1},
+        "schemas": {"type": "array", "minItems": 1, "maxItems": 1, "items": {"$ref": "#/$defs/artifactRecord"}},
+        "supported_subset_verified": {"const": true}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedTestEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "returncode", "stdout_sha256", "stderr_sha256", "stdout_line_count", "stderr_line_count", "test_count", "skipped_count", "deselected_count"],
+      "properties": {
+        "command": {"type": "array", "items": {"type": "string"}},
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 48},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "verification": {
+      "oneOf": [
+        {"const": {"status": "not_run_by_payload_builder", "commands_run": false, "scientific_execution_run": false, "r8_files_touched": false, "r8_files_staged": false, "dvc_commands_run": false, "outcome_paths_opened": false}},
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["schema_preflight", "full_type_check", "focused_tests", "poetry_check", "publication_guard", "git_diff_check"],
+          "properties": {
+            "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+            "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+            "focused_tests": {"$ref": "#/$defs/focusedTestEvidence"},
+            "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+            "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+            "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+          }
+        }
+      ]
+    },
+    "authorizations": {
+      "const": {
+        "calibration_development_run_authorized": false,
+        "dvc_commands_authorized": false,
+        "dvc_push_authorized": false,
+        "e0_m_authorized": false,
+        "e0_u_authorized": false,
+        "e7_learning_curve_run_authorized": false,
+        "effective_in_payload": false,
+        "git_commit_authorized": false,
+        "git_push_authorized": false,
+        "holdout_access_authorized": false,
+        "locked_evaluation_authorized": false,
+        "outcome_access_authorized": false,
+        "post_2021_access_authorized": false,
+        "r8_staging_authorized": false,
+        "scientific_network_authorized": false
+      }
+    }
+  }
+}
