@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """Materialize the development-only E0-MCAL final-calibration bundle.
 
-Every public mode first calls the effective E0-MCALI authority; only after
+Every public mode first calls the effective E0-MCALJ authority; only after
 that gate may a scientific reader or ``publish_ordered_bundle`` run.  The
 scientific E0-MCAL algorithms and output paths remain unchanged.
 """
@@ -38,7 +38,7 @@ if __package__ in {None, ""}:
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 
 from src.experiments import (  # noqa: E402
-    closure_final_calibration_owned_run_guard_revalidation_patch as calibration,
+    closure_final_calibration_platt_parameter_dialect_patch as calibration,
 )
 from src.experiments import train_closure_anfis_ablation as anfis_training  # noqa: E402
 from src.experiments.closure_runtime_contract import (  # noqa: E402

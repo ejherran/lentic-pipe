@@ -6,6 +6,7 @@ import io
 import inspect
 import itertools
 import json
+import math
 import os
 import stat
 from collections.abc import Mapping
@@ -22,7 +23,7 @@ import yaml
 
 from src.experiments import calibrate_closure_final_models as runner
 from src.experiments import (
-    closure_final_calibration_owned_run_guard_revalidation_patch as calibration,
+    closure_final_calibration_platt_parameter_dialect_patch as calibration,
 )
 
 
@@ -465,7 +466,7 @@ def test_check_only_requires_effective_p_before_any_scientific_io(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     assert runner.calibration is calibration
-    assert calibration.PATCH_GATE == "E0-MCALI"
+    assert calibration.PATCH_GATE == "E0-MCALJ"
     calls: list[tuple[bool, Path]] = []
     events: list[str] = []
     authority = {"gate": calibration.PATCH_GATE, "status": "effective"}
@@ -549,6 +550,10 @@ def test_platt_calibrator_is_deterministic_bounded_and_needs_both_classes() -> N
     first = runner.fit_calibrator_spec("platt_logistic", scores, labels)
     second = runner.fit_calibrator_spec("platt_logistic", scores, labels)
     assert first == second
+    assert set(first["parameters"]) == {"coefficient", "intercept", "input"}
+    assert first["parameters"]["input"] == "raw_probability"
+    assert type(first["parameters"]["coefficient"]) is float
+    assert type(first["parameters"]["intercept"]) is float
     values = runner.apply_calibrator_spec(first, [0.0, 0.5, 1.0])
     assert np.isfinite(values).all()
     assert np.all((values >= 0.0) & (values <= 1.0))
@@ -1013,7 +1018,7 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
 ) -> None:
     source = inspect.getsource(runner)
     assert (
-        "closure_final_calibration_owned_run_guard_revalidation_patch as calibration"
+        "closure_final_calibration_platt_parameter_dialect_patch as calibration"
         in source
     )
     precision_contract = calibration.OBSERVED_RISK_PRECISION_CONTRACT
@@ -2221,6 +2226,19 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         "nonce": "stable",
         "authority_binding_sha256": "a" * 64,
     }
+    # Force one real builder group through the registered Platt branch without
+    # changing labels, target identities, row counts, or temporal roles.  This
+    # closes the producer/consumer dialect at the bytes that are actually
+    # handed to the owned-publication validator.
+    platt_group = (
+        predictions["model_id"].eq("B1")
+        & predictions["model_seed"].eq(1729)
+        & predictions["horizon_months"].eq(1)
+    )
+    assert int(platt_group.sum()) == 882
+    predictions.loc[platt_group, "bloom_probability"] = (
+        np.random.default_rng(1).uniform(0.0, 1.0, int(platt_group.sum()))
+    )
     payloads, manifest = runner.build_final_calibration_bundle(
         authority=authority,
         predictions=predictions,
@@ -2258,6 +2276,22 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
     specs = json.loads(payloads[0][1])
     assert len(specs["bloom_calibrators"]) == 66
     assert len(specs["split_conformal_q_c"]) == 90
+    platt_specs = [
+        record
+        for record in specs["bloom_calibrators"]
+        if record["selected_method"] == "platt_logistic"
+    ]
+    assert [
+        (record["model_id"], record["model_seed"], record["horizon_months"])
+        for record in platt_specs
+    ] == [("B1", 1729, 1)]
+    platt_parameters = platt_specs[0]["refit_spec"]["parameters"]
+    assert set(platt_parameters) == {"coefficient", "intercept", "input"}
+    assert platt_parameters["input"] == "raw_probability"
+    assert type(platt_parameters["coefficient"]) is float
+    assert type(platt_parameters["intercept"]) is float
+    assert math.isfinite(platt_parameters["coefficient"])
+    assert math.isfinite(platt_parameters["intercept"])
     b0_specs = [
         record for record in specs["bloom_calibrators"] if record["model_id"] == "B0"
     ]
@@ -2301,6 +2335,9 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         for path, payload in payloads
     }
     indexed_specs = calibration._validate_calibrator_specs(specs)
+    assert indexed_specs[("B1", 1729, 1)]["refit_spec"]["parameters"] == (
+        platt_parameters
+    )
     calibration._validate_calibration_csv_outputs(
         payload_map,
         calibrators=indexed_specs,
@@ -2325,6 +2362,41 @@ def test_runner_build_and_execute_are_closed_functional_and_revalidate_before_io
         )
         with pytest.raises(calibration.FinalCalibrationError):
             calibration._validate_calibrator_specs(identity_drift_payload)
+
+    platt_parameter_drifts: list[dict[str, Any]] = [
+        {
+            "coefficient": platt_parameters["coefficient"],
+            "intercept": platt_parameters["intercept"],
+        },
+        {**platt_parameters, "extra": False},
+        {**platt_parameters, "input": "logit_probability"},
+        {**platt_parameters, "input": True},
+        {**platt_parameters, "input": 1},
+    ]
+    for numeric_field in ("coefficient", "intercept"):
+        for malformed_numeric in (1, True, "1.0", float("nan"), float("inf")):
+            platt_parameter_drifts.append(
+                {**platt_parameters, numeric_field: malformed_numeric}
+            )
+    for drifted_parameters in platt_parameter_drifts:
+        drifted_specs = json.loads(json.dumps(specs))
+        drifted_record = next(
+            record
+            for record in drifted_specs["bloom_calibrators"]
+            if (
+                record["model_id"],
+                record["model_seed"],
+                record["horizon_months"],
+            )
+            == ("B1", 1729, 1)
+        )
+        drifted_record["refit_spec"]["parameters"] = drifted_parameters
+        with pytest.raises(calibration.FinalCalibrationError) as raised:
+            calibration._validate_calibrator_specs(drifted_specs)
+        message = str(raised.value)
+        assert message.startswith("E0-MCALJ ")
+        assert message.count("E0-MCALJ") == 1
+        assert "E0-MCALII" not in message
 
     wrong_specs = json.loads(json.dumps(specs))
     wrong_record = next(
