@@ -1375,6 +1375,40 @@ class ClosureLockedEvaluationInputBundleAdapterError(RuntimeError):
     """Raised when the exact E0-MIB precommit exception drifts."""
 
 
+class ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(RuntimeError):
+    """Raised when the exact E0-MIC precommit exception drifts."""
+
+
+_LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_STAGED_SCOPE = {
+    "configs/closure_v1/locked_evaluation_input_panel_dvc_identity_patch_lock.schema.json": "A",
+    "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_PATCH.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/closure_locked_evaluation_input_panel_dvc_identity_patch.py": "A",
+    "src/experiments/lock_closure_locked_evaluation_input_panel_dvc_identity_patch.py": "A",
+    "tests/test_closure_locked_evaluation_input_panel_dvc_identity_patch.py": "A",
+}
+_LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_P_STAGED_SCOPE = {
+    "configs/closure_v1/locked_evaluation_input_panel_dvc_identity_patch_lock.json": "A",
+    "configs/closure_v1/locked_evaluation_input_panel_dvc_identity_patch_lock_manifest.json": "A",
+}
+_LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_R_STAGED_SCOPE = {
+    "data/closure_v1/locked_evaluation/input_history.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/origin_features.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc": "A",
+    "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json": "A",
+    "reports/closure_v1/01_surface/locked_evaluation_input_summary.json": "A",
+}
+_LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_GIT_MODES = {
+    path: (
+        "100755"
+        if path == "src/data/prepare_commit_artifacts.py"
+        else "100644"
+    )
+    for path in _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_STAGED_SCOPE
+}
+
+
 _LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE = {
     "configs/closure_v1/locked_evaluation_input_bundle_lock.schema.json": "A",
     "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_BUNDLE.md": "A",
@@ -4430,6 +4464,453 @@ def revalidate_final_calibration_r8_post_publication_authority_transaction(
         )
 
 
+def _closure_locked_evaluation_input_panel_dvc_identity_scopes(
+    patch: Any,
+) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """Reject core-side H6/P2/R6 drift before selecting E0-MIC."""
+    expected = (
+        _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_STAGED_SCOPE,
+        _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_P_STAGED_SCOPE,
+        _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_R_STAGED_SCOPE,
+    )
+    observed = (
+        getattr(
+            patch,
+            "LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_STAGED_SCOPE",
+            None,
+        ),
+        getattr(
+            patch,
+            "LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_P_STAGED_SCOPE",
+            None,
+        ),
+        getattr(
+            patch,
+            "LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_R_STAGED_SCOPE",
+            None,
+        ),
+    )
+    if (
+        getattr(patch, "PATCH_GATE", None) != "E0-MIC"
+        or any(
+            type(actual) is not dict or actual != contract
+            for actual, contract in zip(observed, expected, strict=True)
+        )
+        or type(getattr(patch, "PATCH_COMPONENT_GIT_MODES", None)) is not dict
+        or patch.PATCH_COMPONENT_GIT_MODES
+        != _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_GIT_MODES
+        or set(expected[0]) & set(expected[1])
+        or set(expected[0]) & set(expected[2])
+        or set(expected[1]) & set(expected[2])
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC H6/P2/R6 scope contract drifted"
+        )
+    return dict(expected[0]), dict(expected[1]), dict(expected[2])
+
+
+def closure_locked_evaluation_input_panel_dvc_identity_pre_stage_scope(
+    status_output: str,
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[str, tuple[str, ...]] | None:
+    """Select exact MIC H/P/R before the predecessor MIB selector."""
+    patch = _closure_locked_evaluation_input_panel_dvc_identity_patch_module()
+    h_scope, p_scope, r_scope = (
+        _closure_locked_evaluation_input_panel_dvc_identity_scopes(patch)
+    )
+
+    def short_map(scope: Mapping[str, str]) -> dict[str, str]:
+        return {
+            path: "??" if status == "A" else " M"
+            for path, status in scope.items()
+        }
+
+    r_pre_dvc = {
+        path: status for path, status in r_scope.items() if not path.endswith(".dvc")
+    }
+    candidates = (
+        ("H-E0-MIC", short_map(h_scope), h_scope),
+        ("P-E0-MIC", short_map(p_scope), p_scope),
+        ("R-E0-MI", short_map(r_pre_dvc), r_scope),
+    )
+    candidate_paths = set().union(*(set(scope) for scope in (h_scope, p_scope, r_scope)))
+    observed: dict[str, str] = {}
+    anomaly = False
+    for line in status_output.splitlines():
+        if (
+            len(line) < 4
+            or line[2] != " "
+            or line[:2] not in {"??", " M"}
+            or not line[3:]
+        ):
+            if any(path in line for path in candidate_paths):
+                raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                    "E0-MIC pre-stage scope contains a malformed candidate record"
+                )
+            anomaly = True
+            continue
+        path = line[3:]
+        if path in observed:
+            if path in candidate_paths:
+                raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                    "E0-MIC pre-stage scope contains a duplicate path"
+                )
+            anomaly = True
+            continue
+        observed[path] = line[:2]
+    if anomaly and set(observed) & candidate_paths:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC candidate pre-stage scope contains an extra malformed record"
+        )
+    for gate, expected, stage_scope in candidates:
+        if observed == expected:
+            _require_closure_locked_evaluation_input_panel_dvc_identity_stage_base(
+                gate,
+                patch=patch,
+                repo_root=repo_root,
+            )
+            return gate, tuple(sorted(stage_scope))
+    if set(observed) & candidate_paths:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC candidate pre-stage scope is not exact"
+        )
+    return None
+
+
+def _require_closure_locked_evaluation_input_panel_dvc_identity_stage_base(
+    gate: str,
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> None:
+    """Bind MIC H/P/R to P-MIB, H-MIC, and P-MIC respectively."""
+    h_scope, _, _ = _closure_locked_evaluation_input_panel_dvc_identity_scopes(
+        patch
+    )
+    head = _git_output(repo_root, "rev-parse", "HEAD").strip()
+    base = "ddd00ae96fa8cb589f368cb2f7b98d9e2561491d"
+    if gate == "H-E0-MIC":
+        if head != base:
+            raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                "H-E0-MIC staging requires exact published P-E0-MIB HEAD"
+            )
+        _require_closure_locked_evaluation_input_panel_dvc_identity_prelock(
+            patch=patch,
+            repo_root=repo_root,
+        )
+        return
+    if gate == "P-E0-MIC":
+        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        published_h_scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
+        )
+        if parent != base:
+            raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                "P-E0-MIC staging requires a direct H child of P-E0-MIB"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                published_h_scope,
+                expected=h_scope,
+                context="published H-E0-MIC scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                str(exc)
+            ) from exc
+        _require_closure_locked_evaluation_input_panel_dvc_identity_unpublished_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="untracked",
+        )
+        return
+    if gate == "R-E0-MI":
+        _require_closure_locked_evaluation_input_panel_dvc_identity_authority(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="physical_and_light_untracked",
+        )
+        _require_closure_locked_evaluation_input_panel_dvc_identity_r_validation(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=False,
+        )
+        return
+    raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+        "Unknown E0-MIC staging gate"
+    )
+
+
+def _require_closure_locked_evaluation_input_panel_dvc_identity_prelock(
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> dict[str, Any]:
+    """Require equal MIC prelock, physical, and scientific-source identities."""
+    try:
+        source_before = patch._source_identity_snapshot(repo_root)
+        physical_before = patch._physical_snapshot(repo_root)
+        before = patch.collect_closure_locked_evaluation_input_panel_dvc_identity_patch_prelock_state(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+        after = patch.collect_closure_locked_evaluation_input_panel_dvc_identity_patch_prelock_state(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+        physical_after = patch._physical_snapshot(repo_root)
+        source_after = patch._source_identity_snapshot(repo_root)
+    except patch.ClosureLockedEvaluationInputPanelDvcIdentityPatchError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+    if (
+        before != after
+        or physical_before != physical_after
+        or source_before != source_after
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC H prelock topology, physical, or source identity drifted"
+        )
+    _validate_closure_locked_evaluation_input_panel_dvc_identity_prelock_result(
+        before,
+        patch=patch,
+    )
+    return before
+
+
+def _require_mic_panel_identity_fields(value: Mapping[str, Any]) -> None:
+    contract = value.get("panel_dvc_identity_contract")
+    if (
+        not isinstance(contract, Mapping)
+        or value.get("panel_dvc_identity_verified") is not True
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC panel DVC identity result drifted"
+        )
+
+
+def _validate_closure_locked_evaluation_input_panel_dvc_identity_prelock_result(
+    value: Any,
+    *,
+    patch: Any,
+) -> None:
+    expected_keys = {
+        "repository",
+        "h_patch",
+        "base_authority",
+        "input_contract",
+        "r_contract",
+        "prelock",
+        "historical_inputs",
+        "historical_inputs_sha256",
+        "coordination_namespace",
+        "schema_preflight",
+        "panel_dvc_identity_contract",
+        "panel_dvc_identity_verified",
+    }
+    if type(value) is not dict or set(value) != expected_keys:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC H prelock result dialect drifted"
+        )
+    repository = value["repository"]
+    h_patch = value["h_patch"]
+    base = value["base_authority"]
+    prelock = value["prelock"]
+    namespace = value["coordination_namespace"]
+    if (
+        not isinstance(repository, Mapping)
+        or repository.get("base_p_mib_commit")
+        != "ddd00ae96fa8cb589f368cb2f7b98d9e2561491d"
+        or not isinstance(h_patch, Mapping)
+        or h_patch.get("gate") != "H-E0-MIC"
+        or h_patch.get("component_count") != 6
+        or h_patch.get("added_count") != 5
+        or h_patch.get("modified_count") != 1
+        or not isinstance(base, Mapping)
+        or base.get("gate") != "E0-MIB"
+        or base.get("status") != "published_p_mib_authority_validated"
+        or not isinstance(base.get("p_components"), list)
+        or len(base["p_components"]) != 2
+        or not isinstance(prelock, Mapping)
+        or prelock.get("p_output_present_count") != 0
+        or prelock.get("r_output_present_count") != 0
+        or prelock.get("coordination_present_count") != 0
+        or prelock.get("component_count") != 6
+        or prelock.get("panel_bytes_opened") is not True
+        or prelock.get("assignment_bytes_opened") is not True
+        or any(
+            prelock.get(key) is not False
+            for key in (
+                "scientific_execution_run",
+                "panel_rows_decoded",
+                "assignment_rows_decoded",
+                "target_namespace_opened",
+                "outcome_paths_opened",
+                "dvc_commands_run",
+            )
+        )
+        or not isinstance(value["historical_inputs"], list)
+        or len(value["historical_inputs"]) != 6
+        or not isinstance(value["historical_inputs_sha256"], str)
+        or len(value["historical_inputs_sha256"]) != 64
+        or not isinstance(namespace, Mapping)
+        or namespace.get("current_lock_present_count") != 0
+        or namespace.get("coordination_present_count") != 0
+        or namespace.get("r_state") != "absent"
+        or namespace.get("formal_e0_m_output_present_count") != 0
+        or namespace.get("outcome_access_log_absent") is not True
+        or not isinstance(value["schema_preflight"], Mapping)
+        or value["schema_preflight"].get("gate") != patch.PATCH_GATE
+        or value["schema_preflight"].get("status") != "schema_ready"
+        or value["schema_preflight"].get("schema_count") != 1
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC H prelock contract drifted"
+        )
+    _require_mic_panel_identity_fields(value)
+
+
+def _require_closure_locked_evaluation_input_panel_dvc_identity_unpublished_validation(
+    *, patch: Any, repo_root: Path, expected_stage_state: str
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_locked_evaluation_input_panel_dvc_identity_patch_unpublished_lock_bundle(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputPanelDvcIdentityPatchError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status") != "locked_unpublished"
+        or validation.get("p_stage_state") != expected_stage_state
+        or validation.get("p_output_count") != 2
+        or validation.get("physical_input_count") != 16
+        or validation.get("historical_input_count") != 6
+        or validation.get("companion_output_count") != 1
+        or validation.get("coordination_present_count") != 0
+        or validation.get("r_state") != "absent"
+        or validation.get("effective_authority") is not False
+        or validation.get("input_bundle_execution_authorized") is not False
+        or validation.get("evaluation_authorized") is not False
+        or validation.get("e0_m_authorized") is not False
+        or validation.get("e0_u_authorized") is not False
+        or validation.get("dvc_commands_authorized") is not False
+        or validation.get("git_commit_authorized") is not False
+        or validation.get("git_push_authorized") is not False
+        or validation.get("writes_performed") is not False
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC unpublished P semantic validation result drifted"
+        )
+    _require_mic_panel_identity_fields(validation)
+    return validation
+
+
+def _require_closure_locked_evaluation_input_panel_dvc_identity_authority(
+    *, patch: Any, repo_root: Path, expected_stage_state: str
+) -> dict[str, Any]:
+    expected_r_state = {
+        "physical_and_light_untracked": "physical_and_light",
+        "exact6_staged": "complete",
+    }.get(expected_stage_state)
+    expected_tracked = 0 if expected_stage_state == "physical_and_light_untracked" else 6
+    if expected_r_state is None:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC effective authority stage policy drifted"
+        )
+    try:
+        authority = patch.require_locked_evaluation_input_panel_dvc_identity_patch_authority(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputPanelDvcIdentityPatchError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+    if (
+        type(authority) is not dict
+        or authority.get("gate") != patch.PATCH_GATE
+        or authority.get("status") != "effective"
+        or authority.get("r_stage_state") != expected_stage_state
+        or authority.get("r_state") != expected_r_state
+        or authority.get("r_physical_output_count") != 4
+        or authority.get("r_tracked_output_count") != expected_tracked
+        or authority.get("input_bundle_execution_authorized") is not False
+        or authority.get("input_bundle_run_consumed") is not True
+        or authority.get("effective_authority") is not True
+        or any(
+            authority.get(key) is not False
+            for key in (
+                "evaluation_authorized",
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "outcome_access_authorized",
+                "dvc_commands_authorized",
+                "dvc_push_authorized",
+                "git_commit_authorized",
+                "git_push_authorized",
+                "writes_performed",
+            )
+        )
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC effective authority result drifted"
+        )
+    _require_mic_panel_identity_fields(authority)
+    return authority
+
+
+def _require_closure_locked_evaluation_input_panel_dvc_identity_r_validation(
+    *, patch: Any, repo_root: Path, require_staged: bool
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_locked_evaluation_input_panel_dvc_identity_patch(
+            repo_root=repo_root,
+            require_staged=require_staged,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputPanelDvcIdentityPatchError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+    expected_stage = "exact6_staged" if require_staged else "physical_and_light_untracked"
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status") != "input_bundle_validated"
+        or validation.get("r_stage_state") != expected_stage
+        or validation.get("physical_output_count") != 4
+        or validation.get("tracked_output_count") != 6
+        or validation.get("pointer_count") != 4
+        or validation.get("summary_count") != 1
+        or validation.get("manifest_count") != 1
+        or validation.get("manifest_written_last") is not True
+        or validation.get("input_only") is not True
+        or any(
+            validation.get(key) is not False
+            for key in (
+                "target_paths_opened",
+                "target_availability_inspected",
+                "outcome_paths_opened",
+                "future_outcomes_accessed",
+                "evaluation_authorized",
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "writes_performed",
+            )
+        )
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC R semantic validation result drifted"
+        )
+    _require_mic_panel_identity_fields(validation)
+    return validation
+
+
 def _closure_locked_evaluation_input_bundle_scopes(
     patch: Any,
 ) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
@@ -5300,6 +5781,286 @@ def revalidate_closure_locked_evaluation_input_bundle_transaction(
     ):
         raise ClosureLockedEvaluationInputBundleAdapterError(
             f"{gate} staged files changed during semantic revalidation"
+        )
+
+
+def validate_closure_locked_evaluation_input_panel_dvc_identity_invocation(
+    args: Any,
+    *,
+    gate: str,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Require closed H/P no-DVC or exact-four-target R invocation for MIC."""
+    source = os.environ if env is None else env
+    expected_targets: tuple[Path, ...] = ()
+    if gate == "R-E0-MI":
+        expected_targets = tuple(
+            Path(path.removesuffix(".dvc"))
+            for path in _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_R_STAGED_SCOPE
+            if path.endswith(".dvc")
+        )
+    elif gate not in {"H-E0-MIC", "P-E0-MIC"}:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "Unknown E0-MIC invocation gate"
+        )
+    if (
+        tuple(Path(value) for value in args.target) != expected_targets
+        or not args.no_push
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or not args.allow_unmanaged
+        or bool(args.defer_dvc_target)
+        or bool(getattr(args, "register_anfis_ablation_model_family", False))
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            source.get("DVC_SITE_CACHE_DIR") is not None
+            and source["DVC_SITE_CACHE_DIR"]
+            != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "E0-MIC precommit requires exact --allow-unmanaged --no-push, "
+            "default paths, mandatory publication checks, analytics-disabled DVC, "
+            "and only the four registered R-E0-MI targets for the R gate"
+        )
+
+
+def validate_closure_locked_evaluation_input_panel_dvc_identity_staged_scope(
+    staged_status: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _closure_locked_evaluation_input_panel_dvc_identity_patch_module()
+    h_scope, p_scope, r_scope = (
+        _closure_locked_evaluation_input_panel_dvc_identity_scopes(patch)
+    )
+    expected = {
+        "H-E0-MIC": h_scope,
+        "P-E0-MIC": p_scope,
+        "R-E0-MI": r_scope,
+    }.get(gate)
+    if expected is None:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "Unknown E0-MIC staged scope"
+        )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=expected,
+            context=f"{gate}/MIC staged scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_panel_dvc_identity_workspace_scope(
+    status_output: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _closure_locked_evaluation_input_panel_dvc_identity_patch_module()
+    h_scope, p_scope, r_scope = (
+        _closure_locked_evaluation_input_panel_dvc_identity_scopes(patch)
+    )
+    expected = {
+        "H-E0-MIC": h_scope,
+        "P-E0-MIC": p_scope,
+        "R-E0-MI": r_scope,
+    }.get(gate)
+    if expected is None:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "Unknown E0-MIC workspace scope"
+        )
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_expected_short_scope(expected, staged=True),
+            context=f"{gate}/MIC workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_panel_dvc_identity_staged_bindings(
+    *,
+    gate: str,
+    repo_root: Path = Path("."),
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind every MIC index blob to one stable regular worktree file."""
+    patch = _closure_locked_evaluation_input_panel_dvc_identity_patch_module()
+    h_scope, p_scope, r_scope = (
+        _closure_locked_evaluation_input_panel_dvc_identity_scopes(patch)
+    )
+    scope = {
+        "H-E0-MIC": h_scope,
+        "P-E0-MIC": p_scope,
+        "R-E0-MI": r_scope,
+    }.get(gate)
+    if scope is None:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "Unknown E0-MIC staged binding gate"
+        )
+    expected_modes = (
+        _LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_H_GIT_MODES
+        if gate == "H-E0-MIC"
+        else {path: "100644" for path in scope}
+    )
+    if set(expected_modes) != set(scope):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            f"{gate}/MIC staged mode contract drifted"
+        )
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(scope):
+            expected_git_mode = expected_modes[raw_path]
+            index_line = _git_output(
+                repo_root, "ls-files", "-s", "--", raw_path
+            ).strip()
+            parts = index_line.split(maxsplit=3)
+            if (
+                len(parts) != 4
+                or parts[0] != expected_git_mode
+                or parts[2] != "0"
+                or parts[3] != raw_path
+            ):
+                raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                    f"{gate}/MIC staged mode/path binding drifted: {raw_path}"
+                )
+            worktree_oid = _git_output(
+                repo_root, "hash-object", "--no-filters", "--", raw_path
+            ).strip()
+            if len(parts[1]) != 40 or parts[1] != worktree_oid:
+                raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                    f"{gate}/MIC index blob differs from worktree: {raw_path}"
+                )
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(expected_git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                    f"{gate}/MIC staged path is not single-link: {raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(str(exc)) from exc
+    if len(records) != len(scope):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            f"{gate}/MIC staged binding count drifted"
+        )
+    return tuple(records)
+
+
+def revalidate_closure_locked_evaluation_input_panel_dvc_identity_transaction(
+    *,
+    gate: str,
+    staged_status: str,
+    expected_physical_snapshot: tuple[RegistrationFileIdentity, ...] | None = None,
+    repo_root: Path = Path("."),
+) -> None:
+    """Close MIC Git, remote, panel-identity, and R semantic races."""
+    validate_closure_locked_evaluation_input_panel_dvc_identity_staged_scope(
+        staged_status,
+        gate=gate,
+    )
+    current_staged = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+    )
+    validate_closure_locked_evaluation_input_panel_dvc_identity_staged_scope(
+        current_staged,
+        gate=gate,
+    )
+    workspace = _git_output(
+        repo_root,
+        "status",
+        "--short",
+        "--untracked-files=all",
+    )
+    validate_closure_locked_evaluation_input_panel_dvc_identity_workspace_scope(
+        workspace,
+        gate=gate,
+    )
+    first_bindings = (
+        validate_closure_locked_evaluation_input_panel_dvc_identity_staged_bindings(
+            gate=gate,
+            repo_root=repo_root,
+        )
+    )
+    patch = _closure_locked_evaluation_input_panel_dvc_identity_patch_module()
+    if gate == "H-E0-MIC":
+        if (
+            _git_output(repo_root, "rev-parse", "HEAD").strip()
+            != "ddd00ae96fa8cb589f368cb2f7b98d9e2561491d"
+        ):
+            raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                "H-E0-MIC base changed during precommit"
+            )
+        _require_closure_locked_evaluation_input_panel_dvc_identity_prelock(
+            patch=patch,
+            repo_root=repo_root,
+        )
+    elif gate == "P-E0-MIC":
+        _require_closure_locked_evaluation_input_panel_dvc_identity_unpublished_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="staged",
+        )
+    elif gate == "R-E0-MI":
+        if (
+            expected_physical_snapshot is None
+            or snapshot_closure_locked_evaluation_input_physical_outputs(
+                repo_root=repo_root
+            )
+            != expected_physical_snapshot
+        ):
+            raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                "R-E0-MI physical outputs changed during MIC precommit"
+            )
+        _require_closure_locked_evaluation_input_panel_dvc_identity_authority(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="exact6_staged",
+        )
+        _require_closure_locked_evaluation_input_panel_dvc_identity_r_validation(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=True,
+        )
+        if (
+            snapshot_closure_locked_evaluation_input_physical_outputs(
+                repo_root=repo_root
+            )
+            != expected_physical_snapshot
+        ):
+            raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+                "R-E0-MI physical outputs changed during MIC semantic revalidation"
+            )
+    else:
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            "Unknown E0-MIC transaction gate"
+        )
+    if (
+        validate_closure_locked_evaluation_input_panel_dvc_identity_staged_bindings(
+            gate=gate,
+            repo_root=repo_root,
+        )
+        != first_bindings
+    ):
+        raise ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(
+            f"{gate}/MIC staged files changed during semantic revalidation"
         )
 
 
@@ -6664,6 +7425,15 @@ def _final_calibration_r8_post_publication_authority_patch_module() -> Any:
 def _closure_locked_evaluation_input_bundle_module() -> Any:
     """Import E0-MIB lazily so the generic assistant stays independent."""
     from src.experiments import closure_locked_evaluation_input_bundle as patch
+
+    return patch
+
+
+def _closure_locked_evaluation_input_panel_dvc_identity_patch_module() -> Any:
+    """Import E0-MIC lazily so the generic assistant stays independent."""
+    from src.experiments import (
+        closure_locked_evaluation_input_panel_dvc_identity_patch as patch,
+    )
 
     return patch
 
@@ -10293,6 +11063,7 @@ def main() -> int:
     locked_evaluation_input_physical_snapshot: (
         tuple[RegistrationFileIdentity, ...] | None
     ) = None
+    locked_evaluation_input_panel_dvc_identity_active = False
     deferred_exclude_validator = validate_deferred_dvc_git_exclude_environment
     deferred_state_validator = validate_deferred_dvc_models_state
     if deferred_dvc_paths:
@@ -10317,10 +11088,18 @@ def main() -> int:
         )
         try:
             final_calibration_scope = (
-                closure_locked_evaluation_input_bundle_pre_stage_scope(
+                closure_locked_evaluation_input_panel_dvc_identity_pre_stage_scope(
                     final_calibration_git_status_before
                 )
             )
+            if final_calibration_scope is not None:
+                locked_evaluation_input_panel_dvc_identity_active = True
+            if final_calibration_scope is None:
+                final_calibration_scope = (
+                    closure_locked_evaluation_input_bundle_pre_stage_scope(
+                        final_calibration_git_status_before
+                    )
+                )
             if final_calibration_scope is None:
                 final_calibration_scope = (
                     final_calibration_r8_post_publication_authority_pre_stage_scope(
@@ -10341,6 +11120,7 @@ def main() -> int:
                 )
         except (
             DeferredDvcTargetError,
+            ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
             ClosureLockedEvaluationInputBundleAdapterError,
             FinalCalibrationR8PostPublicationAuthorityAdapterError,
             FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
@@ -10354,7 +11134,16 @@ def main() -> int:
             )
             git_status_before = final_calibration_git_status_before
             try:
-                if final_calibration_stage_gate.endswith("MIB") or final_calibration_stage_gate == "R-E0-MI":
+                if locked_evaluation_input_panel_dvc_identity_active:
+                    validate_closure_locked_evaluation_input_panel_dvc_identity_invocation(
+                        args,
+                        gate=final_calibration_stage_gate,
+                    )
+                    if final_calibration_stage_gate == "R-E0-MI":
+                        locked_evaluation_input_physical_snapshot = (
+                            snapshot_closure_locked_evaluation_input_physical_outputs()
+                        )
+                elif final_calibration_stage_gate.endswith("MIB") or final_calibration_stage_gate == "R-E0-MI":
                     validate_closure_locked_evaluation_input_bundle_invocation(
                         args,
                         gate=final_calibration_stage_gate,
@@ -10383,6 +11172,7 @@ def main() -> int:
                     )
                     final_calibration_r8_snapshot = snapshot_final_calibration_r8_outputs()
             except (
+                ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
@@ -10393,10 +11183,13 @@ def main() -> int:
     report_path = args.report or default_report_path()
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
     mib_stage_gate = bool(
-        final_calibration_stage_gate
-        and (
-            final_calibration_stage_gate.endswith("MIB")
-            or final_calibration_stage_gate == "R-E0-MI"
+        locked_evaluation_input_panel_dvc_identity_active
+        or (
+            final_calibration_stage_gate
+            and (
+                final_calibration_stage_gate.endswith("MIB")
+                or final_calibration_stage_gate == "R-E0-MI"
+            )
         )
     )
     if mib_stage_gate:
@@ -10721,6 +11514,20 @@ def main() -> int:
                     "--untracked-files=all",
                 )
                 if (
+                    locked_evaluation_input_panel_dvc_identity_active
+                ):
+                    validate_closure_locked_evaluation_input_panel_dvc_identity_staged_scope(
+                        staged_status,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_closure_locked_evaluation_input_panel_dvc_identity_workspace_scope(
+                        workspace_scope,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_closure_locked_evaluation_input_panel_dvc_identity_staged_bindings(
+                        gate=final_calibration_stage_gate,
+                    )
+                elif (
                     final_calibration_stage_gate.endswith("MIB")
                     or final_calibration_stage_gate == "R-E0-MI"
                 ):
@@ -10763,6 +11570,7 @@ def main() -> int:
                         gate=final_calibration_stage_gate,
                     )
             except (
+                ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
@@ -10800,7 +11608,8 @@ def main() -> int:
             )
         if final_calibration_stage_gate:
             mib_gate = (
-                final_calibration_stage_gate.endswith("MIB")
+                locked_evaluation_input_panel_dvc_identity_active
+                or final_calibration_stage_gate.endswith("MIB")
                 or final_calibration_stage_gate == "R-E0-MI"
             )
             if not mib_gate and final_calibration_r8_snapshot is None:
@@ -10810,7 +11619,15 @@ def main() -> int:
                 )
                 return 2
             try:
-                if mib_gate:
+                if locked_evaluation_input_panel_dvc_identity_active:
+                    revalidate_closure_locked_evaluation_input_panel_dvc_identity_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_physical_snapshot=(
+                            locked_evaluation_input_physical_snapshot
+                        ),
+                    )
+                elif mib_gate:
                     revalidate_closure_locked_evaluation_input_bundle_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -10848,6 +11665,7 @@ def main() -> int:
                         "during precommit",
                     )
             except (
+                ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
@@ -10932,7 +11750,8 @@ def main() -> int:
                 return 2
         if final_calibration_stage_gate:
             mib_gate = (
-                final_calibration_stage_gate.endswith("MIB")
+                locked_evaluation_input_panel_dvc_identity_active
+                or final_calibration_stage_gate.endswith("MIB")
                 or final_calibration_stage_gate == "R-E0-MI"
             )
             if not mib_gate and final_calibration_r8_snapshot is None:
@@ -10942,7 +11761,15 @@ def main() -> int:
                 )
                 return 2
             try:
-                if mib_gate:
+                if locked_evaluation_input_panel_dvc_identity_active:
+                    revalidate_closure_locked_evaluation_input_panel_dvc_identity_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_physical_snapshot=(
+                            locked_evaluation_input_physical_snapshot
+                        ),
+                    )
+                elif mib_gate:
                     revalidate_closure_locked_evaluation_input_bundle_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -10979,6 +11806,7 @@ def main() -> int:
                         "while writing the report",
                     )
             except (
+                ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
