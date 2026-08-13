@@ -1,0 +1,660 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-v1/locked-evaluation-input-bundle-lock-v1.json",
+  "title": "Closure V1 E0-MIB locked-evaluation input-bundle lock",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate",
+    "status",
+    "generated_at_utc",
+    "repository",
+    "h_patch",
+    "base_authority",
+    "input_contract",
+    "r_contract",
+    "prelock",
+    "historical_inputs",
+    "historical_inputs_sha256",
+    "coordination_namespace",
+    "schema_preflight",
+    "verification",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_locked_evaluation_input_bundle_lock_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-MIB"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "base_authority": {"$ref": "#/$defs/baseAuthority"},
+    "input_contract": {"$ref": "#/$defs/inputContract"},
+    "r_contract": {"$ref": "#/$defs/rContract"},
+    "prelock": {"$ref": "#/$defs/prelock"},
+    "historical_inputs": {"$ref": "#/$defs/historicalInputs"},
+    "historical_inputs_sha256": {"const": "86077953d543817e83bc831b255105accc4b8e64adbefee1d8125ff8f6d254da"},
+    "coordination_namespace": {"$ref": "#/$defs/coordinationNamespace"},
+    "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sha1": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "publicArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "gitArtifactRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["role", "path", "bytes", "sha256", "git_oid", "git_mode"],
+      "properties": {
+        "role": {"const": "locked_evaluation_input_bundle_h_component"},
+        "path": {
+          "enum": [
+            "configs/closure_v1/locked_evaluation_input_bundle_lock.schema.json",
+            "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_BUNDLE.md",
+            "src/data/prepare_commit_artifacts.py",
+            "src/experiments/closure_locked_evaluation_input_bundle.py",
+            "src/experiments/lock_closure_locked_evaluation_input_bundle.py",
+            "tests/test_closure_locked_evaluation_input_bundle.py"
+          ]
+        },
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "git_oid": {"$ref": "#/$defs/sha1"},
+        "git_mode": {"enum": ["100644", "100755"]}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_p_mcalm_commit",
+        "h_patch_head",
+        "branch",
+        "remote_head",
+        "scope"
+      ],
+      "properties": {
+        "base_p_mcalm_commit": {"const": "81c1fc485902d484264fccc53cf88888c359930d"},
+        "h_patch_head": {"$ref": "#/$defs/sha1"},
+        "branch": {"const": "main"},
+        "remote_head": {"$ref": "#/$defs/sha1"},
+        "scope": {
+          "const": {
+            "added": 5,
+            "modified": 1,
+            "deleted": 0,
+            "path_count": 6,
+            "paths": [
+              "configs/closure_v1/locked_evaluation_input_bundle_lock.schema.json",
+              "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_BUNDLE.md",
+              "src/data/prepare_commit_artifacts.py",
+              "src/experiments/closure_locked_evaluation_input_bundle.py",
+              "src/experiments/lock_closure_locked_evaluation_input_bundle.py",
+              "tests/test_closure_locked_evaluation_input_bundle.py"
+            ]
+          }
+        }
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "component_count",
+        "added_count",
+        "modified_count",
+        "components",
+        "components_sha256"
+      ],
+      "properties": {
+        "gate": {"const": "H-E0-MIB"},
+        "component_count": {"const": 6},
+        "added_count": {"const": 5},
+        "modified_count": {"const": 1},
+        "components": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/gitArtifactRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "baseAuthority": {
+      "const": {
+        "gate": "E0-MCALM",
+        "status": "published_p_mcalm_authority_validated",
+        "p_commit": "81c1fc485902d484264fccc53cf88888c359930d",
+        "h_commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b",
+        "r_commit": "09309c2d16820f5d93fe9fd38dadef92377fd005",
+        "p_scope": {
+          "added": 2,
+          "modified": 0,
+          "deleted": 0,
+          "path_count": 2,
+          "paths": [
+            "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock.json",
+            "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock_manifest.json"
+          ]
+        },
+        "p_components": [
+          {
+            "role": "published_p_mcalm_lock",
+            "path": "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock.json",
+            "bytes": 34354,
+            "sha256": "e0e03785b16e5cb73d70e598915823843b12227e8652f2f9cbf5847941805238",
+            "git_oid": "85a6a8c54b9370b980c067a7ee3dffe229701e0a",
+            "git_mode": "100644"
+          },
+          {
+            "role": "published_p_mcalm_lock_manifest",
+            "path": "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock_manifest.json",
+            "bytes": 6547,
+            "sha256": "95e075b524f4c5b6522f06862af8d212b774b67dd73f89a10a94099db88af73a",
+            "git_oid": "1129efb765ba91958e7635646cf7cb6ba659820b",
+            "git_mode": "100644"
+          }
+        ],
+        "p_components_sha256": "a07851074088a5afffb2a63b201ee14d25eac695bdc92b59feef2d68c992c0ab",
+        "lock_sha256": "e0e03785b16e5cb73d70e598915823843b12227e8652f2f9cbf5847941805238",
+        "companion_sha256": "95e075b524f4c5b6522f06862af8d212b774b67dd73f89a10a94099db88af73a",
+        "r8_output_count": 8,
+        "r8_outputs_sha256": "524928813b26bed6de9feee34eff1e946f9fc214521c3a39171ed905b3faf7a2",
+        "scientific_inputs_rehashed": false,
+        "outcome_paths_opened": false
+      }
+    },
+    "inputContract": {
+      "const": {
+        "producer_command": [
+          "poetry",
+          "run",
+          "python",
+          "src/experiments/closure_locked_evaluation_input_bundle.py",
+          "--execute-input-bundle"
+        ],
+        "assignment_path": "data/closure_v1/closure_holdout_assignment.csv",
+        "assignment_columns": [
+          "source_id",
+          "site_id",
+          "holdout_group_id",
+          "assignment_role"
+        ],
+        "assignment_role": "internal_holdout",
+        "panel_path": "data/panel/panel_monthly_v0.parquet",
+        "panel_projection": [
+          "source_id",
+          "site_id",
+          "year_month",
+          "mean_TP_ugL",
+          "std_TP_ugL",
+          "n_obs_TP_ugL",
+          "n_bad_TP_ugL",
+          "qc_ok_rate_TP_ugL",
+          "mean_TN_ugL",
+          "std_TN_ugL",
+          "n_obs_TN_ugL",
+          "n_bad_TN_ugL",
+          "qc_ok_rate_TN_ugL",
+          "mean_temperature_C",
+          "std_temperature_C",
+          "n_obs_temperature_C",
+          "n_bad_temperature_C",
+          "qc_ok_rate_temperature_C",
+          "mean_secchi_depth_m",
+          "std_secchi_depth_m",
+          "n_obs_secchi_depth_m",
+          "n_bad_secchi_depth_m",
+          "qc_ok_rate_secchi_depth_m",
+          "mean_turbidity_NTU",
+          "std_turbidity_NTU",
+          "n_obs_turbidity_NTU",
+          "n_bad_turbidity_NTU",
+          "qc_ok_rate_turbidity_NTU",
+          "mean_DO_mgL",
+          "std_DO_mgL",
+          "n_obs_DO_mgL",
+          "n_bad_DO_mgL",
+          "qc_ok_rate_DO_mgL",
+          "mean_pH",
+          "std_pH",
+          "n_obs_pH",
+          "n_bad_pH",
+          "qc_ok_rate_pH",
+          "log_TP",
+          "log_TN",
+          "TN_TP_ratio"
+        ],
+        "panel_projection_count": 41,
+        "physical_feature_columns": [
+          "mean_TP_ugL",
+          "std_TP_ugL",
+          "n_obs_TP_ugL",
+          "n_bad_TP_ugL",
+          "qc_ok_rate_TP_ugL",
+          "mean_TN_ugL",
+          "std_TN_ugL",
+          "n_obs_TN_ugL",
+          "n_bad_TN_ugL",
+          "qc_ok_rate_TN_ugL",
+          "mean_temperature_C",
+          "std_temperature_C",
+          "n_obs_temperature_C",
+          "n_bad_temperature_C",
+          "qc_ok_rate_temperature_C",
+          "mean_secchi_depth_m",
+          "std_secchi_depth_m",
+          "n_obs_secchi_depth_m",
+          "n_bad_secchi_depth_m",
+          "qc_ok_rate_secchi_depth_m",
+          "mean_turbidity_NTU",
+          "std_turbidity_NTU",
+          "n_obs_turbidity_NTU",
+          "n_bad_turbidity_NTU",
+          "qc_ok_rate_turbidity_NTU",
+          "mean_DO_mgL",
+          "std_DO_mgL",
+          "n_obs_DO_mgL",
+          "n_bad_DO_mgL",
+          "qc_ok_rate_DO_mgL",
+          "mean_pH",
+          "std_pH",
+          "n_obs_pH",
+          "n_bad_pH",
+          "qc_ok_rate_pH",
+          "log_TP",
+          "log_TN",
+          "TN_TP_ratio"
+        ],
+        "physical_feature_count": 38,
+        "derived_calendar_columns": [
+          "season_sin_annual",
+          "season_cos_annual",
+          "season_sin_semiannual",
+          "season_cos_semiannual"
+        ],
+        "derived_calendar_count": 4,
+        "locked_evaluation_origin_start": "2022-01",
+        "locked_evaluation_origin_end_rule": "last_panel_month_with_required_input_projection",
+        "history_length_months": 12,
+        "horizons_deferred_to_evaluation": [1, 2, 3],
+        "target_months_materialized": false,
+        "target_availability_inspected": false,
+        "target_namespace_opened": false,
+        "outcome_access_log_opened": false,
+        "forbidden_path_prefixes": [
+          "data/targets/",
+          "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
+        ],
+        "source_records": [
+          {
+            "role": "baseline_runtime_feature_contract",
+            "path": "configs/closure_v1/baseline_development_runtime.yaml",
+            "bytes": 17524,
+            "sha256": "5a68c99650e4019dfe28cf9db4ec476ea268bd66d888613e71baf5c147a65cb8",
+            "git_oid": "44294177a88381c214c07d6bd11a05471af3c24c",
+            "git_mode": "100644"
+          },
+          {
+            "role": "model_benchmark_contract",
+            "path": "configs/closure_v1/model_benchmark.yaml",
+            "bytes": 7281,
+            "sha256": "d6ee7f213853e2f149a227208ced1fe00fccfc566e54d6a3b0549fef9fe58a95",
+            "git_oid": "aa2fd85c0f8cc8035d8de1fcfd475271ec724025",
+            "git_mode": "100644"
+          },
+          {
+            "role": "locked_holdout_assignment",
+            "path": "data/closure_v1/closure_holdout_assignment.csv",
+            "bytes": 89635,
+            "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef",
+            "git_oid": "b70ac13e5d79d49d0bab123a4829cd82cf7ef241",
+            "git_mode": "100644"
+          },
+          {
+            "role": "locked_panel_dvc_pointer",
+            "path": "data/panel/panel_monthly_v0.parquet.dvc",
+            "bytes": 109,
+            "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c",
+            "git_oid": "2e1c175705fa8845d98d412c693a3d5bfb0f2250",
+            "git_mode": "100644"
+          }
+        ],
+        "source_records_sha256": "cfb0d564e10229d430cb32187eb858076535ebcc6119b4c3d7bd4fc8492da1be"
+      }
+    },
+    "rContract": {
+      "const": {
+        "gate": "R-E0-MI",
+        "physical_output_count": 4,
+        "physical_output_paths": [
+          "data/closure_v1/locked_evaluation/input_history.parquet",
+          "data/closure_v1/locked_evaluation/intent_origins.parquet",
+          "data/closure_v1/locked_evaluation/origin_features.parquet",
+          "data/closure_v1/locked_evaluation/sequence_features.parquet"
+        ],
+        "pointer_output_count": 4,
+        "pointer_output_paths": [
+          "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+          "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+          "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+          "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc"
+        ],
+        "light_output_count": 2,
+        "light_output_paths": [
+          "reports/closure_v1/01_surface/locked_evaluation_input_summary.json",
+          "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json"
+        ],
+        "tracked_output_count": 6,
+        "tracked_output_paths": [
+          "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+          "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+          "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+          "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+          "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json",
+          "reports/closure_v1/01_surface/locked_evaluation_input_summary.json"
+        ],
+        "publication_order": [
+          "data/closure_v1/locked_evaluation/input_history.parquet",
+          "data/closure_v1/locked_evaluation/intent_origins.parquet",
+          "data/closure_v1/locked_evaluation/origin_features.parquet",
+          "data/closure_v1/locked_evaluation/sequence_features.parquet",
+          "reports/closure_v1/01_surface/locked_evaluation_input_summary.json",
+          "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json"
+        ],
+        "manifest_written_last": true,
+        "dvc_registration_is_separate": true
+      }
+    },
+    "prelock": {
+      "const": {
+        "p_output_present_count": 0,
+        "r_output_present_count": 0,
+        "coordination_present_count": 0,
+        "component_count": 6,
+        "companion_contract": {
+          "physical_input_count": 16,
+          "historical_input_count": 6,
+          "output_count": 1,
+          "script_path": "src/experiments/lock_closure_locked_evaluation_input_bundle.py",
+          "manifest_written_last": true
+        },
+        "scientific_execution_run": false,
+        "panel_opened": false,
+        "assignment_opened": false,
+        "target_namespace_opened": false,
+        "outcome_paths_opened": false,
+        "dvc_commands_run": false
+      }
+    },
+    "historicalInputs": {
+      "const": [
+        {
+          "role": "superseded_h_mcalm_component",
+          "path": "configs/closure_v1/final_calibration_r8_post_publication_authority_patch_lock.schema.json",
+          "bytes": 16945,
+          "sha256": "26cd52c0e1b054165244f46a8c1eeee8a1770662e1d8f34f997b03ce2f69518b",
+          "git_oid": "73caf2ac9220442605c6784dacea1e86d9c9960c",
+          "git_mode": "100644",
+          "commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b"
+        },
+        {
+          "role": "superseded_h_mcalm_component",
+          "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_R8_POST_PUBLICATION_AUTHORITY_PATCH_1.md",
+          "bytes": 12811,
+          "sha256": "4f51dd08181e26940d215ce0c9bf4023a7693736657449e7f5ac7c2d208525c8",
+          "git_oid": "72083ac09d9006381836297bcac331fb4fe41b96",
+          "git_mode": "100644",
+          "commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b"
+        },
+        {
+          "role": "superseded_h_mcalm_component",
+          "path": "src/data/prepare_commit_artifacts.py",
+          "bytes": 382355,
+          "sha256": "ddd4e65da0e3d7191aff224ee0787df56846d8b587915cfb7976fd63b214df15",
+          "git_oid": "1664bb2f87ca85036b8431dd083f00feae75969e",
+          "git_mode": "100755",
+          "commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b"
+        },
+        {
+          "role": "superseded_h_mcalm_component",
+          "path": "src/experiments/closure_final_calibration_r8_post_publication_authority_patch.py",
+          "bytes": 65854,
+          "sha256": "a84ab68b8f269403ef3716fa91c3b2391ba8b773d2e451a3708c6f4a9880ac96",
+          "git_oid": "7b212e1e7e5a6cca8b8cc916d5a1d545a3f2f519",
+          "git_mode": "100644",
+          "commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b"
+        },
+        {
+          "role": "superseded_h_mcalm_component",
+          "path": "src/experiments/lock_closure_final_calibration_r8_post_publication_authority_patch.py",
+          "bytes": 11681,
+          "sha256": "a85df0336dc0507ce221af87529b8fa6b88f2ab1ed5d3962dbe4494d87df9b8b",
+          "git_oid": "524eea9f2423de2488339d54c544703964f9604d",
+          "git_mode": "100644",
+          "commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b"
+        },
+        {
+          "role": "superseded_h_mcalm_component",
+          "path": "tests/test_closure_final_calibration_r8_post_publication_authority_patch.py",
+          "bytes": 29949,
+          "sha256": "e0ec96b0e83fbbb187b6f4ba5b1b6757dbb77267706d38e6a9fd075ad73cfa8a",
+          "git_oid": "2253c065eaca0c3bc4f5e089daff848a0799537b",
+          "git_mode": "100644",
+          "commit": "a7dc955d6c565779a4ddd0df16bb83f1c89f687b"
+        }
+      ]
+    },
+    "coordinationNamespace": {
+      "const": {
+        "historical_published_lock_count": 22,
+        "never_published_lock_present_count": 0,
+        "current_lock_present_count": 0,
+        "coordination_forbidden_count": 59,
+        "coordination_present_count": 0,
+        "owned_lock_guard_present": false,
+        "owned_run_guard_present": false,
+        "r_state": "absent",
+        "formal_e0_m_output_present_count": 0,
+        "outcome_access_log_absent": true
+      }
+    },
+    "schemaFileRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/publicArtifactRecord"},
+        {
+          "type": "object",
+          "properties": {
+            "role": {"const": "locked_evaluation_input_bundle_lock_schema"},
+            "path": {"const": "configs/closure_v1/locked_evaluation_input_bundle_lock.schema.json"}
+          }
+        }
+      ]
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "gate",
+        "schema_count",
+        "schema_version",
+        "schemas",
+        "supported_subset_verified",
+        "duplicate_keys_rejected"
+      ],
+      "properties": {
+        "status": {"const": "schema_ready"},
+        "gate": {"const": "E0-MIB"},
+        "schema_count": {"const": 1},
+        "schema_version": {"const": "closure_locked_evaluation_input_bundle_lock_v1"},
+        "schemas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/schemaFileRecord"}
+        },
+        "supported_subset_verified": {"const": true},
+        "duplicate_keys_rejected": {"const": true}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"const": 0}
+      }
+    },
+    "typeCheckEvidence": {
+      "allOf": [
+        {"$ref": "#/$defs/commandEvidence"},
+        {"type": "object", "properties": {"command": {"const": ["poetry", "run", "ty", "check"]}}}
+      ]
+    },
+    "poetryCheckEvidence": {
+      "allOf": [
+        {"$ref": "#/$defs/commandEvidence"},
+        {"type": "object", "properties": {"command": {"const": ["poetry", "check"]}}}
+      ]
+    },
+    "publicationGuardEvidence": {
+      "allOf": [
+        {"$ref": "#/$defs/commandEvidence"},
+        {"type": "object", "properties": {"command": {"const": ["scripts/check_repo_publication_ready.sh"]}}}
+      ]
+    },
+    "diffCheckEvidence": {
+      "allOf": [
+        {"$ref": "#/$defs/commandEvidence"},
+        {"type": "object", "properties": {"command": {"const": ["git", "diff", "--check"]}}}
+      ]
+    },
+    "focusedTestEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "test_count",
+        "skipped_count",
+        "deselected_count"
+      ],
+      "properties": {
+        "command": {
+          "const": [
+            "poetry",
+            "run",
+            "pytest",
+            "-q",
+            "tests/test_prepare_commit_artifacts.py",
+            "tests/test_closure_locked_evaluation_input_bundle.py"
+          ]
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"const": 0},
+        "test_count": {"const": 48},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "verification": {
+      "oneOf": [
+        {
+          "const": {
+            "status": "not_run_by_payload_builder",
+            "commands_run": false,
+            "scientific_execution_run": false,
+            "input_bundle_run": false,
+            "dvc_commands_run": false,
+            "outcome_paths_opened": false
+          }
+        },
+        {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "schema_preflight",
+            "full_type_check",
+            "focused_tests",
+            "poetry_check",
+            "publication_guard",
+            "git_diff_check"
+          ],
+          "properties": {
+            "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+            "full_type_check": {"$ref": "#/$defs/typeCheckEvidence"},
+            "focused_tests": {"$ref": "#/$defs/focusedTestEvidence"},
+            "poetry_check": {"$ref": "#/$defs/poetryCheckEvidence"},
+            "publication_guard": {"$ref": "#/$defs/publicationGuardEvidence"},
+            "git_diff_check": {"$ref": "#/$defs/diffCheckEvidence"}
+          }
+        }
+      ]
+    },
+    "authorizations": {
+      "const": {
+        "input_bundle_execution_authorized": false,
+        "input_bundle_run_consumed": false,
+        "evaluation_authorized": false,
+        "e0_m_authorized": false,
+        "e0_u_authorized": false,
+        "outcome_access_authorized": false,
+        "holdout_outcome_access_authorized": false,
+        "post_2021_outcome_access_authorized": false,
+        "training_authorized": false,
+        "calibration_authorized": false,
+        "dvc_add_authorized": false,
+        "dvc_push_authorized": false,
+        "git_commit_authorized": false,
+        "git_push_authorized": false
+      }
+    }
+  }
+}

@@ -1371,10 +1371,46 @@ class FinalCalibrationR8PostPublicationAuthorityAdapterError(RuntimeError):
     """Raised when the exact E0-MCALM precommit exception drifts."""
 
 
+class ClosureLockedEvaluationInputBundleAdapterError(RuntimeError):
+    """Raised when the exact E0-MIB precommit exception drifts."""
+
+
+_LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE = {
+    "configs/closure_v1/locked_evaluation_input_bundle_lock.schema.json": "A",
+    "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_BUNDLE.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/closure_locked_evaluation_input_bundle.py": "A",
+    "src/experiments/lock_closure_locked_evaluation_input_bundle.py": "A",
+    "tests/test_closure_locked_evaluation_input_bundle.py": "A",
+}
+_LOCKED_EVALUATION_INPUT_P_STAGED_SCOPE = {
+    "configs/closure_v1/locked_evaluation_input_bundle_lock.json": "A",
+    "configs/closure_v1/locked_evaluation_input_bundle_lock_manifest.json": "A",
+}
+_LOCKED_EVALUATION_INPUT_R_STAGED_SCOPE = {
+    "data/closure_v1/locked_evaluation/input_history.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/origin_features.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc": "A",
+    "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json": "A",
+    "reports/closure_v1/01_surface/locked_evaluation_input_summary.json": "A",
+}
+_LOCKED_EVALUATION_INPUT_H_GIT_MODES = {
+    path: (
+        "100755"
+        if path == "src/data/prepare_commit_artifacts.py"
+        else "100644"
+    )
+    for path in _LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE
+}
+
+
 def _final_calibration_stage_adapter_error(
     gate: str, message: str
 ) -> RuntimeError:
     """Preserve the owning adapter error boundary for each calibration gate."""
+    if gate.endswith("MIB") or gate == "R-E0-MI":
+        return ClosureLockedEvaluationInputBundleAdapterError(message)
     if gate.endswith("MCALM"):
         return FinalCalibrationR8PostPublicationAuthorityAdapterError(message)
     if gate.endswith("MCALL"):
@@ -4394,6 +4430,879 @@ def revalidate_final_calibration_r8_post_publication_authority_transaction(
         )
 
 
+def _closure_locked_evaluation_input_bundle_scopes(
+    patch: Any,
+) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """Reject any core-side drift before selecting an E0-MIB transaction."""
+    contracts = (
+        (
+            getattr(patch, "LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE", None),
+            _LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE,
+        ),
+        (
+            getattr(patch, "LOCKED_EVALUATION_INPUT_P_STAGED_SCOPE", None),
+            _LOCKED_EVALUATION_INPUT_P_STAGED_SCOPE,
+        ),
+        (
+            getattr(patch, "LOCKED_EVALUATION_INPUT_R_STAGED_SCOPE", None),
+            _LOCKED_EVALUATION_INPUT_R_STAGED_SCOPE,
+        ),
+    )
+    if (
+        getattr(patch, "PATCH_GATE", None) != "E0-MIB"
+        or getattr(patch, "BASE_P_MCALM_COMMIT", None)
+        != "81c1fc485902d484264fccc53cf88888c359930d"
+        or any(type(observed) is not dict or observed != expected for observed, expected in contracts)
+        or type(getattr(patch, "PATCH_COMPONENT_GIT_MODES", None)) is not dict
+        or patch.PATCH_COMPONENT_GIT_MODES != _LOCKED_EVALUATION_INPUT_H_GIT_MODES
+        or set(_LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE)
+        & set(_LOCKED_EVALUATION_INPUT_P_STAGED_SCOPE)
+        or set(_LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE)
+        & set(_LOCKED_EVALUATION_INPUT_R_STAGED_SCOPE)
+        or set(_LOCKED_EVALUATION_INPUT_P_STAGED_SCOPE)
+        & set(_LOCKED_EVALUATION_INPUT_R_STAGED_SCOPE)
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB H6/P2/R6 scope contract drifted"
+        )
+    return (
+        dict(_LOCKED_EVALUATION_INPUT_H_STAGED_SCOPE),
+        dict(_LOCKED_EVALUATION_INPUT_P_STAGED_SCOPE),
+        dict(_LOCKED_EVALUATION_INPUT_R_STAGED_SCOPE),
+    )
+
+
+def closure_locked_evaluation_input_bundle_pre_stage_scope(
+    status_output: str,
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[str, tuple[str, ...]] | None:
+    """Select only the exact H/P/R E0-MIB transaction before generic staging."""
+    patch = _closure_locked_evaluation_input_bundle_module()
+
+    def short_map(scope: Mapping[str, str]) -> dict[str, str]:
+        return {
+            path: "??" if status == "A" else " M"
+            for path, status in scope.items()
+        }
+
+    h_scope, p_scope, r_scope = _closure_locked_evaluation_input_bundle_scopes(
+        patch
+    )
+    r_pre_dvc = {
+        path: status
+        for path, status in r_scope.items()
+        if not path.endswith(".dvc")
+    }
+    candidates = (
+        ("H-E0-MIB", short_map(h_scope), h_scope),
+        ("P-E0-MIB", short_map(p_scope), p_scope),
+        ("R-E0-MI", short_map(r_pre_dvc), r_scope),
+    )
+    candidate_paths = {
+        path
+        for scope in (h_scope, p_scope, r_scope)
+        for path in scope
+    }
+    observed: dict[str, str] = {}
+    anomaly = False
+    for line in status_output.splitlines():
+        if (
+            len(line) < 4
+            or line[2] != " "
+            or line[:2] not in {"??", " M"}
+            or not line[3:]
+        ):
+            if any(path in line for path in candidate_paths):
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    "E0-MIB pre-stage scope contains a malformed candidate record"
+                )
+            anomaly = True
+            continue
+        path = line[3:]
+        if path in observed:
+            if path in candidate_paths:
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    "E0-MIB pre-stage scope contains a duplicate path"
+                )
+            anomaly = True
+            continue
+        observed[path] = line[:2]
+    if anomaly and set(observed) & candidate_paths:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB candidate pre-stage scope contains an extra malformed record"
+        )
+    for gate, expected, stage_scope in candidates:
+        if observed == expected:
+            _require_closure_locked_evaluation_input_bundle_stage_base(
+                gate,
+                patch=patch,
+                repo_root=repo_root,
+            )
+            return gate, tuple(sorted(stage_scope))
+    if set(observed) & candidate_paths:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB candidate pre-stage scope is not exact"
+        )
+    return None
+
+
+def _require_closure_locked_evaluation_input_bundle_stage_base(
+    gate: str,
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> None:
+    """Bind each E0-MIB stage to its exact published predecessor."""
+    expected_h_scope, _, _ = _closure_locked_evaluation_input_bundle_scopes(patch)
+    head = _git_output(repo_root, "rev-parse", "HEAD").strip()
+    if gate == "H-E0-MIB":
+        if head != patch.BASE_P_MCALM_COMMIT:
+            raise ClosureLockedEvaluationInputBundleAdapterError(
+                "H-E0-MIB staging requires exact published P-E0-MCALM HEAD"
+            )
+        _require_closure_locked_evaluation_input_prelock(
+            patch=patch,
+            repo_root=repo_root,
+        )
+        return
+    if gate == "P-E0-MIB":
+        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        published_h_scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
+        )
+        if parent != patch.BASE_P_MCALM_COMMIT:
+            raise ClosureLockedEvaluationInputBundleAdapterError(
+                "P-E0-MIB staging requires a direct H child of P-E0-MCALM"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                published_h_scope,
+                expected=expected_h_scope,
+                context="published H-E0-MIB scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+        _require_closure_locked_evaluation_input_unpublished_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="untracked",
+        )
+        return
+    if gate == "R-E0-MI":
+        _require_closure_locked_evaluation_input_authority(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="physical_and_light_untracked",
+        )
+        _require_closure_locked_evaluation_input_r_validation(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=False,
+        )
+        return
+    raise ClosureLockedEvaluationInputBundleAdapterError(
+        "Unknown E0-MIB staging gate"
+    )
+
+
+def _require_closure_locked_evaluation_input_prelock(
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> dict[str, Any]:
+    """Require two equal remote-aware H prelock and physical snapshots."""
+    try:
+        physical_before = patch._physical_snapshot(repo_root)
+        before = patch.collect_closure_locked_evaluation_input_bundle_prelock_state(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+        after = patch.collect_closure_locked_evaluation_input_bundle_prelock_state(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+        physical_after = patch._physical_snapshot(repo_root)
+    except patch.ClosureLockedEvaluationInputBundleError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+    if (
+        before != after
+        or physical_before != physical_after
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB H prelock topology or physical snapshot drifted"
+        )
+    _validate_closure_locked_evaluation_input_prelock_result(
+        before,
+        patch=patch,
+    )
+    return before
+
+
+def _validate_closure_locked_evaluation_input_prelock_result(
+    value: Any,
+    *,
+    patch: Any,
+) -> None:
+    """Require the frozen science-free H prelock result, never an equal empty dict."""
+    expected_keys = {
+        "repository",
+        "h_patch",
+        "base_authority",
+        "input_contract",
+        "r_contract",
+        "prelock",
+        "historical_inputs",
+        "historical_inputs_sha256",
+        "coordination_namespace",
+        "schema_preflight",
+    }
+    if type(value) is not dict or set(value) != expected_keys:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB H prelock result dialect drifted"
+        )
+    repository = value.get("repository")
+    h_patch = value.get("h_patch")
+    base = value.get("base_authority")
+    inputs = value.get("input_contract")
+    r_contract = value.get("r_contract")
+    prelock = value.get("prelock")
+    historical = value.get("historical_inputs")
+    namespace = value.get("coordination_namespace")
+    schema = value.get("schema_preflight")
+    if (
+        not isinstance(repository, Mapping)
+        or repository.get("base_p_mcalm_commit") != patch.BASE_P_MCALM_COMMIT
+        or not isinstance(h_patch, Mapping)
+        or h_patch.get("gate") != "H-E0-MIB"
+        or h_patch.get("component_count") != 6
+        or h_patch.get("added_count") != 5
+        or h_patch.get("modified_count") != 1
+        or not isinstance(base, Mapping)
+        or base.get("gate") != "E0-MCALM"
+        or base.get("status") != "published_p_mcalm_authority_validated"
+        or not isinstance(base.get("p_components"), list)
+        or len(base["p_components"]) != 2
+        or base.get("scientific_inputs_rehashed") is not False
+        or base.get("outcome_paths_opened") is not False
+        or not isinstance(inputs, Mapping)
+        or inputs.get("panel_projection_count") != 41
+        or inputs.get("physical_feature_count") != 38
+        or inputs.get("derived_calendar_count") != 4
+        or inputs.get("locked_evaluation_origin_start") != "2022-01"
+        or inputs.get("target_months_materialized") is not False
+        or inputs.get("target_availability_inspected") is not False
+        or inputs.get("target_namespace_opened") is not False
+        or inputs.get("outcome_access_log_opened") is not False
+        or not isinstance(inputs.get("source_records"), list)
+        or len(inputs["source_records"]) != 4
+        or not isinstance(r_contract, Mapping)
+        or r_contract.get("gate") != "R-E0-MI"
+        or r_contract.get("physical_output_count") != 4
+        or r_contract.get("pointer_output_count") != 4
+        or r_contract.get("light_output_count") != 2
+        or r_contract.get("tracked_output_count") != 6
+        or r_contract.get("manifest_written_last") is not True
+        or not isinstance(prelock, Mapping)
+        or prelock.get("p_output_present_count") != 0
+        or prelock.get("r_output_present_count") != 0
+        or prelock.get("coordination_present_count") != 0
+        or prelock.get("component_count") != 6
+        or any(
+            prelock.get(key) is not False
+            for key in (
+                "scientific_execution_run",
+                "panel_opened",
+                "assignment_opened",
+                "target_namespace_opened",
+                "outcome_paths_opened",
+                "dvc_commands_run",
+            )
+        )
+        or not isinstance(historical, list)
+        or len(historical) != 6
+        or not isinstance(value.get("historical_inputs_sha256"), str)
+        or len(value["historical_inputs_sha256"]) != 64
+        or not isinstance(namespace, Mapping)
+        or namespace.get("current_lock_present_count") != 0
+        or namespace.get("coordination_present_count") != 0
+        or namespace.get("r_state") != "absent"
+        or namespace.get("formal_e0_m_output_present_count") != 0
+        or namespace.get("outcome_access_log_absent") is not True
+        or not isinstance(schema, Mapping)
+        or schema.get("gate") != patch.PATCH_GATE
+        or schema.get("status") != "schema_ready"
+        or schema.get("schema_count") != 1
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB H prelock contract drifted"
+        )
+
+
+def _require_closure_locked_evaluation_input_unpublished_validation(
+    *,
+    patch: Any,
+    repo_root: Path,
+    expected_stage_state: str,
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_locked_evaluation_input_bundle_unpublished_lock_bundle(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputBundleError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status") != "locked_unpublished"
+        or validation.get("p_stage_state") != expected_stage_state
+        or validation.get("p_output_count") != 2
+        or validation.get("physical_input_count") != 16
+        or validation.get("historical_input_count") != 6
+        or validation.get("companion_output_count") != 1
+        or validation.get("coordination_present_count") != 0
+        or validation.get("r_state") != "absent"
+        or validation.get("effective_authority") is not False
+        or validation.get("input_bundle_execution_authorized") is not False
+        or validation.get("evaluation_authorized") is not False
+        or validation.get("e0_m_authorized") is not False
+        or validation.get("e0_u_authorized") is not False
+        or validation.get("dvc_commands_authorized") is not False
+        or validation.get("git_commit_authorized") is not False
+        or validation.get("git_push_authorized") is not False
+        or validation.get("writes_performed") is not False
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB unpublished P semantic validation result drifted"
+        )
+    return validation
+
+
+def _require_closure_locked_evaluation_input_authority(
+    *,
+    patch: Any,
+    repo_root: Path,
+    expected_stage_state: str,
+) -> dict[str, Any]:
+    expected_r_state = {
+        "physical_and_light_untracked": "physical_and_light",
+        "exact6_staged": "complete",
+    }.get(expected_stage_state)
+    expected_tracked_count = 0 if expected_stage_state == "physical_and_light_untracked" else 6
+    if expected_r_state is None:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB effective authority stage policy drifted"
+        )
+    try:
+        authority = patch.require_locked_evaluation_input_bundle_authority(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputBundleError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+    if (
+        type(authority) is not dict
+        or authority.get("gate") != patch.PATCH_GATE
+        or authority.get("status") != "effective"
+        or authority.get("r_stage_state") != expected_stage_state
+        or authority.get("r_state") != expected_r_state
+        or authority.get("r_physical_output_count") != 4
+        or authority.get("r_tracked_output_count") != expected_tracked_count
+        or authority.get("input_bundle_execution_authorized") is not False
+        or authority.get("input_bundle_run_consumed") is not True
+        or authority.get("effective_authority") is not True
+        or authority.get("evaluation_authorized") is not False
+        or authority.get("e0_m_authorized") is not False
+        or authority.get("e0_u_authorized") is not False
+        or authority.get("outcome_access_authorized") is not False
+        or authority.get("dvc_commands_authorized") is not False
+        or authority.get("dvc_push_authorized") is not False
+        or authority.get("git_commit_authorized") is not False
+        or authority.get("git_push_authorized") is not False
+        or authority.get("writes_performed") is not False
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB effective authority result drifted"
+        )
+    return authority
+
+
+def _require_closure_locked_evaluation_input_r_validation(
+    *,
+    patch: Any,
+    repo_root: Path,
+    require_staged: bool,
+) -> dict[str, Any]:
+    """Adopt only a semantically exact input-only R bundle."""
+    try:
+        validation = patch.validate_locked_evaluation_input_bundle(
+            repo_root=repo_root,
+            require_staged=require_staged,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputBundleError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+    expected_stage = "exact6_staged" if require_staged else "physical_and_light_untracked"
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != patch.PATCH_GATE
+        or validation.get("status") != "input_bundle_validated"
+        or validation.get("r_stage_state") != expected_stage
+        or validation.get("physical_output_count") != 4
+        or validation.get("tracked_output_count") != 6
+        or validation.get("pointer_count") != 4
+        or validation.get("summary_count") != 1
+        or validation.get("manifest_count") != 1
+        or validation.get("manifest_written_last") is not True
+        or validation.get("input_only") is not True
+        or validation.get("target_paths_opened") is not False
+        or validation.get("target_availability_inspected") is not False
+        or validation.get("outcome_paths_opened") is not False
+        or validation.get("future_outcomes_accessed") is not False
+        or validation.get("evaluation_authorized") is not False
+        or validation.get("e0_m_authorized") is not False
+        or validation.get("e0_u_authorized") is not False
+        or validation.get("writes_performed") is not False
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB R semantic validation result drifted"
+        )
+    return validation
+
+
+def closure_locked_evaluation_input_dvc_targets(
+    patch: Any | None = None,
+) -> tuple[Path, ...]:
+    """Return the four physical R-E0-MI targets implied by the closed pointers."""
+    module = _closure_locked_evaluation_input_bundle_module() if patch is None else patch
+    _, _, r_scope = _closure_locked_evaluation_input_bundle_scopes(module)
+    pointer_paths = sorted(
+        path
+        for path in r_scope
+        if path.endswith(".parquet.dvc")
+    )
+    if len(pointer_paths) != 4 or len(set(pointer_paths)) != 4:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB R scope does not contain exactly four Parquet pointers"
+        )
+    return tuple(Path(path.removesuffix(".dvc")) for path in pointer_paths)
+
+
+def closure_locked_evaluation_input_dvc_add_command(
+    dvc_bin: str,
+    target: Path,
+) -> list[str]:
+    """Build one exact no-relink R-E0-MI registration command."""
+    if (
+        dvc_bin != DEFAULT_DVC_BIN.as_posix()
+        or target not in closure_locked_evaluation_input_dvc_targets()
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "R-E0-MI DVC add received a non-closed binary or target"
+        )
+    return [dvc_bin, "add", "--no-relink", target.as_posix()]
+
+
+def validate_closure_locked_evaluation_input_dvc_binary(
+    dvc_bin: str,
+    *,
+    repo_root: Path = Path("."),
+) -> None:
+    """Seal the repository DVC executable before any E0-MIB DVC command."""
+    if dvc_bin != DEFAULT_DVC_BIN.as_posix():
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB requires the repository .venv/bin/dvc executable"
+        )
+    try:
+        _require_no_symlink_ancestors(DEFAULT_DVC_BIN, anchor=repo_root)
+        _require_regular_file(DEFAULT_DVC_BIN, mode=0o755)
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_unmanaged_namespace(
+    unmanaged_paths: list[Path],
+) -> None:
+    """Require exactly one ignored R namespace while tolerating rejected history."""
+    namespace = Path("data/closure_v1/locked_evaluation")
+    mib_paths = [
+        path
+        for path in unmanaged_paths
+        if path == namespace or namespace in path.parents
+    ]
+    if mib_paths != [namespace]:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "R-E0-MI ignored namespace is not the exact locked-evaluation directory"
+        )
+
+
+def write_closure_locked_evaluation_input_dvc_failure_report(
+    *,
+    report_path: Path,
+    selected_dvc_paths: list[Path],
+    rejected_unmanaged_paths: list[Path],
+    git_status_before: str,
+    dvc_status_before: dict[str, Any],
+    dvc_add_results: list[CommandResult],
+    failed_target_index: int,
+) -> None:
+    """Record a failed R add prefix without staging, pushing, retrying, or cleanup."""
+    if (
+        failed_target_index < 1
+        or failed_target_index > 4
+        or len(dvc_add_results) != failed_target_index
+        or dvc_add_results[-1].returncode == 0
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "R-E0-MI DVC failure evidence dialect drifted"
+        )
+    failed = dvc_add_results[-1]
+    write_report(
+        report_path,
+        dry_run=False,
+        selected_dvc_paths=selected_dvc_paths,
+        deferred_dvc_paths=[],
+        deferred_snapshot_before=None,
+        deferred_snapshot_after=None,
+        rejected_unmanaged_paths=rejected_unmanaged_paths,
+        git_status_before=git_status_before,
+        dvc_status_before=dvc_status_before,
+        dvc_status_after=None,
+        cloud_status_before=None,
+        dvc_add_results=dvc_add_results,
+        dvc_push_result=None,
+        git_add_result=None,
+        publication_check_result=None,
+        reproducibility_findings=[
+            ReproducibilityFinding(
+                "fail",
+                "locked_evaluation_input_dvc_add",
+                failed.command[-1],
+                (
+                    f"R-E0-MI DVC add {failed_target_index}/4 failed; any partial "
+                    "pointer evidence was preserved. No Git staging or push ran, "
+                    "and retry is forbidden pending an independent audit."
+                ),
+            )
+        ],
+        staged_status="",
+        exclusive=True,
+    )
+
+
+def snapshot_closure_locked_evaluation_input_physical_outputs(
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Seal the four R physical files without decoding their Parquet content."""
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for path in closure_locked_evaluation_input_dvc_targets():
+            identity = _registration_file_identity(
+                repo_root / path,
+                repo_root=repo_root,
+                mode=0o644,
+            )
+            if identity.nlink != 1:
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    f"R-E0-MI physical output is not single-link: {path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+    if len(records) != 4 or len({record.path for record in records}) != 4:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "R-E0-MI physical output snapshot is not exact4"
+        )
+    return tuple(records)
+
+
+def validate_closure_locked_evaluation_input_bundle_invocation(
+    args: Any,
+    *,
+    gate: str,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Require closed H/P no-DVC or exact-four-target R-E0-MI invocation."""
+    source = os.environ if env is None else env
+    expected_targets: tuple[Path, ...] = ()
+    if gate == "R-E0-MI":
+        expected_targets = closure_locked_evaluation_input_dvc_targets()
+    elif gate not in {"H-E0-MIB", "P-E0-MIB"}:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "Unknown E0-MIB invocation gate"
+        )
+    observed_targets = tuple(Path(value) for value in args.target)
+    if (
+        observed_targets != expected_targets
+        or not args.no_push
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or not args.allow_unmanaged
+        or bool(args.defer_dvc_target)
+        or bool(getattr(args, "register_anfis_ablation_model_family", False))
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            source.get("DVC_SITE_CACHE_DIR") is not None
+            and source["DVC_SITE_CACHE_DIR"]
+            != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "E0-MIB precommit requires exact --allow-unmanaged --no-push, "
+            "default paths, mandatory publication checks, analytics-disabled DVC, "
+            "and only the four registered R-E0-MI targets for the R gate"
+        )
+
+
+def validate_closure_locked_evaluation_input_bundle_staged_scope(
+    staged_status: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _closure_locked_evaluation_input_bundle_module()
+    h_scope, p_scope, r_scope = _closure_locked_evaluation_input_bundle_scopes(
+        patch
+    )
+    scopes = {
+        "H-E0-MIB": h_scope,
+        "P-E0-MIB": p_scope,
+        "R-E0-MI": r_scope,
+    }
+    expected = scopes.get(gate)
+    if expected is None:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "Unknown E0-MIB staged scope"
+        )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=expected,
+            context=f"{gate} staged scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_bundle_workspace_scope(
+    status_output: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _closure_locked_evaluation_input_bundle_module()
+    h_scope, p_scope, r_scope = _closure_locked_evaluation_input_bundle_scopes(
+        patch
+    )
+    scopes = {
+        "H-E0-MIB": h_scope,
+        "P-E0-MIB": p_scope,
+        "R-E0-MI": r_scope,
+    }
+    expected = scopes.get(gate)
+    if expected is None:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "Unknown E0-MIB workspace scope"
+        )
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_expected_short_scope(expected, staged=True),
+            context=f"{gate} workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_bundle_staged_bindings(
+    *,
+    gate: str,
+    repo_root: Path = Path("."),
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind every E0-MIB index blob to one stable regular worktree file."""
+    patch = _closure_locked_evaluation_input_bundle_module()
+    h_scope, p_scope, r_scope = _closure_locked_evaluation_input_bundle_scopes(
+        patch
+    )
+    scopes = {
+        "H-E0-MIB": h_scope,
+        "P-E0-MIB": p_scope,
+        "R-E0-MI": r_scope,
+    }
+    scope = scopes.get(gate)
+    if scope is None:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "Unknown E0-MIB staged binding gate"
+        )
+    expected_modes = (
+        _LOCKED_EVALUATION_INPUT_H_GIT_MODES
+        if gate == "H-E0-MIB"
+        else {path: "100644" for path in scope}
+    )
+    if (
+        type(expected_modes) is not dict
+        or set(expected_modes) != set(scope)
+        or any(mode not in {"100644", "100755"} for mode in expected_modes.values())
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            f"{gate} staged mode contract drifted"
+        )
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(scope):
+            expected_git_mode = expected_modes[raw_path]
+            index_line = _git_output(
+                repo_root, "ls-files", "-s", "--", raw_path
+            ).strip()
+            parts = index_line.split(maxsplit=3)
+            if (
+                len(parts) != 4
+                or parts[0] != expected_git_mode
+                or parts[2] != "0"
+                or parts[3] != raw_path
+            ):
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    f"{gate} staged mode/path binding drifted: {raw_path}"
+                )
+            worktree_oid = _git_output(
+                repo_root, "hash-object", "--no-filters", "--", raw_path
+            ).strip()
+            if len(parts[1]) != 40 or parts[1] != worktree_oid:
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    f"{gate} index blob differs from worktree: {raw_path}"
+                )
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(expected_git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    f"{gate} staged path is not single-link: {raw_path}"
+                )
+            records.append(identity)
+        if len(records) != len(scope):
+            raise ClosureLockedEvaluationInputBundleAdapterError(
+                f"{gate} staged binding count drifted"
+            )
+        return tuple(records)
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputBundleAdapterError(str(exc)) from exc
+
+
+def revalidate_closure_locked_evaluation_input_bundle_transaction(
+    *,
+    gate: str,
+    staged_status: str,
+    expected_physical_snapshot: tuple[RegistrationFileIdentity, ...] | None = None,
+    repo_root: Path = Path("."),
+) -> None:
+    """Close E0-MIB Git scope and remote semantic races at each checkpoint."""
+    validate_closure_locked_evaluation_input_bundle_staged_scope(
+        staged_status,
+        gate=gate,
+    )
+    current_staged = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+    )
+    validate_closure_locked_evaluation_input_bundle_staged_scope(
+        current_staged,
+        gate=gate,
+    )
+    workspace = _git_output(
+        repo_root,
+        "status",
+        "--short",
+        "--untracked-files=all",
+    )
+    validate_closure_locked_evaluation_input_bundle_workspace_scope(
+        workspace,
+        gate=gate,
+    )
+    first_bindings = validate_closure_locked_evaluation_input_bundle_staged_bindings(
+        gate=gate,
+        repo_root=repo_root,
+    )
+    patch = _closure_locked_evaluation_input_bundle_module()
+    if gate == "H-E0-MIB":
+        if _git_output(repo_root, "rev-parse", "HEAD").strip() != patch.BASE_P_MCALM_COMMIT:
+            raise ClosureLockedEvaluationInputBundleAdapterError(
+                "H-E0-MIB base changed during precommit"
+            )
+        _require_closure_locked_evaluation_input_prelock(
+            patch=patch,
+            repo_root=repo_root,
+        )
+    elif gate == "P-E0-MIB":
+        _require_closure_locked_evaluation_input_unpublished_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="staged",
+        )
+    elif gate == "R-E0-MI":
+        if (
+            expected_physical_snapshot is None
+            or snapshot_closure_locked_evaluation_input_physical_outputs(
+                repo_root=repo_root
+            )
+            != expected_physical_snapshot
+        ):
+            raise ClosureLockedEvaluationInputBundleAdapterError(
+                "R-E0-MI physical outputs changed during registration/precommit"
+            )
+        _require_closure_locked_evaluation_input_authority(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="exact6_staged",
+        )
+        _require_closure_locked_evaluation_input_r_validation(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=True,
+        )
+        if (
+            snapshot_closure_locked_evaluation_input_physical_outputs(
+                repo_root=repo_root
+            )
+            != expected_physical_snapshot
+        ):
+            raise ClosureLockedEvaluationInputBundleAdapterError(
+                "R-E0-MI physical outputs changed during semantic revalidation"
+            )
+    else:
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            "Unknown E0-MIB transaction gate"
+        )
+    if (
+        validate_closure_locked_evaluation_input_bundle_staged_bindings(
+            gate=gate,
+            repo_root=repo_root,
+        )
+        != first_bindings
+    ):
+        raise ClosureLockedEvaluationInputBundleAdapterError(
+            f"{gate} staged files changed during semantic revalidation"
+        )
+
+
 def normalize_repo_path(raw_path: str) -> Path:
     path = Path(raw_path)
     if not path.is_absolute():
@@ -5748,6 +6657,13 @@ def _final_calibration_r8_post_publication_authority_patch_module() -> Any:
     from src.experiments import (
         closure_final_calibration_r8_post_publication_authority_patch as patch,
     )
+
+    return patch
+
+
+def _closure_locked_evaluation_input_bundle_module() -> Any:
+    """Import E0-MIB lazily so the generic assistant stays independent."""
+    from src.experiments import closure_locked_evaluation_input_bundle as patch
 
     return patch
 
@@ -9374,6 +10290,9 @@ def main() -> int:
     final_calibration_r8_snapshot: (
         tuple[FinalCalibrationR8PhysicalIdentity, ...] | None
     ) = None
+    locked_evaluation_input_physical_snapshot: (
+        tuple[RegistrationFileIdentity, ...] | None
+    ) = None
     deferred_exclude_validator = validate_deferred_dvc_git_exclude_environment
     deferred_state_validator = validate_deferred_dvc_models_state
     if deferred_dvc_paths:
@@ -9398,10 +10317,16 @@ def main() -> int:
         )
         try:
             final_calibration_scope = (
-                final_calibration_r8_post_publication_authority_pre_stage_scope(
+                closure_locked_evaluation_input_bundle_pre_stage_scope(
                     final_calibration_git_status_before
                 )
             )
+            if final_calibration_scope is None:
+                final_calibration_scope = (
+                    final_calibration_r8_post_publication_authority_pre_stage_scope(
+                        final_calibration_git_status_before
+                    )
+                )
             if final_calibration_scope is None:
                 final_calibration_scope = (
                     final_calibration_r8_coordination_namespace_revalidation_pre_stage_scope(
@@ -9416,6 +10341,7 @@ def main() -> int:
                 )
         except (
             DeferredDvcTargetError,
+            ClosureLockedEvaluationInputBundleAdapterError,
             FinalCalibrationR8PostPublicationAuthorityAdapterError,
             FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
             FinalCalibrationR8ManifestReproducibilityAdapterError,
@@ -9428,7 +10354,16 @@ def main() -> int:
             )
             git_status_before = final_calibration_git_status_before
             try:
-                if final_calibration_stage_gate.endswith("MCALM"):
+                if final_calibration_stage_gate.endswith("MIB") or final_calibration_stage_gate == "R-E0-MI":
+                    validate_closure_locked_evaluation_input_bundle_invocation(
+                        args,
+                        gate=final_calibration_stage_gate,
+                    )
+                    if final_calibration_stage_gate == "R-E0-MI":
+                        locked_evaluation_input_physical_snapshot = (
+                            snapshot_closure_locked_evaluation_input_physical_outputs()
+                        )
+                elif final_calibration_stage_gate.endswith("MCALM"):
                     validate_final_calibration_r8_post_publication_authority_invocation(
                         args
                     )
@@ -9448,6 +10383,7 @@ def main() -> int:
                     )
                     final_calibration_r8_snapshot = snapshot_final_calibration_r8_outputs()
             except (
+                ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
@@ -9456,6 +10392,19 @@ def main() -> int:
                 return 2
     report_path = args.report or default_report_path()
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
+    mib_stage_gate = bool(
+        final_calibration_stage_gate
+        and (
+            final_calibration_stage_gate.endswith("MIB")
+            or final_calibration_stage_gate == "R-E0-MI"
+        )
+    )
+    if mib_stage_gate:
+        try:
+            validate_closure_locked_evaluation_input_dvc_binary(dvc_bin)
+        except ClosureLockedEvaluationInputBundleAdapterError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
     if deferred_dvc_paths and dvc_bin != DEFAULT_DVC_BIN.as_posix():
         print("Deferred models mode requires the repository .venv/bin/dvc.", file=sys.stderr)
         return 2
@@ -9472,15 +10421,22 @@ def main() -> int:
     missing_pointer_artifacts = declared_artifacts_missing_pointers(artifacts)
     manual_targets = unique_paths([Path(path) for path in args.target])
     unmanaged_paths = unmanaged_ignored_heavy_paths(artifacts)
+    mib_r_gate = final_calibration_stage_gate == "R-E0-MI"
     if final_calibration_stage_gate and (
         dvc_status_before
         or changed_artifacts
         or missing_pointer_artifacts
-        or manual_targets
+        or (manual_targets and not mib_r_gate)
     ):
         print(
             f"{final_calibration_stage_gate[2:]} precommit requires a closed "
             "empty DVC and unmanaged target set.",
+            file=sys.stderr,
+        )
+        return 2
+    if mib_r_gate and (changed_artifacts or missing_pointer_artifacts):
+        print(
+            "R-E0-MI requires manual exact targets, not generic DVC discovery.",
             file=sys.stderr,
         )
         return 2
@@ -9522,8 +10478,23 @@ def main() -> int:
     selected_dvc_paths.extend(manual_targets)
 
     rejected_unmanaged: list[Path] = []
+    if mib_r_gate:
+        try:
+            validate_closure_locked_evaluation_input_unmanaged_namespace(
+                unmanaged_paths
+            )
+        except ClosureLockedEvaluationInputBundleAdapterError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
     if unmanaged_paths:
-        if args.yes:
+        if mib_r_gate:
+            namespace = Path("data/closure_v1/locked_evaluation")
+            rejected_unmanaged.extend(
+                path
+                for path in unmanaged_paths
+                if path != namespace and namespace not in path.parents
+            )
+        elif args.yes:
             selected_dvc_paths.extend(unmanaged_paths)
         else:
             for path in unmanaged_paths:
@@ -9534,7 +10505,17 @@ def main() -> int:
 
     selected_dvc_paths = unique_paths(selected_dvc_paths)
 
-    if final_calibration_stage_gate and selected_dvc_paths:
+    if mib_r_gate:
+        try:
+            expected_mib_targets = closure_locked_evaluation_input_dvc_targets()
+            if tuple(selected_dvc_paths) != expected_mib_targets:
+                raise ClosureLockedEvaluationInputBundleAdapterError(
+                    "R-E0-MI selected DVC targets are not the exact four inputs"
+                )
+        except ClosureLockedEvaluationInputBundleAdapterError as exc:
+            print(str(exc), file=sys.stderr)
+            return 2
+    elif final_calibration_stage_gate and selected_dvc_paths:
         print(
             f"{final_calibration_stage_gate[2:]} precommit forbids every DVC add target.",
             file=sys.stderr,
@@ -9587,11 +10568,57 @@ def main() -> int:
         else:
             print("would run: git add -A")
     else:
-        for path in selected_dvc_paths:
+        for target_index, path in enumerate(selected_dvc_paths, start=1):
             if not path.exists():
                 print(f"Selected DVC target does not exist: {path}", file=sys.stderr)
                 return 2
-            dvc_add_results.append(run_command([dvc_bin, "add", path.as_posix()], env=dvc_environment()))
+            dvc_add_command = [dvc_bin, "add", path.as_posix()]
+            if mib_r_gate:
+                dvc_add_command = closure_locked_evaluation_input_dvc_add_command(
+                    dvc_bin,
+                    path,
+                )
+            dvc_add_result = run_command(
+                dvc_add_command,
+                check=not mib_r_gate,
+                env=dvc_environment(),
+            )
+            dvc_add_results.append(dvc_add_result)
+            if mib_r_gate and dvc_add_result.returncode != 0:
+                try:
+                    write_closure_locked_evaluation_input_dvc_failure_report(
+                        report_path=report_path,
+                        selected_dvc_paths=selected_dvc_paths,
+                        rejected_unmanaged_paths=rejected_unmanaged,
+                        git_status_before=git_status_before,
+                        dvc_status_before=dvc_status_before,
+                        dvc_add_results=dvc_add_results,
+                        failed_target_index=target_index,
+                    )
+                except (
+                    ClosureLockedEvaluationInputBundleAdapterError,
+                    DeferredDvcTargetError,
+                ) as exc:
+                    print(str(exc), file=sys.stderr)
+                print(
+                    f"R-E0-MI DVC add {target_index}/4 failed; partial evidence "
+                    "was preserved and no staging or push will run. Audit before "
+                    "any retry.",
+                    file=sys.stderr,
+                )
+                return 2
+
+        if mib_r_gate:
+            if (
+                locked_evaluation_input_physical_snapshot is None
+                or snapshot_closure_locked_evaluation_input_physical_outputs()
+                != locked_evaluation_input_physical_snapshot
+            ):
+                print(
+                    "R-E0-MI physical outputs changed during directed DVC add.",
+                    file=sys.stderr,
+                )
+                return 2
 
         if not args.no_push:
             cloud_status_before = run_command([dvc_bin, "status", "--cloud"], check=False, env=dvc_environment())
@@ -9693,7 +10720,22 @@ def main() -> int:
                     "--short",
                     "--untracked-files=all",
                 )
-                if final_calibration_stage_gate.endswith("MCALM"):
+                if (
+                    final_calibration_stage_gate.endswith("MIB")
+                    or final_calibration_stage_gate == "R-E0-MI"
+                ):
+                    validate_closure_locked_evaluation_input_bundle_staged_scope(
+                        staged_status,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_closure_locked_evaluation_input_bundle_workspace_scope(
+                        workspace_scope,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_closure_locked_evaluation_input_bundle_staged_bindings(
+                        gate=final_calibration_stage_gate,
+                    )
+                elif final_calibration_stage_gate.endswith("MCALM"):
                     validate_final_calibration_r8_post_publication_authority_staged_scope(
                         staged_status,
                         gate=final_calibration_stage_gate,
@@ -9721,6 +10763,7 @@ def main() -> int:
                         gate=final_calibration_stage_gate,
                     )
             except (
+                ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
@@ -9756,14 +10799,30 @@ def main() -> int:
                 verify_manifest_inputs=args.verify_manifest_inputs,
             )
         if final_calibration_stage_gate:
-            if final_calibration_r8_snapshot is None:
+            mib_gate = (
+                final_calibration_stage_gate.endswith("MIB")
+                or final_calibration_stage_gate == "R-E0-MI"
+            )
+            if not mib_gate and final_calibration_r8_snapshot is None:
                 print(
                     f"{final_calibration_stage_gate[2:]} immutable R8 snapshot is absent.",
                     file=sys.stderr,
                 )
                 return 2
             try:
-                if final_calibration_stage_gate.endswith("MCALM"):
+                if mib_gate:
+                    revalidate_closure_locked_evaluation_input_bundle_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_physical_snapshot=(
+                            locked_evaluation_input_physical_snapshot
+                        ),
+                    )
+                elif final_calibration_r8_snapshot is None:
+                    raise FinalCalibrationR8ManifestReproducibilityAdapterError(
+                        "Immutable R8 snapshot disappeared before revalidation"
+                    )
+                elif final_calibration_stage_gate.endswith("MCALM"):
                     revalidate_final_calibration_r8_post_publication_authority_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -9789,6 +10848,7 @@ def main() -> int:
                         "during precommit",
                     )
             except (
+                ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
@@ -9871,14 +10931,30 @@ def main() -> int:
                 print(str(exc), file=sys.stderr)
                 return 2
         if final_calibration_stage_gate:
-            if final_calibration_r8_snapshot is None:
+            mib_gate = (
+                final_calibration_stage_gate.endswith("MIB")
+                or final_calibration_stage_gate == "R-E0-MI"
+            )
+            if not mib_gate and final_calibration_r8_snapshot is None:
                 print(
                     f"{final_calibration_stage_gate[2:]} immutable R8 snapshot is absent.",
                     file=sys.stderr,
                 )
                 return 2
             try:
-                if final_calibration_stage_gate.endswith("MCALM"):
+                if mib_gate:
+                    revalidate_closure_locked_evaluation_input_bundle_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_physical_snapshot=(
+                            locked_evaluation_input_physical_snapshot
+                        ),
+                    )
+                elif final_calibration_r8_snapshot is None:
+                    raise FinalCalibrationR8ManifestReproducibilityAdapterError(
+                        "Immutable R8 snapshot disappeared before revalidation"
+                    )
+                elif final_calibration_stage_gate.endswith("MCALM"):
                     revalidate_final_calibration_r8_post_publication_authority_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -9903,6 +10979,7 @@ def main() -> int:
                         "while writing the report",
                     )
             except (
+                ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
                 FinalCalibrationR8CoordinationNamespaceRevalidationAdapterError,
                 FinalCalibrationR8ManifestReproducibilityAdapterError,
