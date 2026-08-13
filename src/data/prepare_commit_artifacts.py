@@ -1375,6 +1375,40 @@ class ClosureLockedEvaluationInputBundleAdapterError(RuntimeError):
     """Raised when the exact E0-MIB precommit exception drifts."""
 
 
+class ClosureLockedEvaluationInputManifestDialectAdapterError(RuntimeError):
+    """Raised when the exact E0-MID precommit exception drifts."""
+
+
+_LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_STAGED_SCOPE = {
+    "configs/closure_v1/locked_evaluation_input_manifest_dialect_patch_lock.schema.json": "A",
+    "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_PATCH.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/closure_locked_evaluation_input_manifest_dialect_patch.py": "A",
+    "src/experiments/lock_closure_locked_evaluation_input_manifest_dialect_patch.py": "A",
+    "tests/test_closure_locked_evaluation_input_manifest_dialect_patch.py": "A",
+}
+_LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_P_STAGED_SCOPE = {
+    "configs/closure_v1/locked_evaluation_input_manifest_dialect_patch_lock.json": "A",
+    "configs/closure_v1/locked_evaluation_input_manifest_dialect_patch_lock_manifest.json": "A",
+}
+_LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_R_STAGED_SCOPE = {
+    "data/closure_v1/locked_evaluation/input_history.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/origin_features.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc": "A",
+    "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json": "A",
+    "reports/closure_v1/01_surface/locked_evaluation_input_summary.json": "A",
+}
+_LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_GIT_MODES = {
+    path: (
+        "100755"
+        if path == "src/data/prepare_commit_artifacts.py"
+        else "100644"
+    )
+    for path in _LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_STAGED_SCOPE
+}
+
+
 class ClosureLockedEvaluationInputPanelDvcIdentityAdapterError(RuntimeError):
     """Raised when the exact E0-MIC precommit exception drifts."""
 
@@ -1443,6 +1477,8 @@ def _final_calibration_stage_adapter_error(
     gate: str, message: str
 ) -> RuntimeError:
     """Preserve the owning adapter error boundary for each calibration gate."""
+    if gate.endswith("MID"):
+        return ClosureLockedEvaluationInputManifestDialectAdapterError(message)
     if gate.endswith("MIB") or gate == "R-E0-MI":
         return ClosureLockedEvaluationInputBundleAdapterError(message)
     if gate.endswith("MCALM"):
@@ -4464,6 +4500,457 @@ def revalidate_final_calibration_r8_post_publication_authority_transaction(
         )
 
 
+def _closure_locked_evaluation_input_manifest_dialect_scopes(
+    patch: Any,
+) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
+    """Reject core-side H6/P2/R6 drift before selecting E0-MID."""
+    expected = (
+        _LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_STAGED_SCOPE,
+        _LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_P_STAGED_SCOPE,
+        _LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_R_STAGED_SCOPE,
+    )
+    observed = (
+        getattr(
+            patch,
+            "LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_STAGED_SCOPE",
+            None,
+        ),
+        getattr(
+            patch,
+            "LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_P_STAGED_SCOPE",
+            None,
+        ),
+        getattr(
+            patch,
+            "LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_R_STAGED_SCOPE",
+            None,
+        ),
+    )
+    if (
+        getattr(patch, "PATCH_GATE", None) != "E0-MID"
+        or any(
+            type(actual) is not dict or actual != contract
+            for actual, contract in zip(observed, expected, strict=True)
+        )
+        or type(getattr(patch, "PATCH_COMPONENT_GIT_MODES", None)) is not dict
+        or patch.PATCH_COMPONENT_GIT_MODES
+        != _LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_GIT_MODES
+        or set(expected[0]) & set(expected[1])
+        or set(expected[0]) & set(expected[2])
+        or set(expected[1]) & set(expected[2])
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID H6/P2/R6 scope contract drifted"
+        )
+    return dict(expected[0]), dict(expected[1]), dict(expected[2])
+
+
+def closure_locked_evaluation_input_manifest_dialect_pre_stage_scope(
+    status_output: str,
+    *,
+    repo_root: Path = Path("."),
+) -> tuple[str, tuple[str, ...]] | None:
+    """Select exact MID H/P/R before the superseded MIC selector."""
+    patch = _closure_locked_evaluation_input_manifest_dialect_patch_module()
+    h_scope, p_scope, r_scope = _closure_locked_evaluation_input_manifest_dialect_scopes(
+        patch
+    )
+
+    def short_map(scope: Mapping[str, str]) -> dict[str, str]:
+        return {
+            path: "??" if status == "A" else " M"
+            for path, status in scope.items()
+        }
+
+    candidates = (
+        ("H-E0-MID", short_map(h_scope), h_scope),
+        ("P-E0-MID", short_map(p_scope), p_scope),
+        ("R-E0-MID", short_map(r_scope), r_scope),
+    )
+    candidate_paths = set().union(
+        *(set(scope) for scope in (h_scope, p_scope, r_scope))
+    )
+    observed: dict[str, str] = {}
+    anomaly = False
+    for line in status_output.splitlines():
+        if (
+            len(line) < 4
+            or line[2] != " "
+            or line[:2] not in {"??", " M"}
+            or not line[3:]
+        ):
+            if any(path in line for path in candidate_paths):
+                raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                    "E0-MID pre-stage scope contains a malformed candidate record"
+                )
+            anomaly = True
+            continue
+        path = line[3:]
+        if path in observed:
+            if path in candidate_paths:
+                raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                    "E0-MID pre-stage scope contains a duplicate path"
+                )
+            anomaly = True
+            continue
+        observed[path] = line[:2]
+    if anomaly and set(observed) & candidate_paths:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID candidate pre-stage scope contains an extra malformed record"
+        )
+    for gate, expected, stage_scope in candidates:
+        if observed == expected:
+            _require_closure_locked_evaluation_input_manifest_dialect_stage_base(
+                gate,
+                patch=patch,
+                repo_root=repo_root,
+            )
+            return gate, tuple(sorted(stage_scope))
+    if set(observed) & candidate_paths:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID candidate pre-stage scope is not exact"
+        )
+    return None
+
+
+def _require_closure_locked_evaluation_input_manifest_dialect_stage_base(
+    gate: str,
+    *,
+    patch: Any,
+    repo_root: Path,
+) -> None:
+    """Bind MID H/P/R to P-MIC, H-MID, and P-MID respectively."""
+    h_scope, _, _ = _closure_locked_evaluation_input_manifest_dialect_scopes(
+        patch
+    )
+    head = _git_output(repo_root, "rev-parse", "HEAD").strip()
+    base = "707fbe92c7147d281c2a272178289e948a137b1b"
+    if gate == "H-E0-MID":
+        if head != base:
+            raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                "H-E0-MID staging requires exact published P-E0-MIC HEAD"
+            )
+        _require_closure_locked_evaluation_input_manifest_dialect_prelock(
+            patch=patch,
+            repo_root=repo_root,
+        )
+        return
+    if gate == "P-E0-MID":
+        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        published_h_scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
+        )
+        if parent != base:
+            raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                "P-E0-MID staging requires a direct H child of P-E0-MIC"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                published_h_scope,
+                expected=h_scope,
+                context="published H-E0-MID scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                str(exc)
+            ) from exc
+        _require_closure_locked_evaluation_input_manifest_dialect_unpublished_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="untracked",
+        )
+        return
+    if gate == "R-E0-MID":
+        _require_closure_locked_evaluation_input_manifest_dialect_authority(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="exact6_untracked",
+        )
+        _require_closure_locked_evaluation_input_manifest_dialect_adoption(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=False,
+        )
+        return
+    raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+        "Unknown E0-MID staging gate"
+    )
+
+
+def _require_closure_locked_evaluation_input_manifest_dialect_prelock(
+    *, patch: Any, repo_root: Path
+) -> dict[str, Any]:
+    """Require two equal remote-aware MID prelock and physical snapshots."""
+    try:
+        physical_before = patch._physical_snapshot(repo_root)
+        before = patch.collect_closure_locked_evaluation_input_manifest_dialect_patch_prelock_state(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+        after = patch.collect_closure_locked_evaluation_input_manifest_dialect_patch_prelock_state(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+        physical_after = patch._physical_snapshot(repo_root)
+    except patch.ClosureLockedEvaluationInputManifestDialectPatchError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+    if before != after or physical_before != physical_after:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID H prelock topology or physical snapshot drifted"
+        )
+    expected_keys = {
+        "repository",
+        "h_patch",
+        "base_authority",
+        "failed_attempt",
+        "manifest_dialect_contract",
+        "generic_manifest_findings_contract",
+        "r_output_contract",
+        "r_outputs_sha256",
+        "archived_r_identity_contract",
+        "archived_r_identity_sha256",
+        "historical_inputs",
+        "historical_inputs_sha256",
+        "coordination_namespace",
+        "schema_preflight",
+        "prelock",
+    }
+    if type(before) is not dict or set(before) != expected_keys:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID H prelock result dialect drifted"
+        )
+    h_patch = before.get("h_patch")
+    base = before.get("base_authority")
+    prelock = before.get("prelock")
+    namespace = before.get("coordination_namespace")
+    schema = before.get("schema_preflight")
+    repository = before.get("repository")
+    companion = prelock.get("companion_contract") if isinstance(prelock, Mapping) else None
+    if (
+        not isinstance(repository, Mapping)
+        or repository.get("base_p_mic_commit")
+        != "707fbe92c7147d281c2a272178289e948a137b1b"
+        or not isinstance(repository.get("scope"), Mapping)
+        or repository["scope"].get("path_count") != 6
+        or not isinstance(h_patch, Mapping)
+        or h_patch.get("gate") != "H-E0-MID"
+        or h_patch.get("component_count") != 6
+        or h_patch.get("added_count") != 5
+        or h_patch.get("modified_count") != 1
+        or not isinstance(base, Mapping)
+        or base.get("gate") != "E0-MIC"
+        or base.get("status") != "published_p_mic_authority_validated"
+        or not isinstance(base.get("p_components"), list)
+        or len(base["p_components"]) != 2
+        or base.get("outcome_paths_opened") is not False
+        or not isinstance(prelock, Mapping)
+        or prelock.get("p_output_present_count") != 0
+        or prelock.get("r_output_present_count") != 0
+        or prelock.get("component_count") != 6
+        or prelock.get("physical_input_count") != 16
+        or prelock.get("historical_input_count") != 6
+        or prelock.get("companion_output_count") != 1
+        or not isinstance(companion, Mapping)
+        or companion.get("physical_input_count") != 16
+        or companion.get("historical_input_count") != 6
+        or companion.get("output_count") != 1
+        or companion.get("manifest_written_last") is not True
+        or prelock.get("archived_r_preserved") is not True
+        or prelock.get("archived_r_count") != 10
+        or prelock.get("archive_metadata_inspected") is not True
+        or prelock.get("archive_bytes_opened") is not False
+        or any(
+            prelock.get(key) is not False
+            for key in (
+                "scientific_execution_run",
+                "r_files_touched",
+                "r_files_staged",
+                "dvc_commands_run",
+                "outcome_paths_opened",
+            )
+        )
+        or not isinstance(before.get("historical_inputs"), list)
+        or len(before["historical_inputs"]) != 6
+        or not isinstance(before.get("historical_inputs_sha256"), str)
+        or len(before["historical_inputs_sha256"]) != 64
+        or before.get("manifest_dialect_contract")
+        != dict(patch.MANIFEST_DIALECT_CONTRACT)
+        or before.get("generic_manifest_findings_contract")
+        != list(patch.GENERIC_MANIFEST_FINDINGS_CONTRACT)
+        or before.get("r_output_contract") != list(patch.R_OUTPUT_CONTRACT)
+        or before.get("r_outputs_sha256")
+        != "2b1e89ffa6816ad3bbaa8e1e8c5122b6b0b014dfc4645886443ffabe84036c17"
+        or before.get("archived_r_identity_contract")
+        != list(patch.ARCHIVED_R_IDENTITY_CONTRACT)
+        or before.get("archived_r_identity_sha256")
+        != patch.ARCHIVED_R_IDENTITY_SHA256
+        or prelock.get("archive_identity_verified") is not True
+        or prelock.get("archive_identity_sha256")
+        != patch.ARCHIVED_R_IDENTITY_SHA256
+        or prelock.get("archive_parent_walk_no_follow") is not True
+        or not isinstance(namespace, Mapping)
+        or namespace.get("p_output_present_count") != 0
+        or namespace.get("r_output_present_count") != 0
+        or namespace.get("r_state") != "absent"
+        or namespace.get("temporary_present_count") != 0
+        or namespace.get("coordination_present_count") != 0
+        or namespace.get("guard_present") is not False
+        or namespace.get("outcome_paths_opened") is not False
+        or not isinstance(schema, Mapping)
+        or schema.get("gate") != "E0-MID"
+        or schema.get("status") != "schema_ready"
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID H prelock contract drifted"
+        )
+    return before
+
+
+def _require_closure_locked_evaluation_input_manifest_dialect_unpublished_validation(
+    *, patch: Any, repo_root: Path, expected_stage_state: str
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_closure_locked_evaluation_input_manifest_dialect_patch_unpublished_lock_bundle(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputManifestDialectPatchError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != "E0-MID"
+        or validation.get("status") != "locked_unpublished"
+        or validation.get("p_stage_state") != expected_stage_state
+        or validation.get("p_output_count") != 2
+        or validation.get("physical_input_count") != 16
+        or validation.get("historical_input_count") != 6
+        or validation.get("companion_output_count") != 1
+        or validation.get("coordination_present_count") != 0
+        or validation.get("r_state") != "absent"
+        or validation.get("r_adoption_authorized") is not False
+        or validation.get("effective_authority") is not False
+        or validation.get("writes_performed") is not False
+        or any(
+            validation.get(key) is not False
+            for key in (
+                "scientific_rerun_authorized",
+                "dvc_commands_authorized",
+                "git_commit_authorized",
+                "git_push_authorized",
+                "outcome_access_authorized",
+            )
+        )
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID unpublished P semantic validation result drifted"
+        )
+    return validation
+
+
+def _require_closure_locked_evaluation_input_manifest_dialect_authority(
+    *, patch: Any, repo_root: Path, expected_stage_state: str
+) -> dict[str, Any]:
+    try:
+        authority = patch.require_closure_locked_evaluation_input_manifest_dialect_patch_authority(
+            repo_root=repo_root,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputManifestDialectPatchError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+    if (
+        type(authority) is not dict
+        or authority.get("gate") != "E0-MID"
+        or authority.get("status") != "effective"
+        or authority.get("r_state") != "complete"
+        or authority.get("r_stage_state") != expected_stage_state
+        or authority.get("r_adoption_gate") != "R-E0-MID"
+        or authority.get("r_output_count") != 10
+        or authority.get("r_adoption_authorized") is not True
+        or authority.get("effective_authority") is not True
+        or authority.get("r_outputs_sha256")
+        != "2b1e89ffa6816ad3bbaa8e1e8c5122b6b0b014dfc4645886443ffabe84036c17"
+        or any(
+            authority.get(key) is not False
+            for key in (
+                "scientific_rerun_authorized",
+                "input_bundle_execution_authorized",
+                "dvc_add_authorized",
+                "dvc_push_authorized",
+                "git_commit_authorized",
+                "git_push_authorized",
+                "outcome_access_authorized",
+                "evaluation_authorized",
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "target_access_authorized",
+                "writes_performed",
+            )
+        )
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID effective authority result drifted"
+        )
+    return authority
+
+
+def _require_closure_locked_evaluation_input_manifest_dialect_adoption(
+    *, patch: Any, repo_root: Path, require_staged: bool
+) -> dict[str, Any]:
+    try:
+        validation = patch.validate_locked_evaluation_input_manifest_dialect_adoption(
+            repo_root=repo_root,
+            require_staged=require_staged,
+            verify_remote=True,
+        )
+    except patch.ClosureLockedEvaluationInputManifestDialectPatchError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+    expected_stage = "exact6_staged" if require_staged else "exact6_untracked"
+    if (
+        type(validation) is not dict
+        or validation.get("gate") != "E0-MID"
+        or validation.get("status")
+        != "locked_evaluation_input_manifest_dialect_adoption_validated"
+        or validation.get("r_gate") != "R-E0-MID"
+        or validation.get("underlying_r_gate") != "R-E0-MI"
+        or validation.get("r_stage_state") != expected_stage
+        or validation.get("physical_output_count") != 4
+        or validation.get("tracked_output_count") != 6
+        or validation.get("pointer_count") != 4
+        or validation.get("summary_count") != 1
+        or validation.get("manifest_count") != 1
+        or validation.get("r_output_count") != 10
+        or validation.get("r_outputs_sha256")
+        != "2b1e89ffa6816ad3bbaa8e1e8c5122b6b0b014dfc4645886443ffabe84036c17"
+        or validation.get("expected_non_ok_findings")
+        != list(patch.GENERIC_MANIFEST_FINDINGS_CONTRACT)
+        or validation.get("staged_scope_verified") is not require_staged
+        or validation.get("input_only") is not True
+        or any(
+            validation.get(key) is not False
+            for key in (
+                "target_paths_opened",
+                "target_availability_inspected",
+                "outcome_paths_opened",
+                "future_outcomes_accessed",
+                "evaluation_authorized",
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "writes_performed",
+            )
+        )
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID strict R10 adoption result drifted"
+        )
+    return validation
+
+
 def _closure_locked_evaluation_input_panel_dvc_identity_scopes(
     patch: Any,
 ) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
@@ -6064,6 +6551,281 @@ def revalidate_closure_locked_evaluation_input_panel_dvc_identity_transaction(
         )
 
 
+def validate_closure_locked_evaluation_input_manifest_dialect_invocation(
+    args: Any,
+    *,
+    gate: str,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Close every MID invocation; R is adoption-only and has no DVC target."""
+    source = os.environ if env is None else env
+    if gate not in {"H-E0-MID", "P-E0-MID", "R-E0-MID"}:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "Unknown E0-MID invocation gate"
+        )
+    if (
+        tuple(Path(value) for value in args.target)
+        or not args.no_push
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or not args.allow_unmanaged
+        or bool(args.defer_dvc_target)
+        or bool(getattr(args, "register_anfis_ablation_model_family", False))
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            source.get("DVC_SITE_CACHE_DIR") is not None
+            and source["DVC_SITE_CACHE_DIR"]
+            != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "E0-MID precommit requires exact --allow-unmanaged --no-push, "
+            "no DVC target/add/push, mandatory publication checks, default "
+            "paths, and analytics-disabled repository DVC"
+        )
+
+
+def _closure_locked_evaluation_input_manifest_dialect_scope_for_gate(
+    gate: str,
+    *,
+    patch: Any,
+) -> dict[str, str]:
+    h_scope, p_scope, r_scope = (
+        _closure_locked_evaluation_input_manifest_dialect_scopes(patch)
+    )
+    scope = {
+        "H-E0-MID": h_scope,
+        "P-E0-MID": p_scope,
+        "R-E0-MID": r_scope,
+    }.get(gate)
+    if scope is None:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "Unknown E0-MID scope gate"
+        )
+    return scope
+
+
+def validate_closure_locked_evaluation_input_manifest_dialect_staged_scope(
+    staged_status: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _closure_locked_evaluation_input_manifest_dialect_patch_module()
+    expected = _closure_locked_evaluation_input_manifest_dialect_scope_for_gate(
+        gate,
+        patch=patch,
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=expected,
+            context=f"{gate} staged scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_manifest_dialect_workspace_scope(
+    status_output: str,
+    *,
+    gate: str,
+) -> None:
+    patch = _closure_locked_evaluation_input_manifest_dialect_patch_module()
+    expected = _closure_locked_evaluation_input_manifest_dialect_scope_for_gate(
+        gate,
+        patch=patch,
+    )
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_expected_short_scope(expected, staged=True),
+            context=f"{gate} workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+
+
+def validate_closure_locked_evaluation_input_manifest_dialect_staged_bindings(
+    *,
+    gate: str,
+    repo_root: Path = Path("."),
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind every MID index blob to one stable single-link worktree file."""
+    patch = _closure_locked_evaluation_input_manifest_dialect_patch_module()
+    scope = _closure_locked_evaluation_input_manifest_dialect_scope_for_gate(
+        gate,
+        patch=patch,
+    )
+    expected_modes = (
+        _LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_H_GIT_MODES
+        if gate == "H-E0-MID"
+        else {path: "100644" for path in scope}
+    )
+    if set(expected_modes) != set(scope):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            f"{gate} staged mode contract drifted"
+        )
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(scope):
+            expected_mode = expected_modes[raw_path]
+            index_line = _git_output(
+                repo_root,
+                "ls-files",
+                "-s",
+                "--",
+                raw_path,
+            ).strip()
+            parts = index_line.split(maxsplit=3)
+            if (
+                len(parts) != 4
+                or parts[0] != expected_mode
+                or parts[2] != "0"
+                or parts[3] != raw_path
+            ):
+                raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                    f"{gate} staged mode/path binding drifted: {raw_path}"
+                )
+            worktree_oid = _git_output(
+                repo_root,
+                "hash-object",
+                "--no-filters",
+                "--",
+                raw_path,
+            ).strip()
+            if len(parts[1]) != 40 or parts[1] != worktree_oid:
+                raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                    f"{gate} index blob differs from worktree: {raw_path}"
+                )
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(expected_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                    f"{gate} staged path is not single-link: {raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(str(exc)) from exc
+    if len(records) != len(scope):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            f"{gate} staged binding count drifted"
+        )
+    return tuple(records)
+
+
+def revalidate_closure_locked_evaluation_input_manifest_dialect_transaction(
+    *,
+    gate: str,
+    staged_status: str,
+    expected_physical_snapshot: tuple[RegistrationFileIdentity, ...] | None = None,
+    repo_root: Path = Path("."),
+) -> None:
+    """Close MID Git, remote, immutable-R, and semantic races."""
+    validate_closure_locked_evaluation_input_manifest_dialect_staged_scope(
+        staged_status,
+        gate=gate,
+    )
+    validate_closure_locked_evaluation_input_manifest_dialect_staged_scope(
+        _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ),
+        gate=gate,
+    )
+    validate_closure_locked_evaluation_input_manifest_dialect_workspace_scope(
+        _git_output(
+            repo_root,
+            "status",
+            "--short",
+            "--untracked-files=all",
+        ),
+        gate=gate,
+    )
+    first_bindings = (
+        validate_closure_locked_evaluation_input_manifest_dialect_staged_bindings(
+            gate=gate,
+            repo_root=repo_root,
+        )
+    )
+    patch = _closure_locked_evaluation_input_manifest_dialect_patch_module()
+    if gate == "H-E0-MID":
+        if (
+            _git_output(repo_root, "rev-parse", "HEAD").strip()
+            != "707fbe92c7147d281c2a272178289e948a137b1b"
+        ):
+            raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                "H-E0-MID base changed during precommit"
+            )
+        _require_closure_locked_evaluation_input_manifest_dialect_prelock(
+            patch=patch,
+            repo_root=repo_root,
+        )
+    elif gate == "P-E0-MID":
+        _require_closure_locked_evaluation_input_manifest_dialect_unpublished_validation(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="staged",
+        )
+    elif gate == "R-E0-MID":
+        if (
+            expected_physical_snapshot is None
+            or snapshot_closure_locked_evaluation_input_physical_outputs(
+                repo_root=repo_root
+            )
+            != expected_physical_snapshot
+        ):
+            raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                "R-E0-MID physical outputs changed before strict adoption"
+            )
+        _require_closure_locked_evaluation_input_manifest_dialect_authority(
+            patch=patch,
+            repo_root=repo_root,
+            expected_stage_state="exact6_staged",
+        )
+        _require_closure_locked_evaluation_input_manifest_dialect_adoption(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=True,
+        )
+        if (
+            snapshot_closure_locked_evaluation_input_physical_outputs(
+                repo_root=repo_root
+            )
+            != expected_physical_snapshot
+        ):
+            raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+                "R-E0-MID physical outputs changed during strict adoption"
+            )
+    else:
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            "Unknown E0-MID transaction gate"
+        )
+    if (
+        validate_closure_locked_evaluation_input_manifest_dialect_staged_bindings(
+            gate=gate,
+            repo_root=repo_root,
+        )
+        != first_bindings
+    ):
+        raise ClosureLockedEvaluationInputManifestDialectAdapterError(
+            f"{gate} staged files changed during semantic revalidation"
+        )
+
+
 def normalize_repo_path(raw_path: str) -> Path:
     path = Path(raw_path)
     if not path.is_absolute():
@@ -7438,6 +8200,15 @@ def _closure_locked_evaluation_input_panel_dvc_identity_patch_module() -> Any:
     return patch
 
 
+def _closure_locked_evaluation_input_manifest_dialect_patch_module() -> Any:
+    """Import E0-MID lazily so the generic assistant stays independent."""
+    from src.experiments import (
+        closure_locked_evaluation_input_manifest_dialect_patch as patch,
+    )
+
+    return patch
+
+
 def _exact_finding_multiset(
     observed: list[ReproducibilityFinding],
     expected: tuple[ReproducibilityFinding, ...],
@@ -7445,6 +8216,124 @@ def _exact_finding_multiset(
     return len(observed) == len(expected) and all(
         observed.count(finding) == expected.count(finding)
         for finding in set(expected)
+    )
+
+
+def _locked_evaluation_input_manifest_dialect_failure(
+    findings: list[ReproducibilityFinding],
+    message: str,
+) -> list[ReproducibilityFinding]:
+    return [
+        *findings,
+        ReproducibilityFinding(
+            "fail",
+            "locked_evaluation_input_manifest_dialect",
+            "R-E0-MID",
+            message,
+        ),
+    ]
+
+
+def adopt_closure_locked_evaluation_input_manifest_dialect_findings(
+    findings: list[ReproducibilityFinding],
+    *,
+    staged_status: str,
+    repo_root: Path = Path("."),
+) -> list[ReproducibilityFinding]:
+    """Replace only the exact sealed three-failure multiset after strict MID."""
+    patch = _closure_locked_evaluation_input_manifest_dialect_patch_module()
+    try:
+        _, _, r_scope = _closure_locked_evaluation_input_manifest_dialect_scopes(
+            patch
+        )
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=r_scope,
+            context="R-E0-MID staged scope",
+        )
+    except (
+        ClosureLockedEvaluationInputManifestDialectAdapterError,
+        DeferredDvcTargetError,
+    ) as exc:
+        return _locked_evaluation_input_manifest_dialect_failure(
+            findings,
+            str(exc),
+        )
+    contract = getattr(patch, "GENERIC_MANIFEST_FINDINGS_CONTRACT", None)
+    if (
+        type(contract) is not tuple
+        or len(contract) != 3
+        or any(
+            type(record) is not dict
+            or set(record) != {"level", "check", "path", "message"}
+            or record.get("level") != "fail"
+            or any(type(record[key]) is not str for key in record)
+            for record in contract
+        )
+    ):
+        return _locked_evaluation_input_manifest_dialect_failure(
+            findings,
+            "E0-MID generic manifest finding contract drifted.",
+        )
+    expected = tuple(ReproducibilityFinding(**record) for record in contract)
+    observed_non_ok = [finding for finding in findings if finding.level != "ok"]
+    if not _exact_finding_multiset(observed_non_ok, expected):
+        return _locked_evaluation_input_manifest_dialect_failure(
+            findings,
+            "E0-MID generic manifest findings were not the exact three-failure multiset.",
+        )
+    try:
+        validation = _require_closure_locked_evaluation_input_manifest_dialect_adoption(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=True,
+        )
+    except ClosureLockedEvaluationInputManifestDialectAdapterError as exc:
+        return _locked_evaluation_input_manifest_dialect_failure(
+            findings,
+            str(exc),
+        )
+    if validation.get("staged_scope_verified") is not True:
+        return _locked_evaluation_input_manifest_dialect_failure(
+            findings,
+            "E0-MID strict adoption did not verify the staged R6 scope.",
+        )
+    adopted = [finding for finding in findings if finding.level == "ok"]
+    adopted.append(
+        ReproducibilityFinding(
+            "ok",
+            "locked_evaluation_input_manifest_dialect",
+            "R-E0-MID",
+            (
+                "Adopted exactly the sealed three generic manifest failures "
+                "after strict remote-aware MID validation; no R file was rewritten."
+            ),
+        )
+    )
+    return adopted
+
+
+def closure_locked_evaluation_input_manifest_dialect_checks(
+    *,
+    staged_status: str,
+    selected_dvc_paths: list[Path],
+    artifacts: list[DvcArtifact],
+    max_manifest_hash_bytes: int,
+    verify_manifest_inputs: bool,
+    repo_root: Path = Path("."),
+) -> list[ReproducibilityFinding]:
+    """Run the generic checker unchanged, then the exact MID adapter."""
+    generic = reproducibility_checks(
+        staged_status=staged_status,
+        selected_dvc_paths=selected_dvc_paths,
+        artifacts=artifacts,
+        max_manifest_hash_bytes=max_manifest_hash_bytes,
+        verify_manifest_inputs=verify_manifest_inputs,
+    )
+    return adopt_closure_locked_evaluation_input_manifest_dialect_findings(
+        generic,
+        staged_status=staged_status,
+        repo_root=repo_root,
     )
 
 
@@ -11063,6 +11952,7 @@ def main() -> int:
     locked_evaluation_input_physical_snapshot: (
         tuple[RegistrationFileIdentity, ...] | None
     ) = None
+    locked_evaluation_input_manifest_dialect_active = False
     locked_evaluation_input_panel_dvc_identity_active = False
     deferred_exclude_validator = validate_deferred_dvc_git_exclude_environment
     deferred_state_validator = validate_deferred_dvc_models_state
@@ -11088,11 +11978,22 @@ def main() -> int:
         )
         try:
             final_calibration_scope = (
-                closure_locked_evaluation_input_panel_dvc_identity_pre_stage_scope(
+                closure_locked_evaluation_input_manifest_dialect_pre_stage_scope(
                     final_calibration_git_status_before
                 )
             )
             if final_calibration_scope is not None:
+                locked_evaluation_input_manifest_dialect_active = True
+            if final_calibration_scope is None:
+                final_calibration_scope = (
+                    closure_locked_evaluation_input_panel_dvc_identity_pre_stage_scope(
+                        final_calibration_git_status_before
+                    )
+                )
+            if (
+                final_calibration_scope is not None
+                and not locked_evaluation_input_manifest_dialect_active
+            ):
                 locked_evaluation_input_panel_dvc_identity_active = True
             if final_calibration_scope is None:
                 final_calibration_scope = (
@@ -11120,6 +12021,7 @@ def main() -> int:
                 )
         except (
             DeferredDvcTargetError,
+            ClosureLockedEvaluationInputManifestDialectAdapterError,
             ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
             ClosureLockedEvaluationInputBundleAdapterError,
             FinalCalibrationR8PostPublicationAuthorityAdapterError,
@@ -11134,7 +12036,16 @@ def main() -> int:
             )
             git_status_before = final_calibration_git_status_before
             try:
-                if locked_evaluation_input_panel_dvc_identity_active:
+                if locked_evaluation_input_manifest_dialect_active:
+                    validate_closure_locked_evaluation_input_manifest_dialect_invocation(
+                        args,
+                        gate=final_calibration_stage_gate,
+                    )
+                    if final_calibration_stage_gate == "R-E0-MID":
+                        locked_evaluation_input_physical_snapshot = (
+                            snapshot_closure_locked_evaluation_input_physical_outputs()
+                        )
+                elif locked_evaluation_input_panel_dvc_identity_active:
                     validate_closure_locked_evaluation_input_panel_dvc_identity_invocation(
                         args,
                         gate=final_calibration_stage_gate,
@@ -11172,6 +12083,7 @@ def main() -> int:
                     )
                     final_calibration_r8_snapshot = snapshot_final_calibration_r8_outputs()
             except (
+                ClosureLockedEvaluationInputManifestDialectAdapterError,
                 ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
@@ -11183,7 +12095,8 @@ def main() -> int:
     report_path = args.report or default_report_path()
     dvc_bin = resolve_dvc_bin(args.dvc_bin)
     mib_stage_gate = bool(
-        locked_evaluation_input_panel_dvc_identity_active
+        locked_evaluation_input_manifest_dialect_active
+        or locked_evaluation_input_panel_dvc_identity_active
         or (
             final_calibration_stage_gate
             and (
@@ -11280,7 +12193,9 @@ def main() -> int:
             print(str(exc), file=sys.stderr)
             return 2
     if unmanaged_paths:
-        if mib_r_gate:
+        if locked_evaluation_input_manifest_dialect_active:
+            rejected_unmanaged.extend(unmanaged_paths)
+        elif mib_r_gate:
             namespace = Path("data/closure_v1/locked_evaluation")
             rejected_unmanaged.extend(
                 path
@@ -11513,9 +12428,19 @@ def main() -> int:
                     "--short",
                     "--untracked-files=all",
                 )
-                if (
-                    locked_evaluation_input_panel_dvc_identity_active
-                ):
+                if locked_evaluation_input_manifest_dialect_active:
+                    validate_closure_locked_evaluation_input_manifest_dialect_staged_scope(
+                        staged_status,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_closure_locked_evaluation_input_manifest_dialect_workspace_scope(
+                        workspace_scope,
+                        gate=final_calibration_stage_gate,
+                    )
+                    validate_closure_locked_evaluation_input_manifest_dialect_staged_bindings(
+                        gate=final_calibration_stage_gate,
+                    )
+                elif locked_evaluation_input_panel_dvc_identity_active:
                     validate_closure_locked_evaluation_input_panel_dvc_identity_staged_scope(
                         staged_status,
                         gate=final_calibration_stage_gate,
@@ -11570,6 +12495,7 @@ def main() -> int:
                         gate=final_calibration_stage_gate,
                     )
             except (
+                ClosureLockedEvaluationInputManifestDialectAdapterError,
                 ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
@@ -11578,7 +12504,17 @@ def main() -> int:
             ) as exc:
                 print(str(exc), file=sys.stderr)
                 return 2
-        if final_calibration_stage_gate == "R-E0-MCALL":
+        if final_calibration_stage_gate == "R-E0-MID":
+            reproducibility_findings = (
+                closure_locked_evaluation_input_manifest_dialect_checks(
+                    staged_status=staged_status,
+                    selected_dvc_paths=selected_dvc_paths,
+                    artifacts=artifacts,
+                    max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+                    verify_manifest_inputs=args.verify_manifest_inputs,
+                )
+            )
+        elif final_calibration_stage_gate == "R-E0-MCALL":
             reproducibility_findings = (
                 final_calibration_r8_coordination_namespace_revalidation_checks(
                     staged_status=staged_status,
@@ -11608,7 +12544,8 @@ def main() -> int:
             )
         if final_calibration_stage_gate:
             mib_gate = (
-                locked_evaluation_input_panel_dvc_identity_active
+                locked_evaluation_input_manifest_dialect_active
+                or locked_evaluation_input_panel_dvc_identity_active
                 or final_calibration_stage_gate.endswith("MIB")
                 or final_calibration_stage_gate == "R-E0-MI"
             )
@@ -11619,7 +12556,15 @@ def main() -> int:
                 )
                 return 2
             try:
-                if locked_evaluation_input_panel_dvc_identity_active:
+                if locked_evaluation_input_manifest_dialect_active:
+                    revalidate_closure_locked_evaluation_input_manifest_dialect_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_physical_snapshot=(
+                            locked_evaluation_input_physical_snapshot
+                        ),
+                    )
+                elif locked_evaluation_input_panel_dvc_identity_active:
                     revalidate_closure_locked_evaluation_input_panel_dvc_identity_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -11665,6 +12610,7 @@ def main() -> int:
                         "during precommit",
                     )
             except (
+                ClosureLockedEvaluationInputManifestDialectAdapterError,
                 ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
@@ -11750,7 +12696,8 @@ def main() -> int:
                 return 2
         if final_calibration_stage_gate:
             mib_gate = (
-                locked_evaluation_input_panel_dvc_identity_active
+                locked_evaluation_input_manifest_dialect_active
+                or locked_evaluation_input_panel_dvc_identity_active
                 or final_calibration_stage_gate.endswith("MIB")
                 or final_calibration_stage_gate == "R-E0-MI"
             )
@@ -11761,7 +12708,15 @@ def main() -> int:
                 )
                 return 2
             try:
-                if locked_evaluation_input_panel_dvc_identity_active:
+                if locked_evaluation_input_manifest_dialect_active:
+                    revalidate_closure_locked_evaluation_input_manifest_dialect_transaction(
+                        gate=final_calibration_stage_gate,
+                        staged_status=staged_status,
+                        expected_physical_snapshot=(
+                            locked_evaluation_input_physical_snapshot
+                        ),
+                    )
+                elif locked_evaluation_input_panel_dvc_identity_active:
                     revalidate_closure_locked_evaluation_input_panel_dvc_identity_transaction(
                         gate=final_calibration_stage_gate,
                         staged_status=staged_status,
@@ -11806,6 +12761,7 @@ def main() -> int:
                         "while writing the report",
                     )
             except (
+                ClosureLockedEvaluationInputManifestDialectAdapterError,
                 ClosureLockedEvaluationInputPanelDvcIdentityAdapterError,
                 ClosureLockedEvaluationInputBundleAdapterError,
                 FinalCalibrationR8PostPublicationAuthorityAdapterError,
