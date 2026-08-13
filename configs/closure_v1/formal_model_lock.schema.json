@@ -1,0 +1,618 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-v1/formal-model-lock-authority-v1.json",
+  "title": "Closure V1 E0-M formal model lock authority",
+  "description": "Closed future P-E0-M authority schema. The current H slice validates this schema but cannot generate an authority while its runner is incomplete.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "gate",
+    "status",
+    "generated_at_utc",
+    "base_head",
+    "repository",
+    "h_patch",
+    "runner_readiness",
+    "calibration_evidence",
+    "locked_input_evidence",
+    "model_policy_evidence",
+    "formal_outputs",
+    "verification",
+    "authorizations"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_formal_model_lock_authority_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-M"},
+    "status": {"const": "locked_unpublished"},
+    "generated_at_utc": {"type": "string", "minLength": 20},
+    "base_head": {"const": "53947df3b826ee10be8cf3b137bae913bc73d2bb"},
+    "repository": {"$ref": "#/$defs/repository"},
+    "h_patch": {"$ref": "#/$defs/hPatch"},
+    "runner_readiness": {"$ref": "#/$defs/runnerReadiness"},
+    "calibration_evidence": {"$ref": "#/$defs/calibrationEvidence"},
+    "locked_input_evidence": {"$ref": "#/$defs/lockedInputEvidence"},
+    "model_policy_evidence": {"$ref": "#/$defs/modelPolicyEvidence"},
+    "formal_outputs": {"$ref": "#/$defs/formalOutputs"},
+    "verification": {"$ref": "#/$defs/verification"},
+    "authorizations": {"$ref": "#/$defs/authorizations"}
+  },
+  "$defs": {
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "sha1": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "stableRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "path",
+        "bytes",
+        "sha256",
+        "git_oid",
+        "git_mode",
+        "device",
+        "inode",
+        "mode",
+        "nlink",
+        "mtime_ns",
+        "ctime_ns"
+      ],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "git_oid": {"$ref": "#/$defs/sha1"},
+        "git_mode": {"enum": ["100644", "100755"]},
+        "device": {"type": "integer"},
+        "inode": {"type": "integer"},
+        "mode": {"enum": [420, 493]},
+        "nlink": {"const": 1},
+        "mtime_ns": {"type": "integer"},
+        "ctime_ns": {"type": "integer"}
+      }
+    },
+    "hComponentRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/stableRecord"},
+        {
+          "properties": {
+            "role": {"const": "formal_model_lock_h_component"},
+            "path": {
+              "enum": [
+                "configs/closure_v1/formal_model_lock.schema.json",
+                "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md",
+                "src/data/prepare_commit_artifacts.py",
+                "src/experiments/closure_formal_model_lock.py",
+                "src/experiments/lock_closure_formal_model_lock.py",
+                "src/experiments/run_closure_benchmark.py",
+                "tests/test_closure_formal_model_lock.py"
+              ]
+            }
+          }
+        }
+      ]
+    },
+    "calibrationRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/stableRecord"},
+        {
+          "properties": {
+            "role": {"const": "published_final_calibration_r8_output"},
+            "path": {"pattern": "^(data|reports)/closure_v1/"},
+            "git_mode": {"const": "100644"},
+            "mode": {"const": 420}
+          }
+        }
+      ]
+    },
+    "lockedInputRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/stableRecord"},
+        {
+          "properties": {
+            "role": {"const": "published_locked_evaluation_input"},
+            "path": {
+              "enum": [
+                "data/closure_v1/locked_evaluation/input_history.parquet",
+                "data/closure_v1/locked_evaluation/intent_origins.parquet",
+                "data/closure_v1/locked_evaluation/origin_features.parquet",
+                "data/closure_v1/locked_evaluation/sequence_features.parquet",
+                "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+                "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+                "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+                "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+                "reports/closure_v1/01_surface/locked_evaluation_input_summary.json",
+                "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json"
+              ]
+            },
+            "git_mode": {"const": "100644"},
+            "mode": {"const": 420}
+          }
+        }
+      ]
+    },
+    "policyRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/stableRecord"},
+        {
+          "properties": {
+            "role": {"const": "formal_model_policy_input"},
+            "path": {
+              "enum": [
+                "configs/closure_v1/analysis_plan.yaml",
+                "configs/closure_v1/final_calibration_runtime.yaml",
+                "configs/closure_v1/model_benchmark.yaml",
+                "configs/closure_v1/model_lock_availability_policy.schema.json",
+                "configs/closure_v1/model_lock_availability_policy.yaml"
+              ]
+            },
+            "git_mode": {"const": "100644"},
+            "mode": {"const": 420}
+          }
+        }
+      ]
+    },
+    "schemaRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/stableRecord"},
+        {
+          "properties": {
+            "role": {"const": "formal_model_lock_authority_schema"},
+            "path": {"const": "configs/closure_v1/formal_model_lock.schema.json"},
+            "git_mode": {"const": "100644"},
+            "mode": {"const": 420}
+          }
+        }
+      ]
+    },
+    "workspaceStatusRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status"],
+      "properties": {
+        "path": {
+          "enum": [
+            "configs/closure_v1/formal_model_lock.schema.json",
+            "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md",
+            "src/data/prepare_commit_artifacts.py",
+            "src/experiments/closure_formal_model_lock.py",
+            "src/experiments/lock_closure_formal_model_lock.py",
+            "src/experiments/run_closure_benchmark.py",
+            "tests/test_closure_formal_model_lock.py"
+          ]
+        },
+        "status": {"enum": ["??", " M", "A ", "M "]}
+      }
+    },
+    "repository": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_r_mid_commit",
+        "head",
+        "main",
+        "origin_main",
+        "origin_head",
+        "remote_main",
+        "branch",
+        "verify_remote",
+        "workspace_status"
+      ],
+      "properties": {
+        "base_r_mid_commit": {"const": "53947df3b826ee10be8cf3b137bae913bc73d2bb"},
+        "head": {"$ref": "#/$defs/sha1"},
+        "main": {"$ref": "#/$defs/sha1"},
+        "origin_main": {"$ref": "#/$defs/sha1"},
+        "origin_head": {"$ref": "#/$defs/sha1"},
+        "remote_main": {"$ref": "#/$defs/sha1"},
+        "branch": {"const": "main"},
+        "verify_remote": {"type": "boolean"},
+        "workspace_status": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/workspaceStatusRecord"}
+        }
+      }
+    },
+    "hPatch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "component_count",
+        "added_count",
+        "modified_count",
+        "components",
+        "components_sha256"
+      ],
+      "properties": {
+        "gate": {"const": "H-E0-M"},
+        "component_count": {"const": 7},
+        "added_count": {"const": 6},
+        "modified_count": {"const": 1},
+        "components": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/hComponentRecord"}
+        },
+        "components_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "runnerSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "bytes",
+        "sha256",
+        "mode",
+        "nlink",
+        "contract_sha256",
+        "sealed_command"
+      ],
+      "properties": {
+        "path": {"const": "src/experiments/run_closure_benchmark.py"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "contract_sha256": {"$ref": "#/$defs/sha256"},
+        "sealed_command": {"const": ".venv/bin/python -I -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"}
+      }
+    },
+    "missingComponentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["component_id", "stage_id", "reason"],
+      "properties": {
+        "component_id": {"type": "string", "minLength": 1},
+        "stage_id": {"type": "string", "pattern": "^E(?:[1-9]|10)$"},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
+    "componentSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "component_id",
+        "stage_id",
+        "module_name",
+        "source_path",
+        "bytes",
+        "sha256",
+        "mode",
+        "nlink",
+        "required_apis",
+        "missing_apis",
+        "status"
+      ],
+      "properties": {
+        "component_id": {"type": "string", "minLength": 1},
+        "stage_id": {"type": "string", "pattern": "^E(?:[2-9]|10)$"},
+        "module_name": {"type": "string", "pattern": "^src\\."},
+        "source_path": {"type": "string", "pattern": "^src/.*\\.py$"},
+        "bytes": {"type": "integer"},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "required_apis": {
+          "const": [
+            "preflight_closure_sealed_batch_component",
+            "execute_closure_sealed_batch_component"
+          ]
+        },
+        "missing_apis": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "status": {"const": "ready"}
+      }
+    },
+    "componentReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "component_count",
+        "external_component_count",
+        "ready_external_component_count",
+        "missing_component_count",
+        "missing_components",
+        "component_source_records",
+        "outcome_paths_opened",
+        "future_outcomes_accessed",
+        "writes_performed"
+      ],
+      "properties": {
+        "status": {"const": "sealed_batch_components_ready"},
+        "component_count": {"const": 11},
+        "external_component_count": {"const": 10},
+        "ready_external_component_count": {"const": 10},
+        "missing_component_count": {"const": 0},
+        "missing_components": {
+          "type": "array",
+          "maxItems": 0,
+          "items": {"$ref": "#/$defs/missingComponentRecord"}
+        },
+        "component_source_records": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/componentSourceRecord"}
+        },
+        "outcome_paths_opened": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "writes_performed": {"const": false}
+      }
+    },
+    "runnerReadiness": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "gate",
+        "status",
+        "runner",
+        "batch_contract_sha256",
+        "sealed_batch_command",
+        "component_readiness",
+        "formal_model_lock_ready",
+        "evaluator_available",
+        "missing_component_count",
+        "sealed_batch_execution_ready",
+        "e0_u_authority_path",
+        "e0_u_authority_inspected",
+        "e0_m_authorized",
+        "e0_u_authorized",
+        "evaluation_authorized",
+        "outcome_access_authorized",
+        "target_paths_opened",
+        "outcome_paths_opened",
+        "future_outcomes_accessed",
+        "writes_performed"
+      ],
+      "properties": {
+        "gate": {"const": "E0-M"},
+        "status": {"const": "sealed_batch_runner_ready_for_formal_lock"},
+        "runner": {"$ref": "#/$defs/runnerSourceRecord"},
+        "batch_contract_sha256": {"$ref": "#/$defs/sha256"},
+        "sealed_batch_command": {"const": ".venv/bin/python -I -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"},
+        "component_readiness": {"$ref": "#/$defs/componentReadiness"},
+        "formal_model_lock_ready": {"const": true},
+        "evaluator_available": {"const": true},
+        "missing_component_count": {"const": 0},
+        "sealed_batch_execution_ready": {"const": true},
+        "e0_u_authority_path": {"const": "src/experiments/closure_e0_u_authority.py"},
+        "e0_u_authority_inspected": {"const": false},
+        "e0_m_authorized": {"const": false},
+        "e0_u_authorized": {"const": false},
+        "evaluation_authorized": {"const": false},
+        "outcome_access_authorized": {"const": false},
+        "target_paths_opened": {"const": false},
+        "outcome_paths_opened": {"const": false},
+        "future_outcomes_accessed": {"const": false},
+        "writes_performed": {"const": false}
+      }
+    },
+    "calibrationEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "output_count",
+        "outputs",
+        "outputs_sha256",
+        "scientific_rows_decoded"
+      ],
+      "properties": {
+        "status": {"const": "published_immutable_r8_validated"},
+        "output_count": {"const": 8},
+        "outputs": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/calibrationRecord"}
+        },
+        "outputs_sha256": {"$ref": "#/$defs/sha256"},
+        "scientific_rows_decoded": {"const": false}
+      }
+    },
+    "lockedInputEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "output_count",
+        "outputs",
+        "outputs_sha256",
+        "scientific_rows_decoded"
+      ],
+      "properties": {
+        "status": {"const": "published_input_only_bundle_validated"},
+        "output_count": {"const": 10},
+        "outputs": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/lockedInputRecord"}
+        },
+        "outputs_sha256": {"const": "2b1e89ffa6816ad3bbaa8e1e8c5122b6b0b014dfc4645886443ffabe84036c17"},
+        "scientific_rows_decoded": {"const": false}
+      }
+    },
+    "modelPolicyEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "input_count", "inputs", "inputs_sha256"],
+      "properties": {
+        "status": {"const": "published_policy_inputs_validated"},
+        "input_count": {"const": 5},
+        "inputs": {
+          "type": "array",
+          "minItems": 5,
+          "maxItems": 5,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/policyRecord"}
+        },
+        "inputs_sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "formalOutputs": {
+      "const": {
+        "expected_output_count": 5,
+        "expected_paths": [
+          "reports/closure_v1/00_protocol/calibration_lock.yaml",
+          "reports/closure_v1/00_protocol/hypothesis_registry.csv",
+          "reports/closure_v1/00_protocol/locked_batch_command.txt",
+          "reports/closure_v1/00_protocol/outcome_access_log.jsonl",
+          "reports/closure_v1/00_protocol/model_lock.yaml"
+        ],
+        "expected_absent_count": 16,
+        "present_count": 0,
+        "present_paths": [],
+        "p_output_present_count": 0,
+        "formal_output_present_count": 0,
+        "outcome_access_log_state": "absent",
+        "locker_guard_present": false,
+        "formal_run_guard_present": false
+      }
+    },
+    "schemaPreflight": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "gate",
+        "schema_count",
+        "schema_version",
+        "schemas",
+        "supported_subset_verified",
+        "duplicate_keys_rejected"
+      ],
+      "properties": {
+        "status": {"const": "schema_ready"},
+        "gate": {"const": "E0-M"},
+        "schema_count": {"const": 1},
+        "schema_version": {"const": "closure_formal_model_lock_authority_v1"},
+        "schemas": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 1,
+          "items": {"$ref": "#/$defs/schemaRecord"}
+        },
+        "supported_subset_verified": {"const": true},
+        "duplicate_keys_rejected": {"const": true}
+      }
+    },
+    "commandEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count"
+      ],
+      "properties": {
+        "command": {
+          "type": "array",
+          "minItems": 1,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"}
+      }
+    },
+    "focusedEvidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "command",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "test_count",
+        "skipped_count",
+        "deselected_count"
+      ],
+      "properties": {
+        "command": {
+          "const": [
+            "poetry",
+            "run",
+            "pytest",
+            "-q",
+            "tests/test_prepare_commit_artifacts.py",
+            "tests/test_closure_formal_model_lock.py"
+          ]
+        },
+        "returncode": {"const": 0},
+        "stdout_sha256": {"$ref": "#/$defs/sha256"},
+        "stderr_sha256": {"$ref": "#/$defs/sha256"},
+        "stdout_line_count": {"type": "integer"},
+        "stderr_line_count": {"type": "integer"},
+        "test_count": {"const": 48},
+        "skipped_count": {"const": 0},
+        "deselected_count": {"const": 0}
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_preflight",
+        "full_type_check",
+        "focused_tests",
+        "poetry_check",
+        "publication_guard",
+        "git_diff_check"
+      ],
+      "properties": {
+        "schema_preflight": {"$ref": "#/$defs/schemaPreflight"},
+        "full_type_check": {"$ref": "#/$defs/commandEvidence"},
+        "focused_tests": {"$ref": "#/$defs/focusedEvidence"},
+        "poetry_check": {"$ref": "#/$defs/commandEvidence"},
+        "publication_guard": {"$ref": "#/$defs/commandEvidence"},
+        "git_diff_check": {"$ref": "#/$defs/commandEvidence"}
+      }
+    },
+    "authorizations": {
+      "const": {
+        "p_authority_generation_authorized": false,
+        "formal_lock_execution_authorized": false,
+        "e0_m_authorized": false,
+        "e0_u_authorized": false,
+        "evaluation_authorized": false,
+        "outcome_access_authorized": false,
+        "target_access_authorized": false,
+        "dvc_add_authorized": false,
+        "dvc_push_authorized": false,
+        "git_commit_authorized": false,
+        "git_push_authorized": false
+      }
+    }
+  }
+}
