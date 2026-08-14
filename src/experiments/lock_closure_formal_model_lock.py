@@ -187,7 +187,7 @@ def _capture_prelock_state() -> tuple[Any, dict[str, Any]]:
 
 
 def check_only() -> dict[str, Any]:
-    """Revalidate the complete outcome-free H-E0-MBATCH candidate."""
+    """Revalidate the published, outcome-free H-E0-MBATCHP1 boundary."""
 
     schema = patch.preflight_formal_model_lock_schema(repo_root=PROJECT_ROOT)
     physical_before, prelock_before = _capture_prelock_state()
@@ -200,12 +200,12 @@ def check_only() -> dict[str, Any]:
         prelock_before.get("status") != "ready_to_lock"
         or prelock_before.get("formal_model_lock_ready") is not True
         or prelock_before.get("missing_component_count") != 0
-        or prelock_before.get("p_authority_generation_authorized") is not False
+        or prelock_before.get("p_authority_generation_authorized") is not True
         or not isinstance(prelock_before.get("runner_readiness"), Mapping)
         or prelock_before["runner_readiness"].get("status")
         != "sealed_batch_runner_ready_for_formal_lock"
     ):
-        raise _error("H-E0-MBATCH candidate readiness drifted")
+        raise _error("published H-E0-MBATCHP1 readiness drifted")
     return {
         "status": "ready_to_lock",
         "gate": patch.PATCH_GATE,
@@ -219,7 +219,7 @@ def check_only() -> dict[str, Any]:
         "prelock_revalidated": True,
         "formal_model_lock_ready": True,
         "missing_component_count": 0,
-        "p_authority_generation_authorized": False,
+        "p_authority_generation_authorized": True,
         "writes_performed": False,
         "verification_commands_run": False,
         "formal_model_lock_run": False,
@@ -241,7 +241,7 @@ def execute_lock() -> dict[str, Any]:
     physical_before, prelock_before = _capture_prelock_state()
     if prelock_before.get("p_authority_generation_authorized") is not True:
         raise _error(
-            "E0-M P generation requires published H-E0-MBATCH"
+            "E0-M P generation requires published H-E0-MBATCHP1"
         )
     verification = run_formal_model_lock_verification(
         expected_schema_preflight=schema

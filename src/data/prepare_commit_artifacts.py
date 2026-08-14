@@ -1402,6 +1402,13 @@ _FORMAL_MODEL_LOCK_H_STAGED_SCOPE = {
     "src/reporting/build_closure_evidence_matrix.py": "A",
     "tests/test_closure_formal_model_lock.py": "M",
 }
+_FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE = {
+    "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md": "M",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/closure_formal_model_lock.py": "M",
+    "src/experiments/lock_closure_formal_model_lock.py": "M",
+    "tests/test_closure_formal_model_lock.py": "M",
+}
 _FORMAL_MODEL_LOCK_P_STAGED_SCOPE = {
     "configs/closure_v1/formal_model_lock_authority.json": "A",
     "configs/closure_v1/formal_model_lock_authority_manifest.json": "A",
@@ -1416,6 +1423,10 @@ _FORMAL_MODEL_LOCK_R_STAGED_SCOPE = {
 _FORMAL_MODEL_LOCK_H_GIT_MODES = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
     for path in _FORMAL_MODEL_LOCK_H_STAGED_SCOPE
+}
+_FORMAL_MODEL_LOCK_H_CHECK_ONLY_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in _FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE
 }
 
 
@@ -1517,7 +1528,12 @@ def _final_calibration_stage_adapter_error(
     gate: str, message: str
 ) -> RuntimeError:
     """Preserve the owning adapter error boundary for each calibration gate."""
-    if gate in {"H-E0-MBATCH", "P-E0-M", "R-E0-M"}:
+    if gate in {
+        "H-E0-MBATCH",
+        "H-E0-MBATCHP1",
+        "P-E0-M",
+        "R-E0-M",
+    }:
         return ClosureFormalModelLockAdapterError(message)
     if gate.endswith("MID"):
         return ClosureLockedEvaluationInputManifestDialectAdapterError(message)
@@ -4616,7 +4632,7 @@ def _closure_locked_evaluation_input_manifest_dialect_scopes(
 def _closure_formal_model_lock_scopes(
     patch: Any,
 ) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """Reject core-side H17/P2/R5 drift before selecting formal E0-M."""
+    """Reject core-side H17/H5/P2/R5 drift before selecting formal E0-M."""
     expected = (
         _FORMAL_MODEL_LOCK_H_STAGED_SCOPE,
         _FORMAL_MODEL_LOCK_P_STAGED_SCOPE,
@@ -4630,8 +4646,12 @@ def _closure_formal_model_lock_scopes(
     if (
         getattr(patch, "PATCH_GATE", None) != "E0-M"
         or getattr(patch, "H_GATE", None) != "H-E0-MBATCH"
+        or getattr(patch, "H_CHECK_ONLY_PATCH_GATE", None)
+        != "H-E0-MBATCHP1"
         or getattr(patch, "P_GATE", None) != "P-E0-M"
         or getattr(patch, "R_GATE", None) != "R-E0-M"
+        or getattr(patch, "SUPERSEDED_H_E0_M_BATCH_COMMIT", None)
+        != "4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8"
         or getattr(patch, "BASE_R_MID_COMMIT", None)
         != "53947df3b826ee10be8cf3b137bae913bc73d2bb"
         or getattr(patch, "BASE_H_E0_M_PREREQUISITE_COMMIT", None)
@@ -4644,6 +4664,12 @@ def _closure_formal_model_lock_scopes(
         or set(expected[0]) & set(expected[2])
         or set(expected[1]) & set(expected[2])
         or getattr(patch, "PATCH_PATHS", None) != tuple(sorted(expected[0]))
+        or type(
+            getattr(patch, "FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE", None)
+        )
+        is not dict
+        or getattr(patch, "FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE", None)
+        != _FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE
         or getattr(patch, "FINAL_CALIBRATION_H_STAGED_SCOPE", None) != expected[0]
         or getattr(patch, "FINAL_CALIBRATION_P_STAGED_SCOPE", None) != expected[1]
         or getattr(patch, "FINAL_CALIBRATION_R_STAGED_SCOPE", None) != expected[2]
@@ -4665,7 +4691,7 @@ def _closure_formal_model_lock_scopes(
         != Path("reports/closure_v1/00_protocol/outcome_access_log.jsonl")
     ):
         raise ClosureFormalModelLockAdapterError(
-            "E0-M H17/P2/R5 scope contract drifted"
+            "E0-M H17/H5/P2/R5 scope contract drifted"
         )
     return dict(expected[0]), dict(expected[1]), dict(expected[2])
 
@@ -4675,7 +4701,7 @@ def closure_formal_model_lock_pre_stage_scope(
     *,
     repo_root: Path = Path("."),
 ) -> tuple[str, tuple[str, ...]] | None:
-    """Select exact formal E0-M H/P/R before every predecessor selector."""
+    """Select exact formal E0-M H/H-check/P/R before predecessors."""
     patch = _closure_formal_model_lock_module()
     h_scope, p_scope, r_scope = _closure_formal_model_lock_scopes(patch)
 
@@ -4683,11 +4709,26 @@ def closure_formal_model_lock_pre_stage_scope(
         return {path: "??" if state == "A" else " M" for path, state in scope.items()}
 
     candidates = (
+        (
+            "H-E0-MBATCHP1",
+            short_map(_FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE),
+            _FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE,
+        ),
         ("H-E0-MBATCH", short_map(h_scope), h_scope),
         ("P-E0-M", short_map(p_scope), p_scope),
         ("R-E0-M", short_map(r_scope), r_scope),
     )
-    candidate_paths = set().union(*(set(scope) for scope in (h_scope, p_scope, r_scope)))
+    candidate_paths = set().union(
+        *(
+            set(scope)
+            for scope in (
+                _FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE,
+                h_scope,
+                p_scope,
+                r_scope,
+            )
+        )
+    )
     observed: dict[str, str] = {}
     anomaly = False
     for line in status_output.splitlines():
@@ -4727,10 +4768,10 @@ def closure_formal_model_lock_pre_stage_scope(
 def _require_closure_formal_model_lock_stage_base(
     gate: str, *, patch: Any, repo_root: Path
 ) -> None:
-    """Bind H/P/R to the prerequisite, published H, and published P."""
-    h_scope, p_scope, _ = _closure_formal_model_lock_scopes(patch)
+    """Bind H/H-check/P/R to the exact published linear topology."""
+    _, p_scope, _ = _closure_formal_model_lock_scopes(patch)
     head = _git_output(repo_root, "rev-parse", "HEAD").strip()
-    base = "4bf1953660462b63115a47f97b1041e44d33d873"
+    base = patch.BASE_H_E0_M_PREREQUISITE_COMMIT
     if gate == "H-E0-MBATCH":
         if head != base:
             raise ClosureFormalModelLockAdapterError(
@@ -4738,36 +4779,26 @@ def _require_closure_formal_model_lock_stage_base(
             )
         _require_closure_formal_model_lock_prelock(patch=patch, repo_root=repo_root)
         return
-    if gate == "P-E0-M":
-        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
-        published_h_scope = _git_output(
-            repo_root,
-            "diff-tree",
-            "--no-commit-id",
-            "--name-status",
-            "-r",
-            "--no-renames",
-            "HEAD",
+    if gate == "H-E0-MBATCHP1":
+        _require_closure_formal_model_lock_superseded_h(
+            patch=patch,
+            repo_root=repo_root,
+            revision=head,
         )
-        if parent != base:
-            raise ClosureFormalModelLockAdapterError(
-                "P-E0-M staging requires a direct H-E0-MBATCH child of the prerequisite"
-            )
-        try:
-            validate_anfis_ablation_git_name_status_map(
-                published_h_scope,
-                expected=h_scope,
-                context="published H-E0-MBATCH scope",
-            )
-        except DeferredDvcTargetError as exc:
-            raise ClosureFormalModelLockAdapterError(str(exc)) from exc
+        _require_closure_formal_model_lock_prelock(patch=patch, repo_root=repo_root)
+        return
+    if gate == "P-E0-M":
+        _require_closure_formal_model_lock_published_h_check_only_patch(
+            patch=patch,
+            repo_root=repo_root,
+            revision=head,
+        )
         _require_closure_formal_model_lock_unpublished(
             patch=patch, repo_root=repo_root, require_staged=False
         )
         return
     if gate == "R-E0-M":
-        h_head = _git_output(repo_root, "rev-parse", "HEAD^").strip()
-        prerequisite = _git_output(repo_root, "rev-parse", "HEAD^^").strip()
+        h_head = _git_output(repo_root, "rev-parse", f"{head}^").strip()
         published_p_scope = _git_output(
             repo_root,
             "diff-tree",
@@ -4775,27 +4806,14 @@ def _require_closure_formal_model_lock_stage_base(
             "--name-status",
             "-r",
             "--no-renames",
-            "HEAD",
+            head,
         )
-        published_h_scope = _git_output(
-            repo_root,
-            "diff-tree",
-            "--no-commit-id",
-            "--name-status",
-            "-r",
-            "--no-renames",
-            "HEAD^",
+        _require_closure_formal_model_lock_published_h_check_only_patch(
+            patch=patch,
+            repo_root=repo_root,
+            revision=h_head,
         )
-        if prerequisite != base:
-            raise ClosureFormalModelLockAdapterError(
-                "R-E0-M staging requires exact prerequisite -> H -> P topology"
-            )
         try:
-            validate_anfis_ablation_git_name_status_map(
-                published_h_scope,
-                expected=h_scope,
-                context="published H-E0-MBATCH scope",
-            )
             validate_anfis_ablation_git_name_status_map(
                 published_p_scope,
                 expected=p_scope,
@@ -4820,6 +4838,97 @@ def _require_closure_formal_model_lock_stage_base(
         )
         return
     raise ClosureFormalModelLockAdapterError("Unknown formal E0-M staging gate")
+
+
+def _require_closure_formal_model_lock_superseded_h(
+    *,
+    patch: Any,
+    repo_root: Path,
+    revision: str,
+) -> str:
+    """Require the exact immutable H17 predecessor at ``revision``."""
+
+    h_scope, _, _ = _closure_formal_model_lock_scopes(patch)
+    commit = _git_output(repo_root, "rev-parse", revision).strip()
+    if commit != patch.SUPERSEDED_H_E0_M_BATCH_COMMIT:
+        raise ClosureFormalModelLockAdapterError(
+            "Published superseded H-E0-MBATCH identity drifted"
+        )
+    parent = _git_output(repo_root, "rev-parse", f"{commit}^").strip()
+    if parent != patch.BASE_H_E0_M_PREREQUISITE_COMMIT:
+        raise ClosureFormalModelLockAdapterError(
+            "Published superseded H-E0-MBATCH parent drifted"
+        )
+    published_scope = _git_output(
+        repo_root,
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "-r",
+        "--no-renames",
+        commit,
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            published_scope,
+            expected=h_scope,
+            context="published superseded H-E0-MBATCH scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureFormalModelLockAdapterError(str(exc)) from exc
+    return commit
+
+
+def _require_closure_formal_model_lock_published_h_check_only_patch(
+    *,
+    patch: Any,
+    repo_root: Path,
+    revision: str,
+) -> str:
+    """Require the exact H17 -> H5 corrective child at ``revision``."""
+
+    head = _git_output(repo_root, "rev-parse", revision).strip()
+    parent = _git_output(repo_root, "rev-parse", f"{head}^").strip()
+    if parent != patch.SUPERSEDED_H_E0_M_BATCH_COMMIT:
+        raise ClosureFormalModelLockAdapterError(
+            "Published H-E0-MBATCHP1 is not a direct child of superseded H"
+        )
+    published_scope = _git_output(
+        repo_root,
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "-r",
+        "--no-renames",
+        head,
+    )
+    cumulative_scope = _git_output(
+        repo_root,
+        "diff",
+        "--name-status",
+        "--no-renames",
+        patch.BASE_H_E0_M_PREREQUISITE_COMMIT,
+        head,
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            published_scope,
+            expected=_FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE,
+            context="published H-E0-MBATCHP1 scope",
+        )
+        validate_anfis_ablation_git_name_status_map(
+            cumulative_scope,
+            expected=_FORMAL_MODEL_LOCK_H_STAGED_SCOPE,
+            context="cumulative H-E0-MBATCHP1 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureFormalModelLockAdapterError(str(exc)) from exc
+    _require_closure_formal_model_lock_superseded_h(
+        patch=patch,
+        repo_root=repo_root,
+        revision=parent,
+    )
+    return head
 
 
 def _require_closure_formal_model_lock_prelock(
@@ -5004,9 +5113,14 @@ def validate_closure_formal_model_lock_invocation(
     gate: str,
     env: Mapping[str, str] | None = None,
 ) -> None:
-    """Require the exact no-DVC formal H/P/R precommit invocation."""
+    """Require the exact no-DVC formal H/H-check/P/R invocation."""
     source = os.environ if env is None else env
-    if gate not in {"H-E0-MBATCH", "P-E0-M", "R-E0-M"}:
+    if gate not in {
+        "H-E0-MBATCH",
+        "H-E0-MBATCHP1",
+        "P-E0-M",
+        "R-E0-M",
+    }:
         raise ClosureFormalModelLockAdapterError("Unknown formal E0-M invocation gate")
     if (
         tuple(Path(value) for value in args.target)
@@ -5046,6 +5160,7 @@ def _closure_formal_model_lock_scope_for_gate(
     h_scope, p_scope, r_scope = _closure_formal_model_lock_scopes(patch)
     scope = {
         "H-E0-MBATCH": h_scope,
+        "H-E0-MBATCHP1": _FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE,
         "P-E0-M": p_scope,
         "R-E0-M": r_scope,
     }.get(gate)
@@ -5110,7 +5225,11 @@ def validate_closure_formal_model_lock_staged_bindings(
     expected_modes = (
         _FORMAL_MODEL_LOCK_H_GIT_MODES
         if gate == "H-E0-MBATCH"
-        else {path: "100644" for path in scope}
+        else (
+            _FORMAL_MODEL_LOCK_H_CHECK_ONLY_GIT_MODES
+            if gate == "H-E0-MBATCHP1"
+            else {path: "100644" for path in scope}
+        )
     )
     records: list[RegistrationFileIdentity] = []
     try:
@@ -5161,7 +5280,7 @@ def revalidate_closure_formal_model_lock_transaction(
     expected_physical_snapshot: Any,
     repo_root: Path = Path("."),
 ) -> None:
-    """Close formal H/P/R Git, remote, physical, and semantic races."""
+    """Close formal H/H-check/P/R Git, remote, physical, and semantic races."""
     validate_closure_formal_model_lock_staged_scope(staged_status, gate=gate)
     validate_closure_formal_model_lock_staged_scope(
         _git_output(repo_root, "diff", "--cached", "--name-status", "--no-renames"),
@@ -5188,6 +5307,14 @@ def revalidate_closure_formal_model_lock_transaction(
             raise ClosureFormalModelLockAdapterError(
                 "H-E0-MBATCH base changed during precommit"
             )
+        _require_closure_formal_model_lock_prelock(patch=patch, repo_root=repo_root)
+    elif gate == "H-E0-MBATCHP1":
+        h_check_only_base = _git_output(repo_root, "rev-parse", "HEAD").strip()
+        _require_closure_formal_model_lock_superseded_h(
+            patch=patch,
+            repo_root=repo_root,
+            revision=h_check_only_base,
+        )
         _require_closure_formal_model_lock_prelock(patch=patch, repo_root=repo_root)
     elif gate == "P-E0-M":
         _require_closure_formal_model_lock_unpublished(

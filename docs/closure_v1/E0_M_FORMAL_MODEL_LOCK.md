@@ -16,10 +16,14 @@ changes denominators after development.
 
 ## Published predecessor authorities
 
-The superseding H-E0-MBATCH overlay is based on the published H-E0-M
-prerequisite at `4bf1953660462b63115a47f97b1041e44d33d873`, itself the
-direct child of `53947df3b826ee10be8cf3b137bae913bc73d2bb`. The formal lock must require,
-among all other frozen predecessors, both of the following independently:
+The published H-E0-MBATCH implementation at
+`4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8` is the direct child of the
+published H-E0-M prerequisite at
+`4bf1953660462b63115a47f97b1041e44d33d873`, itself the direct child of
+`53947df3b826ee10be8cf3b137bae913bc73d2bb`. H-E0-MBATCHP1 is the narrow
+check-only correction above that immutable H17 implementation. The formal
+lock must require, among all other frozen predecessors, both of the following
+independently:
 
 - the exact published final-calibration R8 authority and all eight immutable
   final-calibration records, with digest
@@ -52,8 +56,20 @@ document, precommit adapter, formal core, locker, runner, and governance test)
 and adds exactly the ten E2--E10 component paths enumerated by the runner.
 The runner contains E1 internally; no outcome data is read by H.
 
-P-E0-M is the direct non-merge child of H and contains exactly two regular
-`100644` additions, in this publication order:
+H-E0-MBATCHP1 is the direct non-merge child of the exact published
+H-E0-MBATCH commit `4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8` and has exact
+scope `5M`: this document, the precommit adapter, formal core, locker, and the
+existing governance test. It adds or deletes nothing. The predecessor must
+remain a direct child of `4bf1953660462b63115a47f97b1041e44d33d873` with its
+original exact `7M+10A` scope,
+the correction must be a direct exact-`5M` child, and the cumulative
+`4bf1953660462b63115a47f97b1041e44d33d873`--H-E0-MBATCHP1 scope must remain
+the same H17 path set. Any other parent, merge, path, state, or cumulative
+scope fails closed.
+
+P-E0-M is the direct non-merge child of the published H-E0-MBATCHP1 correction
+and contains exactly two regular `100644` additions, in this publication
+order:
 
 1. `configs/closure_v1/formal_model_lock_authority.json`;
 2. `configs/closure_v1/formal_model_lock_authority_manifest.json`, last.
@@ -234,14 +250,27 @@ APIs are sealable; it does not execute them and does not authorize E0-U.
 Target access, outcome access, writes, E0-M authorization, E0-U authorization,
 and evaluation authorization remain false throughout H and P.
 
-`src/experiments/lock_closure_formal_model_lock.py --check-only` performs
-schema preflight and captures the complete outcome-free prelock state twice.
-It requires exact H scope, direct topology, clean worktree/index outside the
-authorized H slice, aligned local/tracking/live-remote refs, closed namespace,
-absent P and R outputs, absent guards and temporaries, exact companion inputs,
-and effective predecessor authorities including R8 and R10. Both captures
-must be equal. Check-only writes nothing and runs no verification, DVC,
-staging, formal-output builder, batch, evaluation, target, or outcome command.
+The original H-E0-MBATCH locker accidentally retained the H-candidate value
+`p_authority_generation_authorized=false` in its post-publication check-only
+predicate, although the core and `--execute-lock` correctly require `true`
+after H publication. H-E0-MBATCHP1 corrects only that boundary. While its
+exact `5M` worktree/index slice is still an unpublished H candidate, the core
+continues to report `p_authority_generation_authorized=false` and check-only
+must stop. Only the clean, locally and remotely aligned, direct published
+H-E0-MBATCHP1 child reports and accepts `true`; P and R remain wholly absent.
+
+`GIT_OPTIONAL_LOCKS=0 .venv/bin/python -I -B
+src/experiments/lock_closure_formal_model_lock.py --check-only` performs schema
+preflight and captures the complete outcome-free prelock state twice. It
+requires the original exact H17 predecessor, exact corrective `5M` child,
+unchanged cumulative H17 scope, clean worktree/index, aligned
+local/tracking/live-remote refs, closed namespace, absent P and R outputs,
+absent guards and temporaries, exact companion inputs, and effective
+predecessor authorities including R8 and R10. Both captures must be equal.
+`-B` forbids Python bytecode writes and `GIT_OPTIONAL_LOCKS=0` prevents the
+read-only Git status probes from refreshing the index. Check-only writes
+nothing and runs no verification, DVC, staging, formal-output builder, batch,
+evaluation, target, or outcome command.
 
 `--execute-lock` starts from the same prelock and brackets the frozen H
 verification commands with fresh schema, repository, namespace, predecessor,
@@ -346,24 +375,28 @@ staging. The report must contain no non-adopted warning or failure.
 ## Acceptance sequence
 
 1. Preserve published H-E0-M `1M+6A` as immutable prerequisite evidence.
-2. Publish H-E0-MBATCH `7M+10A` as its direct child; do not create P or R.
-3. Under separate authorization run `--check-only`; require equal captures,
+2. Preserve published H-E0-MBATCH `7M+10A` at exact commit `4d0f2eb...` as its
+   direct child; do not amend, rewrite, or replace it.
+3. Publish H-E0-MBATCHP1 exact `5M` as the direct child of `4d0f2eb...`;
+   require the cumulative scope to remain H17 and do not create P or R.
+4. Under separate authorization run `--check-only`; require equal captures,
    absent P/R, no writes, no verification, no outcome access, and exact
-   `sealed_batch_runner_ready_for_formal_lock`/missing-zero readiness.
-4. Under a new authorization run `--execute-lock`; publish only P
+   `sealed_batch_runner_ready_for_formal_lock`/missing-zero readiness plus
+   `p_authority_generation_authorized=true`.
+5. Under a new authorization run `--execute-lock`; publish only P
    authority then companion and audit them before precommit.
-5. Publish exact P-E0-M `2A`, verify clean local/tracking/live-remote refs, and
+6. Publish exact P-E0-M `2A`, verify clean local/tracking/live-remote refs, and
    reload the effective authority independently.
-6. Under a new explicit one-shot authorization, create exact R-E0-M `5A` in
+7. Under a new explicit one-shot authorization, create exact R-E0-M `5A` in
    calibration/hypothesis/batch/empty-log/model-lock-last order.
-7. Strictly audit R, then run precommit under separate authorization; require
+8. Strictly audit R, then run precommit under separate authorization; require
    exact dialect adoption, exact five staged additions, no DVC selection or
    command, and no other warning or failure.
-8. Leave Git commit and Git push to the user. E0-U and the sealed evaluation
+9. Leave Git commit and Git push to the user. E0-U and the sealed evaluation
    batch remain separately authorized future barriers.
 
 Acceptance requires prerequisite H `1M+6A`, superseding H-E0-MBATCH
-`7M+10A`, P `2A`, R `5A`, authority-first and
+`7M+10A`, corrective H-E0-MBATCHP1 `5M`, P `2A`, R `5A`, authority-first and
 manifest-last P publication, exact five-output R order with a zero-byte log
 fourth and `model_lock.yaml` last, immutable R8/R10, exact runner command and
 source identity, complete

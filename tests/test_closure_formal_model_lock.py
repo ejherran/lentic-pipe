@@ -16,7 +16,11 @@ from src.data import prepare_commit_artifacts as precommit
 
 BASE_R_MI = "53947df3b826ee10be8cf3b137bae913bc73d2bb"
 BASE_PREREQUISITE = "4bf1953660462b63115a47f97b1041e44d33d873"
+SUPERSEDED_H_BATCH = "4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8"
 H_SCOPE = dict(precommit._FORMAL_MODEL_LOCK_H_STAGED_SCOPE)
+H_CHECK_ONLY_SCOPE = dict(
+    precommit._FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE
+)
 P_SCOPE = dict(precommit._FORMAL_MODEL_LOCK_P_STAGED_SCOPE)
 R_SCOPE = dict(precommit._FORMAL_MODEL_LOCK_R_STAGED_SCOPE)
 
@@ -151,12 +155,17 @@ def _fake(**overrides: Any) -> SimpleNamespace:
     values: dict[str, Any] = {
         "PATCH_GATE": "E0-M",
         "H_GATE": "H-E0-MBATCH",
+        "H_CHECK_ONLY_PATCH_GATE": "H-E0-MBATCHP1",
         "P_GATE": "P-E0-M",
         "R_GATE": "R-E0-M",
         "BASE_R_MID_COMMIT": BASE_R_MI,
         "BASE_H_E0_M_PREREQUISITE_COMMIT": BASE_PREREQUISITE,
+        "SUPERSEDED_H_E0_M_BATCH_COMMIT": SUPERSEDED_H_BATCH,
         "PATCH_PATHS": tuple(sorted(H_SCOPE)),
         "FORMAL_MODEL_LOCK_H_STAGED_SCOPE": dict(H_SCOPE),
+        "FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE": dict(
+            H_CHECK_ONLY_SCOPE
+        ),
         "FORMAL_MODEL_LOCK_P_STAGED_SCOPE": dict(P_SCOPE),
         "FORMAL_MODEL_LOCK_R_STAGED_SCOPE": dict(R_SCOPE),
         "FINAL_CALIBRATION_H_STAGED_SCOPE": dict(H_SCOPE),
@@ -236,9 +245,20 @@ def test_topology_is_exact_h17_p2_r5_and_e1_e10_are_ready(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     from src.experiments import closure_formal_model_lock as core
+    from src.experiments import lock_closure_formal_model_lock as locker
     from src.experiments import run_closure_benchmark as runner
 
     assert (len(H_SCOPE), len(P_SCOPE), len(R_SCOPE)) == (17, 2, 5)
+    assert len(H_CHECK_ONLY_SCOPE) == 5
+    assert set(H_CHECK_ONLY_SCOPE.values()) == {"M"}
+    assert set(H_CHECK_ONLY_SCOPE) == {
+        "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md",
+        "src/data/prepare_commit_artifacts.py",
+        "src/experiments/closure_formal_model_lock.py",
+        "src/experiments/lock_closure_formal_model_lock.py",
+        "tests/test_closure_formal_model_lock.py",
+    }
+    assert set(H_CHECK_ONLY_SCOPE) < set(H_SCOPE)
     assert tuple(H_SCOPE.values()).count("M") == 7
     assert tuple(H_SCOPE.values()).count("A") == 10
     assert not set(H_SCOPE) & set(P_SCOPE)
@@ -248,7 +268,9 @@ def test_topology_is_exact_h17_p2_r5_and_e1_e10_are_ready(
     assert H_SCOPE["src/experiments/run_closure_benchmark.py"] == "M"
     assert core.BASE_R_MID_COMMIT == BASE_R_MI
     assert core.BASE_H_E0_M_PREREQUISITE_COMMIT == BASE_PREREQUISITE
+    assert core.SUPERSEDED_H_E0_M_BATCH_COMMIT == SUPERSEDED_H_BATCH
     assert core.H_GATE == "H-E0-MBATCH"
+    assert core.H_CHECK_ONLY_PATCH_GATE == "H-E0-MBATCHP1"
     artifact_snapshot = core._model_artifact_snapshot(
         Path("."), git_commit=core.BASE_H_E0_M_PREREQUISITE_COMMIT
     )
@@ -327,6 +349,7 @@ def test_topology_is_exact_h17_p2_r5_and_e1_e10_are_ready(
     )
     assert core.PATCH_PATHS == tuple(sorted(H_SCOPE))
     assert core.FORMAL_MODEL_LOCK_H_STAGED_SCOPE == H_SCOPE
+    assert core.FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE == H_CHECK_ONLY_SCOPE
     assert core.FORMAL_MODEL_LOCK_P_STAGED_SCOPE == P_SCOPE
     assert core.FORMAL_MODEL_LOCK_R_STAGED_SCOPE == R_SCOPE
     assert core.FINAL_CALIBRATION_H_STAGED_SCOPE == H_SCOPE
@@ -364,13 +387,65 @@ def test_topology_is_exact_h17_p2_r5_and_e1_e10_are_ready(
     )
     assert prelock["missing_component_count"] == 0
     assert prelock["formal_model_lock_ready"] is True
-    assert prelock["p_authority_generation_authorized"] is False
+    assert prelock["p_authority_generation_authorized"] is (
+        prelock["repository"]["h_state"] == "published"
+    )
     assert prelock["formal_output_count"] == 0
     assert prelock["outcome_access_log_state"] == "absent"
     assert prelock["target_paths_opened"] is False
     assert prelock["outcome_paths_opened"] is False
     assert prelock["future_outcomes_accessed"] is False
     assert prelock["writes_performed"] is False
+    with monkeypatch.context() as locker_patch:
+        locker_patch.setattr(
+            locker.patch,
+            "preflight_formal_model_lock_schema",
+            lambda **_kwargs: {"gate": "E0-M", "status": "schema_validated"},
+        )
+        captures = iter(
+            (
+                (("physical",), _prelock(p_authority_generation_authorized=True)),
+                (("physical",), _prelock(p_authority_generation_authorized=True)),
+            )
+        )
+        locker_patch.setattr(locker, "_capture_prelock_state", lambda: next(captures))
+        locker_patch.setattr(
+            locker,
+            "_run_command",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("check-only executed a verification command")
+            ),
+        )
+        checked = locker.check_only()
+        assert checked["p_authority_generation_authorized"] is True
+        assert checked["prelock"]["p_authority_generation_authorized"] is True
+        assert checked["verification_commands_run"] is False
+        assert checked["writes_performed"] is False
+    with monkeypatch.context() as locker_patch:
+        locker_patch.setattr(
+            locker.patch,
+            "preflight_formal_model_lock_schema",
+            lambda **_kwargs: {"gate": "E0-M", "status": "schema_validated"},
+        )
+        captures = iter(
+            (
+                (("physical",), _prelock()),
+                (("physical",), _prelock()),
+            )
+        )
+        locker_patch.setattr(locker, "_capture_prelock_state", lambda: next(captures))
+        locker_patch.setattr(
+            locker,
+            "_run_command",
+            lambda *_args, **_kwargs: (_ for _ in ()).throw(
+                AssertionError("rejected check-only executed a verification command")
+            ),
+        )
+        with pytest.raises(
+            core.ClosureFormalModelLockError,
+            match="published H-E0-MBATCHP1 readiness drifted",
+        ):
+            locker.check_only()
     assert runner.GATE == runner.PATCH_GATE == runner.FORMAL_MODEL_LOCK_GATE == "E0-M"
     assert runner.UNBLINDING_GATE == "E0-U"
     assert runner.SEALED_BATCH_ARGV == runner.SEALED_BATCH_PYTHON_ARGV
@@ -800,6 +875,12 @@ def test_selector_routes_h_before_mid(monkeypatch: pytest.MonkeyPatch) -> None:
         "H-E0-MBATCH",
         tuple(sorted(H_SCOPE)),
     )
+    assert precommit.closure_formal_model_lock_pre_stage_scope(
+        _short(H_CHECK_ONLY_SCOPE)
+    ) == (
+        "H-E0-MBATCHP1",
+        tuple(sorted(H_CHECK_ONLY_SCOPE)),
+    )
     source = inspect.getsource(precommit.main)
     assert source.index("closure_formal_model_lock_pre_stage_scope") < source.index(
         "closure_locked_evaluation_input_manifest_dialect_pre_stage_scope"
@@ -814,9 +895,19 @@ def test_selector_routes_p_only_from_exact_published_h(
     def git_output(root: Path, *args: str) -> str:
         if args[:2] == ("rev-parse", "HEAD"):
             return "h" * 40 + "\n"
-        if args[:2] == ("rev-parse", "HEAD^"):
+        if args[:2] == ("rev-parse", "h" * 40):
+            return "h" * 40 + "\n"
+        if args[:2] == ("rev-parse", f"{'h' * 40}^"):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", SUPERSEDED_H_BATCH):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", f"{SUPERSEDED_H_BATCH}^"):
             return BASE_PREREQUISITE + "\n"
         if args[0] == "diff-tree":
+            return _name_status(
+                H_SCOPE if args[-1] == SUPERSEDED_H_BATCH else H_CHECK_ONLY_SCOPE
+            )
+        if args[0] == "diff":
             return _name_status(H_SCOPE)
         raise AssertionError(args)
 
@@ -844,12 +935,26 @@ def test_selector_routes_r_only_from_exact_published_h_and_p(
     def git_output(root: Path, *args: str) -> str:
         if args[:2] == ("rev-parse", "HEAD"):
             return p_head + "\n"
-        if args[:2] == ("rev-parse", "HEAD^"):
+        if args[:2] == ("rev-parse", f"{p_head}^"):
             return h_head + "\n"
-        if args[:2] == ("rev-parse", "HEAD^^"):
+        if args[:2] == ("rev-parse", h_head):
+            return h_head + "\n"
+        if args[:2] == ("rev-parse", f"{h_head}^"):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", SUPERSEDED_H_BATCH):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", f"{SUPERSEDED_H_BATCH}^"):
             return BASE_PREREQUISITE + "\n"
         if args[0] == "diff-tree":
-            return _name_status(H_SCOPE if args[-1] == "HEAD^" else P_SCOPE)
+            return _name_status(
+                H_SCOPE
+                if args[-1] == SUPERSEDED_H_BATCH
+                else H_CHECK_ONLY_SCOPE
+                if args[-1] == h_head
+                else P_SCOPE
+            )
+        if args[0] == "diff":
+            return _name_status(H_SCOPE)
         raise AssertionError(args)
 
     monkeypatch.setattr(precommit, "_git_output", git_output)
@@ -899,7 +1004,12 @@ def test_non_formal_status_remains_generic(monkeypatch: pytest.MonkeyPatch) -> N
 
 def test_invocation_is_closed_no_dvc() -> None:
     env = {"DVC_NO_ANALYTICS": "1"}
-    for gate in ("H-E0-MBATCH", "P-E0-M", "R-E0-M"):
+    for gate in (
+        "H-E0-MBATCH",
+        "H-E0-MBATCHP1",
+        "P-E0-M",
+        "R-E0-M",
+    ):
         precommit.validate_closure_formal_model_lock_invocation(
             _args(), gate=gate, env=env
         )
@@ -923,6 +1033,7 @@ def test_staged_and_workspace_scopes_are_exact(
     monkeypatch.setattr(precommit, "_closure_formal_model_lock_module", _fake)
     for gate, scope in (
         ("H-E0-MBATCH", H_SCOPE),
+        ("H-E0-MBATCHP1", H_CHECK_ONLY_SCOPE),
         ("P-E0-M", P_SCOPE),
         ("R-E0-M", R_SCOPE),
     ):
@@ -968,6 +1079,11 @@ def test_staged_bindings_require_modes_oids_and_single_links(
             gate="H-E0-MBATCH"
         )
     ) == 17
+    assert len(
+        precommit.validate_closure_formal_model_lock_staged_bindings(
+            gate="H-E0-MBATCHP1"
+        )
+    ) == 5
 
 
 def test_h_stage_base_requires_exact_prerequisite_and_prelock(
@@ -986,7 +1102,43 @@ def test_h_stage_base_requires_exact_prerequisite_and_prelock(
     precommit._require_closure_formal_model_lock_stage_base(
         "H-E0-MBATCH", patch=patch, repo_root=Path(".")
     )
-    assert calls == ["prelock"]
+    def correction_git_output(root: Path, *args: str) -> str:
+        if args[:2] == ("rev-parse", "HEAD"):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", SUPERSEDED_H_BATCH):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", f"{SUPERSEDED_H_BATCH}^"):
+            return BASE_PREREQUISITE + "\n"
+        if args[0] == "diff-tree":
+            return _name_status(H_SCOPE)
+        raise AssertionError(args)
+
+    monkeypatch.setattr(precommit, "_git_output", correction_git_output)
+    monkeypatch.setattr(
+        precommit,
+        "_require_closure_formal_model_lock_unpublished",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("H correction opened P")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit,
+        "_require_closure_formal_model_lock_authority",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("H correction opened authority")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit,
+        "_require_closure_formal_model_lock_bundle",
+        lambda **_kwargs: (_ for _ in ()).throw(
+            AssertionError("H correction opened R")
+        ),
+    )
+    precommit._require_closure_formal_model_lock_stage_base(
+        "H-E0-MBATCHP1", patch=patch, repo_root=Path(".")
+    )
+    assert calls == ["prelock", "prelock"]
 
 
 def test_p_stage_base_rejects_topology_drift_before_unpublished(
@@ -998,10 +1150,10 @@ def test_p_stage_base_rejects_topology_drift_before_unpublished(
     def git_output(root: Path, *args: str) -> str:
         if args[:2] == ("rev-parse", "HEAD"):
             return "h" * 40 + "\n"
-        if args[:2] == ("rev-parse", "HEAD^"):
+        if args[:2] == ("rev-parse", "h" * 40):
+            return "h" * 40 + "\n"
+        if args[:2] == ("rev-parse", f"{'h' * 40}^"):
             return BASE_R_MI + "\n"
-        if args[0] == "diff-tree":
-            return _name_status(H_SCOPE)
         raise AssertionError(args)
 
     monkeypatch.setattr(precommit, "_git_output", git_output)
@@ -1010,7 +1162,35 @@ def test_p_stage_base_rejects_topology_drift_before_unpublished(
         "_require_closure_formal_model_lock_unpublished",
         lambda **kwargs: calls.append(kwargs["require_staged"]),
     )
-    with pytest.raises(precommit.ClosureFormalModelLockAdapterError, match="direct H"):
+    with pytest.raises(
+        precommit.ClosureFormalModelLockAdapterError,
+        match="direct child",
+    ):
+        precommit._require_closure_formal_model_lock_stage_base(
+            "P-E0-M", patch=patch, repo_root=Path(".")
+        )
+    assert calls == []
+
+    def reverted_cumulative_git_output(root: Path, *args: str) -> str:
+        if args[:2] == ("rev-parse", "HEAD"):
+            return "h" * 40 + "\n"
+        if args[:2] == ("rev-parse", "h" * 40):
+            return "h" * 40 + "\n"
+        if args[:2] == ("rev-parse", f"{'h' * 40}^"):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[0] == "diff-tree":
+            return _name_status(H_CHECK_ONLY_SCOPE)
+        if args[0] == "diff":
+            reverted = dict(H_SCOPE)
+            reverted.pop("docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md")
+            return _name_status(reverted)
+        raise AssertionError(args)
+
+    monkeypatch.setattr(precommit, "_git_output", reverted_cumulative_git_output)
+    with pytest.raises(
+        precommit.ClosureFormalModelLockAdapterError,
+        match="cumulative H-E0-MBATCHP1 scope",
+    ):
         precommit._require_closure_formal_model_lock_stage_base(
             "P-E0-M", patch=patch, repo_root=Path(".")
         )
@@ -1025,12 +1205,14 @@ def test_r_stage_base_rejects_topology_drift_before_authority_or_bundle(
     def git_output(root: Path, *args: str) -> str:
         if args[:2] == ("rev-parse", "HEAD"):
             return "p" * 40 + "\n"
-        if args[:2] == ("rev-parse", "HEAD^"):
+        if args[:2] == ("rev-parse", f"{'p' * 40}^"):
             return "h" * 40 + "\n"
-        if args[:2] == ("rev-parse", "HEAD^^"):
+        if args[:2] == ("rev-parse", "h" * 40):
+            return "h" * 40 + "\n"
+        if args[:2] == ("rev-parse", f"{'h' * 40}^"):
             return BASE_R_MI + "\n"
         if args[0] == "diff-tree":
-            return _name_status(H_SCOPE if args[-1] == "HEAD^" else P_SCOPE)
+            return _name_status(P_SCOPE)
         raise AssertionError(args)
 
     monkeypatch.setattr(precommit, "_git_output", git_output)
@@ -1044,7 +1226,10 @@ def test_r_stage_base_rejects_topology_drift_before_authority_or_bundle(
             f"bundle:{kwargs['require_staged']}"
         ),
     )
-    with pytest.raises(precommit.ClosureFormalModelLockAdapterError, match="topology"):
+    with pytest.raises(
+        precommit.ClosureFormalModelLockAdapterError,
+        match="direct child",
+    ):
         precommit._require_closure_formal_model_lock_stage_base(
             "R-E0-M", patch=patch, repo_root=Path(".")
         )
@@ -1459,17 +1644,38 @@ def test_h_p_r_transactions_revalidate_semantics_and_physical_snapshot(
         "_require_closure_formal_model_lock_bundle",
         lambda **k: calls.append(f"r:bundle:{k['require_staged']}"),
     )
-    for gate, scope in (
-        ("H-E0-MBATCH", H_SCOPE),
-        ("P-E0-M", P_SCOPE),
-        ("R-E0-M", R_SCOPE),
-    ):
+    precommit.revalidate_closure_formal_model_lock_transaction(
+        gate="H-E0-MBATCH",
+        staged_status=_name_status(H_SCOPE),
+        expected_physical_snapshot=("physical",),
+    )
+
+    def correction_git_output(root: Path, *args: str) -> str:
+        if args[:2] == ("rev-parse", "HEAD"):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", SUPERSEDED_H_BATCH):
+            return SUPERSEDED_H_BATCH + "\n"
+        if args[:2] == ("rev-parse", f"{SUPERSEDED_H_BATCH}^"):
+            return BASE_PREREQUISITE + "\n"
+        if args[0] == "diff-tree":
+            return _name_status(H_SCOPE)
+        return ""
+
+    monkeypatch.setattr(precommit, "_git_output", correction_git_output)
+    precommit.revalidate_closure_formal_model_lock_transaction(
+        gate="H-E0-MBATCHP1",
+        staged_status=_name_status(H_CHECK_ONLY_SCOPE),
+        expected_physical_snapshot=("physical",),
+    )
+    monkeypatch.setattr(precommit, "_git_output", lambda *a, **k: "")
+    for gate, scope in (("P-E0-M", P_SCOPE), ("R-E0-M", R_SCOPE)):
         precommit.revalidate_closure_formal_model_lock_transaction(
             gate=gate,
             staged_status=_name_status(scope),
             expected_physical_snapshot=("physical",),
         )
     assert calls == [
+        "h:prelock",
         "h:prelock",
         "p:True",
         "r:authority",

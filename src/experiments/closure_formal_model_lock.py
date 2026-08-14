@@ -1,10 +1,12 @@
 """Build and validate the outcome-free Closure V1 formal model lock.
 
-The published H-E0-M prerequisite remains immutable history.  This superseding
-H-E0-MBATCH slice adds the eleven sealed-batch scientific components while
-keeping every outcome path closed.  Only after this exact implementation is
-published may P-E0-M authorize one no-outcome materialization of the five
-formal lock files; E0-U and evaluation remain separate later gates.
+The published H-E0-M prerequisite and H-E0-MBATCH implementation remain
+immutable history.  H-E0-MBATCHP1 is a narrow, cumulative check-only
+correction: it preserves the exact H17 implementation while making the
+published-H P-readiness bit internally consistent.  Only after this exact
+correction is published may P-E0-M authorize one no-outcome materialization
+of the five formal lock files; E0-U and evaluation remain separate later
+gates.
 """
 
 from __future__ import annotations
@@ -32,8 +34,10 @@ PROJECT_ROOT = Path(__file__).resolve().parents[2]
 BASE_R_MID_COMMIT = "53947df3b826ee10be8cf3b137bae913bc73d2bb"
 BASE_P_MCALM_COMMIT = "81c1fc485902d484264fccc53cf88888c359930d"
 BASE_H_E0_M_PREREQUISITE_COMMIT = "4bf1953660462b63115a47f97b1041e44d33d873"
+SUPERSEDED_H_E0_M_BATCH_COMMIT = "4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8"
 PATCH_GATE = "E0-M"
 H_GATE = "H-E0-MBATCH"
+H_CHECK_ONLY_PATCH_GATE = "H-E0-MBATCHP1"
 P_GATE = "P-E0-M"
 R_GATE = "R-E0-M"
 EXPERIMENT_ID = "closure_v1"
@@ -94,6 +98,13 @@ PATCH_COMPONENT_GIT_MODES = {
 }
 FORMAL_MODEL_LOCK_H_STAGED_SCOPE = {
     path: ("A" if path in BATCH_COMPONENT_PATHS else "M") for path in PATCH_PATHS
+}
+FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE = {
+    DOCUMENTATION_PATH: "M",
+    PRECOMMIT_PATH: "M",
+    CORE_PATH: "M",
+    LOCKER_PATH.as_posix(): "M",
+    TEST_PATH: "M",
 }
 FORMAL_MODEL_LOCK_P_STAGED_SCOPE = {
     DEFAULT_AUTHORITY_PATH.as_posix(): "A",
@@ -653,6 +664,8 @@ def _require_h_component_git_binding(
 
 
 def _expected_h_scope() -> dict[str, Any]:
+    """Return the cumulative H17 implementation scope sealed by the schema."""
+
     return {
         "added": len(BATCH_COMPONENT_PATHS),
         "modified": len(SUPPORT_PATHS),
@@ -660,6 +673,70 @@ def _expected_h_scope() -> dict[str, Any]:
         "path_count": len(PATCH_PATHS),
         "paths": list(PATCH_PATHS),
     }
+
+
+def _expected_h_check_only_patch_scope() -> dict[str, Any]:
+    """Return the exact corrective child scope over published H-E0-MBATCH."""
+
+    return {
+        "added": 0,
+        "modified": len(FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE),
+        "deleted": 0,
+        "path_count": len(FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE),
+        "paths": sorted(FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE),
+    }
+
+
+def _require_superseded_h_topology(repo_root: Path) -> None:
+    """Require the immutable, already-published H17 predecessor."""
+
+    try:
+        parent = mcal._single_parent(
+            repo_root,
+            SUPERSEDED_H_E0_M_BATCH_COMMIT,
+            context=H_GATE,
+        )
+        scope = mcal._git_scope(
+            repo_root,
+            BASE_H_E0_M_PREREQUISITE_COMMIT,
+            SUPERSEDED_H_E0_M_BATCH_COMMIT,
+        )
+    except Exception as exc:
+        raise _error("superseded H-E0-MBATCH topology cannot be read") from exc
+    if parent != BASE_H_E0_M_PREREQUISITE_COMMIT or scope != _expected_h_scope():
+        raise _error("superseded H-E0-MBATCH topology drifted")
+
+
+def _require_published_h_check_only_patch_topology(
+    repo_root: Path, h_head: str
+) -> None:
+    """Require base -> H17 -> exact5 correction and cumulative H17 scope."""
+
+    _require_superseded_h_topology(repo_root)
+    try:
+        parent = mcal._single_parent(
+            repo_root,
+            h_head,
+            context=H_CHECK_ONLY_PATCH_GATE,
+        )
+        patch_scope = mcal._git_scope(
+            repo_root,
+            SUPERSEDED_H_E0_M_BATCH_COMMIT,
+            h_head,
+        )
+        cumulative_scope = mcal._git_scope(
+            repo_root,
+            BASE_H_E0_M_PREREQUISITE_COMMIT,
+            h_head,
+        )
+    except Exception as exc:
+        raise _error("published H-E0-MBATCHP1 topology cannot be read") from exc
+    if (
+        parent != SUPERSEDED_H_E0_M_BATCH_COMMIT
+        or patch_scope != _expected_h_check_only_patch_scope()
+        or cumulative_scope != _expected_h_scope()
+    ):
+        raise _error("published H-E0-MBATCHP1 topology drifted")
 
 
 def _status_map(repo_root: Path) -> dict[str, str]:
@@ -688,15 +765,14 @@ def _repository_state(
         raise _error("repository refs cannot be validated") from exc
     if branch != "main":
         raise _error("formal E0-M requires branch main")
-    expected_scope = _expected_h_scope()
     observed = _status_map(repo_root)
     candidate_status = {
         path: ("??" if state == "A" else " M")
-        for path, state in FORMAL_MODEL_LOCK_H_STAGED_SCOPE.items()
+        for path, state in FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE.items()
     }
     staged_candidate_status = {
         path: ("A " if state == "A" else "M ")
-        for path, state in FORMAL_MODEL_LOCK_H_STAGED_SCOPE.items()
+        for path, state in FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE.items()
     }
     p_untracked_status = {
         path.as_posix(): "??" for path in CURRENT_LOCK_PATHS
@@ -705,17 +781,18 @@ def _repository_state(
         path.as_posix(): "A " for path in CURRENT_LOCK_PATHS
     }
     if (
-        head == BASE_H_E0_M_PREREQUISITE_COMMIT
+        head == SUPERSEDED_H_E0_M_BATCH_COMMIT
         and main == head
         and tracking == head
         and tracking_head == head
         and observed in (candidate_status, staged_candidate_status)
     ):
+        _require_superseded_h_topology(repo_root)
         h_state = "candidate"
         h_head: str | None = None
-        expected_ref = BASE_H_E0_M_PREREQUISITE_COMMIT
+        expected_ref = SUPERSEDED_H_E0_M_BATCH_COMMIT
     elif (
-        head != BASE_H_E0_M_PREREQUISITE_COMMIT
+        head != SUPERSEDED_H_E0_M_BATCH_COMMIT
         and main == head
         and tracking == head
         and tracking_head == head
@@ -727,20 +804,15 @@ def _repository_state(
             )
         )
     ):
-        try:
-            parent = mcal._single_parent(repo_root, head, context=H_GATE)
-            scope = mcal._git_scope(
-                repo_root, BASE_H_E0_M_PREREQUISITE_COMMIT, head
-            )
-        except Exception as exc:
-            raise _error("published H-E0-MBATCH topology cannot be read") from exc
-        if parent != BASE_H_E0_M_PREREQUISITE_COMMIT or scope != expected_scope:
-            raise _error("published H-E0-MBATCH topology drifted")
+        _require_published_h_check_only_patch_topology(repo_root, head)
         h_state = "published"
         h_head = head
         expected_ref = head
     else:
-        raise _error("formal E0-M repository is neither exact H candidate nor H publication")
+        raise _error(
+            "formal E0-M repository is neither exact H-E0-MBATCHP1 candidate "
+            "nor its publication"
+        )
     remote = tracking
     if verify_remote:
         try:
@@ -1330,7 +1402,7 @@ def build_formal_model_lock_authority_payload(
     if repository.get("h_state") != "published" or not isinstance(
         repository.get("h_batch_head"), str
     ):
-        raise _error("P payload requires published H-E0-MBATCH")
+        raise _error("P payload requires published H-E0-MBATCHP1")
     return {
         "schema_version": LOCK_SCHEMA_VERSION,
         "experiment_id": EXPERIMENT_ID,
@@ -1533,6 +1605,7 @@ def _effective_repository_snapshot(
 ) -> dict[str, Any]:
     """Capture and validate refs, topology, remote, and workspace only."""
 
+    _require_published_h_check_only_patch_topology(repo_root, h_head)
     try:
         head = mcal._git_head(repo_root)
         branch = cast(
@@ -1656,15 +1729,7 @@ def _validate_published_authority_payload(
         mcal.validate_json_schema(payload, schema)
     except Exception as exc:
         raise _error("published authority schema validation failed") from exc
-    if (
-        mcal._single_parent(repo_root, h_head, context=H_GATE)
-        != BASE_H_E0_M_PREREQUISITE_COMMIT
-        or mcal._git_scope(
-            repo_root, BASE_H_E0_M_PREREQUISITE_COMMIT, h_head
-        )
-        != _expected_h_scope()
-    ):
-        raise _error("published H-E0-MBATCH topology drifted")
+    _require_published_h_check_only_patch_topology(repo_root, h_head)
     physical_components = _component_records(repo_root)
     for record in physical_components:
         _require_h_component_git_binding(record, h_head=h_head, repo_root=repo_root)
@@ -1764,6 +1829,7 @@ def _require_p_repository_boundary(
     repo_root: Path,
     owned_guard: Any | None,
 ) -> None:
+    _require_published_h_check_only_patch_topology(repo_root, h_head)
     try:
         head = mcal._git_head(repo_root)
         branch = cast(
@@ -1968,6 +2034,7 @@ def _unpublished_p_repository_snapshot(
 ) -> dict[str, Any]:
     """Capture only terminal refs, topology, remote, and status for P."""
 
+    _require_published_h_check_only_patch_topology(repo_root, h_head)
     try:
         head = mcal._git_head(repo_root)
         branch = cast(
@@ -1980,8 +2047,11 @@ def _unpublished_p_repository_snapshot(
             mcal._live_remote_main_head(repo_root) if verify_remote else tracking
         )
         status = tuple(sorted(_status_map(repo_root).items()))
-        parent = mcal._single_parent(repo_root, h_head, context=H_GATE)
-        scope = mcal._git_scope(
+        parent = mcal._single_parent(
+            repo_root, h_head, context=H_CHECK_ONLY_PATCH_GATE
+        )
+        scope = mcal._git_scope(repo_root, SUPERSEDED_H_E0_M_BATCH_COMMIT, h_head)
+        cumulative_scope = mcal._git_scope(
             repo_root, BASE_H_E0_M_PREREQUISITE_COMMIT, h_head
         )
     except Exception as exc:
@@ -1993,13 +2063,14 @@ def _unpublished_p_repository_snapshot(
         or tracking != h_head
         or tracking_head != h_head
         or remote != h_head
-        or parent != BASE_H_E0_M_PREREQUISITE_COMMIT
-        or scope != _expected_h_scope()
+        or parent != SUPERSEDED_H_E0_M_BATCH_COMMIT
+        or scope != _expected_h_check_only_patch_scope()
+        or cumulative_scope != _expected_h_scope()
     ):
-        raise _error("unpublished P terminal repository topology drifted")
+        raise _error("unpublished P terminal H-E0-MBATCHP1 topology drifted")
     return {
         "refs": (head, branch, main, tracking, tracking_head, remote),
-        "topology": (parent, scope),
+        "topology": (parent, scope, cumulative_scope),
         "status": status,
     }
 
@@ -2027,7 +2098,7 @@ def validate_formal_model_lock_unpublished_authority_bundle(
         repo_root=root, verify_remote=verify_remote, allow_p_outputs=True
     )
     if state.get("h_state") != "published" or state.get("h_batch_head") != h_head:
-        raise _error("unpublished P requires exact published H-E0-MBATCH")
+        raise _error("unpublished P requires exact published H-E0-MBATCHP1")
     observed = _status_map(root)
     untracked = {path.as_posix(): "??" for path in CURRENT_LOCK_PATHS}
     staged = {path.as_posix(): "A " for path in CURRENT_LOCK_PATHS}
