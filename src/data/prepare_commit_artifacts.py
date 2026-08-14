@@ -1384,13 +1384,23 @@ class ClosureFormalModelLockAdapterError(RuntimeError):
 
 
 _FORMAL_MODEL_LOCK_H_STAGED_SCOPE = {
-    "configs/closure_v1/formal_model_lock.schema.json": "A",
-    "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md": "A",
+    "configs/closure_v1/formal_model_lock.schema.json": "M",
+    "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md": "M",
     "src/data/prepare_commit_artifacts.py": "M",
-    "src/experiments/closure_formal_model_lock.py": "A",
-    "src/experiments/lock_closure_formal_model_lock.py": "A",
-    "src/experiments/run_closure_benchmark.py": "A",
-    "tests/test_closure_formal_model_lock.py": "A",
+    "src/experiments/build_trophic_reference_targets.py": "A",
+    "src/experiments/calibrate_uncertainty_closure.py": "A",
+    "src/experiments/closure_formal_model_lock.py": "M",
+    "src/experiments/compare_models_clustered.py": "A",
+    "src/experiments/evaluate_anfis_ablation.py": "A",
+    "src/experiments/evaluate_matched_degradation.py": "A",
+    "src/experiments/evaluate_planning_inference.py": "A",
+    "src/experiments/evaluate_site_transfer.py": "A",
+    "src/experiments/evaluate_threshold_sensitivity.py": "A",
+    "src/experiments/evaluate_trophic_state.py": "A",
+    "src/experiments/lock_closure_formal_model_lock.py": "M",
+    "src/experiments/run_closure_benchmark.py": "M",
+    "src/reporting/build_closure_evidence_matrix.py": "A",
+    "tests/test_closure_formal_model_lock.py": "M",
 }
 _FORMAL_MODEL_LOCK_P_STAGED_SCOPE = {
     "configs/closure_v1/formal_model_lock_authority.json": "A",
@@ -1507,7 +1517,7 @@ def _final_calibration_stage_adapter_error(
     gate: str, message: str
 ) -> RuntimeError:
     """Preserve the owning adapter error boundary for each calibration gate."""
-    if gate in {"H-E0-M", "P-E0-M", "R-E0-M"}:
+    if gate in {"H-E0-MBATCH", "P-E0-M", "R-E0-M"}:
         return ClosureFormalModelLockAdapterError(message)
     if gate.endswith("MID"):
         return ClosureLockedEvaluationInputManifestDialectAdapterError(message)
@@ -2652,6 +2662,32 @@ def resolve_dvc_bin(explicit_path: str | None) -> str:
         if resolved.returncode == 0 and resolved.stdout.strip():
             return resolved.stdout.strip()
     raise SystemExit("Could not find dvc. Expected .venv/bin/dvc or set DVC_BIN.")
+
+
+def _initialize_precommit_dvc_observation(
+    explicit_path: str | None,
+    *,
+    formal_model_lock_active: bool,
+    require_locked_input_binary: bool,
+) -> tuple[str, dict[str, Any]]:
+    """Return the closed DVC boundary without touching DVC for formal E0-M."""
+
+    if formal_model_lock_active:
+        return DEFAULT_DVC_BIN.as_posix(), {}
+    dvc_bin = resolve_dvc_bin(explicit_path)
+    if require_locked_input_binary:
+        validate_closure_locked_evaluation_input_dvc_binary(dvc_bin)
+    return dvc_bin, dvc_status_json(dvc_bin)
+
+
+def _recapture_precommit_dvc_status(
+    dvc_bin: str, *, formal_model_lock_active: bool
+) -> dict[str, Any]:
+    """Keep every formal H/P/R revalidation on the logical empty snapshot."""
+
+    if formal_model_lock_active:
+        return {}
+    return dvc_status_json(dvc_bin)
 
 
 def ensure_repo_root() -> None:
@@ -4580,7 +4616,7 @@ def _closure_locked_evaluation_input_manifest_dialect_scopes(
 def _closure_formal_model_lock_scopes(
     patch: Any,
 ) -> tuple[dict[str, str], dict[str, str], dict[str, str]]:
-    """Reject core-side H7/P2/R5 drift before selecting formal E0-M."""
+    """Reject core-side H17/P2/R5 drift before selecting formal E0-M."""
     expected = (
         _FORMAL_MODEL_LOCK_H_STAGED_SCOPE,
         _FORMAL_MODEL_LOCK_P_STAGED_SCOPE,
@@ -4593,9 +4629,13 @@ def _closure_formal_model_lock_scopes(
     )
     if (
         getattr(patch, "PATCH_GATE", None) != "E0-M"
-        or getattr(patch, "H_GATE", None) != "H-E0-M"
+        or getattr(patch, "H_GATE", None) != "H-E0-MBATCH"
         or getattr(patch, "P_GATE", None) != "P-E0-M"
         or getattr(patch, "R_GATE", None) != "R-E0-M"
+        or getattr(patch, "BASE_R_MID_COMMIT", None)
+        != "53947df3b826ee10be8cf3b137bae913bc73d2bb"
+        or getattr(patch, "BASE_H_E0_M_PREREQUISITE_COMMIT", None)
+        != "4bf1953660462b63115a47f97b1041e44d33d873"
         or any(
             type(actual) is not dict or actual != contract
             for actual, contract in zip(observed, expected, strict=True)
@@ -4625,7 +4665,7 @@ def _closure_formal_model_lock_scopes(
         != Path("reports/closure_v1/00_protocol/outcome_access_log.jsonl")
     ):
         raise ClosureFormalModelLockAdapterError(
-            "E0-M H7/P2/R5 scope contract drifted"
+            "E0-M H17/P2/R5 scope contract drifted"
         )
     return dict(expected[0]), dict(expected[1]), dict(expected[2])
 
@@ -4643,7 +4683,7 @@ def closure_formal_model_lock_pre_stage_scope(
         return {path: "??" if state == "A" else " M" for path, state in scope.items()}
 
     candidates = (
-        ("H-E0-M", short_map(h_scope), h_scope),
+        ("H-E0-MBATCH", short_map(h_scope), h_scope),
         ("P-E0-M", short_map(p_scope), p_scope),
         ("R-E0-M", short_map(r_scope), r_scope),
     )
@@ -4687,25 +4727,98 @@ def closure_formal_model_lock_pre_stage_scope(
 def _require_closure_formal_model_lock_stage_base(
     gate: str, *, patch: Any, repo_root: Path
 ) -> None:
-    """Bind H/P/R to R-E0-MI, H-E0-M, and P-E0-M respectively."""
-    h_scope, _, _ = _closure_formal_model_lock_scopes(patch)
+    """Bind H/P/R to the prerequisite, published H, and published P."""
+    h_scope, p_scope, _ = _closure_formal_model_lock_scopes(patch)
     head = _git_output(repo_root, "rev-parse", "HEAD").strip()
-    base = "53947df3b826ee10be8cf3b137bae913bc73d2bb"
-    if gate == "H-E0-M":
+    base = "4bf1953660462b63115a47f97b1041e44d33d873"
+    if gate == "H-E0-MBATCH":
         if head != base:
             raise ClosureFormalModelLockAdapterError(
-                "H-E0-M staging requires exact published R-E0-MI HEAD"
+                "H-E0-MBATCH staging requires exact published prerequisite HEAD"
             )
         _require_closure_formal_model_lock_prelock(patch=patch, repo_root=repo_root)
         return
     if gate == "P-E0-M":
-        raise ClosureFormalModelLockAdapterError(
-            "P-E0-M is blocked: formal model-lock infrastructure has 11 missing components"
+        parent = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        published_h_scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
         )
+        if parent != base:
+            raise ClosureFormalModelLockAdapterError(
+                "P-E0-M staging requires a direct H-E0-MBATCH child of the prerequisite"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                published_h_scope,
+                expected=h_scope,
+                context="published H-E0-MBATCH scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosureFormalModelLockAdapterError(str(exc)) from exc
+        _require_closure_formal_model_lock_unpublished(
+            patch=patch, repo_root=repo_root, require_staged=False
+        )
+        return
     if gate == "R-E0-M":
-        raise ClosureFormalModelLockAdapterError(
-            "R-E0-M is blocked: formal model-lock infrastructure has 11 missing components"
+        h_head = _git_output(repo_root, "rev-parse", "HEAD^").strip()
+        prerequisite = _git_output(repo_root, "rev-parse", "HEAD^^").strip()
+        published_p_scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD",
         )
+        published_h_scope = _git_output(
+            repo_root,
+            "diff-tree",
+            "--no-commit-id",
+            "--name-status",
+            "-r",
+            "--no-renames",
+            "HEAD^",
+        )
+        if prerequisite != base:
+            raise ClosureFormalModelLockAdapterError(
+                "R-E0-M staging requires exact prerequisite -> H -> P topology"
+            )
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                published_h_scope,
+                expected=h_scope,
+                context="published H-E0-MBATCH scope",
+            )
+            validate_anfis_ablation_git_name_status_map(
+                published_p_scope,
+                expected=p_scope,
+                context="published P-E0-M scope",
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosureFormalModelLockAdapterError(str(exc)) from exc
+        authority = _require_closure_formal_model_lock_authority(
+            patch=patch, repo_root=repo_root
+        )
+        if (
+            authority.get("h_batch_head") != h_head
+            or authority.get("p_patch_head") != head
+            or authority.get("r_state") != "complete"
+            or authority.get("r_stage_state") != "exact5_untracked"
+        ):
+            raise ClosureFormalModelLockAdapterError(
+                "R-E0-M staging authority is not bound to exact published H/P"
+            )
+        _require_closure_formal_model_lock_bundle(
+            patch=patch, repo_root=repo_root, require_staged=False
+        )
+        return
     raise ClosureFormalModelLockAdapterError("Unknown formal E0-M staging gate")
 
 
@@ -4731,17 +4844,37 @@ def _require_closure_formal_model_lock_prelock(
     if (
         type(before) is not dict
         or before.get("gate") != "E0-M"
-        or before.get("status") != "formal_model_lock_infrastructure_incomplete"
+        or before.get("status") != "ready_to_lock"
         or type(before.get("runner_readiness")) is not dict
         or before["runner_readiness"].get("status")
-        != "sealed_batch_runner_incomplete"
-        or before["runner_readiness"].get("missing_component_count") != 11
-        or before["runner_readiness"].get("formal_model_lock_ready") is not False
-        or before.get("formal_model_lock_ready") is not False
-        or before.get("missing_component_count") != 11
+        != "sealed_batch_runner_ready_for_formal_lock"
+        or before["runner_readiness"].get("missing_component_count") != 0
+        or before["runner_readiness"].get("formal_model_lock_ready") is not True
+        or before["runner_readiness"].get("evaluator_available") is not True
+        or before["runner_readiness"].get("sealed_batch_execution_ready") is not True
+        or before.get("formal_model_lock_ready") is not True
+        or before.get("missing_component_count") != 0
         or before.get("p_authority_generation_authorized") is not False
         or before.get("formal_output_count") != 0
         or before.get("outcome_access_log_state") != "absent"
+        or any(
+            before.get(key) is not False
+            for key in (
+                "formal_lock_execution_authorized",
+                "r_execution_authorized",
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "evaluation_authorized",
+                "outcome_access_authorized",
+                "target_paths_opened",
+                "outcome_paths_opened",
+                "future_outcomes_accessed",
+                "scientific_execution_run",
+                "verification_commands_run",
+                "dvc_commands_run",
+                "git_commands_mutating_run",
+            )
+        )
         or before.get("writes_performed") is not False
     ):
         raise ClosureFormalModelLockAdapterError("E0-M prelock result is not exact")
@@ -4765,16 +4898,27 @@ def _require_closure_formal_model_lock_unpublished(
         or result.get("gate") != "E0-M"
         or result.get("status") != "locked_unpublished"
         or result.get("p_stage_state") != expected_stage
+        or result.get("formal_model_lock_ready") is not True
+        or result.get("p_authority_generation_authorized") is not True
         or result.get("effective_authority") is not False
         or result.get("formal_lock_execution_authorized") is not False
+        or any(
+            result.get(key) is not False
+            for key in (
+                "e0_m_authorized",
+                "e0_u_authorized",
+                "evaluation_authorized",
+                "outcome_access_authorized",
+                "target_access_authorized",
+                "dvc_commands_authorized",
+                "git_commit_authorized",
+                "git_push_authorized",
+            )
+        )
         or result.get("writes_performed") is not False
     ):
         raise ClosureFormalModelLockAdapterError(
             "E0-M unpublished authority result drifted"
-        )
-    if result.get("p_authority_generation_authorized") is not True:
-        raise ClosureFormalModelLockAdapterError(
-            "P-E0-M is blocked until formal runner infrastructure is complete"
         )
     return result
 
@@ -4796,6 +4940,9 @@ def _require_closure_formal_model_lock_authority(
         or result.get("r_state") not in {"absent", "complete"}
         or result.get("r_stage_state")
         not in {"absent", "exact5_untracked", "exact5_staged", "published"}
+        or result.get("formal_model_lock_ready") is not True
+        or result.get("p_authority_generation_authorized") is not False
+        or result.get("effective_authority") is not True
         or result.get("formal_lock_execution_authorized")
         is not (result.get("r_state") == "absent")
         or result.get("e0_m_authorized")
@@ -4803,13 +4950,13 @@ def _require_closure_formal_model_lock_authority(
         or result.get("evaluation_authorized") is not False
         or result.get("e0_u_authorized") is not False
         or result.get("outcome_access_authorized") is not False
+        or result.get("target_access_authorized") is not False
+        or result.get("dvc_commands_authorized") is not False
+        or result.get("git_commit_authorized") is not False
+        or result.get("git_push_authorized") is not False
         or result.get("writes_performed") is not False
     ):
         raise ClosureFormalModelLockAdapterError("E0-M effective authority drifted")
-    if result.get("formal_model_lock_ready") is not True:
-        raise ClosureFormalModelLockAdapterError(
-            "R-E0-M is blocked until formal runner infrastructure is complete"
-        )
     return result
 
 
@@ -4830,12 +4977,21 @@ def _require_closure_formal_model_lock_bundle(
         or result.get("gate") != "E0-M"
         or result.get("status") != "formal_model_lock_validated"
         or result.get("r_stage_state") != expected_stage
-        or result.get("e0_m_authorized") is not True
+        or result.get("output_count") != 5
+        or result.get("manifest_written_last") is not True
+        or result.get("formal_model_lock_ready") is not True
+        or result.get("e0_m_authorized")
+        is not (result.get("r_stage_state") == "published")
         or result.get("evaluation_authorized") is not False
         or result.get("e0_u_authorized") is not False
         or result.get("outcome_access_authorized") is not False
+        or result.get("target_access_authorized") is not False
         or result.get("outcome_access_log_state") != "present_empty"
         or result.get("outcome_access_log_record_count") != 0
+        or result.get("future_outcomes_accessed") is not False
+        or result.get("scientific_execution_run") is not False
+        or result.get("dvc_commands_run") is not False
+        or result.get("git_commands_mutating_run") is not False
         or result.get("writes_performed") is not False
     ):
         raise ClosureFormalModelLockAdapterError("R-E0-M bundle result drifted")
@@ -4850,12 +5006,8 @@ def validate_closure_formal_model_lock_invocation(
 ) -> None:
     """Require the exact no-DVC formal H/P/R precommit invocation."""
     source = os.environ if env is None else env
-    if gate not in {"H-E0-M", "P-E0-M", "R-E0-M"}:
+    if gate not in {"H-E0-MBATCH", "P-E0-M", "R-E0-M"}:
         raise ClosureFormalModelLockAdapterError("Unknown formal E0-M invocation gate")
-    if gate in {"P-E0-M", "R-E0-M"}:
-        raise ClosureFormalModelLockAdapterError(
-            f"{gate} invocation is blocked while 11 formal components are missing"
-        )
     if (
         tuple(Path(value) for value in args.target)
         or not args.no_push
@@ -4893,7 +5045,7 @@ def _closure_formal_model_lock_scope_for_gate(
 ) -> dict[str, str]:
     h_scope, p_scope, r_scope = _closure_formal_model_lock_scopes(patch)
     scope = {
-        "H-E0-M": h_scope,
+        "H-E0-MBATCH": h_scope,
         "P-E0-M": p_scope,
         "R-E0-M": r_scope,
     }.get(gate)
@@ -4957,7 +5109,7 @@ def validate_closure_formal_model_lock_staged_bindings(
     scope = _closure_formal_model_lock_scope_for_gate(gate, patch=patch)
     expected_modes = (
         _FORMAL_MODEL_LOCK_H_GIT_MODES
-        if gate == "H-E0-M"
+        if gate == "H-E0-MBATCH"
         else {path: "100644" for path in scope}
     )
     records: list[RegistrationFileIdentity] = []
@@ -5010,10 +5162,6 @@ def revalidate_closure_formal_model_lock_transaction(
     repo_root: Path = Path("."),
 ) -> None:
     """Close formal H/P/R Git, remote, physical, and semantic races."""
-    if gate in {"P-E0-M", "R-E0-M"}:
-        raise ClosureFormalModelLockAdapterError(
-            f"{gate} transaction is blocked while 11 formal components are missing"
-        )
     validate_closure_formal_model_lock_staged_scope(staged_status, gate=gate)
     validate_closure_formal_model_lock_staged_scope(
         _git_output(repo_root, "diff", "--cached", "--name-status", "--no-renames"),
@@ -5033,12 +5181,12 @@ def revalidate_closure_formal_model_lock_transaction(
         raise ClosureFormalModelLockAdapterError(
             f"{gate} physical authority changed before semantic revalidation"
         )
-    if gate == "H-E0-M":
+    if gate == "H-E0-MBATCH":
         if _git_output(repo_root, "rev-parse", "HEAD").strip() != (
-            "53947df3b826ee10be8cf3b137bae913bc73d2bb"
+            "4bf1953660462b63115a47f97b1041e44d33d873"
         ):
             raise ClosureFormalModelLockAdapterError(
-                "H-E0-M base changed during precommit"
+                "H-E0-MBATCH base changed during precommit"
             )
         _require_closure_formal_model_lock_prelock(patch=patch, repo_root=repo_root)
     elif gate == "P-E0-M":
@@ -8760,6 +8908,125 @@ def _locked_evaluation_input_manifest_dialect_failure(
             message,
         ),
     ]
+
+
+def _formal_model_lock_dialect_failure(
+    findings: list[ReproducibilityFinding],
+    message: str,
+) -> list[ReproducibilityFinding]:
+    return [
+        *findings,
+        ReproducibilityFinding(
+            "fail",
+            "formal_model_lock_dialect",
+            "R-E0-M",
+            message,
+        ),
+    ]
+
+
+def adopt_closure_formal_model_lock_findings(
+    findings: list[ReproducibilityFinding],
+    *,
+    staged_status: str,
+    repo_root: Path = Path("."),
+) -> list[ReproducibilityFinding]:
+    """Adopt only the exact two generic R5 coverage failures after strict E0-M."""
+
+    patch = _closure_formal_model_lock_module()
+    try:
+        _, _, r_scope = _closure_formal_model_lock_scopes(patch)
+        validate_anfis_ablation_git_name_status_map(
+            staged_status,
+            expected=r_scope,
+            context="R-E0-M staged scope",
+        )
+    except (ClosureFormalModelLockAdapterError, DeferredDvcTargetError) as exc:
+        return _formal_model_lock_dialect_failure(findings, str(exc))
+    contract = getattr(patch, "GENERIC_MANIFEST_FINDINGS_CONTRACT", None)
+    if (
+        type(contract) is not tuple
+        or len(contract) != 2
+        or any(
+            type(record) is not dict
+            or set(record) != {"level", "check", "path", "message"}
+            or record.get("level") != "fail"
+            or any(type(record[key]) is not str for key in record)
+            for record in contract
+        )
+    ):
+        return _formal_model_lock_dialect_failure(
+            findings,
+            "E0-M generic manifest finding contract drifted.",
+        )
+    expected = tuple(ReproducibilityFinding(**record) for record in contract)
+    observed_non_ok = [finding for finding in findings if finding.level != "ok"]
+    if not _exact_finding_multiset(observed_non_ok, expected):
+        return _formal_model_lock_dialect_failure(
+            findings,
+            "E0-M generic findings were not the exact two-failure multiset.",
+        )
+    try:
+        authority = _require_closure_formal_model_lock_authority(
+            patch=patch,
+            repo_root=repo_root,
+        )
+        validation = _require_closure_formal_model_lock_bundle(
+            patch=patch,
+            repo_root=repo_root,
+            require_staged=True,
+        )
+    except ClosureFormalModelLockAdapterError as exc:
+        return _formal_model_lock_dialect_failure(findings, str(exc))
+    if (
+        authority.get("r_state") != "complete"
+        or authority.get("r_stage_state") != "exact5_staged"
+        or authority.get("e0_m_authorized") is not False
+        or validation.get("r_stage_state") != "exact5_staged"
+        or validation.get("e0_m_authorized") is not False
+    ):
+        return _formal_model_lock_dialect_failure(
+            findings,
+            "E0-M strict staged R5 validation result drifted.",
+        )
+    adopted = [finding for finding in findings if finding.level == "ok"]
+    adopted.append(
+        ReproducibilityFinding(
+            "ok",
+            "formal_model_lock_dialect",
+            "R-E0-M",
+            (
+                "Adopted exactly the sealed CSV/TXT coverage failures after "
+                "strict remote-aware R5 validation; no formal-lock file was rewritten."
+            ),
+        )
+    )
+    return adopted
+
+
+def closure_formal_model_lock_checks(
+    *,
+    staged_status: str,
+    selected_dvc_paths: list[Path],
+    artifacts: list[DvcArtifact],
+    max_manifest_hash_bytes: int,
+    verify_manifest_inputs: bool,
+    repo_root: Path = Path("."),
+) -> list[ReproducibilityFinding]:
+    """Run generic checks unchanged, then the exact heterogeneous R5 adapter."""
+
+    generic = reproducibility_checks(
+        staged_status=staged_status,
+        selected_dvc_paths=selected_dvc_paths,
+        artifacts=artifacts,
+        max_manifest_hash_bytes=max_manifest_hash_bytes,
+        verify_manifest_inputs=verify_manifest_inputs,
+    )
+    return adopt_closure_formal_model_lock_findings(
+        generic,
+        staged_status=staged_status,
+        repo_root=repo_root,
+    )
 
 
 def adopt_closure_locked_evaluation_input_manifest_dialect_findings(
@@ -12646,7 +12913,6 @@ def main() -> int:
                 print(str(exc), file=sys.stderr)
                 return 2
     report_path = args.report or default_report_path()
-    dvc_bin = resolve_dvc_bin(args.dvc_bin)
     mib_stage_gate = bool(
         formal_model_lock_active
         or locked_evaluation_input_manifest_dialect_active
@@ -12659,12 +12925,15 @@ def main() -> int:
             )
         )
     )
-    if mib_stage_gate:
-        try:
-            validate_closure_locked_evaluation_input_dvc_binary(dvc_bin)
-        except ClosureLockedEvaluationInputBundleAdapterError as exc:
-            print(str(exc), file=sys.stderr)
-            return 2
+    try:
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=formal_model_lock_active,
+            require_locked_input_binary=mib_stage_gate,
+        )
+    except ClosureLockedEvaluationInputBundleAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
     if deferred_dvc_paths and dvc_bin != DEFAULT_DVC_BIN.as_posix():
         print("Deferred models mode requires the repository .venv/bin/dvc.", file=sys.stderr)
         return 2
@@ -12676,7 +12945,6 @@ def main() -> int:
             print(str(exc), file=sys.stderr)
             return 2
     artifacts = load_configured_dvc_artifacts(args.manifest)
-    dvc_status_before = dvc_status_json(dvc_bin)
     changed_artifacts = dvc_status_candidates(dvc_status_before, artifacts)
     missing_pointer_artifacts = declared_artifacts_missing_pointers(artifacts)
     manual_targets = unique_paths([Path(path) for path in args.target])
@@ -13073,7 +13341,15 @@ def main() -> int:
             ) as exc:
                 print(str(exc), file=sys.stderr)
                 return 2
-        if final_calibration_stage_gate == "R-E0-MID":
+        if formal_model_lock_active and final_calibration_stage_gate == "R-E0-M":
+            reproducibility_findings = closure_formal_model_lock_checks(
+                staged_status=staged_status,
+                selected_dvc_paths=selected_dvc_paths,
+                artifacts=artifacts,
+                max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+                verify_manifest_inputs=args.verify_manifest_inputs,
+            )
+        elif final_calibration_stage_gate == "R-E0-MID":
             reproducibility_findings = (
                 closure_locked_evaluation_input_manifest_dialect_checks(
                     staged_status=staged_status,
@@ -13182,7 +13458,10 @@ def main() -> int:
                         staged_status=staged_status,
                         expected_snapshot=final_calibration_r8_snapshot,
                     )
-                dvc_status_after = dvc_status_json(dvc_bin)
+                dvc_status_after = _recapture_precommit_dvc_status(
+                    dvc_bin,
+                    formal_model_lock_active=formal_model_lock_active,
+                )
                 if dvc_status_after != dvc_status_before:
                     raise _final_calibration_stage_adapter_error(
                         final_calibration_stage_gate,
@@ -13346,7 +13625,13 @@ def main() -> int:
                         staged_status=staged_status,
                         expected_snapshot=final_calibration_r8_snapshot,
                     )
-                if dvc_status_json(dvc_bin) != dvc_status_before:
+                if (
+                    _recapture_precommit_dvc_status(
+                        dvc_bin,
+                        formal_model_lock_active=formal_model_lock_active,
+                    )
+                    != dvc_status_before
+                ):
                     raise _final_calibration_stage_adapter_error(
                         final_calibration_stage_gate,
                         f"{final_calibration_stage_gate[2:]} DVC status changed "

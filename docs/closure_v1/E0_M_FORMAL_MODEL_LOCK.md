@@ -16,8 +16,9 @@ changes denominators after development.
 
 ## Published predecessor authorities
 
-H-E0-M is based on the published Closure V1 state at
-`53947df3b826ee10be8cf3b137bae913bc73d2bb`. The formal lock must require,
+The superseding H-E0-MBATCH overlay is based on the published H-E0-M
+prerequisite at `4bf1953660462b63115a47f97b1041e44d33d873`, itself the
+direct child of `53947df3b826ee10be8cf3b137bae913bc73d2bb`. The formal lock must require,
 among all other frozen predecessors, both of the following independently:
 
 - the exact published final-calibration R8 authority and all eight immutable
@@ -45,19 +46,11 @@ closed.
 The unique gate is `E0-M` and the module stem is
 `closure_formal_model_lock`.
 
-H-E0-M is the direct non-merge child of the published base above and has exact
-scope `1M+6A`. The sole modification is:
-
-- `src/data/prepare_commit_artifacts.py`.
-
-The six additions are:
-
-- `configs/closure_v1/formal_model_lock.schema.json`;
-- this document;
-- `src/experiments/closure_formal_model_lock.py`;
-- `src/experiments/lock_closure_formal_model_lock.py`;
-- `src/experiments/run_closure_benchmark.py`;
-- `tests/test_closure_formal_model_lock.py`.
+H-E0-MBATCH is the direct non-merge child of the prerequisite above and has
+exact scope `7M+10A`. It modifies the seven prerequisite paths (schema, this
+document, precommit adapter, formal core, locker, runner, and governance test)
+and adds exactly the ten E2--E10 component paths enumerated by the runner.
+The runner contains E1 internally; no outcome data is read by H.
 
 P-E0-M is the direct non-merge child of H and contains exactly two regular
 `100644` additions, in this publication order:
@@ -133,21 +126,77 @@ observed result or future-outcome-derived field.
 `locked_batch_command.txt` contains exactly one newline-terminated command:
 
 ```text
-.venv/bin/python -I -B src/experiments/run_closure_benchmark.py --execute-sealed-batch
+/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch
 ```
 
-Its exact argv is:
+Its exact external launch argv is:
 
 ```text
-[".venv/bin/python", "-I", "-B", "src/experiments/run_closure_benchmark.py", "--execute-sealed-batch"]
+["/usr/bin/env", "-i", "LANG=C", "LC_ALL=C", ".venv/bin/python", "-I", "-S", "-B", "src/experiments/run_closure_benchmark.py", "--execute-sealed-batch"]
 ```
 
-There is no shell, glob, interpolation, redirection, pipeline, optional flag,
-environment-dependent path, extra argument, or alternative entrypoint. E0-M
-binds the runner's path, bytes, SHA-256, mode, and Git blob. The runner must
-load the future published E0-U authority as its first gate. Under E0-M alone,
-`--check-only` may validate the outcome-free contract, but
-`--execute-sealed-batch` must fail before any outcome path or evaluation I/O.
+The inner Python `sys.orig_argv` is exactly
+`[".venv/bin/python", "-I", "-S", "-B",
+"src/experiments/run_closure_benchmark.py", "--execute-sealed-batch"]` and the
+working directory is the repository root. There is no shell, glob,
+interpolation, redirection, pipeline, optional flag, inherited environment,
+extra argument, or alternative entrypoint. E0-M binds the runner's path,
+bytes, SHA-256, mode, Git blob, complete startup contract, and exact external
+and inner commands. Under E0-M alone, `--check-only` may validate the
+outcome-free contract, but `--execute-sealed-batch` must fail before any
+outcome path or evaluation I/O.
+
+The executable performs an authenticated, outcome-free bootstrap before it
+executes any future E0-U source. It requires exact isolated/no-site/no-bytecode
+flags, exact `LANG=C`/`LC_ALL=C` as the entire environment, exact bootstrap
+`sys.path`, import hooks, no trace/profile hook, and sealed identities for
+`/usr/bin/env`, Python, `/usr/bin/git`, local Git config, and the HTTPS remote
+helper. The future authority must already be a regular tracked `100644` file
+whose physical bytes equal the index and a locally recomputed,
+content-addressed HEAD commit/tree/blob chain. Local `main`, `origin/main`,
+`origin/HEAD`, HEAD, and live `main` at the literal HTTPS repository URL must
+all agree before those bytes are compiled. Missing E0-U stops at the local
+anchored source lookup before the live-remote query.
+
+The authenticated authority source permits only a module docstring, exact
+future-annotations directive, literal constants, and undecorated function
+definitions; classes, executable top-level imports or expressions, common
+dynamic-loader/reflection primitives, and nonliteral defaults are forbidden.
+Direct import statements inside functions are restricted to a closed stdlib
+allowlist, and the authority runs with a restricted builtins mapping. The
+content-addressed, live-remote Git binding remains the authority for the
+behavior inside the authenticated `require` function; this contract does not
+claim that arbitrary Python function behavior can be proven safe by a static
+syntax filter alone. Its `require` API is the first
+capability-bearing/outcome-bearing operation, not the first bootstrap check.
+The compatibility field `authority_is_first_execute_operation=true` is
+therefore defined narrowly as "first capability or outcome operation after the
+authenticated outcome-free bootstrap"; it does not erase or mislabel those
+preceding trust checks.
+Only after that API returns may the runner activate the authority-bound
+runtime: it validates exact wheel `RECORD` and recursive physical records for
+the ten declared distributions and native-library roots, sets the structurally
+non-creatable pycache prefix `/dev/null/closure_e0_u_pycache`, appends purelib
+without `site` or `.pth`, and installs a closed origin-checking import guard.
+The runner rejects preactivated scientific modules, seals existing importer
+cache entries by object identity, accepts only exact loader types/origins, and
+recaptures the exact process environment, module/import topology, runtime
+records after callbacks, immediately before and after publication/audit, and
+at the terminal boundary. The E0-U result has an exact public keyset; runner
+callables and observed private records never enter component contexts.
+Component diagnostics have exact, branch-aware keysets and
+permit only finite JSON scalars, lists, and string-keyed maps; DataFrames,
+arrays, bytes, paths, callables, tuples, and extra keys cannot travel through
+the diagnostics channel.
+
+The kernel, ELF loader, `/usr/bin/env`, Python executable and linked system
+libraries, and Python frozen/stdlib bootstrap are an unavoidable external TCB
+before Python can run its own checks. The sealed launcher minimizes that TCB
+and the first Python boundary detects drift; it does not claim to
+retroactively prevent side effects from a compromised pre-Python TCB.
+The live-remote check likewise treats the sealed `git-remote-http` helper plus
+the system libcurl/TLS/DNS/CA transport stack as an explicit external network
+TCB; it does not claim a complete binary closure of that system stack.
 
 The sealed batch is a single evaluation transaction, not a training command.
 Its stage ordering is fixed for the Closure V1 E1--E10 analysis, and it may
@@ -173,29 +222,17 @@ revalidated.
 
 ## H/P locker behavior
 
-### Current implementation-readiness barrier
+### Superseding implementation-readiness barrier
 
-The H slice may publish the formal-lock infrastructure and the fail-closed
-runner contract, but its runner is intentionally incomplete at this revision.
-Its source-only runner result is `status=sealed_batch_runner_incomplete`; the
-formal prelock/check-only result is
-`status=formal_model_lock_infrastructure_incomplete`, with
-`missing_component_count=11`, `formal_model_lock_ready=false`,
-`evaluator_available=false`, and `sealed_batch_execution_ready=false`. The
-declared E1 scientific executor and the required external component APIs are
-not yet a complete executable batch. Target access, outcome access, future
-outcome access, writes, E0-M authorization, E0-U authorization, and evaluation
-authorization all remain false.
-
-Consequently this H revision is infrastructure-only: P-E0-M and R-E0-M are
-not eligible to run or publish from it. `--check-only` must expose the barrier,
-and `--execute-lock`, the effective authority path, and the one-shot R builder
-must fail closed before P/R publication. A later, separately reviewed H
-overlay must supply all missing components, produce and seal a new runner
-source/contract hash, restore exact zero missing components, and pass the full
-outcome-free audit before P may be generated. Publishing the current
-incomplete runner as effective formal-model authority would be a protocol
-error, not an accepted deferred E0-U implementation detail.
+The published prerequisite remains immutable evidence of the earlier
+`missing_component_count=11` STOP. H-E0-MBATCH supersedes only that readiness
+surface: it supplies E1 and all ten external component paths and requires
+`status=sealed_batch_runner_ready_for_formal_lock`, exact zero missing
+components, `formal_model_lock_ready=true`, `evaluator_available=true`, and
+`sealed_batch_execution_ready=true`. This means the command and all component
+APIs are sealable; it does not execute them and does not authorize E0-U.
+Target access, outcome access, writes, E0-M authorization, E0-U authorization,
+and evaluation authorization remain false throughout H and P.
 
 `src/experiments/lock_closure_formal_model_lock.py --check-only` performs
 schema preflight and captures the complete outcome-free prelock state twice.
@@ -237,20 +274,25 @@ authority, refs, remote, index/worktree, namespace, R8, R10, configs, source
 identities, and all input hashes. The five R finals and every R temporary must
 be absent.
 
-All five outputs are built from outcome-free inputs into private temporaries,
-strictly parsed, semantically rebuilt, byte-hashed, metadata-checked, and
-cross-bound before any final appears. Publication is no-clobber and follows
-the exact five-record order above. Every step is bracketed by full-state
-recapture. The empty log is published fourth and verified at exact zero bytes;
-the cross-binding `model_lock.yaml` is published fifth and last. A later
-failure rolls back only owned final inodes in reverse order. Foreign or
-ambiguous state is retained for audit and produces STOP rather than
-destructive cleanup.
+All five output byte strings are first rebuilt in memory from outcome-free
+inputs, strictly parsed, byte-hashed, metadata-checked, and cross-bound before
+any final appears. Each output then passes through its own private temporary
+and a no-clobber publication step in the exact five-record order above. Every
+step is bracketed by full-state recapture. The empty log is published fourth
+and verified at exact zero bytes; the cross-binding `model_lock.yaml` is
+published fifth and last. A later failure rolls back only owned final inodes
+in reverse order. Foreign or ambiguous state is retained for audit and
+produces STOP rather than destructive cleanup.
 
-After publication, the builder validates all five named and retained-FD
+The locker exposes this transaction only as
+`--execute-formal-model-lock`; it is separate from `--execute-lock` (P).
+After publication, the builder validates all five named owned-inode
 identities, exact bytes, semantic relationships, output order, empty-log
 state, P authority, R8, R10, repository, remote, namespace, and guard before
-emitting a success result. It performs no DVC add/push and no Git add/commit/
+emitting a success result. The unpublished `model_lock.yaml` keeps
+`e0_m_authorized=false` and records only that E0-M becomes effective after
+publication; the strict loader is the sole source of the effective
+authorization bit. The builder performs no DVC add/push and no Git add/commit/
 push. The authorization is consumed by the single attempted transaction; a
 failure is not retried without audit and a new explicit authorization.
 
@@ -303,28 +345,25 @@ staging. The report must contain no non-adopted warning or failure.
 
 ## Acceptance sequence
 
-1. Publish H-E0-M `1M+6A` as the direct child of `53947df3b...`; do not create
-   P or R.
-2. Under separate authorization run `--check-only`; require equal captures,
-   absent P/R, no writes, no verification, no outcome access, and the explicit
-   current `sealed_batch_runner_incomplete`/missing-11 result.
-3. Stop. Do not run `--execute-lock` and do not generate P or R from this H.
-4. In a future reviewed H overlay, implement all missing batch components and
-   seal the new runner hash; repeat the full outcome-free check until missing
-   count is exactly zero and formal-lock readiness is true.
-5. Only then, under a new authorization, run `--execute-lock`; publish only P
+1. Preserve published H-E0-M `1M+6A` as immutable prerequisite evidence.
+2. Publish H-E0-MBATCH `7M+10A` as its direct child; do not create P or R.
+3. Under separate authorization run `--check-only`; require equal captures,
+   absent P/R, no writes, no verification, no outcome access, and exact
+   `sealed_batch_runner_ready_for_formal_lock`/missing-zero readiness.
+4. Under a new authorization run `--execute-lock`; publish only P
    authority then companion and audit them before precommit.
-6. Publish exact P-E0-M `2A`, verify clean local/tracking/live-remote refs, and
+5. Publish exact P-E0-M `2A`, verify clean local/tracking/live-remote refs, and
    reload the effective authority independently.
-7. Under a new explicit one-shot authorization, create exact R-E0-M `5A` in
+6. Under a new explicit one-shot authorization, create exact R-E0-M `5A` in
    calibration/hypothesis/batch/empty-log/model-lock-last order.
-8. Strictly audit R, then run precommit under separate authorization; require
+7. Strictly audit R, then run precommit under separate authorization; require
    exact dialect adoption, exact five staged additions, no DVC selection or
    command, and no other warning or failure.
-9. Leave Git commit and Git push to the user. E0-U and the sealed evaluation
+8. Leave Git commit and Git push to the user. E0-U and the sealed evaluation
    batch remain separately authorized future barriers.
 
-Acceptance requires exact H `1M+6A`, P `2A`, R `5A`, authority-first and
+Acceptance requires prerequisite H `1M+6A`, superseding H-E0-MBATCH
+`7M+10A`, P `2A`, R `5A`, authority-first and
 manifest-last P publication, exact five-output R order with a zero-byte log
 fourth and `model_lock.yaml` last, immutable R8/R10, exact runner command and
 source identity, complete

@@ -2,7 +2,7 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://lentic-pipe.local/schemas/closure-v1/formal-model-lock-authority-v1.json",
   "title": "Closure V1 E0-M formal model lock authority",
-  "description": "Closed future P-E0-M authority schema. The current H slice validates this schema but cannot generate an authority while its runner is incomplete.",
+  "description": "Closed P-E0-M authority schema for the complete, outcome-free H-E0-MBATCH implementation.",
   "type": "object",
   "additionalProperties": false,
   "required": [
@@ -28,7 +28,7 @@
     "gate": {"const": "E0-M"},
     "status": {"const": "locked_unpublished"},
     "generated_at_utc": {"type": "string", "minLength": 20},
-    "base_head": {"const": "53947df3b826ee10be8cf3b137bae913bc73d2bb"},
+    "base_head": {"const": "4bf1953660462b63115a47f97b1041e44d33d873"},
     "repository": {"$ref": "#/$defs/repository"},
     "h_patch": {"$ref": "#/$defs/hPatch"},
     "runner_readiness": {"$ref": "#/$defs/runnerReadiness"},
@@ -55,15 +55,7 @@
         "role",
         "path",
         "bytes",
-        "sha256",
-        "git_oid",
-        "git_mode",
-        "device",
-        "inode",
-        "mode",
-        "nlink",
-        "mtime_ns",
-        "ctime_ns"
+        "sha256"
       ],
       "properties": {
         "role": {"type": "string", "minLength": 1},
@@ -72,18 +64,14 @@
         "sha256": {"$ref": "#/$defs/sha256"},
         "git_oid": {"$ref": "#/$defs/sha1"},
         "git_mode": {"enum": ["100644", "100755"]},
-        "device": {"type": "integer"},
-        "inode": {"type": "integer"},
-        "mode": {"enum": [420, 493]},
-        "nlink": {"const": 1},
-        "mtime_ns": {"type": "integer"},
-        "ctime_ns": {"type": "integer"}
+        "mode": {"enum": [420, 493]}
       }
     },
     "hComponentRecord": {
       "allOf": [
         {"$ref": "#/$defs/stableRecord"},
         {
+          "required": ["git_oid", "git_mode"],
           "properties": {
             "role": {"const": "formal_model_lock_h_component"},
             "path": {
@@ -91,9 +79,19 @@
                 "configs/closure_v1/formal_model_lock.schema.json",
                 "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md",
                 "src/data/prepare_commit_artifacts.py",
+                "src/experiments/build_trophic_reference_targets.py",
+                "src/experiments/calibrate_uncertainty_closure.py",
                 "src/experiments/closure_formal_model_lock.py",
+                "src/experiments/compare_models_clustered.py",
+                "src/experiments/evaluate_anfis_ablation.py",
+                "src/experiments/evaluate_matched_degradation.py",
+                "src/experiments/evaluate_planning_inference.py",
+                "src/experiments/evaluate_site_transfer.py",
+                "src/experiments/evaluate_threshold_sensitivity.py",
+                "src/experiments/evaluate_trophic_state.py",
                 "src/experiments/lock_closure_formal_model_lock.py",
                 "src/experiments/run_closure_benchmark.py",
+                "src/reporting/build_closure_evidence_matrix.py",
                 "tests/test_closure_formal_model_lock.py"
               ]
             }
@@ -105,6 +103,7 @@
       "allOf": [
         {"$ref": "#/$defs/stableRecord"},
         {
+          "required": ["mode"],
           "properties": {
             "role": {"const": "published_final_calibration_r8_output"},
             "path": {"pattern": "^(data|reports)/closure_v1/"},
@@ -118,6 +117,7 @@
       "allOf": [
         {"$ref": "#/$defs/stableRecord"},
         {
+          "required": ["mode"],
           "properties": {
             "role": {"const": "published_locked_evaluation_input"},
             "path": {
@@ -144,6 +144,7 @@
       "allOf": [
         {"$ref": "#/$defs/stableRecord"},
         {
+          "required": ["mode"],
           "properties": {
             "role": {"const": "formal_model_policy_input"},
             "path": {
@@ -165,6 +166,7 @@
       "allOf": [
         {"$ref": "#/$defs/stableRecord"},
         {
+          "required": ["mode"],
           "properties": {
             "role": {"const": "formal_model_lock_authority_schema"},
             "path": {"const": "configs/closure_v1/formal_model_lock.schema.json"},
@@ -184,9 +186,19 @@
             "configs/closure_v1/formal_model_lock.schema.json",
             "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md",
             "src/data/prepare_commit_artifacts.py",
+            "src/experiments/build_trophic_reference_targets.py",
+            "src/experiments/calibrate_uncertainty_closure.py",
             "src/experiments/closure_formal_model_lock.py",
+            "src/experiments/compare_models_clustered.py",
+            "src/experiments/evaluate_anfis_ablation.py",
+            "src/experiments/evaluate_matched_degradation.py",
+            "src/experiments/evaluate_planning_inference.py",
+            "src/experiments/evaluate_site_transfer.py",
+            "src/experiments/evaluate_threshold_sensitivity.py",
+            "src/experiments/evaluate_trophic_state.py",
             "src/experiments/lock_closure_formal_model_lock.py",
             "src/experiments/run_closure_benchmark.py",
+            "src/reporting/build_closure_evidence_matrix.py",
             "tests/test_closure_formal_model_lock.py"
           ]
         },
@@ -198,6 +210,9 @@
       "additionalProperties": false,
       "required": [
         "base_r_mid_commit",
+        "base_h_e0_m_prerequisite_commit",
+        "h_batch_head",
+        "h_state",
         "head",
         "main",
         "origin_main",
@@ -209,6 +224,9 @@
       ],
       "properties": {
         "base_r_mid_commit": {"const": "53947df3b826ee10be8cf3b137bae913bc73d2bb"},
+        "base_h_e0_m_prerequisite_commit": {"const": "4bf1953660462b63115a47f97b1041e44d33d873"},
+        "h_batch_head": {"$ref": "#/$defs/sha1"},
+        "h_state": {"const": "published"},
         "head": {"$ref": "#/$defs/sha1"},
         "main": {"$ref": "#/$defs/sha1"},
         "origin_main": {"$ref": "#/$defs/sha1"},
@@ -218,8 +236,7 @@
         "verify_remote": {"type": "boolean"},
         "workspace_status": {
           "type": "array",
-          "minItems": 7,
-          "maxItems": 7,
+          "maxItems": 0,
           "uniqueItems": true,
           "items": {"$ref": "#/$defs/workspaceStatusRecord"}
         }
@@ -237,14 +254,14 @@
         "components_sha256"
       ],
       "properties": {
-        "gate": {"const": "H-E0-M"},
-        "component_count": {"const": 7},
-        "added_count": {"const": 6},
-        "modified_count": {"const": 1},
+        "gate": {"const": "H-E0-MBATCH"},
+        "component_count": {"const": 17},
+        "added_count": {"const": 10},
+        "modified_count": {"const": 7},
         "components": {
           "type": "array",
-          "minItems": 7,
-          "maxItems": 7,
+          "minItems": 17,
+          "maxItems": 17,
           "uniqueItems": true,
           "items": {"$ref": "#/$defs/hComponentRecord"}
         },
@@ -270,7 +287,7 @@
         "mode": {"const": 420},
         "nlink": {"const": 1},
         "contract_sha256": {"$ref": "#/$defs/sha256"},
-        "sealed_command": {"const": ".venv/bin/python -I -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"}
+        "sealed_command": {"const": "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"}
       }
     },
     "missingComponentRecord": {
@@ -360,6 +377,130 @@
         "writes_performed": {"const": false}
       }
     },
+    "startupContract": {
+      "const": {
+        "authenticated_bootstrap": {
+          "authority_source_binding": "physical_equals_index_equals_content_addressed_head_blob",
+          "authority_source_top_level": "future_annotations_literals_functions_no_classes",
+          "authority_stdlib_import_roots": [
+            "base64",
+            "collections",
+            "csv",
+            "hashlib",
+            "io",
+            "json",
+            "os",
+            "pathlib",
+            "stat",
+            "subprocess",
+            "sys",
+            "typing"
+          ],
+          "git_and_https_helper_physically_sealed": true,
+          "live_remote_transport_tcb": [
+            "git_remote_http",
+            "system_libcurl_tls_dns_and_ca_stack"
+          ],
+          "live_remote_main_equals_head": true,
+          "live_remote_url": "https://github.com/ejherran/lentic-pipe.git",
+          "outcome_free": true
+        },
+        "authority_require": {
+          "first_capability_operation": true,
+          "private_apis_removed_from_component_payload": true,
+          "result_exact_keys": true,
+          "runtime_environment_record_key": "sealed_runtime_environment_record",
+          "source_record_key": "sealed_authority_source_record"
+        },
+        "bootstrap_sys_path": [
+          "/usr/lib/python314.zip",
+          "/usr/lib/python3.14",
+          "/usr/lib/python3.14/lib-dynload"
+        ],
+        "component_diagnostics": {
+          "branch_aware": true,
+          "canonical_json_scalars_lists_maps_only": true,
+          "component_count": 11,
+          "exact_keysets": true
+        },
+        "external_launch_argv": [
+          "/usr/bin/env",
+          "-i",
+          "LANG=C",
+          "LC_ALL=C",
+          ".venv/bin/python",
+          "-I",
+          "-S",
+          "-B",
+          "src/experiments/run_closure_benchmark.py",
+          "--execute-sealed-batch"
+        ],
+        "external_launch_command": "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n",
+        "external_pre_python_tcb": [
+          "/usr/bin/env",
+          "kernel_and_elf_loader",
+          "/usr/bin/python3.14_and_linked_system_libraries",
+          "python_frozen_and_stdlib_bootstrap"
+        ],
+        "publication": {
+          "artifact_count": 52,
+          "physical_post_publication_auditor_required": true,
+          "stage_count": 10,
+          "transactional_publisher_required": true
+        },
+        "python_argv": [
+          ".venv/bin/python",
+          "-I",
+          "-S",
+          "-B",
+          "src/experiments/run_closure_benchmark.py",
+          "--execute-sealed-batch"
+        ],
+        "python_command": ".venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n",
+        "runtime_activation": {
+          "import_origins_physically_sealed": true,
+          "importer_cache_object_identity_sealed": true,
+          "manual_purelib_after_authority": true,
+          "preactivated_runtime_modules_forbidden": true,
+          "process_environment_recaptured": true,
+          "pycache_prefix": "/dev/null/closure_e0_u_pycache",
+          "runtime_distributions": [
+            "joblib",
+            "numpy",
+            "pandas",
+            "pyarrow",
+            "python-dateutil",
+            "scikit-learn",
+            "scipy",
+            "six",
+            "threadpoolctl",
+            "tzdata"
+          ],
+          "runtime_import_roots": [
+            "dateutil",
+            "joblib",
+            "numpy",
+            "pandas",
+            "pyarrow",
+            "scipy",
+            "six",
+            "sklearn",
+            "threadpoolctl",
+            "tzdata"
+          ],
+          "runtime_recaptured_after_callbacks_before_publication_and_at_terminal": true,
+          "site_and_pth_forbidden": true,
+          "stdlib_import_roots_closed": true
+        },
+        "schema_version": "closure_sealed_batch_startup_v1",
+        "startup_environment": {"LANG": "C", "LC_ALL": "C"},
+        "startup_flags": {
+          "dont_write_bytecode": true,
+          "isolated": true,
+          "no_site": true
+        }
+      }
+    },
     "runnerReadiness": {
       "type": "object",
       "additionalProperties": false,
@@ -369,6 +510,7 @@
         "runner",
         "batch_contract_sha256",
         "sealed_batch_command",
+        "startup_contract",
         "component_readiness",
         "formal_model_lock_ready",
         "evaluator_available",
@@ -390,7 +532,8 @@
         "status": {"const": "sealed_batch_runner_ready_for_formal_lock"},
         "runner": {"$ref": "#/$defs/runnerSourceRecord"},
         "batch_contract_sha256": {"$ref": "#/$defs/sha256"},
-        "sealed_batch_command": {"const": ".venv/bin/python -I -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"},
+        "sealed_batch_command": {"const": "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"},
+        "startup_contract": {"$ref": "#/$defs/startupContract"},
         "component_readiness": {"$ref": "#/$defs/componentReadiness"},
         "formal_model_lock_ready": {"const": true},
         "evaluator_available": {"const": true},

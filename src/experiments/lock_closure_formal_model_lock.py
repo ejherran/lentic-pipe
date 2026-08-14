@@ -187,7 +187,7 @@ def _capture_prelock_state() -> tuple[Any, dict[str, Any]]:
 
 
 def check_only() -> dict[str, Any]:
-    """Revalidate the incomplete outcome-free H prerequisite without writes."""
+    """Revalidate the complete outcome-free H-E0-MBATCH candidate."""
 
     schema = patch.preflight_formal_model_lock_schema(repo_root=PROJECT_ROOT)
     physical_before, prelock_before = _capture_prelock_state()
@@ -197,18 +197,17 @@ def check_only() -> dict[str, Any]:
     if prelock_before != prelock_after:
         raise _error("E0-M topology, refs, namespace, or prelock state changed")
     if (
-        prelock_before.get("status")
-        != "formal_model_lock_infrastructure_incomplete"
-        or prelock_before.get("formal_model_lock_ready") is not False
-        or prelock_before.get("missing_component_count") != 11
+        prelock_before.get("status") != "ready_to_lock"
+        or prelock_before.get("formal_model_lock_ready") is not True
+        or prelock_before.get("missing_component_count") != 0
         or prelock_before.get("p_authority_generation_authorized") is not False
         or not isinstance(prelock_before.get("runner_readiness"), Mapping)
         or prelock_before["runner_readiness"].get("status")
-        != "sealed_batch_runner_incomplete"
+        != "sealed_batch_runner_ready_for_formal_lock"
     ):
-        raise _error("E0-M incomplete H unexpectedly authorizes P generation")
+        raise _error("H-E0-MBATCH candidate readiness drifted")
     return {
-        "status": "formal_model_lock_infrastructure_incomplete",
+        "status": "ready_to_lock",
         "gate": patch.PATCH_GATE,
         "schema_preflight": schema,
         "prelock": prelock_before,
@@ -218,8 +217,8 @@ def check_only() -> dict[str, Any]:
         "r_output_count": len(patch.FORMAL_MODEL_LOCK_R_STAGED_SCOPE),
         "physical_snapshot_revalidated": True,
         "prelock_revalidated": True,
-        "formal_model_lock_ready": False,
-        "missing_component_count": 11,
+        "formal_model_lock_ready": True,
+        "missing_component_count": 0,
         "p_authority_generation_authorized": False,
         "writes_performed": False,
         "verification_commands_run": False,
@@ -242,7 +241,7 @@ def execute_lock() -> dict[str, Any]:
     physical_before, prelock_before = _capture_prelock_state()
     if prelock_before.get("p_authority_generation_authorized") is not True:
         raise _error(
-            "E0-M P generation is forbidden while batch infrastructure is incomplete"
+            "E0-M P generation requires published H-E0-MBATCH"
         )
     verification = run_formal_model_lock_verification(
         expected_schema_preflight=schema
@@ -304,12 +303,34 @@ def check_effective() -> dict[str, Any]:
     )
 
 
+def execute_formal_model_lock() -> dict[str, Any]:
+    """Materialize exact R-E0-M without executing the sealed batch."""
+
+    result = patch.execute_formal_model_lock(
+        verify_remote=True,
+        repo_root=PROJECT_ROOT,
+    )
+    validated = patch.validate_formal_model_lock_bundle(
+        require_staged=False,
+        verify_remote=True,
+        repo_root=PROJECT_ROOT,
+    )
+    if (
+        result.get("status") != "formal_model_lock_written_unpublished"
+        or validated.get("status") != "formal_model_lock_validated"
+        or validated.get("r_stage_state") != "exact5_untracked"
+    ):
+        raise _error("R-E0-M post-publication validation drifted")
+    return {"materialization": result, "validation": validated}
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     mode = parser.add_mutually_exclusive_group(required=True)
     mode.add_argument("--check-only", action="store_true")
     mode.add_argument("--execute-lock", action="store_true")
     mode.add_argument("--check-effective", action="store_true")
+    mode.add_argument("--execute-formal-model-lock", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -320,8 +341,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             payload = check_only()
         elif args.execute_lock:
             payload = execute_lock()
-        else:
+        elif args.check_effective:
             payload = check_effective()
+        else:
+            payload = execute_formal_model_lock()
     except patch.ClosureFormalModelLockError as exc:
         print(str(exc), file=sys.stderr)
         return 2
