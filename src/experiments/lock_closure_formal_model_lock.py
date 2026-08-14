@@ -187,7 +187,7 @@ def _capture_prelock_state() -> tuple[Any, dict[str, Any]]:
 
 
 def check_only() -> dict[str, Any]:
-    """Revalidate the published, outcome-free H-E0-MBATCHP1 boundary."""
+    """Revalidate the published, outcome-free H-E0-MBATCHP2 boundary."""
 
     schema = patch.preflight_formal_model_lock_schema(repo_root=PROJECT_ROOT)
     physical_before, prelock_before = _capture_prelock_state()
@@ -205,7 +205,7 @@ def check_only() -> dict[str, Any]:
         or prelock_before["runner_readiness"].get("status")
         != "sealed_batch_runner_ready_for_formal_lock"
     ):
-        raise _error("published H-E0-MBATCHP1 readiness drifted")
+        raise _error("published H-E0-MBATCHP2 readiness drifted")
     return {
         "status": "ready_to_lock",
         "gate": patch.PATCH_GATE,
@@ -241,7 +241,7 @@ def execute_lock() -> dict[str, Any]:
     physical_before, prelock_before = _capture_prelock_state()
     if prelock_before.get("p_authority_generation_authorized") is not True:
         raise _error(
-            "E0-M P generation requires published H-E0-MBATCHP1"
+            "E0-M P generation requires published H-E0-MBATCHP2"
         )
     verification = run_formal_model_lock_verification(
         expected_schema_preflight=schema

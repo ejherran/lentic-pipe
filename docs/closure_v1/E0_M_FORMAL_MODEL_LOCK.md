@@ -20,14 +20,19 @@ The published H-E0-MBATCH implementation at
 `4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8` is the direct child of the
 published H-E0-M prerequisite at
 `4bf1953660462b63115a47f97b1041e44d33d873`, itself the direct child of
-`53947df3b826ee10be8cf3b137bae913bc73d2bb`. H-E0-MBATCHP1 is the narrow
-check-only correction above that immutable H17 implementation. The formal
-lock must require, among all other frozen predecessors, both of the following
-independently:
+`53947df3b826ee10be8cf3b137bae913bc73d2bb`. H-E0-MBATCHP1 at
+`367143285067b91f85df3b81542b30db9c74fc2f` is the narrow check-only
+correction above that immutable H17 implementation. H-E0-MBATCHP2 is the
+narrow offline-validation correction above P1. The formal lock must require,
+among all other frozen predecessors, both of the following independently:
 
 - the exact published final-calibration R8 authority and all eight immutable
-  final-calibration records, with digest
-  `524928813b26bed6de9feee34eff1e946f9fc214521c3a39171ed905b3faf7a2`;
+  final-calibration records. The authority digest is
+  `524928813b26bed6de9feee34eff1e946f9fc214521c3a39171ed905b3faf7a2`,
+  while the separate canonical rehash of the exact eight sorted portable
+  records is
+  `ae353e664a6136803aad1c410d7355e5dead9c907ca01a57799f41c967855af5`;
+  both bindings are mandatory and must never be substituted for one another;
 - the exact published locked-evaluation R10 authority and all ten live input
   records, with strict digest
   `2b1e89ffa6816ad3bbaa8e1e8c5122b6b0b014dfc4645886443ffabe84036c17`.
@@ -67,7 +72,13 @@ the correction must be a direct exact-`5M` child, and the cumulative
 the same H17 path set. Any other parent, merge, path, state, or cumulative
 scope fails closed.
 
-P-E0-M is the direct non-merge child of the published H-E0-MBATCHP1 correction
+H-E0-MBATCHP2 is the direct non-merge child of the exact published
+H-E0-MBATCHP1 commit `367143285067b91f85df3b81542b30db9c74fc2f` and has the
+same exact `5M` scope. P1 must remain a direct exact-`5M` child of `4d0f2eb...`,
+P2 must remain a direct exact-`5M` child of P1, and the cumulative
+`4bf1953...`--P1 and `4bf1953...`--P2 scopes must both remain H17.
+
+P-E0-M is the direct non-merge child of the published H-E0-MBATCHP2 correction
 and contains exactly two regular `100644` additions, in this publication
 order:
 
@@ -82,6 +93,16 @@ misrepresenting them as current files. Its script is
 counts, sorted path sets, modes, byte counts, SHA-256 values, Git blobs,
 commits, roles, and aggregate digests; duplicate, omitted, additional, or
 reordered records fail closed.
+
+For H-E0-MBATCHP2 the current `inputs` remain the exact 17 physical H paths.
+The companion additionally carries exactly five sorted `historical_inputs`
+from commit `367143285067b91f85df3b81542b30db9c74fc2f`, one for every P2-modified
+path. Each closed record contains only `role`, `path`, `commit`, `git_mode`,
+`git_oid`, `bytes`, and `sha256`, uses role
+`superseded_h_e0_m_check_only_patch_component`, and is reconstructed from its
+Git blob rather than compared to current physical bytes. Their canonical
+`historical_inputs_sha256` is
+`33d3e44c899797570e1a0ccd3514902d57ce40c67a8f9c6043d7398f9064e426`.
 
 P publication is necessary but not sufficient to create the formal model
 lock. The effective P authority must be published, clean, remotely aligned,
@@ -256,14 +277,30 @@ predicate, although the core and `--execute-lock` correctly require `true`
 after H publication. H-E0-MBATCHP1 corrects only that boundary. While its
 exact `5M` worktree/index slice is still an unpublished H candidate, the core
 continues to report `p_authority_generation_authorized=false` and check-only
-must stop. Only the clean, locally and remotely aligned, direct published
-H-E0-MBATCHP1 child reports and accepts `true`; P and R remain wholly absent.
+must stop. P1 publication made that historical core state report `true`, but
+the current locker supersedes it with the P2 topology below: only the clean,
+locally and remotely aligned, direct published H-E0-MBATCHP2 child is accepted
+as the active `true` state; P and R remain wholly absent during H.
+
+The first P pair generated under P1 correctly sealed
+`repository.verify_remote=true`, but the offline validator reconstructed that
+historical proof bit as `false` when invoked with `verify_remote=false` and
+therefore rejected an otherwise byte-identical payload. That exact P pair is
+blocked evidence and is not publishable. H-E0-MBATCHP2 preserves it for audit
+outside the active namespace and changes only the validator dialect: every P
+payload must seal `repository.verify_remote=true`; online validation remains
+exact, while offline validation reconstructs all local refs, tracking
+`remote_main`, topology, bytes, and semantics, requires
+`remote_main==origin_main`, and normalizes only the expected historical proof
+bit to `true` before the canonical comparison. No other drift is adopted.
+While H-E0-MBATCHP2 remains a candidate its P-generation authority is false;
+only its exact published child state reports true.
 
 `GIT_OPTIONAL_LOCKS=0 .venv/bin/python -I -B
 src/experiments/lock_closure_formal_model_lock.py --check-only` performs schema
 preflight and captures the complete outcome-free prelock state twice. It
-requires the original exact H17 predecessor, exact corrective `5M` child,
-unchanged cumulative H17 scope, clean worktree/index, aligned
+requires the original exact H17 predecessor, exact P1 and P2 corrective `5M`
+children, unchanged cumulative H17 scope, clean worktree/index, aligned
 local/tracking/live-remote refs, closed namespace, absent P and R outputs,
 absent guards and temporaries, exact companion inputs, and effective
 predecessor authorities including R8 and R10. Both captures must be equal.
@@ -379,24 +416,30 @@ staging. The report must contain no non-adopted warning or failure.
    direct child; do not amend, rewrite, or replace it.
 3. Publish H-E0-MBATCHP1 exact `5M` as the direct child of `4d0f2eb...`;
    require the cumulative scope to remain H17 and do not create P or R.
-4. Under separate authorization run `--check-only`; require equal captures,
+4. Preserve the blocked P1-generated P pair as local audit evidence outside
+   the active namespace; do not publish, reuse, or rewrite it.
+5. Publish H-E0-MBATCHP2 exact `5M` as the direct child of `3671432...`;
+   require both corrective edges and both cumulative H17 scopes.
+6. Under separate authorization run `--check-only`; require equal captures,
    absent P/R, no writes, no verification, no outcome access, and exact
    `sealed_batch_runner_ready_for_formal_lock`/missing-zero readiness plus
    `p_authority_generation_authorized=true`.
-5. Under a new authorization run `--execute-lock`; publish only P
+7. Under a new authorization run `--execute-lock`; publish only P
    authority then companion and audit them before precommit.
-6. Publish exact P-E0-M `2A`, verify clean local/tracking/live-remote refs, and
+8. Validate the unpublished P pair both online and offline, then publish exact
+   P-E0-M `2A`, verify clean local/tracking/live-remote refs, and
    reload the effective authority independently.
-7. Under a new explicit one-shot authorization, create exact R-E0-M `5A` in
+9. Under a new explicit one-shot authorization, create exact R-E0-M `5A` in
    calibration/hypothesis/batch/empty-log/model-lock-last order.
-8. Strictly audit R, then run precommit under separate authorization; require
+10. Strictly audit R, then run precommit under separate authorization; require
    exact dialect adoption, exact five staged additions, no DVC selection or
    command, and no other warning or failure.
-9. Leave Git commit and Git push to the user. E0-U and the sealed evaluation
+11. Leave Git commit and Git push to the user. E0-U and the sealed evaluation
    batch remain separately authorized future barriers.
 
 Acceptance requires prerequisite H `1M+6A`, superseding H-E0-MBATCH
-`7M+10A`, corrective H-E0-MBATCHP1 `5M`, P `2A`, R `5A`, authority-first and
+`7M+10A`, corrective H-E0-MBATCHP1 `5M`, corrective H-E0-MBATCHP2 `5M`, P
+`2A`, R `5A`, authority-first and
 manifest-last P publication, exact five-output R order with a zero-byte log
 fourth and `model_lock.yaml` last, immutable R8/R10, exact runner command and
 source identity, complete

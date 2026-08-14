@@ -1,12 +1,12 @@
 """Build and validate the outcome-free Closure V1 formal model lock.
 
-The published H-E0-M prerequisite and H-E0-MBATCH implementation remain
-immutable history.  H-E0-MBATCHP1 is a narrow, cumulative check-only
-correction: it preserves the exact H17 implementation while making the
-published-H P-readiness bit internally consistent.  Only after this exact
-correction is published may P-E0-M authorize one no-outcome materialization
-of the five formal lock files; E0-U and evaluation remain separate later
-gates.
+The published H-E0-M prerequisite, H-E0-MBATCH implementation, and
+H-E0-MBATCHP1 check-only correction remain immutable history.
+H-E0-MBATCHP2 is a second narrow, cumulative correction: it preserves the
+exact H17 implementation while making offline validation retain the live
+remote proof sealed by P.  Only after this exact correction is published may
+P-E0-M authorize one no-outcome materialization of the five formal lock
+files; E0-U and evaluation remain separate later gates.
 """
 
 from __future__ import annotations
@@ -35,9 +35,13 @@ BASE_R_MID_COMMIT = "53947df3b826ee10be8cf3b137bae913bc73d2bb"
 BASE_P_MCALM_COMMIT = "81c1fc485902d484264fccc53cf88888c359930d"
 BASE_H_E0_M_PREREQUISITE_COMMIT = "4bf1953660462b63115a47f97b1041e44d33d873"
 SUPERSEDED_H_E0_M_BATCH_COMMIT = "4d0f2ebd1d55cc21757755f90b5ae5e8ec6531f8"
+SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT = (
+    "367143285067b91f85df3b81542b30db9c74fc2f"
+)
 PATCH_GATE = "E0-M"
 H_GATE = "H-E0-MBATCH"
 H_CHECK_ONLY_PATCH_GATE = "H-E0-MBATCHP1"
+H_OFFLINE_VALIDATION_PATCH_GATE = "H-E0-MBATCHP2"
 P_GATE = "P-E0-M"
 R_GATE = "R-E0-M"
 EXPERIMENT_ID = "closure_v1"
@@ -106,6 +110,9 @@ FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE = {
     LOCKER_PATH.as_posix(): "M",
     TEST_PATH: "M",
 }
+FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE = dict(
+    FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE
+)
 FORMAL_MODEL_LOCK_P_STAGED_SCOPE = {
     DEFAULT_AUTHORITY_PATH.as_posix(): "A",
     DEFAULT_AUTHORITY_MANIFEST_PATH.as_posix(): "A",
@@ -278,8 +285,17 @@ GENERIC_MANIFEST_FINDINGS_CONTRACT = (
     },
 )
 R8_OUTPUT_CONTRACT = tuple(mid.R8_OUTPUT_CONTRACT)
+R8_AUTHORITY_OUTPUTS_SHA256 = (
+    "524928813b26bed6de9feee34eff1e946f9fc214521c3a39171ed905b3faf7a2"
+)
+R8_PORTABLE_OUTPUTS_SHA256 = (
+    "ae353e664a6136803aad1c410d7355e5dead9c907ca01a57799f41c967855af5"
+)
 LOCKED_INPUT_OUTPUT_CONTRACT = tuple(mid.R_OUTPUT_CONTRACT)
 LOCKED_INPUT_OUTPUTS_SHA256 = mid.R_OUTPUTS_SHA256
+H_CHECK_ONLY_PATCH_HISTORICAL_INPUTS_SHA256 = (
+    "33d3e44c899797570e1a0ccd3514902d57ce40c67a8f9c6043d7398f9064e426"
+)
 EXPECTED_MISSING_COMPONENT_COUNT = 0
 
 TYPE_CHECK_COMMAND = ("poetry", "run", "ty", "check")
@@ -489,6 +505,79 @@ def _portable_content_record(record: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _sorted_portable_content_records(
+    records: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    values = [_portable_content_record(record) for record in records]
+    values.sort(key=lambda record: cast(str, record["path"]))
+    return values
+
+
+def _r8_portable_records(
+    records: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    values = _sorted_portable_content_records(records)
+    expected_paths = {cast(str, record["path"]) for record in R8_OUTPUT_CONTRACT}
+    if (
+        len(values) != len(R8_OUTPUT_CONTRACT)
+        or {cast(str, record["path"]) for record in values} != expected_paths
+        or _sha256_bytes(_canonical_json_bytes(values))
+        != R8_PORTABLE_OUTPUTS_SHA256
+    ):
+        raise _error("portable R8 evidence contract drifted")
+    return values
+
+
+def _historical_h_check_only_patch_records(
+    repo_root: Path,
+) -> list[dict[str, Any]]:
+    """Reconstruct the exact superseded P1 bytes only from its Git commit."""
+
+    records: list[dict[str, Any]] = []
+    expected_paths = sorted(FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE)
+    for raw_path in expected_paths:
+        path = Path(raw_path)
+        try:
+            mode, oid = mcal._git_mode_oid(
+                repo_root,
+                SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT,
+                path,
+            )
+            payload = mcal._git_blob_bytes(
+                repo_root,
+                SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT,
+                path,
+            )
+        except Exception as exc:
+            raise _error(
+                f"historical H-E0-MBATCHP1 input is absent: {raw_path}"
+            ) from exc
+        expected_mode = PATCH_COMPONENT_GIT_MODES[raw_path]
+        if mode != expected_mode or oid != _blob_oid(payload):
+            raise _error(
+                f"historical H-E0-MBATCHP1 Git binding drifted: {raw_path}"
+            )
+        records.append(
+            {
+                "role": "superseded_h_e0_m_check_only_patch_component",
+                "path": raw_path,
+                "commit": SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT,
+                "git_mode": mode,
+                "git_oid": oid,
+                "bytes": len(payload),
+                "sha256": _sha256_bytes(payload),
+            }
+        )
+    if (
+        len(records) != len(FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE)
+        or [cast(str, record["path"]) for record in records] != expected_paths
+        or _sha256_bytes(_canonical_json_bytes(records))
+        != H_CHECK_ONLY_PATCH_HISTORICAL_INPUTS_SHA256
+    ):
+        raise _error("historical H-E0-MBATCHP1 exact5 contract drifted")
+    return records
+
+
 def _scientific_binding_commit(
     repo_root: Path, git_commit: str | None = None
 ) -> str:
@@ -687,6 +776,18 @@ def _expected_h_check_only_patch_scope() -> dict[str, Any]:
     }
 
 
+def _expected_h_offline_validation_patch_scope() -> dict[str, Any]:
+    """Return the exact offline-validation correction scope over P1."""
+
+    return {
+        "added": 0,
+        "modified": len(FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE),
+        "deleted": 0,
+        "path_count": len(FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE),
+        "paths": sorted(FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE),
+    }
+
+
 def _require_superseded_h_topology(repo_root: Path) -> None:
     """Require the immutable, already-published H17 predecessor."""
 
@@ -707,12 +808,11 @@ def _require_superseded_h_topology(repo_root: Path) -> None:
         raise _error("superseded H-E0-MBATCH topology drifted")
 
 
-def _require_published_h_check_only_patch_topology(
-    repo_root: Path, h_head: str
-) -> None:
+def _require_superseded_h_check_only_patch_topology(repo_root: Path) -> None:
     """Require base -> H17 -> exact5 correction and cumulative H17 scope."""
 
     _require_superseded_h_topology(repo_root)
+    h_head = SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT
     try:
         parent = mcal._single_parent(
             repo_root,
@@ -737,6 +837,38 @@ def _require_published_h_check_only_patch_topology(
         or cumulative_scope != _expected_h_scope()
     ):
         raise _error("published H-E0-MBATCHP1 topology drifted")
+
+
+def _require_published_h_offline_validation_patch_topology(
+    repo_root: Path, h_head: str
+) -> None:
+    """Require base -> H17 -> P1 -> exact5 P2 and cumulative H17."""
+
+    _require_superseded_h_check_only_patch_topology(repo_root)
+    try:
+        parent = mcal._single_parent(
+            repo_root,
+            h_head,
+            context=H_OFFLINE_VALIDATION_PATCH_GATE,
+        )
+        patch_scope = mcal._git_scope(
+            repo_root,
+            SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT,
+            h_head,
+        )
+        cumulative_scope = mcal._git_scope(
+            repo_root,
+            BASE_H_E0_M_PREREQUISITE_COMMIT,
+            h_head,
+        )
+    except Exception as exc:
+        raise _error("published H-E0-MBATCHP2 topology cannot be read") from exc
+    if (
+        parent != SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT
+        or patch_scope != _expected_h_offline_validation_patch_scope()
+        or cumulative_scope != _expected_h_scope()
+    ):
+        raise _error("published H-E0-MBATCHP2 topology drifted")
 
 
 def _status_map(repo_root: Path) -> dict[str, str]:
@@ -768,11 +900,11 @@ def _repository_state(
     observed = _status_map(repo_root)
     candidate_status = {
         path: ("??" if state == "A" else " M")
-        for path, state in FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE.items()
+        for path, state in FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE.items()
     }
     staged_candidate_status = {
         path: ("A " if state == "A" else "M ")
-        for path, state in FORMAL_MODEL_LOCK_H_CHECK_ONLY_STAGED_SCOPE.items()
+        for path, state in FORMAL_MODEL_LOCK_H_OFFLINE_VALIDATION_STAGED_SCOPE.items()
     }
     p_untracked_status = {
         path.as_posix(): "??" for path in CURRENT_LOCK_PATHS
@@ -781,18 +913,18 @@ def _repository_state(
         path.as_posix(): "A " for path in CURRENT_LOCK_PATHS
     }
     if (
-        head == SUPERSEDED_H_E0_M_BATCH_COMMIT
+        head == SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT
         and main == head
         and tracking == head
         and tracking_head == head
         and observed in (candidate_status, staged_candidate_status)
     ):
-        _require_superseded_h_topology(repo_root)
+        _require_superseded_h_check_only_patch_topology(repo_root)
         h_state = "candidate"
         h_head: str | None = None
-        expected_ref = SUPERSEDED_H_E0_M_BATCH_COMMIT
+        expected_ref = SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT
     elif (
-        head != SUPERSEDED_H_E0_M_BATCH_COMMIT
+        head != SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT
         and main == head
         and tracking == head
         and tracking_head == head
@@ -804,13 +936,13 @@ def _repository_state(
             )
         )
     ):
-        _require_published_h_check_only_patch_topology(repo_root, head)
+        _require_published_h_offline_validation_patch_topology(repo_root, head)
         h_state = "published"
         h_head = head
         expected_ref = head
     else:
         raise _error(
-            "formal E0-M repository is neither exact H-E0-MBATCHP1 candidate "
+            "formal E0-M repository is neither exact H-E0-MBATCHP2 candidate "
             "nor its publication"
         )
     remote = tracking
@@ -1240,22 +1372,28 @@ def collect_formal_model_lock_prelock_state(
     physical_after = _physical_snapshot(root)
     if physical_before != physical_after:
         raise _error("physical prerequisite changed during prelock collection")
-    r8 = [
-        _portable_content_record(record)
-        for record in physical_before
-        if record["path"] in {item["path"] for item in R8_OUTPUT_CONTRACT}
-    ]
-    locked = [
-        _portable_content_record(record)
-        for record in physical_before
-        if record["path"]
-        in {item["path"] for item in LOCKED_INPUT_OUTPUT_CONTRACT}
-    ]
-    policy = [
-        _portable_content_record(record)
-        for record in physical_before
-        if record["path"] in {path.as_posix() for path in MODEL_POLICY_PATHS}
-    ]
+    r8 = _r8_portable_records(
+        [
+            record
+            for record in physical_before
+            if record["path"] in {item["path"] for item in R8_OUTPUT_CONTRACT}
+        ]
+    )
+    locked = _sorted_portable_content_records(
+        [
+            record
+            for record in physical_before
+            if record["path"]
+            in {item["path"] for item in LOCKED_INPUT_OUTPUT_CONTRACT}
+        ]
+    )
+    policy = _sorted_portable_content_records(
+        [
+            record
+            for record in physical_before
+            if record["path"] in {path.as_posix() for path in MODEL_POLICY_PATHS}
+        ]
+    )
     result = {
         "gate": PATCH_GATE,
         "status": "ready_to_lock",
@@ -1268,7 +1406,7 @@ def collect_formal_model_lock_prelock_state(
             "status": "published_immutable_r8_validated",
             "output_count": 8,
             "outputs": r8,
-            "outputs_sha256": _sha256_bytes(_canonical_json_bytes(r8)),
+            "outputs_sha256": R8_AUTHORITY_OUTPUTS_SHA256,
             "scientific_rows_decoded": False,
         },
         "locked_input_evidence": {
@@ -1402,7 +1540,7 @@ def build_formal_model_lock_authority_payload(
     if repository.get("h_state") != "published" or not isinstance(
         repository.get("h_batch_head"), str
     ):
-        raise _error("P payload requires published H-E0-MBATCHP1")
+        raise _error("P payload requires published H-E0-MBATCHP2")
     return {
         "schema_version": LOCK_SCHEMA_VERSION,
         "experiment_id": EXPERIMENT_ID,
@@ -1435,6 +1573,12 @@ def validate_formal_model_lock_authority_payload(
         mcal.validate_json_schema(payload, schema)
     except Exception as exc:
         raise _error("authority schema validation failed") from exc
+    repository = payload.get("repository")
+    if (
+        not isinstance(repository, Mapping)
+        or repository.get("verify_remote") is not True
+    ):
+        raise _error("authority must seal successful live-remote verification")
     generated = payload.get("generated_at_utc")
     if not isinstance(generated, str):
         raise _error("authority generated timestamp is absent")
@@ -1458,13 +1602,29 @@ def validate_formal_model_lock_authority_payload(
         generated_at_utc=generated,
         repo_root=root,
     )
+    if not verify_remote:
+        expected_repository = expected.get("repository")
+        if (
+            not isinstance(expected_repository, dict)
+            or expected_repository.get("remote_main")
+            != expected_repository.get("origin_main")
+            or expected_repository.get("verify_remote") is not False
+        ):
+            raise _error("offline authority repository reconstruction drifted")
+        # The payload records that its generation was live-remote verified.
+        # Offline validation rechecks every local/ref/content field and changes
+        # only this historical proof bit before the canonical comparison.
+        expected_repository["verify_remote"] = True
     if _canonical_json_bytes(payload) != _canonical_json_bytes(expected):
         raise _error("authority semantic reconstruction drifted")
     return dict(payload)
 
 
 def _expected_authority_companion(
-    payload: Mapping[str, Any], authority_record: Mapping[str, Any]
+    payload: Mapping[str, Any],
+    authority_record: Mapping[str, Any],
+    *,
+    repo_root: Path,
 ) -> dict[str, Any]:
     repository = cast(Mapping[str, Any], payload["repository"])
     component_inputs = [
@@ -1479,6 +1639,7 @@ def _expected_authority_companion(
         )
     ]
     component_inputs.sort(key=lambda record: cast(str, record["path"]))
+    historical_inputs = _historical_h_check_only_patch_records(repo_root)
     return {
         "schema_version": COMPANION_SCHEMA_VERSION,
         "status": "completed",
@@ -1490,6 +1651,8 @@ def _expected_authority_companion(
             if record["path"] == LOCKER_PATH.as_posix()
         ),
         "inputs": component_inputs,
+        "historical_inputs": historical_inputs,
+        "historical_inputs_sha256": H_CHECK_ONLY_PATCH_HISTORICAL_INPUTS_SHA256,
         "outputs": [dict(authority_record)],
         "manifest_written_last": True,
         "formal_model_lock_run": False,
@@ -1605,7 +1768,7 @@ def _effective_repository_snapshot(
 ) -> dict[str, Any]:
     """Capture and validate refs, topology, remote, and workspace only."""
 
-    _require_published_h_check_only_patch_topology(repo_root, h_head)
+    _require_published_h_offline_validation_patch_topology(repo_root, h_head)
     try:
         head = mcal._git_head(repo_root)
         branch = cast(
@@ -1729,7 +1892,7 @@ def _validate_published_authority_payload(
         mcal.validate_json_schema(payload, schema)
     except Exception as exc:
         raise _error("published authority schema validation failed") from exc
-    _require_published_h_check_only_patch_topology(repo_root, h_head)
+    _require_published_h_offline_validation_patch_topology(repo_root, h_head)
     physical_components = _component_records(repo_root)
     for record in physical_components:
         _require_h_component_git_binding(record, h_head=h_head, repo_root=repo_root)
@@ -1757,14 +1920,14 @@ def _validate_published_authority_payload(
         "components_sha256": _sha256_bytes(_canonical_json_bytes(components)),
     }
     r8_physical, locked_physical, policy_physical = _evidence_state(repo_root)
-    r8 = [_portable_content_record(record) for record in r8_physical]
-    locked = [_portable_content_record(record) for record in locked_physical]
-    policy = [_portable_content_record(record) for record in policy_physical]
+    r8 = _r8_portable_records(r8_physical)
+    locked = _sorted_portable_content_records(locked_physical)
+    policy = _sorted_portable_content_records(policy_physical)
     expected_calibration = {
         "status": "published_immutable_r8_validated",
         "output_count": 8,
         "outputs": r8,
-        "outputs_sha256": _sha256_bytes(_canonical_json_bytes(r8)),
+        "outputs_sha256": R8_AUTHORITY_OUTPUTS_SHA256,
         "scientific_rows_decoded": False,
     }
     expected_locked = {
@@ -1829,7 +1992,7 @@ def _require_p_repository_boundary(
     repo_root: Path,
     owned_guard: Any | None,
 ) -> None:
-    _require_published_h_check_only_patch_topology(repo_root, h_head)
+    _require_published_h_offline_validation_patch_topology(repo_root, h_head)
     try:
         head = mcal._git_head(repo_root)
         branch = cast(
@@ -1907,7 +2070,9 @@ def publish_formal_model_lock_authority_bundle(
         "bytes": len(authority_bytes),
         "sha256": _sha256_bytes(authority_bytes),
     }
-    companion = _expected_authority_companion(frozen, authority_record)
+    companion = _expected_authority_companion(
+        frozen, authority_record, repo_root=root
+    )
     published: list[Any] = []
     guard: Any | None = None
     committed = False
@@ -2034,7 +2199,7 @@ def _unpublished_p_repository_snapshot(
 ) -> dict[str, Any]:
     """Capture only terminal refs, topology, remote, and status for P."""
 
-    _require_published_h_check_only_patch_topology(repo_root, h_head)
+    _require_published_h_offline_validation_patch_topology(repo_root, h_head)
     try:
         head = mcal._git_head(repo_root)
         branch = cast(
@@ -2048,9 +2213,13 @@ def _unpublished_p_repository_snapshot(
         )
         status = tuple(sorted(_status_map(repo_root).items()))
         parent = mcal._single_parent(
-            repo_root, h_head, context=H_CHECK_ONLY_PATCH_GATE
+            repo_root, h_head, context=H_OFFLINE_VALIDATION_PATCH_GATE
         )
-        scope = mcal._git_scope(repo_root, SUPERSEDED_H_E0_M_BATCH_COMMIT, h_head)
+        scope = mcal._git_scope(
+            repo_root,
+            SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT,
+            h_head,
+        )
         cumulative_scope = mcal._git_scope(
             repo_root, BASE_H_E0_M_PREREQUISITE_COMMIT, h_head
         )
@@ -2063,11 +2232,11 @@ def _unpublished_p_repository_snapshot(
         or tracking != h_head
         or tracking_head != h_head
         or remote != h_head
-        or parent != SUPERSEDED_H_E0_M_BATCH_COMMIT
-        or scope != _expected_h_check_only_patch_scope()
+        or parent != SUPERSEDED_H_E0_M_CHECK_ONLY_PATCH_COMMIT
+        or scope != _expected_h_offline_validation_patch_scope()
         or cumulative_scope != _expected_h_scope()
     ):
-        raise _error("unpublished P terminal H-E0-MBATCHP1 topology drifted")
+        raise _error("unpublished P terminal H-E0-MBATCHP2 topology drifted")
     return {
         "refs": (head, branch, main, tracking, tracking_head, remote),
         "topology": (parent, scope, cumulative_scope),
@@ -2098,7 +2267,7 @@ def validate_formal_model_lock_unpublished_authority_bundle(
         repo_root=root, verify_remote=verify_remote, allow_p_outputs=True
     )
     if state.get("h_state") != "published" or state.get("h_batch_head") != h_head:
-        raise _error("unpublished P requires exact published H-E0-MBATCHP1")
+        raise _error("unpublished P requires exact published H-E0-MBATCHP2")
     observed = _status_map(root)
     untracked = {path.as_posix(): "??" for path in CURRENT_LOCK_PATHS}
     staged = {path.as_posix(): "A " for path in CURRENT_LOCK_PATHS}
@@ -2120,7 +2289,9 @@ def validate_formal_model_lock_unpublished_authority_bundle(
         "sha256": _sha256_bytes(authority_bytes),
     }
     if _canonical_json_bytes(companion) != _canonical_json_bytes(
-        _expected_authority_companion(authority, authority_record)
+        _expected_authority_companion(
+            authority, authority_record, repo_root=root
+        )
     ):
         raise _error("unpublished P companion drifted")
     pair_snapshot = _p_pair_snapshot(root)
@@ -2226,7 +2397,9 @@ def load_effective_formal_model_lock_authority(
         DEFAULT_AUTHORITY_MANIFEST_PATH, repo_root=root
     )
     if _canonical_json_bytes(companion) != _canonical_json_bytes(
-        _expected_authority_companion(authority, authority_record)
+        _expected_authority_companion(
+            authority, authority_record, repo_root=root
+        )
     ):
         raise _error("published authority companion drifted")
     try:
