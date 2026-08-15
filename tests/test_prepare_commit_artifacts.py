@@ -1,9 +1,14 @@
 from __future__ import annotations
 
+import hashlib
 import json
+import os
+from collections.abc import Mapping
 from copy import deepcopy
 from pathlib import Path
 from typing import Any, cast
+
+import pytest
 
 from src.data import prepare_commit_artifacts as precommit_artifacts
 from src.data.prepare_commit_artifacts import (
@@ -562,6 +567,397 @@ def test_closure_protocol_lock_is_a_strict_experiment_manifest() -> None:
     assert is_experiment_manifest_path(path)
     assert not is_report_artifact_path(path)
     assert not is_experiment_manifest_path(Path("reports/other/protocol_lock.json"))
+
+
+def test_closure_e0_u_precommit_compares_configured_origin_not_live_evidence_url() -> None:
+    class ActivationStub:
+        CONFIGURED_ORIGIN_URL = "git@github.com:ejherran/lentic-pipe.git"
+        LIVE_REMOTE_URL = "https://github.com/ejherran/lentic-pipe.git"
+        observed = CONFIGURED_ORIGIN_URL
+
+        @classmethod
+        def _git_text(cls, _repo_root: Path, args: tuple[str, ...]) -> str:
+            assert args == ("remote", "get-url", "origin")
+            return cls.observed + "\n"
+
+    assert precommit_artifacts._closure_e0_u_configured_origin_matches(
+        ActivationStub,
+        repo_root=Path("."),
+    )
+
+    ActivationStub.observed = ActivationStub.LIVE_REMOTE_URL
+    assert not precommit_artifacts._closure_e0_u_configured_origin_matches(
+        ActivationStub,
+        repo_root=Path("."),
+    )
+
+
+def test_closure_e0_u_activation_is_an_exact_authoritative_manifest_without_outputs(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from src.experiments import closure_e0_u_authority as authority
+    from src.experiments import run_closure_benchmark as runner
+
+    activation = precommit_artifacts.CLOSURE_E0_U_ACTIVATION_PATH
+    alternate = Path("reports/other/closure_e0_u_activation.json")
+    assert is_experiment_manifest_path(activation)
+    assert not is_report_artifact_path(activation)
+    assert not is_experiment_manifest_path(alternate)
+    assert is_report_artifact_path(alternate)
+
+    schema_bytes = (
+        precommit_artifacts.PROJECT_ROOT
+        / precommit_artifacts.CLOSURE_E0_U_ACTIVATION_SCHEMA_PATH
+    ).read_bytes()
+    monkeypatch.chdir(tmp_path)
+    schema_path = precommit_artifacts.CLOSURE_E0_U_ACTIVATION_SCHEMA_PATH
+    schema_path.parent.mkdir(parents=True)
+    schema_path.write_bytes(schema_bytes)
+
+    def scope_record(path: str, status: str) -> dict[str, Any]:
+        return {
+            "bytes": 1,
+            "mode": "100644",
+            "path": path,
+            "sha256": "a" * 64,
+            "status": status,
+        }
+
+    def source_record(path: str) -> dict[str, Any]:
+        return {
+            "path": path,
+            "bytes": 1,
+            "mode": 0o644,
+            "nlink": 1,
+            "sha256": "b" * 64,
+        }
+
+    layout = authority._contract_layout(runner.sealed_batch_contract())
+    heavy = sorted(
+        path
+        for path, format_name in layout["formats_by_path"].items()
+        if format_name == "parquet"
+    )
+    direct = sorted(set(layout["expected_paths"]) - set(heavy))
+    deep_sources = [
+        {
+            "role": spec["role"],
+            "path": spec["path"],
+            "bytes": index + 1,
+            "sha256": f"{index + 1:064x}",
+        }
+        for index, spec in enumerate(authority._phase3_overlay_source_specs())
+    ]
+    payload: dict[str, Any] = {
+        "schema_version": "closure_e0_u_activation_v1",
+        "experiment_id": "closure_v1",
+        "gate": "E0-U",
+        "base_r_commit": authority.BASE_R_COMMIT,
+        "h_commit": "c" * 40,
+        "p_commit": "d" * 40,
+        "execution_id": "closure-e0-u-test",
+        "git_remote_url": authority.LIVE_REMOTE_URL,
+        "sealed_batch_command": authority.SEALED_BATCH_COMMAND,
+        "h_scope": sorted(
+            (
+                scope_record(authority.AUTHORITY_SOURCE_PATH, "A"),
+                scope_record(authority.CONTEXT_BUILDER_SOURCE_PATH, "A"),
+                scope_record(authority.RUNNER_SOURCE_PATH, "M"),
+            ),
+            key=lambda record: cast(str, record["path"]),
+        ),
+        "p_scope": [
+            scope_record(path, "A") for path in authority.EXPECTED_P_SCOPE_PATHS
+        ],
+        "phase3_overlay_deep_validation": {
+            "schema_version": "closure_phase3_input_overlay_deep_validation_v1",
+            "status": "passed",
+            "experiment_id": "closure_v1",
+            "surface_id": "closure_v1_phase3_input_overlay",
+            "gate": "pre_E0-U",
+            "expected_h_commit": "c" * 40,
+            "builder_source": {
+                "role": "phase3_input_overlay_builder",
+                "path": authority.PHASE3_OVERLAY_BUILDER_PATH,
+                "bytes": 100,
+                "sha256": "f" * 64,
+            },
+            "source_inputs": deep_sources,
+            "source_input_count": 27,
+            "source_inputs_sha256": authority._sha256_bytes(
+                authority._canonical_json_bytes(deep_sources)
+            ),
+            "manifest": {
+                "path": authority.PHASE3_OVERLAY_MANIFEST_PATH,
+                "bytes": 200,
+                "sha256": "e" * 64,
+            },
+            "physical_outputs": [
+                {
+                    "path": path,
+                    "bytes": 300 + index,
+                    "sha256": str(index + 1) * 64,
+                }
+                for index, (path, _role) in enumerate(
+                    authority.PHASE3_OVERLAY_OUTPUTS
+                )
+            ],
+            "checkpoint_count": 25,
+            "state_dict_array_count": 195,
+            "warmup_row_count": 88,
+            "warmup_site_count": 88,
+            "npz_regenerated_byte_equality": True,
+            "warmup_regenerated_byte_equality": True,
+            "manifest_regenerated_byte_equality": True,
+            "checkpoint_identity_revalidated": True,
+            "numpy_torch_parity_recomputed": True,
+            "warmup_projection_recomputed": True,
+            "history_projection": list(
+                authority.PHASE3_OVERLAY_HISTORY_PROJECTION
+            ),
+            "panel_projection": list(authority.PHASE3_OVERLAY_PANEL_PROJECTION),
+            "projection_contains_chlorophyll": False,
+            "projection_contains_target": False,
+            "opened_outcome_path_count": 0,
+            "opened_target_path_count": 0,
+            "writes_performed": False,
+        },
+        "sealed_batch_contract_sha256": layout["contract_sha256"],
+        "expected_artifact_paths_sha256": authority._sha256_bytes(
+            authority._canonical_json_bytes(list(layout["expected_paths"]))
+        ),
+        "expected_publication_order_sha256": authority._sha256_bytes(
+            authority._canonical_json_bytes(list(layout["publication_order"]))
+        ),
+        "sealed_runner_source_record": source_record(
+            "src/experiments/run_closure_benchmark.py"
+        ),
+        "sealed_context_builder_source_record": source_record(
+            "src/experiments/closure_phase3_context.py"
+        ),
+        "sealed_component_source_records": [
+            source_record(f"src/experiments/component_{index}.py")
+            for index in range(10)
+        ],
+        "sealed_support_source_records": [
+            source_record(f"src/experiments/support_{index}.py")
+            for index in range(3)
+        ],
+        "sealed_runtime_environment_record": {"python": "/usr/bin/python3"},
+        "dvc_policy": {
+            "direct_git_artifact_paths": direct,
+            "dvc_pointer_paths": [f"{path}.dvc" for path in heavy],
+            "heavy_artifact_paths": heavy,
+            "dvc_add_after_success_only": True,
+            "dvc_push_after_audit_only": True,
+            "implicit_dvc_forbidden": True,
+        },
+    }
+    activation.parent.mkdir(parents=True)
+
+    def write_activation() -> None:
+        activation.write_bytes(authority._canonical_json_bytes(payload))
+
+    observed: list[tuple[Path, set[Path]]] = []
+
+    def topology_adapter(
+        value: Mapping[str, Any],
+        *,
+        manifest_path: Path,
+        staged_paths: set[Path],
+        repo_root: Path,
+        physical_payload: bytes,
+    ) -> None:
+        assert dict(value) == payload
+        assert repo_root == tmp_path
+        assert physical_payload == authority._canonical_json_bytes(payload)
+        observed.append((manifest_path, staged_paths))
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_e0_u_activation_staged_topology",
+        topology_adapter,
+    )
+    write_activation()
+    findings = validate_experiment_manifests(
+        staged_paths={activation},
+        artifacts=[],
+        max_hash_bytes=0,
+        verify_manifest_inputs=False,
+    )
+    assert not has_failing_findings(findings), "\n".join(
+        f"{finding.level}:{finding.check}:{finding.message}" for finding in findings
+    )
+    assert not any(finding.level == "warn" for finding in findings)
+    assert observed == [(activation, {activation})]
+    assert any(
+        "passed without an outputs list" in finding.message for finding in findings
+    )
+
+    payload["sealed_runner_source_record"]["mode"] = 0o600
+    write_activation()
+    findings = validate_experiment_manifests(
+        staged_paths={activation},
+        artifacts=[],
+        max_hash_bytes=0,
+        verify_manifest_inputs=False,
+    )
+    assert has_failing_findings(findings)
+    assert any("schema const rejected" in finding.message for finding in findings)
+
+
+def test_closure_e0_u_final_batch_uses_exact53_transaction_and_covers_reports(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    from src.experiments import closure_e0_u_authority as authority
+    from src.experiments import run_closure_benchmark as runner
+
+    monkeypatch.chdir(tmp_path)
+    expected, formats, direct, heavy, pointers = (
+        precommit_artifacts._closure_e0_u_final_layout()
+    )
+    assert len(expected) == 52
+    assert len(direct) == 48
+    assert len(heavy) == len(pointers) == 4
+    assert all(formats[path] == "parquet" for path in heavy)
+
+    for index, path in enumerate(direct):
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(f"direct-{index}:{path.as_posix()}\n".encode())
+    for index, (output_path, pointer_path) in enumerate(
+        zip(heavy, pointers, strict=True)
+    ):
+        output_path.parent.mkdir(parents=True, exist_ok=True)
+        output_payload = f"parquet-{index}:{output_path.as_posix()}\n".encode()
+        output_path.write_bytes(output_payload)
+        pointer_path.write_text(
+            "outs:\n"
+            f"- md5: {hashlib.md5(output_payload, usedforsecurity=False).hexdigest()}\n"
+            f"  size: {len(output_payload)}\n"
+            "  hash: md5\n"
+            f"  path: {output_path.name}\n",
+            encoding="utf-8",
+        )
+    hardlink_cache = tmp_path / "synthetic-dvc-cache-object"
+    os.link(heavy[0], hardlink_cache)
+    heavy[0].chmod(0o444)
+    assert heavy[0].stat().st_nlink == 2
+
+    execution_id = "closure-e0-u-final-test"
+    manifest_path = precommit_artifacts.CLOSURE_E0_U_FINAL_BENCHMARK_MANIFEST_PATH
+    e1_paths = next(
+        stage.output_paths for stage in runner.BATCH_STAGES if stage.stage_id == "E1"
+    )
+    manifest_payload = {
+        "schema_version": "closure_e1_benchmark_manifest_v1",
+        "execution_id": execution_id,
+        "rng_seed": runner.RNG_SEED,
+        "model_ids": list(runner.MODEL_IDS),
+        "registered_seed_slots": list(runner.REGISTERED_SEEDS),
+        "model_availability": dict(runner.CURRENT_MODEL_AVAILABILITY),
+        "prediction_row_count": runner.LOCKED_PREDICTION_ROW_COUNT,
+        "metric_row_count": 1,
+        "comparison_row_count": 1,
+        "prediction_sha256": "a" * 64,
+        "metrics_sha256": "b" * 64,
+        "comparisons_sha256": "c" * 64,
+        "output_paths": list(e1_paths),
+        "evaluation_refit_performed": False,
+        "failed_model_replacement_performed": False,
+        "silent_row_deletion_performed": False,
+        "manifest_last": True,
+    }
+    manifest_path.write_bytes(runner._canonical_json_bytes(manifest_payload))
+
+    access_log = precommit_artifacts.CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH
+    access_log.parent.mkdir(parents=True, exist_ok=True)
+    access_log_payload = authority._canonical_json_bytes(
+        {
+            "event": "sealed_outcome_context_opened",
+            "execution_id": execution_id,
+            "experiment_id": authority.EXPERIMENT_ID,
+            "gate": authority.GATE,
+            "one_shot_consumed": True,
+            "outcome_access_authorized": True,
+            "schema_version": authority.ACCESS_LOG_SCHEMA_VERSION,
+        }
+    )
+    access_log.write_bytes(access_log_payload)
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_load_closure_e0_u_final_activation_authority",
+        lambda *, repo_root: {"execution_id": execution_id},
+    )
+    observed_scopes: list[dict[str, str]] = []
+
+    def validate_git_scope(
+        *, expected_scope: Mapping[str, str], repo_root: Path
+    ) -> None:
+        assert repo_root == tmp_path
+        assert len(expected_scope) == 53
+        assert sum(status == "A" for status in expected_scope.values()) == 52
+        assert sum(status == "M" for status in expected_scope.values()) == 1
+        assert expected_scope[access_log.as_posix()] == "M"
+        observed_scopes.append(dict(expected_scope))
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_e0_u_final_git_scope",
+        validate_git_scope,
+    )
+    staged_paths = {*direct, *pointers, access_log}
+
+    def validate(paths: set[Path] = staged_paths):
+        staged_status = "\n".join(
+            f"{'M' if path == access_log else 'A'}\t{path.as_posix()}"
+            for path in sorted(paths, key=Path.as_posix)
+        )
+        return precommit_artifacts.reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=list(heavy),
+            artifacts=[],
+            max_manifest_hash_bytes=0,
+            verify_manifest_inputs=False,
+        )
+
+    findings = validate()
+    assert not has_failing_findings(findings)
+    assert not any(finding.level == "warn" for finding in findings)
+    assert len(observed_scopes) == 2
+    assert observed_scopes[0] == observed_scopes[1]
+    assert any("final exact53 staging" in finding.message for finding in findings)
+    assert any("52 output record(s)" in finding.message for finding in findings)
+    assert not any(
+        "not listed in any experiment manifest output" in finding.message
+        for finding in findings
+    )
+
+    extra = Path("reports/closure_v1/09_planning/unsealed_extra.json")
+    extra.write_text("{}\n", encoding="utf-8")
+    findings = validate(staged_paths | {extra})
+    assert has_failing_findings(findings)
+    assert any("staging is not exact53" in finding.message for finding in findings)
+
+    heavy[0].chmod(0o600)
+    findings = validate()
+    assert has_failing_findings(findings)
+    assert any("DVC output identity is unsafe" in finding.message for finding in findings)
+    heavy[0].chmod(0o444)
+
+    pointer_payload = pointers[0].read_bytes()
+    pointers[0].write_bytes(pointer_payload.replace(b"- md5: ", b"- md5: 0", 1))
+    findings = validate()
+    assert has_failing_findings(findings)
+    assert any("DVC pointer" in finding.message for finding in findings)
+    pointers[0].write_bytes(pointer_payload)
+
+    access_log.write_bytes(access_log_payload + access_log_payload)
+    findings = validate()
+    assert has_failing_findings(findings)
+    assert any("outcome access log" in finding.message for finding in findings)
 
 
 def test_closure_development_runtime_lock_is_an_exact_authoritative_manifest() -> None:
@@ -1188,3 +1584,3074 @@ def test_reproducibility_checks_validate_dvc_pointer_structure(tmp_path: Path, m
     )
 
     assert not has_failing_findings(findings)
+
+
+def _closure_phase3_h_args() -> Any:
+    return precommit_artifacts.argparse.Namespace(
+        manifest=DEFAULT_DVC_MANIFEST,
+        dvc_bin=None,
+        report=None,
+        target=[],
+        defer_dvc_target=[],
+        register_anfis_ablation_model_family=False,
+        jobs=None,
+        yes=False,
+        dry_run=False,
+        no_push=True,
+        allow_unmanaged=True,
+        skip_publication_check=False,
+        max_manifest_hash_bytes=(
+            precommit_artifacts.DEFAULT_MAX_MANIFEST_HASH_BYTES
+        ),
+        verify_manifest_inputs=False,
+    )
+
+
+def _closure_phase3_h_short_status(*, staged: bool) -> str:
+    expected = precommit_artifacts._closure_phase3_h_expected_short_scope(
+        staged=staged
+    )
+    return "\n".join(
+        f"{status_code} {path}" for path, status_code in sorted(expected.items())
+    )
+
+
+def _closure_phase3_h_name_status() -> str:
+    return "\n".join(
+        f"{status_code}\t{path}"
+        for path, status_code in sorted(
+            precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE.items()
+        )
+    )
+
+
+def _closure_phase3_h_amend_short_status(*, staged: bool) -> str:
+    expected = (
+        precommit_artifacts._closure_phase3_h_amend_expected_short_scope(
+            staged=staged
+        )
+    )
+    return "\n".join(
+        f"{status_code} {path}"
+        for path, status_code in sorted(expected.items())
+    )
+
+
+def _closure_phase3_h_amend_name_status() -> str:
+    return "\n".join(
+        f"{status_code}\t{path}"
+        for path, status_code in sorted(
+            precommit_artifacts.CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE.items()
+        )
+    )
+
+
+def _closure_phase3_h_import_repair_short_status(*, staged: bool) -> str:
+    expected = (
+        precommit_artifacts._closure_phase3_h_import_repair_expected_short_scope(
+            staged=staged
+        )
+    )
+    return "\n".join(
+        f"{status_code} {path}" for path, status_code in sorted(expected.items())
+    )
+
+
+def _closure_phase3_h_import_repair_name_status() -> str:
+    return "\n".join(
+        f"{status_code}\t{path}"
+        for path, status_code in sorted(
+            precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE.items()
+        )
+    )
+
+
+def _closure_phase3_h_authority_rewrite_short_status(*, staged: bool) -> str:
+    expected = (
+        precommit_artifacts._closure_phase3_h_authority_rewrite_expected_short_scope(
+            staged=staged
+        )
+    )
+    return "\n".join(
+        f"{status_code} {path}" for path, status_code in sorted(expected.items())
+    )
+
+
+def _closure_phase3_h_authority_rewrite_name_status() -> str:
+    return "\n".join(
+        f"{status_code}\t{path}"
+        for path, status_code in sorted(
+            precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE.items()
+        )
+    )
+
+
+def _closure_phase3_h_runner_rewrite_short_status(*, staged: bool) -> str:
+    expected = (
+        precommit_artifacts._closure_phase3_h_runner_rewrite_expected_short_scope(
+            staged=staged
+        )
+    )
+    return "\n".join(
+        f"{status_code} {path}" for path, status_code in sorted(expected.items())
+    )
+
+
+def _closure_phase3_h_runner_rewrite_name_status() -> str:
+    return "\n".join(
+        f"{status_code}\t{path}"
+        for path, status_code in sorted(
+            precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE.items()
+        )
+    )
+
+
+def _closure_phase3_h_runner_rewrite_ref_output(*args: str) -> str:
+    u_commit = precommit_artifacts.CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT
+    p_commit = precommit_artifacts.CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT
+    h_commit = precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT
+    r_commit = precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT
+    if args and args[0] == "rev-parse":
+        return u_commit + "\n"
+    if args == ("symbolic-ref", "--quiet", "HEAD"):
+        return "refs/heads/main\n"
+    if args == (
+        "symbolic-ref",
+        "--quiet",
+        "refs/remotes/origin/HEAD",
+    ):
+        return "refs/remotes/origin/main\n"
+    for commit, parent in (
+        (u_commit, p_commit),
+        (p_commit, h_commit),
+        (h_commit, r_commit),
+    ):
+        if args == ("rev-list", "--parents", "-n", "1", commit):
+            return f"{commit} {parent}\n"
+    if args == (
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        h_commit,
+    ):
+        return _closure_phase3_h_name_status()
+    if args == (
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        p_commit,
+    ):
+        return "\n".join(
+            f"A\t{path}"
+            for path in sorted(
+                precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+            )
+        )
+    if args == (
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        u_commit,
+    ):
+        return f"A\t{precommit_artifacts.CLOSURE_E0_U_ACTIVATION_PATH.as_posix()}\n"
+    raise AssertionError(args)
+
+
+def _closure_phase3_h_authority_rewrite_ref_output(*args: str) -> str:
+    p_commit = precommit_artifacts.CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT
+    h_commit = precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_COMMIT
+    r_commit = precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT
+    if args and args[0] == "rev-parse":
+        return p_commit + "\n"
+    if args == ("symbolic-ref", "--quiet", "HEAD"):
+        return "refs/heads/main\n"
+    if args == (
+        "symbolic-ref",
+        "--quiet",
+        "refs/remotes/origin/HEAD",
+    ):
+        return "refs/remotes/origin/main\n"
+    if args == ("rev-list", "--parents", "-n", "1", p_commit):
+        return f"{p_commit} {h_commit}\n"
+    if args == ("rev-list", "--parents", "-n", "1", h_commit):
+        return f"{h_commit} {r_commit}\n"
+    if args == (
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        h_commit,
+    ):
+        return _closure_phase3_h_name_status()
+    if args == (
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        p_commit,
+    ):
+        return "\n".join(
+            f"A\t{path}"
+            for path in sorted(
+                precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+            )
+        )
+    raise AssertionError(args)
+
+
+def _closure_phase3_h_ref_output(*args: str) -> str:
+    if args[:2] == ("rev-parse", "HEAD^{commit}"):
+        return precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT + "\n"
+    if args and args[0] == "rev-parse":
+        return precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT + "\n"
+    if args == ("symbolic-ref", "--quiet", "HEAD"):
+        return "refs/heads/main\n"
+    if args == (
+        "symbolic-ref",
+        "--quiet",
+        "refs/remotes/origin/HEAD",
+    ):
+        return "refs/remotes/origin/main\n"
+    raise AssertionError(args)
+
+
+def _closure_phase3_h_amend_ref_output(*args: str) -> str:
+    if args == ("rev-parse", "HEAD^1^{commit}"):
+        return precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT + "\n"
+    if args and args[0] == "rev-parse":
+        return precommit_artifacts.CLOSURE_PHASE3_H_HISTORICAL_COMMIT + "\n"
+    if args == ("symbolic-ref", "--quiet", "HEAD"):
+        return "refs/heads/main\n"
+    if args == (
+        "symbolic-ref",
+        "--quiet",
+        "refs/remotes/origin/HEAD",
+    ):
+        return "refs/remotes/origin/main\n"
+    raise AssertionError(args)
+
+
+def _closure_phase3_h_import_repair_ref_output(*args: str) -> str:
+    h_commit = precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT
+    pre_import_h_commit = (
+        precommit_artifacts.CLOSURE_PHASE3_H_PRE_IMPORT_REPAIR_COMMIT
+    )
+    p_commit = precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_COMMIT
+    r_commit = precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT
+    if args == ("rev-parse", "HEAD^{commit}") or args == (
+        "rev-parse",
+        "refs/heads/main^{commit}",
+    ):
+        return h_commit + "\n"
+    if args in {
+        ("rev-parse", "refs/remotes/origin/main^{commit}"),
+        ("rev-parse", "refs/remotes/origin/HEAD^{commit}"),
+    }:
+        return h_commit + "\n"
+    if args == ("symbolic-ref", "--quiet", "HEAD"):
+        return "refs/heads/main\n"
+    if args == (
+        "symbolic-ref",
+        "--quiet",
+        "refs/remotes/origin/HEAD",
+    ):
+        return "refs/remotes/origin/main\n"
+    if args == ("rev-list", "--parents", "-n", "1", h_commit):
+        return f"{h_commit} {r_commit}\n"
+    if args == (
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        pre_import_h_commit,
+    ):
+        return f"{pre_import_h_commit} {r_commit}\n"
+    if args == ("rev-list", "--parents", "-n", "1", p_commit):
+        return f"{p_commit} {pre_import_h_commit}\n"
+    if args == (
+        "diff-tree",
+        "--no-commit-id",
+        "--name-status",
+        "--no-renames",
+        "-r",
+        p_commit,
+    ):
+        return "\n".join(
+            f"A\t{path}"
+            for path in sorted(
+                precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+            )
+        )
+    if args[:5] == ("ls-tree", "-r", "--full-tree", p_commit, "--"):
+        assert tuple(args[5:]) == tuple(
+            sorted(precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+        )
+        return "\n".join(
+            f"100644 blob {'a' * 40}\t{path}"
+            for path in sorted(
+                precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+            )
+        )
+    raise AssertionError(args)
+
+
+def test_closure_phase3_h_runner_rewrite_selector_binds_current_u_p_h_r(
+    monkeypatch,
+) -> None:
+    status = _closure_phase3_h_runner_rewrite_short_status(staged=False)
+    assert precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT == (
+        "22cf63d58298e4eb769a437c0cfae3fbfa69ecb5"
+    )
+    assert precommit_artifacts.CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT == (
+        "116b33ad2c63792750f0fb021e7ed9208d8c0742"
+    )
+    assert precommit_artifacts.CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT == (
+        "0ff9a7d88fe60810a61f76543413b73e4f6ac85d"
+    )
+    assert precommit_artifacts.CLOSURE_PHASE3_U_RUNNER_REWRITE_BYTES == 34368
+    assert precommit_artifacts.CLOSURE_PHASE3_U_RUNNER_REWRITE_SHA256 == (
+        "6b1f149e53e5304e846794a98e06f2ad7b87800d05c4ae6059c9107d2af7c137"
+    )
+    assert precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE == {
+        "src/data/prepare_commit_artifacts.py": "M",
+        "src/experiments/run_closure_benchmark.py": "M",
+        "tests/test_closure_e0_u_authority.py": "M",
+        "tests/test_prepare_commit_artifacts.py": "M",
+    }
+    assert set(
+        precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+    ).issubset(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE)
+    assert not (
+        set(precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE)
+        & set(precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: _closure_phase3_h_runner_rewrite_ref_output(
+            *args
+        ),
+    )
+
+    assert precommit_artifacts.closure_phase3_h_runner_rewrite_pre_stage_scope(
+        status,
+        "",
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="empty Git index",
+    ):
+        precommit_artifacts.closure_phase3_h_runner_rewrite_pre_stage_scope(
+            status,
+            "M\tsrc/data/prepare_commit_artifacts.py\n",
+        )
+
+    partial = status.replace(
+        " M src/experiments/run_closure_benchmark.py\n", ""
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="exact4M",
+    ):
+        precommit_artifacts.closure_phase3_h_runner_rewrite_pre_stage_scope(
+            partial,
+            "",
+        )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            f"{'f' * 40}\n"
+            if args
+            == (
+                "rev-list",
+                "--parents",
+                "-n",
+                "1",
+                precommit_artifacts.CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT,
+            )
+            else _closure_phase3_h_runner_rewrite_ref_output(*args)
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="R 4c92ed7 -> H 22cf63d -> P 116b33a -> U 0ff9a7d",
+    ):
+        precommit_artifacts.closure_phase3_h_runner_rewrite_pre_stage_scope(
+            status,
+            "",
+        )
+
+
+def test_closure_phase3_h_runner_rewrite_live_remote_is_current_u(
+    monkeypatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        return precommit_artifacts.CommandResult(
+            command,
+            0,
+            (
+                precommit_artifacts.CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT
+                + "\trefs/heads/main\n"
+            ),
+            "",
+        )
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    precommit_artifacts._require_closure_phase3_h_runner_rewrite_live_remote(
+        repo_root=Path(".")
+    )
+    assert commands == [
+        [
+            "git",
+            "-C",
+            ".",
+            "ls-remote",
+            "--heads",
+            precommit_artifacts.CLOSURE_PHASE3_LIVE_REMOTE_URL,
+            "refs/heads/main",
+        ]
+    ]
+
+
+@pytest.mark.parametrize(
+    "guard_path",
+    precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_FORBIDDEN_GUARDS,
+)
+def test_closure_phase3_h_runner_rewrite_rejects_each_runtime_guard(
+    tmp_path: Path,
+    guard_path: Path,
+) -> None:
+    assert (
+        precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_FORBIDDEN_GUARDS
+        == (
+            Path("tmp/closure_v1_e10_source_evidence.guard"),
+            Path("tmp/closure_phase3_input_overlay.guard"),
+            Path("tmp/closure_v1_e0_u_activation/activation.guard"),
+            Path("tmp/closure_v1_e0_u/sealed_batch.guard"),
+        )
+    )
+    precommit_artifacts._require_closure_phase3_h_runner_rewrite_future_paths_absent(
+        repo_root=tmp_path
+    )
+    physical = tmp_path / guard_path
+    physical.parent.mkdir(parents=True, exist_ok=True)
+    physical.write_text("owned\n", encoding="utf-8")
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match=guard_path.name,
+    ):
+        precommit_artifacts._require_closure_phase3_h_runner_rewrite_future_paths_absent(
+            repo_root=tmp_path
+        )
+
+
+def _closure_phase3_h_runner_rewrite_publication_failure(
+    payload: bytes,
+    *,
+    path: str | None = None,
+    extra_section: str = "",
+) -> Any:
+    payload_line = payload[:-1].decode("utf-8")
+    raw_path = (
+        precommit_artifacts.CLOSURE_E0_U_ACTIVATION_PATH.as_posix()
+        if path is None
+        else path
+    )
+    stdout = (
+        "Checking tracked files before publication...\n\n"
+        "Local absolute paths found in versionable files:\n"
+        f"{raw_path}:1:{payload_line}\n"
+        f"{extra_section}\n"
+        "Publication readiness check failed.\n"
+    )
+    command = ["scripts/check_repo_publication_ready.sh"]
+    return precommit_artifacts.CommandResult(command, 1, stdout, "")
+
+
+def _closure_phase3_h_runner_rewrite_activation_payload() -> bytes:
+    """Build the canonical two-path U shape without requiring published U."""
+
+    repository_root = "/" + "home" + "/" + "zero/repos/lentic-pipe"
+    manifest = {
+        "sealed_runtime_environment_record": {
+            "purelib_path": repository_root
+            + "/.venv/lib/python3.14/site-packages",
+            "python_executable": {
+                "link_path": repository_root + "/.venv/bin/python"
+            },
+        }
+    }
+    return (
+        json.dumps(
+            manifest,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "extra_absolute_path",
+        "extra_section",
+        "wrong_file",
+        "service_account",
+        "private_key",
+        "bucket",
+    ],
+)
+def test_closure_phase3_h_runner_rewrite_publication_compensation_is_exact(
+    mutation: str,
+) -> None:
+    payload = _closure_phase3_h_runner_rewrite_activation_payload()
+    exact = _closure_phase3_h_runner_rewrite_publication_failure(payload)
+    assert (
+        precommit_artifacts._validate_closure_phase3_h_runner_rewrite_publication_result(
+            exact,
+            activation_payload=payload,
+        )
+        is True
+    )
+
+    candidate_payload = payload
+    candidate_result = exact
+    if mutation in {
+        "extra_absolute_path",
+        "service_account",
+        "private_key",
+        "bucket",
+    }:
+        manifest = json.loads(payload)
+        injected = {
+            "extra_absolute_path": "/" + "home" + "/" + "zero/forbidden",
+            "service_account": {"type": "service_" + "account"},
+            "private_" + "key": {"private_" + "key": "secret"},
+            "bucket": "gs:" + "//forbidden-bucket/object",
+        }[mutation]
+        manifest["synthetic_mutation"] = injected
+        candidate_payload = (
+            json.dumps(
+                manifest,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+            )
+            + "\n"
+        ).encode("utf-8")
+        candidate_result = _closure_phase3_h_runner_rewrite_publication_failure(
+            candidate_payload
+        )
+    elif mutation == "extra_section":
+        candidate_result = _closure_phase3_h_runner_rewrite_publication_failure(
+            payload,
+            extra_section="\nTracked secret-looking files:\nsynthetic",
+        )
+    elif mutation == "wrong_file":
+        candidate_result = _closure_phase3_h_runner_rewrite_publication_failure(
+            payload,
+            path="reports/other.json",
+        )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="publication",
+    ):
+        precommit_artifacts._validate_closure_phase3_h_runner_rewrite_publication_result(
+            candidate_result,
+            activation_payload=candidate_payload,
+        )
+
+
+def test_closure_phase3_h_authority_rewrite_selector_binds_current_p_h_r(
+    monkeypatch,
+) -> None:
+    status = _closure_phase3_h_authority_rewrite_short_status(staged=False)
+    assert precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE == {
+        "src/data/prepare_commit_artifacts.py": "M",
+        "src/experiments/closure_e0_u_authority.py": "M",
+        "tests/test_closure_e0_u_authority.py": "M",
+        "tests/test_prepare_commit_artifacts.py": "M",
+    }
+    assert set(
+        precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+    ).issubset(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE)
+    assert not (
+        set(precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE)
+        & set(precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+    )
+    assert sorted(
+        precommit_artifacts.CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES.values()
+    ) == [0o600] * 7 + [0o644] * 3
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: _closure_phase3_h_authority_rewrite_ref_output(
+            *args
+        ),
+    )
+
+    assert precommit_artifacts.closure_phase3_h_authority_rewrite_pre_stage_scope(
+        status,
+        "",
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="empty Git index",
+    ):
+        precommit_artifacts.closure_phase3_h_authority_rewrite_pre_stage_scope(
+            status,
+            "M\tsrc/data/prepare_commit_artifacts.py\n",
+        )
+
+    partial = status.replace(
+        " M src/experiments/closure_e0_u_authority.py\n", ""
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="exact4M",
+    ):
+        precommit_artifacts.closure_phase3_h_authority_rewrite_pre_stage_scope(
+            partial,
+            "",
+        )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            f"{'f' * 40}\n"
+            if args
+            == (
+                "rev-list",
+                "--parents",
+                "-n",
+                "1",
+                precommit_artifacts.CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT,
+            )
+            else _closure_phase3_h_authority_rewrite_ref_output(*args)
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="R -> H 203b320 -> P 1cbef2a",
+    ):
+        precommit_artifacts.closure_phase3_h_authority_rewrite_pre_stage_scope(
+            status,
+            "",
+        )
+
+
+def test_closure_phase3_h_authority_rewrite_live_remote_is_current_p(
+    monkeypatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        return precommit_artifacts.CommandResult(
+            command,
+            0,
+            (
+                precommit_artifacts.CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT
+                + "\trefs/heads/main\n"
+            ),
+            "",
+        )
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    precommit_artifacts._require_closure_phase3_h_authority_rewrite_live_remote(
+        repo_root=Path(".")
+    )
+    assert commands == [
+        [
+            "git",
+            "-C",
+            ".",
+            "ls-remote",
+            "--heads",
+            precommit_artifacts.CLOSURE_PHASE3_LIVE_REMOTE_URL,
+            "refs/heads/main",
+        ]
+    ]
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda command, **_kwargs: precommit_artifacts.CommandResult(
+            command,
+            0,
+            f"{'f' * 40}\trefs/heads/main\n",
+            "",
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="live remote main",
+    ):
+        precommit_artifacts._require_closure_phase3_h_authority_rewrite_live_remote(
+            repo_root=Path(".")
+        )
+
+
+@pytest.mark.parametrize(
+    "guard_path",
+    precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_FORBIDDEN_GUARDS,
+)
+def test_closure_phase3_h_authority_rewrite_rejects_each_runtime_guard(
+    tmp_path: Path,
+    guard_path: Path,
+) -> None:
+    assert (
+        precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_FORBIDDEN_GUARDS
+        == (
+            Path("tmp/closure_v1_e0_u_activation/activation.guard"),
+            Path("tmp/closure_v1_e0_u/sealed_batch.guard"),
+        )
+    )
+    precommit_artifacts._require_closure_phase3_h_authority_rewrite_future_paths_absent(
+        repo_root=tmp_path
+    )
+    physical = tmp_path / guard_path
+    physical.parent.mkdir(parents=True, exist_ok=True)
+    physical.write_text("owned\n", encoding="utf-8")
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match=guard_path.name,
+    ):
+        precommit_artifacts._require_closure_phase3_h_authority_rewrite_future_paths_absent(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase3_h_import_repair_selector_binds_exact5_and_historical_p(
+    monkeypatch,
+) -> None:
+    status = _closure_phase3_h_import_repair_short_status(staged=False)
+    assert precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE == {
+        "docs/closure_v1/E0_U_PHASE3_SEALED_BATCH.md": "M",
+        "src/data/prepare_commit_artifacts.py": "M",
+        "src/experiments/build_closure_e10_source_evidence.py": "M",
+        "tests/test_build_closure_e10_source_evidence.py": "M",
+        "tests/test_prepare_commit_artifacts.py": "M",
+    }
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            "f" * 40 + "\n"
+            if args == ("rev-parse", "HEAD^{commit}")
+            else (_ for _ in ()).throw(AssertionError(args))
+        ),
+    )
+    assert not precommit_artifacts.closure_phase3_h_import_repair_pre_stage_scope(
+        status,
+        "",
+    )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: _closure_phase3_h_import_repair_ref_output(*args),
+    )
+
+    assert precommit_artifacts.closure_phase3_h_import_repair_pre_stage_scope(
+        status,
+        "",
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="empty Git index",
+    ):
+        precommit_artifacts.closure_phase3_h_import_repair_pre_stage_scope(
+            status,
+            "M\tsrc/data/prepare_commit_artifacts.py\n",
+        )
+
+    partial = status.replace(
+        " M src/experiments/build_closure_e10_source_evidence.py\n", ""
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="exact5M",
+    ):
+        precommit_artifacts.closure_phase3_h_import_repair_pre_stage_scope(
+            partial,
+            "",
+        )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            f"{precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_COMMIT} "
+            f"{'f' * 40}\n"
+            if args
+            == (
+                "rev-list",
+                "--parents",
+                "-n",
+                "1",
+                precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_COMMIT,
+            )
+            else _closure_phase3_h_import_repair_ref_output(*args)
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="historical R -> pre-import-H -> P histories",
+    ):
+        precommit_artifacts.closure_phase3_h_import_repair_pre_stage_scope(
+            status,
+            "",
+        )
+
+
+def test_closure_phase3_h_import_repair_live_remote_is_canonical_and_exact(
+    monkeypatch,
+) -> None:
+    commands: list[list[str]] = []
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        return precommit_artifacts.CommandResult(
+            command,
+            0,
+            (
+                precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT
+                + "\trefs/heads/main\n"
+            ),
+            "",
+        )
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    precommit_artifacts._require_closure_phase3_h_import_repair_live_remote(
+        repo_root=Path(".")
+    )
+    assert commands == [
+        [
+            "git",
+            "-C",
+            ".",
+            "ls-remote",
+            "--heads",
+            precommit_artifacts.CLOSURE_PHASE3_LIVE_REMOTE_URL,
+            "refs/heads/main",
+        ]
+    ]
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda command, **_kwargs: precommit_artifacts.CommandResult(
+            command,
+            0,
+            f"{'f' * 40}\trefs/heads/main\n",
+            "",
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="live remote main",
+    ):
+        precommit_artifacts._require_closure_phase3_h_import_repair_live_remote(
+            repo_root=Path(".")
+        )
+
+
+def test_closure_phase3_h_amend_selector_is_exact13_unstaged_and_parent_scoped(
+    monkeypatch,
+) -> None:
+    status = _closure_phase3_h_amend_short_status(staged=False)
+    e10_amendment_paths = {
+        "src/experiments/build_closure_e10_source_evidence.py",
+        "tests/test_build_closure_e10_source_evidence.py",
+    }
+    assert {
+        path: precommit_artifacts.CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE[path]
+        for path in e10_amendment_paths
+    } == {path: "M" for path in e10_amendment_paths}
+    assert {
+        precommit_artifacts.CLOSURE_PHASE3_H_AMEND_GIT_MODES[path]
+        for path in e10_amendment_paths
+    } == {"100644"}
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: _closure_phase3_h_amend_ref_output(*args),
+    )
+
+    assert precommit_artifacts.closure_phase3_h_amend_pre_stage_scope(
+        status,
+        "",
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="empty Git index",
+    ):
+        precommit_artifacts.closure_phase3_h_amend_pre_stage_scope(
+            status,
+            "M\t.gitignore\n",
+        )
+
+    partial = status.replace(
+        " M src/experiments/build_closure_e10_source_evidence.py\n", ""
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="exact13M",
+    ):
+        precommit_artifacts.closure_phase3_h_amend_pre_stage_scope(
+            partial,
+            "",
+        )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            "f" * 40 + "\n"
+            if args == ("rev-parse", "HEAD^1^{commit}")
+            else _closure_phase3_h_amend_ref_output(*args)
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="direct parent R",
+    ):
+        precommit_artifacts.closure_phase3_h_amend_pre_stage_scope(
+            status,
+            "",
+        )
+
+
+def test_closure_phase3_h_selector_is_exact_unstaged_and_base_scoped(
+    monkeypatch,
+) -> None:
+    status = _closure_phase3_h_short_status(staged=False)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: _closure_phase3_h_ref_output(*args),
+    )
+
+    assert precommit_artifacts.closure_phase3_h_pre_stage_scope(status, "")
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="empty Git index",
+    ):
+        precommit_artifacts.closure_phase3_h_pre_stage_scope(
+            status,
+            "M\tsrc/data/prepare_commit_artifacts.py\n",
+        )
+
+    partial = status.replace(
+        "?? configs/closure_v1/closure_e0_u_activation.schema.json\n", ""
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="exact40",
+    ):
+        precommit_artifacts.closure_phase3_h_pre_stage_scope(partial, "")
+
+    later_head = "f" * 40
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            later_head + "\n"
+            if args[:2] == ("rev-parse", "HEAD^{commit}")
+            else _closure_phase3_h_ref_output(*args)
+        ),
+    )
+    one_marker = " M src/experiments/closure_e0_u_authority.py\n"
+    assert not precommit_artifacts.closure_phase3_h_pre_stage_scope(
+        one_marker, ""
+    )
+
+
+def test_closure_phase3_h_invocation_forbids_dvc_mutation() -> None:
+    args = _closure_phase3_h_args()
+    env = {"DVC_NO_ANALYTICS": "1"}
+
+    precommit_artifacts.validate_closure_phase3_h_invocation(args, env=env)
+
+    args.target = ["models"]
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="empty DVC target set",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_invocation(args, env=env)
+
+
+def test_closure_phase3_h_staged_transaction_binds_exact_modes_and_blobs(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    blob_oids: dict[str, str] = {}
+    for raw_path, git_mode in precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES.items():
+        path = tmp_path / raw_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = f"phase3-h:{raw_path}\n".encode()
+        path.write_bytes(payload)
+        path.chmod(0o755 if git_mode == "100755" else 0o644)
+        blob_oids[raw_path] = hashlib.sha1(
+            f"blob {len(payload)}\0".encode() + payload,
+            usedforsecurity=False,
+        ).hexdigest()
+    index_oids = dict(blob_oids)
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase3_h_name_status()
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        if args[:3] == ("ls-files", "-s", "--"):
+            raw_path = args[3]
+            return (
+                f"{precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES[raw_path]} "
+                f"{index_oids[raw_path]} 0\t{raw_path}\n"
+            )
+        if args[:3] == ("hash-object", "--no-filters", "--"):
+            return blob_oids[args[3]] + "\n"
+        return _closure_phase3_h_ref_output(*args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    records = precommit_artifacts.validate_closure_phase3_h_staged_transaction(
+        repo_root=tmp_path
+    )
+    assert len(records) == 40
+    assert sum(record.mode == 0o755 for record in records) == 1
+    assert all(record.nlink == 1 for record in records)
+
+    index_oids["src/experiments/run_closure_benchmark.py"] = "0" * 40
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="mode/blob binding drifted",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_staged_transaction(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase3_h_authority_rewrite_staged_transaction_binds_future_h(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    blob_oids: dict[str, str] = {}
+    all_git_modes = {
+        **{
+            path: "100644"
+            for path in precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+        },
+        **precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES,
+    }
+    for raw_path, git_mode in all_git_modes.items():
+        path = tmp_path / raw_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = f"phase3-authority-rewrite:{raw_path}\n".encode()
+        path.write_bytes(payload)
+        if raw_path in precommit_artifacts.CLOSURE_PHASE3_P_HISTORICAL_SCOPE:
+            path.chmod(
+                precommit_artifacts.CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES[
+                    raw_path
+                ]
+            )
+        else:
+            path.chmod(0o755 if git_mode == "100755" else 0o644)
+        blob_oids[raw_path] = hashlib.sha1(
+            f"blob {len(payload)}\0".encode() + payload,
+            usedforsecurity=False,
+        ).hexdigest()
+    prospective = _closure_phase3_h_name_status()
+    prospective_command = (
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+        precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        "--",
+        *sorted(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE),
+    )
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase3_h_authority_rewrite_name_status()
+        if args == prospective_command:
+            return prospective
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_authority_rewrite_short_status(
+                staged=True
+            )
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        if args[:3] == ("ls-files", "-s", "--"):
+            raw_path = args[3]
+            return (
+                f"{all_git_modes[raw_path]} {blob_oids[raw_path]} "
+                f"0\t{raw_path}\n"
+            )
+        if args[:3] == ("hash-object", "--no-filters", "--"):
+            return blob_oids[args[3]] + "\n"
+        if args[0] == "rev-parse" and ":" in args[1]:
+            raw_path = args[1].split(":", 1)[1]
+            return blob_oids[raw_path] + "\n"
+        return _closure_phase3_h_authority_rewrite_ref_output(*args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    records = (
+        precommit_artifacts.validate_closure_phase3_h_authority_rewrite_staged_transaction(
+            repo_root=tmp_path
+        )
+    )
+    assert len(records) == 40
+    assert sum(record.mode == 0o755 for record in records) == 1
+    assert all(record.nlink == 1 for record in records)
+
+    prospective = _closure_phase3_h_authority_rewrite_name_status()
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="prospective exact40",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_authority_rewrite_staged_transaction(
+            repo_root=tmp_path
+        )
+
+    prospective = _closure_phase3_h_name_status()
+    restricted_p_path = next(
+        path
+        for path, mode in (
+            precommit_artifacts.CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES.items()
+        )
+        if mode == 0o600
+    )
+    (tmp_path / restricted_p_path).chmod(0o644)
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="file/name/parent identity changed",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_authority_rewrite_staged_transaction(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase3_h_amend_staged_transaction_binds_patch_and_final_tree(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    blob_oids: dict[str, str] = {}
+    for raw_path, git_mode in precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES.items():
+        path = tmp_path / raw_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = f"phase3-h-amended:{raw_path}\n".encode()
+        path.write_bytes(payload)
+        path.chmod(0o755 if git_mode == "100755" else 0o644)
+        blob_oids[raw_path] = hashlib.sha1(
+            f"blob {len(payload)}\0".encode() + payload,
+            usedforsecurity=False,
+        ).hexdigest()
+    index_oids = dict(blob_oids)
+    prospective = _closure_phase3_h_name_status()
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase3_h_amend_name_status()
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        ):
+            return prospective
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_amend_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        if args[:3] == ("ls-files", "-s", "--"):
+            raw_path = args[3]
+            return (
+                f"{precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES[raw_path]} "
+                f"{index_oids[raw_path]} 0\t{raw_path}\n"
+            )
+        if args[:3] == ("hash-object", "--no-filters", "--"):
+            return blob_oids[args[3]] + "\n"
+        return _closure_phase3_h_amend_ref_output(*args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    records = (
+        precommit_artifacts.validate_closure_phase3_h_amend_staged_transaction(
+            repo_root=tmp_path
+        )
+    )
+    assert len(records) == 40
+    assert all(record.nlink == 1 for record in records)
+
+    prospective = _closure_phase3_h_amend_name_status()
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="prospective exact40",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_amend_staged_transaction(
+            repo_root=tmp_path
+        )
+
+    prospective = _closure_phase3_h_name_status()
+    index_oids[".gitignore"] = "0" * 40
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="mode/blob binding drifted",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_amend_staged_transaction(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase3_h_import_repair_staged_transaction_binds_exact40(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    blob_oids: dict[str, str] = {}
+    for raw_path, git_mode in precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES.items():
+        path = tmp_path / raw_path
+        path.parent.mkdir(parents=True, exist_ok=True)
+        payload = f"phase3-h-import-repair:{raw_path}\n".encode()
+        path.write_bytes(payload)
+        path.chmod(0o755 if git_mode == "100755" else 0o644)
+        blob_oids[raw_path] = hashlib.sha1(
+            f"blob {len(payload)}\0".encode() + payload,
+            usedforsecurity=False,
+        ).hexdigest()
+    prospective = _closure_phase3_h_name_status()
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase3_h_import_repair_name_status()
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        ):
+            return prospective
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_import_repair_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        if args[:3] == ("ls-files", "-s", "--"):
+            raw_path = args[3]
+            return (
+                f"{precommit_artifacts.CLOSURE_PHASE3_H_GIT_MODES[raw_path]} "
+                f"{blob_oids[raw_path]} 0\t{raw_path}\n"
+            )
+        if args[:3] == ("hash-object", "--no-filters", "--"):
+            return blob_oids[args[3]] + "\n"
+        return _closure_phase3_h_import_repair_ref_output(*args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    records = (
+        precommit_artifacts.validate_closure_phase3_h_import_repair_staged_transaction(
+            repo_root=tmp_path
+        )
+    )
+    assert len(records) == 40
+    assert all(record.nlink == 1 for record in records)
+
+    prospective = _closure_phase3_h_import_repair_name_status()
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase3HPrecommitAdapterError,
+        match="prospective exact40",
+    ):
+        precommit_artifacts.validate_closure_phase3_h_import_repair_staged_transaction(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase3_h_main_bypasses_historical_e0_m_selectors(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(precommit_artifacts, "parse_args", _closure_phase3_h_args)
+    monkeypatch.setattr(precommit_artifacts, "ensure_repo_root", lambda: None)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", lambda *_args: "")
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase3_h_precommit",
+        lambda *_args, **_kwargs: 73,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_formal_model_lock_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("historical E0-M selector must not run")
+        ),
+    )
+
+    assert precommit_artifacts.main() == 73
+
+
+def test_closure_phase3_h_amend_main_precedes_full_h_and_historical_selectors(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(precommit_artifacts, "parse_args", _closure_phase3_h_args)
+    monkeypatch.setattr(precommit_artifacts, "ensure_repo_root", lambda: None)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", lambda *_args: "")
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_amend_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase3_h_amend_precommit",
+        lambda *_args, **_kwargs: 79,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("full-H selector must not run after amend match")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_formal_model_lock_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("historical E0-M selector must not run")
+        ),
+    )
+
+    assert precommit_artifacts.main() == 79
+
+
+def test_closure_phase3_h_import_repair_main_precedes_other_h_selectors(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(precommit_artifacts, "parse_args", _closure_phase3_h_args)
+    monkeypatch.setattr(precommit_artifacts, "ensure_repo_root", lambda: None)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", lambda *_args: "")
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_import_repair_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase3_h_import_repair_precommit",
+        lambda *_args, **_kwargs: 83,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_amend_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("older H amendment selector must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("full-H selector must not run")
+        ),
+    )
+
+    assert precommit_artifacts.main() == 83
+
+
+def test_closure_phase3_h_runner_rewrite_main_precedes_all_h_selectors(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(precommit_artifacts, "parse_args", _closure_phase3_h_args)
+    monkeypatch.setattr(precommit_artifacts, "ensure_repo_root", lambda: None)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", lambda *_args: "")
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_runner_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase3_h_runner_rewrite_precommit",
+        lambda *_args, **_kwargs: 97,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_authority_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("older H authority selector must not run")
+        ),
+    )
+
+    assert precommit_artifacts.main() == 97
+
+
+def test_closure_phase3_h_authority_rewrite_main_precedes_all_h_selectors(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(precommit_artifacts, "parse_args", _closure_phase3_h_args)
+    monkeypatch.setattr(precommit_artifacts, "ensure_repo_root", lambda: None)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", lambda *_args: "")
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_authority_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase3_h_authority_rewrite_precommit",
+        lambda *_args, **_kwargs: 89,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_import_repair_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("older H repair selector must not run")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_amend_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("older H amendment selector must not run")
+        ),
+    )
+
+    assert precommit_artifacts.main() == 89
+
+
+def test_closure_phase3_h_transaction_only_stages_exact40_and_runs_generic_checks(
+    monkeypatch,
+) -> None:
+    args = _closure_phase3_h_args()
+    initial_status = _closure_phase3_h_short_status(staged=False)
+    staged = False
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    generic_calls: list[str] = []
+    physical = ("sealed-physical-snapshot",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+    unmanaged = [Path("data/closure_v1/locked_evaluation")]
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: unmanaged,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase3-h-test.md"),
+    )
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command[:4] == ("status", "--short", "--untracked-files=all"):
+            return (
+                _closure_phase3_h_short_status(staged=True)
+                if staged
+                else initial_status
+            )
+        if command[:3] == (
+            "diff",
+            "--cached",
+            "--name-status",
+        ):
+            return _closure_phase3_h_name_status() if staged else ""
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        nonlocal staged
+        commands.append(command)
+        if command == ["scripts/check_repo_publication_ready.sh"]:
+            return precommit_artifacts.CommandResult(command, 0, "PASS", "")
+        if command[:4] == ["git", "add", "-A", "--"]:
+            staged = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+
+    def generic(**kwargs: Any) -> list[Any]:
+        generic_calls.append(kwargs["staged_status"])
+        return [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "generic checks passed"
+            )
+        ]
+
+    monkeypatch.setattr(precommit_artifacts, "reproducibility_checks", generic)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase3_h_precommit(
+            args,
+            initial_status=initial_status,
+        )
+        == 0
+    )
+    assert len(commands) == 2
+    assert commands[0] == ["scripts/check_repo_publication_ready.sh"]
+    assert commands[1] == [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE),
+    ]
+    assert generic_calls == [_closure_phase3_h_name_status()]
+    assert reports[0]["rejected_unmanaged_paths"] == unmanaged
+    assert reports[0]["selected_dvc_paths"] == []
+    assert reports[0]["dvc_push_result"] is None
+    assert all("push" not in command for command in commands)
+
+
+def test_closure_phase3_h_runner_rewrite_transaction_stages_only_exact4(
+    monkeypatch,
+) -> None:
+    args = _closure_phase3_h_args()
+    initial_status = _closure_phase3_h_runner_rewrite_short_status(
+        staged=False
+    )
+    state = {"staged": False}
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    generic_calls: list[str] = []
+    physical = ("sealed-future-h-exact40",)
+    rewrite = ("sealed-runner-rewrite-exact4",)
+    p_physical = ("sealed-current-p-exact10",)
+    u_physical = ("sealed-current-u-exact1",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_runner_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_runner_rewrite_files",
+        lambda **_kwargs: rewrite,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_p_runner_rewrite_files",
+        lambda **_kwargs: p_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_u_runner_rewrite_file",
+        lambda **_kwargs: u_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_runner_rewrite_future_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_runner_rewrite_live_remote",
+        lambda **_kwargs: None,
+    )
+
+    def publication_check(**_kwargs: Any) -> tuple[Any, bool]:
+        command = ["scripts/check_repo_publication_ready.sh"]
+        commands.append(command)
+        return (
+            precommit_artifacts.CommandResult(command, 1, "exact U", ""),
+            True,
+        )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase3_h_runner_rewrite_publication_check",
+        publication_check,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_runner_rewrite_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase3-h-runner-rewrite-test.md"),
+    )
+
+    prospective_command = (
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+        precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        "--",
+        *sorted(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE),
+    )
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_runner_rewrite_short_status(
+                staged=state["staged"]
+            )
+        if command == prospective_command:
+            assert state["staged"]
+            return _closure_phase3_h_name_status()
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return (
+                _closure_phase3_h_runner_rewrite_name_status()
+                if state["staged"]
+                else ""
+            )
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        if command == [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+            ),
+        ]:
+            state["staged"] = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+
+    def generic(**kwargs: Any) -> list[Any]:
+        generic_calls.append(kwargs["staged_status"])
+        return [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "generic checks passed"
+            )
+        ]
+
+    monkeypatch.setattr(precommit_artifacts, "reproducibility_checks", generic)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase3_h_runner_rewrite_precommit(
+            args,
+            initial_status=initial_status,
+        )
+        == 0
+    )
+    assert commands == [
+        ["scripts/check_repo_publication_ready.sh"],
+        [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+            ),
+        ],
+    ]
+    assert generic_calls == [_closure_phase3_h_name_status()]
+    assert reports[0]["staged_status"] == (
+        _closure_phase3_h_runner_rewrite_name_status()
+    )
+    assert reports[0]["selected_dvc_paths"] == []
+    assert reports[0]["dvc_push_result"] is None
+    publication_report = reports[0]["publication_check_result"]
+    assert publication_report.returncode == 0
+    assert publication_report.stdout == (
+        "OK: exact current-U two-path publication exception compensated; "
+        "no other findings.\n"
+    )
+    assert any(
+        finding.check == "phase3_h_runner_rewrite_topology"
+        and "drop stale P exact10 and U exact1" in finding.message
+        and "regenerate and republish P followed by U" in finding.message
+        for finding in reports[0]["reproducibility_findings"]
+    )
+    assert any(
+        finding.check == "phase3_h_runner_rewrite_publication_guard"
+        and "real rc=1" in finding.message
+        and "compensated only" in finding.message
+        for finding in reports[0]["reproducibility_findings"]
+    )
+    report_text = publication_report.stdout + "\n".join(
+        finding.message for finding in reports[0]["reproducibility_findings"]
+    )
+    assert "WARN" not in report_text
+    assert "FAIL" not in report_text
+    assert all("push" not in command for command in commands)
+
+
+def test_closure_phase3_h_authority_rewrite_transaction_stages_only_exact4(
+    monkeypatch,
+) -> None:
+    args = _closure_phase3_h_args()
+    initial_status = _closure_phase3_h_authority_rewrite_short_status(
+        staged=False
+    )
+    state = {"staged": False}
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    generic_calls: list[str] = []
+    physical = ("sealed-future-h-exact40",)
+    rewrite = ("sealed-authority-rewrite-exact4",)
+    p_physical = ("sealed-current-p-exact10",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_authority_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_authority_rewrite_files",
+        lambda **_kwargs: rewrite,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_p_authority_rewrite_files",
+        lambda **_kwargs: p_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_authority_rewrite_future_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_authority_rewrite_live_remote",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_authority_rewrite_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase3-h-authority-rewrite-test.md"),
+    )
+
+    prospective_command = (
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+        precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        "--",
+        *sorted(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE),
+    )
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_authority_rewrite_short_status(
+                staged=state["staged"]
+            )
+        if command == prospective_command:
+            assert state["staged"]
+            return _closure_phase3_h_name_status()
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return (
+                _closure_phase3_h_authority_rewrite_name_status()
+                if state["staged"]
+                else ""
+            )
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        if command == ["scripts/check_repo_publication_ready.sh"]:
+            return precommit_artifacts.CommandResult(command, 0, "PASS", "")
+        if command == [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+            ),
+        ]:
+            state["staged"] = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+
+    def generic(**kwargs: Any) -> list[Any]:
+        generic_calls.append(kwargs["staged_status"])
+        return [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "generic checks passed"
+            )
+        ]
+
+    monkeypatch.setattr(precommit_artifacts, "reproducibility_checks", generic)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase3_h_authority_rewrite_precommit(
+            args,
+            initial_status=initial_status,
+        )
+        == 0
+    )
+    assert commands == [
+        ["scripts/check_repo_publication_ready.sh"],
+        [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+            ),
+        ],
+    ]
+    assert generic_calls == [_closure_phase3_h_name_status()]
+    assert reports[0]["staged_status"] == (
+        _closure_phase3_h_authority_rewrite_name_status()
+    )
+    assert reports[0]["selected_dvc_paths"] == []
+    assert reports[0]["dvc_push_result"] is None
+    assert any(
+        finding.check == "phase3_h_authority_rewrite_topology"
+        and "drop stale P exact10" in finding.message
+        for finding in reports[0]["reproducibility_findings"]
+    )
+    assert all("push" not in command for command in commands)
+
+
+@pytest.mark.parametrize("drift", [None, "p", "u"])
+def test_closure_phase3_h_runner_rewrite_rollback_binds_current_p_and_u(
+    monkeypatch,
+    capsys,
+    drift: str | None,
+) -> None:
+    state = {"staged": True}
+    commands: list[list[str]] = []
+    physical = ("sealed-future-h-exact40",)
+    rewrite = ("sealed-runner-rewrite-exact4",)
+    p_physical = ("sealed-current-p-exact10",)
+    u_physical = ("sealed-current-u-exact1",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        assert command == [
+            "git",
+            "restore",
+            "--staged",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+            ),
+        ]
+        state["staged"] = False
+        return precommit_artifacts.CommandResult(command, 0, "", "")
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_runner_rewrite_short_status(
+                staged=state["staged"]
+            )
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return (
+                _closure_phase3_h_runner_rewrite_name_status()
+                if state["staged"]
+                else ""
+            )
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_runner_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: not state["staged"],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_runner_rewrite_files",
+        lambda **_kwargs: rewrite,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_p_runner_rewrite_files",
+        lambda **_kwargs: ("drifted-current-p",)
+        if drift == "p"
+        else p_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_u_runner_rewrite_file",
+        lambda **_kwargs: ("drifted-current-u",)
+        if drift == "u"
+        else u_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_runner_rewrite_future_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_runner_rewrite_live_remote",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+
+    assert (
+        precommit_artifacts._abort_closure_phase3_h_post_add(
+            RuntimeError("synthetic runner rewrite failure"),
+            mode="runner_rewrite",
+            physical_before=physical,
+            amend_before=rewrite,
+            outcome_log_before=outcome,
+            dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            dvc_status_before={},
+            artifacts=[],
+            unmanaged_before=[],
+            repo_root=Path("."),
+            p_before=p_physical,
+            u_before=u_physical,
+        )
+        == 2
+    )
+    stderr = capsys.readouterr().err
+    if drift is not None:
+        assert "ROLLBACK FAILED CLOSED" in stderr
+        assert f"current {drift.upper()} snapshot drifted" in stderr
+    else:
+        assert "directed index rollback restored" in stderr
+    assert len(commands) == 1
+
+
+@pytest.mark.parametrize("p_drift", [False, True])
+def test_closure_phase3_h_authority_rewrite_rollback_is_exact_and_directed(
+    monkeypatch,
+    capsys,
+    p_drift: bool,
+) -> None:
+    state = {"staged": True}
+    commands: list[list[str]] = []
+    physical = ("sealed-future-h-exact40",)
+    rewrite = ("sealed-authority-rewrite-exact4",)
+    p_physical = ("sealed-current-p-exact10",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        expected = [
+            "git",
+            "restore",
+            "--staged",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+            ),
+        ]
+        assert command == expected
+        state["staged"] = False
+        return precommit_artifacts.CommandResult(command, 0, "", "")
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase3_h_authority_rewrite_short_status(
+                staged=state["staged"]
+            )
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return (
+                _closure_phase3_h_authority_rewrite_name_status()
+                if state["staged"]
+                else ""
+            )
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_authority_rewrite_pre_stage_scope",
+        lambda *_args, **_kwargs: not state["staged"],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_authority_rewrite_files",
+        lambda **_kwargs: rewrite,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_p_authority_rewrite_files",
+        lambda **_kwargs: ("drifted-current-p",) if p_drift else p_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_authority_rewrite_future_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_authority_rewrite_live_remote",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+
+    assert (
+        precommit_artifacts._abort_closure_phase3_h_post_add(
+            RuntimeError("synthetic authority rewrite failure"),
+            mode="authority_rewrite",
+            physical_before=physical,
+            amend_before=rewrite,
+            outcome_log_before=outcome,
+            dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            dvc_status_before={},
+            artifacts=[],
+            unmanaged_before=[],
+            repo_root=Path("."),
+            p_before=p_physical,
+        )
+        == 2
+    )
+    assert commands == [
+        [
+            "git",
+            "restore",
+            "--staged",
+            "--",
+            *sorted(
+                precommit_artifacts.CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+            ),
+        ]
+    ]
+    assert state["staged"] is False
+    error = capsys.readouterr().err
+    if p_drift:
+        assert "ROLLBACK FAILED CLOSED" in error
+        assert "post-rollback exact10 P worktree snapshot drifted" in error
+    else:
+        assert "restored the exact unstaged scope" in error
+
+
+def test_closure_phase3_h_amend_transaction_end_to_end_synthetic(
+    monkeypatch,
+) -> None:
+    args = _closure_phase3_h_args()
+    initial_status = _closure_phase3_h_amend_short_status(staged=False)
+    staged = False
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    generic_calls: list[str] = []
+    physical = ("sealed-final-exact40",)
+    amend_physical = ("sealed-amend-exact13",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+    unmanaged = [Path("data/closure_v1/locked_evaluation")]
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_amend_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_amend_files",
+        lambda **_kwargs: amend_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: unmanaged,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_amend_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase3-h-amend-test.md"),
+    )
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return (
+                _closure_phase3_h_amend_short_status(staged=True)
+                if staged
+                else initial_status
+            )
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase3_h_amend_name_status() if staged else ""
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        ):
+            assert staged
+            return _closure_phase3_h_name_status()
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        nonlocal staged
+        commands.append(command)
+        if command == ["scripts/check_repo_publication_ready.sh"]:
+            return precommit_artifacts.CommandResult(command, 0, "PASS", "")
+        if command[:4] == ["git", "add", "-A", "--"]:
+            staged = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+
+    def generic(**kwargs: Any) -> list[Any]:
+        generic_calls.append(kwargs["staged_status"])
+        return [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "generic checks passed"
+            )
+        ]
+
+    monkeypatch.setattr(precommit_artifacts, "reproducibility_checks", generic)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase3_h_amend_precommit(
+            args,
+            initial_status=initial_status,
+        )
+        == 0
+    )
+    assert commands == [
+        ["scripts/check_repo_publication_ready.sh"],
+        [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(precommit_artifacts.CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE),
+        ],
+    ]
+    assert generic_calls == [_closure_phase3_h_name_status()]
+    assert reports[0]["staged_status"] == _closure_phase3_h_amend_name_status()
+    assert reports[0]["selected_dvc_paths"] == []
+    assert reports[0]["dvc_push_result"] is None
+    assert all("push" not in command for command in commands)
+
+
+def test_closure_phase3_h_import_repair_transaction_stages_only_exact5(
+    monkeypatch,
+) -> None:
+    args = _closure_phase3_h_args()
+    initial_status = _closure_phase3_h_import_repair_short_status(staged=False)
+    state = {"staged": False}
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    generic_calls: list[str] = []
+    physical = ("sealed-final-exact40",)
+    repair_physical = ("sealed-e10-inventory-repair-exact5",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_import_repair_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_import_repair_files",
+        lambda **_kwargs: repair_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_import_repair_live_remote",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_import_repair_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase3-h-import-repair-test.md"),
+    )
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return (
+                _closure_phase3_h_import_repair_short_status(staged=True)
+                if state["staged"]
+                else initial_status
+            )
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return (
+                _closure_phase3_h_import_repair_name_status()
+                if state["staged"]
+                else ""
+            )
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        ):
+            assert state["staged"]
+            return _closure_phase3_h_name_status()
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        if command == ["scripts/check_repo_publication_ready.sh"]:
+            return precommit_artifacts.CommandResult(command, 0, "PASS", "")
+        if command == [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE),
+        ]:
+            state["staged"] = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+
+    def generic(**kwargs: Any) -> list[Any]:
+        generic_calls.append(kwargs["staged_status"])
+        return [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "generic checks passed"
+            )
+        ]
+
+    monkeypatch.setattr(precommit_artifacts, "reproducibility_checks", generic)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase3_h_import_repair_precommit(
+            args,
+            initial_status=initial_status,
+        )
+        == 0
+    )
+    assert commands == [
+        ["scripts/check_repo_publication_ready.sh"],
+        [
+            "git",
+            "add",
+            "-A",
+            "--",
+            *sorted(precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE),
+        ],
+    ]
+    assert generic_calls == [_closure_phase3_h_name_status()]
+    assert reports[0]["staged_status"] == (
+        _closure_phase3_h_import_repair_name_status()
+    )
+    assert reports[0]["selected_dvc_paths"] == []
+    assert reports[0]["dvc_push_result"] is None
+    assert all("push" not in command for command in commands)
+
+
+def test_closure_phase3_h_import_repair_rollback_is_directed(
+    monkeypatch,
+    capsys,
+) -> None:
+    commands: list[list[str]] = []
+    physical = ("sealed-final-exact40",)
+    repair_physical = ("sealed-e10-inventory-repair-exact5",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda command, **_kwargs: (
+            commands.append(command)
+            or precommit_artifacts.CommandResult(command, 0, "", "")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *command: (
+            _closure_phase3_h_import_repair_short_status(staged=False)
+            if command == ("status", "--short", "--untracked-files=all")
+            else ""
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_import_repair_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_import_repair_files",
+        lambda **_kwargs: repair_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+
+    assert (
+        precommit_artifacts._abort_closure_phase3_h_post_add(
+            RuntimeError("synthetic import repair failure"),
+            mode="import_repair",
+            physical_before=physical,
+            amend_before=repair_physical,
+            outcome_log_before=outcome,
+            dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            dvc_status_before={},
+            artifacts=[],
+            unmanaged_before=[],
+            repo_root=Path("."),
+        )
+        == 2
+    )
+    assert commands == [
+        [
+            "git",
+            "restore",
+            "--staged",
+            "--",
+            *sorted(precommit_artifacts.CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE),
+        ]
+    ]
+    assert "restored the exact unstaged scope" in capsys.readouterr().err
+
+
+def _exercise_phase3_h_post_add_rollback(
+    monkeypatch,
+    *,
+    mode: str,
+    failure: str,
+) -> tuple[int, list[list[str]], dict[str, bool]]:
+    args = _closure_phase3_h_args()
+    is_amend = mode == "amend"
+    initial_status = (
+        _closure_phase3_h_amend_short_status(staged=False)
+        if is_amend
+        else _closure_phase3_h_short_status(staged=False)
+    )
+    state = {"staged": False, "report_written": False}
+    commands: list[list[str]] = []
+    physical = ("sealed-final-exact40",)
+    amend_physical = ("sealed-amend-exact13",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+    validation_calls = 0
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase3_h_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_amend_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase3_h_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_amend_files",
+        lambda **_kwargs: amend_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path(f"tmp/phase3-h-{mode}-rollback-test.md"),
+    )
+
+    def validate_staged(**_kwargs: Any) -> tuple[str, ...]:
+        nonlocal validation_calls
+        validation_calls += 1
+        if failure == "recapture" and validation_calls == 2:
+            raise OSError("synthetic post-report recapture failure")
+        return physical
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        (
+            "validate_closure_phase3_h_amend_staged_transaction"
+            if is_amend
+            else "validate_closure_phase3_h_staged_transaction"
+        ),
+        validate_staged,
+    )
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            if is_amend:
+                return _closure_phase3_h_amend_short_status(
+                    staged=state["staged"]
+                )
+            return _closure_phase3_h_short_status(staged=state["staged"])
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            if not state["staged"]:
+                return ""
+            return (
+                _closure_phase3_h_amend_name_status()
+                if is_amend
+                else _closure_phase3_h_name_status()
+            )
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            precommit_artifacts.CLOSURE_PHASE3_H_BASE_COMMIT,
+        ):
+            assert is_amend and state["staged"]
+            return _closure_phase3_h_name_status()
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    expected_scope = (
+        precommit_artifacts.CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE
+        if is_amend
+        else precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE
+    )
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        if command == ["scripts/check_repo_publication_ready.sh"]:
+            return precommit_artifacts.CommandResult(command, 0, "PASS", "")
+        if command == ["git", "add", "-A", "--", *sorted(expected_scope)]:
+            state["staged"] = True
+            return precommit_artifacts.CommandResult(
+                command,
+                7 if failure == "git_add" else 0,
+                "",
+                "synthetic partial git add" if failure == "git_add" else "",
+            )
+        if command == [
+            "git",
+            "restore",
+            "--staged",
+            "--",
+            *sorted(expected_scope),
+        ]:
+            state["staged"] = False
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+
+    def generic(**_kwargs: Any) -> list[Any]:
+        level = "warn" if failure == "generic" else "ok"
+        return [
+            precommit_artifacts.ReproducibilityFinding(
+                level,
+                "synthetic",
+                "-",
+                "synthetic generic finding",
+            )
+        ]
+
+    monkeypatch.setattr(precommit_artifacts, "reproducibility_checks", generic)
+
+    def write_report(_path: Path, **_kwargs: Any) -> None:
+        if failure == "write_report":
+            raise OSError("synthetic report failure")
+        state["report_written"] = True
+
+    monkeypatch.setattr(precommit_artifacts, "write_report", write_report)
+    runner = (
+        precommit_artifacts._run_closure_phase3_h_amend_precommit
+        if is_amend
+        else precommit_artifacts._run_closure_phase3_h_precommit
+    )
+    result = runner(args, initial_status=initial_status)
+    return result, commands, state
+
+
+@pytest.mark.parametrize(
+    "failure",
+    ["git_add", "generic", "write_report", "recapture"],
+)
+def test_closure_phase3_h_amend_post_add_failure_restores_exact13_unstaged(
+    monkeypatch,
+    capsys,
+    failure: str,
+) -> None:
+    result, commands, state = _exercise_phase3_h_post_add_rollback(
+        monkeypatch,
+        mode="amend",
+        failure=failure,
+    )
+    expected_restore = [
+        "git",
+        "restore",
+        "--staged",
+        "--",
+        *sorted(precommit_artifacts.CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE),
+    ]
+    assert result == 2
+    assert commands[-1] == expected_restore
+    assert state["staged"] is False
+    assert all("reset" not in command and "checkout" not in command for command in commands)
+    assert "restored the exact unstaged scope" in capsys.readouterr().err
+
+
+def test_closure_phase3_full_h_post_add_failure_restores_exact40_unstaged(
+    monkeypatch,
+    capsys,
+) -> None:
+    result, commands, state = _exercise_phase3_h_post_add_rollback(
+        monkeypatch,
+        mode="full",
+        failure="generic",
+    )
+    expected_restore = [
+        "git",
+        "restore",
+        "--staged",
+        "--",
+        *sorted(precommit_artifacts.CLOSURE_PHASE3_H_STAGED_SCOPE),
+    ]
+    assert result == 2
+    assert commands[-1] == expected_restore
+    assert state["staged"] is False
+    assert "restored the exact unstaged scope" in capsys.readouterr().err
+
+
+def test_closure_phase3_h_rollback_failure_reports_primary_and_rollback_errors(
+    monkeypatch,
+    capsys,
+) -> None:
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda command, **_kwargs: precommit_artifacts.CommandResult(
+            command,
+            9,
+            "",
+            "synthetic restore rejection",
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda *_args: "M\tforeign-path\n",
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: ("drifted",),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_amend_files",
+        lambda **_kwargs: ("drifted",),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: (1, 2, 0o644, 1, 0, 3, 4, "a" * 40),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+
+    result = precommit_artifacts._abort_closure_phase3_h_post_add(
+        RuntimeError("primary synthetic failure"),
+        mode="amend",
+        physical_before=("sealed",),
+        amend_before=("sealed-amend",),
+        outcome_log_before=(1, 2, 0o644, 1, 0, 3, 4, "a" * 40),
+        dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+        dvc_status_before={},
+        artifacts=[],
+        unmanaged_before=[],
+        repo_root=Path("."),
+    )
+    error = capsys.readouterr().err
+    assert result == 2
+    assert "primary synthetic failure" in error
+    assert "ROLLBACK FAILED CLOSED" in error
+    assert "synthetic restore rejection" in error
+
+
+def test_closure_phase3_h_rollback_preserves_concurrent_foreign_staged_path(
+    monkeypatch,
+    capsys,
+) -> None:
+    commands: list[list[str]] = []
+    foreign_staged = {"present": True}
+    physical = ("sealed-final-exact40",)
+    amend_physical = ("sealed-amend-exact13",)
+    outcome = (1, 2, 0o644, 1, 0, 3, 4, "a" * 40)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        assert "foreign-path" not in command
+        return precommit_artifacts.CommandResult(command, 0, "", "")
+
+    def git_output(_root: Path, *command: str) -> str:
+        if command == ("status", "--short", "--untracked-files=all"):
+            return "M  foreign-path\n"
+        if command == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            assert foreign_staged["present"]
+            return "M\tforeign-path\n"
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase3_h_amend_files",
+        lambda **_kwargs: amend_physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase3_h_outcome_log_identity",
+        lambda **_kwargs: outcome,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase3_h_unpublished_paths_absent",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "unmanaged_ignored_heavy_paths",
+        lambda _artifacts: [],
+    )
+
+    result = precommit_artifacts._abort_closure_phase3_h_post_add(
+        RuntimeError("primary synthetic failure"),
+        mode="amend",
+        physical_before=physical,
+        amend_before=amend_physical,
+        outcome_log_before=outcome,
+        dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+        dvc_status_before={},
+        artifacts=[],
+        unmanaged_before=[],
+        repo_root=Path("."),
+    )
+
+    assert result == 2
+    assert foreign_staged["present"]
+    assert commands == [
+        [
+            "git",
+            "restore",
+            "--staged",
+            "--",
+            *sorted(precommit_artifacts.CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE),
+        ]
+    ]
+    error = capsys.readouterr().err
+    assert "primary synthetic failure" in error
+    assert "ROLLBACK FAILED CLOSED" in error
+    assert "did not restore the exact fully-unstaged scope" in error

@@ -61,7 +61,7 @@ CONTEXT_KEYS = frozenset(
         "software_evidence",
     }
 )
-E2A_COHORTS = ("legacy_development", "location_holdout")
+E2A_COHORTS = ("location_holdout",)
 PREDICTION_KEY_COLUMNS = (
     "source_id",
     "site_id",
@@ -76,6 +76,7 @@ PREDICTION_REQUIRED_COLUMNS = (
     "evaluation_cohort",
     "evaluation_role",
     "terminal_status",
+    "bloom_status",
     "bloom_probability",
     "actual_bloom",
     "alert_threshold",
@@ -86,7 +87,6 @@ SITE_STRATA_COLUMNS = (
     "series_length_band",
     "historical_bloom_present",
     "coverage_band",
-    "available_period_band",
 )
 OUTPUT_PATHS = (
     "reports/closure_v1/02_site_transfer/location_holdout_metrics.csv",
@@ -238,8 +238,8 @@ def _validate_batch_context(batch_context: Mapping[str, Any]) -> dict[str, Any]:
         or not isinstance(software_evidence, Mapping)
     ):
         raise ClosureSiteTransferError("E2 context mappings are malformed")
-    if set(software_evidence) != SOFTWARE_EVIDENCE_KEYS:
-        raise ClosureSiteTransferError("E2 software evidence keys drifted")
+    if software_evidence:
+        raise ClosureSiteTransferError("E2 received unrelated software evidence")
     stage_results_copy: dict[str, dict[str, Any]] = {}
     for key, value in stage_results.items():
         if type(key) is not str or not key or not isinstance(value, Mapping):
@@ -289,6 +289,7 @@ def _prediction_frame(frame: pd.DataFrame, *, context: str) -> pd.DataFrame:
         "evaluation_cohort",
         "evaluation_role",
         "terminal_status",
+        "bloom_status",
     ):
         if value[column].isna().any() or (value[column].astype(str).str.len() == 0).any():
             raise ClosureSiteTransferError(f"E2 {context} {column} is malformed")
@@ -298,13 +299,28 @@ def _prediction_frame(frame: pd.DataFrame, *, context: str) -> pd.DataFrame:
     value["seed_slot"] = _exact_integer(value["seed_slot"], name="seed slot")
     if not value["horizon_months"].isin(HORIZONS).all():
         raise ClosureSiteTransferError(f"E2 {context} horizon drifted")
-    if not value["evaluation_role"].isin(["validation", "test"]).all():
+    if not value["evaluation_role"].eq("test").all():
         raise ClosureSiteTransferError(f"E2 {context} evaluation role drifted")
+    if not value["evaluation_cohort"].eq("location_holdout").all():
+        raise ClosureSiteTransferError(
+            f"E2 {context} is not restricted to the locked location holdout"
+        )
     if value.duplicated(list(PREDICTION_KEY_COLUMNS)).any():
         raise ClosureSiteTransferError(f"E2 {context} contains duplicate predictions")
     for column in ("bloom_probability", "actual_bloom", "alert_threshold"):
         value[column] = pd.to_numeric(value[column], errors="coerce")
-    success = value["terminal_status"].eq("success")
+    terminal_statuses = {
+        "success",
+        "input_ineligible",
+        "target_unavailable",
+        "model_unavailable",
+        "numerical_failure",
+        "infrastructure_failure",
+        "not_applicable",
+    }
+    if not value["bloom_status"].isin(terminal_statuses).all():
+        raise ClosureSiteTransferError(f"E2 {context} bloom status drifted")
+    success = value["bloom_status"].eq("success")
     if value.loc[success, ["bloom_probability", "actual_bloom", "alert_threshold"]].isna().any().any():
         raise ClosureSiteTransferError(f"E2 {context} successful row is incomplete")
     if (
@@ -317,7 +333,7 @@ def _prediction_frame(frame: pd.DataFrame, *, context: str) -> pd.DataFrame:
     if not set(MINIMUM_MODELS).issubset(observed_models):
         raise ClosureSiteTransferError("E2 minimum model set is incomplete")
     unavailable = value["model_id"].isin(UNAVAILABLE_MODELS)
-    if not value.loc[unavailable, "terminal_status"].eq("model_unavailable").all():
+    if not value.loc[unavailable, "bloom_status"].eq("model_unavailable").all():
         raise ClosureSiteTransferError("E2 P0/P1 unavailable terminal rows are absent or drifted")
     if value.loc[unavailable, "bloom_probability"].notna().any():
         raise ClosureSiteTransferError("E2 unavailable models contain invented predictions")
@@ -337,11 +353,11 @@ def _finite_optional(group: pd.DataFrame, actual: str, predicted: str) -> tuple[
 
 def _metric_record(group: pd.DataFrame) -> dict[str, Any]:
     total = len(group)
-    successful = group.loc[group["terminal_status"].eq("success")].copy()
+    successful = group.loc[group["bloom_status"].eq("success")].copy()
     sites = group[["source_id", "site_id"]].drop_duplicates()
     base: dict[str, Any] = {
         "terminal_status": (
-            "success" if len(successful) else str(group["terminal_status"].iloc[0])
+            "success" if len(successful) else str(group["bloom_status"].iloc[0])
         ),
         "site_count": int(len(sites)),
         "event_count": int(total),
@@ -467,33 +483,23 @@ def build_generalization_gaps(metrics: pd.DataFrame) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     for key, group in subset.groupby(identity, sort=True):
         by_cohort = {str(row["evaluation_cohort"]): row for _, row in group.iterrows()}
-        legacy = by_cohort.get("legacy_development")
         heldout = by_cohort.get("location_holdout")
         for metric in ("pr_auc", "brier", "rmse", "mae", "recall", "coverage", "prediction_availability_rate"):
-            legacy_value = None if legacy is None else legacy.get(metric)
             heldout_value = None if heldout is None else heldout.get(metric)
-            estimable = bool(pd.notna(legacy_value) and pd.notna(heldout_value))
             lower_better = metric in {"brier", "rmse", "mae"}
-            delta = None
-            legacy_float: float | None = None
-            heldout_float: float | None = None
-            if estimable:
-                legacy_float = float(cast(Any, legacy_value))
-                heldout_float = float(cast(Any, heldout_value))
-                delta = (
-                    heldout_float - legacy_float
-                    if lower_better
-                    else legacy_float - heldout_float
-                )
+            heldout_float = (
+                float(cast(Any, heldout_value)) if pd.notna(heldout_value) else None
+            )
             rows.append(
                 {
                     **dict(zip(identity, key, strict=True)),
                     "metric": metric,
-                    "legacy_value": legacy_float,
+                    "legacy_value": None,
                     "heldout_value": heldout_float,
                     "delta_name": "error_increase" if lower_better else "location_transfer_gap",
-                    "delta": delta,
-                    "estimable": bool(estimable),
+                    "delta": None,
+                    "estimable": False,
+                    "not_estimable_reason": "legacy_evaluation_surface_not_frozen_before_e0_u",
                 }
             )
     return pd.DataFrame(rows).sort_values([*identity, "metric"], kind="mergesort").reset_index(drop=True)
@@ -508,13 +514,14 @@ def _report(metrics: pd.DataFrame, gaps: pd.DataFrame, *, e2b_available: bool) -
     estimable_gaps = int(gaps["estimable"].sum()) if not gaps.empty else 0
     return (
         "# Closure V1 E2 site-transfer evaluation\n\n"
-        "This is internal transfer to held-out WQP monitoring locations, not "
+        "This is internal evaluation on held-out WQP monitoring locations, not "
         "external validation on unseen water bodies.\n\n"
         f"- E2A metric rows: {len(metrics.loc[metrics['design'].eq('E2A')])}\n"
         f"- held-out unavailable rows retained: {unavailable}\n"
         f"- estimable transfer gaps: {estimable_gaps}\n"
+        "- no legacy test surface was invented from fit, selection, or calibration rows.\n"
         f"- E2B grouped predictions supplied: {'yes' if e2b_available else 'no'}\n"
-        "- E2B assignments were fixed from outcome-free strata before scoring.\n"
+        "- E2B is terminally unavailable because no authenticated grouped prediction surface existed before E0-U.\n"
         "- P0 and P1 remain model_unavailable; no prediction was fabricated.\n"
     )
 
@@ -595,8 +602,8 @@ def execute_closure_sealed_batch_component(
     ):
         raise ClosureSiteTransferError("E2 site crossed evaluation cohorts")
     evaluation = predictions.loc[predictions["evaluation_role"].eq("test")].copy()
-    if not set(E2A_COHORTS).issubset(set(evaluation["evaluation_cohort"])):
-        raise ClosureSiteTransferError("E2A legacy/holdout cohorts are incomplete")
+    if set(evaluation["evaluation_cohort"]) != {"location_holdout"}:
+        raise ClosureSiteTransferError("E2A location-holdout cohort drifted")
     assignments = build_grouped_fold_assignments(tables["e2_site_strata"], rng_seed=RNG_SEED)
     prediction_sites = set(
         map(
@@ -616,39 +623,12 @@ def execute_closure_sealed_batch_component(
         raise ClosureSiteTransferError("E2 site-strata universe drifted")
     e2a_metrics = _group_metrics(evaluation, design="E2A")
     site_metrics = _group_metrics(evaluation, design="E2A", include_site=True)
-    e2b_available = "e2_grouped_predictions" in tables
-    if e2b_available:
-        grouped = _prediction_frame(tables["e2_grouped_predictions"], context="E2B predictions")
-        grouped = grouped.loc[grouped["evaluation_role"].eq("test")].copy()
-        if grouped.empty:
-            raise ClosureSiteTransferError("E2B has no test predictions")
-        if "fold_id" not in grouped:
-            raise ClosureSiteTransferError("E2B fold_id is absent")
-        grouped["fold_id"] = _exact_integer(grouped["fold_id"], name="fold id")
-        if not grouped["fold_id"].between(1, FOLD_COUNT).all():
-            raise ClosureSiteTransferError("E2B fold range drifted")
-        expected_fold = assignments.set_index(["source_id", "site_id"])["fold_id"]
-        observed_keys = pd.MultiIndex.from_frame(grouped[["source_id", "site_id"]])
-        if not observed_keys.isin(expected_fold.index).all():
-            raise ClosureSiteTransferError("E2B prediction site is absent from assignments")
-        mapped = expected_fold.reindex(observed_keys).to_numpy(dtype="int64")
-        if not np.array_equal(mapped, grouped["fold_id"].to_numpy(dtype="int64")):
-            raise ClosureSiteTransferError("E2B prediction fold drifted")
-        grouped_sites = set(
-            map(
-                tuple,
-                grouped[["source_id", "site_id"]]
-                .drop_duplicates()
-                .itertuples(index=False, name=None),
-            )
+    if "e2_grouped_predictions" in tables:
+        raise ClosureSiteTransferError(
+            "E2B grouped predictions were not frozen before E0-U"
         )
-        if grouped_sites != assignment_sites:
-            raise ClosureSiteTransferError("E2B grouped site universe is incomplete")
-        e2b_metrics = _group_metrics(grouped, design="E2B")
-        metrics = pd.concat([e2a_metrics, e2b_metrics], ignore_index=True, sort=False)
-    else:
-        grouped = pd.DataFrame()
-        metrics = e2a_metrics
+    e2b_available = False
+    metrics = e2a_metrics
     gaps = build_generalization_gaps(e2a_metrics)
     report = _report(metrics, gaps, e2b_available=e2b_available)
     artifacts = {
@@ -658,7 +638,7 @@ def execute_closure_sealed_batch_component(
         OUTPUT_PATHS[3]: _artifact("csv", gaps.copy(deep=True)),
         OUTPUT_PATHS[4]: _artifact("markdown", report, manifest_last=True),
     }
-    status = "completed" if e2b_available else "completed_unavailable"
+    status = "completed_unavailable"
     result = {
         "component_id": COMPONENT_ID,
         "stage_id": STAGE_ID,
@@ -673,6 +653,9 @@ def execute_closure_sealed_batch_component(
         "diagnostics": {
             "execution_id": context["execution_id"],
             "e2a_complete": True,
+            "e2a_estimand": "locked_location_holdout_only",
+            "legacy_surface_available": False,
+            "legacy_gap_not_estimable_reason": "legacy_evaluation_surface_not_frozen_before_e0_u",
             "e2b_predeclared": True,
             "e2b_predictions_available": e2b_available,
             "fold_count": FOLD_COUNT,

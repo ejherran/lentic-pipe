@@ -28,6 +28,8 @@ from src.experiments.evaluate_anfis_ablation import (
 COMPONENT_ID = "E9_planning_inference"
 STAGE_ID = "E9"
 MODEL_ID = "P1"
+INTENT_TABLE = "intent_origins"
+PLANNING_TABLE = "planning_scenarios"
 RNG_SEED = 1729
 BOOTSTRAP_REPLICATES = 2000
 MINIMUM_CLUSTER_COUNT = 2
@@ -80,6 +82,32 @@ ROW_COLUMNS = (
     "target_year_month",
     "horizon_months",
 )
+INTENT_COLUMNS = (
+    "source_id",
+    "site_id",
+    "holdout_group_id",
+    "common_origin_id",
+    "origin_year_month",
+    "target_year_month",
+    "horizon_months",
+    "evaluation_cohort",
+    "evaluation_role",
+    "time_role",
+)
+UNAVAILABLE_FAILURE_COLUMNS = (
+    "scenario_id",
+    "horizon_months",
+    "evaluation_cohort",
+    "evaluation_role",
+    "model_id",
+    "failure_code",
+    "intent_origin_count",
+    "site_count",
+    "holdout_group_count",
+    "intended_seed_slot_count",
+    "intended_scenario_row_count",
+    "estimable",
+)
 OUTPUT_PATHS = (
     "reports/closure_v1/09_planning/planning_origin_deltas.parquet",
     "reports/closure_v1/09_planning/planning_bootstrap.csv",
@@ -89,10 +117,25 @@ OUTPUT_PATHS = (
 )
 COMPONENT_CONTRACT = MappingProxyType(
     {
-        "schema_version": "closure_e9_planning_inference_component_v1",
+        "schema_version": "closure_e9_planning_inference_component_v2",
         "component_id": COMPONENT_ID,
         "stage_id": STAGE_ID,
-        "input_table": "planning_scenarios",
+        "input_tables": [INTENT_TABLE],
+        "future_available_branch_input_tables": [PLANNING_TABLE],
+        "unavailable_branch_required_table": INTENT_TABLE,
+        "unavailable_branch_planning_rows": 0,
+        "available_branch_currently_authorized": False,
+        "unavailable_branch_nonempty_tables": [
+            "e9_planning_inference",
+            "e9_planning_failures",
+            "e9_planning_sensitivity",
+            "e9_ecological_coherence",
+        ],
+        "unavailable_branch_empty_tables": [
+            "e9_planning_origin_deltas",
+            "e9_planning_bootstrap_replicates",
+        ],
+        "intent_columns": list(INTENT_COLUMNS),
         "model_id": MODEL_ID,
         "registered_seeds": list(REGISTERED_SEEDS),
         "baseline_scenario_id": BASELINE_SCENARIO,
@@ -641,6 +684,11 @@ def _report(
 ) -> str:
     positive = int(coherence["dictamen"].eq("positive_internal_planning_evidence").sum())
     unavailable = int(coherence["dictamen"].eq("not_estimable_model_or_rows_unavailable").sum())
+    failed_intents = (
+        int(failures["intent_origin_count"].sum())
+        if "intent_origin_count" in failures
+        else int(len(failures))
+    )
     return "\n".join(
         [
             "# Closure V1 — E9 planning inference",
@@ -648,7 +696,7 @@ def _report(
             "The registered P1 planning surface is evaluated without refit against exact no-action pairs.",
             "",
             f"- Shared-success action-origin rows: `{len(deltas)}`",
-            f"- Explicit incomplete intent rows: `{len(failures)}`",
+            f"- Explicit incomplete action-by-horizon intent rows: `{failed_intents}`",
             f"- Fixed confirmatory actions: `{len(summary)}`",
             f"- Holm-positive internal actions: `{positive}`",
             f"- Not-estimable actions: `{unavailable}`",
@@ -661,11 +709,151 @@ def _report(
     )
 
 
-def _empty_result(*, reason: str) -> dict[str, Any]:
+def _normalize_unavailable_intents(intents: pd.DataFrame) -> pd.DataFrame:
+    if tuple(intents.columns) != INTENT_COLUMNS or intents.empty:
+        raise ClosurePlanningInferenceError("E9 unavailable intent universe is not exact")
+    out = intents.copy(deep=True)
+    text_columns = [column for column in INTENT_COLUMNS if column != "horizon_months"]
+    for column in text_columns:
+        if out[column].isna().any():
+            raise ClosurePlanningInferenceError(f"E9 intent text is null: {column}")
+        out[column] = out[column].astype(str)
+        if out[column].eq("").any():
+            raise ClosurePlanningInferenceError(f"E9 intent text is empty: {column}")
+    horizon = pd.to_numeric(out["horizon_months"], errors="raise")
+    if not np.isfinite(horizon).all() or not np.equal(horizon, np.floor(horizon)).all():
+        raise ClosurePlanningInferenceError("E9 intent horizon is not exact integer")
+    out["horizon_months"] = horizon.astype("int64")
+    if set(out["horizon_months"]) != {1, 2, 3}:
+        raise ClosurePlanningInferenceError("E9 unavailable horizon universe drifted")
+    if (
+        not out["evaluation_cohort"].eq("location_holdout").all()
+        or not out["evaluation_role"].eq("test").all()
+    ):
+        raise ClosurePlanningInferenceError("E9 unavailable intents are not holdout/test only")
+    key = [
+        "source_id",
+        "site_id",
+        "holdout_group_id",
+        "common_origin_id",
+        "origin_year_month",
+        "target_year_month",
+        "horizon_months",
+    ]
+    if out.duplicated(key).any():
+        raise ClosurePlanningInferenceError("E9 unavailable intents contain duplicate rows")
+    base_key = [
+        "source_id",
+        "site_id",
+        "holdout_group_id",
+        "common_origin_id",
+        "origin_year_month",
+        "evaluation_cohort",
+        "evaluation_role",
+        "time_role",
+    ]
+    horizon_sets = out.groupby(base_key, sort=True, dropna=False)[
+        "horizon_months"
+    ].agg(lambda values: set(int(value) for value in values))
+    if horizon_sets.empty or any(values != {1, 2, 3} for values in horizon_sets):
+        raise ClosurePlanningInferenceError("E9 intent origins lack exact h1-h3 coverage")
+    try:
+        origins = pd.PeriodIndex(out["origin_year_month"], freq="M")
+        targets = pd.PeriodIndex(out["target_year_month"], freq="M")
+    except BaseException as exc:
+        raise ClosurePlanningInferenceError("E9 intent month dialect drifted") from exc
+    expected_targets = pd.PeriodIndex(
+        [
+            origin + int(horizon_months)
+            for origin, horizon_months in zip(
+                origins, out["horizon_months"], strict=True
+            )
+        ],
+        freq="M",
+    )
+    if not expected_targets.equals(targets):
+        raise ClosurePlanningInferenceError("E9 target month is not origin plus horizon")
+    return out.sort_values(key, kind="mergesort").reset_index(drop=True)
+
+
+def _unavailable_result(*, reason: str, intents: pd.DataFrame) -> dict[str, Any]:
+    normalized = _normalize_unavailable_intents(intents)
     deltas, failures = paired_origin_deltas(pd.DataFrame(columns=[*PLANNING_COLUMNS, "cluster_id"]))
-    replicates, summary = _bootstrap(deltas)
+    replicate_columns = ["scenario_id", "replicate", "delta_objective"]
+    replicates = pd.DataFrame(columns=replicate_columns)
+    intent_row_count = int(len(normalized))
+    common_origin_count = int(
+        normalized[
+            ["source_id", "site_id", "common_origin_id", "origin_year_month"]
+        ]
+        .drop_duplicates()
+        .shape[0]
+    )
+    site_count = int(normalized[["source_id", "site_id"]].drop_duplicates().shape[0])
+    cluster_count = int(normalized["holdout_group_id"].nunique(dropna=False))
+    summary_columns = [
+        "scenario_id",
+        "row_count",
+        "cluster_count",
+        "estimate",
+        "ci95_lower",
+        "ci95_upper",
+        "p_value_greater",
+        "p_holm",
+        "reject_holm_0_05",
+        "status",
+    ]
+    summary = pd.DataFrame(
+        [
+            {
+                "scenario_id": scenario_id,
+                "row_count": intent_row_count,
+                "cluster_count": cluster_count,
+                "estimate": np.nan,
+                "ci95_lower": np.nan,
+                "ci95_upper": np.nan,
+                "p_value_greater": np.nan,
+                "p_holm": np.nan,
+                "reject_holm_0_05": False,
+                "status": "model_unavailable",
+            }
+            for scenario_id in ACTION_SCENARIOS
+        ],
+        columns=summary_columns,
+    )
     sensitivity = _sensitivity(deltas)
+    sensitivity["row_count"] = intent_row_count
     coherence = _coherence(deltas, summary)
+    coherence["row_count"] = intent_row_count
+    failure_rows: list[dict[str, Any]] = []
+    for scenario_id in ACTION_SCENARIOS:
+        for horizon_months in (1, 2, 3):
+            part = normalized[normalized["horizon_months"].eq(horizon_months)]
+            failure_rows.append(
+                {
+                    "scenario_id": scenario_id,
+                    "horizon_months": horizon_months,
+                    "evaluation_cohort": "location_holdout",
+                    "evaluation_role": "test",
+                    "model_id": MODEL_ID,
+                    "failure_code": reason,
+                    "intent_origin_count": int(len(part)),
+                    "site_count": int(
+                        part[["source_id", "site_id"]].drop_duplicates().shape[0]
+                    ),
+                    "holdout_group_count": int(
+                        part["holdout_group_id"].nunique(dropna=False)
+                    ),
+                    "intended_seed_slot_count": len(REGISTERED_SEEDS),
+                    "intended_scenario_row_count": int(
+                        len(part) * len(REGISTERED_SEEDS)
+                    ),
+                    "estimable": False,
+                }
+            )
+    failures = pd.DataFrame(failure_rows, columns=list(UNAVAILABLE_FAILURE_COLUMNS))
+    if len(failures) != len(ACTION_SCENARIOS) * 3:
+        raise ClosurePlanningInferenceError("E9 unavailable failure ledger drifted")
     report = _report(deltas, failures, summary, coherence)
     return {
         "component_id": COMPONENT_ID,
@@ -690,6 +878,15 @@ def _empty_result(*, reason: str) -> dict[str, Any]:
             "component_contract_sha256": component_contract_sha256(),
             "unavailable_reason": reason,
             "model_id": MODEL_ID,
+            "intent_row_count": intent_row_count,
+            "common_origin_count": common_origin_count,
+            "site_count": site_count,
+            "holdout_group_count": cluster_count,
+            "failure_ledger_row_count": int(len(failures)),
+            "intended_action_seed_row_count": int(
+                intent_row_count * len(ACTION_SCENARIOS) * len(REGISTERED_SEEDS)
+            ),
+            "holm_universe_size": len(ACTION_SCENARIOS),
             "refit_performed": False,
         },
         "outcome_paths_opened": True,
@@ -734,52 +931,26 @@ def execute_closure_sealed_batch_component(
     ):
         raise ClosurePlanningInferenceError("model availability is not batch-bound")
     tables = cast(dict[str, pd.DataFrame], context["tables"])
-    if "planning_scenarios" not in tables:
-        raise ClosurePlanningInferenceError("batch_context lacks planning_scenarios")
-    planning = _normalize(tables["planning_scenarios"])
     state = availability.get(MODEL_ID)
     if state not in {"available", "unavailable"}:
         raise ClosurePlanningInferenceError(f"{MODEL_ID} availability is absent")
     if state == "unavailable":
-        if not planning.empty and not planning["status"].eq("model_unavailable").all():
-            raise ClosurePlanningInferenceError("unavailable P1 produced planning results")
-        return _empty_result(reason=f"{MODEL_ID}_model_unavailable")
-    if planning["status"].eq("model_unavailable").any():
-        raise ClosurePlanningInferenceError("available P1 was silently unavailable")
-    deltas, failures = paired_origin_deltas(planning)
-    replicates, summary = _bootstrap(deltas, rng_seed=cast(int, context["rng_seed"]))
-    sensitivity = _sensitivity(deltas)
-    coherence = _coherence(deltas, summary)
-    report = _report(deltas, failures, summary, coherence)
-    artifacts = {
-        OUTPUT_PATHS[0]: artifact_envelope("parquet", deltas),
-        OUTPUT_PATHS[1]: artifact_envelope("csv", summary),
-        OUTPUT_PATHS[2]: artifact_envelope("csv", sensitivity),
-        OUTPUT_PATHS[3]: artifact_envelope("csv", coherence),
-        OUTPUT_PATHS[4]: artifact_envelope("markdown", report, manifest_last=True),
-    }
-    return {
-        "component_id": COMPONENT_ID,
-        "stage_id": STAGE_ID,
-        "status": "completed" if not deltas.empty else "completed_unavailable",
-        "artifacts": artifacts,
-        "tables": {
-            "e9_planning_origin_deltas": deltas.copy(deep=True),
-            "e9_planning_bootstrap_replicates": replicates.copy(deep=True),
-            "e9_planning_inference": summary.copy(deep=True),
-            "e9_planning_failures": failures.copy(deep=True),
-            "e9_planning_sensitivity": sensitivity.copy(deep=True),
-            "e9_ecological_coherence": coherence.copy(deep=True),
-        },
-        "diagnostics": {
-            "component_contract_sha256": component_contract_sha256(),
-            "input_row_count": int(len(planning)),
-            "shared_success_row_count": int(len(deltas)),
-            "failure_row_count": int(len(failures)),
-            "bootstrap_replicates": BOOTSTRAP_REPLICATES,
-            "holm_universe_size": len(ACTION_SCENARIOS),
-            "refit_performed": False,
-        },
-        "outcome_paths_opened": True,
-        "writes_performed": False,
-    }
+        planning = tables.get(PLANNING_TABLE)
+        if planning is not None and (
+            type(planning) is not pd.DataFrame or not planning.empty
+        ):
+            raise ClosurePlanningInferenceError(
+                "unavailable P1 received forbidden planning scenario rows"
+            )
+        intents = tables.get(INTENT_TABLE)
+        if type(intents) is not pd.DataFrame:
+            raise ClosurePlanningInferenceError(
+                "batch_context lacks the locked planning intent universe"
+            )
+        return _unavailable_result(
+            reason=f"{MODEL_ID}_model_unavailable",
+            intents=intents,
+        )
+    raise ClosurePlanningInferenceError(
+        "E9 available/scientific branch is not authorized by the current formal lock"
+    )

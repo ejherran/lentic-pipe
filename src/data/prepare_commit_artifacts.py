@@ -8,6 +8,7 @@ import hashlib
 import json
 import os
 import pwd
+import re
 import shlex
 import shutil
 import stat
@@ -889,6 +890,220 @@ REPORT_ARTIFACT_SUFFIXES = {".csv", ".json", ".md", ".parquet", ".txt"}
 CLOSURE_PROTOCOL_LOCK_PATH = Path("reports/closure_v1/00_protocol/protocol_lock.json")
 CLOSURE_PROTOCOL_LOCK_VERSION = "closure_protocol_lock_v1"
 CLOSURE_PROTOCOL_LOCK_SCRIPT = Path("src/experiments/lock_closure_protocol.py")
+CLOSURE_E0_U_ACTIVATION_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_activation.json"
+)
+CLOSURE_E0_U_ACTIVATION_SCHEMA_PATH = Path(
+    "configs/closure_v1/closure_e0_u_activation.schema.json"
+)
+CLOSURE_E0_U_FINAL_BENCHMARK_MANIFEST_PATH = Path(
+    "reports/closure_v1/01_benchmark/benchmark_manifest.json"
+)
+CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH = Path(
+    "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
+)
+CLOSURE_PHASE3_H_BASE_COMMIT = "4c92ed7249a91b7dd541fd22dde68b61574556b2"
+CLOSURE_PHASE3_H_HISTORICAL_COMMIT = (
+    "937de67e79d0a9887c9bdc4db5fa65eca13abdba"
+)
+CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT = (
+    "09414d83ad92d7eb72413fc1d5a5717bb4f9f1c2"
+)
+CLOSURE_PHASE3_H_PRE_IMPORT_REPAIR_COMMIT = (
+    "7f07473d8c159c55cecacfbea7621eb0810ec760"
+)
+CLOSURE_PHASE3_P_HISTORICAL_COMMIT = (
+    "52da1b33b24b930330baf68b630bbf3845a00fe2"
+)
+CLOSURE_PHASE3_H_AUTHORITY_REWRITE_COMMIT = (
+    "203b3208c73ebf9d3af2b6c2bd379e1d1aebbd20"
+)
+CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT = (
+    "1cbef2a225791ca8bad200158eb7ef21efd8c885"
+)
+CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT = (
+    "22cf63d58298e4eb769a437c0cfae3fbfa69ecb5"
+)
+CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT = (
+    "116b33ad2c63792750f0fb021e7ed9208d8c0742"
+)
+CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT = (
+    "0ff9a7d88fe60810a61f76543413b73e4f6ac85d"
+)
+CLOSURE_PHASE3_U_RUNNER_REWRITE_BYTES = 34368
+CLOSURE_PHASE3_U_RUNNER_REWRITE_SHA256 = (
+    "6b1f149e53e5304e846794a98e06f2ad7b87800d05c4ae6059c9107d2af7c137"
+)
+CLOSURE_PHASE3_LIVE_REMOTE_URL = "https://github.com/ejherran/lentic-pipe.git"
+CLOSURE_PHASE3_H_STAGED_SCOPE = {
+    ".gitignore": "M",
+    "configs/closure_v1/closure_e0_u_activation.schema.json": "A",
+    "docs/closure_v1/E0_U_PHASE3_SEALED_BATCH.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/audit_closure_p0_model_availability.py": "M",
+    "src/experiments/build_closure_e10_source_evidence.py": "A",
+    "src/experiments/build_closure_phase3_input_overlay.py": "A",
+    "src/experiments/build_trophic_reference_targets.py": "M",
+    "src/experiments/calibrate_uncertainty_closure.py": "M",
+    "src/experiments/closure_e0_u_authority.py": "A",
+    "src/experiments/closure_phase3_context.py": "A",
+    "src/experiments/compare_models_clustered.py": "M",
+    "src/experiments/evaluate_anfis_ablation.py": "M",
+    "src/experiments/evaluate_matched_degradation.py": "M",
+    "src/experiments/evaluate_planning_inference.py": "M",
+    "src/experiments/evaluate_site_transfer.py": "M",
+    "src/experiments/evaluate_threshold_sensitivity.py": "M",
+    "src/experiments/evaluate_trophic_state.py": "M",
+    "src/experiments/lock_closure_e0_u_activation.py": "A",
+    "src/experiments/run_closure_benchmark.py": "M",
+    "src/reporting/build_closure_evidence_matrix.py": "M",
+    "tests/test_audit_closure_p0_model_availability.py": "M",
+    "tests/test_audit_closure_p0_sequence_bundle.py": "M",
+    "tests/test_build_closure_e10_source_evidence.py": "A",
+    "tests/test_closure_e0_u_activation_lock.py": "A",
+    "tests/test_closure_e0_u_authority.py": "A",
+    "tests/test_closure_e6_e9_unavailable.py": "A",
+    "tests/test_closure_phase3_context.py": "A",
+    "tests/test_closure_phase3_e1_e2_e3_e5_contracts.py": "A",
+    "tests/test_closure_phase3_e4_e7_contracts.py": "A",
+    "tests/test_closure_phase3_e8_locked_uncertainty.py": "A",
+    "tests/test_closure_phase3_input_overlay.py": "A",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_gitignore_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_reproducibility_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_status_patch.py": "M",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE = {
+    "docs/closure_v1/E0_U_PHASE3_SEALED_BATCH.md": "M",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/build_closure_e10_source_evidence.py": "M",
+    "tests/test_audit_closure_p0_sequence_bundle.py": "M",
+    "tests/test_build_closure_e10_source_evidence.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_adoption_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_gitignore_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_namespace_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_order_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_reproducibility_patch.py": "M",
+    "tests/test_closure_anfis_ablation_dvc_registration_status_patch.py": "M",
+    "tests/test_closure_anfis_ablation_model_publication_adoption_patch.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE = {
+    "docs/closure_v1/E0_U_PHASE3_SEALED_BATCH.md": "M",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/build_closure_e10_source_evidence.py": "M",
+    "tests/test_build_closure_e10_source_evidence.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE = {
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/closure_e0_u_authority.py": "M",
+    "tests/test_closure_e0_u_authority.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE = {
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/run_closure_benchmark.py": "M",
+    "tests/test_closure_e0_u_authority.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+CLOSURE_PHASE3_P_HISTORICAL_SCOPE = {
+    "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet.dvc": "A",
+    "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz.dvc": "A",
+    "reports/closure_v1/00_protocol/software_evidence_source/end_to_end_report.md": "A",
+    "reports/closure_v1/00_protocol/software_evidence_source/environment.json": "A",
+    "reports/closure_v1/00_protocol/software_evidence_source/openapi.json": "A",
+    "reports/closure_v1/00_protocol/software_evidence_source/openapi_contract_report.md": "A",
+    "reports/closure_v1/00_protocol/software_evidence_source/public_tests.xml": "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source/"
+        "software_evidence_source_manifest.json"
+    ): "A",
+    "reports/closure_v1/00_protocol/software_evidence_source/test_report.md": "A",
+    "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json": "A",
+}
+CLOSURE_PHASE3_H_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE3_H_STAGED_SCOPE
+}
+CLOSURE_PHASE3_H_AMEND_GIT_MODES = {
+    path: CLOSURE_PHASE3_H_GIT_MODES[path]
+    for path in CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE
+}
+CLOSURE_PHASE3_H_IMPORT_REPAIR_GIT_MODES = {
+    path: CLOSURE_PHASE3_H_GIT_MODES[path]
+    for path in CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE
+}
+CLOSURE_PHASE3_H_AUTHORITY_REWRITE_GIT_MODES = {
+    path: CLOSURE_PHASE3_H_GIT_MODES[path]
+    for path in CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+}
+CLOSURE_PHASE3_H_RUNNER_REWRITE_GIT_MODES = {
+    path: CLOSURE_PHASE3_H_GIT_MODES[path]
+    for path in CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+}
+CLOSURE_PHASE3_P_HISTORICAL_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+}
+CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES = {
+    path: (
+        0o600
+        if path.startswith(
+            "reports/closure_v1/00_protocol/software_evidence_source/"
+        )
+        else 0o644
+    )
+    for path in CLOSURE_PHASE3_P_HISTORICAL_SCOPE
+}
+CLOSURE_PHASE3_H_MARKER_PATHS = frozenset(
+    path
+    for path, status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.items()
+    if status_code == "A"
+)
+CLOSURE_PHASE3_H_AMEND_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE
+)
+CLOSURE_PHASE3_H_IMPORT_REPAIR_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE
+)
+CLOSURE_PHASE3_H_AUTHORITY_REWRITE_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+)
+CLOSURE_PHASE3_H_RUNNER_REWRITE_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+)
+CLOSURE_PHASE3_H_AUTHORITY_REWRITE_FORBIDDEN_GUARDS = (
+    Path("tmp/closure_v1_e0_u_activation/activation.guard"),
+    Path("tmp/closure_v1_e0_u/sealed_batch.guard"),
+)
+CLOSURE_PHASE3_H_RUNNER_REWRITE_FORBIDDEN_GUARDS = (
+    Path("tmp/closure_v1_e10_source_evidence.guard"),
+    Path("tmp/closure_phase3_input_overlay.guard"),
+    Path("tmp/closure_v1_e0_u_activation/activation.guard"),
+    Path("tmp/closure_v1_e0_u/sealed_batch.guard"),
+)
+CLOSURE_PHASE3_H_FORBIDDEN_UNPUBLISHED_PATHS = tuple(
+    Path(path)
+    for path in (
+        "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet",
+        "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet.dvc",
+        "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz",
+        "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz.dvc",
+        "reports/closure_v1/00_protocol/closure_e0_u_activation.json",
+        "reports/closure_v1/00_protocol/software_evidence_source/end_to_end_report.md",
+        "reports/closure_v1/00_protocol/software_evidence_source/environment.json",
+        "reports/closure_v1/00_protocol/software_evidence_source/openapi.json",
+        "reports/closure_v1/00_protocol/software_evidence_source/openapi_contract_report.md",
+        "reports/closure_v1/00_protocol/software_evidence_source/public_tests.xml",
+        "reports/closure_v1/00_protocol/software_evidence_source/software_evidence_source_manifest.json",
+        "reports/closure_v1/00_protocol/software_evidence_source/test_report.md",
+        "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json",
+    )
+)
 CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/development_runtime_lock.json"
 )
@@ -7754,7 +7969,11 @@ def is_experiment_manifest_path(path: Path) -> bool:
     text = path.as_posix()
     if path.name.endswith("_promotion_manifest.json"):
         return False
-    if path in {CLOSURE_PROTOCOL_LOCK_PATH, CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH}:
+    if path in {
+        CLOSURE_PROTOCOL_LOCK_PATH,
+        CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH,
+        CLOSURE_E0_U_ACTIVATION_PATH,
+    }:
         return True
     if path.name == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH.name:
         return path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH
@@ -7795,6 +8014,1089 @@ def manifest_output_records(payload: Any, manifest_path: Path) -> Any:
     if manifest_path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH:
         return [payload.get("output")]
     return payload.get("outputs")
+
+
+class ClosureE0UActivationManifestAdapterError(RuntimeError):
+    """Raised when the exact staged E0-U authority dialect drifts."""
+
+
+def _closure_e0_u_json_equal(left: Any, right: Any) -> bool:
+    """Use JSON equality, keeping booleans distinct from integers."""
+
+    if isinstance(left, bool) or isinstance(right, bool):
+        return isinstance(left, bool) and isinstance(right, bool) and left == right
+    if isinstance(left, (int, float)) or isinstance(right, (int, float)):
+        return (
+            not isinstance(left, bool)
+            and not isinstance(right, bool)
+            and isinstance(left, (int, float))
+            and isinstance(right, (int, float))
+            and left == right
+        )
+    if isinstance(left, Mapping) or isinstance(right, Mapping):
+        return (
+            isinstance(left, Mapping)
+            and isinstance(right, Mapping)
+            and set(left) == set(right)
+            and all(_closure_e0_u_json_equal(left[key], right[key]) for key in left)
+        )
+    if isinstance(left, list) or isinstance(right, list):
+        return (
+            isinstance(left, list)
+            and isinstance(right, list)
+            and len(left) == len(right)
+            and all(
+                _closure_e0_u_json_equal(left_item, right_item)
+                for left_item, right_item in zip(left, right, strict=True)
+            )
+        )
+    return type(left) is type(right) and left == right
+
+
+def _closure_e0_u_schema_reference(
+    reference: str, root_schema: Mapping[str, Any]
+) -> Any:
+    if reference == "#":
+        return root_schema
+    if not reference.startswith("#/"):
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U schema contains a non-local reference"
+        )
+    current: Any = root_schema
+    for raw_token in reference[2:].split("/"):
+        token = raw_token.replace("~1", "/").replace("~0", "~")
+        if not isinstance(current, Mapping) or token not in current:
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U schema reference does not resolve"
+            )
+        current = current[token]
+    return current
+
+
+def _validate_closure_e0_u_schema_node(
+    instance: Any,
+    schema: Any,
+    *,
+    root_schema: Mapping[str, Any],
+    instance_path: str,
+) -> None:
+    """Validate the closed JSON-Schema feature set used by the activation."""
+
+    if schema is True:
+        return
+    if schema is False or not isinstance(schema, Mapping):
+        raise ClosureE0UActivationManifestAdapterError(
+            f"Closure E0-U schema rejected {instance_path}"
+        )
+    reference = schema.get("$ref")
+    if reference is not None:
+        if not isinstance(reference, str):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U schema reference is malformed"
+            )
+        _validate_closure_e0_u_schema_node(
+            instance,
+            _closure_e0_u_schema_reference(reference, root_schema),
+            root_schema=root_schema,
+            instance_path=instance_path,
+        )
+    for child in schema.get("allOf", []):
+        _validate_closure_e0_u_schema_node(
+            instance,
+            child,
+            root_schema=root_schema,
+            instance_path=instance_path,
+        )
+    if "anyOf" in schema:
+        for child in schema["anyOf"]:
+            try:
+                _validate_closure_e0_u_schema_node(
+                    instance,
+                    child,
+                    root_schema=root_schema,
+                    instance_path=instance_path,
+                )
+            except ClosureE0UActivationManifestAdapterError:
+                continue
+            break
+        else:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema anyOf rejected {instance_path}"
+            )
+
+    expected_type = schema.get("type")
+    if expected_type is not None:
+        type_map = {
+            "object": lambda value: isinstance(value, Mapping),
+            "array": lambda value: isinstance(value, list),
+            "string": lambda value: isinstance(value, str),
+            "integer": lambda value: isinstance(value, int)
+            and not isinstance(value, bool),
+            "boolean": lambda value: isinstance(value, bool),
+        }
+        expected_types = (
+            [expected_type] if isinstance(expected_type, str) else list(expected_type)
+        )
+        if not any(
+            name in type_map and type_map[name](instance) for name in expected_types
+        ):
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema type rejected {instance_path}"
+            )
+    if "const" in schema and not _closure_e0_u_json_equal(
+        instance, schema["const"]
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            f"Closure E0-U schema const rejected {instance_path}"
+        )
+    if "enum" in schema and not any(
+        _closure_e0_u_json_equal(instance, candidate) for candidate in schema["enum"]
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            f"Closure E0-U schema enum rejected {instance_path}"
+        )
+
+    if isinstance(instance, Mapping):
+        required = schema.get("required", [])
+        if any(key not in instance for key in required):
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema required fields rejected {instance_path}"
+            )
+        minimum_properties = schema.get("minProperties")
+        if isinstance(minimum_properties, int) and len(instance) < minimum_properties:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema minProperties rejected {instance_path}"
+            )
+        properties = schema.get("properties", {})
+        if not isinstance(properties, Mapping):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U schema properties are malformed"
+            )
+        for key, child in properties.items():
+            if key in instance:
+                _validate_closure_e0_u_schema_node(
+                    instance[key],
+                    child,
+                    root_schema=root_schema,
+                    instance_path=f"{instance_path}.{key}",
+                )
+        additional = schema.get("additionalProperties", True)
+        for key in set(instance) - set(properties):
+            if additional is False:
+                raise ClosureE0UActivationManifestAdapterError(
+                    f"Closure E0-U schema additionalProperties rejected {instance_path}.{key}"
+                )
+            if isinstance(additional, Mapping) or isinstance(additional, bool):
+                _validate_closure_e0_u_schema_node(
+                    instance[key],
+                    additional,
+                    root_schema=root_schema,
+                    instance_path=f"{instance_path}.{key}",
+                )
+
+    if isinstance(instance, list):
+        minimum_items = schema.get("minItems")
+        maximum_items = schema.get("maxItems")
+        if isinstance(minimum_items, int) and len(instance) < minimum_items:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema minItems rejected {instance_path}"
+            )
+        if isinstance(maximum_items, int) and len(instance) > maximum_items:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema maxItems rejected {instance_path}"
+            )
+        if schema.get("uniqueItems") is True and any(
+            _closure_e0_u_json_equal(left, right)
+            for index, left in enumerate(instance)
+            for right in instance[index + 1 :]
+        ):
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema uniqueItems rejected {instance_path}"
+            )
+        child = schema.get("items", True)
+        for index, item in enumerate(instance):
+            _validate_closure_e0_u_schema_node(
+                item,
+                child,
+                root_schema=root_schema,
+                instance_path=f"{instance_path}[{index}]",
+            )
+
+    if isinstance(instance, str):
+        minimum_length = schema.get("minLength")
+        maximum_length = schema.get("maxLength")
+        if isinstance(minimum_length, int) and len(instance) < minimum_length:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema minLength rejected {instance_path}"
+            )
+        if isinstance(maximum_length, int) and len(instance) > maximum_length:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema maxLength rejected {instance_path}"
+            )
+        pattern = schema.get("pattern")
+        if isinstance(pattern, str) and re.search(pattern, instance) is None:
+            raise ClosureE0UActivationManifestAdapterError(
+                f"Closure E0-U schema pattern rejected {instance_path}"
+            )
+
+    minimum = schema.get("minimum")
+    if (
+        minimum is not None
+        and isinstance(instance, (int, float))
+        and not isinstance(instance, bool)
+        and instance < minimum
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            f"Closure E0-U schema minimum rejected {instance_path}"
+        )
+
+
+def _validate_closure_e0_u_activation_staged_topology(
+    payload: Mapping[str, Any],
+    *,
+    manifest_path: Path,
+    staged_paths: set[Path],
+    repo_root: Path,
+    physical_payload: bytes,
+) -> None:
+    """Bind an unpublished exact-one U to the already-published R-H-P chain."""
+
+    from src.experiments import closure_e0_u_authority as authority
+    from src.experiments import lock_closure_e0_u_activation as activation
+
+    if manifest_path != CLOSURE_E0_U_ACTIVATION_PATH or staged_paths != {
+        CLOSURE_E0_U_ACTIVATION_PATH
+    }:
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U staging is not the exact activation-only path"
+        )
+    p_commit = activation._git_oid(repo_root, "HEAD^{commit}")
+    h_commit = activation._git_oid(repo_root, "HEAD~1^{commit}")
+    r_commit = activation._git_oid(repo_root, "HEAD~2^{commit}")
+    if (
+        payload.get("base_r_commit") != r_commit
+        or payload.get("h_commit") != h_commit
+        or payload.get("p_commit") != p_commit
+        or r_commit != activation.BASE_R_COMMIT
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U staged R-H-P identities drifted"
+        )
+    refs = {
+        activation._git_oid(repo_root, "refs/heads/main^{commit}"),
+        activation._git_oid(repo_root, "refs/remotes/origin/main^{commit}"),
+        activation._git_oid(repo_root, "refs/remotes/origin/HEAD^{commit}"),
+    }
+    if (
+        refs != {p_commit}
+        or activation._git_text(
+            repo_root, ("symbolic-ref", "--quiet", "HEAD")
+        ).strip()
+        != "refs/heads/main"
+        or activation._git_text(
+            repo_root,
+            ("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"),
+        ).strip()
+        != "refs/remotes/origin/main"
+        or not _closure_e0_u_configured_origin_matches(
+            activation,
+            repo_root=repo_root,
+        )
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U staged refs or branch topology drifted"
+        )
+    activation._require_direct_parent(
+        repo_root, child=h_commit, expected_parent=r_commit, label="H"
+    )
+    activation._require_direct_parent(
+        repo_root, child=p_commit, expected_parent=h_commit, label="P"
+    )
+    if (
+        activation._git_diff_scope(repo_root, r_commit, h_commit)
+        != payload.get("h_scope")
+        or activation._git_diff_scope(repo_root, h_commit, p_commit)
+        != payload.get("p_scope")
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U staged H/P scope binding drifted"
+        )
+    path_text = manifest_path.as_posix()
+    staged = activation._git(
+        repo_root,
+        ("diff", "--cached", "--name-status", "-z", "--no-renames", "--"),
+    )
+    status = activation._git(
+        repo_root,
+        ("status", "--porcelain=v1", "-z", "--untracked-files=all"),
+    )
+    if staged != b"A\0" + path_text.encode("utf-8") + b"\0" or status != (
+        b"A  " + path_text.encode("utf-8") + b"\0"
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U index/worktree scope is not exact1 addition"
+        )
+    index = activation._git(
+        repo_root, ("ls-files", "--stage", "-z", "--", path_text)
+    )
+    try:
+        header, encoded_path = index[:-1].split(b"\t", 1)
+        mode, oid, stage = header.decode("ascii").split(" ")
+        observed_path = encoded_path.decode("utf-8")
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U staged index record is malformed"
+        ) from exc
+    if (
+        not index.endswith(b"\0")
+        or index.count(b"\0") != 1
+        or observed_path != path_text
+        or mode != "100644"
+        or stage != "0"
+        or activation._git(repo_root, ("cat-file", "blob", oid))
+        != physical_payload
+    ):
+        raise ClosureE0UActivationManifestAdapterError(
+            "Closure E0-U staged blob differs from the canonical authority"
+        )
+    authority._validate_manifest_bindings(repo_root, p_commit, payload)
+    overlay_record = authority._validate_phase3_overlay_bundle(
+        repo_root,
+        h_commit,
+        p_commit,
+    )
+    authority._validate_phase3_overlay_deep_validation(
+        payload["phase3_overlay_deep_validation"],
+        h_commit,
+        overlay_record,
+        repo_root,
+    )
+
+
+def validate_closure_e0_u_activation_manifest(
+    payload: Any,
+    manifest_path: Path,
+    *,
+    staged_paths: set[Path],
+) -> list[ReproducibilityFinding]:
+    """Validate exact U as an authoritative lock, not as an output manifest."""
+
+    from src.experiments import closure_e0_u_authority as authority
+    from src.experiments import run_closure_benchmark as runner
+
+    try:
+        if manifest_path != CLOSURE_E0_U_ACTIVATION_PATH or not isinstance(
+            payload, Mapping
+        ):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U authority path or object dialect drifted"
+            )
+        metadata = manifest_path.lstat()
+        physical_payload = manifest_path.read_bytes()
+        canonical_payload = (
+            json.dumps(
+                dict(payload),
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+        ).encode("utf-8")
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or stat.S_IMODE(metadata.st_mode) != 0o644
+            or metadata.st_nlink != 1
+            or physical_payload != canonical_payload
+        ):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U authority is not one canonical 0644 regular file"
+            )
+        schema = json.loads(
+            CLOSURE_E0_U_ACTIVATION_SCHEMA_PATH.read_text(encoding="utf-8")
+        )
+        if not isinstance(schema, Mapping):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U public schema is not an object"
+            )
+        _validate_closure_e0_u_schema_node(
+            payload,
+            schema,
+            root_schema=schema,
+            instance_path="$",
+        )
+        validated = authority._validate_activation_without_contract(payload)
+        if validated != dict(payload):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U authority dialect normalized unexpectedly"
+            )
+        layout = authority._contract_layout(runner.sealed_batch_contract())
+        if (
+            payload.get("sealed_batch_contract_sha256")
+            != layout["contract_sha256"]
+            or payload.get("expected_artifact_paths_sha256")
+            != authority._sha256_bytes(
+                authority._canonical_json_bytes(list(layout["expected_paths"]))
+            )
+            or payload.get("expected_publication_order_sha256")
+            != authority._sha256_bytes(
+                authority._canonical_json_bytes(list(layout["publication_order"]))
+            )
+        ):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U sealed exact52 contract digests drifted"
+            )
+        authority._validate_dvc_policy(
+            payload["dvc_policy"],
+            layout["expected_paths"],
+            layout["formats_by_path"],
+        )
+        _validate_closure_e0_u_activation_staged_topology(
+            payload,
+            manifest_path=manifest_path,
+            staged_paths=staged_paths,
+            repo_root=Path.cwd().resolve(),
+            physical_payload=physical_payload,
+        )
+    except Exception as exc:
+        return [
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"Closure E0-U activation validation failed: {exc}",
+            )
+        ]
+    return [
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            manifest_path.as_posix(),
+            (
+                "Closure E0-U canonical authority, public schema, exact52 dialect, "
+                "and staged R-H-P topology passed without an outputs list."
+            ),
+        )
+    ]
+
+
+class ClosureE0UFinalBatchManifestAdapterError(RuntimeError):
+    """Raised when the exact staged E0-U result transaction drifts."""
+
+
+def _closure_e0_u_configured_origin_matches(
+    activation: Any,
+    *,
+    repo_root: Path,
+) -> bool:
+    """Compare local origin transport to config, never to live-evidence URL."""
+
+    return (
+        activation._git_text(
+            repo_root,
+            ("remote", "get-url", "origin"),
+        ).strip()
+        == activation.CONFIGURED_ORIGIN_URL
+    )
+
+
+def _closure_e0_u_final_layout() -> tuple[
+    tuple[Path, ...],
+    dict[Path, str],
+    tuple[Path, ...],
+    tuple[Path, ...],
+    tuple[Path, ...],
+]:
+    from src.experiments import run_closure_benchmark as runner
+
+    expected_paths = tuple(Path(path) for path in runner.EXPECTED_ARTIFACT_PATHS)
+    formats = {
+        Path(path): format_name
+        for path, format_name in runner.EXPECTED_ARTIFACT_FORMATS.items()
+    }
+    heavy = tuple(path for path in expected_paths if formats.get(path) == "parquet")
+    direct = tuple(path for path in expected_paths if path not in set(heavy))
+    pointers = tuple(dvc_pointer_path(path) for path in heavy)
+    if (
+        len(expected_paths) != 52
+        or len(set(expected_paths)) != 52
+        or set(formats) != set(expected_paths)
+        or len(direct) != 48
+        or len(heavy) != 4
+        or len(pointers) != 4
+        or len(set(pointers)) != 4
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final artifact layout is not exact52/48+4"
+        )
+    return expected_paths, formats, direct, heavy, pointers
+
+
+def _closure_e0_u_final_sha256(value: Any) -> bool:
+    return (
+        type(value) is str
+        and len(value) == 64
+        and all(character in "0123456789abcdef" for character in value)
+    )
+
+
+def _load_closure_e0_u_final_activation_authority(
+    *, repo_root: Path
+) -> dict[str, Any]:
+    """Revalidate published U while allowing only the exact final staged scope."""
+
+    from src.experiments import closure_e0_u_authority as authority
+    from src.experiments import lock_closure_e0_u_activation as activation
+    from src.experiments import run_closure_benchmark as runner
+
+    physical = activation._regular_bytes(
+        CLOSURE_E0_U_ACTIVATION_PATH,
+        repo_root=repo_root,
+    )
+    try:
+        raw = json.loads(physical.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U published activation is not JSON"
+        ) from exc
+    if (
+        not isinstance(raw, Mapping)
+        or authority._canonical_json_bytes(dict(raw)) != physical
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U published activation is not canonical"
+        )
+    manifest = authority._validate_activation_without_contract(raw)
+    layout = authority._contract_layout(runner.sealed_batch_contract())
+    if (
+        manifest.get("sealed_batch_contract_sha256") != layout["contract_sha256"]
+        or manifest.get("expected_artifact_paths_sha256")
+        != authority._sha256_bytes(
+            authority._canonical_json_bytes(list(layout["expected_paths"]))
+        )
+        or manifest.get("expected_publication_order_sha256")
+        != authority._sha256_bytes(
+            authority._canonical_json_bytes(list(layout["publication_order"]))
+        )
+        or tuple(layout["expected_paths"]) != runner.EXPECTED_ARTIFACT_PATHS
+        or dict(layout["formats_by_path"])
+        != dict(runner.EXPECTED_ARTIFACT_FORMATS)
+        or tuple(layout["publication_order"])
+        != runner.EXPECTED_PUBLICATION_ORDER
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U published activation does not bind exact52"
+        )
+    authority._validate_dvc_policy(
+        manifest["dvc_policy"],
+        layout["expected_paths"],
+        layout["formats_by_path"],
+    )
+
+    head = activation._git_oid(repo_root, "HEAD^{commit}")
+    p_commit = cast(str, manifest["p_commit"])
+    h_commit = cast(str, manifest["h_commit"])
+    r_commit = cast(str, manifest["base_r_commit"])
+    refs = {
+        activation._git_oid(repo_root, "refs/heads/main^{commit}"),
+        activation._git_oid(repo_root, "refs/remotes/origin/main^{commit}"),
+        activation._git_oid(repo_root, "refs/remotes/origin/HEAD^{commit}"),
+    }
+    if (
+        refs != {head}
+        or activation._git_text(
+            repo_root, ("symbolic-ref", "--quiet", "HEAD")
+        ).strip()
+        != "refs/heads/main"
+        or activation._git_text(
+            repo_root,
+            ("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"),
+        ).strip()
+        != "refs/remotes/origin/main"
+        or not _closure_e0_u_configured_origin_matches(
+            activation,
+            repo_root=repo_root,
+        )
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final refs, branch, or remote drifted"
+        )
+    activation._require_direct_parent(
+        repo_root,
+        child=h_commit,
+        expected_parent=r_commit,
+        label="H",
+    )
+    activation._require_direct_parent(
+        repo_root,
+        child=p_commit,
+        expected_parent=h_commit,
+        label="P",
+    )
+    activation._require_direct_parent(
+        repo_root,
+        child=head,
+        expected_parent=p_commit,
+        label="U",
+    )
+    u_scope = activation._git_diff_scope(repo_root, p_commit, head)
+    if (
+        len(u_scope) != 1
+        or u_scope[0].get("path") != CLOSURE_E0_U_ACTIVATION_PATH.as_posix()
+        or u_scope[0].get("status") != "A"
+        or u_scope[0].get("mode") != "100644"
+        or u_scope[0].get("bytes") != len(physical)
+        or u_scope[0].get("sha256") != hashlib.sha256(physical).hexdigest()
+        or activation._git(
+            repo_root,
+            ("cat-file", "blob", f"{head}:{CLOSURE_E0_U_ACTIVATION_PATH.as_posix()}"),
+        )
+        != physical
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final HEAD is not exact activation-only U"
+        )
+    authority._validate_manifest_bindings(repo_root, head, manifest)
+    overlay_record = authority._validate_phase3_overlay_bundle(
+        repo_root,
+        h_commit,
+        p_commit,
+    )
+    authority._validate_phase3_overlay_deep_validation(
+        manifest["phase3_overlay_deep_validation"],
+        h_commit,
+        overlay_record,
+        repo_root,
+    )
+    return dict(manifest)
+
+
+def _validate_closure_e0_u_final_benchmark_manifest(
+    payload: Any,
+    *,
+    manifest_path: Path,
+    repo_root: Path,
+    activation_manifest: Mapping[str, Any],
+) -> bytes:
+    from src.experiments import lock_closure_e0_u_activation as activation
+    from src.experiments import run_closure_benchmark as runner
+
+    if manifest_path != CLOSURE_E0_U_FINAL_BENCHMARK_MANIFEST_PATH:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final benchmark manifest path drifted"
+        )
+    physical = activation._regular_bytes(manifest_path, repo_root=repo_root)
+    try:
+        observed = json.loads(physical.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final benchmark manifest is not JSON"
+        ) from exc
+    expected_keys = {
+        "schema_version",
+        "execution_id",
+        "rng_seed",
+        "model_ids",
+        "registered_seed_slots",
+        "model_availability",
+        "prediction_row_count",
+        "metric_row_count",
+        "comparison_row_count",
+        "prediction_sha256",
+        "metrics_sha256",
+        "comparisons_sha256",
+        "output_paths",
+        "evaluation_refit_performed",
+        "failed_model_replacement_performed",
+        "silent_row_deletion_performed",
+        "manifest_last",
+    }
+    e1_paths = next(
+        stage.output_paths for stage in runner.BATCH_STAGES if stage.stage_id == "E1"
+    )
+    if (
+        not isinstance(payload, Mapping)
+        or not isinstance(observed, Mapping)
+        or dict(payload) != dict(observed)
+        or set(observed) != expected_keys
+        or runner._canonical_json_bytes(dict(observed)) != physical
+        or observed.get("schema_version")
+        != "closure_e1_benchmark_manifest_v1"
+        or observed.get("execution_id") != activation_manifest.get("execution_id")
+        or observed.get("rng_seed") != runner.RNG_SEED
+        or observed.get("model_ids") != list(runner.MODEL_IDS)
+        or observed.get("registered_seed_slots")
+        != list(runner.REGISTERED_SEEDS)
+        or observed.get("model_availability")
+        != dict(runner.CURRENT_MODEL_AVAILABILITY)
+        or observed.get("prediction_row_count")
+        != runner.LOCKED_PREDICTION_ROW_COUNT
+        or type(observed.get("metric_row_count")) is not int
+        or cast(int, observed["metric_row_count"]) <= 0
+        or type(observed.get("comparison_row_count")) is not int
+        or cast(int, observed["comparison_row_count"]) <= 0
+        or any(
+            not _closure_e0_u_final_sha256(observed.get(key))
+            for key in (
+                "prediction_sha256",
+                "metrics_sha256",
+                "comparisons_sha256",
+            )
+        )
+        or observed.get("output_paths") != list(e1_paths)
+        or observed.get("evaluation_refit_performed") is not False
+        or observed.get("failed_model_replacement_performed") is not False
+        or observed.get("silent_row_deletion_performed") is not False
+        or observed.get("manifest_last") is not True
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final benchmark authority dialect drifted"
+        )
+    return physical
+
+
+def _validate_closure_e0_u_final_git_scope(
+    *,
+    expected_scope: Mapping[str, str],
+    repo_root: Path,
+) -> None:
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=expected_scope,
+            context="Closure E0-U final staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=_expected_short_scope(expected_scope, staged=True),
+            context="Closure E0-U final workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosureE0UFinalBatchManifestAdapterError(str(exc)) from exc
+    for raw_path in sorted(expected_scope):
+        fields = _git_output(
+            repo_root,
+            "ls-files",
+            "-s",
+            "--",
+            raw_path,
+        ).strip().split(maxsplit=3)
+        worktree_oid = _git_output(
+            repo_root,
+            "hash-object",
+            "--no-filters",
+            "--",
+            raw_path,
+        ).strip()
+        if (
+            len(fields) != 4
+            or fields[0] != "100644"
+            or len(fields[1]) != 40
+            or fields[1] != worktree_oid
+            or fields[2] != "0"
+            or fields[3] != raw_path
+        ):
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                f"Closure E0-U final index/worktree binding drifted: {raw_path}"
+            )
+
+
+def _validate_closure_e0_u_final_dvc_pointer(
+    pointer_payload: bytes,
+    *,
+    pointer_path: Path,
+    output_path: Path,
+    output_payload: bytes,
+) -> None:
+    try:
+        lines = pointer_payload.decode("utf-8").splitlines()
+    except UnicodeDecodeError as exc:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            f"Closure E0-U DVC pointer is not UTF-8: {pointer_path}"
+        ) from exc
+    expected_name = output_path.name
+    if (
+        len(lines) != 5
+        or lines[0] != "outs:"
+        or not lines[1].startswith("- md5: ")
+        or not lines[2].startswith("  size: ")
+        or lines[3] != "  hash: md5"
+        or lines[4] != f"  path: {expected_name}"
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            f"Closure E0-U DVC pointer dialect drifted: {pointer_path}"
+        )
+    digest = lines[1][7:]
+    size_text = lines[2][8:]
+    if (
+        len(digest) != 32
+        or any(character not in "0123456789abcdef" for character in digest)
+        or not size_text.isdigit()
+        or int(size_text) != len(output_payload)
+        or hashlib.md5(output_payload, usedforsecurity=False).hexdigest() != digest
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            f"Closure E0-U DVC pointer does not bind physical Parquet: {pointer_path}"
+        )
+    expected_payload = (
+        "outs:\n"
+        f"- md5: {digest}\n"
+        f"  size: {size_text}\n"
+        "  hash: md5\n"
+        f"  path: {expected_name}\n"
+    ).encode("utf-8")
+    if pointer_payload != expected_payload:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            f"Closure E0-U DVC pointer bytes are not canonical: {pointer_path}"
+        )
+
+
+def _read_closure_e0_u_final_dvc_output(
+    path: Path,
+    *,
+    repo_root: Path,
+) -> bytes:
+    """Read one DVC-managed output without assuming copy/reflink vs hardlink."""
+
+    from src.experiments import lock_closure_e0_u_activation as activation
+
+    try:
+        metadata = os.lstat(repo_root / path)
+    except OSError as exc:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            f"Closure E0-U final DVC output is absent: {path}"
+        ) from exc
+    mode = stat.S_IMODE(metadata.st_mode)
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or stat.S_ISLNK(metadata.st_mode)
+        or mode not in {0o444, 0o644}
+        or metadata.st_nlink < 1
+    ):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            f"Closure E0-U final DVC output identity is unsafe: {path}"
+        )
+    return activation._regular_bytes(
+        path,
+        repo_root=repo_root,
+        expected_mode=mode,
+        expected_nlink=metadata.st_nlink,
+        expected_identity=(metadata.st_dev, metadata.st_ino),
+    )
+
+
+def _validate_closure_e0_u_final_physical_bundle(
+    *,
+    repo_root: Path,
+    expected_paths: tuple[Path, ...],
+    direct_paths: tuple[Path, ...],
+    heavy_paths: tuple[Path, ...],
+    pointer_paths: tuple[Path, ...],
+    activation_manifest: Mapping[str, Any],
+) -> dict[Path, tuple[int, str]]:
+    from src.experiments import closure_e0_u_authority as authority
+    from src.experiments import lock_closure_e0_u_activation as activation
+
+    if os.path.lexists(repo_root / authority.RUN_GUARD_PATH):
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final run guard is still present"
+        )
+    snapshot: dict[Path, tuple[int, str]] = {}
+    for path in direct_paths:
+        payload = activation._regular_bytes(path, repo_root=repo_root)
+        if not payload:
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                f"Closure E0-U final direct artifact is empty: {path}"
+            )
+        snapshot[path] = (len(payload), hashlib.sha256(payload).hexdigest())
+    for output_path, pointer_path in zip(
+        heavy_paths,
+        pointer_paths,
+        strict=True,
+    ):
+        output_payload = _read_closure_e0_u_final_dvc_output(
+            output_path,
+            repo_root=repo_root,
+        )
+        pointer_payload = activation._regular_bytes(pointer_path, repo_root=repo_root)
+        if not output_payload or not pointer_payload:
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                f"Closure E0-U final DVC artifact is empty: {output_path}"
+            )
+        _validate_closure_e0_u_final_dvc_pointer(
+            pointer_payload,
+            pointer_path=pointer_path,
+            output_path=output_path,
+            output_payload=output_payload,
+        )
+        snapshot[output_path] = (
+            len(output_payload),
+            hashlib.sha256(output_payload).hexdigest(),
+        )
+        snapshot[pointer_path] = (
+            len(pointer_payload),
+            hashlib.sha256(pointer_payload).hexdigest(),
+        )
+    log_payload = activation._regular_bytes(
+        CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH,
+        repo_root=repo_root,
+    )
+    try:
+        log_record = json.loads(log_payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U outcome access log is not one JSON record"
+        ) from exc
+    expected_log = {
+        "event": "sealed_outcome_context_opened",
+        "execution_id": activation_manifest.get("execution_id"),
+        "experiment_id": authority.EXPERIMENT_ID,
+        "gate": authority.GATE,
+        "one_shot_consumed": True,
+        "outcome_access_authorized": True,
+        "schema_version": authority.ACCESS_LOG_SCHEMA_VERSION,
+    }
+    if log_record != expected_log or authority._canonical_json_bytes(log_record) != log_payload:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U outcome access log is not the exact canonical one-shot record"
+        )
+    snapshot[CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH] = (
+        len(log_payload),
+        hashlib.sha256(log_payload).hexdigest(),
+    )
+    execution_id = activation_manifest.get("execution_id")
+    if type(execution_id) is not str or not execution_id:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final execution id is absent"
+        )
+    for path in expected_paths:
+        prefix = f".{path.name}.closure-e0-u-{execution_id}."
+        try:
+            temporary_names = [
+                candidate.name
+                for candidate in (repo_root / path.parent).iterdir()
+                if candidate.name.startswith(prefix) and candidate.name.endswith(".tmp")
+            ]
+        except OSError as exc:
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                f"Closure E0-U final parent cannot be audited: {path.parent}"
+            ) from exc
+        if temporary_names:
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                f"Closure E0-U final temporary artifact remains: {path}"
+            )
+    if len(snapshot) != 57:
+        raise ClosureE0UFinalBatchManifestAdapterError(
+            "Closure E0-U final physical snapshot is not exact57 (52 outputs, 4 pointers, log)"
+        )
+    return snapshot
+
+
+def validate_closure_e0_u_final_batch_manifest(
+    payload: Any,
+    manifest_path: Path,
+    *,
+    staged_paths: set[Path],
+) -> list[ReproducibilityFinding]:
+    """Validate exact53 final staging under the published exact52 authority."""
+
+    try:
+        expected, _formats, direct, heavy, pointers = _closure_e0_u_final_layout()
+        expected_scope = {
+            **{path.as_posix(): "A" for path in direct},
+            **{path.as_posix(): "A" for path in pointers},
+            CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(): "M",
+        }
+        if (
+            len(expected_scope) != 53
+            or staged_paths != {Path(path) for path in expected_scope}
+        ):
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                "Closure E0-U final staging is not exact53 (48 direct A, 4 pointers A, log M)"
+            )
+        repo_root = Path.cwd().resolve()
+        activation_manifest = _load_closure_e0_u_final_activation_authority(
+            repo_root=repo_root
+        )
+        benchmark_payload = _validate_closure_e0_u_final_benchmark_manifest(
+            payload,
+            manifest_path=manifest_path,
+            repo_root=repo_root,
+            activation_manifest=activation_manifest,
+        )
+        _validate_closure_e0_u_final_git_scope(
+            expected_scope=expected_scope,
+            repo_root=repo_root,
+        )
+        physical_snapshot = _validate_closure_e0_u_final_physical_bundle(
+            repo_root=repo_root,
+            expected_paths=expected,
+            direct_paths=direct,
+            heavy_paths=heavy,
+            pointer_paths=pointers,
+            activation_manifest=activation_manifest,
+        )
+        if (
+            _validate_closure_e0_u_final_benchmark_manifest(
+                payload,
+                manifest_path=manifest_path,
+                repo_root=repo_root,
+                activation_manifest=activation_manifest,
+            )
+            != benchmark_payload
+        ):
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                "Closure E0-U final benchmark manifest changed during validation"
+            )
+        _validate_closure_e0_u_final_git_scope(
+            expected_scope=expected_scope,
+            repo_root=repo_root,
+        )
+        if (
+            _validate_closure_e0_u_final_physical_bundle(
+                repo_root=repo_root,
+                expected_paths=expected,
+                direct_paths=direct,
+                heavy_paths=heavy,
+                pointer_paths=pointers,
+                activation_manifest=activation_manifest,
+            )
+            != physical_snapshot
+        ):
+            raise ClosureE0UFinalBatchManifestAdapterError(
+                "Closure E0-U final outputs, pointers, or log changed during validation"
+            )
+    except Exception as exc:
+        return [
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"Closure E0-U final batch validation failed: {exc}",
+            )
+        ]
+    return [
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            manifest_path.as_posix(),
+            (
+                "Closure E0-U final exact53 staging, exact52 authority, exact4 DVC "
+                "bindings, canonical one-shot log, and report coverage passed."
+            ),
+        )
+    ]
 
 
 def validate_closure_development_runtime_lock_manifest(
@@ -8365,6 +9667,12 @@ def validate_experiment_manifests(
         is_closure_development_runtime_lock = (
             manifest_path == CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH
         )
+        is_closure_e0_u_activation = (
+            manifest_path == CLOSURE_E0_U_ACTIVATION_PATH
+        )
+        is_closure_e0_u_final_batch = (
+            manifest_path == CLOSURE_E0_U_FINAL_BENCHMARK_MANIFEST_PATH
+        )
         is_closure_common_origin_manifest = (
             manifest_path == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH
         )
@@ -8378,6 +9686,30 @@ def validate_experiment_manifests(
             findings.extend(
                 validate_closure_development_runtime_lock_manifest(manifest_path)
             )
+            continue
+        if is_closure_e0_u_activation:
+            findings.extend(
+                validate_closure_e0_u_activation_manifest(
+                    payload,
+                    manifest_path,
+                    staged_paths=staged_paths,
+                )
+            )
+            continue
+        if is_closure_e0_u_final_batch:
+            final_findings = validate_closure_e0_u_final_batch_manifest(
+                payload,
+                manifest_path,
+                staged_paths=staged_paths,
+            )
+            findings.extend(final_findings)
+            if not has_failing_findings(final_findings):
+                expected_paths, _formats, _direct, _heavy, _pointers = (
+                    _closure_e0_u_final_layout()
+                )
+                for output_path in expected_paths:
+                    covered_outputs.setdefault(output_path, []).append(manifest_path)
+                checked_outputs += len(expected_paths)
             continue
         if is_closure_expert_state_manifest:
             findings.extend(validate_closure_expert_state_manifest(manifest_path))
@@ -12917,6 +14249,3543 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
     return 0
 
 
+class ClosurePhase3HPrecommitAdapterError(RuntimeError):
+    """Raised when the outcome-free Phase 3 H publication boundary drifts."""
+
+
+def _closure_phase3_h_runner_rewrite_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase3_h_runner_rewrite_history(
+    *, repo_root: Path
+) -> None:
+    """Bind the published R -> H -> P -> U chain and its exact scopes."""
+
+    expected_ancestry = (
+        (
+            CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT,
+            CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT,
+        ),
+        (
+            CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT,
+            CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT,
+        ),
+        (
+            CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT,
+            CLOSURE_PHASE3_H_BASE_COMMIT,
+        ),
+    )
+    for commit, parent in expected_ancestry:
+        observed = _git_output(
+            repo_root,
+            "rev-list",
+            "--parents",
+            "-n",
+            "1",
+            commit,
+        ).strip()
+        if observed != f"{commit} {parent}":
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite requires exact published "
+                "R 4c92ed7 -> H 22cf63d -> P 116b33a -> U 0ff9a7d history"
+            )
+    try:
+        for commit, expected, context in (
+            (
+                CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT,
+                CLOSURE_PHASE3_H_STAGED_SCOPE,
+                "Closure Phase 3 runner-rewrite H exact40 scope",
+            ),
+            (
+                CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT,
+                CLOSURE_PHASE3_P_HISTORICAL_SCOPE,
+                "Closure Phase 3 runner-rewrite P exact10 scope",
+            ),
+            (
+                CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT,
+                {CLOSURE_E0_U_ACTIVATION_PATH.as_posix(): "A"},
+                "Closure Phase 3 runner-rewrite U exact1 scope",
+            ),
+        ):
+            validate_anfis_ablation_git_name_status_map(
+                _git_output(
+                    repo_root,
+                    "diff-tree",
+                    "--no-commit-id",
+                    "--name-status",
+                    "--no-renames",
+                    "-r",
+                    commit,
+                ),
+                expected=expected,
+                context=context,
+            )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+
+
+def _require_closure_phase3_h_runner_rewrite_refs(
+    *, repo_root: Path
+) -> None:
+    """Require every local publication ref at the exact current U."""
+
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT}
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite requires HEAD/main/origin refs "
+            "at exact current U 0ff9a7d"
+        )
+    _require_closure_phase3_h_runner_rewrite_history(repo_root=repo_root)
+
+
+def _require_closure_phase3_h_runner_rewrite_live_remote(
+    *, repo_root: Path
+) -> None:
+    """Bind live public main to U before staging the rewrite patch."""
+
+    command = [
+        "git",
+        "-C",
+        repo_root.as_posix(),
+        "ls-remote",
+        "--heads",
+        CLOSURE_PHASE3_LIVE_REMOTE_URL,
+        "refs/heads/main",
+    ]
+    result = run_command(command, check=False)
+    if (
+        result.returncode != 0
+        or result.stdout
+        != (
+            f"{CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT}"
+            "\trefs/heads/main\n"
+        )
+        or result.stderr.strip()
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite requires live remote main at "
+            "exact current U 0ff9a7d"
+        )
+
+
+def closure_phase3_h_runner_rewrite_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize exact4M runner-fix inputs on current published U."""
+
+    rewrite_scope = CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+    if (
+        len(rewrite_scope) != 4
+        or set(rewrite_scope.values()) != {"M"}
+        or not set(rewrite_scope).issubset(CLOSURE_PHASE3_H_STAGED_SCOPE)
+        or set(CLOSURE_PHASE3_H_RUNNER_REWRITE_GIT_MODES)
+        != set(rewrite_scope)
+        or CLOSURE_PHASE3_H_RUNNER_REWRITE_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE3_H_RUNNER_REWRITE_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+        or len(CLOSURE_PHASE3_H_STAGED_SCOPE) != 40
+        or sum(
+            status_code == "M"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 24
+        or sum(
+            status_code == "A"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 16
+        or len(CLOSURE_PHASE3_P_HISTORICAL_SCOPE) != 10
+        or set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE.values()) != {"A"}
+        or set(rewrite_scope) & set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+        or CLOSURE_E0_U_ACTIVATION_PATH.as_posix() in rewrite_scope
+        or CLOSURE_PHASE3_H_RUNNER_REWRITE_FORBIDDEN_GUARDS
+        != (
+            Path("tmp/closure_v1_e10_source_evidence.guard"),
+            Path("tmp/closure_phase3_input_overlay.guard"),
+            Path("tmp/closure_v1_e0_u_activation/activation.guard"),
+            Path("tmp/closure_v1_e0_u/sealed_batch.guard"),
+        )
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite exact4M/final exact40/P "
+            "exact10/U exact1 contract drifted"
+        )
+    if (
+        _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        != CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT
+    ):
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_h_runner_rewrite_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 3 H runner rewrite pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(
+            marker in status_output or marker in staged_status
+            for marker in CLOSURE_PHASE3_H_RUNNER_REWRITE_MARKER_PATHS
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite candidate must be exact4M "
+                "and fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite requires an empty Git index"
+        )
+    _require_closure_phase3_h_runner_rewrite_refs(repo_root=repo_root)
+    return True
+
+
+def _closure_phase3_h_authority_rewrite_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase3_h_authority_rewrite_history(
+    *, repo_root: Path
+) -> None:
+    """Bind current P -> H -> R and both immutable publication scopes."""
+
+    p_ancestry = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT,
+    ).strip()
+    h_ancestry = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        CLOSURE_PHASE3_H_AUTHORITY_REWRITE_COMMIT,
+    ).strip()
+    if p_ancestry != (
+        f"{CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT} "
+        f"{CLOSURE_PHASE3_H_AUTHORITY_REWRITE_COMMIT}"
+    ) or h_ancestry != (
+        f"{CLOSURE_PHASE3_H_AUTHORITY_REWRITE_COMMIT} "
+        f"{CLOSURE_PHASE3_H_BASE_COMMIT}"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite requires exact current "
+            "R -> H 203b320 -> P 1cbef2a history"
+        )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff-tree",
+                "--no-commit-id",
+                "--name-status",
+                "--no-renames",
+                "-r",
+                CLOSURE_PHASE3_H_AUTHORITY_REWRITE_COMMIT,
+            ),
+            expected=CLOSURE_PHASE3_H_STAGED_SCOPE,
+            context="Closure Phase 3 authority-rewrite H exact40 scope",
+        )
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff-tree",
+                "--no-commit-id",
+                "--name-status",
+                "--no-renames",
+                "-r",
+                CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT,
+            ),
+            expected=CLOSURE_PHASE3_P_HISTORICAL_SCOPE,
+            context="Closure Phase 3 authority-rewrite P exact10 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+
+
+def _require_closure_phase3_h_authority_rewrite_refs(
+    *, repo_root: Path
+) -> None:
+    """Require all local refs at current P before preparing the H rewrite."""
+
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT}
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite requires HEAD/main/origin "
+            "refs at exact current P 1cbef2a"
+        )
+    _require_closure_phase3_h_authority_rewrite_history(repo_root=repo_root)
+
+
+def _require_closure_phase3_h_authority_rewrite_live_remote(
+    *, repo_root: Path
+) -> None:
+    """Bind live public main to current P before staging the rewrite patch."""
+
+    command = [
+        "git",
+        "-C",
+        repo_root.as_posix(),
+        "ls-remote",
+        "--heads",
+        CLOSURE_PHASE3_LIVE_REMOTE_URL,
+        "refs/heads/main",
+    ]
+    result = run_command(command, check=False)
+    if (
+        result.returncode != 0
+        or result.stdout
+        != (
+            f"{CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT}"
+            "\trefs/heads/main\n"
+        )
+        or result.stderr.strip()
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite requires live remote main "
+            "at exact current P 1cbef2a"
+        )
+
+
+def closure_phase3_h_authority_rewrite_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize exact4M H-authority rewrite inputs on current published P."""
+
+    rewrite_scope = CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+    if (
+        len(rewrite_scope) != 4
+        or set(rewrite_scope.values()) != {"M"}
+        or not set(rewrite_scope).issubset(CLOSURE_PHASE3_H_STAGED_SCOPE)
+        or set(CLOSURE_PHASE3_H_AUTHORITY_REWRITE_GIT_MODES)
+        != set(rewrite_scope)
+        or CLOSURE_PHASE3_H_AUTHORITY_REWRITE_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE3_H_AUTHORITY_REWRITE_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+        or len(CLOSURE_PHASE3_H_STAGED_SCOPE) != 40
+        or sum(
+            status_code == "M"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 24
+        or sum(
+            status_code == "A"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 16
+        or len(CLOSURE_PHASE3_P_HISTORICAL_SCOPE) != 10
+        or set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE.values()) != {"A"}
+        or set(CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES)
+        != set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+        or sum(
+            mode == 0o600
+            for mode in CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES.values()
+        )
+        != 7
+        or sum(
+            mode == 0o644
+            for mode in CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES.values()
+        )
+        != 3
+        or CLOSURE_PHASE3_H_AUTHORITY_REWRITE_FORBIDDEN_GUARDS
+        != (
+            Path("tmp/closure_v1_e0_u_activation/activation.guard"),
+            Path("tmp/closure_v1_e0_u/sealed_batch.guard"),
+        )
+        or set(rewrite_scope) & set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite exact4M/final exact40/P "
+            "exact10 contract drifted"
+        )
+    if (
+        _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        != CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT
+    ):
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=(
+                _closure_phase3_h_authority_rewrite_expected_short_scope(
+                    staged=False
+                )
+            ),
+            context="Closure Phase 3 H authority rewrite pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(
+            marker in status_output or marker in staged_status
+            for marker in CLOSURE_PHASE3_H_AUTHORITY_REWRITE_MARKER_PATHS
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite candidate must be exact4M "
+                "and fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite requires an empty Git index"
+        )
+    _require_closure_phase3_h_authority_rewrite_refs(repo_root=repo_root)
+    return True
+
+
+def _closure_phase3_h_import_repair_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase3_h_import_repair_historical_p(
+    *, repo_root: Path
+) -> None:
+    """Bind both repaired H states and displaced P without opening P artifacts."""
+
+    h_ancestry = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT,
+    ).strip()
+    pre_import_h_ancestry = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        CLOSURE_PHASE3_H_PRE_IMPORT_REPAIR_COMMIT,
+    ).strip()
+    p_ancestry = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        CLOSURE_PHASE3_P_HISTORICAL_COMMIT,
+    ).strip()
+    if h_ancestry != (
+        f"{CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT} "
+        f"{CLOSURE_PHASE3_H_BASE_COMMIT}"
+    ) or pre_import_h_ancestry != (
+        f"{CLOSURE_PHASE3_H_PRE_IMPORT_REPAIR_COMMIT} "
+        f"{CLOSURE_PHASE3_H_BASE_COMMIT}"
+    ) or p_ancestry != (
+        f"{CLOSURE_PHASE3_P_HISTORICAL_COMMIT} "
+        f"{CLOSURE_PHASE3_H_PRE_IMPORT_REPAIR_COMMIT}"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H E10 inventory repair requires the exact current "
+            "R -> H and displaced historical R -> pre-import-H -> P histories"
+        )
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff-tree",
+                "--no-commit-id",
+                "--name-status",
+                "--no-renames",
+                "-r",
+                CLOSURE_PHASE3_P_HISTORICAL_COMMIT,
+            ),
+            expected=CLOSURE_PHASE3_P_HISTORICAL_SCOPE,
+            context="Closure Phase 3 historical P exact10 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+
+    records: dict[str, tuple[str, str]] = {}
+    for line in _git_output(
+        repo_root,
+        "ls-tree",
+        "-r",
+        "--full-tree",
+        CLOSURE_PHASE3_P_HISTORICAL_COMMIT,
+        "--",
+        *sorted(CLOSURE_PHASE3_P_HISTORICAL_SCOPE),
+    ).splitlines():
+        metadata, separator, raw_path = line.partition("\t")
+        fields = metadata.split()
+        if (
+            not separator
+            or len(fields) != 3
+            or fields[1] != "blob"
+            or len(fields[2]) != 40
+            or raw_path in records
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 historical P tree is malformed"
+            )
+        records[raw_path] = (fields[0], fields[2])
+    if (
+        set(records) != set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE)
+        or any(
+            records[path][0] != CLOSURE_PHASE3_P_HISTORICAL_GIT_MODES[path]
+            for path in records
+        )
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 historical P is not the exact ten regular Git additions"
+        )
+
+
+def _require_closure_phase3_h_import_repair_refs(*, repo_root: Path) -> None:
+    """Require every local ref at the published pre-inventory-repair H."""
+
+    refs = {
+        "HEAD": _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip(),
+        "main": _git_output(
+            repo_root, "rev-parse", "refs/heads/main^{commit}"
+        ).strip(),
+        "origin/main": _git_output(
+            repo_root,
+            "rev-parse",
+            "refs/remotes/origin/main^{commit}",
+        ).strip(),
+        "origin/HEAD": _git_output(
+            repo_root,
+            "rev-parse",
+            "refs/remotes/origin/HEAD^{commit}",
+        ).strip(),
+    }
+    if (
+        refs["HEAD"] != CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT
+        or refs["main"] != CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT
+        or refs["origin/main"] != CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT
+        or refs["origin/HEAD"] != CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H E10 inventory repair requires every local ref "
+            "at published H 09414d8"
+        )
+    _require_closure_phase3_h_import_repair_historical_p(repo_root=repo_root)
+
+
+def _require_closure_phase3_h_import_repair_live_remote(
+    *, repo_root: Path
+) -> None:
+    """Bind the public main ref to the pre-inventory-repair H over HTTPS."""
+
+    command = [
+        "git",
+        "-C",
+        repo_root.as_posix(),
+        "ls-remote",
+        "--heads",
+        CLOSURE_PHASE3_LIVE_REMOTE_URL,
+        "refs/heads/main",
+    ]
+    result = run_command(command, check=False)
+    if (
+        result.returncode != 0
+        or result.stdout
+        != f"{CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT}\trefs/heads/main\n"
+        or result.stderr.strip()
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H E10 inventory repair requires live remote main "
+            "at published H 09414d8"
+        )
+
+
+def closure_phase3_h_import_repair_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize only the exact5M E10 inventory repair on published H."""
+
+    if (
+        len(CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE) != 5
+        or set(CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE.values()) != {"M"}
+        or not set(CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE).issubset(
+            CLOSURE_PHASE3_H_STAGED_SCOPE
+        )
+        or set(CLOSURE_PHASE3_H_IMPORT_REPAIR_GIT_MODES)
+        != set(CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE)
+        or CLOSURE_PHASE3_H_IMPORT_REPAIR_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE3_H_IMPORT_REPAIR_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+        or len(CLOSURE_PHASE3_P_HISTORICAL_SCOPE) != 10
+        or set(CLOSURE_PHASE3_P_HISTORICAL_SCOPE.values()) != {"A"}
+        or set(CLOSURE_PHASE3_P_HISTORICAL_GIT_MODES.values()) != {"100644"}
+        or len(CLOSURE_PHASE3_H_STAGED_SCOPE) != 40
+        or sum(
+            status_code == "M"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 24
+        or sum(
+            status_code == "A"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 16
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H E10 inventory repair exact5M/final exact40/P "
+            "exact10 contract drifted"
+        )
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    if head != CLOSURE_PHASE3_H_IMPORT_REPAIR_COMMIT:
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_h_import_repair_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 3 H import repair pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(
+            marker in status_output or marker in staged_status
+            for marker in CLOSURE_PHASE3_H_IMPORT_REPAIR_MARKER_PATHS
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H E10 inventory repair candidate must be exact5M "
+                "and fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H import repair requires an empty Git index"
+        )
+    _require_closure_phase3_h_import_repair_refs(repo_root=repo_root)
+    return True
+
+
+def _closure_phase3_h_amend_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase3_h_amend_refs(*, repo_root: Path) -> None:
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    parent = _git_output(
+        repo_root,
+        "rev-parse",
+        "HEAD^1^{commit}",
+    ).strip()
+    if (
+        refs != {CLOSURE_PHASE3_H_HISTORICAL_COMMIT}
+        or parent != CLOSURE_PHASE3_H_BASE_COMMIT
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H amendment requires HEAD/main/origin refs at "
+            "exact historical H 937de67 with direct parent R 4c92ed7"
+        )
+
+
+def closure_phase3_h_amend_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize only the exact13 unstaged amendment of published historical H."""
+
+    if (
+        len(CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE) != 13
+        or set(CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE.values()) != {"M"}
+        or set(CLOSURE_PHASE3_H_AMEND_GIT_MODES)
+        != set(CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE)
+        or CLOSURE_PHASE3_H_AMEND_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE3_H_AMEND_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+        or len(CLOSURE_PHASE3_H_STAGED_SCOPE) != 40
+        or sum(
+            status_code == "M"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 24
+        or sum(
+            status_code == "A"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 16
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H amendment exact13M/final exact40 contract drifted"
+        )
+    if (
+        _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        != CLOSURE_PHASE3_H_HISTORICAL_COMMIT
+    ):
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_h_amend_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 3 H amendment pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(
+            marker in status_output or marker in staged_status
+            for marker in CLOSURE_PHASE3_H_AMEND_MARKER_PATHS
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment candidate must be exact13M and "
+                "fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H amendment pre-stage requires an empty Git index"
+        )
+    _require_closure_phase3_h_amend_refs(repo_root=repo_root)
+    return True
+
+
+def _closure_phase3_h_expected_short_scope(*, staged: bool) -> dict[str, str]:
+    return _expected_short_scope(CLOSURE_PHASE3_H_STAGED_SCOPE, staged=staged)
+
+
+def _require_closure_phase3_h_base_refs(*, repo_root: Path) -> None:
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {CLOSURE_PHASE3_H_BASE_COMMIT}
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H requires HEAD/main/origin refs at exact base 4c92ed7"
+        )
+
+
+def closure_phase3_h_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize only exact40 unstaged H on its sealed R base.
+
+    This selector intentionally runs before every historical E0-M selector.  A
+    partial Phase 3 H candidate fails closed instead of being reinterpreted as
+    one of the older, overlapping E0-M patch scopes.
+    """
+
+    if (
+        len(CLOSURE_PHASE3_H_STAGED_SCOPE) != 40
+        or sum(
+            status_code == "M"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 24
+        or sum(
+            status_code == "A"
+            for status_code in CLOSURE_PHASE3_H_STAGED_SCOPE.values()
+        )
+        != 16
+        or set(CLOSURE_PHASE3_H_GIT_MODES) != set(CLOSURE_PHASE3_H_STAGED_SCOPE)
+        or CLOSURE_PHASE3_H_GIT_MODES.get("src/data/prepare_commit_artifacts.py")
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE3_H_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H exact40/24M+16A contract drifted"
+        )
+    if (
+        _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        != CLOSURE_PHASE3_H_BASE_COMMIT
+    ):
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_h_expected_short_scope(staged=False),
+            context="Closure Phase 3 H pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(marker in status_output for marker in CLOSURE_PHASE3_H_MARKER_PATHS):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H candidate must be exact40 and fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H pre-stage requires an empty Git index"
+        )
+    _require_closure_phase3_h_base_refs(repo_root=repo_root)
+    return True
+
+
+def validate_closure_phase3_h_invocation(
+    args: Any,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Require the exact outcome-free, no-DVC-mutation H invocation."""
+
+    source = os.environ if env is None else env
+    dvc_site_cache = source.get("DVC_SITE_CACHE_DIR")
+    if (
+        tuple(Path(value) for value in args.target)
+        or tuple(args.defer_dvc_target)
+        or bool(getattr(args, "register_anfis_ablation_model_family", False))
+        or not args.no_push
+        or not args.allow_unmanaged
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            dvc_site_cache is not None
+            and dvc_site_cache != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H precommit requires exact --allow-unmanaged "
+            "--no-push, default paths, mandatory publication checks, an empty "
+            "DVC target set, and analytics-disabled repository DVC"
+        )
+
+
+def _closure_phase3_h_outcome_log_identity(
+    *, repo_root: Path
+) -> tuple[int, int, int, int, int, int, int, str]:
+    """Validate the tracked empty log without opening its worktree contents."""
+
+    path = repo_root / CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH
+    try:
+        metadata = path.lstat()
+    except FileNotFoundError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H requires the tracked empty outcome access log"
+        ) from exc
+    index_fields = _git_output(
+        repo_root,
+        "ls-files",
+        "-s",
+        "--",
+        CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+    ).strip().split(maxsplit=3)
+    head_oid = _git_output(
+        repo_root,
+        "rev-parse",
+        f"HEAD:{CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix()}",
+    ).strip()
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or stat.S_IMODE(metadata.st_mode) != 0o644
+        or metadata.st_nlink != 1
+        or metadata.st_size != 0
+        or len(index_fields) != 4
+        or index_fields[0] != "100644"
+        or index_fields[1] != head_oid
+        or len(head_oid) != 40
+        or index_fields[2] != "0"
+        or index_fields[3]
+        != CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix()
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H outcome access log is not the unchanged empty HEAD file"
+        )
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        stat.S_IMODE(metadata.st_mode),
+        metadata.st_nlink,
+        metadata.st_size,
+        metadata.st_mtime_ns,
+        metadata.st_ctime_ns,
+        head_oid,
+    )
+
+
+def _require_closure_phase3_h_unpublished_paths_absent(
+    *, repo_root: Path
+) -> None:
+    from src.experiments import run_closure_benchmark as runner
+
+    contract = runner.sealed_batch_contract()
+    component_contracts = contract.get("component_artifact_contracts")
+    contract_paths: list[str] = []
+    if isinstance(component_contracts, list):
+        for record in component_contracts:
+            raw_paths = (
+                record.get("artifact_paths")
+                if isinstance(record, Mapping)
+                else None
+            )
+            if (
+                not isinstance(raw_paths, list)
+                or any(type(path) is not str for path in raw_paths)
+            ):
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H sealed exact52 contract is malformed"
+                )
+            contract_paths.extend(cast(list[str], raw_paths))
+    if (
+        tuple(sorted(contract_paths)) != runner.EXPECTED_ARTIFACT_PATHS
+        or len(contract_paths) != 52
+        or len(set(contract_paths)) != 52
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H sealed exact52 contract drifted"
+        )
+    exact52 = [Path(path) for path in contract_paths]
+    exact52_pointers = [
+        Path(f"{path}.dvc")
+        for path in contract_paths
+        if runner.EXPECTED_ARTIFACT_FORMATS.get(path) == "parquet"
+    ]
+    present = [
+        path.as_posix()
+        for path in (
+            *CLOSURE_PHASE3_H_FORBIDDEN_UNPUBLISHED_PATHS,
+            *exact52,
+            *exact52_pointers,
+        )
+        if os.path.lexists(repo_root / path)
+    ]
+    if present:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H forbids every P/U artifact before publication: "
+            + ", ".join(present)
+        )
+
+
+def _require_closure_phase3_h_runner_rewrite_future_paths_absent(
+    *, repo_root: Path
+) -> None:
+    """Require exact52 outputs, future pointers, and every guard absent."""
+
+    from src.experiments import run_closure_benchmark as runner
+
+    contract = runner.sealed_batch_contract()
+    component_contracts = contract.get("component_artifact_contracts")
+    contract_paths: list[str] = []
+    if isinstance(component_contracts, list):
+        for record in component_contracts:
+            raw_paths = (
+                record.get("artifact_paths")
+                if isinstance(record, Mapping)
+                else None
+            )
+            if (
+                not isinstance(raw_paths, list)
+                or any(type(path) is not str for path in raw_paths)
+            ):
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H runner rewrite exact52 contract is malformed"
+                )
+            contract_paths.extend(cast(list[str], raw_paths))
+    if (
+        tuple(sorted(contract_paths)) != runner.EXPECTED_ARTIFACT_PATHS
+        or len(contract_paths) != 52
+        or len(set(contract_paths)) != 52
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite exact52 contract drifted"
+        )
+    exact52 = [Path(path) for path in contract_paths]
+    exact52_pointers = [
+        Path(f"{path}.dvc")
+        for path in contract_paths
+        if runner.EXPECTED_ARTIFACT_FORMATS.get(path) == "parquet"
+    ]
+    present = [
+        path.as_posix()
+        for path in (
+            *exact52,
+            *exact52_pointers,
+            *CLOSURE_PHASE3_H_RUNNER_REWRITE_FORBIDDEN_GUARDS,
+        )
+        if os.path.lexists(repo_root / path)
+    ]
+    if present:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite forbids exact52/pointer/guard "
+            "paths while preserving current P and U: "
+            + ", ".join(present)
+        )
+
+
+def _require_closure_phase3_h_authority_rewrite_future_paths_absent(
+    *, repo_root: Path
+) -> None:
+    """Require U and exact52 absent while preserving the published P bundle."""
+
+    from src.experiments import run_closure_benchmark as runner
+
+    contract = runner.sealed_batch_contract()
+    component_contracts = contract.get("component_artifact_contracts")
+    contract_paths: list[str] = []
+    if isinstance(component_contracts, list):
+        for record in component_contracts:
+            raw_paths = (
+                record.get("artifact_paths")
+                if isinstance(record, Mapping)
+                else None
+            )
+            if (
+                not isinstance(raw_paths, list)
+                or any(type(path) is not str for path in raw_paths)
+            ):
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H authority rewrite exact52 contract is malformed"
+                )
+            contract_paths.extend(cast(list[str], raw_paths))
+    if (
+        tuple(sorted(contract_paths)) != runner.EXPECTED_ARTIFACT_PATHS
+        or len(contract_paths) != 52
+        or len(set(contract_paths)) != 52
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite exact52 contract drifted"
+        )
+    exact52 = [Path(path) for path in contract_paths]
+    exact52_pointers = [
+        Path(f"{path}.dvc")
+        for path in contract_paths
+        if runner.EXPECTED_ARTIFACT_FORMATS.get(path) == "parquet"
+    ]
+    present = [
+        path.as_posix()
+        for path in (
+            CLOSURE_E0_U_ACTIVATION_PATH,
+            *exact52,
+            *exact52_pointers,
+            *CLOSURE_PHASE3_H_AUTHORITY_REWRITE_FORBIDDEN_GUARDS,
+        )
+        if os.path.lexists(repo_root / path)
+    ]
+    if present:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite forbids U/exact52/guard paths: "
+            + ", ".join(present)
+        )
+
+
+def _snapshot_closure_phase3_h_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE3_H_STAGED_SCOPE):
+            git_mode = CLOSURE_PHASE3_H_GIT_MODES[raw_path]
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    f"Closure Phase 3 H path is not single-link: {raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 40:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H physical snapshot is not exact40"
+        )
+    return tuple(records)
+
+
+def _snapshot_closure_phase3_h_amend_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE):
+            git_mode = CLOSURE_PHASE3_H_AMEND_GIT_MODES[raw_path]
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H amendment path is not single-link: "
+                    f"{raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 13:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H amendment physical snapshot is not exact13"
+        )
+    return tuple(records)
+
+
+def _snapshot_closure_phase3_h_import_repair_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE):
+            git_mode = CLOSURE_PHASE3_H_IMPORT_REPAIR_GIT_MODES[raw_path]
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H import repair path is not single-link: "
+                    f"{raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 5:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H E10 inventory repair physical snapshot is not exact5"
+        )
+    return tuple(records)
+
+
+def _snapshot_closure_phase3_h_authority_rewrite_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(
+            CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+        ):
+            git_mode = CLOSURE_PHASE3_H_AUTHORITY_REWRITE_GIT_MODES[raw_path]
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H authority rewrite path is not "
+                    f"single-link: {raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 4:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite physical snapshot is not exact4"
+        )
+    return tuple(records)
+
+
+def _snapshot_closure_phase3_h_runner_rewrite_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE):
+            git_mode = CLOSURE_PHASE3_H_RUNNER_REWRITE_GIT_MODES[raw_path]
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 H runner rewrite path is not "
+                    f"single-link: {raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 4:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite physical snapshot is not exact4"
+        )
+    return tuple(records)
+
+
+def _snapshot_closure_phase3_p_files_at_commit(
+    *,
+    repo_root: Path,
+    commit: str,
+    context: str,
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind the ten published P files without opening heavy runtime payloads."""
+
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE3_P_HISTORICAL_SCOPE):
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=CLOSURE_PHASE3_P_AUTHORITY_REWRITE_PHYSICAL_MODES[
+                    raw_path
+                ],
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    f"Closure Phase 3 {context} P path is not single-link: "
+                    f"{raw_path}"
+                )
+            index_fields = _git_output(
+                repo_root, "ls-files", "-s", "--", raw_path
+            ).strip().split(maxsplit=3)
+            head_oid = _git_output(
+                repo_root,
+                "rev-parse",
+                f"{commit}:{raw_path}",
+            ).strip()
+            worktree_oid = _git_output(
+                repo_root, "hash-object", "--no-filters", "--", raw_path
+            ).strip()
+            if (
+                len(index_fields) != 4
+                or index_fields[0] != "100644"
+                or index_fields[1] != head_oid
+                or index_fields[2] != "0"
+                or index_fields[3] != raw_path
+                or worktree_oid != head_oid
+                or len(head_oid) != 40
+            ):
+                raise ClosurePhase3HPrecommitAdapterError(
+                    f"Closure Phase 3 {context} P mode/blob binding drifted: "
+                    f"{raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 10:
+        raise ClosurePhase3HPrecommitAdapterError(
+            f"Closure Phase 3 {context} P physical snapshot is not exact10"
+        )
+    return tuple(records)
+
+
+def _snapshot_closure_phase3_p_runner_rewrite_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    return _snapshot_closure_phase3_p_files_at_commit(
+        repo_root=repo_root,
+        commit=CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT,
+        context="runner-rewrite current",
+    )
+
+
+def _snapshot_closure_phase3_u_runner_rewrite_file(
+    *,
+    repo_root: Path,
+    _payload_sink: list[bytes] | None = None,
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind canonical published U bytes, index entry, and H/P authority."""
+
+    raw_path = CLOSURE_E0_U_ACTIVATION_PATH.as_posix()
+    payload_sink: list[bytes] = []
+    try:
+        identity = _registration_file_identity(
+            repo_root / CLOSURE_E0_U_ACTIVATION_PATH,
+            repo_root=repo_root,
+            mode=0o644,
+            _payload_sink=payload_sink,
+        )
+        payload = payload_sink[0]
+        manifest = json.loads(payload.decode("utf-8"))
+    except (DeferredDvcTargetError, UnicodeDecodeError, ValueError) as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 runner-rewrite current U is not canonical JSON"
+        ) from exc
+    canonical = (
+        json.dumps(
+            manifest,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    index_fields = _git_output(
+        repo_root, "ls-files", "-s", "--", raw_path
+    ).strip().split(maxsplit=3)
+    head_oid = _git_output(
+        repo_root,
+        "rev-parse",
+        f"{CLOSURE_PHASE3_U_RUNNER_REWRITE_COMMIT}:{raw_path}",
+    ).strip()
+    worktree_oid = _git_output(
+        repo_root, "hash-object", "--no-filters", "--", raw_path
+    ).strip()
+    if (
+        identity.nlink != 1
+        or identity.size != CLOSURE_PHASE3_U_RUNNER_REWRITE_BYTES
+        or identity.sha256 != CLOSURE_PHASE3_U_RUNNER_REWRITE_SHA256
+        or payload != canonical
+        or not isinstance(manifest, dict)
+        or manifest.get("schema_version") != "closure_e0_u_activation_v1"
+        or manifest.get("gate") != "E0-U"
+        or manifest.get("base_r_commit") != CLOSURE_PHASE3_H_BASE_COMMIT
+        or manifest.get("h_commit") != CLOSURE_PHASE3_H_RUNNER_REWRITE_COMMIT
+        or manifest.get("p_commit") != CLOSURE_PHASE3_P_RUNNER_REWRITE_COMMIT
+        or len(index_fields) != 4
+        or index_fields[0] != "100644"
+        or index_fields[1] != head_oid
+        or index_fields[2] != "0"
+        or index_fields[3] != raw_path
+        or worktree_oid != head_oid
+        or len(head_oid) != 40
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 runner-rewrite current U byte/schema/Git binding drifted"
+        )
+    if _payload_sink is not None:
+        _payload_sink.append(payload)
+    return (identity,)
+
+
+def _validate_closure_phase3_h_runner_rewrite_publication_result(
+    result: CommandResult,
+    *,
+    activation_payload: bytes,
+) -> bool:
+    """Accept the generic guard or its one exact current-U-only rejection."""
+
+    generic_success = (
+        "Checking tracked files before publication...\n"
+        "OK: tracked files look publication-ready.\n"
+    )
+    if (
+        result.returncode == 0
+        and not result.stderr
+        and result.stdout == generic_success
+    ):
+        return False
+    try:
+        activation = json.loads(activation_payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 runner rewrite publication compensation U is not JSON"
+        ) from exc
+    if (
+        not activation_payload.endswith(b"\n")
+        or activation_payload.count(b"\n") != 1
+        or (b'"type":"' + b"service_" + b'account"')
+        in activation_payload
+        or (b'"private_' + b'key":') in activation_payload
+        or (b"gs:" + b"//") in activation_payload
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 runner rewrite publication compensation found "
+            "forbidden credential, bucket, or non-single-line U content"
+        )
+
+    absolute_values: list[tuple[tuple[str | int, ...], str]] = []
+
+    def collect(value: Any, path: tuple[str | int, ...] = ()) -> None:
+        if isinstance(value, dict):
+            for key, nested in value.items():
+                collect(nested, (*path, key))
+        elif isinstance(value, list):
+            for index, nested in enumerate(value):
+                collect(nested, (*path, index))
+        elif isinstance(value, str) and re.search(
+            r"/home/(?:zero|wolf)(?:/|$)", value
+        ):
+            absolute_values.append((path, value))
+
+    collect(activation)
+    sealed_home = "/" + "home" + "/" + "zero"
+    expected_absolute_values = [
+        (
+            ("sealed_runtime_environment_record", "purelib_path"),
+            sealed_home
+            + "/repos/lentic-pipe/.venv/lib/python3.14/site-packages",
+        ),
+        (
+            (
+                "sealed_runtime_environment_record",
+                "python_executable",
+                "link_path",
+            ),
+            sealed_home + "/repos/lentic-pipe/.venv/bin/python",
+        ),
+    ]
+    if absolute_values != expected_absolute_values:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 runner rewrite publication compensation absolute "
+            "path inventory is not the exact two sealed U runtime values"
+        )
+    payload_line = activation_payload[:-1].decode("utf-8")
+    expected_failure = (
+        "Checking tracked files before publication...\n\n"
+        "Local absolute paths found in versionable files:\n"
+        f"{CLOSURE_E0_U_ACTIVATION_PATH.as_posix()}:1:{payload_line}\n\n"
+        "Publication readiness check failed.\n"
+    )
+    if (
+        result.returncode != 1
+        or result.stderr
+        or result.stdout != expected_failure
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 runner rewrite publication guard failed beyond "
+            "the exact current-U two-path exception"
+        )
+    return True
+
+
+def _run_closure_phase3_h_runner_rewrite_publication_check(
+    *, repo_root: Path
+) -> tuple[CommandResult, bool]:
+    payload_sink: list[bytes] = []
+    _snapshot_closure_phase3_u_runner_rewrite_file(
+        repo_root=repo_root,
+        _payload_sink=payload_sink,
+    )
+    result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    compensated = _validate_closure_phase3_h_runner_rewrite_publication_result(
+        result,
+        activation_payload=payload_sink[0],
+    )
+    return result, compensated
+
+
+def _snapshot_closure_phase3_p_authority_rewrite_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind the ten published P files without opening heavy runtime payloads."""
+
+    return _snapshot_closure_phase3_p_files_at_commit(
+        repo_root=repo_root,
+        commit=CLOSURE_PHASE3_P_AUTHORITY_REWRITE_COMMIT,
+        context="current",
+    )
+
+
+def _validate_closure_phase3_h_index_bindings(
+    physical: tuple[RegistrationFileIdentity, ...],
+    *,
+    repo_root: Path,
+) -> None:
+    for identity in physical:
+        raw_path = identity.path
+        fields = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip().split(maxsplit=3)
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            len(fields) != 4
+            or fields[0] != CLOSURE_PHASE3_H_GIT_MODES[raw_path]
+            or fields[1] != worktree_oid
+            or len(worktree_oid) != 40
+            or fields[2] != "0"
+            or fields[3] != raw_path
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                f"Closure Phase 3 H staged mode/blob binding drifted: {raw_path}"
+            )
+
+
+def validate_closure_phase3_h_runner_rewrite_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind exact4 staged patch, current P/U, and future R -> H exact40."""
+
+    prospective_command = (
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+        CLOSURE_PHASE3_H_BASE_COMMIT,
+        "--",
+        *sorted(CLOSURE_PHASE3_H_STAGED_SCOPE),
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE,
+            context="Closure Phase 3 H runner rewrite staged patch",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=_closure_phase3_h_runner_rewrite_expected_short_scope(
+                staged=True
+            ),
+            context="Closure Phase 3 H runner rewrite workspace scope",
+        )
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(repo_root, *prospective_command),
+            expected=CLOSURE_PHASE3_H_STAGED_SCOPE,
+            context="Closure Phase 3 H runner rewrite prospective exact40 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H runner rewrite left an unstaged tracked change"
+        )
+    _require_closure_phase3_h_runner_rewrite_refs(repo_root=repo_root)
+    physical = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+    _validate_closure_phase3_h_index_bindings(physical, repo_root=repo_root)
+    _snapshot_closure_phase3_p_runner_rewrite_files(repo_root=repo_root)
+    _snapshot_closure_phase3_u_runner_rewrite_file(repo_root=repo_root)
+    return physical
+
+
+def validate_closure_phase3_h_authority_rewrite_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind exact4 staged patch and the future R -> H exact40 tree."""
+
+    prospective_command = (
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+        CLOSURE_PHASE3_H_BASE_COMMIT,
+        "--",
+        *sorted(CLOSURE_PHASE3_H_STAGED_SCOPE),
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE,
+            context="Closure Phase 3 H authority rewrite staged patch",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=(
+                _closure_phase3_h_authority_rewrite_expected_short_scope(
+                    staged=True
+                )
+            ),
+            context="Closure Phase 3 H authority rewrite workspace scope",
+        )
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(repo_root, *prospective_command),
+            expected=CLOSURE_PHASE3_H_STAGED_SCOPE,
+            context=(
+                "Closure Phase 3 H authority rewrite prospective exact40 scope"
+            ),
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H authority rewrite left an unstaged tracked change"
+        )
+    _require_closure_phase3_h_authority_rewrite_refs(repo_root=repo_root)
+    physical = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+    _validate_closure_phase3_h_index_bindings(physical, repo_root=repo_root)
+    _snapshot_closure_phase3_p_authority_rewrite_files(repo_root=repo_root)
+    return physical
+
+
+def validate_closure_phase3_h_amend_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind exact13 staged amendment and prospective exact40 H tree."""
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE,
+            context="Closure Phase 3 H amendment staged patch",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=_closure_phase3_h_amend_expected_short_scope(
+                staged=True
+            ),
+            context="Closure Phase 3 H amendment workspace scope",
+        )
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+                CLOSURE_PHASE3_H_BASE_COMMIT,
+            ),
+            expected=CLOSURE_PHASE3_H_STAGED_SCOPE,
+            context="Closure Phase 3 H amendment prospective exact40 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H amendment left an unstaged tracked change"
+        )
+    _require_closure_phase3_h_amend_refs(repo_root=repo_root)
+    physical = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+    _validate_closure_phase3_h_index_bindings(
+        physical,
+        repo_root=repo_root,
+    )
+    return physical
+
+
+def validate_closure_phase3_h_import_repair_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind exact5 staged repair and the prospective exact40 replacement H."""
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE,
+            context="Closure Phase 3 H import repair staged patch",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=_closure_phase3_h_import_repair_expected_short_scope(
+                staged=True
+            ),
+            context="Closure Phase 3 H import repair workspace scope",
+        )
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+                CLOSURE_PHASE3_H_BASE_COMMIT,
+            ),
+            expected=CLOSURE_PHASE3_H_STAGED_SCOPE,
+            context="Closure Phase 3 H import repair prospective exact40 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H import repair left an unstaged tracked change"
+        )
+    _require_closure_phase3_h_import_repair_refs(repo_root=repo_root)
+    physical = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+    _validate_closure_phase3_h_index_bindings(physical, repo_root=repo_root)
+    return physical
+
+
+def validate_closure_phase3_h_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind exact40 staged blobs, modes, files, workspace, and base HEAD."""
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_H_STAGED_SCOPE,
+            context="Closure Phase 3 H staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=_closure_phase3_h_expected_short_scope(staged=True),
+            context="Closure Phase 3 H workspace scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 H left an unstaged tracked change"
+        )
+    _require_closure_phase3_h_base_refs(repo_root=repo_root)
+    physical = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+    _validate_closure_phase3_h_index_bindings(physical, repo_root=repo_root)
+    return physical
+
+
+def _rollback_closure_phase3_h_staging(
+    *,
+    mode: str,
+    physical_before: tuple[Any, ...],
+    amend_before: tuple[Any, ...] | None,
+    outcome_log_before: tuple[int, int, int, int, int, int, int, str],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    artifacts: list[DvcArtifact],
+    unmanaged_before: list[Path],
+    repo_root: Path,
+    p_before: tuple[Any, ...] | None = None,
+    u_before: tuple[Any, ...] | None = None,
+) -> str | None:
+    """Restore only the owned index paths and verify the unstaged boundary."""
+
+    if mode == "runner_rewrite":
+        scope = CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+        selector = closure_phase3_h_runner_rewrite_pre_stage_scope
+    elif mode == "authority_rewrite":
+        scope = CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE
+        selector = closure_phase3_h_authority_rewrite_pre_stage_scope
+    elif mode == "import_repair":
+        scope = CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE
+        selector = closure_phase3_h_import_repair_pre_stage_scope
+    elif mode == "amend":
+        scope = CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE
+        selector = closure_phase3_h_amend_pre_stage_scope
+    elif mode == "full":
+        scope = CLOSURE_PHASE3_H_STAGED_SCOPE
+        selector = closure_phase3_h_pre_stage_scope
+    else:
+        return f"unknown rollback mode: {mode}"
+
+    errors: list[str] = []
+    restore_command = [
+        "git",
+        "restore",
+        "--staged",
+        "--",
+        *sorted(scope),
+    ]
+    try:
+        restore_result = run_command(restore_command, check=False)
+        if restore_result.returncode != 0:
+            errors.append(
+                "directed git restore --staged failed: "
+                f"exit={restore_result.returncode}; stderr={restore_result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed git restore --staged raised: {exc}")
+
+    try:
+        status = _git_output(
+            repo_root,
+            "status",
+            "--short",
+            "--untracked-files=all",
+        )
+        staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if staged.strip() or not selector(
+            status,
+            staged,
+            repo_root=repo_root,
+        ):
+            errors.append(
+                "directed rollback did not restore the exact fully-unstaged scope"
+            )
+    except BaseException as exc:
+        errors.append(f"post-rollback Git scope validation failed: {exc}")
+
+    try:
+        if _snapshot_closure_phase3_h_files(
+            repo_root=repo_root
+        ) != physical_before:
+            errors.append("post-rollback exact40 worktree snapshot drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback exact40 worktree recapture failed: {exc}")
+    if mode == "runner_rewrite":
+        try:
+            if amend_before is None or (
+                _snapshot_closure_phase3_h_runner_rewrite_files(
+                    repo_root=repo_root
+                )
+                != amend_before
+            ):
+                errors.append("post-rollback runner exact4 worktree snapshot drifted")
+        except BaseException as exc:
+            errors.append(
+                f"post-rollback runner exact4 worktree recapture failed: {exc}"
+            )
+        try:
+            if p_before is None or (
+                _snapshot_closure_phase3_p_runner_rewrite_files(
+                    repo_root=repo_root
+                )
+                != p_before
+            ):
+                errors.append("post-rollback runner current P snapshot drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback runner current P validation failed: {exc}")
+        try:
+            if u_before is None or (
+                _snapshot_closure_phase3_u_runner_rewrite_file(
+                    repo_root=repo_root
+                )
+                != u_before
+            ):
+                errors.append("post-rollback runner current U snapshot drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback runner current U validation failed: {exc}")
+        try:
+            _require_closure_phase3_h_runner_rewrite_live_remote(
+                repo_root=repo_root
+            )
+        except BaseException as exc:
+            errors.append(f"post-rollback runner live remote validation failed: {exc}")
+    elif mode == "authority_rewrite":
+        try:
+            if amend_before is None or (
+                _snapshot_closure_phase3_h_authority_rewrite_files(
+                    repo_root=repo_root
+                )
+                != amend_before
+            ):
+                errors.append("post-rollback exact4 worktree snapshot drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback exact4 worktree recapture failed: {exc}")
+        try:
+            if p_before is None or (
+                _snapshot_closure_phase3_p_authority_rewrite_files(
+                    repo_root=repo_root
+                )
+                != p_before
+            ):
+                errors.append("post-rollback exact10 P worktree snapshot drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback current P validation failed: {exc}")
+        try:
+            _require_closure_phase3_h_authority_rewrite_live_remote(
+                repo_root=repo_root
+            )
+        except BaseException as exc:
+            errors.append(f"post-rollback live remote validation failed: {exc}")
+    elif mode == "import_repair":
+        try:
+            if amend_before is None or _snapshot_closure_phase3_h_import_repair_files(
+                repo_root=repo_root
+            ) != amend_before:
+                errors.append("post-rollback exact5 worktree snapshot drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback exact5 worktree recapture failed: {exc}")
+    elif mode == "amend":
+        try:
+            if amend_before is None or _snapshot_closure_phase3_h_amend_files(
+                repo_root=repo_root
+            ) != amend_before:
+                errors.append("post-rollback exact13 worktree snapshot drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback exact13 worktree recapture failed: {exc}")
+
+    try:
+        if _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ) != outcome_log_before:
+            errors.append("post-rollback outcome access log identity drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback outcome access log validation failed: {exc}")
+    try:
+        if mode == "runner_rewrite":
+            _require_closure_phase3_h_runner_rewrite_future_paths_absent(
+                repo_root=repo_root
+            )
+        elif mode == "authority_rewrite":
+            _require_closure_phase3_h_authority_rewrite_future_paths_absent(
+                repo_root=repo_root
+            )
+        else:
+            _require_closure_phase3_h_unpublished_paths_absent(
+                repo_root=repo_root
+            )
+    except BaseException as exc:
+        errors.append(f"post-rollback P/U/exact52 absence validation failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback DVC validation failed: {exc}")
+    try:
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            errors.append("post-rollback ignored-heavy inventory drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback ignored-heavy validation failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _abort_closure_phase3_h_post_add(
+    primary: BaseException,
+    *,
+    mode: str,
+    physical_before: tuple[Any, ...],
+    amend_before: tuple[Any, ...] | None,
+    outcome_log_before: tuple[int, int, int, int, int, int, int, str],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    artifacts: list[DvcArtifact],
+    unmanaged_before: list[Path],
+    repo_root: Path,
+    p_before: tuple[Any, ...] | None = None,
+    u_before: tuple[Any, ...] | None = None,
+) -> int:
+    rollback_error = _rollback_closure_phase3_h_staging(
+        mode=mode,
+        physical_before=physical_before,
+        amend_before=amend_before,
+        outcome_log_before=outcome_log_before,
+        dvc_bin=dvc_bin,
+        dvc_status_before=dvc_status_before,
+        artifacts=artifacts,
+        unmanaged_before=unmanaged_before,
+        repo_root=repo_root,
+        p_before=p_before,
+        u_before=u_before,
+    )
+    label = {
+        "runner_rewrite": "runner rewrite",
+        "authority_rewrite": "authority rewrite",
+        "import_repair": "import repair",
+        "amend": "amendment",
+        "full": "full H",
+    }.get(mode, mode)
+    if rollback_error is None:
+        print(
+            f"Closure Phase 3 {label} failed after staging: {primary}; "
+            "the directed index rollback restored the exact unstaged scope.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            f"Closure Phase 3 {label} failed after staging: {primary}; "
+            f"ROLLBACK FAILED CLOSED: {rollback_error}",
+            file=sys.stderr,
+        )
+    return 2
+
+
+def _run_closure_phase3_h_runner_rewrite_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact4M while published U anchors the future H rewrite."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_runner_rewrite_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite exact4 scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+        rewrite_before = _snapshot_closure_phase3_h_runner_rewrite_files(
+            repo_root=repo_root
+        )
+        p_before = _snapshot_closure_phase3_p_runner_rewrite_files(
+            repo_root=repo_root
+        )
+        u_before = _snapshot_closure_phase3_u_runner_rewrite_file(
+            repo_root=repo_root
+        )
+        outcome_log_before = _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_runner_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_runner_rewrite_live_remote(
+            repo_root=repo_root
+        )
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite requires exact empty "
+                "repository DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    try:
+        (
+            publication_check_result,
+            publication_compensated,
+        ) = _run_closure_phase3_h_runner_rewrite_publication_check(
+            repo_root=repo_root
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    publication_report_result = publication_check_result
+    if publication_compensated:
+        publication_report_result = CommandResult(
+            publication_check_result.command,
+            0,
+            "OK: exact current-U two-path publication exception compensated; "
+            "no other findings.\n",
+            "",
+        )
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_runner_rewrite_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite changed during publication checks"
+            )
+        if (
+            physical_before
+            != _snapshot_closure_phase3_h_files(repo_root=repo_root)
+            or rewrite_before
+            != _snapshot_closure_phase3_h_runner_rewrite_files(
+                repo_root=repo_root
+            )
+            or p_before
+            != _snapshot_closure_phase3_p_runner_rewrite_files(
+                repo_root=repo_root
+            )
+            or u_before
+            != _snapshot_closure_phase3_u_runner_rewrite_file(
+                repo_root=repo_root
+            )
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H/P/U runner-rewrite files changed before staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 outcome access log changed before runner rewrite staging"
+            )
+        _require_closure_phase3_h_runner_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_runner_rewrite_live_remote(
+            repo_root=repo_root
+        )
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 ignored-heavy inventory changed before "
+                "runner rewrite staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_command = [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE),
+    ]
+    try:
+        git_add_result = run_command(git_add_command, check=False)
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = (
+            validate_closure_phase3_h_runner_rewrite_staged_transaction(
+                repo_root=repo_root
+            )
+        )
+        if (
+            staged_physical != physical_before
+            or _snapshot_closure_phase3_h_runner_rewrite_files(
+                repo_root=repo_root
+            )
+            != rewrite_before
+            or _snapshot_closure_phase3_p_runner_rewrite_files(
+                repo_root=repo_root
+            )
+            != p_before
+            or _snapshot_closure_phase3_u_runner_rewrite_file(
+                repo_root=repo_root
+            )
+            != u_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H/P/U runner-rewrite files changed across staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 outcome access log changed during runner rewrite staging"
+            )
+        _require_closure_phase3_h_runner_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_runner_rewrite_live_remote(
+            repo_root=repo_root
+        )
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 DVC status changed during runner rewrite staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        prospective_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            CLOSURE_PHASE3_H_BASE_COMMIT,
+            "--",
+            *sorted(CLOSURE_PHASE3_H_STAGED_SCOPE),
+        )
+        findings = reproducibility_checks(
+            staged_status=prospective_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite generic reproducibility "
+                "checks contain warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok_findings)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_runner_rewrite_scope",
+                    "-",
+                    "Exact4M staged on current U; prospective R -> H stays "
+                    "exact40 (24M+16A).",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_runner_rewrite_topology",
+                    "-",
+                    "User-only fixup/autosquash must fold exact4 into H, "
+                    "drop stale P exact10 and U exact1, publish rewritten H, "
+                    "then regenerate and republish P followed by U.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_runner_rewrite_dvc",
+                    "-",
+                    "DVC stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_runner_rewrite_outcomes",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "Current P exact10 and U exact1 stayed byte-bound, "
+                    "exact52/pointers/guards stayed absent, and the tracked "
+                    "outcome log stayed empty.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_runner_rewrite_publication_guard",
+                    CLOSURE_E0_U_ACTIVATION_PATH.as_posix(),
+                    (
+                        "Generic publication guard passed without compensation."
+                        if not publication_compensated
+                        else "Generic publication guard real rc=1 was "
+                        "compensated only for the exact byte-bound current U "
+                        "line containing its two sealed .venv runtime paths; "
+                        "every other section remained absent."
+                    ),
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_report_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_h_runner_rewrite_staged_transaction(
+                repo_root=repo_root
+            )
+            != physical_before
+            or _snapshot_closure_phase3_h_runner_rewrite_files(
+                repo_root=repo_root
+            )
+            != rewrite_before
+            or _snapshot_closure_phase3_p_runner_rewrite_files(
+                repo_root=repo_root
+            )
+            != p_before
+            or _snapshot_closure_phase3_u_runner_rewrite_file(
+                repo_root=repo_root
+            )
+            != u_before
+            or _closure_phase3_h_outcome_log_identity(repo_root=repo_root)
+            != outcome_log_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H runner rewrite changed while writing its report"
+            )
+        _require_closure_phase3_h_runner_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_runner_rewrite_live_remote(
+            repo_root=repo_root
+        )
+    except BaseException as exc:
+        return _abort_closure_phase3_h_post_add(
+            exc,
+            mode="runner_rewrite",
+            physical_before=physical_before,
+            amend_before=rewrite_before,
+            outcome_log_before=outcome_log_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+            p_before=p_before,
+            u_before=u_before,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 H runner rewrite patch is staged; no DVC "
+        "add or push ran. Drop stale P and U, then regenerate both."
+    )
+    return 0
+
+
+def _run_closure_phase3_h_authority_rewrite_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact4M while current P still anchors the future H rewrite."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_authority_rewrite_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite exact4 scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+        rewrite_before = _snapshot_closure_phase3_h_authority_rewrite_files(
+            repo_root=repo_root
+        )
+        p_before = _snapshot_closure_phase3_p_authority_rewrite_files(
+            repo_root=repo_root
+        )
+        outcome_log_before = _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_authority_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_authority_rewrite_live_remote(
+            repo_root=repo_root
+        )
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite requires exact empty "
+                "repository DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    publication_check_result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    if publication_check_result.returncode != 0:
+        print(publication_check_result.stdout)
+        print(publication_check_result.stderr, file=sys.stderr)
+        print(
+            "Publication check failed; not staging the Phase 3 H authority rewrite.",
+            file=sys.stderr,
+        )
+        return publication_check_result.returncode
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_authority_rewrite_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite changed during "
+                "publication checks"
+            )
+        if (
+            physical_before
+            != _snapshot_closure_phase3_h_files(repo_root=repo_root)
+            or rewrite_before
+            != _snapshot_closure_phase3_h_authority_rewrite_files(
+                repo_root=repo_root
+            )
+            or p_before
+            != _snapshot_closure_phase3_p_authority_rewrite_files(
+                repo_root=repo_root
+            )
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H/P authority-rewrite files changed before staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 outcome access log changed before authority "
+                "rewrite staging"
+            )
+        _require_closure_phase3_h_authority_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_authority_rewrite_live_remote(
+            repo_root=repo_root
+        )
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 ignored-heavy inventory changed before "
+                "authority rewrite staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_command = [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(CLOSURE_PHASE3_H_AUTHORITY_REWRITE_STAGED_SCOPE),
+    ]
+    try:
+        git_add_result = run_command(git_add_command, check=False)
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = (
+            validate_closure_phase3_h_authority_rewrite_staged_transaction(
+                repo_root=repo_root
+            )
+        )
+        if (
+            staged_physical != physical_before
+            or _snapshot_closure_phase3_h_authority_rewrite_files(
+                repo_root=repo_root
+            )
+            != rewrite_before
+            or _snapshot_closure_phase3_p_authority_rewrite_files(
+                repo_root=repo_root
+            )
+            != p_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H/P authority-rewrite files changed across staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 outcome access log changed during authority "
+                "rewrite staging"
+            )
+        _require_closure_phase3_h_authority_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_authority_rewrite_live_remote(
+            repo_root=repo_root
+        )
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 DVC status changed during authority rewrite staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        prospective_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            CLOSURE_PHASE3_H_BASE_COMMIT,
+            "--",
+            *sorted(CLOSURE_PHASE3_H_STAGED_SCOPE),
+        )
+        findings = reproducibility_checks(
+            staged_status=prospective_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite generic reproducibility "
+                "checks contain warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok_findings)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_authority_rewrite_scope",
+                    "-",
+                    "Exact4M staged on current P; prospective R -> H stays "
+                    "exact40 (24M+16A).",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_authority_rewrite_topology",
+                    "-",
+                    "User-only fixup/autosquash must drop stale P exact10, "
+                    "publish rewritten H, then regenerate P on that H.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_authority_rewrite_dvc",
+                    "-",
+                    "DVC stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_authority_rewrite_outcomes",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "P stayed exact10, U/exact52/guards stayed absent, and the "
+                    "tracked outcome log stayed empty.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_h_authority_rewrite_staged_transaction(
+                repo_root=repo_root
+            )
+            != physical_before
+            or _snapshot_closure_phase3_h_authority_rewrite_files(
+                repo_root=repo_root
+            )
+            != rewrite_before
+            or _snapshot_closure_phase3_p_authority_rewrite_files(
+                repo_root=repo_root
+            )
+            != p_before
+            or _closure_phase3_h_outcome_log_identity(repo_root=repo_root)
+            != outcome_log_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H authority rewrite changed while writing "
+                "its report"
+            )
+        _require_closure_phase3_h_authority_rewrite_future_paths_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_authority_rewrite_live_remote(
+            repo_root=repo_root
+        )
+    except BaseException as exc:
+        return _abort_closure_phase3_h_post_add(
+            exc,
+            mode="authority_rewrite",
+            physical_before=physical_before,
+            amend_before=rewrite_before,
+            outcome_log_before=outcome_log_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+            p_before=p_before,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 H authority rewrite patch is staged; no DVC "
+        "add or push ran."
+    )
+    return 0
+
+
+def _run_closure_phase3_h_import_repair_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact5M E10 inventory repair on the published repaired H."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_import_repair_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H exact import repair scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+        repair_before = _snapshot_closure_phase3_h_import_repair_files(
+            repo_root=repo_root
+        )
+        outcome_log_before = _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_h_import_repair_live_remote(repo_root=repo_root)
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair requires exact empty repository DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    publication_check_result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    if publication_check_result.returncode != 0:
+        print(publication_check_result.stdout)
+        print(publication_check_result.stderr, file=sys.stderr)
+        print(
+            "Publication check failed; not staging the Phase 3 H import repair.",
+            file=sys.stderr,
+        )
+        return publication_check_result.returncode
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_import_repair_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair changed during publication checks"
+            )
+        if physical_before != _snapshot_closure_phase3_h_files(
+            repo_root=repo_root
+        ) or repair_before != _snapshot_closure_phase3_h_import_repair_files(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair files changed before staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H outcome access log changed before import repair staging"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_h_import_repair_live_remote(repo_root=repo_root)
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H unmanaged ignored-heavy inventory changed "
+                "before import repair staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_command = [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(CLOSURE_PHASE3_H_IMPORT_REPAIR_STAGED_SCOPE),
+    ]
+    try:
+        git_add_result = run_command(git_add_command, check=False)
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = validate_closure_phase3_h_import_repair_staged_transaction(
+            repo_root=repo_root
+        )
+        if (
+            staged_physical != physical_before
+            or _snapshot_closure_phase3_h_import_repair_files(repo_root=repo_root)
+            != repair_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair files changed across exact staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H outcome access log changed during import repair staging"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_h_import_repair_live_remote(repo_root=repo_root)
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H DVC status changed during import repair staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        prospective_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            CLOSURE_PHASE3_H_BASE_COMMIT,
+        )
+        findings = reproducibility_checks(
+            staged_status=prospective_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair generic reproducibility checks "
+                "contain warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok_findings)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_import_repair_scope",
+                    "-",
+                    "Exact5M E10 inventory repair staged; replacement H stays exact40 (24M+16A).",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_import_repair_history",
+                    "-",
+                    "Historical exact10 P remains the displaced direct child of pre-import H.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_import_repair_dvc",
+                    "-",
+                    "DVC status stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_import_repair_outcomes",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "Tracked outcome access log stayed empty and no outcome artifact was opened.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_h_import_repair_staged_transaction(
+                repo_root=repo_root
+            )
+            != physical_before
+            or _snapshot_closure_phase3_h_import_repair_files(repo_root=repo_root)
+            != repair_before
+            or _closure_phase3_h_outcome_log_identity(repo_root=repo_root)
+            != outcome_log_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H import repair changed while writing its report"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_h_import_repair_live_remote(repo_root=repo_root)
+    except BaseException as exc:
+        return _abort_closure_phase3_h_post_add(
+            exc,
+            mode="import_repair",
+            physical_before=physical_before,
+            amend_before=repair_before,
+            outcome_log_before=outcome_log_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 H E10 inventory repair is staged; no DVC add or push ran."
+    )
+    return 0
+
+
+def _run_closure_phase3_h_amend_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact13M on historical H and bind the prospective exact40 H."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_amend_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H exact amendment scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase3_h_files(
+            repo_root=repo_root
+        )
+        amend_before = _snapshot_closure_phase3_h_amend_files(
+            repo_root=repo_root
+        )
+        outcome_log_before = _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment requires exact empty repository DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    publication_check_result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    if publication_check_result.returncode != 0:
+        print(publication_check_result.stdout)
+        print(publication_check_result.stderr, file=sys.stderr)
+        print(
+            "Publication check failed; not staging the Phase 3 H amendment.",
+            file=sys.stderr,
+        )
+        return publication_check_result.returncode
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_amend_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment changed during publication checks"
+            )
+        if physical_before != _snapshot_closure_phase3_h_files(
+            repo_root=repo_root
+        ) or amend_before != _snapshot_closure_phase3_h_amend_files(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment files changed before staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H outcome access log changed before amendment staging"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H unmanaged ignored-heavy inventory changed before amendment staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_command = [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(CLOSURE_PHASE3_H_AMEND_STAGED_SCOPE),
+    ]
+    try:
+        git_add_result = run_command(git_add_command, check=False)
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = validate_closure_phase3_h_amend_staged_transaction(
+            repo_root=repo_root
+        )
+        if (
+            staged_physical != physical_before
+            or _snapshot_closure_phase3_h_amend_files(repo_root=repo_root)
+            != amend_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment files changed across exact staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H outcome access log changed during amendment staging"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H DVC status changed during amendment staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        prospective_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+            CLOSURE_PHASE3_H_BASE_COMMIT,
+        )
+        findings = reproducibility_checks(
+            staged_status=prospective_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment generic reproducibility checks "
+                "contain warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok_findings)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_amend_scope",
+                    "-",
+                    "Exact13M amendment staged; prospective H is exact40 (24M+16A).",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_amend_dvc",
+                    "-",
+                    "DVC status stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_amend_outcomes",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "Tracked outcome access log stayed empty and no outcome artifact was opened.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_h_amend_staged_transaction(
+                repo_root=repo_root
+            )
+            != physical_before
+            or _snapshot_closure_phase3_h_amend_files(repo_root=repo_root)
+            != amend_before
+            or _closure_phase3_h_outcome_log_identity(repo_root=repo_root)
+            != outcome_log_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H amendment changed while writing its report"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+    except BaseException as exc:
+        return _abort_closure_phase3_h_post_add(
+            exc,
+            mode="amend",
+            physical_before=physical_before,
+            amend_before=amend_before,
+            outcome_log_before=outcome_log_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 H amendment is staged; no DVC add or push ran."
+    )
+    return 0
+
+
+def _run_closure_phase3_h_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact outcome-free H without entering any historical E0-M path."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H exact pre-stage scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase3_h_files(repo_root=repo_root)
+        outcome_log_before = _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H requires exact empty repository DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    publication_check_result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    if publication_check_result.returncode != 0:
+        print(publication_check_result.stdout)
+        print(publication_check_result.stderr, file=sys.stderr)
+        print("Publication check failed; not staging Phase 3 H.", file=sys.stderr)
+        return publication_check_result.returncode
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_h_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H pre-stage scope changed during publication checks"
+            )
+        if physical_before != _snapshot_closure_phase3_h_files(repo_root=repo_root):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H files changed before staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H outcome access log changed before staging"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H unmanaged ignored-heavy inventory changed before staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_command = [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(CLOSURE_PHASE3_H_STAGED_SCOPE),
+    ]
+    try:
+        git_add_result = run_command(git_add_command, check=False)
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = validate_closure_phase3_h_staged_transaction(
+            repo_root=repo_root
+        )
+        if staged_physical != physical_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H files changed across exact staging"
+            )
+        if outcome_log_before != _closure_phase3_h_outcome_log_identity(
+            repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H outcome access log changed during staging"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H DVC status changed during staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H generic reproducibility checks contain "
+                "warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok_findings)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_scope",
+                    "-",
+                    "Exact outcome-free Closure Phase 3 H scope staged: 40 paths (24M+16A).",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_dvc",
+                    "-",
+                    "DVC status stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_h_outcomes",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "Tracked outcome access log stayed empty and no outcome artifact was opened.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_h_staged_transaction(repo_root=repo_root)
+            != physical_before
+            or _closure_phase3_h_outcome_log_identity(repo_root=repo_root)
+            != outcome_log_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 H transaction changed while writing its report"
+            )
+        _require_closure_phase3_h_unpublished_paths_absent(repo_root=repo_root)
+    except BaseException as exc:
+        return _abort_closure_phase3_h_post_add(
+            exc,
+            mode="full",
+            physical_before=physical_before,
+            amend_before=None,
+            outcome_log_before=outcome_log_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print("Exact outcome-free Closure Phase 3 H is staged; no DVC add or push ran.")
+    return 0
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Prepare Git and DVC artifacts before a manual commit.")
     parser.add_argument("--manifest", type=Path, default=DEFAULT_DVC_MANIFEST)
@@ -12968,6 +17837,97 @@ def parse_args() -> argparse.Namespace:
 def main() -> int:
     args = parse_args()
     ensure_repo_root()
+    phase3_h_initial_status = _git_output(
+        Path("."), "status", "--short", "--untracked-files=all"
+    )
+    phase3_h_initial_index = _git_output(
+        Path("."),
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+    )
+    try:
+        phase3_h_runner_rewrite_active = (
+            closure_phase3_h_runner_rewrite_pre_stage_scope(
+                phase3_h_initial_status,
+                phase3_h_initial_index,
+                repo_root=Path("."),
+            )
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_h_runner_rewrite_active:
+        return _run_closure_phase3_h_runner_rewrite_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase3_h_authority_rewrite_active = (
+            closure_phase3_h_authority_rewrite_pre_stage_scope(
+                phase3_h_initial_status,
+                phase3_h_initial_index,
+                repo_root=Path("."),
+            )
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_h_authority_rewrite_active:
+        return _run_closure_phase3_h_authority_rewrite_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase3_h_import_repair_active = (
+            closure_phase3_h_import_repair_pre_stage_scope(
+                phase3_h_initial_status,
+                phase3_h_initial_index,
+                repo_root=Path("."),
+            )
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_h_import_repair_active:
+        return _run_closure_phase3_h_import_repair_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase3_h_amend_active = closure_phase3_h_amend_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_h_amend_active:
+        return _run_closure_phase3_h_amend_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase3_h_active = closure_phase3_h_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_h_active:
+        return _run_closure_phase3_h_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
     if bool(getattr(args, "register_anfis_ablation_model_family", False)):
         return _run_anfis_ablation_model_family_registration(args)
     try:

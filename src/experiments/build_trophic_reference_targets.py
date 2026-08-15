@@ -30,6 +30,8 @@ INPUT_COLUMNS = (
     "origin_year_month",
     "target_year_month",
     "horizon_months",
+    "evaluation_cohort",
+    "evaluation_role",
     "future_TP_ugL",
     "future_secchi_depth_m",
     "future_chlorophyll_a_ugL",
@@ -42,6 +44,8 @@ KEY_COLUMNS = (
     "origin_year_month",
     "target_year_month",
     "horizon_months",
+    "evaluation_cohort",
+    "evaluation_role",
 )
 COMPONENT_CONTRACT = {
     "schema_version": "closure_e4_trophic_reference_targets_v1",
@@ -60,6 +64,10 @@ COMPONENT_CONTRACT = {
     "tsi_non_chla_rule": "median_tp_sd_only_when_both_observed",
     "tsi_all_rule": "median_of_observed_tp_sd_chla",
     "future_indicator_imputation": "forbidden",
+    "source_id": "wqp",
+    "evaluation_cohort": "location_holdout",
+    "evaluation_role": "test",
+    "outcome_boundary": "target_year_month_after_2021_12",
     "same_target_month_required": True,
     "filesystem_writes": "forbidden",
 }
@@ -173,11 +181,8 @@ def _validate_context(batch_context: Mapping[str, Any]) -> Mapping[str, pd.DataF
     availability = cast(Mapping[str, Any], batch_context["model_availability"])
     if any(type(key) is not str or type(status) is not str for key, status in availability.items()):
         raise TrophicReferenceTargetsError("E4 model availability drifted")
-    if set(cast(Mapping[str, Any], batch_context["software_evidence"])) != {
-        "public_tests_xml", "test_report", "openapi", "openapi_contract_report",
-        "end_to_end_report", "environment",
-    }:
-        raise TrophicReferenceTargetsError("E4 software evidence keys drifted")
+    if cast(Mapping[str, Any], batch_context["software_evidence"]):
+        raise TrophicReferenceTargetsError("E4 received unrelated software evidence")
     return cast(Mapping[str, pd.DataFrame], tables)
 
 
@@ -225,11 +230,23 @@ def build_trophic_reference_targets(frame: pd.DataFrame) -> pd.DataFrame:
         "common_origin_id",
         "origin_year_month",
         "target_year_month",
+        "evaluation_cohort",
+        "evaluation_role",
     ):
         if frame[column].astype(str).str.len().eq(0).any():
             raise TrophicReferenceTargetsError(f"E4 reference identity drifted: {column}")
     if frame.duplicated(list(KEY_COLUMNS)).any():
         raise TrophicReferenceTargetsError("E4 future indicator keys are not unique")
+    if not frame["common_origin_id"].astype(str).str.fullmatch(r"[0-9a-f]{64}").all():
+        raise TrophicReferenceTargetsError("E4 common-origin identity is not canonical")
+    if (
+        not frame["source_id"].eq("wqp").all()
+        or not frame["evaluation_cohort"].eq("location_holdout").all()
+        or not frame["evaluation_role"].eq("test").all()
+    ):
+        raise TrophicReferenceTargetsError(
+            "E4 references are not restricted to locked location holdout test rows"
+        )
     horizons = pd.to_numeric(frame["horizon_months"], errors="coerce")
     if horizons.isna().any() or not horizons.isin([1, 2, 3]).all():
         raise TrophicReferenceTargetsError("E4 horizons are not exact 1/2/3")
@@ -244,6 +261,8 @@ def build_trophic_reference_targets(frame: pd.DataFrame) -> pd.DataFrame:
     )
     if not targets.equals(expected_targets):
         raise TrophicReferenceTargetsError("E4 reference is not from the prediction target month")
+    if not (targets > pd.Period("2021-12", freq="M")).all():
+        raise TrophicReferenceTargetsError("E4 reference is outside the sealed post-2021 outcome boundary")
     tp = _optional_nonnegative_numeric(frame, "future_TP_ugL")
     sd = _optional_nonnegative_numeric(frame, "future_secchi_depth_m")
     chla = _optional_nonnegative_numeric(frame, "future_chlorophyll_a_ugL")

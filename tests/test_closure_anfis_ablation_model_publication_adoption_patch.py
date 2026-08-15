@@ -253,6 +253,43 @@ def _record(path: Path, *, role: str) -> dict[str, Any]:
     }
 
 
+def _copy_regular_0644(source: Path, target: Path) -> None:
+    """Copy bytes with the historical mode and timestamps used by the bundle."""
+
+    source_metadata = source.stat()
+    target.write_bytes(source.read_bytes())
+    target.chmod(0o644)
+    os.utime(
+        target,
+        ns=(source_metadata.st_atime_ns, source_metadata.st_mtime_ns),
+        follow_symlinks=False,
+    )
+
+
+def _copy_normalized_anfis_family(repo_root: Path) -> int:
+    """Recreate the historical 0644 family independently of sandbox mount modes."""
+
+    for model_id, base_seed in precommit_artifacts.ANFIS_ABLATION_ORDERED_SLOTS:
+        for raw_path in precommit_artifacts._anfis_ablation_slot_final_paths(
+            model_id, base_seed
+        ):
+            source = ROOT / raw_path
+            target = repo_root / raw_path
+            target.parent.mkdir(parents=True, exist_ok=True)
+            _copy_regular_0644(source, target)
+
+    pointer_count = 0
+    for raw_path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS:
+        source = ROOT / raw_path
+        if not os.path.lexists(source):
+            continue
+        target = repo_root / raw_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        _copy_regular_0644(source, target)
+        pointer_count += 1
+    return pointer_count
+
+
 def _install_synthetic_adopted_a0(
     repo_root: Path, monkeypatch: pytest.MonkeyPatch
 ) -> Path:
@@ -636,7 +673,9 @@ def test_deferred_precommit_scopes_and_current_boundary_are_exact() -> None:
     )
 
 
-def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not() -> None:
+def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not(
+    tmp_path: Path,
+) -> None:
     assert (
         precommit_artifacts.DEFERRED_DVC_A0_LIGHT_PUBLICATION_COMMIT
         == LIGHT_PUBLICATION_COMMIT
@@ -664,16 +703,18 @@ def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not() -> No
     assert len(precommit_artifacts.ANFIS_ABLATION_MZ_TRACKED_LIGHT_PATHS) == 50
     assert precommit_artifacts.ANFIS_ABLATION_MZ_UNTRACKED_LIGHT_PATHS == ()
     precommit_artifacts._validate_anfis_ablation_mz_git_tracking(ROOT)
-    pointer_count = sum(
-        os.path.lexists(ROOT / path)
-        for path in precommit_artifacts.ANFIS_ABLATION_SELECTION_POINTER_PATHS
-    )
+    historical_root = tmp_path / "historical-anfis-family"
+    historical_root.mkdir()
+    pointer_count = _copy_normalized_anfis_family(historical_root)
     assert pointer_count in {0, 10}
     snapshot = precommit_artifacts.snapshot_anfis_ablation_family_bundle(
-        repo_root=ROOT, expected_pointer_count=pointer_count
+        repo_root=historical_root, expected_pointer_count=pointer_count
     )
     assert len(snapshot) == 80
-    assert all(record.nlink == 1 and record.ctime_ns > 0 for record in snapshot)
+    assert all(
+        record.mode == 0o644 and record.nlink == 1 and record.ctime_ns > 0
+        for record in snapshot
+    )
     assert replace(snapshot[0], nlink=2) != snapshot[0]
     assert replace(snapshot[0], ctime_ns=snapshot[0].ctime_ns + 1) != snapshot[0]
     with pytest.raises(
@@ -681,7 +722,7 @@ def test_tracked_light_publication_is_git_bound_and_heavy_finals_are_not() -> No
         match="exact pre/post registration pointer set",
     ):
         precommit_artifacts.snapshot_anfis_ablation_family_bundle(
-            repo_root=ROOT, expected_pointer_count=1
+            repo_root=historical_root, expected_pointer_count=1
         )
 
 
@@ -705,7 +746,9 @@ def test_my_registration_inventory_is_closed_without_expanding_general_inventory
     assert not set(registration) & set(general)
 
 
-def test_my_family_exclude_and_registration_cli_are_exact(tmp_path: Path) -> None:
+def test_my_family_exclude_and_registration_cli_are_exact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     exclude = tmp_path / "family-excludes"
     payload = "".join(
         f"{pattern}\n"
@@ -871,33 +914,33 @@ def test_my_family_exclude_and_registration_cli_are_exact(tmp_path: Path) -> Non
         "a912c374690215c7753070f68d7dfdaff8c1224b01c336aa887d6731a3bb2287",
         1,
     )
-    runtime_identity = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
-        repo_root=ROOT
+    historical_python = Path("/usr/bin/python3.14")
+    historical_python_sha256 = (
+        "2700be1aabe3687bd597f21b0eac3b9bbdf7417e93035255a9286c67935b59bd"
     )
-    expected_wrapper = (
-        precommit_artifacts.expected_anfis_ablation_dvc_wrapper_bytes(ROOT)
+    historical_git_sha256 = (
+        "93473c28694fd72bd889364107cd2770514de59780885a6a4aafca4d602e30ad"
     )
+    assert precommit_artifacts.ANFIS_ABLATION_DVC_PYTHON_TARGET == historical_python
+    assert precommit_artifacts.ANFIS_ABLATION_DVC_PYTHON_BYTES == 14_424
     assert (
-        runtime_identity.wrapper.size,
-        runtime_identity.wrapper.sha256,
-        runtime_identity.wrapper.nlink,
-    ) == (
-        len(expected_wrapper),
-        hashlib.sha256(expected_wrapper).hexdigest(),
-        1,
+        precommit_artifacts.ANFIS_ABLATION_DVC_PYTHON_SHA256
+        == historical_python_sha256
     )
-    assert runtime_identity.python_link.target == "/usr/bin/python3.14"
-    assert (
-        runtime_identity.python_target.size,
-        runtime_identity.python_target.sha256,
-        runtime_identity.git.size,
-        runtime_identity.git.sha256,
-    ) == (
-        14_424,
-        "2700be1aabe3687bd597f21b0eac3b9bbdf7417e93035255a9286c67935b59bd",
-        4_899_632,
-        "93473c28694fd72bd889364107cd2770514de59780885a6a4aafca4d602e30ad",
+    assert precommit_artifacts.ANFIS_ABLATION_GIT_BIN == Path("/usr/bin/git")
+    assert precommit_artifacts.ANFIS_ABLATION_GIT_BYTES == 4_899_632
+    assert precommit_artifacts.ANFIS_ABLATION_GIT_SHA256 == historical_git_sha256
+
+    live_python_identity = (
+        historical_python.stat().st_size,
+        hashlib.sha256(historical_python.read_bytes()).hexdigest(),
     )
+    if live_python_identity != (14_424, historical_python_sha256):
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="DVC Python interpreter drifted",
+        ):
+            precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(repo_root=ROOT)
     registration_source = inspect.getsource(
         precommit_artifacts._run_anfis_ablation_model_family_registration
     )
@@ -908,37 +951,88 @@ def test_my_family_exclude_and_registration_cli_are_exact(tmp_path: Path) -> Non
     runtime_probe = tmp_path / "runtime-probe"
     runtime_bin = runtime_probe / ".venv/bin"
     runtime_bin.mkdir(parents=True)
-    runtime_wrapper = runtime_bin / "dvc"
-    runtime_wrapper.write_bytes(
-        precommit_artifacts.expected_anfis_ablation_dvc_wrapper_bytes(
-            runtime_probe
+    sealed_runtime = tmp_path / "sealed-runtime"
+    sealed_runtime.mkdir()
+    synthetic_python = sealed_runtime / "python3.14"
+    synthetic_python.write_bytes(b"synthetic historical python runtime\n")
+    synthetic_python.chmod(0o755)
+    synthetic_git = sealed_runtime / "git"
+    synthetic_git.write_bytes(b"synthetic historical git runtime\n")
+    synthetic_git.chmod(0o755)
+
+    with monkeypatch.context() as synthetic_runtime:
+        synthetic_runtime.setattr(
+            precommit_artifacts,
+            "ANFIS_ABLATION_DVC_PYTHON_TARGET",
+            synthetic_python,
         )
-    )
-    runtime_wrapper.chmod(0o755)
-    (runtime_bin / "python").symlink_to(
-        precommit_artifacts.ANFIS_ABLATION_DVC_PYTHON_TARGET
-    )
-    runtime_before = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
-        repo_root=runtime_probe
-    )
-    wrapper_metadata = runtime_wrapper.stat()
-    os.utime(
-        runtime_wrapper,
-        ns=(wrapper_metadata.st_atime_ns, wrapper_metadata.st_mtime_ns + 1_000_000),
-    )
-    runtime_after = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
-        repo_root=runtime_probe
-    )
-    assert runtime_after != runtime_before
-    runtime_wrapper.write_bytes(b"#!/bin/false\n")
-    runtime_wrapper.chmod(0o755)
-    with pytest.raises(
-        precommit_artifacts.DeferredDvcTargetError,
-        match="DVC wrapper identity drifted",
-    ):
-        precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+        synthetic_runtime.setattr(
+            precommit_artifacts,
+            "ANFIS_ABLATION_DVC_PYTHON_BYTES",
+            synthetic_python.stat().st_size,
+        )
+        synthetic_runtime.setattr(
+            precommit_artifacts,
+            "ANFIS_ABLATION_DVC_PYTHON_SHA256",
+            hashlib.sha256(synthetic_python.read_bytes()).hexdigest(),
+        )
+        synthetic_runtime.setattr(
+            precommit_artifacts, "ANFIS_ABLATION_GIT_BIN", synthetic_git
+        )
+        synthetic_runtime.setattr(
+            precommit_artifacts,
+            "ANFIS_ABLATION_GIT_BYTES",
+            synthetic_git.stat().st_size,
+        )
+        synthetic_runtime.setattr(
+            precommit_artifacts,
+            "ANFIS_ABLATION_GIT_SHA256",
+            hashlib.sha256(synthetic_git.read_bytes()).hexdigest(),
+        )
+        synthetic_runtime.setattr(
+            precommit_artifacts.shutil,
+            "which",
+            lambda command: synthetic_git.as_posix() if command == "git" else None,
+        )
+        runtime_wrapper = runtime_bin / "dvc"
+        runtime_wrapper.write_bytes(
+            precommit_artifacts.expected_anfis_ablation_dvc_wrapper_bytes(
+                runtime_probe
+            )
+        )
+        runtime_wrapper.chmod(0o755)
+        (runtime_bin / "python").symlink_to(synthetic_python)
+        runtime_before = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
             repo_root=runtime_probe
         )
+        assert runtime_before.python_link.target == synthetic_python.as_posix()
+        assert runtime_before.python_target.sha256 == hashlib.sha256(
+            synthetic_python.read_bytes()
+        ).hexdigest()
+        assert runtime_before.git.sha256 == hashlib.sha256(
+            synthetic_git.read_bytes()
+        ).hexdigest()
+        wrapper_metadata = runtime_wrapper.stat()
+        os.utime(
+            runtime_wrapper,
+            ns=(
+                wrapper_metadata.st_atime_ns,
+                wrapper_metadata.st_mtime_ns + 1_000_000,
+            ),
+        )
+        runtime_after = precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+            repo_root=runtime_probe
+        )
+        assert runtime_after != runtime_before
+        runtime_wrapper.write_bytes(b"#!/bin/false\n")
+        runtime_wrapper.chmod(0o755)
+        with pytest.raises(
+            precommit_artifacts.DeferredDvcTargetError,
+            match="DVC wrapper identity drifted",
+        ):
+            precommit_artifacts.snapshot_anfis_ablation_dvc_runtime(
+                repo_root=runtime_probe
+            )
     config_probe = tmp_path / "config-probe"
     (config_probe / ".dvc").mkdir(parents=True)
     for raw_path in (

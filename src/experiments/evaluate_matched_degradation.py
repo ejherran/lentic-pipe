@@ -19,6 +19,7 @@ COMPONENT_ID = "E6_matched_degradation"
 STAGE_ID = "E6"
 RAW_TABLE = "degradation_raw_cells"
 PREDICTION_TABLE = "degradation_predictions"
+INTENT_TABLE = "intent_origins"
 SEEDS = (1729, 20260612, 20260613, 20260614, 314159)
 RAW_VARIABLES = ("mean_TP_ugL", "mean_TN_ugL", "mean_DO_mgL", "mean_pH", "mean_turbidity_NTU", "mean_secchi_depth_m", "mean_temperature_C")
 SCENARIOS = ("control", "mcar_10", "mcar_25", "mcar_50", "block_1m_10", "block_3m_10", "block_6m_25", "ablate_nutrients", "ablate_physchem", "ablate_light", "ablate_temperature", "combined_moderate", "combined_severe")
@@ -26,7 +27,131 @@ TARGET_EVENTS = ("bloom_h", "irc_alert_h")
 RAW_COLUMNS = ("source_id", "site_id", "holdout_group_id", "common_origin_id", "year_month", "horizon_months", "raw_variable", "value")
 PREDICTION_COLUMNS = ("scenario_id", "degradation_seed", "source_id", "site_id", "holdout_group_id", "common_origin_id", "horizon_months", "model_id", "model_seed", "target_event", "actual", "score", "threshold", "terminal_status", "mask_sha256")
 OUTPUT_PATHS = ("data/closure_v1/degradation_masks.parquet", "reports/closure_v1/06_degradation/matched_degradation_metrics.csv", "reports/closure_v1/06_degradation/matched_degradation_pairwise.csv", "reports/closure_v1/06_degradation/failure_registry.csv", "reports/closure_v1/06_degradation/robustness_auc.csv", "reports/closure_v1/06_degradation/matched_degradation_report.md")
-COMPONENT_CONTRACT = {"schema_version": "closure_e6_matched_degradation_v1", "component_id": COMPONENT_ID, "stage_id": STAGE_ID, "input_tables": [RAW_TABLE, PREDICTION_TABLE], "raw_columns": list(RAW_COLUMNS), "prediction_columns": list(PREDICTION_COLUMNS), "scenarios": list(SCENARIOS), "ordered_seed_slots": list(SEEDS), "target_events": list(TARGET_EVENTS), "raw_variables": list(RAW_VARIABLES), "mask_digest": "sha256_first8_big_endian_divide_2pow64", "mask_tuple": ["closure_v1", "E6", "scenario_id", "seed", "source_id", "site_id", "year_month", "variable"], "common_mask_models": ["M0", "P1"], "model_seed_cross_product": "forbidden", "m0_model_seed": 1729, "p1_seed_slot_pairing": "one_to_one", "derived_lineage_invalidation_before_transform": True, "refit_under_degradation": "forbidden", "output_paths": list(OUTPUT_PATHS), "filesystem_writes": "forbidden"}
+INTENT_COLUMNS = (
+    "source_id",
+    "site_id",
+    "holdout_group_id",
+    "common_origin_id",
+    "origin_year_month",
+    "target_year_month",
+    "horizon_months",
+    "evaluation_cohort",
+    "evaluation_role",
+    "time_role",
+)
+MASK_COLUMNS = (
+    "scenario_id",
+    "degradation_seed",
+    "source_id",
+    "site_id",
+    "holdout_group_id",
+    "common_origin_id",
+    "year_month",
+    "horizon_months",
+    "raw_variable",
+    "eligible",
+    "masked",
+    "realized_fraction",
+)
+METRIC_COLUMNS = (
+    "scenario_id",
+    "degradation_seed",
+    "horizon_months",
+    "target_event",
+    "model_id",
+    "model_seed",
+    "rows",
+    "site_count",
+    "pr_auc",
+    "brier",
+    "recall",
+    "f2",
+    "availability",
+    "failure_rate",
+)
+PAIRWISE_COLUMNS = (
+    "scenario_id",
+    "horizon_months",
+    "target_event",
+    "slot_count",
+    "delta_pr_auc_m0_minus_p1",
+    "delta_brier_m0_minus_p1",
+    "delta_recall_m0_minus_p1",
+    "delta_f2_m0_minus_p1",
+)
+FAILURE_COLUMNS = (
+    "scenario_id",
+    "horizon_months",
+    "target_event",
+    "evaluation_cohort",
+    "evaluation_role",
+    "terminal_status",
+    "missing_model_id",
+    "reason",
+    "intent_origin_count",
+    "site_count",
+    "holdout_group_count",
+    "ordered_seed_slot_count",
+    "intended_model_count",
+    "intended_prediction_row_count",
+    "available_prediction_row_count",
+    "estimable",
+)
+AUPD_COLUMNS = (
+    "model_id",
+    "model_seed",
+    "degradation_seed",
+    "horizon_months",
+    "target_event",
+    "degradation_family",
+    "metric",
+    "retention_orientation",
+    "aupd",
+)
+COMPONENT_CONTRACT = {
+    "schema_version": "closure_e6_matched_degradation_v2",
+    "component_id": COMPONENT_ID,
+    "stage_id": STAGE_ID,
+    "input_tables": [INTENT_TABLE],
+    "future_available_branch_input_tables": [RAW_TABLE, PREDICTION_TABLE],
+    "unavailable_branch_required_table": INTENT_TABLE,
+    "unavailable_branch_status": "completed_unavailable",
+    "unavailable_branch_family_b_cell_count": 78,
+    "unavailable_branch_nonempty_table": "failure_registry",
+    "unavailable_branch_empty_tables": [
+        "degradation_masks",
+        "matched_degradation_metrics",
+        "matched_degradation_pairwise",
+        "robustness_auc",
+    ],
+    "available_branch_currently_authorized": False,
+    "intent_columns": list(INTENT_COLUMNS),
+    "raw_columns": list(RAW_COLUMNS),
+    "prediction_columns": list(PREDICTION_COLUMNS),
+    "scenarios": list(SCENARIOS),
+    "ordered_seed_slots": list(SEEDS),
+    "target_events": list(TARGET_EVENTS),
+    "raw_variables": list(RAW_VARIABLES),
+    "mask_digest": "sha256_first8_big_endian_divide_2pow64",
+    "mask_tuple": [
+        "closure_v1",
+        "E6",
+        "scenario_id",
+        "seed",
+        "source_id",
+        "site_id",
+        "year_month",
+        "variable",
+    ],
+    "common_mask_models": ["M0", "P1"],
+    "model_seed_cross_product": "forbidden",
+    "m0_model_seed": 1729,
+    "p1_seed_slot_pairing": "one_to_one",
+    "derived_lineage_invalidation_before_transform": True,
+    "refit_under_degradation": "forbidden",
+    "output_paths": list(OUTPUT_PATHS),
+    "filesystem_writes": "forbidden",
+}
 
 
 class MatchedDegradationError(RuntimeError):
@@ -382,20 +507,201 @@ def _context(value: Mapping[str, Any]) -> tuple[Mapping[str, pd.DataFrame], Mapp
     availability = cast(Mapping[str, Any], value["model_availability"])
     if any(type(key) is not str or type(status) is not str for key, status in availability.items()):
         raise MatchedDegradationError("E6 model availability drifted")
-    if set(cast(Mapping[str, Any], value["software_evidence"])) != {
-        "public_tests_xml", "test_report", "openapi", "openapi_contract_report",
-        "end_to_end_report", "environment",
-    }:
-        raise MatchedDegradationError("E6 software evidence keys drifted")
+    if cast(Mapping[str, Any], value["software_evidence"]):
+        raise MatchedDegradationError("E6 received unrelated software evidence")
     return cast(Mapping[str, pd.DataFrame], tables), cast(Mapping[str, str], availability)
 
 
-def _unavailable_result(reason: str) -> dict[str, Any]:
-    empty = pd.DataFrame()
-    tables = {"degradation_masks": empty.copy(), "matched_degradation_metrics": empty.copy(), "matched_degradation_pairwise": empty.copy(), "failure_registry": pd.DataFrame([{"reason": reason}]), "robustness_auc": empty.copy()}
-    report = f"# Closure V1 E6 matched degradation\n\nStatus: unavailable\nReason: {reason}\n"
-    artifacts = {OUTPUT_PATHS[0]: {"format": "parquet", "payload": tables["degradation_masks"], "manifest_last": False}, OUTPUT_PATHS[1]: {"format": "csv", "payload": tables["matched_degradation_metrics"], "manifest_last": False}, OUTPUT_PATHS[2]: {"format": "csv", "payload": tables["matched_degradation_pairwise"], "manifest_last": False}, OUTPUT_PATHS[3]: {"format": "csv", "payload": tables["failure_registry"], "manifest_last": False}, OUTPUT_PATHS[4]: {"format": "csv", "payload": tables["robustness_auc"], "manifest_last": False}, OUTPUT_PATHS[5]: {"format": "markdown", "payload": report, "manifest_last": True}}
-    return {"component_id": COMPONENT_ID, "stage_id": STAGE_ID, "status": "completed_unavailable", "artifacts": artifacts, "tables": tables, "diagnostics": {"reason": reason, "refit_performed": False}, "outcome_paths_opened": True, "writes_performed": False}
+def _normalize_unavailable_intents(intents: pd.DataFrame) -> pd.DataFrame:
+    if tuple(intents.columns) != INTENT_COLUMNS or intents.empty:
+        raise MatchedDegradationError("E6 unavailable intent universe is not exact")
+    out = intents.copy(deep=True)
+    text_columns = [column for column in INTENT_COLUMNS if column != "horizon_months"]
+    for column in text_columns:
+        if out[column].isna().any():
+            raise MatchedDegradationError(f"E6 intent text is null: {column}")
+        out[column] = out[column].astype(str)
+        if out[column].eq("").any():
+            raise MatchedDegradationError(f"E6 intent text is empty: {column}")
+    horizon = pd.to_numeric(out["horizon_months"], errors="raise")
+    if not np.isfinite(horizon).all() or not np.equal(horizon, np.floor(horizon)).all():
+        raise MatchedDegradationError("E6 intent horizon is not exact integer")
+    out["horizon_months"] = horizon.astype("int64")
+    if set(out["horizon_months"]) != {1, 2, 3}:
+        raise MatchedDegradationError("E6 unavailable horizon universe drifted")
+    if (
+        not out["evaluation_cohort"].eq("location_holdout").all()
+        or not out["evaluation_role"].eq("test").all()
+    ):
+        raise MatchedDegradationError("E6 unavailable intents are not holdout/test only")
+    key = [
+        "source_id",
+        "site_id",
+        "holdout_group_id",
+        "common_origin_id",
+        "origin_year_month",
+        "target_year_month",
+        "horizon_months",
+    ]
+    if out.duplicated(key).any():
+        raise MatchedDegradationError("E6 unavailable intents contain duplicate rows")
+    base_key = [
+        "source_id",
+        "site_id",
+        "holdout_group_id",
+        "common_origin_id",
+        "origin_year_month",
+        "evaluation_cohort",
+        "evaluation_role",
+        "time_role",
+    ]
+    horizon_sets = out.groupby(base_key, sort=True, dropna=False)[
+        "horizon_months"
+    ].agg(lambda values: set(int(value) for value in values))
+    if horizon_sets.empty or any(values != {1, 2, 3} for values in horizon_sets):
+        raise MatchedDegradationError("E6 intent origins lack exact h1-h3 coverage")
+    try:
+        origins = pd.PeriodIndex(out["origin_year_month"], freq="M")
+        targets = pd.PeriodIndex(out["target_year_month"], freq="M")
+    except BaseException as exc:
+        raise MatchedDegradationError("E6 intent month dialect drifted") from exc
+    expected_targets = pd.PeriodIndex(
+        [
+            origin + int(horizon_months)
+            for origin, horizon_months in zip(
+                origins, out["horizon_months"], strict=True
+            )
+        ],
+        freq="M",
+    )
+    if not expected_targets.equals(targets):
+        raise MatchedDegradationError("E6 target month is not origin plus horizon")
+    return out.sort_values(key, kind="mergesort").reset_index(drop=True)
+
+
+def _empty_table(columns: tuple[str, ...]) -> pd.DataFrame:
+    return pd.DataFrame(columns=list(columns))
+
+
+def _unavailable_result(reason: str, intents: pd.DataFrame) -> dict[str, Any]:
+    normalized = _normalize_unavailable_intents(intents)
+    failures: list[dict[str, Any]] = []
+    for scenario_id in SCENARIOS:
+        for horizon_months in (1, 2, 3):
+            part = normalized[normalized["horizon_months"].eq(horizon_months)]
+            for target_event in TARGET_EVENTS:
+                failures.append(
+                    {
+                        "scenario_id": scenario_id,
+                        "horizon_months": horizon_months,
+                        "target_event": target_event,
+                        "evaluation_cohort": "location_holdout",
+                        "evaluation_role": "test",
+                        "terminal_status": "model_unavailable",
+                        "missing_model_id": "P1",
+                        "reason": reason,
+                        "intent_origin_count": int(len(part)),
+                        "site_count": int(
+                            part[["source_id", "site_id"]].drop_duplicates().shape[0]
+                        ),
+                        "holdout_group_count": int(
+                            part["holdout_group_id"].nunique(dropna=False)
+                        ),
+                        "ordered_seed_slot_count": len(SEEDS),
+                        "intended_model_count": 2,
+                        "intended_prediction_row_count": int(
+                            len(part) * len(SEEDS) * 2
+                        ),
+                        "available_prediction_row_count": 0,
+                        "estimable": False,
+                    }
+                )
+    failure_registry = pd.DataFrame(failures, columns=list(FAILURE_COLUMNS))
+    expected_cell_count = len(SCENARIOS) * 3 * len(TARGET_EVENTS)
+    if len(failure_registry) != expected_cell_count or expected_cell_count != 78:
+        raise MatchedDegradationError("E6 unavailable family-B ledger drifted")
+    tables = {
+        "degradation_masks": _empty_table(MASK_COLUMNS),
+        "matched_degradation_metrics": _empty_table(METRIC_COLUMNS),
+        "matched_degradation_pairwise": _empty_table(PAIRWISE_COLUMNS),
+        "failure_registry": failure_registry,
+        "robustness_auc": _empty_table(AUPD_COLUMNS),
+    }
+    intent_count = int(len(normalized))
+    base_origin_count = int(
+        normalized[
+            ["source_id", "site_id", "common_origin_id", "origin_year_month"]
+        ]
+        .drop_duplicates()
+        .shape[0]
+    )
+    site_count = int(normalized[["source_id", "site_id"]].drop_duplicates().shape[0])
+    report = "\n".join(
+        [
+            "# Closure V1 E6 matched degradation",
+            "",
+            "Status: completed_unavailable",
+            f"Reason: {reason}",
+            f"Locked h1-h3 intent rows retained: {intent_count}",
+            f"Distinct common origins retained: {base_origin_count}",
+            f"Holdout sites retained: {site_count}",
+            "Family-B non-estimable scenario/horizon/endpoint cells: 78",
+            "Masks, metrics, pairwise effects and robustness AUPD remain empty.",
+            "No model was refit and no missing model was replaced.",
+            "",
+        ]
+    )
+    artifacts = {
+        OUTPUT_PATHS[0]: {
+            "format": "parquet",
+            "payload": tables["degradation_masks"],
+            "manifest_last": False,
+        },
+        OUTPUT_PATHS[1]: {
+            "format": "csv",
+            "payload": tables["matched_degradation_metrics"],
+            "manifest_last": False,
+        },
+        OUTPUT_PATHS[2]: {
+            "format": "csv",
+            "payload": tables["matched_degradation_pairwise"],
+            "manifest_last": False,
+        },
+        OUTPUT_PATHS[3]: {
+            "format": "csv",
+            "payload": tables["failure_registry"],
+            "manifest_last": False,
+        },
+        OUTPUT_PATHS[4]: {
+            "format": "csv",
+            "payload": tables["robustness_auc"],
+            "manifest_last": False,
+        },
+        OUTPUT_PATHS[5]: {
+            "format": "markdown",
+            "payload": report,
+            "manifest_last": True,
+        },
+    }
+    return {
+        "component_id": COMPONENT_ID,
+        "stage_id": STAGE_ID,
+        "status": "completed_unavailable",
+        "artifacts": artifacts,
+        "tables": tables,
+        "diagnostics": {
+            "component_contract_sha256": component_contract_sha256(),
+            "reason": reason,
+            "intent_row_count": intent_count,
+            "common_origin_count": base_origin_count,
+            "site_count": site_count,
+            "family_b_cell_count": expected_cell_count,
+            "ordered_seed_slot_count": len(SEEDS),
+            "refit_performed": False,
+        },
+        "outcome_paths_opened": True,
+        "writes_performed": False,
+    }
 
 
 def execute_closure_sealed_batch_component(authority: Mapping[str, Any], sealed_batch_contract: Mapping[str, Any], batch_context: Mapping[str, Any], repo_root: Path | None = None) -> dict[str, Any]:
@@ -406,15 +712,25 @@ def execute_closure_sealed_batch_component(authority: Mapping[str, Any], sealed_
         cast(Mapping[str, Any], sealed_batch_contract.get("model_availability", {}))
     ):
         raise MatchedDegradationError("E6 model availability is not batch-bound")
-    if availability.get("M0") != "available" or availability.get("P1") != "available":
-        return _unavailable_result("M0_or_P1_model_unavailable_under_formal_lock")
-    raw, predictions = tables.get(RAW_TABLE), tables.get(PREDICTION_TABLE)
-    if type(raw) is not pd.DataFrame or type(predictions) is not pd.DataFrame:
-        raise MatchedDegradationError("E6 required logical tables are absent")
-    result = evaluate_matched_degradation(raw.copy(deep=True), predictions.copy(deep=True))
-    report = "# Closure V1 E6 matched degradation\n\nCommon raw-cell masks were shared exactly by M0 and P1; no model was refit.\n"
-    artifacts = {OUTPUT_PATHS[0]: {"format": "parquet", "payload": result["degradation_masks"], "manifest_last": False}, OUTPUT_PATHS[1]: {"format": "csv", "payload": result["matched_degradation_metrics"], "manifest_last": False}, OUTPUT_PATHS[2]: {"format": "csv", "payload": result["matched_degradation_pairwise"], "manifest_last": False}, OUTPUT_PATHS[3]: {"format": "csv", "payload": result["failure_registry"], "manifest_last": False}, OUTPUT_PATHS[4]: {"format": "csv", "payload": result["robustness_auc"], "manifest_last": False}, OUTPUT_PATHS[5]: {"format": "markdown", "payload": report, "manifest_last": True}}
-    return {"component_id": COMPONENT_ID, "stage_id": STAGE_ID, "status": "completed", "artifacts": artifacts, "tables": result, "diagnostics": {"scenario_count": len(SCENARIOS), "ordered_seed_slot_count": len(SEEDS), "common_mask_required": True, "refit_performed": False}, "outcome_paths_opened": True, "writes_performed": False}
+    if availability.get("M0") != "available" or availability.get("P1") != "unavailable":
+        raise MatchedDegradationError(
+            "E6 available/scientific branch is not authorized by the current formal lock"
+        )
+    intents = tables.get(INTENT_TABLE)
+    if type(intents) is not pd.DataFrame:
+        raise MatchedDegradationError("E6 locked intent universe is absent")
+    for table_name in (RAW_TABLE, PREDICTION_TABLE):
+        candidate = tables.get(table_name)
+        if candidate is not None and (
+            type(candidate) is not pd.DataFrame or not candidate.empty
+        ):
+            raise MatchedDegradationError(
+                f"E6 unavailable branch received forbidden scientific rows: {table_name}"
+            )
+    return _unavailable_result(
+        "M0_or_P1_model_unavailable_under_formal_lock",
+        intents,
+    )
 
 
 __all__ = ["MatchedDegradationError", "component_contract", "component_contract_sha256", "build_common_degradation_masks", "evaluate_matched_degradation", "preflight_closure_sealed_batch_component", "execute_closure_sealed_batch_component"]

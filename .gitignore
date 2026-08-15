@@ -292,6 +292,7 @@ AGENTS.md
 # parquet payloads through explicit DVC pointers.
 /data/closure_v1/*.parquet
 /data/closure_v1/**/*.parquet
+/data/closure_v1/locked_evaluation/phase3_runtime_weights.npz
 !/data/closure_v1/*.parquet.dvc
 !/data/closure_v1/**/*.parquet.dvc
 

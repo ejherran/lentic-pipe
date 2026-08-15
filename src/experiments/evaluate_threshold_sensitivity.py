@@ -1,12 +1,11 @@
-"""Pure Closure V1 E3 bloom-threshold sensitivity component.
+"""Pure Closure V1 E3 fixed-score bloom-threshold sensitivity component.
 
 E3 receives the locked, already-opened prediction surface from the sealed
-batch runner.  It never opens a path and never writes an artifact.  Temporal
-model scores are held fixed; for each predeclared Chl-a threshold, an
-independent Platt calibrator and decision threshold are fitted on validation
-rows only, then applied without refitting to the legacy-test and location-
-holdout rows.  Degenerate or unavailable model slots remain explicit instead
-of being replaced with synthetic predictions.
+batch runner.  It never opens a path, writes an artifact, fits a calibrator or
+selects a decision threshold.  The four predeclared Chl-a event definitions
+are evaluated against the exact same frozen bloom probabilities and alert
+thresholds.  The resulting non-primary rows are sensitivity diagnostics, not
+claims that the primary probabilities are calibrated for a different event.
 """
 
 from __future__ import annotations
@@ -21,7 +20,6 @@ from typing import Any, cast
 
 import numpy as np
 import pandas as pd
-from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import (
     average_precision_score,
     brier_score_loss,
@@ -38,8 +36,7 @@ RNG_SEED = 1729
 THRESHOLDS_UG_L = (25.0, 30.0, 33.0, 50.0)
 PRIMARY_THRESHOLD_UG_L = 30.0
 HORIZONS = (1, 2, 3)
-EVALUATION_COHORTS = ("legacy_development", "location_holdout")
-VALIDATION_ROLE = "validation"
+EVALUATION_COHORTS = ("location_holdout",)
 TEST_ROLE = "test"
 MODEL_PAIRS = (
     ("P1", "B1"),
@@ -83,8 +80,10 @@ PREDICTION_REQUIRED_COLUMNS = (
     "evaluation_cohort",
     "evaluation_role",
     "terminal_status",
-    "continuous_score",
-    "actual_value",
+    "bloom_status",
+    "bloom_probability",
+    "alert_threshold",
+    "actual_chla_ug_l",
 )
 OUTPUT_PATHS = (
     "reports/closure_v1/03_thresholds/threshold_prevalence.csv",
@@ -228,8 +227,8 @@ def _copy_context(batch_context: Mapping[str, Any]) -> dict[str, Any]:
         raise ClosureThresholdSensitivityError("E3 availability mapping is malformed")
     if not isinstance(software_evidence_raw, Mapping):
         raise ClosureThresholdSensitivityError("E3 software evidence is malformed")
-    if set(software_evidence_raw) != SOFTWARE_EVIDENCE_KEYS:
-        raise ClosureThresholdSensitivityError("E3 software evidence keys drifted")
+    if software_evidence_raw:
+        raise ClosureThresholdSensitivityError("E3 received unrelated software evidence")
     tables: dict[str, pd.DataFrame] = {}
     for key, frame in tables_raw.items():
         if type(key) is not str or not key or not isinstance(frame, pd.DataFrame):
@@ -280,6 +279,7 @@ def _prediction_frame(frame: pd.DataFrame) -> pd.DataFrame:
         "evaluation_cohort",
         "evaluation_role",
         "terminal_status",
+        "bloom_status",
     )
     for column in text_columns:
         if value[column].isna().any() or (value[column].astype(str).str.len() == 0).any():
@@ -293,27 +293,50 @@ def _prediction_frame(frame: pd.DataFrame) -> pd.DataFrame:
     duplicate_columns = [*PREDICTION_KEY_COLUMNS, "evaluation_role"]
     if value.duplicated(duplicate_columns).any():
         raise ClosureThresholdSensitivityError("E3 duplicate prediction rows")
-    if not set(EVALUATION_COHORTS).issubset(set(value["evaluation_cohort"])):
-        raise ClosureThresholdSensitivityError("E3 evaluation cohorts are incomplete")
-    if VALIDATION_ROLE not in set(value["evaluation_role"]):
-        raise ClosureThresholdSensitivityError("E3 validation role is absent")
-    if not value["evaluation_role"].isin([VALIDATION_ROLE, TEST_ROLE]).all():
+    if set(value["evaluation_cohort"]) != {"location_holdout"}:
+        raise ClosureThresholdSensitivityError(
+            "E3 is not restricted to the locked location holdout"
+        )
+    if not value["evaluation_role"].eq(TEST_ROLE).all():
         raise ClosureThresholdSensitivityError("E3 evaluation role drifted")
-    value["continuous_score"] = pd.to_numeric(value["continuous_score"], errors="coerce")
-    value["actual_value"] = pd.to_numeric(value["actual_value"], errors="coerce")
-    success = value["terminal_status"].eq("success")
-    if value.loc[success, ["continuous_score", "actual_value"]].isna().any().any():
+    for column in ("bloom_probability", "alert_threshold", "actual_chla_ug_l"):
+        value[column] = pd.to_numeric(value[column], errors="coerce")
+    endpoint_statuses = {
+        "success",
+        "input_ineligible",
+        "target_unavailable",
+        "model_unavailable",
+        "numerical_failure",
+        "infrastructure_failure",
+        "not_applicable",
+    }
+    if not value["bloom_status"].isin(endpoint_statuses).all():
+        raise ClosureThresholdSensitivityError("E3 bloom endpoint status drifted")
+    success = value["bloom_status"].eq("success")
+    if value.loc[
+        success, ["bloom_probability", "alert_threshold", "actual_chla_ug_l"]
+    ].isna().any().any():
         raise ClosureThresholdSensitivityError("E3 successful prediction is incomplete")
-    finite = value.loc[success, ["continuous_score", "actual_value"]].to_numpy(
-        dtype="float64"
-    )
-    if finite.size and not np.isfinite(finite).all():
+    finite = value.loc[
+        success, ["bloom_probability", "alert_threshold", "actual_chla_ug_l"]
+    ].to_numpy(dtype="float64")
+    if (
+        finite.size
+        and not np.isfinite(finite).all()
+        or not value.loc[success, "bloom_probability"].between(0.0, 1.0).all()
+        or not value.loc[success, "alert_threshold"].between(0.0, 1.0).all()
+        or (value.loc[success, "actual_chla_ug_l"] < 0.0).any()
+    ):
         raise ClosureThresholdSensitivityError("E3 successful values are nonfinite")
-    for model_id, status in value.groupby("model_id", sort=True)["terminal_status"]:
+    if value.loc[~success, ["bloom_probability", "alert_threshold"]].notna().any().any():
+        raise ClosureThresholdSensitivityError(
+            "E3 unavailable bloom endpoints contain invented values"
+        )
+    for model_id, status in value.groupby("model_id", sort=True)["bloom_status"]:
         expected = cast(str, model_id)
         if status.eq("success").any():
             continue
-        if not status.eq("model_unavailable").all():
+        if not status.isin(["model_unavailable", "not_applicable"]).all():
             raise ClosureThresholdSensitivityError(
                 f"E3 unavailable terminal dialect drifted: {expected}"
             )
@@ -329,41 +352,17 @@ def _target_surface(predictions: pd.DataFrame) -> pd.DataFrame:
         "evaluation_cohort",
         "evaluation_role",
     ]
-    available = predictions.loc[predictions["actual_value"].notna(), [*identity, "actual_value"]]
+    available = predictions.loc[
+        predictions["actual_chla_ug_l"].notna(), [*identity, "actual_chla_ug_l"]
+    ]
     if available.empty:
         raise ClosureThresholdSensitivityError("E3 has no locked continuous outcomes")
-    consistency = available.groupby(identity, sort=True, dropna=False)["actual_value"].nunique()
+    consistency = available.groupby(identity, sort=True, dropna=False)[
+        "actual_chla_ug_l"
+    ].nunique()
     if (consistency != 1).any():
         raise ClosureThresholdSensitivityError("E3 locked outcome drifted across models")
     return available.drop_duplicates(identity).sort_values(identity, kind="mergesort").reset_index(drop=True)
-
-
-def _fit_calibrator(
-    scores: np.ndarray, labels: np.ndarray
-) -> tuple[LogisticRegression, float] | None:
-    if scores.size == 0 or np.unique(labels).size != 2:
-        return None
-    estimator = LogisticRegression(
-        C=1.0,
-        fit_intercept=True,
-        max_iter=1000,
-        random_state=RNG_SEED,
-        solver="lbfgs",
-        tol=1e-12,
-    )
-    estimator.fit(scores.reshape(-1, 1), labels)
-    calibrated = estimator.predict_proba(scores.reshape(-1, 1))[:, 1]
-    candidates = np.unique(np.concatenate(([0.0], calibrated, [1.0])))
-    best_score = -1.0
-    best_threshold = 1.0
-    for candidate in candidates:
-        score = float(
-            fbeta_score(labels, calibrated >= candidate, beta=2.0, zero_division=0)
-        )
-        if score > best_score or (score == best_score and candidate > best_threshold):
-            best_score = score
-            best_threshold = float(candidate)
-    return estimator, best_threshold
 
 
 def _calibration_curve(labels: np.ndarray, probabilities: np.ndarray) -> list[dict[str, Any]]:
@@ -393,7 +392,7 @@ def _prevalence_table(targets: pd.DataFrame) -> pd.DataFrame:
     for key, group in targets.groupby(group_columns, sort=True):
         key_values = cast(tuple[Any, ...], key)
         for threshold in THRESHOLDS_UG_L:
-            positive = group["actual_value"].to_numpy(dtype="float64") >= threshold
+            positive = group["actual_chla_ug_l"].to_numpy(dtype="float64") > threshold
             positive_sites = group.loc[positive, ["source_id", "site_id"]].drop_duplicates()
             rows.append(
                 {
@@ -420,23 +419,11 @@ def _evaluate_thresholds(
         key_values = cast(tuple[Any, ...], key)
         model_id = str(key_values[0])
         model_available = availability.get(model_id) == "available"
-        validation = group.loc[
-            group["evaluation_role"].eq(VALIDATION_ROLE)
-            & group["terminal_status"].eq("success")
-        ]
         tests = group.loc[group["evaluation_role"].eq(TEST_ROLE)].copy()
         for threshold in THRESHOLDS_UG_L:
-            fitted: tuple[LogisticRegression, float] | None = None
-            if model_available and not validation.empty:
-                labels = (
-                    validation["actual_value"].to_numpy(dtype="float64") >= threshold
-                ).astype("int64")
-                fitted = _fit_calibrator(
-                    validation["continuous_score"].to_numpy(dtype="float64"), labels
-                )
             for cohort in EVALUATION_COHORTS:
                 cohort_rows = tests.loc[tests["evaluation_cohort"].eq(cohort)].copy()
-                successful = cohort_rows.loc[cohort_rows["terminal_status"].eq("success")]
+                successful = cohort_rows.loc[cohort_rows["bloom_status"].eq("success")]
                 base = {
                     **dict(zip(identity, key_values, strict=True)),
                     "threshold_ug_l": threshold,
@@ -459,17 +446,26 @@ def _evaluate_thresholds(
                     base["terminal_status"] = "model_unavailable"
                     metrics.append(base)
                     continue
-                if fitted is None or successful.empty:
-                    base["terminal_status"] = "calibration_unavailable"
+                if successful.empty:
+                    observed = sorted(set(cohort_rows["bloom_status"].astype(str)))
+                    base["terminal_status"] = (
+                        observed[0] if len(observed) == 1 else "endpoint_unavailable"
+                    )
                     metrics.append(base)
                     continue
-                estimator, decision_threshold = fitted
+                thresholds = successful["alert_threshold"].drop_duplicates()
+                if len(thresholds) != 1:
+                    raise ClosureThresholdSensitivityError(
+                        "E3 fixed alert threshold drifted within a model slot"
+                    )
+                decision_threshold = float(thresholds.iloc[0])
                 labels = (
-                    successful["actual_value"].to_numpy(dtype="float64") >= threshold
+                    successful["actual_chla_ug_l"].to_numpy(dtype="float64")
+                    > threshold
                 ).astype("int64")
-                probabilities = estimator.predict_proba(
-                    successful["continuous_score"].to_numpy(dtype="float64").reshape(-1, 1)
-                )[:, 1]
+                probabilities = successful["bloom_probability"].to_numpy(
+                    dtype="float64"
+                )
                 alerts = probabilities >= decision_threshold
                 base.update(
                     {
@@ -513,7 +509,7 @@ def _evaluate_thresholds(
                 ].copy()
                 scored["threshold_ug_l"] = threshold
                 scored["actual_bloom"] = labels
-                scored["calibrated_probability"] = probabilities
+                scored["fixed_probability"] = probabilities
                 scored["decision_threshold"] = decision_threshold
                 scored["alert"] = alerts.astype("int64")
                 scored_rows.append(scored)
@@ -536,7 +532,7 @@ def _evaluate_thresholds(
                 "evaluation_cohort",
                 "threshold_ug_l",
                 "actual_bloom",
-                "calibrated_probability",
+                "fixed_probability",
                 "decision_threshold",
                 "alert",
             ]
@@ -545,24 +541,86 @@ def _evaluate_thresholds(
     return metric_frame, scored_frame
 
 
+def _paired_binary_metrics(frame: pd.DataFrame, *, suffix: str) -> dict[str, float | None]:
+    labels = frame["actual_bloom"].to_numpy(dtype="int64")
+    probabilities = frame[f"fixed_probability_{suffix}"].to_numpy(dtype="float64")
+    alerts = frame[f"alert_{suffix}"].to_numpy(dtype="int64")
+    return {
+        "pr_auc": (
+            float(average_precision_score(labels, probabilities))
+            if np.unique(labels).size == 2
+            else None
+        ),
+        "brier": float(brier_score_loss(labels, probabilities)),
+        "recall": float(recall_score(labels, alerts, zero_division=0)),
+        "precision": float(precision_score(labels, alerts, zero_division=0)),
+        "f2": float(fbeta_score(labels, alerts, beta=2.0, zero_division=0)),
+        "alert_rate": float(np.mean(alerts)),
+    }
+
+
 def _pairwise_differences(metrics: pd.DataFrame, scored: pd.DataFrame) -> pd.DataFrame:
     rows: list[dict[str, Any]] = []
     key_columns = ["threshold_ug_l", "horizon_months", "evaluation_cohort"]
     for key, metric_group in metrics.groupby(key_columns, sort=True):
         key_values = cast(tuple[Any, ...], key)
         for left_model, right_model in MODEL_PAIRS:
-            slots = sorted(
-                set(
-                    metric_group.loc[
-                        metric_group["model_id"].isin([left_model, right_model]),
-                        "seed_slot",
-                    ].astype("int64")
-                )
-            )
+            slots = sorted(set(metric_group["seed_slot"].astype("int64")))
             if not slots:
                 slots = [RNG_SEED]
             for seed_slot in slots:
-                seed_group = metric_group.loc[metric_group["seed_slot"].eq(seed_slot)]
+                surface = scored.loc[
+                    scored["threshold_ug_l"].eq(key_values[0])
+                    & scored["horizon_months"].eq(key_values[1])
+                    & scored["evaluation_cohort"].eq(key_values[2])
+                    & scored["seed_slot"].eq(seed_slot)
+                ]
+                join_columns = [
+                    "source_id",
+                    "site_id",
+                    "common_origin_id",
+                    "horizon_months",
+                    "seed_slot",
+                    "evaluation_cohort",
+                    "threshold_ug_l",
+                    "actual_bloom",
+                ]
+                value_columns = [
+                    *join_columns,
+                    "fixed_probability",
+                    "decision_threshold",
+                    "alert",
+                ]
+                left_rows = surface.loc[
+                    surface["model_id"].eq(left_model), value_columns
+                ]
+                right_rows = surface.loc[
+                    surface["model_id"].eq(right_model), value_columns
+                ]
+                if left_rows.duplicated(join_columns).any() or right_rows.duplicated(
+                    join_columns
+                ).any():
+                    raise ClosureThresholdSensitivityError(
+                        "E3 paired fixed-score keys are duplicated"
+                    )
+                paired = left_rows.merge(
+                    right_rows,
+                    on=join_columns,
+                    how="inner",
+                    validate="one_to_one",
+                    suffixes=("_left", "_right"),
+                )
+                paired_count = len(paired)
+                left_metrics = (
+                    _paired_binary_metrics(paired, suffix="left")
+                    if paired_count
+                    else {}
+                )
+                right_metrics = (
+                    _paired_binary_metrics(paired, suffix="right")
+                    if paired_count
+                    else {}
+                )
                 for metric in (
                     "pr_auc",
                     "brier",
@@ -571,34 +629,13 @@ def _pairwise_differences(metrics: pd.DataFrame, scored: pd.DataFrame) -> pd.Dat
                     "f2",
                     "alert_rate",
                 ):
-                    left = seed_group.loc[seed_group["model_id"].eq(left_model), metric]
-                    right = seed_group.loc[seed_group["model_id"].eq(right_model), metric]
+                    left_value = left_metrics.get(metric)
+                    right_value = right_metrics.get(metric)
                     estimable = bool(
-                        len(left) == 1
-                        and len(right) == 1
-                        and pd.notna(left.iloc[0])
-                        and pd.notna(right.iloc[0])
+                        paired_count
+                        and left_value is not None
+                        and right_value is not None
                     )
-                    paired_count = 0
-                    if not scored.empty:
-                        surface = scored.loc[
-                            scored["threshold_ug_l"].eq(key_values[0])
-                            & scored["horizon_months"].eq(key_values[1])
-                            & scored["evaluation_cohort"].eq(key_values[2])
-                            & scored["seed_slot"].eq(seed_slot)
-                            & scored["model_id"].isin([left_model, right_model])
-                        ]
-                        paired_count = int(
-                            surface.groupby(
-                                ["source_id", "site_id", "common_origin_id"],
-                                sort=True,
-                            )["model_id"]
-                            .nunique()
-                            .eq(2)
-                            .sum()
-                        )
-                    left_value = float(cast(Any, left.iloc[0])) if estimable else None
-                    right_value = float(cast(Any, right.iloc[0])) if estimable else None
                     rows.append(
                         {
                             **dict(zip(key_columns, key_values, strict=True)),
@@ -613,8 +650,8 @@ def _pairwise_differences(metrics: pd.DataFrame, scored: pd.DataFrame) -> pd.Dat
                                 if estimable
                                 else None
                             ),
-                            "paired_origin_count": paired_count,
-                            "estimable": bool(estimable and paired_count > 0),
+                            "paired_origin_count": int(paired_count),
+                            "estimable": estimable,
                         }
                     )
     result = pd.DataFrame(rows)
@@ -757,16 +794,18 @@ def _report(
     severe_positives = int(severe["positive_count"].sum())
     return (
         "# Closure V1 E3 threshold sensitivity\n\n"
-        "Temporal scores were held fixed. Independent Platt calibrators and "
-        "decision thresholds were fitted on validation rows only.\n\n"
+        "Bloom probabilities and alert thresholds were held fixed exactly as "
+        "sealed before E0-U; no calibration, threshold selection, or refit was "
+        "performed. Alternative Chl-a cutoffs only relabel the locked outcomes.\n\n"
         f"- predeclared thresholds: {', '.join(str(int(v)) for v in THRESHOLDS_UG_L)} ug/L\n"
         f"- terminal unavailable metric rows retained: {unavailable}\n"
         f"- estimable paired comparisons: {estimable_pairs}\n"
         f"- comparison groups with sign stable in at least 3/4 thresholds: {robust_pair_groups}\n"
         f"- estimable Kendall comparisons: {estimable_ranks}\n"
-        f"- observed positives at 50 ug/L across reported cohorts: {severe_positives}\n"
+        f"- observed positives at 50 ug/L in the location holdout: {severe_positives}\n"
         "- P0/P1/A2 are never replaced by another model.\n"
-        "- B2 threshold-specific retraining is not performed in this primary fixed-score analysis.\n"
+        "- probabilities at non-primary cutoffs are sensitivity diagnostics, not newly calibrated forecasts.\n"
+        "- B2 threshold-specific retraining is not performed.\n"
         "- A sparse 50 ug/L endpoint is reported as imprecise, never removed post hoc.\n"
     )
 
@@ -887,7 +926,10 @@ def execute_closure_sealed_batch_component(
             "thresholds_ug_l": list(THRESHOLDS_UG_L),
             "primary_threshold_ug_l": PRIMARY_THRESHOLD_UG_L,
             "model_scores_refit": False,
-            "validation_only_calibration": True,
+            "calibrator_fit_performed": False,
+            "decision_threshold_selection_performed": False,
+            "fixed_probability_sensitivity_only": True,
+            "evaluation_cohort": "location_holdout",
             "b2_secondary_retraining_performed": False,
             "writes_performed": False,
         },

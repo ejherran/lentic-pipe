@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import xml.etree.ElementTree as ET
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -60,6 +61,17 @@ OUTPUT_PATHS = (
     "reports/closure_v1/10_api/end_to_end_report.md",
     "reports/closure_v1/10_api/environment.json",
 )
+EXPECTED_DVC_POINTER_PATHS = (
+    "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+    "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+    "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+    "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+)
+EXPECTED_E2E_TEST_NODES = (
+    "tests/test_api_predictions_alerts.py::test_api_exposes_current_state_predictions_and_alerts",
+    "tests/test_api_counterfactual_simulation.py::test_api_runs_minimal_current_state_counterfactual",
+    "tests/test_api_run_artifacts.py::test_api_lists_previews_and_summarizes_run_artifacts",
+)
 COMPONENT_CONTRACT = MappingProxyType(
     {
         "schema_version": "closure_e10_evidence_matrix_component_v1",
@@ -73,6 +85,16 @@ COMPONENT_CONTRACT = MappingProxyType(
         "critical_skips": "zero_or_explicitly_justified",
         "openapi_contract_valid": True,
         "end_to_end_success": True,
+        "source_evidence_commit_binding": "exact_phase3_code_commit_H",
+        "junit_commit_property_required": True,
+        "openapi_document_report_hash_binding_required": True,
+        "public_test_database": "postgresql_asyncpg_explicit_no_skip",
+        "dvc_restore": "offline_exact4_input_only_pointers",
+        "filesystem_isolation": (
+            "bubblewrap_materialized_exact_H_snapshot_read_only_with_direct_"
+            "and_opaque_masks"
+        ),
+        "synthetic_e2e_fixture": "external_non_closure_outcome",
         "operational_commands": "forbidden_in_component",
         "git_tagging": "external_evidence_only",
         "output_paths": list(OUTPUT_PATHS),
@@ -108,6 +130,32 @@ def _canonical_json_bytes(value: Any) -> bytes:
     ).encode("utf-8")
 
 
+def _pretty_json_bytes(value: Any) -> bytes:
+    return (
+        json.dumps(
+            _plain_json(value),
+            indent=2,
+            sort_keys=True,
+            ensure_ascii=False,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+
+
+def _require_sha256(value: Any, *, context: str) -> str:
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
+        raise ClosureEvidenceMatrixError(f"{context} SHA-256 is malformed")
+    return value
+
+
+def _require_h_commit(authority: Mapping[str, Any]) -> str:
+    value = authority.get("phase3_code_commit")
+    if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{40}", value) is None:
+        raise ClosureEvidenceMatrixError("phase3 code commit H is absent")
+    return value
+
+
 def component_contract() -> dict[str, Any]:
     return cast(dict[str, Any], json.loads(_canonical_json_bytes(COMPONENT_CONTRACT)))
 
@@ -135,7 +183,9 @@ def _require_mapping(value: Any, *, context: str) -> Mapping[str, Any]:
     return cast(Mapping[str, Any], value)
 
 
-def _validate_junit(value: Any) -> tuple[str | bytes, dict[str, int]]:
+def _validate_junit(
+    value: Any, *, expected_h_commit: str
+) -> tuple[str | bytes, dict[str, int]]:
     if not isinstance(value, (str, bytes)):
         raise ClosureEvidenceMatrixError("public_tests_xml must be UTF-8 XML")
     try:
@@ -163,6 +213,25 @@ def _validate_junit(value: Any) -> tuple[str | bytes, dict[str, int]]:
             if parsed < 0:
                 raise ClosureEvidenceMatrixError("JUnit counters must be nonnegative")
             totals[name] += parsed
+        closure_properties = [
+            node
+            for node in suite.findall("./properties/property")
+            if node.attrib.get("name")
+            in {"closure.repository_commit", "closure.outcome_guard"}
+        ]
+        if len(closure_properties) != 2:
+            raise ClosureEvidenceMatrixError(
+                "JUnit Closure commit/guard properties are not exact"
+            )
+        properties = {
+            str(node.attrib.get("name")): str(node.attrib.get("value"))
+            for node in closure_properties
+        }
+        if properties != {
+            "closure.repository_commit": expected_h_commit,
+            "closure.outcome_guard": "enabled_no_access",
+        }:
+            raise ClosureEvidenceMatrixError("JUnit is not bound to exact H")
     if totals["tests"] <= 0 or totals["failures"] != 0 or totals["errors"] != 0:
         raise ClosureEvidenceMatrixError("public suite has failures, errors, or no tests")
     return value, totals
@@ -177,7 +246,7 @@ def _markdown_from_record(title: str, value: Any) -> tuple[str, Mapping[str, Any
 
 
 def _validate_test_report(
-    value: Any, *, junit_totals: Mapping[str, int]
+    value: Any, *, junit_totals: Mapping[str, int], expected_h_commit: str
 ) -> tuple[str, Mapping[str, Any]]:
     markdown, record = _markdown_from_record("test_report", value)
     required = {
@@ -206,10 +275,21 @@ def _validate_test_report(
         raise ClosureEvidenceMatrixError("critical skip justification must be boolean")
     if junit_totals["skipped"] and not justified:
         raise ClosureEvidenceMatrixError("public suite contains unjustified skips")
+    markers = (
+        f"Repository commit (H): `{expected_h_commit}`",
+        "Exact suite command:",
+        "poetry",
+        "pytest",
+        "- Critical skips: `0`",
+        "Target/outcome guard: enabled",
+        "no Closure target or outcome path opened",
+    )
+    if any(marker not in markdown for marker in markers):
+        raise ClosureEvidenceMatrixError("test_report H/command/outcome binding drifted")
     return markdown, record
 
 
-def _validate_openapi(value: Any) -> Mapping[str, Any]:
+def _validate_openapi(value: Any, *, expected_h_commit: str) -> Mapping[str, Any]:
     document = _require_mapping(value, context="openapi")
     version = document.get("openapi")
     paths = document.get("paths")
@@ -217,36 +297,169 @@ def _validate_openapi(value: Any) -> Mapping[str, Any]:
         raise ClosureEvidenceMatrixError("OpenAPI version is not 3.x")
     if not isinstance(paths, Mapping) or not paths:
         raise ClosureEvidenceMatrixError("OpenAPI paths are absent")
+    if document.get("x-closure-e10-source-evidence") != {
+        "evidence_role": "openapi",
+        "outcome_paths_opened": False,
+        "private_full_opened": False,
+        "repository_commit": expected_h_commit,
+    }:
+        raise ClosureEvidenceMatrixError("OpenAPI is not bound to exact H")
+    operation_ids: list[str] = []
+    for path, path_item in paths.items():
+        if not isinstance(path, str) or not isinstance(path_item, Mapping):
+            raise ClosureEvidenceMatrixError("OpenAPI path item is malformed")
+        for method, operation in path_item.items():
+            if method not in {"get", "post", "put", "patch", "delete", "head", "options"}:
+                continue
+            if not isinstance(operation, Mapping):
+                raise ClosureEvidenceMatrixError("OpenAPI operation is malformed")
+            operation_id = operation.get("operationId")
+            if not isinstance(operation_id, str) or not operation_id:
+                raise ClosureEvidenceMatrixError("OpenAPI operationId is absent")
+            operation_ids.append(operation_id)
+    if not operation_ids or len(operation_ids) != len(set(operation_ids)):
+        raise ClosureEvidenceMatrixError("OpenAPI operationId registry drifted")
     _canonical_json_bytes(document)
     return document
 
 
-def _validate_contract_report(value: Any) -> tuple[str, Mapping[str, Any]]:
+def _validate_contract_report(
+    value: Any,
+    *,
+    expected_h_commit: str,
+    openapi: Mapping[str, Any],
+) -> tuple[str, Mapping[str, Any]]:
     markdown, record = _markdown_from_record("openapi_contract_report", value)
     if set(record) != {"status", "valid", "markdown"}:
         raise ClosureEvidenceMatrixError("openapi_contract_report keys are not exact")
     if record.get("status") != "passed" or record.get("valid") is not True:
         raise ClosureEvidenceMatrixError("OpenAPI contract validation did not pass")
+    openapi_sha256 = hashlib.sha256(_pretty_json_bytes(openapi)).hexdigest()
+    markers = (
+        f"Repository commit (H): `{expected_h_commit}`",
+        "- Status: `passed`",
+        f"- OpenAPI SHA-256: `{openapi_sha256}`",
+        "- Missing documented operations: `0`",
+        "- Unique operation IDs: `true`",
+        "- Exact path parameters: `true`",
+        "`docs/API_PROTOCOL.md`",
+        "`docs/API_DATASET_CONTRACT.md`",
+    )
+    if any(marker not in markdown for marker in markers):
+        raise ClosureEvidenceMatrixError(
+            "OpenAPI contract report/document binding drifted"
+        )
     return markdown, record
 
 
-def _validate_e2e(value: Any) -> tuple[str, Mapping[str, Any]]:
+def _validate_e2e(
+    value: Any, *, expected_h_commit: str
+) -> tuple[str, Mapping[str, Any]]:
     markdown, record = _markdown_from_record("end_to_end_report", value)
     if set(record) != {"status", "workflow_successful", "markdown"}:
         raise ClosureEvidenceMatrixError("end_to_end_report keys are not exact")
     if record.get("status") != "passed" or record.get("workflow_successful") is not True:
         raise ClosureEvidenceMatrixError("end-to-end workflow did not pass")
+    markers = (
+        f"Repository commit (H): `{expected_h_commit}`",
+        "Exact suite command:",
+        "- Tests: `3`",
+        "- Failures/errors/skips: `0/0/0`",
+        "synthetic_external_non_closure_outcome",
+        "no WQP holdout membership",
+        "Closure targets, future outcomes, outcome access log, and `private/FULL.md`: not opened",
+        *EXPECTED_E2E_TEST_NODES,
+    )
+    if any(marker not in markdown for marker in markers):
+        raise ClosureEvidenceMatrixError("end-to-end H/fixture/command binding drifted")
     return markdown, record
 
 
-def _validate_environment(value: Any) -> Mapping[str, Any]:
+def _validate_command_record(value: Any, *, context: str) -> Mapping[str, Any]:
+    record = _require_mapping(value, context=context)
+    required = {
+        "argv",
+        "returncode",
+        "stdout_sha256",
+        "stderr_sha256",
+        "stdout_line_count",
+        "stderr_line_count",
+        "environment_overrides",
+        "timeout_seconds",
+    }
+    if set(record) != required:
+        raise ClosureEvidenceMatrixError(f"{context} command record is not exact")
+    argv = record.get("argv")
+    if (
+        not isinstance(argv, list)
+        or not argv
+        or not all(isinstance(item, str) and item for item in argv)
+        or record.get("returncode") != 0
+        or type(record.get("returncode")) is not int
+    ):
+        raise ClosureEvidenceMatrixError(f"{context} command did not pass")
+    _require_sha256(record.get("stdout_sha256"), context=f"{context} stdout")
+    _require_sha256(record.get("stderr_sha256"), context=f"{context} stderr")
+    if any(
+        type(record.get(key)) is not int or cast(int, record[key]) < 0
+        for key in ("stdout_line_count", "stderr_line_count")
+    ):
+        raise ClosureEvidenceMatrixError(f"{context} line counts drifted")
+    if (
+        not isinstance(record.get("environment_overrides"), Mapping)
+        or type(record.get("timeout_seconds")) is not int
+        or cast(int, record["timeout_seconds"]) <= 0
+    ):
+        raise ClosureEvidenceMatrixError(f"{context} execution metadata drifted")
+    return record
+
+
+def _validate_repository_state(value: Any, *, expected_h_commit: str) -> Mapping[str, Any]:
+    state = _require_mapping(value, context="H repository state")
+    refs = _require_mapping(state.get("refs"), context="H repository refs")
+    builder = _require_mapping(
+        state.get("builder_source"), context="H evidence builder source"
+    )
+    if (
+        state.get("repository_commit") != expected_h_commit
+        or state.get("branch") != "main"
+        or state.get("clean_worktree") is not True
+        or not refs
+        or set(refs.values()) != {expected_h_commit}
+        or builder.get("path")
+        != "src/experiments/build_closure_e10_source_evidence.py"
+        or builder.get("physical_equals_h_blob") is not True
+        or type(builder.get("bytes")) is not int
+        or cast(int, builder["bytes"]) <= 0
+    ):
+        raise ClosureEvidenceMatrixError("environment H repository binding drifted")
+    _require_sha256(builder.get("sha256"), context="H evidence builder")
+    return state
+
+
+def _validate_environment(
+    value: Any, *, expected_h_commit: str
+) -> Mapping[str, Any]:
+    """Revalidate E10's exact source dialect through the sealed support API."""
+
     environment = _require_mapping(value, context="environment")
-    required = {"python", "platform", "repository_commit", "dependency_lock_sha256"}
-    if not required.issubset(environment):
-        raise ClosureEvidenceMatrixError("environment identity is incomplete")
-    for key in required:
-        if not isinstance(environment[key], str) or not environment[key]:
-            raise ClosureEvidenceMatrixError(f"environment field is absent: {key}")
+    try:
+        from src.experiments.build_closure_e10_source_evidence import (
+            validate_closure_e10_environment_payload,
+        )
+
+        validated = validate_closure_e10_environment_payload(
+            environment,
+            expected_h_commit=expected_h_commit,
+        )
+    except BaseException as exc:
+        raise ClosureEvidenceMatrixError(
+            "source-bound E10 environment validation failed"
+        ) from exc
+    if dict(validated) != dict(environment):
+        raise ClosureEvidenceMatrixError(
+            "source-bound E10 environment validation changed the payload"
+        )
     _canonical_json_bytes(environment)
     return environment
 
@@ -433,6 +646,7 @@ def execute_closure_sealed_batch_component(
     repo_root: Path,
 ) -> dict[str, Any]:
     preflight_closure_sealed_batch_component(authority, sealed_batch_contract, repo_root)
+    expected_h_commit = _require_h_commit(authority)
     try:
         context = validate_batch_context(batch_context)
     except ClosureAnfisAblationError as exc:
@@ -446,16 +660,28 @@ def execute_closure_sealed_batch_component(
     evidence = cast(dict[str, Any], context["software_evidence"])
     if set(evidence) != SOFTWARE_EVIDENCE_KEYS:
         raise ClosureEvidenceMatrixError("software_evidence keys are not exact")
-    junit, totals = _validate_junit(evidence["public_tests_xml"])
+    junit, totals = _validate_junit(
+        evidence["public_tests_xml"], expected_h_commit=expected_h_commit
+    )
     test_markdown, test_record = _validate_test_report(
-        evidence["test_report"], junit_totals=totals
+        evidence["test_report"],
+        junit_totals=totals,
+        expected_h_commit=expected_h_commit,
     )
-    openapi = _validate_openapi(evidence["openapi"])
+    openapi = _validate_openapi(
+        evidence["openapi"], expected_h_commit=expected_h_commit
+    )
     contract_markdown, contract_record = _validate_contract_report(
-        evidence["openapi_contract_report"]
+        evidence["openapi_contract_report"],
+        expected_h_commit=expected_h_commit,
+        openapi=openapi,
     )
-    e2e_markdown, e2e_record = _validate_e2e(evidence["end_to_end_report"])
-    environment = _validate_environment(evidence["environment"])
+    e2e_markdown, e2e_record = _validate_e2e(
+        evidence["end_to_end_report"], expected_h_commit=expected_h_commit
+    )
+    environment = _validate_environment(
+        evidence["environment"], expected_h_commit=expected_h_commit
+    )
     stage_matrix = _validate_stage_results(context["stage_results"])
     artifacts = {
         OUTPUT_PATHS[0]: artifact_envelope("xml", junit),

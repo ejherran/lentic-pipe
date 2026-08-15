@@ -4,7 +4,6 @@ import hashlib
 import inspect
 import json
 import os
-import shutil
 import stat
 import subprocess
 from dataclasses import replace
@@ -88,6 +87,19 @@ def _record(path: Path, *, role: str) -> dict[str, Any]:
     }
 
 
+def _copy_regular_0644(source: Path, target: Path) -> None:
+    """Copy bytes with the historical mode and timestamps used by the bundle."""
+
+    source_metadata = source.stat()
+    target.write_bytes(source.read_bytes())
+    target.chmod(0o644)
+    os.utime(
+        target,
+        ns=(source_metadata.st_atime_ns, source_metadata.st_mtime_ns),
+        follow_symlinks=False,
+    )
+
+
 def _copy_family_tree(repo_root: Path) -> None:
     """Copy the sealed 80 finals into an isolated namespace fixture."""
 
@@ -98,7 +110,7 @@ def _copy_family_tree(repo_root: Path) -> None:
             source = ROOT / raw_path
             target = repo_root / raw_path
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
+            _copy_regular_0644(source, target)
 
 
 def _write_pointer(repo_root: Path, index: int) -> Path:
@@ -107,6 +119,104 @@ def _write_pointer(repo_root: Path, index: int) -> Path:
     pointer.write_bytes(patch._expected_pointer_bytes(payload, repo_root=repo_root))
     pointer.chmod(0o644)
     return pointer
+
+
+def _git_blob(commit: str, path: str | Path) -> bytes:
+    return subprocess.run(
+        ["git", "-C", ROOT.as_posix(), "show", f"{commit}:{Path(path).as_posix()}"],
+        check=True,
+        capture_output=True,
+    ).stdout
+
+
+def _materialize_git_snapshot(
+    repo_root: Path, *, commit: str, paths: tuple[str | Path, ...]
+) -> None:
+    for raw_path in paths:
+        path = Path(raw_path)
+        target = repo_root / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(_git_blob(commit, path))
+        mode = subprocess.run(
+            [
+                "git",
+                "-C",
+                ROOT.as_posix(),
+                "ls-tree",
+                commit,
+                "--",
+                path.as_posix(),
+            ],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.split()[0]
+        assert mode in {"100644", "100755"}
+        target.chmod(0o755 if mode == "100755" else 0o644)
+
+
+def _tracked_paths_at(
+    commit: str, paths: tuple[str, ...] | list[str]
+) -> list[str]:
+    return subprocess.run(
+        ["git", "-C", ROOT.as_posix(), "ls-tree", "-r", "--name-only", commit, "--", *paths],
+        check=True,
+        capture_output=True,
+        text=True,
+    ).stdout.splitlines()
+
+
+@pytest.fixture
+def pre_registration_snapshot(tmp_path: Path) -> Path:
+    repo_root = tmp_path / "pre-registration-snapshot"
+    repo_root.mkdir()
+    _copy_family_tree(repo_root)
+    _materialize_git_snapshot(
+        repo_root,
+        commit=P_MZC_COMMIT,
+        paths=(patch.GITIGNORE_PATH, patch.MODELS_DVC_PATH),
+    )
+    subprocess.run(
+        ["git", "-C", repo_root.as_posix(), "init", "--quiet"],
+        check=True,
+        capture_output=True,
+    )
+    return repo_root
+
+
+def _historical_h_mzc_authority_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, Any]:
+    repo_root = tmp_path / "historical-h-mzc"
+    repo_root.mkdir()
+    _materialize_git_snapshot(
+        repo_root,
+        commit=H_MZC_COMMIT,
+        paths=patch.PRESERVED_MZC_PATHS,
+    )
+    with monkeypatch.context() as historical_git:
+        historical_git.setenv("GIT_DIR", (ROOT / ".git").as_posix())
+        historical_git.setenv("GIT_WORK_TREE", repo_root.as_posix())
+        return patch._historical_h_mzc_authority(repo_root)
+
+
+def _historical_status_order_correction_snapshot(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> dict[str, Any]:
+    repo_root = tmp_path / "historical-status-order"
+    repo_root.mkdir()
+    _materialize_git_snapshot(
+        repo_root,
+        commit=P_MZC_COMMIT,
+        paths=(patch.GITIGNORE_PATH,),
+    )
+    with monkeypatch.context() as historical_git:
+        historical_git.setenv("GIT_DIR", (ROOT / ".git").as_posix())
+        historical_git.setenv("GIT_WORK_TREE", repo_root.as_posix())
+        historical_git.setattr(
+            patch, "_git_head", lambda _repo_root: P_MZC_COMMIT
+        )
+        return patch._status_order_correction(repo_root)
 
 
 def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
@@ -177,9 +287,11 @@ def test_patch_identity_history_and_h_p_r_scopes_are_exact() -> None:
             precommit_artifacts.require_active_deferred_dvc_staging_gate(gate)
 
 
-def test_p_mzc_authority_and_historical_mzc_partition_are_exact() -> None:
+def test_p_mzc_authority_and_historical_mzc_partition_are_exact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     base = patch._base_mzc_authority(ROOT)
-    history = patch._historical_h_mzc_authority(ROOT)
+    history = _historical_h_mzc_authority_snapshot(tmp_path, monkeypatch)
     historical_inputs = patch._historical_inputs(ROOT)
 
     assert base["gate"] == "E0-MZC"
@@ -219,8 +331,9 @@ def test_p_mzc_authority_and_historical_mzc_partition_are_exact() -> None:
 
 
 def test_companion_physical_and_historical_partitions_are_exact(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    history = patch._historical_h_mzc_authority(ROOT)
+    history = _historical_h_mzc_authority_snapshot(tmp_path, monkeypatch)
     base_mzc = patch._base_mzc_authority(ROOT)
     h_components = [
         {"path": path, "role": patch.PATCH_COMPONENT_ROLES[path]}
@@ -252,6 +365,7 @@ def test_companion_physical_and_historical_partitions_are_exact(
 
 def test_registration_inventory_set_validation_and_canonical_commands_are_closed(
     monkeypatch: pytest.MonkeyPatch,
+    pre_registration_snapshot: Path,
 ) -> None:
     inventory = yaml.safe_load(
         (ROOT / patch.DVC_INVENTORY_PATH).read_text(encoding="utf-8")
@@ -283,9 +397,11 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
         precommit_artifacts.DEFAULT_DVC_MANIFEST
     )
     registration = precommit_artifacts.load_anfis_ablation_registration_artifacts()
-    discovered = precommit_artifacts.declared_artifacts_missing_pointers(
-        [*configured, *registration]
-    )
+    with monkeypatch.context() as historical_lifecycle:
+        historical_lifecycle.chdir(pre_registration_snapshot)
+        discovered = precommit_artifacts.declared_artifacts_missing_pointers(
+            [*configured, *registration]
+        )
     discovered_paths = [artifact.path.as_posix() for artifact in discovered]
     assert discovered_paths == sorted(expected_payloads)
     assert discovered_paths != expected_payloads
@@ -696,7 +812,7 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     assert configuration["local_cache_override_absent"] is True
     assert configuration["autostage_override_absent"] is True
 
-    gitignore = ROOT / patch.GITIGNORE_PATH
+    gitignore = pre_registration_snapshot / patch.GITIGNORE_PATH
     adopted = gitignore.read_bytes()
     base = subprocess.run(
         ["git", "-C", ROOT.as_posix(), "show", f"{P_MZC_COMMIT}:.gitignore"],
@@ -715,15 +831,38 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     assert stat.S_IMODE(before.st_mode) == 0o644
     assert before.st_nlink == 1
     assert subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "check-ignore", "--quiet", "--no-index", "models"],
+        [
+            "git",
+            "-C",
+            pre_registration_snapshot.as_posix(),
+            "check-ignore",
+            "--quiet",
+            "--no-index",
+            "models",
+        ],
         check=False,
     ).returncode == 0
     assert subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "check-ignore", "--quiet", "--no-index", "models.dvc"],
+        [
+            "git",
+            "-C",
+            pre_registration_snapshot.as_posix(),
+            "check-ignore",
+            "--quiet",
+            "--no-index",
+            "models.dvc",
+        ],
         check=False,
     ).returncode == 1
     assert subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "ls-files", "--", "models"],
+        [
+            "git",
+            "-C",
+            pre_registration_snapshot.as_posix(),
+            "ls-files",
+            "--",
+            "models",
+        ],
         check=True,
         capture_output=True,
         text=True,
@@ -763,7 +902,13 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
             self.appended = True
 
     synthetic = AlreadyIgnored()
-    assert Git.ignore(cast(Any, synthetic), (ROOT / "models").as_posix()) is None
+    assert (
+        Git.ignore(
+            cast(Any, synthetic),
+            (pre_registration_snapshot / "models").as_posix(),
+        )
+        is None
+    )
     assert synthetic.appended is False
     scm_source = inspect.getsource(Git.ignore)
     assert scm_source.index("if self.is_ignored(path)") < scm_source.index(
@@ -771,38 +916,30 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     )
 
 
-def test_complete_family_is_exact80_with_all50_lights_tracked() -> None:
-    records = patch._family_records(ROOT, registered=False)
+def test_complete_family_is_exact80_with_all50_lights_tracked(
+    pre_registration_snapshot: Path,
+) -> None:
+    records = patch._family_records(pre_registration_snapshot, registered=False)
     assert len(records) == patch.FAMILY_FINAL_COUNT == 80
     assert patch._digest_records(records) == FAMILY_RECORDS_SHA256
     assert sum(record["bytes"] for record in records) == 3_790_938
     assert sum(record["role"] in patch.LIGHT_SLOT_ROLES for record in records) == 50
     assert sum(record["role"] in patch.HEAVY_SLOT_ROLES for record in records) == 30
     for record in records:
-        metadata = (ROOT / record["path"]).lstat()
+        metadata = (pre_registration_snapshot / record["path"]).lstat()
         assert stat.S_ISREG(metadata.st_mode)
         assert stat.S_IMODE(metadata.st_mode) == 0o644
         assert metadata.st_nlink == 1
 
-    tracked_lights = subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "ls-files", "--", *patch._light_paths()],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.splitlines()
-    tracked_heavy = subprocess.run(
+    tracked_lights = _tracked_paths_at(P_MZC_COMMIT, patch._light_paths())
+    tracked_heavy = _tracked_paths_at(
+        P_MZC_COMMIT,
         [
-            "git",
-            "-C",
-            ROOT.as_posix(),
-            "ls-files",
-            "--",
-            *(record["path"] for record in records if record["role"] in patch.HEAVY_SLOT_ROLES),
+            record["path"]
+            for record in records
+            if record["role"] in patch.HEAVY_SLOT_ROLES
         ],
-        check=True,
-        capture_output=True,
-        text=True,
-    ).stdout.splitlines()
+    )
     assert set(tracked_lights) == set(patch._light_paths())
     assert len(tracked_lights) == patch.FAMILY_TRACKED_LIGHT_COUNT == 50
     assert patch.FAMILY_UNTRACKED_LIGHT_COUNT == 0
@@ -810,20 +947,26 @@ def test_complete_family_is_exact80_with_all50_lights_tracked() -> None:
 
 
 def test_pre_registration_namespace_and_models_owner_are_exact(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    pre_registration_snapshot: Path,
 ) -> None:
-    patch._validate_family_namespace(registered=False, repo_root=ROOT)
+    patch._validate_family_namespace(
+        registered=False, repo_root=pre_registration_snapshot
+    )
     assert not [
         path.as_posix()
         for path in patch._selection_pointer_paths()
-        if (ROOT / path).exists() or (ROOT / path).is_symlink()
+        if (pre_registration_snapshot / path).exists()
+        or (pre_registration_snapshot / path).is_symlink()
     ]
     assert not [
         path.as_posix()
         for path in patch._forbidden_family_namespace_paths()
-        if (ROOT / path).exists() or (ROOT / path).is_symlink()
+        if (pre_registration_snapshot / path).exists()
+        or (pre_registration_snapshot / path).is_symlink()
     ]
-    models_dvc = ROOT / patch.MODELS_DVC_PATH
+    models_dvc = pre_registration_snapshot / patch.MODELS_DVC_PATH
     metadata = models_dvc.lstat()
     assert stat.S_ISREG(metadata.st_mode)
     assert stat.S_IMODE(metadata.st_mode) == 0o644
@@ -911,7 +1054,7 @@ def test_pre_registration_namespace_and_models_owner_are_exact(
         precommit_artifacts.snapshot_anfis_ablation_family_bundle(
             repo_root=prefix_root, expected_pointer_count=10
         )
-    shutil.copy2(
+    _copy_regular_0644(
         ROOT / precommit_artifacts.ANFIS_ABLATION_SELECTION_PREDICTION_PATHS[0],
         payload,
     )
@@ -1319,7 +1462,9 @@ def test_public_private_loader_api_and_helper_alias_are_closed(
     ]
 
 
-def test_schema_closes_status_order_incident_history_family_and_registration_scope() -> None:
+def test_schema_closes_status_order_incident_history_family_and_registration_scope(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     schema = json.loads(
         (ROOT / patch.DEFAULT_PATCH_LOCK_SCHEMA).read_text(encoding="utf-8")
     )
@@ -1360,7 +1505,7 @@ def test_schema_closes_status_order_incident_history_family_and_registration_sco
     assert history["superseded_component_count"]["const"] == 8
 
     correction_schema = resolved_property("status_order_correction")
-    correction = patch._status_order_correction(ROOT)
+    correction = _historical_status_order_correction_snapshot(tmp_path, monkeypatch)
     assert correction_schema["type"] == "object"
     assert correction_schema["const"] == correction
     assert correction["blocked_gate"] == "R-E0-MZC"

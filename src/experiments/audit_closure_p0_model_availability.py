@@ -615,6 +615,111 @@ def _validate_physical_records(
     return observed
 
 
+def _validate_historical_git_records(
+    raw_records: Any,
+    *,
+    expected_count: int,
+    context: str,
+    evidence_commit: str,
+) -> list[dict[str, Any]]:
+    """Validate immutable source records against their slot's Git authority.
+
+    P0 manifests are historical evidence. Their code inputs intentionally bind
+    the implementation that produced the slot, while later hardening overlays
+    may change the corresponding worktree files. The evidence commit therefore
+    owns these records; current physical bytes do not.
+    """
+    if not isinstance(raw_records, Sequence) or isinstance(raw_records, (str, bytes)):
+        raise P0ModelAvailabilityError(f"{context} must be an array")
+    if len(raw_records) != expected_count:
+        raise P0ModelAvailabilityError(
+            f"{context} must contain {expected_count} records, observed {len(raw_records)}"
+        )
+    _require_exact_commit(evidence_commit)
+    observed: list[dict[str, Any]] = []
+    seen_paths: set[str] = set()
+    for index, raw_record in enumerate(raw_records):
+        if not isinstance(raw_record, Mapping) or set(raw_record) != {
+            "path",
+            "bytes",
+            "sha256",
+        }:
+            raise P0ModelAvailabilityError(f"{context}[{index}] record dialect drifted")
+        record = dict(cast(Mapping[str, Any], raw_record))
+        path = _repo_path(str(record["path"]))
+        if path in seen_paths:
+            raise P0ModelAvailabilityError(f"{context} repeats source path: {path}")
+        seen_paths.add(path)
+        git_record = _git_blob_record(evidence_commit, path)
+        expected = _generic_record(git_record)
+        if record != expected:
+            raise P0ModelAvailabilityError(
+                f"{context}[{index}] differs from sealed Git blob: {path}"
+            )
+        observed.append(expected)
+    return observed
+
+
+def _validate_slot_input_records(
+    raw_records: Any,
+    *,
+    expected_count: int,
+    context: str,
+    historical_sources: Sequence[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    """Validate data/config physically and duplicated source records historically."""
+    if not isinstance(raw_records, Sequence) or isinstance(raw_records, (str, bytes)):
+        raise P0ModelAvailabilityError(f"{context} must be an array")
+    if len(raw_records) != expected_count:
+        raise P0ModelAvailabilityError(
+            f"{context} must contain {expected_count} records, observed {len(raw_records)}"
+        )
+    source_by_path = {
+        str(record["path"]): dict(record) for record in historical_sources
+    }
+    if len(source_by_path) != len(historical_sources):
+        raise P0ModelAvailabilityError(f"{context} historical source paths repeat")
+    observed: list[dict[str, Any]] = []
+    observed_paths: set[str] = set()
+    observed_source_paths: set[str] = set()
+    for index, raw_record in enumerate(raw_records):
+        if not isinstance(raw_record, Mapping) or set(raw_record) != {
+            "path",
+            "bytes",
+            "sha256",
+        }:
+            raise P0ModelAvailabilityError(f"{context}[{index}] record dialect drifted")
+        record = dict(cast(Mapping[str, Any], raw_record))
+        path = _repo_path(str(record["path"]))
+        if path in observed_paths:
+            raise P0ModelAvailabilityError(f"{context} repeats input path: {path}")
+        observed_paths.add(path)
+        if path in source_by_path:
+            if record != source_by_path[path]:
+                raise P0ModelAvailabilityError(
+                    f"{context}[{index}] differs from sealed source record: {path}"
+                )
+            observed_source_paths.add(path)
+            observed.append(record)
+            continue
+        if path.startswith("src/") or Path(path).suffix == ".py":
+            raise P0ModelAvailabilityError(
+                f"{context}[{index}] code input lacks sealed source authority: {path}"
+            )
+        physical = _file_record(path)
+        if record != physical:
+            raise P0ModelAvailabilityError(
+                f"{context}[{index}] differs from physical artifact: {path}"
+            )
+        observed.append(physical)
+    if observed_source_paths != set(source_by_path):
+        missing = sorted(set(source_by_path) - observed_source_paths)
+        raise P0ModelAvailabilityError(
+            f"{context} omits sealed source records: {missing}"
+        )
+    return observed
+
+
 def _normalized_manifest(payload: Mapping[str, Any]) -> dict[str, Any]:
     normalized = json.loads(json.dumps(payload))
     normalized.pop("generated_at_utc", None)
@@ -706,23 +811,30 @@ def validate_p0_slot(
 
     report = namespace["report"]
     manifest = namespace["manifest"]
+    commit = str(evidence["commit"])
+    parent = str(evidence["parent"])
+    if int(evidence["base_seed"]) != seed or _commit_parent(commit) != parent:
+        raise P0ModelAvailabilityError(f"P0 seed {seed} evidence binding drifted")
     payload = _load_json(manifest)
     validate_p0_manifest_semantics(payload, seed=seed)
-    inputs = _validate_physical_records(
-        payload.get("inputs"),
-        expected_count=EXPECTED_INPUT_RECORDS,
-        context=f"P0 seed {seed} inputs",
-    )
-    sources = _validate_physical_records(
+    sources = _validate_historical_git_records(
         payload.get("source_code"),
         expected_count=EXPECTED_SOURCE_RECORDS,
         context=f"P0 seed {seed} source_code",
+        evidence_commit=commit,
+    )
+    inputs = _validate_slot_input_records(
+        payload.get("inputs"),
+        expected_count=EXPECTED_INPUT_RECORDS,
+        context=f"P0 seed {seed} inputs",
+        historical_sources=sources,
     )
     expected_report = {**_file_record(report), "artifact_role": "report"}
     if payload.get("outputs") != [expected_report]:
         raise P0ModelAvailabilityError(f"P0 seed {seed} output record drifted")
     script = payload.get("script")
-    expected_script = _file_record("src/experiments/train_closure_pipe.py")
+    source_by_path = {str(record["path"]): dict(record) for record in sources}
+    expected_script = source_by_path.get("src/experiments/train_closure_pipe.py")
     if not isinstance(script, Mapping) or dict(script) != expected_script:
         raise P0ModelAvailabilityError(f"P0 seed {seed} script record drifted")
 
@@ -735,10 +847,6 @@ def validate_p0_slot(
     if _secure_read_bytes(report, context="P0 report") != expected_report_text:
         raise P0ModelAvailabilityError(f"P0 seed {seed} report content drifted")
 
-    commit = str(evidence["commit"])
-    parent = str(evidence["parent"])
-    if int(evidence["base_seed"]) != seed or _commit_parent(commit) != parent:
-        raise P0ModelAvailabilityError(f"P0 seed {seed} evidence binding drifted")
     expected_paths = sorted((manifest.as_posix(), report.as_posix()))
     additions = _commit_additions(commit)
     if sorted(record["path"] for record in additions) != expected_paths:
@@ -895,12 +1003,16 @@ def _audit_denominator_authority(policy: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def audit_repository(
+def audit_p0_closure_snapshot(
     policy: Mapping[str, Any] | None = None,
-    *,
-    allowed_registry_entries: Sequence[Path] = (),
 ) -> dict[str, Any]:
-    """Audit P0 closure locally without DVC, network, or outcome reads."""
+    """Reconstruct the immutable P0 closure snapshot without later-phase probes.
+
+    This audit remains meaningful after the registry, P1, and E0-M have been
+    published. It validates the five slot bundles, their historical code blobs,
+    and the still-physical data/config authorities, but deliberately does not
+    inspect any later namespace (including the outcome-access log).
+    """
     active_policy = _closed_policy(policy)
     closure_head = str(cast(Mapping[str, Any], active_policy["p0_closure"])["published_closure_head"])
     _require_exact_commit(closure_head)
@@ -927,34 +1039,6 @@ def audit_repository(
     for slot in slots:
         slot.pop("normalized_manifest")
     denominator = _audit_denominator_authority(active_policy)
-
-    allowed = {path.as_posix() for path in allowed_registry_entries}
-    existing_registry = [
-        path.as_posix()
-        for path in _registry_namespace_paths()
-        if _path_entry_exists(path) and path.as_posix() not in allowed
-    ]
-    if existing_registry:
-        raise P0ModelAvailabilityError(
-            f"Registry bundle namespace is not pristine: {existing_registry}"
-        )
-    if _path_entry_exists(OUTCOME_ACCESS_LOG):
-        raise P0ModelAvailabilityError("Outcome access log must remain absent before E0-U")
-    existing_e0_m = [
-        path.as_posix() for path in E0_M_OUTPUTS if _path_entry_exists(path)
-    ]
-    if existing_e0_m:
-        raise P0ModelAvailabilityError(f"E0-M outputs already exist: {existing_e0_m}")
-    existing_p1 = [
-        path.as_posix()
-        for seed in EXPECTED_SEEDS
-        for path in _p1_absence_paths(seed)
-        if _path_entry_exists(path)
-    ]
-    if existing_p1:
-        raise P0ModelAvailabilityError(
-            f"P1 materialization predates the P0 registry: {existing_p1}"
-        )
 
     return {
         "experiment_id": "closure_v1",
@@ -983,6 +1067,44 @@ def audit_repository(
             "outcome_paths_opened": False,
         },
     }
+
+
+def audit_repository(
+    policy: Mapping[str, Any] | None = None,
+    *,
+    allowed_registry_entries: Sequence[Path] = (),
+) -> dict[str, Any]:
+    """Run the strict pre-registry lifecycle gate on the P0 closure snapshot."""
+    summary = audit_p0_closure_snapshot(policy)
+
+    allowed = {path.as_posix() for path in allowed_registry_entries}
+    existing_registry = [
+        path.as_posix()
+        for path in _registry_namespace_paths()
+        if _path_entry_exists(path) and path.as_posix() not in allowed
+    ]
+    if existing_registry:
+        raise P0ModelAvailabilityError(
+            f"Registry bundle namespace is not pristine: {existing_registry}"
+        )
+    if _path_entry_exists(OUTCOME_ACCESS_LOG):
+        raise P0ModelAvailabilityError("Outcome access log must remain absent before E0-U")
+    existing_e0_m = [
+        path.as_posix() for path in E0_M_OUTPUTS if _path_entry_exists(path)
+    ]
+    if existing_e0_m:
+        raise P0ModelAvailabilityError(f"E0-M outputs already exist: {existing_e0_m}")
+    existing_p1 = [
+        path.as_posix()
+        for seed in EXPECTED_SEEDS
+        for path in _p1_absence_paths(seed)
+        if _path_entry_exists(path)
+    ]
+    if existing_p1:
+        raise P0ModelAvailabilityError(
+            f"P1 materialization predates the P0 registry: {existing_p1}"
+        )
+    return summary
 
 
 def _require_h_slice_published(policy: Mapping[str, Any]) -> dict[str, Any]:

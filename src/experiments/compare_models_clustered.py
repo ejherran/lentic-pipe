@@ -1,12 +1,18 @@
 #!/usr/bin/env python
-"""Pure paired site-bootstrap and within-family Holm inference for E5."""
+"""Closed E5 confirmatory ledger for the current Closure V1 model lock.
+
+Every registered confirmatory hypothesis depends on at least one model that is
+terminally unavailable. E5 preserves the complete 27-row registry, the locked
+Holm universes and intent denominators, while emitting no invented inference.
+"""
 
 from __future__ import annotations
 
 import hashlib
 import json
+from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Any, Mapping, cast
+from typing import Any, cast
 
 import numpy as np
 import pandas as pd
@@ -15,8 +21,10 @@ import pandas as pd
 COMPONENT_ID = "E5_clustered_inference"
 STAGE_ID = "E5"
 INPUT_TABLE = "paired_metric_rows"
+REGISTRY_TABLE = "hypothesis_registry"
 BOOTSTRAP_REPLICATES = 5000
 REGISTERED_SEEDS = (1729, 20260612, 20260613, 20260614, 314159)
+LOCKED_UNAVAILABLE_MODELS = ("P0", "P1", "A2")
 INPUT_COLUMNS = (
     "source_id",
     "site_id",
@@ -31,13 +39,28 @@ INPUT_COLUMNS = (
     "loss",
     "terminal_status",
 )
-COMPARISONS = (
-    ("A_P1_vs_B1", "A", "P1", "B1"),
-    ("A_P1_vs_B2", "A", "P1", "B2"),
-    ("A_P1_vs_P0", "A", "P1", "P0"),
-    ("B_M0_vs_P1", "B", "M0", "P1"),
-    ("C_A2_vs_P1", "C", "A2", "P1"),
+HYPOTHESIS_COLUMNS = (
+    "hypothesis_id",
+    "multiplicity_family",
+    "comparison_id",
+    "endpoints",
+    "estimand",
+    "alternative",
+    "evaluation_cohort",
+    "horizons_months",
+    "multiplicity_universe_size",
+    "correction_method",
+    "family_wise_alpha",
+    "availability_condition",
+    "status",
+    "availability_reason",
+    "p_value",
+    "effect_estimate",
+    "confidence_interval",
+    "holm_universe_retained",
 )
+FAMILY_COUNTS = {"A": 3, "B": 13, "C": 1, "D": 9, "E": 1}
+FAMILY_UNIVERSES = {"A": 3, "B": 78, "C": 1, "D": 9, "E": 1}
 OUTPUT_PATHS = (
     "reports/closure_v1/05_inference/pairwise_effects.csv",
     "reports/closure_v1/05_inference/site_level_losses.csv",
@@ -45,21 +68,28 @@ OUTPUT_PATHS = (
     "reports/closure_v1/05_inference/multiplicity_report.csv",
     "reports/closure_v1/05_inference/statistical_inference_report.md",
 )
+OUTPUT_TABLES = (
+    "pairwise_effects",
+    "site_level_losses",
+    "bootstrap_distributions",
+    "multiplicity_report",
+)
 COMPONENT_CONTRACT = {
-    "schema_version": "closure_e5_clustered_inference_v1",
+    "schema_version": "closure_e5_confirmatory_unavailable_ledger_v3",
     "component_id": COMPONENT_ID,
     "stage_id": STAGE_ID,
-    "input_table": INPUT_TABLE,
-    "input_columns": list(INPUT_COLUMNS),
-    "comparisons": [list(value) for value in COMPARISONS],
-    "cluster_unit": ["source_id", "site_id"],
-    "holdout_group_role": "traceability_only",
-    "bootstrap_method": "paired_site_resampling_keep_all_rows",
-    "bootstrap_replicates": BOOTSTRAP_REPLICATES,
-    "confidence_level": 0.95,
-    "multiplicity": "holm_within_family",
-    "loss_orientation": "lower_is_better",
-    "unavailable_comparisons_retained": True,
+    "input_tables": [INPUT_TABLE, REGISTRY_TABLE],
+    "input_columns": {
+        INPUT_TABLE: list(INPUT_COLUMNS),
+        REGISTRY_TABLE: list(HYPOTHESIS_COLUMNS),
+    },
+    "hypothesis_count": 27,
+    "family_counts": FAMILY_COUNTS,
+    "holm_universe_sizes": FAMILY_UNIVERSES,
+    "cluster_unit": "holdout_group_id",
+    "bootstrap_replicates_if_estimable": BOOTSTRAP_REPLICATES,
+    "current_lock_branch": "all_confirmatory_hypotheses_not_estimable_model_unavailable",
+    "future_available_branch": "fail_closed_requires_successor_contract",
     "output_paths": list(OUTPUT_PATHS),
     "filesystem_writes": "forbidden",
 }
@@ -69,29 +99,30 @@ class ClusteredInferenceError(RuntimeError):
     """Raised when the closed E5 inference contract is violated."""
 
 
-def _digest(value: Mapping[str, Any]) -> str:
-    payload = (
+def _canonical_json_bytes(value: Any) -> bytes:
+    return (
         json.dumps(
-            dict(value),
+            value,
             sort_keys=True,
             separators=(",", ":"),
             ensure_ascii=False,
             allow_nan=False,
-        )
-        + "\n"
-    ).encode("utf-8")
-    return hashlib.sha256(payload).hexdigest()
+        ).encode("utf-8")
+        + b"\n"
+    )
 
 
 def component_contract() -> dict[str, Any]:
-    return cast(dict[str, Any], json.loads(json.dumps(COMPONENT_CONTRACT)))
+    return cast(dict[str, Any], json.loads(_canonical_json_bytes(COMPONENT_CONTRACT)))
 
 
 def component_contract_sha256() -> str:
-    return _digest(COMPONENT_CONTRACT)
+    return hashlib.sha256(_canonical_json_bytes(COMPONENT_CONTRACT)).hexdigest()
 
 
-def _validate(authority: Mapping[str, Any], contract: Mapping[str, Any]) -> str:
+def _validate_boundary(
+    authority: Mapping[str, Any], contract: Mapping[str, Any]
+) -> str:
     required = {
         "gate": "E0-U",
         "effective_authority": True,
@@ -102,7 +133,7 @@ def _validate(authority: Mapping[str, Any], contract: Mapping[str, Any]) -> str:
         "outcome_access_authorized": True,
         "writes_performed": False,
     }
-    if any(
+    if not isinstance(authority, Mapping) or any(
         type(authority.get(key)) is not type(expected)
         or authority.get(key) != expected
         for key, expected in required.items()
@@ -122,15 +153,14 @@ def _validate(authority: Mapping[str, Any], contract: Mapping[str, Any]) -> str:
         or contract.get("experiment_id") != "closure_v1"
         or contract.get("execution_gate") != "E0-U"
         or contract.get("evaluation_refit") != "forbidden"
-        or contract.get("failed_model_replacement") != "forbidden"
-        or contract.get("silent_row_deletion") != "forbidden"
         or contract.get("one_batch_only") is not True
         or authority.get("sealed_batch_command") != contract.get("sealed_command")
-        or not isinstance(components, list)
-        or components.count(expected_component) != 1
+        or not isinstance(components, Sequence)
+        or isinstance(components, (str, bytes))
+        or list(components).count(expected_component) != 1
     ):
         raise ClusteredInferenceError("E5 sealed batch contract drifted")
-    return _digest(contract)
+    return hashlib.sha256(_canonical_json_bytes(dict(contract))).hexdigest()
 
 
 def preflight_closure_sealed_batch_component(
@@ -143,122 +173,17 @@ def preflight_closure_sealed_batch_component(
         "component_id": COMPONENT_ID,
         "stage_id": STAGE_ID,
         "status": "ready",
-        "contract_sha256": _validate(authority, sealed_batch_contract),
+        "contract_sha256": _validate_boundary(authority, sealed_batch_contract),
         "outcome_paths_opened": False,
         "writes_performed": False,
     }
 
 
-def _holm(frame: pd.DataFrame) -> pd.DataFrame:
-    result = frame.copy()
-    result["holm_p_value"] = np.nan
-    for _, indices in result.groupby("family", sort=True).groups.items():
-        eligible = result.loc[list(indices)].dropna(subset=["raw_p_value"]).sort_values(
-            ["raw_p_value", "comparison_id", "metric", "horizon_months"],
-            kind="mergesort",
-        )
-        running = 0.0
-        total = len(eligible)
-        for rank, (index, row) in enumerate(eligible.iterrows()):
-            running = max(
-                running,
-                min(1.0, float(row["raw_p_value"]) * (total - rank)),
-            )
-            result.at[index, "holm_p_value"] = running
-    return result
-
-
-def _paired_rows(
-    frame: pd.DataFrame, model_a: str, model_b: str
-) -> pd.DataFrame:
-    identity = [
-        "source_id",
-        "site_id",
-        "holdout_group_id",
-        "common_origin_id",
-        "horizon_months",
-        "seed_slot",
-        "evaluation_cohort",
-        "metric",
-    ]
-    columns = identity + ["model_seed", "loss", "terminal_status"]
-    left = frame.loc[frame["model_id"] == model_a, columns]
-    right = frame.loc[frame["model_id"] == model_b, columns]
-    if left.duplicated(identity).any() or right.duplicated(identity).any():
-        raise ClusteredInferenceError("E5 model rows are not unique within seed slot")
-    paired = left.merge(
-        right,
-        on=identity,
-        how="inner",
-        validate="one_to_one",
-        suffixes=("_model_a", "_model_b"),
-    )
-    return paired
-
-
-def _unavailable_effect(
-    comparison_id: str,
-    family: str,
-    model_a: str,
-    model_b: str,
-    metric: str,
-    horizon: int,
-    cohort: str,
-    reason: str,
-) -> dict[str, Any]:
-    return {
-        "comparison_id": comparison_id,
-        "family": family,
-        "metric": metric,
-        "horizon_months": horizon,
-        "evaluation_cohort": cohort,
-        "model_a": model_a,
-        "model_b": model_b,
-        "status": "not_estimable",
-        "not_estimable_reason": reason,
-        "n_rows": 0,
-        "n_sites": 0,
-        "estimate_model_a": np.nan,
-        "estimate_model_b": np.nan,
-        "delta": np.nan,
-        "site_balanced_delta_mean": np.nan,
-        "site_balanced_delta_median": np.nan,
-        "site_balanced_delta_iqr": np.nan,
-        "relative_delta": np.nan,
-        "ci95_low": np.nan,
-        "ci95_high": np.nan,
-        "site_win_rate": np.nan,
-        "raw_p_value": np.nan,
-        "effect_interpretation": "not_estimable",
-    }
-
-
-def paired_clustered_inference(
-    frame: pd.DataFrame,
-    *,
-    model_availability: Mapping[str, str] | None = None,
-    rng_seed: int = 1729,
-    replicates: int = BOOTSTRAP_REPLICATES,
-) -> dict[str, pd.DataFrame]:
-    """Estimate paired effects while retaining unavailable comparisons."""
-
-    if tuple(frame.columns) != INPUT_COLUMNS:
-        raise ClusteredInferenceError("E5 paired metric columns are not exact")
-    if type(rng_seed) is not int or rng_seed != 1729:
-        raise ClusteredInferenceError("E5 bootstrap seed drifted")
-    if type(replicates) is not int or replicates <= 0:
-        raise ClusteredInferenceError("E5 bootstrap replicate count is invalid")
+def _validate_paired_rows(frame: pd.DataFrame) -> tuple[int, int, int]:
+    if tuple(frame.columns) != INPUT_COLUMNS or frame.empty:
+        raise ClusteredInferenceError("E5 paired metric surface is absent or drifted")
     work = frame.copy(deep=True)
-    if work.empty:
-        raise ClusteredInferenceError("E5 paired metric registry is empty")
-    work["loss"] = pd.to_numeric(work["loss"], errors="coerce")
-    if not work["horizon_months"].isin([1, 2, 3]).all():
-        raise ClusteredInferenceError("E5 horizon universe drifted")
-    if not work["seed_slot"].isin(REGISTERED_SEEDS).all():
-        raise ClusteredInferenceError("E5 seed-slot universe drifted")
-    if work[list(INPUT_COLUMNS[:-2])].isna().any().any():
-        raise ClusteredInferenceError("E5 paired identity contains nulls")
-    for column in (
+    text_columns = (
         "source_id",
         "site_id",
         "holdout_group_id",
@@ -266,177 +191,150 @@ def paired_clustered_inference(
         "model_id",
         "evaluation_cohort",
         "metric",
-    ):
-        if work[column].astype(str).str.len().eq(0).any():
-            raise ClusteredInferenceError(f"E5 text identity drifted: {column}")
-    terminal_statuses = {
-        "success",
-        "input_ineligible",
-        "target_unavailable",
-        "model_unavailable",
-        "numerical_failure",
-        "infrastructure_failure",
-    }
-    if not work["terminal_status"].isin(terminal_statuses).all():
-        raise ClusteredInferenceError("E5 terminal status drifted")
-    success = work["terminal_status"].eq("success")
-    if work.loc[success, "loss"].isna().any() or work.loc[~success, "loss"].notna().any():
-        raise ClusteredInferenceError("E5 terminal status/loss binding drifted")
-    availability = dict(model_availability or {})
-    dimensions = (
-        work[["metric", "horizon_months", "evaluation_cohort"]]
-        .drop_duplicates()
-        .sort_values(["metric", "horizon_months", "evaluation_cohort"])
+        "terminal_status",
     )
-    effects: list[dict[str, Any]] = []
-    sites: list[pd.DataFrame] = []
-    distributions: list[dict[str, Any]] = []
-    ordinal = 0
-    for comparison_id, family, model_a, model_b in COMPARISONS:
-        paired = _paired_rows(work, model_a, model_b)
-        for dimension in dimensions.to_dict("records"):
-            metric = str(dimension["metric"])
-            horizon = int(dimension["horizon_months"])
-            cohort = str(dimension["evaluation_cohort"])
-            group = paired[
-                (paired["metric"] == metric)
-                & (paired["horizon_months"] == horizon)
-                & (paired["evaluation_cohort"] == cohort)
-            ].copy()
-            unavailable_models = [
-                model
-                for model in (model_a, model_b)
-                if availability.get(model, "available") != "available"
-            ]
-            eligible = group[
-                group["terminal_status_model_a"].eq("success")
-                & group["terminal_status_model_b"].eq("success")
-                & group["loss_model_a"].notna()
-                & group["loss_model_b"].notna()
-            ].copy()
-            if unavailable_models or eligible.empty:
-                reason = (
-                    "model_unavailable:" + ",".join(unavailable_models)
-                    if unavailable_models
-                    else "no_exact_paired_success_rows"
-                )
-                effects.append(
-                    _unavailable_effect(
-                        comparison_id,
-                        family,
-                        model_a,
-                        model_b,
-                        metric,
-                        horizon,
-                        cohort,
-                        reason,
-                    )
-                )
-                continue
-            eligible["delta"] = eligible["loss_model_b"] - eligible["loss_model_a"]
-            site = (
-                eligible.groupby(["source_id", "site_id"], sort=True, as_index=False)
-                .agg(
-                    holdout_group_id=("holdout_group_id", "first"),
-                    n_rows=("delta", "size"),
-                    loss_model_a=("loss_model_a", "mean"),
-                    loss_model_b=("loss_model_b", "mean"),
-                    delta=("delta", "mean"),
-                )
-            )
-            site.insert(0, "comparison_id", comparison_id)
-            site.insert(1, "family", family)
-            site.insert(2, "metric", metric)
-            site.insert(3, "horizon_months", horizon)
-            site.insert(4, "evaluation_cohort", cohort)
-            sites.append(site)
-            clusters = [
-                cast(tuple[Any, Any], key)
-                for key in eligible.groupby(["source_id", "site_id"], sort=True).groups
-            ]
-            by_cluster = {
-                cast(tuple[Any, Any], key): values["delta"].to_numpy(dtype="float64")
-                for key, values in eligible.groupby(["source_id", "site_id"], sort=True)
-            }
-            rng = np.random.default_rng(rng_seed + ordinal)
-            ordinal += 1
-            boot = np.empty(replicates, dtype="float64")
-            for replicate in range(replicates):
-                sampled = rng.integers(0, len(clusters), size=len(clusters))
-                values = np.concatenate([by_cluster[clusters[index]] for index in sampled])
-                boot[replicate] = float(values.mean())
-                distributions.append(
-                    {
-                        "comparison_id": comparison_id,
-                        "family": family,
-                        "metric": metric,
-                        "horizon_months": horizon,
-                        "evaluation_cohort": cohort,
-                        "replicate": replicate,
-                        "delta": boot[replicate],
-                    }
-                )
-            lower = (np.count_nonzero(boot <= 0.0) + 1) / (replicates + 1)
-            upper = (np.count_nonzero(boot >= 0.0) + 1) / (replicates + 1)
-            raw_p = min(1.0, 2.0 * min(lower, upper))
-            estimate_a = float(eligible["loss_model_a"].mean())
-            estimate_b = float(eligible["loss_model_b"].mean())
-            ci_low, ci_high = np.quantile(boot, [0.025, 0.975])
-            interpretation = (
-                "model_a_lower_loss"
-                if ci_low > 0.0
-                else "model_b_lower_loss" if ci_high < 0.0 else "difference_not_demonstrated"
-            )
-            effects.append(
-                {
-                    "comparison_id": comparison_id,
-                    "family": family,
-                    "metric": metric,
-                    "horizon_months": horizon,
-                    "evaluation_cohort": cohort,
-                    "model_a": model_a,
-                    "model_b": model_b,
-                    "status": "estimated",
-                    "not_estimable_reason": "",
-                    "n_rows": len(eligible),
-                    "n_sites": len(clusters),
-                    "estimate_model_a": estimate_a,
-                    "estimate_model_b": estimate_b,
-                    "delta": float(eligible["delta"].mean()),
-                    "site_balanced_delta_mean": float(site["delta"].mean()),
-                    "site_balanced_delta_median": float(site["delta"].median()),
-                    "site_balanced_delta_iqr": float(
-                        site["delta"].quantile(0.75) - site["delta"].quantile(0.25)
-                    ),
-                    "relative_delta": (
-                        float(eligible["delta"].mean()) / abs(estimate_b)
-                        if estimate_b != 0.0
-                        else np.nan
-                    ),
-                    "ci95_low": float(ci_low),
-                    "ci95_high": float(ci_high),
-                    "site_win_rate": float((site["delta"] > 0.0).mean()),
-                    "raw_p_value": raw_p,
-                    "effect_interpretation": interpretation,
-                }
-            )
-    effect_frame = _holm(pd.DataFrame(effects))
-    multiplicity = effect_frame[
+    if work[list(text_columns)].isna().any().any():
+        raise ClusteredInferenceError("E5 paired identity contains nulls")
+    for column in text_columns:
+        work[column] = work[column].astype(str)
+        if work[column].str.len().eq(0).any():
+            raise ClusteredInferenceError(f"E5 text identity drifted: {column}")
+    if (
+        not work["source_id"].eq("wqp").all()
+        or not work["evaluation_cohort"].eq("location_holdout").all()
+        or not work["holdout_group_id"].eq(
+            work["source_id"] + "::" + work["site_id"]
+        ).all()
+    ):
+        raise ClusteredInferenceError("E5 locked location-holdout identity drifted")
+    for column in ("horizon_months", "model_seed", "seed_slot"):
+        numeric = pd.to_numeric(work[column], errors="raise")
+        values = numeric.to_numpy(dtype="float64")
+        if not np.isfinite(values).all() or not np.equal(values, np.floor(values)).all():
+            raise ClusteredInferenceError(f"E5 non-integral identity: {column}")
+        work[column] = numeric.astype("int64")
+    if (
+        not work["horizon_months"].isin([1, 2, 3]).all()
+        or not work["seed_slot"].isin(REGISTERED_SEEDS).all()
+        or work.duplicated(list(INPUT_COLUMNS[:10])).any()
+    ):
+        raise ClusteredInferenceError("E5 paired key universe drifted")
+    success = work["terminal_status"].eq("success")
+    loss = pd.to_numeric(work["loss"], errors="coerce")
+    if loss.loc[success].isna().any() or loss.loc[~success].notna().any():
+        raise ClusteredInferenceError("E5 terminal status/loss binding drifted")
+    intents = work[
         [
-            "comparison_id",
-            "family",
-            "metric",
+            "source_id",
+            "site_id",
+            "holdout_group_id",
+            "common_origin_id",
             "horizon_months",
-            "evaluation_cohort",
-            "status",
+        ]
+    ].drop_duplicates()
+    return len(intents), intents["holdout_group_id"].nunique(), len(work)
+
+
+def _normalize_registry(frame: pd.DataFrame) -> pd.DataFrame:
+    if tuple(frame.columns) != HYPOTHESIS_COLUMNS or len(frame) != 27:
+        raise ClusteredInferenceError("E5 hypothesis registry shape drifted")
+    registry = frame.copy(deep=True).fillna("")
+    for column in HYPOTHESIS_COLUMNS:
+        registry[column] = registry[column].astype(str)
+    if registry["hypothesis_id"].duplicated().any():
+        raise ClusteredInferenceError("E5 hypothesis identifiers are duplicated")
+    observed_counts = registry["multiplicity_family"].value_counts().to_dict()
+    if observed_counts != FAMILY_COUNTS:
+        raise ClusteredInferenceError("E5 hypothesis-family registry drifted")
+    universe = pd.to_numeric(
+        registry["multiplicity_universe_size"], errors="raise"
+    ).astype("int64")
+    for family, expected in FAMILY_UNIVERSES.items():
+        if not universe.loc[registry["multiplicity_family"].eq(family)].eq(expected).all():
+            raise ClusteredInferenceError(f"E5 Holm universe drifted: {family}")
+    alpha = pd.to_numeric(registry["family_wise_alpha"], errors="raise")
+    if (
+        not registry["correction_method"].eq("holm").all()
+        or not alpha.eq(0.05).all()
+        or not registry["evaluation_cohort"].eq("locked_location_holdout").all()
+        or not registry["status"].eq("not_estimable_model_unavailable").all()
+        or not registry["availability_reason"].eq(
+            "P1_model_unavailable_no_substitution"
+        ).all()
+        or not registry["holm_universe_retained"].str.lower().eq("true").all()
+        or registry[["p_value", "effect_estimate", "confidence_interval"]]
+        .ne("")
+        .any()
+        .any()
+    ):
+        raise ClusteredInferenceError("E5 frozen unavailable ledger drifted")
+    registry["multiplicity_universe_size"] = universe
+    registry["family_wise_alpha"] = alpha.astype("float64")
+    registry["holm_universe_retained"] = True
+    for column in ("p_value", "effect_estimate", "confidence_interval"):
+        registry[column] = None
+    return registry.sort_values("hypothesis_id", kind="mergesort").reset_index(
+        drop=True
+    )
+
+
+def build_unavailable_confirmatory_ledger(
+    paired_rows: pd.DataFrame,
+    hypothesis_registry: pd.DataFrame,
+    *,
+    model_availability: Mapping[str, str],
+) -> dict[str, pd.DataFrame]:
+    if any(
+        model_availability.get(model_id) != "unavailable"
+        for model_id in LOCKED_UNAVAILABLE_MODELS
+    ):
+        raise ClusteredInferenceError(
+            "E5 available-model branch requires a new pre-outcome contract"
+        )
+    intent_count, site_count, paired_registry_rows = _validate_paired_rows(paired_rows)
+    registry = _normalize_registry(hypothesis_registry)
+    effects = registry.copy(deep=True)
+    effects["intent_origin_count"] = intent_count
+    effects["intent_site_count"] = site_count
+    effects["paired_metric_registry_row_count"] = paired_registry_rows
+    effects["shared_success_origin_count"] = 0
+    effects["shared_success_site_count"] = 0
+    effects["raw_p_value"] = None
+    effects["holm_p_value"] = None
+    effects["effect_estimate_numeric"] = None
+    effects["ci95_low"] = None
+    effects["ci95_high"] = None
+    effects["terminal_status"] = "not_estimable_model_unavailable"
+    multiplicity = effects[
+        [
+            "hypothesis_id",
+            "multiplicity_family",
+            "multiplicity_universe_size",
+            "correction_method",
+            "family_wise_alpha",
+            "terminal_status",
             "raw_p_value",
             "holm_p_value",
+            "holm_universe_retained",
         ]
-    ].copy()
+    ].copy(deep=True)
+    site_losses = pd.DataFrame(
+        columns=(
+            "hypothesis_id",
+            "holdout_group_id",
+            "shared_success_origin_count",
+            "loss_model_a",
+            "loss_model_b",
+            "delta",
+        )
+    )
+    bootstrap = pd.DataFrame(
+        columns=("hypothesis_id", "replicate", "cluster_unit", "delta")
+    )
     return {
-        "pairwise_effects": effect_frame,
-        "site_level_losses": pd.concat(sites, ignore_index=True) if sites else pd.DataFrame(),
-        "bootstrap_distributions": pd.DataFrame(distributions),
+        "pairwise_effects": effects,
+        "site_level_losses": site_losses,
+        "bootstrap_distributions": bootstrap,
         "multiplicity_report": multiplicity,
     }
 
@@ -444,14 +342,15 @@ def paired_clustered_inference(
 def _context(
     value: Mapping[str, Any],
 ) -> tuple[Mapping[str, pd.DataFrame], Mapping[str, str]]:
-    if set(value) != {
+    expected_keys = {
         "execution_id",
         "rng_seed",
         "tables",
         "stage_results",
         "model_availability",
         "software_evidence",
-    }:
+    }
+    if not isinstance(value, Mapping) or set(value) != expected_keys:
         raise ClusteredInferenceError("E5 batch_context keys drifted")
     if (
         type(value.get("execution_id")) is not str
@@ -465,16 +364,16 @@ def _context(
     ):
         raise ClusteredInferenceError("E5 batch_context value drifted")
     tables = cast(Mapping[str, Any], value["tables"])
+    if set(tables) != {INPUT_TABLE, REGISTRY_TABLE} or any(
+        type(table) is not pd.DataFrame for table in tables.values()
+    ):
+        raise ClusteredInferenceError("E5 least-privilege table view drifted")
+    evidence = cast(Mapping[str, Any], value["software_evidence"])
+    if evidence:
+        raise ClusteredInferenceError("E5 received unrelated software evidence")
     availability = cast(Mapping[str, Any], value["model_availability"])
-    if any(type(table) is not pd.DataFrame for table in tables.values()):
-        raise ClusteredInferenceError("E5 tables are not DataFrames")
     if any(type(key) is not str or type(status) is not str for key, status in availability.items()):
         raise ClusteredInferenceError("E5 model availability drifted")
-    if set(cast(Mapping[str, Any], value["software_evidence"])) != {
-        "public_tests_xml", "test_report", "openapi", "openapi_contract_report",
-        "end_to_end_report", "environment",
-    }:
-        raise ClusteredInferenceError("E5 software evidence keys drifted")
     return cast(Mapping[str, pd.DataFrame], tables), cast(Mapping[str, str], availability)
 
 
@@ -485,25 +384,27 @@ def execute_closure_sealed_batch_component(
     repo_root: Path | None = None,
 ) -> dict[str, Any]:
     del repo_root
-    _validate(authority, sealed_batch_contract)
+    _validate_boundary(authority, sealed_batch_contract)
     tables, availability = _context(batch_context)
     if dict(availability) != dict(
         cast(Mapping[str, Any], sealed_batch_contract.get("model_availability", {}))
     ):
         raise ClusteredInferenceError("E5 model availability is not batch-bound")
-    source = tables.get(INPUT_TABLE)
-    if type(source) is not pd.DataFrame:
-        raise ClusteredInferenceError(f"E5 input table is absent: {INPUT_TABLE}")
-    result = paired_clustered_inference(
-        source.copy(deep=True), model_availability=availability, rng_seed=1729
+    result = build_unavailable_confirmatory_ledger(
+        tables[INPUT_TABLE].copy(deep=True),
+        tables[REGISTRY_TABLE].copy(deep=True),
+        model_availability=availability,
     )
     effects = result["pairwise_effects"]
-    estimated = int(effects["status"].eq("estimated").sum())
     report = (
-        "# Closure V1 E5 paired clustered inference\n\n"
-        "Bootstrap: 5,000 paired `(source_id, site_id)` resamples, retaining all "
-        "paired rows. Holm correction is within family only.\n\n"
-        f"Estimated comparisons: {estimated}; not estimable: {len(effects) - estimated}.\n"
+        "# Closure V1 E5 confirmatory inference ledger\n\n"
+        "All 27 preregistered hypotheses are retained with their original Holm "
+        "universes (A=3, B=78, C=1, D=9, E=1). P0, P1 and A2 are terminally "
+        "unavailable, so no effect, interval, p-value or bootstrap draw is "
+        "estimable and no multiplicity family was reduced.\n\n"
+        f"- locked intent-horizon denominator: {int(effects['intent_origin_count'].iloc[0])}\n"
+        f"- locked holdout-group denominator: {int(effects['intent_site_count'].iloc[0])}\n"
+        "- cluster unit under any successor contract: holdout_group_id.\n"
     )
     artifacts = {
         path: {
@@ -527,15 +428,16 @@ def execute_closure_sealed_batch_component(
     return {
         "component_id": COMPONENT_ID,
         "stage_id": STAGE_ID,
-        "status": "completed" if estimated else "completed_unavailable",
+        "status": "completed_unavailable",
         "artifacts": artifacts,
         "tables": result,
         "diagnostics": {
             "bootstrap_replicates": BOOTSTRAP_REPLICATES,
-            "cluster_unit": ["source_id", "site_id"],
-            "unavailable_model_ids": sorted(
-                model for model, status in availability.items() if status != "available"
-            ),
+            "cluster_unit": "holdout_group_id",
+            "hypothesis_count": 27,
+            "family_universe_sizes": FAMILY_UNIVERSES,
+            "unavailable_model_ids": list(LOCKED_UNAVAILABLE_MODELS),
+            "holm_universe_reduced": False,
             "row_level_independence_assumed": False,
         },
         "outcome_paths_opened": True,
@@ -545,9 +447,9 @@ def execute_closure_sealed_batch_component(
 
 __all__ = [
     "ClusteredInferenceError",
+    "build_unavailable_confirmatory_ledger",
     "component_contract",
     "component_contract_sha256",
-    "paired_clustered_inference",
-    "preflight_closure_sealed_batch_component",
     "execute_closure_sealed_batch_component",
+    "preflight_closure_sealed_batch_component",
 ]

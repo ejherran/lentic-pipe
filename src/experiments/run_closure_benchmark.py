@@ -63,12 +63,26 @@ E0_U_AUTHORITY_PATH = Path("src/experiments/closure_e0_u_authority.py")
 E0_U_CONTEXT_FACTORY_API = "open_sealed_batch_context"
 E0_U_TRANSACTION_PUBLISHER_API = "publish_sealed_batch_artifacts"
 E0_U_PUBLICATION_AUDITOR_API = "validate_published_sealed_batch_artifacts"
+E0_U_CONTEXT_BUILDER_MODULE = "src.experiments.closure_phase3_context"
+E0_U_CONTEXT_BUILDER_PATH = Path("src/experiments/closure_phase3_context.py")
+E0_U_CONTEXT_BUILDER_API = "materialize_sealed_batch_context"
+E0_U_CONTEXT_PREFLIGHT_API = "preflight_sealed_phase3_context_inputs"
+E0_U_PHASE3_OVERLAY_RECORD_KEY = "_observed_phase3_overlay_record"
 E0_U_AUTHORITY_SOURCE_RECORD_KEY = "sealed_authority_source_record"
 E0_U_RUNNER_SOURCE_RECORD_KEY = "sealed_runner_source_record"
 E0_U_COMPONENT_SOURCE_RECORDS_KEY = "sealed_component_source_records"
+E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY = "sealed_context_builder_source_record"
+E0_U_SUPPORT_SOURCE_RECORDS_KEY = "sealed_support_source_records"
 E0_U_RUNTIME_ENVIRONMENT_RECORD_KEY = "sealed_runtime_environment_record"
 E0_U_GIT_EXECUTABLE_RECORD_KEY = "sealed_git_executable_record"
 E0_U_ENV_EXECUTABLE_RECORD_KEY = "sealed_env_executable_record"
+HISTORICAL_E0_M_COMMIT = "4c92ed7249a91b7dd541fd22dde68b61574556b2"
+E0_U_COMMIT_BINDING_KEYS = (
+    "historical_e0_m_commit",
+    "phase3_code_commit",
+    "phase3_evidence_commit",
+    "phase3_activation_commit",
+)
 E0_U_AUTHORITY_RESULT_KEYS = frozenset(
     {
         "gate",
@@ -80,9 +94,12 @@ E0_U_AUTHORITY_RESULT_KEYS = frozenset(
         "outcome_access_authorized",
         "writes_performed",
         "sealed_batch_command",
+        *E0_U_COMMIT_BINDING_KEYS,
         E0_U_AUTHORITY_SOURCE_RECORD_KEY,
         E0_U_RUNNER_SOURCE_RECORD_KEY,
         E0_U_COMPONENT_SOURCE_RECORDS_KEY,
+        E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY,
+        E0_U_SUPPORT_SOURCE_RECORDS_KEY,
         E0_U_RUNTIME_ENVIRONMENT_RECORD_KEY,
         E0_U_GIT_EXECUTABLE_RECORD_KEY,
         E0_U_ENV_EXECUTABLE_RECORD_KEY,
@@ -96,6 +113,9 @@ E0_U_AUTHORITY_INTERNAL_KEYS = frozenset(
         "_observed_authority_source_record",
         "_observed_git_executable_record",
         "_observed_env_executable_record",
+        "_observed_context_builder_source_record",
+        "_observed_support_source_records",
+        E0_U_PHASE3_OVERLAY_RECORD_KEY,
     }
 )
 GIT_EXECUTABLE = Path("/usr/bin/git")
@@ -114,6 +134,38 @@ GIT_CONFIG_PATH = Path(".git/config")
 GIT_CONFIG_SHA256 = "326855ec20dd2ab7c5a7573748b5ed437bedd930f362438b46ff857319b8cd7d"
 STARTUP_ENVIRONMENT_DENY_NAMES = frozenset({"LD_PRELOAD", "LD_AUDIT"})
 STARTUP_ENVIRONMENT_DENY_PREFIXES = ("PYTHON",)
+SEALED_SUPPORT_SOURCES = (
+    MappingProxyType(
+        {
+            "support_id": "mifal_ed_t2",
+            "module_name": "src.mifal.ed_t2",
+            "source_path": "src/mifal/ed_t2.py",
+            "required_symbols": ("MIFALEDT2",),
+        }
+    ),
+    MappingProxyType(
+        {
+            "support_id": "mifal_closure_panel_adapter",
+            "module_name": "src.mifal.closure_panel_adapter",
+            "source_path": "src/mifal/closure_panel_adapter.py",
+            "required_symbols": (
+                "panel_row_to_closure_mifal_payload",
+                "payload_is_eligible",
+            ),
+        }
+    ),
+    MappingProxyType(
+        {
+            "support_id": "closure_e10_source_evidence",
+            "module_name": "src.experiments.build_closure_e10_source_evidence",
+            "source_path": "src/experiments/build_closure_e10_source_evidence.py",
+            "required_symbols": (
+                "load_closure_e10_software_evidence",
+                "validate_closure_e10_environment_payload",
+            ),
+        }
+    ),
+)
 RUNTIME_DISTRIBUTIONS = (
     "joblib",
     "numpy",
@@ -164,6 +216,7 @@ RUNTIME_STDLIB_IMPORT_ROOTS = frozenset(
         "_ctypes",
         "_datetime",
         "_decimal",
+        "_elementtree",
         "_hashlib",
         "_heapq",
         "_hmac",
@@ -273,6 +326,7 @@ RUNTIME_STDLIB_IMPORT_ROOTS = frozenset(
         "random",
         "re",
         "resource",
+        "runpy",
         "secrets",
         "selectors",
         "shlex",
@@ -293,6 +347,7 @@ RUNTIME_STDLIB_IMPORT_ROOTS = frozenset(
         "textwrap",
         "threading",
         "time",
+        "timeit",
         "token",
         "tokenize",
         "traceback",
@@ -315,10 +370,12 @@ AUTHORITY_STDLIB_IMPORT_ROOTS = frozenset(
     {
         "base64",
         "collections",
+        "ctypes",
         "csv",
         "hashlib",
         "io",
         "json",
+        "math",
         "os",
         "pathlib",
         "stat",
@@ -500,10 +557,24 @@ HYPOTHESIS_REGISTRY_PATH = Path(
 LOCKED_BATCH_COMMAND_PATH = Path(
     "reports/closure_v1/00_protocol/locked_batch_command.txt"
 )
+PHASE3_OVERLAY_MANIFEST_PATH = Path(
+    "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
+)
+PHASE3_OVERLAY_OUTPUT_PATHS = (
+    Path("data/closure_v1/locked_evaluation/phase3_runtime_weights.npz"),
+    Path("data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet"),
+)
 
 MODEL_IDS = ("B0", "B1", "B2", "F0", "F1", "P0", "P1", "M0", "A0", "A1", "A2")
 HORIZONS_MONTHS = (1, 2, 3)
 REGISTERED_SEEDS = (1729, 20260612, 20260613, 20260614, 314159)
+EVALUATION_SOURCE_ID = "wqp"
+EVALUATION_COHORT = "location_holdout"
+EVALUATION_ROLE = "test"
+EVALUATION_TIME_ROLE = "post_2021_evaluation"
+LOCKED_HOLDOUT_SITE_COUNT = 88
+LOCKED_BASE_ORIGIN_COUNT = 4488
+LOCKED_INTENT_COUNT = LOCKED_BASE_ORIGIN_COUNT * len(HORIZONS_MONTHS)
 TERMINAL_STATUSES = (
     "success",
     "input_ineligible",
@@ -512,7 +583,31 @@ TERMINAL_STATUSES = (
     "numerical_failure",
     "infrastructure_failure",
 )
+ENDPOINTS = ("bloom", "continuous", "uncertainty", "ordinal")
+ENDPOINT_STATUSES = (*TERMINAL_STATUSES, "not_applicable")
+ENDPOINT_STATUS_COLUMNS = tuple(f"{endpoint}_status" for endpoint in ENDPOINTS)
 UNAVAILABLE_MODEL_IDS = ("P0", "P1", "A2")
+MODEL_ENDPOINT_AVAILABILITY = MappingProxyType(
+    {
+        "B0": {"bloom": "available", "continuous": "not_applicable", "uncertainty": "not_applicable", "ordinal": "not_applicable"},
+        "B1": {"bloom": "available", "continuous": "available", "uncertainty": "not_applicable", "ordinal": "available"},
+        "B2": {"bloom": "available", "continuous": "not_applicable", "uncertainty": "not_applicable", "ordinal": "available"},
+        "F0": {"bloom": "not_applicable", "continuous": "available", "uncertainty": "not_applicable", "ordinal": "not_applicable"},
+        "F1": {"bloom": "not_applicable", "continuous": "available", "uncertainty": "not_applicable", "ordinal": "not_applicable"},
+        "P0": {endpoint: "model_unavailable" for endpoint in ENDPOINTS},
+        "P1": {endpoint: "model_unavailable" for endpoint in ENDPOINTS},
+        "M0": {"bloom": "available", "continuous": "available", "uncertainty": "not_applicable", "ordinal": "not_applicable"},
+        "A0": {"bloom": "available", "continuous": "available", "uncertainty": "available", "ordinal": "not_applicable"},
+        "A1": {"bloom": "available", "continuous": "available", "uncertainty": "available", "ordinal": "not_applicable"},
+        "A2": {endpoint: "model_unavailable" for endpoint in ENDPOINTS},
+    }
+)
+DETERMINISTIC_MODEL_IDS = ("B0", "F0", "M0")
+ZERO_SLOT_MODEL_IDS = ("A2",)
+E1_MODEL_SLOT_COUNT = (len(MODEL_IDS) - len(ZERO_SLOT_MODEL_IDS)) * len(
+    REGISTERED_SEEDS
+)
+LOCKED_PREDICTION_ROW_COUNT = LOCKED_INTENT_COUNT * E1_MODEL_SLOT_COUNT
 E1_MODEL_PAIRS = (
     ("P1", "B1", "pipeline_vs_persistence"),
     ("P1", "B2", "pipeline_vs_strong_raw_baseline"),
@@ -590,6 +685,7 @@ E1_PREDICTION_COLUMNS = (
     "model_seed",
     "seed_slot",
     "terminal_status",
+    *ENDPOINT_STATUS_COLUMNS,
     "bloom_probability",
     "alert_threshold",
     "predicted_value",
@@ -622,6 +718,7 @@ E1_TARGET_COLUMNS = (
     "horizon_months",
     "actual_bloom",
     "actual_value",
+    "actual_chla_ug_l",
     "actual_trophic_state",
     "target_status",
 )
@@ -763,13 +860,13 @@ BATCH_STAGES = (
         "E7",
         "locked_anfis_ablation_evaluation",
         True,
-        "reports/closure_v1/07_anfis_ablation",
+        "reports/closure_v1/07_anfis_ablation_evaluation",
         (
-            "reports/closure_v1/07_anfis_ablation/ablation_metrics.csv",
-            "reports/closure_v1/07_anfis_ablation/ablation_pairwise.csv",
-            "reports/closure_v1/07_anfis_ablation/membership_stability.csv",
-            "reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv",
-            "reports/closure_v1/07_anfis_ablation/anfis_ablation_report.md",
+            "reports/closure_v1/07_anfis_ablation_evaluation/ablation_metrics.csv",
+            "reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv",
+            "reports/closure_v1/07_anfis_ablation_evaluation/membership_stability.csv",
+            "reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv",
+            "reports/closure_v1/07_anfis_ablation_evaluation/anfis_ablation_report.md",
         ),
     ),
     BatchStage(
@@ -975,6 +1072,11 @@ BATCH_COMPONENTS = (
         ),
         (),
         ("e8_conformal_factors", "e8_uncertainty_ledger"),
+        unavailable_nonempty_tables=(
+            "e8_conformal_factors",
+            "e8_uncertainty_ledger",
+            "e8_recalibration_comparison",
+        ),
         artifact_paths=BATCH_STAGES[8].output_paths,
         artifact_formats=("csv", "csv", "csv", "csv", "markdown"),
         manifest_last_path=BATCH_STAGES[8].output_paths[-1],
@@ -996,7 +1098,7 @@ BATCH_COMPONENTS = (
         ),
         ("e9_planning_inference", "e9_planning_sensitivity", "e9_ecological_coherence"),
         ("e9_planning_origin_deltas", "e9_planning_bootstrap_replicates"),
-        (),
+        ("e9_planning_failures",),
         (
             "e9_planning_origin_deltas",
             "e9_planning_bootstrap_replicates",
@@ -1033,6 +1135,47 @@ CURRENT_MODEL_AVAILABILITY = MappingProxyType(
         "A0": "available",
         "A1": "available",
         "A2": "unavailable",
+    }
+)
+
+COMPONENT_TABLE_VIEWS = MappingProxyType(
+    {
+        "E1_benchmark_scientific_executor": E1_INPUT_TABLES,
+        "E2_site_transfer": ("predictions_long", "e2_site_strata"),
+        "E3_threshold_sensitivity": ("predictions_long",),
+        "E4_reference_targets": ("future_trophic_indicators",),
+        "E4_trophic_evaluation": (
+            "trophic_predictions",
+            "trophic_reference_targets",
+            "nla_trophic_semantic",
+        ),
+        "E5_clustered_inference": ("paired_metric_rows", "hypothesis_registry"),
+        "E6_matched_degradation": ("intent_origins",),
+        "E7_anfis_ablation": (
+            "e7_predictions",
+            "e7_memberships",
+            "e7_learning_curve",
+        ),
+        "E8_uncertainty": (
+            "locked_conformal_factors",
+            "uncertainty_evaluation",
+        ),
+        "E9_planning_inference": ("intent_origins",),
+        "E10_evidence_matrix": (),
+        "E0-U_publication": (),
+    }
+)
+OPENED_CONTEXT_TABLES = frozenset(
+    {
+        "predictions_long",
+        "intent_origins",
+        "target_outcomes",
+        "e2_site_strata",
+        "future_trophic_indicators",
+        "hypothesis_registry",
+        "e7_predictions",
+        "locked_conformal_factors",
+        "uncertainty_evaluation",
     }
 )
 
@@ -1163,10 +1306,14 @@ if set(STAGE_OUTPUT_TABLES) != {f"E{index}" for index in range(1, 11)} or any(
 
 COMPONENT_CONTRACT_SHA256 = MappingProxyType(
     {
-        "E7_anfis_ablation": "62b7d5851cfdf76ca9acb09f6d6ab9e77fd6079ce62b278eefada4dcf5655508",
-        "E8_uncertainty": "097f0132d3ccda9f0dda81a4219284cf338600b2d0249c5053164b32a94aa3e9",
-        "E9_planning_inference": "17e7fa1d6e71251dab2b37632ef6bde4f292659743452891a018720a70ebb55e",
-        "E10_evidence_matrix": "928caeabbc1ef48ff2dc37963aa6a23b79b1fd08553d122ec284720c248495d6",
+        "E4_reference_targets": "79d5890c8c541e55e32d750998a11d126e19b80ff85663369649de2dde20c2ce",
+        "E4_trophic_evaluation": "fef2c9ab0154f62617945997edf1e685325ebcfddb9df754302ee700e041b83e",
+        "E5_clustered_inference": "6540042e3f1d1bf7e27a1818c7b950e8316dce3770d46ef4fb2e554a9c8ae1c1",
+        "E6_matched_degradation": "c00bbfc96d9b8865f9daa9a856e422216e4aa076a552b1f3d1b1adc7d1861403",
+        "E7_anfis_ablation": "a94e84b3308aaf92b5b771aa0d646179419310ffc469187ea958ccd3cea5927a",
+        "E8_uncertainty": "2ec8c92af8baac9be85184fbe80c1cc15ce98bb64d8c71c97a5db247a19680c9",
+        "E9_planning_inference": "51f7730fe87ee168e5687ebc1da10ebc141db6f32544fac48f781407f3b7592b",
+        "E10_evidence_matrix": "a5ca6af7e949d42d97c9afadff00e5dc9ce991e3b951410288df4d3f01f0c4b4",
     }
 )
 COMPONENT_DIAGNOSTICS_CONTRACTS = MappingProxyType(
@@ -1283,6 +1430,9 @@ STARTUP_CONTRACT = MappingProxyType(
             "source_record_key": E0_U_AUTHORITY_SOURCE_RECORD_KEY,
             "runtime_environment_record_key": E0_U_RUNTIME_ENVIRONMENT_RECORD_KEY,
             "result_exact_keys": True,
+            "public_result_keys": sorted(E0_U_AUTHORITY_RESULT_KEYS),
+            "commit_binding_keys": list(E0_U_COMMIT_BINDING_KEYS),
+            "commit_parent_chain": "R_HEAD~3__H_HEAD~2__P_HEAD~1__U_HEAD",
             "private_apis_removed_from_component_payload": True,
         },
         "runtime_activation": {
@@ -1408,6 +1558,36 @@ BATCH_CONTRACT = MappingProxyType(
             "authority_source_record_key": E0_U_AUTHORITY_SOURCE_RECORD_KEY,
             "runner_source_record_key": E0_U_RUNNER_SOURCE_RECORD_KEY,
             "component_source_records_key": E0_U_COMPONENT_SOURCE_RECORDS_KEY,
+            "context_builder_source_record_key": E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY,
+            "support_source_records_key": E0_U_SUPPORT_SOURCE_RECORDS_KEY,
+            "support_sources": [
+                {
+                    "support_id": spec["support_id"],
+                    "module_name": spec["module_name"],
+                    "source_path": spec["source_path"],
+                    "required_symbols": list(
+                        cast(Sequence[str], spec["required_symbols"])
+                    ),
+                }
+                for spec in SEALED_SUPPORT_SOURCES
+            ],
+            "context_builder_module": E0_U_CONTEXT_BUILDER_MODULE,
+            "context_builder_path": E0_U_CONTEXT_BUILDER_PATH.as_posix(),
+            "context_builder_api": E0_U_CONTEXT_BUILDER_API,
+            "context_builder_preflight_api": E0_U_CONTEXT_PREFLIGHT_API,
+            "context_builder_and_preflight_same_sealed_module": True,
+            "context_input_preflight": {
+                "timing": "before_first_durable_outcome_access_log_append",
+                "outcome_access_performed": False,
+                "writes_performed": False,
+                "complete_pretarget_scoring_performed": True,
+                "phase3_overlay_authority_record_compared": True,
+                "anchored_source_evidence_file_count": 7,
+                "cross_append_policy": (
+                    "reopen_rehash_redecode_rescore_and_compare_exact_path_bytes_sha256"
+                ),
+                "snapshot_reuse_authorized": False,
+            },
             "component_loader": "compile_exec_exact_anchored_source_bytes",
             "importlib_component_loading": "forbidden",
             "pyc_component_loading": "forbidden",
@@ -1416,6 +1596,15 @@ BATCH_CONTRACT = MappingProxyType(
             "e0_u_authority_preexec_binding": "physical_equals_index_equals_head_git_blob",
             "e0_u_authority_git_blob_oid_recomputed": True,
             "e0_u_authority_top_level": "stdlib_only_definition_only",
+            "authority_commit_binding_keys": list(E0_U_COMMIT_BINDING_KEYS),
+            "authority_commit_topology": "historical_e0_m_R__phase3_code_H__phase3_evidence_P__phase3_activation_U",
+            "historical_e0_m_commit": HISTORICAL_E0_M_COMMIT,
+            "authority_commit_parent_chain": {
+                "phase3_activation_commit": "HEAD",
+                "phase3_evidence_commit": "HEAD~1",
+                "phase3_code_commit": "HEAD~2",
+                "historical_e0_m_commit": "HEAD~3",
+            },
             "git_executable_record_key": E0_U_GIT_EXECUTABLE_RECORD_KEY,
             "runtime_environment_record_key": E0_U_RUNTIME_ENVIRONMENT_RECORD_KEY,
             "startup_flags": ["isolated", "no_site", "dont_write_bytecode"],
@@ -1434,11 +1623,19 @@ BATCH_CONTRACT = MappingProxyType(
             "execution_id_type": "nonempty_string",
             "rng_seed": RNG_SEED,
             "tables_type": "mapping_string_to_dataframe",
+            "initial_table_names": sorted(OPENED_CONTEXT_TABLES),
             "stage_results_type": "mapping_string_to_mapping",
             "model_availability": dict(CURRENT_MODEL_AVAILABILITY),
             "software_evidence_type": "mapping_with_exact_logical_keys",
             "software_evidence_keys": sorted(SOFTWARE_EVIDENCE_KEYS),
             "component_context_is_copied": True,
+            "component_context_table_views": {
+                key: list(value)
+                for key, value in COMPONENT_TABLE_VIEWS.items()
+                if key != "E0-U_publication"
+            },
+            "component_context_stage_results": "E10_only",
+            "component_context_software_evidence": "E10_only",
             "component_filesystem_writes": "forbidden",
         },
         "artifact_envelope": {
@@ -1456,6 +1653,12 @@ BATCH_CONTRACT = MappingProxyType(
             "physical_nlink": 1,
         },
         "authority_context_factory_api": E0_U_CONTEXT_FACTORY_API,
+        "authority_context_factory_arguments": [
+            "authority",
+            "sealed_batch_contract",
+            "repo_root",
+            "context_builder",
+        ],
         "authority_transaction_publisher_api": E0_U_TRANSACTION_PUBLISHER_API,
         "authority_post_publication_auditor_api": E0_U_PUBLICATION_AUDITOR_API,
         "authority_transaction_publisher_arguments": [
@@ -1464,6 +1667,7 @@ BATCH_CONTRACT = MappingProxyType(
             "batch_context",
             "stage_results",
             "artifacts",
+            "serialized_artifacts",
             "repo_root",
         ],
         "authority_transaction_publisher_receipt": {
@@ -1485,6 +1689,7 @@ BATCH_CONTRACT = MappingProxyType(
             "batch_context",
             "stage_results",
             "artifacts",
+            "serialized_artifacts",
             "publication_receipt",
             "repo_root",
         ],
@@ -2355,6 +2560,20 @@ def _sealed_authority_builtins() -> dict[str, Any]:
         fromlist: Sequence[str] = (),
         level: int = 0,
     ) -> Any:
+        if type(name) is str and name.partition(".")[0] == "__future__":
+            if (
+                name == "__future__"
+                and type(level) is int
+                and level == 0
+                and type(fromlist) is tuple
+                and fromlist == ("annotations",)
+            ):
+                return real_import(
+                    name, globals_value, locals_value, fromlist, level
+                )
+            raise ImportError(
+                "E0-U authority future import is not exactly annotations"
+            )
         if (
             type(name) is not str
             or not name
@@ -3078,7 +3297,7 @@ class _SealedRuntimeImportGuard:
 
 def _install_sealed_source_namespaces() -> None:
     created: dict[str, ModuleType] = {}
-    for name in ("src", "src.experiments", "src.reporting"):
+    for name in ("src", "src.experiments", "src.reporting", "src.mifal"):
         if name in sys.modules:
             raise ClosureBenchmarkError("E0-U source namespace existed before activation")
         module = ModuleType(name)
@@ -3089,6 +3308,7 @@ def _install_sealed_source_namespaces() -> None:
         sys.modules[name] = module
     created["src"].__dict__["experiments"] = created["src.experiments"]
     created["src"].__dict__["reporting"] = created["src.reporting"]
+    created["src"].__dict__["mifal"] = created["src.mifal"]
     authority = sys.modules.get(E0_U_AUTHORITY_MODULE)
     if not isinstance(authority, ModuleType):
         raise ClosureBenchmarkError("E0-U authority module disappeared before activation")
@@ -3132,9 +3352,9 @@ def _activate_sealed_runtime_environment(authority: Mapping[str, Any]) -> dict[s
     if "site" in sys.modules:
         raise ClosureBenchmarkError("E0-U site was imported before runtime activation")
     baseline = _runtime_environment_record()
-    baseline["bootstrap_import_state"] = _bootstrap_import_state_record()
     if authority.get(E0_U_RUNTIME_ENVIRONMENT_RECORD_KEY) != baseline:
         raise ClosureBenchmarkError("E0-U runtime environment authority binding drifted")
+    baseline["bootstrap_import_state"] = _bootstrap_import_state_record()
     purelib = cast(str, baseline["purelib_path"])
     if purelib in sys.path or any(
         "site-packages" in Path(value).parts for value in sys.path if isinstance(value, str)
@@ -3243,7 +3463,10 @@ def _recapture_runtime_environment(state: Mapping[str, Any]) -> None:
         "src",
         "src.experiments",
         "src.reporting",
+        "src.mifal",
         E0_U_AUTHORITY_MODULE,
+        E0_U_CONTEXT_BUILDER_MODULE,
+        *(cast(str, spec["module_name"]) for spec in SEALED_SUPPORT_SOURCES),
         *component_modules,
     }
     allowed_new_roots = (
@@ -3382,6 +3605,87 @@ def _component_source_record(
     }
 
 
+def _context_builder_source_record(*, repo_root: Path) -> dict[str, Any]:
+    try:
+        payload, metadata = _read_regular_source(
+            E0_U_CONTEXT_BUILDER_PATH, repo_root=repo_root
+        )
+        tree = ast.parse(
+            payload.decode("utf-8"),
+            filename=E0_U_CONTEXT_BUILDER_PATH.as_posix(),
+        )
+    except (ClosureBenchmarkError, UnicodeDecodeError, SyntaxError) as exc:
+        return {
+            "support_id": "phase3_context_builder",
+            "module_name": E0_U_CONTEXT_BUILDER_MODULE,
+            "source_path": E0_U_CONTEXT_BUILDER_PATH.as_posix(),
+            "required_api": E0_U_CONTEXT_BUILDER_API,
+            "status": "missing_or_invalid",
+            "reason": type(exc).__name__,
+        }
+    functions = {
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef))
+    }
+    identity = _source_identity_record(
+        E0_U_CONTEXT_BUILDER_PATH, payload, metadata
+    )
+    present = {
+        E0_U_CONTEXT_BUILDER_API,
+        E0_U_CONTEXT_PREFLIGHT_API,
+    }.issubset(functions)
+    return {
+        "support_id": "phase3_context_builder",
+        "module_name": E0_U_CONTEXT_BUILDER_MODULE,
+        "source_path": E0_U_CONTEXT_BUILDER_PATH.as_posix(),
+        "bytes": identity["bytes"],
+        "sha256": identity["sha256"],
+        "mode": identity["mode"],
+        "nlink": identity["nlink"],
+        "required_api": E0_U_CONTEXT_BUILDER_API,
+        "status": "ready" if present else "missing_required_api",
+    }
+
+
+def _support_source_record(
+    spec: Mapping[str, Any], *, repo_root: Path
+) -> dict[str, Any]:
+    relative_path = Path(cast(str, spec["source_path"]))
+    required_symbols = tuple(cast(Sequence[str], spec["required_symbols"]))
+    try:
+        payload, metadata = _read_regular_source(relative_path, repo_root=repo_root)
+        tree = ast.parse(payload.decode("utf-8"), filename=relative_path.as_posix())
+    except (ClosureBenchmarkError, UnicodeDecodeError, SyntaxError) as exc:
+        return {
+            "support_id": spec["support_id"],
+            "module_name": spec["module_name"],
+            "source_path": relative_path.as_posix(),
+            "required_symbols": list(required_symbols),
+            "status": "missing_or_invalid",
+            "reason": type(exc).__name__,
+        }
+    symbols = {
+        node.name
+        for node in tree.body
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef))
+    }
+    missing = sorted(set(required_symbols).difference(symbols))
+    identity = _source_identity_record(relative_path, payload, metadata)
+    return {
+        "support_id": spec["support_id"],
+        "module_name": spec["module_name"],
+        "source_path": relative_path.as_posix(),
+        "bytes": identity["bytes"],
+        "sha256": identity["sha256"],
+        "mode": identity["mode"],
+        "nlink": identity["nlink"],
+        "required_symbols": list(required_symbols),
+        "missing_symbols": missing,
+        "status": "ready" if not missing else "missing_required_symbol",
+    }
+
+
 def _execute_sealed_source_module(
     *,
     module_name: str,
@@ -3455,6 +3759,11 @@ def collect_sealed_batch_component_readiness(
         _component_source_record(component, repo_root=root)
         for component in BATCH_COMPONENTS
     ]
+    context_builder_record = _context_builder_source_record(repo_root=root)
+    support_records = [
+        _support_source_record(spec, repo_root=root)
+        for spec in SEALED_SUPPORT_SOURCES
+    ]
     missing: list[dict[str, Any]] = []
     if not callable(globals().get(INTERNAL_E1_EXECUTOR_API)):
         missing.append(
@@ -3473,6 +3782,23 @@ def collect_sealed_batch_component_readiness(
         for record in records
         if record["status"] != "ready"
     )
+    if context_builder_record["status"] != "ready":
+        missing.append(
+            {
+                "component_id": "phase3_context_builder",
+                "stage_id": "E0-U",
+                "reason": context_builder_record["status"],
+            }
+        )
+    missing.extend(
+        {
+            "component_id": record["support_id"],
+            "stage_id": "E0-U",
+            "reason": record["status"],
+        }
+        for record in support_records
+        if record["status"] != "ready"
+    )
     return {
         "status": (
             "sealed_batch_components_ready"
@@ -3487,6 +3813,69 @@ def collect_sealed_batch_component_readiness(
         "missing_component_count": len(missing),
         "missing_components": missing,
         "component_source_records": records,
+        "context_builder_source_record": context_builder_record,
+        "support_source_records": support_records,
+        "outcome_paths_opened": False,
+        "future_outcomes_accessed": False,
+        "writes_performed": False,
+    }
+
+
+def collect_e0_u_activation_material(
+    *, repo_root: Path | None = None
+) -> dict[str, Any]:
+    """Capture the outcome-free material sealed by the future E0-U activation.
+
+    This API is intended for the data-only activation writer.  It must be
+    called from the same isolated, ``-S`` and sanitized Python runtime used by
+    the sealed batch so that the runtime record is byte-for-byte comparable at
+    execution time.  It never resolves an outcome path and performs no writes.
+    """
+
+    root = PROJECT_ROOT if repo_root is None else Path(repo_root).resolve()
+    if root != PROJECT_ROOT:
+        raise ClosureBenchmarkError("E0-U activation material repository drifted")
+    source_before = runner_source_record(repo_root=root)
+    readiness_before = collect_sealed_batch_component_readiness(repo_root=root)
+    if readiness_before["missing_component_count"] != 0:
+        raise ClosureBenchmarkError(
+            "E0-U activation material cannot seal incomplete components"
+        )
+    runtime_environment = _runtime_environment_record()
+    source_after = runner_source_record(repo_root=root)
+    readiness_after = collect_sealed_batch_component_readiness(repo_root=root)
+    if source_after != source_before or readiness_after != readiness_before:
+        raise ClosureBenchmarkError(
+            "E0-U activation sources changed during material capture"
+        )
+    heavy = sorted(
+        path
+        for path, format_name in EXPECTED_ARTIFACT_FORMATS.items()
+        if format_name == "parquet"
+    )
+    direct = sorted(set(EXPECTED_ARTIFACT_PATHS).difference(heavy))
+    if len(heavy) != 4 or len(direct) != 48:
+        raise ClosureBenchmarkError("E0-U activation DVC partition drifted")
+    return {
+        "status": "e0_u_activation_material_ready",
+        "runner_source_record": source_before,
+        "component_source_records": readiness_before["component_source_records"],
+        "context_builder_source_record": readiness_before[
+            "context_builder_source_record"
+        ],
+        "support_source_records": readiness_before["support_source_records"],
+        "runtime_environment_record": runtime_environment,
+        "sealed_batch_contract_sha256": sealed_batch_contract_sha256(),
+        "expected_artifact_paths_sha256": EXPECTED_ARTIFACT_PATHS_SHA256,
+        "expected_publication_order_sha256": EXPECTED_PUBLICATION_ORDER_SHA256,
+        "dvc_policy": {
+            "direct_git_artifact_paths": direct,
+            "dvc_pointer_paths": sorted(path + ".dvc" for path in heavy),
+            "heavy_artifact_paths": heavy,
+            "dvc_add_after_success_only": True,
+            "dvc_push_after_audit_only": True,
+            "implicit_dvc_forbidden": True,
+        },
         "outcome_paths_opened": False,
         "future_outcomes_accessed": False,
         "writes_performed": False,
@@ -3510,6 +3899,133 @@ def _load_e0_u_authority_module(
             "E0-U authority is not published or its exact source cannot be loaded; "
             "sealed batch execution is forbidden"
         ) from exc
+
+
+def _validate_authority_commit_bindings(
+    authority: Mapping[str, Any],
+    authority_source_record: Mapping[str, Any],
+) -> dict[str, str]:
+    """Reconstruct and validate the exact historical R -> H -> P -> U chain."""
+
+    observed_head = authority_source_record.get("git_head")
+    if type(observed_head) is not str:
+        raise ClosureBenchmarkError("E0-U authority activation commit is absent")
+    expected = {
+        "historical_e0_m_commit": _git_oid_output(
+            _sealed_git("rev-parse", "--verify", "HEAD~3^{commit}"),
+            context="historical E0-M commit",
+        ),
+        "phase3_code_commit": _git_oid_output(
+            _sealed_git("rev-parse", "--verify", "HEAD~2^{commit}"),
+            context="Phase 3 code commit",
+        ),
+        "phase3_evidence_commit": _git_oid_output(
+            _sealed_git("rev-parse", "--verify", "HEAD~1^{commit}"),
+            context="Phase 3 evidence commit",
+        ),
+        "phase3_activation_commit": _git_oid_output(
+            _sealed_git("rev-parse", "--verify", "HEAD^{commit}"),
+            context="Phase 3 activation commit",
+        ),
+    }
+    if (
+        expected["historical_e0_m_commit"] != HISTORICAL_E0_M_COMMIT
+        or expected["phase3_activation_commit"] != observed_head
+        or len(set(expected.values())) != 4
+    ):
+        raise ClosureBenchmarkError("E0-U authority R-H-P-U topology drifted")
+    for key in E0_U_COMMIT_BINDING_KEYS:
+        value = authority.get(key)
+        if (
+            type(value) is not str
+            or len(value) != 40
+            or any(character not in "0123456789abcdef" for character in value)
+            or value != expected[key]
+        ):
+            raise ClosureBenchmarkError(
+                f"E0-U authority commit binding drifted: {key}"
+            )
+    return expected
+
+
+def _require_clean_repository_snapshot_before_outcome_log(
+    authority: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Recapture the published U topology and a clean tree immediately pre-open."""
+
+    activation_commit = authority.get("phase3_activation_commit")
+    if (
+        type(activation_commit) is not str
+        or len(activation_commit) != 40
+        or any(character not in "0123456789abcdef" for character in activation_commit)
+    ):
+        raise ClosureBenchmarkError(
+            "E0-U activation commit is malformed before outcome logging"
+        )
+
+    def capture() -> dict[str, Any]:
+        refs = {
+            name: _git_oid_output(
+                _sealed_git("rev-parse", "--verify", f"{name}^{{commit}}"),
+                context=f"{name} pre-outcome-log recapture",
+            )
+            for name in (
+                "HEAD",
+                "refs/heads/main",
+                "refs/remotes/origin/main",
+                "refs/remotes/origin/HEAD",
+            )
+        }
+        try:
+            head_ref = _sealed_git(
+                "symbolic-ref", "--quiet", "HEAD"
+            ).decode("ascii")
+            origin_head_ref = _sealed_git(
+                "symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"
+            ).decode("ascii")
+        except UnicodeDecodeError as exc:
+            raise ClosureBenchmarkError(
+                "E0-U symbolic refs are not ASCII before outcome logging"
+            ) from exc
+        status = _sealed_git(
+            "status",
+            "--porcelain=v1",
+            "-z",
+            "--untracked-files=all",
+        )
+        return {
+            "refs": refs,
+            "head_ref": head_ref,
+            "origin_head_ref": origin_head_ref,
+            "status": status,
+        }
+
+    first = capture()
+    second = capture()
+    if first != second:
+        raise ClosureBenchmarkError(
+            "E0-U repository changed during the final pre-outcome-log snapshot"
+        )
+    refs = cast(dict[str, str], second["refs"])
+    if (
+        set(refs.values()) != {activation_commit}
+        or second["head_ref"] != "refs/heads/main\n"
+        or second["origin_head_ref"] != "refs/remotes/origin/main\n"
+        or second["status"] != b""
+    ):
+        raise ClosureBenchmarkError(
+            "E0-U repository is not published and clean immediately before outcome logging"
+        )
+    return {
+        "phase3_activation_commit": activation_commit,
+        "refs_aligned": True,
+        "head_ref": "refs/heads/main",
+        "origin_head_ref": "refs/remotes/origin/main",
+        "worktree_clean": True,
+        "index_clean": True,
+        "untracked_paths_absent": True,
+        "double_recapture_equal": True,
+    }
 
 
 def _require_e0_u_authority_first(
@@ -3556,6 +4072,7 @@ def _require_e0_u_authority_first(
     for key, value in expected.items():
         if type(authority.get(key)) is not type(value) or authority.get(key) != value:
             raise ClosureBenchmarkError(f"E0-U authority field drifted: {key}")
+    _validate_authority_commit_bindings(authority, expected_source_record)
     if authority.get("sealed_batch_command") != SEALED_BATCH_COMMAND:
         raise ClosureBenchmarkError("E0-U authority sealed command drifted")
     if authority.get(E0_U_AUTHORITY_SOURCE_RECORD_KEY) != dict(expected_source_record):
@@ -3568,6 +4085,40 @@ def _require_e0_u_authority_first(
         raise ClosureBenchmarkError("E0-U authority env executable binding drifted")
     if _git_bound_e0_u_authority_source_record() != dict(expected_source_record):
         raise ClosureBenchmarkError("E0-U authority repository binding changed during require")
+    context_builder_record = _context_builder_source_record(repo_root=PROJECT_ROOT)
+    if (
+        context_builder_record.get("status") != "ready"
+        or authority.get(E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY)
+        != context_builder_record
+    ):
+        raise ClosureBenchmarkError(
+            "E0-U authority context-builder binding drifted"
+        )
+    support_source_records = [
+        _support_source_record(spec, repo_root=PROJECT_ROOT)
+        for spec in SEALED_SUPPORT_SOURCES
+    ]
+    if (
+        any(record.get("status") != "ready" for record in support_source_records)
+        or authority.get(E0_U_SUPPORT_SOURCE_RECORDS_KEY)
+        != support_source_records
+    ):
+        raise ClosureBenchmarkError("E0-U authority support-source binding drifted")
+    overlay_validator = getattr(module, "_validate_phase3_overlay_bundle", None)
+    if not callable(overlay_validator):
+        raise ClosureBenchmarkError("E0-U authority overlay validator is absent")
+    try:
+        overlay_record = _validate_phase3_overlay_record(
+            overlay_validator(
+                PROJECT_ROOT,
+                authority["phase3_code_commit"],
+                authority["phase3_evidence_commit"],
+            )
+        )
+    except BaseException as exc:
+        raise ClosureBenchmarkError(
+            "E0-U authority Phase 3 overlay recapture failed"
+        ) from exc
     for api_name in (
         E0_U_CONTEXT_FACTORY_API,
         E0_U_TRANSACTION_PUBLISHER_API,
@@ -3580,6 +4131,9 @@ def _require_e0_u_authority_first(
     authority["_observed_authority_source_record"] = dict(expected_source_record)
     authority["_observed_git_executable_record"] = git_record
     authority["_observed_env_executable_record"] = env_record
+    authority["_observed_context_builder_source_record"] = context_builder_record
+    authority["_observed_support_source_records"] = support_source_records
+    authority[E0_U_PHASE3_OVERLAY_RECORD_KEY] = overlay_record
     return authority
 
 
@@ -3659,6 +4213,8 @@ def _validate_opened_batch_context(raw: Any) -> dict[str, Any]:
     software_evidence = raw.get("software_evidence")
     if not isinstance(tables, Mapping) or not isinstance(stage_results, Mapping):
         raise ClosureBenchmarkError("E0-U batch context mappings are malformed")
+    if set(tables) != OPENED_CONTEXT_TABLES:
+        raise ClosureBenchmarkError("E0-U opened logical table scope drifted")
     if stage_results:
         raise ClosureBenchmarkError("E0-U opened context contains precomputed stages")
     if not isinstance(availability, Mapping) or dict(availability) != dict(
@@ -3763,6 +4319,7 @@ def _normalize_e1_prediction_surface(tables: Mapping[str, Any]) -> Any:
             "target_year_month",
             "model_id",
             "terminal_status",
+            *ENDPOINT_STATUS_COLUMNS,
         ],
         label="prediction",
     )
@@ -3806,28 +4363,88 @@ def _normalize_e1_prediction_surface(tables: Mapping[str, Any]) -> Any:
         raise ClosureBenchmarkError("E1 model registry drifted")
     if not predictions["terminal_status"].isin(TERMINAL_STATUSES).all():
         raise ClosureBenchmarkError("E1 terminal status drifted")
-    if not intents["evaluation_cohort"].isin(
-        ["legacy_development", "location_holdout"]
-    ).all() or not intents["evaluation_role"].isin(["validation", "test"]).all():
-        raise ClosureBenchmarkError("E1 evaluation cohort/role drifted")
-    if not intents.loc[
-        intents["evaluation_cohort"].eq("location_holdout"), "evaluation_role"
-    ].eq("test").all():
-        raise ClosureBenchmarkError("E1 location holdout leaked into validation")
+    if any(
+        not predictions[column].isin(ENDPOINT_STATUSES).all()
+        for column in ENDPOINT_STATUS_COLUMNS
+    ):
+        raise ClosureBenchmarkError("E1 endpoint terminal status drifted")
+    if (
+        not intents["source_id"].eq(EVALUATION_SOURCE_ID).all()
+        or not intents["evaluation_cohort"].eq(EVALUATION_COHORT).all()
+        or not intents["evaluation_role"].eq(EVALUATION_ROLE).all()
+        or not intents["time_role"].eq(EVALUATION_TIME_ROLE).all()
+    ):
+        raise ClosureBenchmarkError("E1 locked holdout cohort/role/time binding drifted")
+    if not intents["holdout_group_id"].eq(
+        intents["source_id"].astype(str) + "::" + intents["site_id"].astype(str)
+    ).all():
+        raise ClosureBenchmarkError("E1 holdout-group derivation drifted")
     _validate_origin_horizon_arithmetic(intents)
     if intents.duplicated(identity).any() or targets.duplicated(target_identity).any():
         raise ClosureBenchmarkError("E1 locked intent/target keys are duplicated")
+    origin_identity = [
+        "source_id",
+        "site_id",
+        "holdout_group_id",
+        "common_origin_id",
+        "origin_year_month",
+    ]
+    horizon_sets = intents.groupby(origin_identity, sort=True)["horizon_months"].apply(
+        lambda values: set(values.astype("int64"))
+    )
+    if (
+        len(intents) != LOCKED_INTENT_COUNT
+        or len(horizon_sets) != LOCKED_BASE_ORIGIN_COUNT
+        or any(value != set(HORIZONS_MONTHS) for value in horizon_sets)
+        or intents[["source_id", "site_id"]].drop_duplicates().shape[0]
+        != LOCKED_HOLDOUT_SITE_COUNT
+    ):
+        raise ClosureBenchmarkError("E1 locked holdout denominator drifted")
+    try:
+        origin_periods = pd.PeriodIndex(intents["origin_year_month"], freq="M")
+        target_periods = pd.PeriodIndex(intents["target_year_month"], freq="M")
+    except BaseException as exc:
+        raise ClosureBenchmarkError("E1 evaluation month dialect drifted") from exc
+    if (origin_periods < pd.Period("2022-01", freq="M")).any() or (
+        target_periods < pd.Period("2022-02", freq="M")
+    ).any():
+        raise ClosureBenchmarkError("E1 pre-2022 rows entered the locked evaluation")
+    intent_target_keys = set(
+        map(tuple, intents[target_identity].itertuples(index=False, name=None))
+    )
+    observed_target_keys = set(
+        map(tuple, targets[target_identity].itertuples(index=False, name=None))
+    )
+    if observed_target_keys != intent_target_keys:
+        raise ClosureBenchmarkError("E1 target key universe is not exact")
 
     prediction_key = [*identity, "model_id", "seed_slot"]
     if predictions.duplicated(prediction_key).any():
         raise ClosureBenchmarkError("E1 prediction keys are duplicated")
-    expected_pairs = {(model, seed) for model in MODEL_IDS for seed in REGISTERED_SEEDS}
+    expected_pairs = {
+        (model, seed)
+        for model in MODEL_IDS
+        if model not in ZERO_SLOT_MODEL_IDS
+        for seed in REGISTERED_SEEDS
+    }
     pair_sets = predictions.groupby(identity, sort=True).apply(
         lambda group: set(zip(group["model_id"], group["seed_slot"], strict=True)),
         include_groups=False,
     )
-    if len(pair_sets) != len(intents) or any(pairs != expected_pairs for pairs in pair_sets):
+    if (
+        len(predictions) != LOCKED_PREDICTION_ROW_COUNT
+        or len(pair_sets) != len(intents)
+        or any(pairs != expected_pairs for pairs in pair_sets)
+    ):
         raise ClosureBenchmarkError("E1 model-by-seed paired surface is incomplete")
+    deterministic = predictions["model_id"].isin(DETERMINISTIC_MODEL_IDS)
+    if (
+        not predictions.loc[deterministic, "model_seed"].eq(RNG_SEED).all()
+        or not predictions.loc[~deterministic, "model_seed"].eq(
+            predictions.loc[~deterministic, "seed_slot"]
+        ).all()
+    ):
+        raise ClosureBenchmarkError("E1 model-seed versus inferential-slot policy drifted")
 
     numeric_prediction_columns = [
         "bloom_probability",
@@ -3846,60 +4463,114 @@ def _normalize_e1_prediction_surface(tables: Mapping[str, Any]) -> Any:
         predictions[column] = pd.to_numeric(predictions[column], errors="coerce")
     targets["actual_bloom"] = pd.to_numeric(targets["actual_bloom"], errors="coerce")
     targets["actual_value"] = pd.to_numeric(targets["actual_value"], errors="coerce")
+    targets["actual_chla_ug_l"] = pd.to_numeric(
+        targets["actual_chla_ug_l"], errors="coerce"
+    )
     _require_text_columns(targets, ["target_status"], label="target")
     if not targets["target_status"].isin(["available", "target_unavailable"]).all():
         raise ClosureBenchmarkError("E1 locked target status drifted")
     target_available = targets["target_status"].eq("available")
     target_numeric = targets.loc[
-        target_available, ["actual_bloom", "actual_value"]
+        target_available, ["actual_bloom", "actual_value", "actual_chla_ug_l"]
     ].to_numpy(dtype="float64")
     if (
         target_numeric.size
         and not np.isfinite(target_numeric).all()
         or not targets.loc[target_available, "actual_bloom"].isin([0.0, 1.0]).all()
-        or targets.loc[~target_available, ["actual_bloom", "actual_value"]]
+        or not targets.loc[target_available, "actual_value"].between(0.0, 1.0).all()
+        or (targets.loc[target_available, "actual_chla_ug_l"] < 0.0).any()
+        or not targets.loc[target_available, "actual_bloom"].eq(
+            targets.loc[target_available, "actual_chla_ug_l"].gt(30.0).astype(float)
+        ).all()
+        or targets.loc[
+            ~target_available, ["actual_bloom", "actual_value", "actual_chla_ug_l"]
+        ]
         .notna()
         .any()
         .any()
     ):
         raise ClosureBenchmarkError("E1 locked target values drifted")
-
-    success = predictions["terminal_status"].eq("success")
-    required_success = numeric_prediction_columns
-    if predictions.loc[success, required_success].isna().any().any():
-        raise ClosureBenchmarkError("E1 successful prediction is incomplete")
-    success_values = predictions.loc[success, required_success].to_numpy(dtype="float64")
-    if success_values.size and not np.isfinite(success_values).all():
-        raise ClosureBenchmarkError("E1 successful prediction is nonfinite")
+    trophic_labels = {"oligotrophic", "mesotrophic", "eutrophic", "hypereutrophic"}
     if (
-        not predictions.loc[success, "bloom_probability"].between(0.0, 1.0).all()
-        or not predictions.loc[success, "alert_threshold"].between(0.0, 1.0).all()
-        or not (predictions.loc[success, "predicted_sigma"] > 0.0).all()
-        or not (
-            predictions.loc[success, "predicted_lower"]
-            <= predictions.loc[success, "predicted_upper"]
-        ).all()
-        or not (
-            predictions.loc[success, "cutpoint_1"]
-            < predictions.loc[success, "cutpoint_2"]
-        ).all()
-        or not (
-            predictions.loc[success, "cutpoint_2"]
-            < predictions.loc[success, "cutpoint_3"]
-        ).all()
-        or not predictions.loc[success, "ordinal_score"].between(0.0, 1.0).all()
-        or not predictions.loc[success, "cutpoint_1"].between(0.0, 1.0).all()
-        or not predictions.loc[success, "cutpoint_2"].between(0.0, 1.0).all()
-        or not predictions.loc[success, "cutpoint_3"].between(0.0, 1.0).all()
+        targets.loc[target_available, "actual_trophic_state"].isna().any()
+        or not targets.loc[target_available, "actual_trophic_state"]
+        .astype(str)
+        .isin(trophic_labels)
+        .all()
+        or targets.loc[~target_available, "actual_trophic_state"].notna().any()
     ):
-        raise ClosureBenchmarkError("E1 successful prediction range drifted")
-    nonsuccess = ~success
-    if predictions.loc[nonsuccess, numeric_prediction_columns].notna().any().any():
-        raise ClosureBenchmarkError("E1 terminal failure contains invented predictions")
+        raise ClosureBenchmarkError("E1 locked trophic target dialect drifted")
+
+    endpoint_fields = {
+        "bloom": ("bloom_probability", "alert_threshold"),
+        "continuous": ("predicted_value", "continuous_score"),
+        "uncertainty": (
+            "predicted_sigma",
+            "predicted_lower",
+            "predicted_upper",
+        ),
+        "ordinal": ("ordinal_score", "cutpoint_1", "cutpoint_2", "cutpoint_3"),
+    }
+    for endpoint, fields in endpoint_fields.items():
+        endpoint_success = predictions[f"{endpoint}_status"].eq("success")
+        if predictions.loc[endpoint_success, list(fields)].isna().any().any():
+            raise ClosureBenchmarkError(
+                f"E1 successful {endpoint} endpoint is incomplete"
+            )
+        values = predictions.loc[endpoint_success, list(fields)].to_numpy(
+            dtype="float64"
+        )
+        if values.size and not np.isfinite(values).all():
+            raise ClosureBenchmarkError(
+                f"E1 successful {endpoint} endpoint is nonfinite"
+            )
+        if predictions.loc[~endpoint_success, list(fields)].notna().any().any():
+            raise ClosureBenchmarkError(
+                f"E1 unavailable {endpoint} endpoint contains invented values"
+            )
+    bloom_success = predictions["bloom_status"].eq("success")
+    continuous_success = predictions["continuous_status"].eq("success")
+    uncertainty_success = predictions["uncertainty_status"].eq("success")
+    ordinal_success = predictions["ordinal_status"].eq("success")
+    if (
+        not predictions.loc[bloom_success, "bloom_probability"].between(0.0, 1.0).all()
+        or not predictions.loc[bloom_success, "alert_threshold"].between(0.0, 1.0).all()
+        or not predictions.loc[continuous_success, "predicted_value"].between(0.0, 1.0).all()
+        or not predictions.loc[continuous_success, "continuous_score"].between(0.0, 1.0).all()
+        or not (predictions.loc[uncertainty_success, "predicted_sigma"] > 0.0).all()
+        or not (
+            predictions.loc[uncertainty_success, "predicted_lower"]
+            <= predictions.loc[uncertainty_success, "predicted_upper"]
+        ).all()
+        or not predictions.loc[uncertainty_success, "continuous_status"].eq("success").all()
+        or not (
+            predictions.loc[ordinal_success, "cutpoint_1"]
+            < predictions.loc[ordinal_success, "cutpoint_2"]
+        ).all()
+        or not (
+            predictions.loc[ordinal_success, "cutpoint_2"]
+            < predictions.loc[ordinal_success, "cutpoint_3"]
+        ).all()
+        or not predictions.loc[ordinal_success, "ordinal_score"].between(0.0, 1.0).all()
+        or not predictions.loc[ordinal_success, "cutpoint_1"].between(0.0, 1.0).all()
+        or not predictions.loc[ordinal_success, "cutpoint_2"].between(0.0, 1.0).all()
+        or not predictions.loc[ordinal_success, "cutpoint_3"].between(0.0, 1.0).all()
+    ):
+        raise ClosureBenchmarkError("E1 successful endpoint range drifted")
+    global_success = predictions["terminal_status"].eq("success")
+    any_endpoint_success = predictions[list(ENDPOINT_STATUS_COLUMNS)].eq("success").any(axis=1)
+    if not global_success.eq(any_endpoint_success).all():
+        raise ClosureBenchmarkError("E1 row and endpoint terminal statuses disagree")
     for model_id, availability in CURRENT_MODEL_AVAILABILITY.items():
         rows = predictions["model_id"].eq(model_id)
         if availability == "unavailable":
-            if not predictions.loc[rows, "terminal_status"].eq("model_unavailable").all():
+            if rows.any() and (
+                not predictions.loc[rows, "terminal_status"].eq("model_unavailable").all()
+                or not predictions.loc[rows, list(ENDPOINT_STATUS_COLUMNS)]
+                .eq("model_unavailable")
+                .all()
+                .all()
+            ):
                 raise ClosureBenchmarkError(
                     f"E1 unavailable model terminal drifted: {model_id}"
                 )
@@ -3907,6 +4578,23 @@ def _normalize_e1_prediction_surface(tables: Mapping[str, Any]) -> Any:
             raise ClosureBenchmarkError(
                 f"E1 available model was silently marked unavailable: {model_id}"
             )
+        if rows.any() and availability == "available":
+            for endpoint, endpoint_availability in MODEL_ENDPOINT_AVAILABILITY[
+                model_id
+            ].items():
+                statuses = predictions.loc[rows, f"{endpoint}_status"]
+                if endpoint_availability == "not_applicable" and not statuses.eq(
+                    "not_applicable"
+                ).all():
+                    raise ClosureBenchmarkError(
+                        f"E1 not-applicable endpoint drifted: {model_id}:{endpoint}"
+                    )
+                if endpoint_availability == "available" and statuses.isin(
+                    ["not_applicable", "model_unavailable"]
+                ).any():
+                    raise ClosureBenchmarkError(
+                        f"E1 applicable endpoint was silently removed: {model_id}:{endpoint}"
+                    )
 
     merged = predictions.merge(
         intents,
@@ -3937,6 +4625,24 @@ def _normalize_e1_prediction_surface(tables: Mapping[str, Any]) -> Any:
         ~target_missing, "terminal_status"
     ].eq("target_unavailable").any():
         raise ClosureBenchmarkError("E1 available target was marked unavailable")
+    for endpoint in ENDPOINTS:
+        status_column = f"{endpoint}_status"
+        applicable = merged["model_id"].map(
+            lambda model_id: MODEL_ENDPOINT_AVAILABILITY[str(model_id)][endpoint]
+            == "available"
+        )
+        if not merged.loc[target_missing & models_available & applicable, status_column].eq(
+            "target_unavailable"
+        ).all():
+            raise ClosureBenchmarkError(
+                f"E1 missing-target endpoint precedence drifted: {endpoint}"
+            )
+        if merged.loc[
+            ~target_missing & models_available & applicable, status_column
+        ].eq("target_unavailable").any():
+            raise ClosureBenchmarkError(
+                f"E1 available-target endpoint was marked unavailable: {endpoint}"
+            )
     return merged.sort_values(prediction_key, kind="mergesort").reset_index(drop=True)
 
 
@@ -3953,7 +4659,6 @@ def _e1_metric_values(group: Any) -> dict[str, float | None]:
         recall_score,
     )
 
-    successful = group.loc[group["terminal_status"].eq("success")]
     empty = {
         "rmse": None,
         "mae": None,
@@ -3967,37 +4672,55 @@ def _e1_metric_values(group: Any) -> dict[str, float | None]:
         "macro_f1": None,
         "alert_rate": None,
     }
-    if successful.empty:
-        return empty
-    actual = successful["actual_value"].to_numpy(dtype="float64")
-    predicted = successful["predicted_value"].to_numpy(dtype="float64")
-    sigma = successful["predicted_sigma"].to_numpy(dtype="float64")
-    labels = successful["actual_bloom"].to_numpy(dtype="int64")
-    probability = successful["bloom_probability"].to_numpy(dtype="float64")
-    alerts = probability >= successful["alert_threshold"].to_numpy(dtype="float64")
-    lower = successful["predicted_lower"].to_numpy(dtype="float64")
-    upper = successful["predicted_upper"].to_numpy(dtype="float64")
-    return {
-        "rmse": float(math.sqrt(mean_squared_error(actual, predicted))),
-        "mae": float(mean_absolute_error(actual, predicted)),
-        "nll": float(
-            np.mean(0.5 * (np.log(2.0 * np.pi * sigma**2) + ((actual - predicted) / sigma) ** 2))
-        ),
-        "coverage": float(np.mean((actual >= lower) & (actual <= upper))),
-        "pr_auc": (
-            float(average_precision_score(labels, probability))
-            if np.unique(labels).size == 2
-            else None
-        ),
-        "brier": float(brier_score_loss(labels, probability)),
-        "recall": float(recall_score(labels, alerts, zero_division=0)),
-        "precision": float(precision_score(labels, alerts, zero_division=0)),
-        "f2": float(fbeta_score(labels, alerts, beta=2.0, zero_division=0)),
-        "macro_f1": float(
-            f1_score(labels, alerts, average="macro", zero_division=0)
-        ),
-        "alert_rate": float(np.mean(alerts)),
-    }
+    result = dict(empty)
+    continuous = group.loc[group["continuous_status"].eq("success")]
+    if not continuous.empty:
+        actual = continuous["actual_value"].to_numpy(dtype="float64")
+        predicted = continuous["predicted_value"].to_numpy(dtype="float64")
+        result["rmse"] = float(math.sqrt(mean_squared_error(actual, predicted)))
+        result["mae"] = float(mean_absolute_error(actual, predicted))
+    uncertain = group.loc[group["uncertainty_status"].eq("success")]
+    if not uncertain.empty:
+        actual = uncertain["actual_value"].to_numpy(dtype="float64")
+        predicted = uncertain["predicted_value"].to_numpy(dtype="float64")
+        sigma = uncertain["predicted_sigma"].to_numpy(dtype="float64")
+        lower = uncertain["predicted_lower"].to_numpy(dtype="float64")
+        upper = uncertain["predicted_upper"].to_numpy(dtype="float64")
+        result["nll"] = float(
+            np.mean(
+                0.5
+                * (
+                    np.log(2.0 * np.pi * sigma**2)
+                    + ((actual - predicted) / sigma) ** 2
+                )
+            )
+        )
+        result["coverage"] = float(np.mean((actual >= lower) & (actual <= upper)))
+    bloom = group.loc[group["bloom_status"].eq("success")]
+    if not bloom.empty:
+        labels = bloom["actual_bloom"].to_numpy(dtype="int64")
+        probability = bloom["bloom_probability"].to_numpy(dtype="float64")
+        alerts = probability >= bloom["alert_threshold"].to_numpy(dtype="float64")
+        result.update(
+            {
+                "pr_auc": (
+                    float(average_precision_score(labels, probability))
+                    if np.unique(labels).size == 2
+                    else None
+                ),
+                "brier": float(brier_score_loss(labels, probability)),
+                "recall": float(recall_score(labels, alerts, zero_division=0)),
+                "precision": float(
+                    precision_score(labels, alerts, zero_division=0)
+                ),
+                "f2": float(fbeta_score(labels, alerts, beta=2.0, zero_division=0)),
+                "macro_f1": float(
+                    f1_score(labels, alerts, average="macro", zero_division=0)
+                ),
+                "alert_rate": float(np.mean(alerts)),
+            }
+        )
+    return result
 
 
 def _e1_metrics_long(surface: Any) -> Any:
@@ -4023,12 +4746,42 @@ def _e1_metrics_long(surface: Any) -> Any:
                     site_values[metric].append(value)
         for metric, value in observation.items():
             terminal = "estimated" if value is not None else "not_estimable"
+            endpoint_status = (
+                "continuous_status"
+                if metric in {"rmse", "mae"}
+                else "uncertainty_status"
+                if metric in {"nll", "coverage"}
+                else "bloom_status"
+            )
             base = {
                 **dict(zip(group_columns, key, strict=True)),
                 "metric": metric,
                 "origin_count": int(len(group)),
-                "successful_origin_count": int(group["terminal_status"].eq("success").sum()),
+                "model_applicable_origin_count": int(
+                    group[endpoint_status].ne("not_applicable").sum()
+                ),
+                "input_eligible_origin_count": int(
+                    (~group[endpoint_status].isin(
+                        ["not_applicable", "model_unavailable", "input_ineligible"]
+                    )).sum()
+                ),
+                "successful_origin_count": int(
+                    group[endpoint_status].eq("success").sum()
+                ),
+                "metric_evaluable_origin_count": int(
+                    group[endpoint_status].eq("success").sum()
+                ),
                 "site_count": int(group[["source_id", "site_id"]].drop_duplicates().shape[0]),
+                "successful_site_count": int(
+                    group.loc[
+                        group[endpoint_status].eq("success"), ["source_id", "site_id"]
+                    ].drop_duplicates().shape[0]
+                ),
+                **{
+                    f"{status}_origin_count": int(group[endpoint_status].eq(status).sum())
+                    for status in ENDPOINT_STATUSES
+                    if status != "success"
+                },
                 "terminal_status": terminal,
             }
             rows.append({**base, "estimand": "observation_weighted", "value": value})
@@ -4055,7 +4808,10 @@ def _e1_paired_metric_rows(surface: Any) -> Any:
     rows: list[Any] = []
     for metric in ("brier_loss", "absolute_error"):
         part = test.loc[:, identity].copy()
-        success = test["terminal_status"].eq("success")
+        status_column = (
+            "bloom_status" if metric == "brier_loss" else "continuous_status"
+        )
+        success = test[status_column].eq("success")
         if metric == "brier_loss":
             loss = (
                 test["bloom_probability"].to_numpy(dtype="float64")
@@ -4068,7 +4824,7 @@ def _e1_paired_metric_rows(surface: Any) -> Any:
             )
         part["metric"] = metric
         part["loss"] = np.where(success.to_numpy(dtype="bool"), loss, np.nan)
-        part["terminal_status"] = test["terminal_status"].to_numpy()
+        part["terminal_status"] = test[status_column].to_numpy()
         rows.append(part.loc[:, PAIRED_METRIC_COLUMNS])
     result = pd.concat(rows, ignore_index=True)
     return result.sort_values(
@@ -4160,15 +4916,20 @@ def _e1_trophic_predictions(surface: Any) -> Any:
         "model_id",
         "model_seed",
         "seed_slot",
+        "evaluation_cohort",
+        "evaluation_role",
         "terminal_status",
+        "ordinal_status",
         "ordinal_score",
         "cutpoint_1",
         "cutpoint_2",
         "cutpoint_3",
     ]
-    evaluation = surface.loc[surface["evaluation_role"].eq("test"), columns].copy(
-        deep=True
-    )
+    evaluation = surface.loc[
+        surface["evaluation_role"].eq("test")
+        & surface["evaluation_cohort"].eq("location_holdout"),
+        columns,
+    ].copy(deep=True)
     return evaluation.sort_values(
         [
             "source_id",
@@ -4351,6 +5112,204 @@ def _load_ready_components(
     return tuple(loaded)
 
 
+def _load_ready_context_builder(
+    readiness: Mapping[str, Any], authority: Mapping[str, Any]
+) -> tuple[Any, Any, dict[str, Any]]:
+    readiness_record = readiness.get("context_builder_source_record")
+    authority_record = authority.get(E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY)
+    if (
+        not isinstance(readiness_record, Mapping)
+        or readiness_record.get("status") != "ready"
+        or not isinstance(authority_record, Mapping)
+        or dict(authority_record) != dict(readiness_record)
+    ):
+        raise ClosureBenchmarkError(
+            "E0-U context-builder source binding drifted"
+        )
+    try:
+        module, observed = _execute_sealed_source_module(
+            module_name=E0_U_CONTEXT_BUILDER_MODULE,
+            source_path=E0_U_CONTEXT_BUILDER_PATH,
+            repo_root=PROJECT_ROOT,
+            expected_source_record=authority_record,
+        )
+    except BaseException as exc:
+        raise ClosureBenchmarkError(
+            "E0-U context-builder source execution failed closed"
+        ) from exc
+    _normalize_sealed_dependency_import_environment()
+    _require_source_identity(
+        authority_record, observed, context="phase3_context_builder"
+    )
+    builder = getattr(module, E0_U_CONTEXT_BUILDER_API, None)
+    preflight = getattr(module, E0_U_CONTEXT_PREFLIGHT_API, None)
+    if not callable(builder) or not callable(preflight):
+        raise ClosureBenchmarkError("E0-U context-builder/preflight API drifted")
+    return builder, preflight, dict(readiness_record)
+
+
+def _validate_phase3_overlay_record(value: Any) -> dict[str, Any]:
+    if not isinstance(value, Mapping) or set(value) != {
+        "manifest",
+        "physical_outputs",
+    }:
+        raise ClosureBenchmarkError("E0-U Phase 3 overlay binding is malformed")
+    manifest = value.get("manifest")
+    outputs = value.get("physical_outputs")
+    expected_paths = [path.as_posix() for path in PHASE3_OVERLAY_OUTPUT_PATHS]
+    if (
+        not isinstance(manifest, Mapping)
+        or set(manifest) != {"path", "bytes", "sha256"}
+        or manifest.get("path") != PHASE3_OVERLAY_MANIFEST_PATH.as_posix()
+        or type(manifest.get("bytes")) is not int
+        or cast(int, manifest["bytes"]) <= 0
+        or not _is_sha256(manifest.get("sha256"))
+        or not isinstance(outputs, list)
+        or len(outputs) != len(expected_paths)
+    ):
+        raise ClosureBenchmarkError("E0-U Phase 3 overlay binding is malformed")
+    normalized_outputs: list[dict[str, Any]] = []
+    for raw, expected_path in zip(outputs, expected_paths, strict=True):
+        if not isinstance(raw, Mapping):
+            raise ClosureBenchmarkError("E0-U Phase 3 overlay binding is malformed")
+        record = cast(Mapping[str, Any], raw)
+        if (
+            set(record) != {"path", "bytes", "sha256"}
+            or record.get("path") != expected_path
+            or type(record.get("bytes")) is not int
+            or cast(int, record["bytes"]) <= 0
+            or not _is_sha256(record.get("sha256"))
+        ):
+            raise ClosureBenchmarkError("E0-U Phase 3 overlay binding is malformed")
+        normalized_outputs.append(dict(record))
+    return {
+        "manifest": dict(manifest),
+        "physical_outputs": normalized_outputs,
+    }
+
+
+def _validate_phase3_context_input_preflight(
+    value: Any,
+    *,
+    expected_overlay_record: Mapping[str, Any],
+) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        raise ClosureBenchmarkError("E0-U Phase 3 input preflight is not a mapping")
+    observed = dict(value)
+    sealed_overlay_record = _validate_phase3_overlay_record(expected_overlay_record)
+    exact = {
+        "status": "sealed_phase3_context_inputs_ready",
+        "gate": UNBLINDING_GATE,
+        "input_only": True,
+        "outcome_access_performed": False,
+        "writes_performed": False,
+        "refit_performed": False,
+        "snapshot_reuse_authorized": False,
+        "post_append_revalidation_required": True,
+        "holdout_site_count": LOCKED_HOLDOUT_SITE_COUNT,
+        "origin_count": LOCKED_BASE_ORIGIN_COUNT,
+        "history_row_count": 53856,
+        "origin_feature_row_count": LOCKED_BASE_ORIGIN_COUNT,
+        "eligible_origin_count": 804,
+        "ineligible_origin_count": 3684,
+        "expanded_intent_count": LOCKED_INTENT_COUNT,
+        "pretarget_prediction_count": LOCKED_PREDICTION_ROW_COUNT,
+        "warmup_site_count": LOCKED_HOLDOUT_SITE_COUNT,
+        "calibrator_count": 66,
+        "threshold_count": 66,
+        "cutpoint_count": 30,
+        "conformal_factor_count": 90,
+        "site_strata_count": LOCKED_HOLDOUT_SITE_COUNT,
+        "hypothesis_count": 27,
+        "software_evidence_artifact_count": len(SOFTWARE_EVIDENCE_KEYS),
+        "registered_seed_count": len(REGISTERED_SEEDS),
+        "outcome_bearing_paths_opened": [],
+        "phase3_overlay_record": sealed_overlay_record,
+    }
+    positive_count_keys = {
+        "overlay_array_count",
+        "scored_model_slot_count",
+        "anchored_input_read_count",
+    }
+    digest_key = "input_snapshot_sha256"
+    if (
+        set(observed) != set(exact) | positive_count_keys | {digest_key}
+        or any(
+            type(observed.get(key)) is not type(expected)
+            or observed.get(key) != expected
+            for key, expected in exact.items()
+        )
+        or any(
+            type(observed.get(key)) is not int
+            or cast(int, observed[key]) <= 0
+            for key in positive_count_keys
+        )
+        or not _is_sha256(observed.get(digest_key))
+    ):
+        raise ClosureBenchmarkError(
+            "E0-U Phase 3 input preflight diagnostics drifted"
+        )
+    return observed
+
+
+def _load_ready_support_sources(
+    readiness: Mapping[str, Any], authority: Mapping[str, Any]
+) -> tuple[dict[str, Any], ...]:
+    readiness_records = readiness.get("support_source_records")
+    authority_records = authority.get(E0_U_SUPPORT_SOURCE_RECORDS_KEY)
+    if (
+        not isinstance(readiness_records, list)
+        or not isinstance(authority_records, list)
+        or authority_records != readiness_records
+        or len(readiness_records) != len(SEALED_SUPPORT_SOURCES)
+    ):
+        raise ClosureBenchmarkError("E0-U support-source bindings drifted")
+    observed_records: list[dict[str, Any]] = []
+    for spec, record in zip(
+        SEALED_SUPPORT_SOURCES, readiness_records, strict=True
+    ):
+        record_mapping = cast(Mapping[str, Any], record)
+        if (
+            not isinstance(record, Mapping)
+            or record_mapping.get("status") != "ready"
+            or record_mapping.get("support_id") != spec["support_id"]
+        ):
+            raise ClosureBenchmarkError("E0-U support-source readiness drifted")
+        module, observed = _execute_sealed_source_module(
+            module_name=cast(str, spec["module_name"]),
+            source_path=Path(cast(str, spec["source_path"])),
+            repo_root=PROJECT_ROOT,
+            expected_source_record=record_mapping,
+        )
+        _normalize_sealed_dependency_import_environment()
+        _require_source_identity(
+            record_mapping, observed, context=cast(str, spec["support_id"])
+        )
+        for symbol in cast(Sequence[str], spec["required_symbols"]):
+            if not callable(getattr(module, symbol, None)):
+                raise ClosureBenchmarkError(
+                    f"E0-U support-source symbol drifted: {spec['support_id']}:{symbol}"
+                )
+        if spec["support_id"] == "closure_e10_source_evidence":
+            loader = getattr(module, "load_closure_e10_software_evidence")
+            try:
+                evidence = loader(
+                    repo_root=PROJECT_ROOT,
+                    expected_h_commit=authority["phase3_code_commit"],
+                    require_git_publication=True,
+                )
+            except BaseException as exc:
+                raise ClosureBenchmarkError(
+                    "E0-U E10 source evidence failed before outcome logging"
+                ) from exc
+            if not isinstance(evidence, Mapping) or set(evidence) != SOFTWARE_EVIDENCE_KEYS:
+                raise ClosureBenchmarkError(
+                    "E0-U E10 source evidence keys drifted before outcome logging"
+                )
+        observed_records.append(dict(record_mapping))
+    return tuple(observed_records)
+
+
 def _validate_authority_source_bindings(
     authority: Mapping[str, Any], readiness: Mapping[str, Any]
 ) -> None:
@@ -4362,15 +5321,29 @@ def _validate_authority_source_bindings(
         E0_U_COMPONENT_SOURCE_RECORDS_KEY
     ) != records:
         raise ClosureBenchmarkError("E0-U authority component source binding drifted")
+    context_builder_record = readiness.get("context_builder_source_record")
+    if not isinstance(context_builder_record, Mapping) or authority.get(
+        E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY
+    ) != dict(context_builder_record):
+        raise ClosureBenchmarkError(
+            "E0-U authority context-builder source binding drifted"
+        )
+    support_records = readiness.get("support_source_records")
+    if not isinstance(support_records, list) or authority.get(
+        E0_U_SUPPORT_SOURCE_RECORDS_KEY
+    ) != support_records:
+        raise ClosureBenchmarkError("E0-U authority support-source binding drifted")
     observed_authority = authority.get("_observed_authority_source_record")
     if not isinstance(observed_authority, Mapping):
         raise ClosureBenchmarkError("E0-U observed authority source is absent")
+    _validate_authority_commit_bindings(authority, observed_authority)
     if authority.get(E0_U_AUTHORITY_SOURCE_RECORD_KEY) != dict(observed_authority):
         raise ClosureBenchmarkError("E0-U authority Git source binding drifted")
 
 
 def _recapture_authority_source(authority: Mapping[str, Any]) -> None:
     observed = _git_bound_e0_u_authority_source_record()
+    _validate_authority_commit_bindings(authority, observed)
     if (
         authority.get(E0_U_AUTHORITY_SOURCE_RECORD_KEY) != observed
         or observed != authority.get("_observed_authority_source_record")
@@ -4378,20 +5351,55 @@ def _recapture_authority_source(authority: Mapping[str, Any]) -> None:
         != _git_executable_record()
         or authority.get(E0_U_ENV_EXECUTABLE_RECORD_KEY)
         != _env_executable_record()
+        or authority.get(E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY)
+        != _context_builder_source_record(repo_root=PROJECT_ROOT)
+        or authority.get("_observed_context_builder_source_record")
+        != _context_builder_source_record(repo_root=PROJECT_ROOT)
+        or authority.get(E0_U_SUPPORT_SOURCE_RECORDS_KEY)
+        != [
+            _support_source_record(spec, repo_root=PROJECT_ROOT)
+            for spec in SEALED_SUPPORT_SOURCES
+        ]
+        or authority.get("_observed_support_source_records")
+        != [
+            _support_source_record(spec, repo_root=PROJECT_ROOT)
+            for spec in SEALED_SUPPORT_SOURCES
+        ]
     ):
         raise ClosureBenchmarkError("E0-U authority source changed during execution")
 
 
-def _component_context(context: Mapping[str, Any]) -> dict[str, Any]:
+def _component_context(
+    context: Mapping[str, Any], *, component_id: str
+) -> dict[str, Any]:
+    allowed = COMPONENT_TABLE_VIEWS.get(component_id)
+    if allowed is None:
+        raise ClosureBenchmarkError(
+            f"E0-U component has no least-privilege table view: {component_id}"
+        )
+    source_tables = cast(Mapping[str, Any], context["tables"])
+    selected_tables = {
+        table_name: source_tables[table_name]
+        for table_name in allowed
+        if table_name in source_tables
+    }
+    stage_results = (
+        copy.deepcopy(dict(cast(Mapping[str, Any], context["stage_results"])))
+        if component_id == "E10_evidence_matrix"
+        else {}
+    )
+    software_evidence = (
+        copy.deepcopy(dict(cast(Mapping[str, Any], context["software_evidence"])))
+        if component_id == "E10_evidence_matrix"
+        else {}
+    )
     return {
         "execution_id": context["execution_id"],
         "rng_seed": RNG_SEED,
-        "tables": _copy_dataframe_tables(cast(Mapping[str, Any], context["tables"])),
-        "stage_results": copy.deepcopy(dict(cast(Mapping[str, Any], context["stage_results"]))),
+        "tables": _copy_dataframe_tables(selected_tables),
+        "stage_results": stage_results,
         "model_availability": dict(CURRENT_MODEL_AVAILABILITY),
-        "software_evidence": copy.deepcopy(
-            dict(cast(Mapping[str, Any], context["software_evidence"]))
-        ),
+        "software_evidence": software_evidence,
     }
 
 
@@ -4448,7 +5456,6 @@ def _validate_component_diagnostics(
     def exact_keys(*names: str) -> bool:
         return set(diagnostics) == set(names)
 
-    unavailable = ["A2", "P0", "P1"]
     if component_id == "E1_benchmark_scientific_executor":
         valid = (
             exact_keys(
@@ -4476,6 +5483,9 @@ def _validate_component_diagnostics(
             exact_keys(
                 "execution_id",
                 "e2a_complete",
+                "e2a_estimand",
+                "legacy_surface_available",
+                "legacy_gap_not_estimable_reason",
                 "e2b_predeclared",
                 "e2b_predictions_available",
                 "fold_count",
@@ -4485,9 +5495,13 @@ def _validate_component_diagnostics(
             and type(diagnostics["execution_id"]) is str
             and bool(diagnostics["execution_id"])
             and diagnostics["e2a_complete"] is True
+            and diagnostics["e2a_estimand"] == "locked_location_holdout_only"
+            and diagnostics["legacy_surface_available"] is False
+            and diagnostics["legacy_gap_not_estimable_reason"]
+            == "legacy_evaluation_surface_not_frozen_before_e0_u"
             and diagnostics["e2b_predeclared"] is True
-            and type(diagnostics["e2b_predictions_available"]) is bool
-            and diagnostics["e2b_predictions_available"] is (status == "completed")
+            and diagnostics["e2b_predictions_available"] is False
+            and status == "completed_unavailable"
             and type(diagnostics["fold_count"]) is int
             and diagnostics["fold_count"] == 5
             and diagnostics["unavailable_models_retained"] == ["P0", "P1"]
@@ -4501,7 +5515,10 @@ def _validate_component_diagnostics(
                 "thresholds_ug_l",
                 "primary_threshold_ug_l",
                 "model_scores_refit",
-                "validation_only_calibration",
+                "calibrator_fit_performed",
+                "decision_threshold_selection_performed",
+                "fixed_probability_sensitivity_only",
+                "evaluation_cohort",
                 "b2_secondary_retraining_performed",
                 "writes_performed",
             )
@@ -4513,7 +5530,10 @@ def _validate_component_diagnostics(
             and type(diagnostics["primary_threshold_ug_l"]) is float
             and diagnostics["primary_threshold_ug_l"] == 30.0
             and diagnostics["model_scores_refit"] is False
-            and diagnostics["validation_only_calibration"] is True
+            and diagnostics["calibrator_fit_performed"] is False
+            and diagnostics["decision_threshold_selection_performed"] is False
+            and diagnostics["fixed_probability_sensitivity_only"] is True
+            and diagnostics["evaluation_cohort"] == EVALUATION_COHORT
             and diagnostics["b2_secondary_retraining_performed"] is False
             and diagnostics["writes_performed"] is False
         )
@@ -4539,7 +5559,7 @@ def _validate_component_diagnostics(
                 "nla_temporal_validation_claimed",
                 "future_indicator_imputation_performed",
             )
-            and diagnostics["unavailable_model_ids"] == unavailable
+            and diagnostics["unavailable_model_ids"] == ["A2", "P0", "P1"]
             and diagnostics["nla_temporal_validation_claimed"] is False
             and diagnostics["future_indicator_imputation_performed"] is False
         )
@@ -4548,13 +5568,20 @@ def _validate_component_diagnostics(
             exact_keys(
                 "bootstrap_replicates",
                 "cluster_unit",
+                "hypothesis_count",
+                "family_universe_sizes",
                 "unavailable_model_ids",
+                "holm_universe_reduced",
                 "row_level_independence_assumed",
             )
             and type(diagnostics["bootstrap_replicates"]) is int
             and diagnostics["bootstrap_replicates"] == 5000
-            and diagnostics["cluster_unit"] == ["source_id", "site_id"]
-            and diagnostics["unavailable_model_ids"] == unavailable
+            and diagnostics["cluster_unit"] == "holdout_group_id"
+            and diagnostics["hypothesis_count"] == 27
+            and diagnostics["family_universe_sizes"]
+            == {"A": 3, "B": 78, "C": 1, "D": 9, "E": 1}
+            and diagnostics["unavailable_model_ids"] == ["P0", "P1", "A2"]
+            and diagnostics["holm_universe_reduced"] is False
             and diagnostics["row_level_independence_assumed"] is False
         )
     elif component_id == "E6_matched_degradation":
@@ -4575,9 +5602,27 @@ def _validate_component_diagnostics(
             )
         else:
             valid = (
-                exact_keys("reason", "refit_performed")
+                exact_keys(
+                    "component_contract_sha256",
+                    "reason",
+                    "intent_row_count",
+                    "common_origin_count",
+                    "site_count",
+                    "family_b_cell_count",
+                    "ordered_seed_slot_count",
+                    "refit_performed",
+                )
+                and _is_sha256(
+                    diagnostics["component_contract_sha256"],
+                    expected=COMPONENT_CONTRACT_SHA256[component_id],
+                )
                 and diagnostics["reason"]
                 == "M0_or_P1_model_unavailable_under_formal_lock"
+                and _is_nonnegative_int(diagnostics["intent_row_count"])
+                and _is_nonnegative_int(diagnostics["common_origin_count"])
+                and _is_nonnegative_int(diagnostics["site_count"])
+                and diagnostics["family_b_cell_count"] == 78
+                and diagnostics["ordered_seed_slot_count"] == 5
                 and diagnostics["refit_performed"] is False
             )
     elif component_id == "E7_anfis_ablation":
@@ -4596,7 +5641,7 @@ def _validate_component_diagnostics(
             )
             and _is_nonnegative_int(diagnostics["input_row_count"])
             and _is_nonnegative_int(diagnostics["available_metric_group_count"])
-            and diagnostics["unavailable_models"] == unavailable
+            and diagnostics["unavailable_models"] == ["P0", "P1"]
             and diagnostics["refit_performed"] is False
             and diagnostics["silent_row_deletion"] is False
         )
@@ -4604,28 +5649,46 @@ def _validate_component_diagnostics(
         valid = (
             exact_keys(
                 "component_contract_sha256",
-                "calibration_row_count",
-                "evaluation_row_count",
-                "available_factor_count",
-                "minimum_group_rows",
+                "locked_factor_count",
+                "evaluation_attempt_row_count",
+                "uncertainty_applicable_model_ids",
+                "a2_slot_count",
+                "calibration_table_received",
+                "q_fit_or_recompute_performed",
                 "q_refit_in_evaluation",
+                "confirmatory_family_E_status",
+                "holm_family_E_universe_size",
+                "p1_substitution_performed",
             )
             and _is_sha256(
                 diagnostics["component_contract_sha256"],
                 expected=COMPONENT_CONTRACT_SHA256[component_id],
             )
-            and _is_nonnegative_int(diagnostics["calibration_row_count"])
-            and _is_nonnegative_int(diagnostics["evaluation_row_count"])
-            and _is_nonnegative_int(diagnostics["available_factor_count"])
-            and type(diagnostics["minimum_group_rows"]) is int
-            and diagnostics["minimum_group_rows"] == 30
+            and diagnostics["locked_factor_count"] == 90
+            and _is_nonnegative_int(diagnostics["evaluation_attempt_row_count"])
+            and diagnostics["uncertainty_applicable_model_ids"] == ["A0", "A1"]
+            and diagnostics["a2_slot_count"] == 0
+            and diagnostics["calibration_table_received"] is False
+            and diagnostics["q_fit_or_recompute_performed"] is False
             and diagnostics["q_refit_in_evaluation"] is False
+            and diagnostics["confirmatory_family_E_status"]
+            == "not_estimable_model_unavailable"
+            and diagnostics["holm_family_E_universe_size"] == 1
+            and diagnostics["p1_substitution_performed"] is False
+            and status == "completed_unavailable"
         )
     elif component_id == "E9_planning_inference":
         unavailable_keys = {
             "component_contract_sha256",
             "unavailable_reason",
             "model_id",
+            "intent_row_count",
+            "common_origin_count",
+            "site_count",
+            "holdout_group_count",
+            "failure_ledger_row_count",
+            "intended_action_seed_row_count",
+            "holm_universe_size",
             "refit_performed",
         }
         available_keys = {
@@ -4647,6 +5710,14 @@ def _validate_component_diagnostics(
                 and digest_valid
                 and diagnostics["unavailable_reason"] == "P1_model_unavailable"
                 and diagnostics["model_id"] == "P1"
+                and _is_nonnegative_int(diagnostics["intent_row_count"])
+                and _is_nonnegative_int(diagnostics["common_origin_count"])
+                and _is_nonnegative_int(diagnostics["site_count"])
+                and _is_nonnegative_int(diagnostics["holdout_group_count"])
+                and diagnostics["failure_ledger_row_count"] == 27
+                and diagnostics["intended_action_seed_row_count"]
+                == diagnostics["intent_row_count"] * 9 * 5
+                and diagnostics["holm_universe_size"] == 9
                 and diagnostics["refit_performed"] is False
             )
         else:
@@ -5206,7 +6277,29 @@ def _execute_with_verified_e0_u_authority(
     _validate_authority_source_bindings(authority, readiness)
     public_authority = _public_authority_payload(authority)
     components = _load_ready_components(readiness)
+    support_source_records = _load_ready_support_sources(readiness, authority)
+    context_builder, context_input_preflight, context_builder_source = _load_ready_context_builder(
+        readiness, authority
+    )
     _recapture_runtime_environment(runtime_state)
+    input_contract = sealed_batch_contract()
+    try:
+        raw_context_preflight = context_input_preflight(
+            authority=copy.deepcopy(public_authority),
+            sealed_batch_contract=input_contract,
+            repo_root=PROJECT_ROOT,
+        )
+    except BaseException as exc:
+        raise ClosureBenchmarkError(
+            "E0-U Phase 3 input preflight failed before outcome logging"
+        ) from exc
+    _recapture_runtime_environment(runtime_state)
+    context_preflight = _validate_phase3_context_input_preflight(
+        raw_context_preflight,
+        expected_overlay_record=cast(
+            Mapping[str, Any], authority[E0_U_PHASE3_OVERLAY_RECORD_KEY]
+        ),
+    )
     preflights: list[dict[str, Any]] = []
     for component, module in components:
         preflight = getattr(module, component.preflight_api)
@@ -5260,11 +6353,14 @@ def _execute_with_verified_e0_u_authority(
         )
     contract = sealed_batch_contract()
     _recapture_runtime_environment(runtime_state)
+    _require_clean_repository_snapshot_before_outcome_log(public_authority)
+    _recapture_runtime_environment(runtime_state)
     try:
         opened = factory(
             authority=copy.deepcopy(public_authority),
             sealed_batch_contract=contract,
             repo_root=PROJECT_ROOT,
+            context_builder=context_builder,
         )
     except BaseException as exc:
         raise ClosureBenchmarkError("E0-U sealed batch context opening failed") from exc
@@ -5273,7 +6369,12 @@ def _execute_with_verified_e0_u_authority(
     artifacts: dict[str, dict[str, Any]] = {}
     _recapture_runtime_environment(runtime_state)
     e1_raw = _execute_e1_locked_benchmark_stage(
-        public_authority, contract, _component_context(context), PROJECT_ROOT
+        public_authority,
+        contract,
+        _component_context(
+            context, component_id="E1_benchmark_scientific_executor"
+        ),
+        PROJECT_ROOT,
     )
     _recapture_runtime_environment(runtime_state)
     e1 = _validate_component_result(
@@ -5300,7 +6401,9 @@ def _execute_with_verified_e0_u_authority(
             raw = execute(
                 authority=copy.deepcopy(public_authority),
                 sealed_batch_contract=contract,
-                batch_context=_component_context(context),
+                batch_context=_component_context(
+                    context, component_id=component.component_id
+                ),
                 repo_root=PROJECT_ROOT,
             )
         except BaseException as exc:
@@ -5349,14 +6452,30 @@ def _execute_with_verified_e0_u_authority(
         raise ClosureBenchmarkError("E0-U component source changed during the sealed batch")
     _recapture_authority_source(authority)
     expected_artifact_bytes = _expected_artifact_bytes(artifacts)
+    if _context_builder_source_record(
+        repo_root=PROJECT_ROOT
+    ) != dict(context_builder_source):
+        raise ClosureBenchmarkError(
+            "E0-U context-builder source changed during the sealed batch"
+        )
+    if [
+        _support_source_record(spec, repo_root=PROJECT_ROOT)
+        for spec in SEALED_SUPPORT_SOURCES
+    ] != list(support_source_records):
+        raise ClosureBenchmarkError(
+            "E0-U support sources changed during the sealed batch"
+        )
     _recapture_runtime_environment(runtime_state)
     try:
         published_raw = publisher(
             authority=copy.deepcopy(public_authority),
             sealed_batch_contract=contract,
-            batch_context=_component_context(context),
+            batch_context=_component_context(
+                context, component_id="E0-U_publication"
+            ),
             stage_results=copy.deepcopy(stage_results),
             artifacts=copy.deepcopy(artifacts),
+            serialized_artifacts=copy.deepcopy(expected_artifact_bytes),
             repo_root=PROJECT_ROOT,
         )
     except BaseException as exc:
@@ -5376,9 +6495,12 @@ def _execute_with_verified_e0_u_authority(
         audit_raw = auditor(
             authority=copy.deepcopy(public_authority),
             sealed_batch_contract=contract,
-            batch_context=_component_context(context),
+            batch_context=_component_context(
+                context, component_id="E0-U_publication"
+            ),
             stage_results=copy.deepcopy(stage_results),
             artifacts=copy.deepcopy(artifacts),
+            serialized_artifacts=copy.deepcopy(expected_artifact_bytes),
             publication_receipt=copy.deepcopy(published),
             repo_root=PROJECT_ROOT,
         )

@@ -28,6 +28,52 @@ from src.experiments.build_closure_pipe_sequences import (
 )
 
 
+REPOSITORY_ROOT = audit.PROJECT_ROOT
+P0_BUNDLE_COMMIT = "b075d4f1606aa35c1b86493604c18845f2d28a2f"
+P0_PHYSICAL_DVC_PATHS = {
+    audit.DEFAULT_COMMON_ORIGINS,
+    audit.P0_STATE_PATH,
+    audit.P0_SEQUENCE_PATH,
+}
+
+
+@pytest.fixture(scope="module")
+def historical_p0_repository(
+    tmp_path_factory: pytest.TempPathFactory,
+) -> Path:
+    """Materialize the exact tracked P0 authority plus its immutable DVC data."""
+
+    snapshot = tmp_path_factory.mktemp("closure_p0_historical_repository")
+    for source in audit._closed_paths(pointer_present=True):
+        relative = source.relative_to(REPOSITORY_ROOT)
+        destination = snapshot / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        if relative in P0_PHYSICAL_DVC_PATHS:
+            payload = source.read_bytes()
+        else:
+            payload = subprocess.run(
+                [
+                    "git",
+                    "show",
+                    f"{P0_BUNDLE_COMMIT}:{relative.as_posix()}",
+                ],
+                cwd=REPOSITORY_ROOT,
+                check=True,
+                capture_output=True,
+            ).stdout
+        destination.write_bytes(payload)
+    (snapshot / "tmp").mkdir()
+
+    historical_builder = (
+        snapshot / "src/experiments/build_closure_pipe_sequences.py"
+    ).read_bytes()
+    assert len(historical_builder) == 110_034
+    assert hashlib.sha256(historical_builder).hexdigest() == (
+        "dc500d94c8ca4b3705d2cb849a037524e33915624cd86f9d355e5c4eebb347f6"
+    )
+    return snapshot
+
+
 def _sample_frame() -> pd.DataFrame:
     rows: list[dict[str, object]] = []
     for index, success in enumerate((True, False)):
@@ -564,7 +610,7 @@ def _external_audit_snapshot() -> dict[str, Any]:
         }
     git_status = subprocess.run(
         ["git", "status", "--porcelain=v1", "-z", "--untracked-files=all"],
-        cwd=audit.PROJECT_ROOT,
+        cwd=REPOSITORY_ROOT,
         check=True,
         capture_output=True,
     ).stdout
@@ -579,7 +625,9 @@ def _external_audit_snapshot() -> dict[str, Any]:
 def test_real_p0_audit_failure_is_read_only(
     failure_stage: str,
     monkeypatch: pytest.MonkeyPatch,
+    historical_p0_repository: Path,
 ) -> None:
+    monkeypatch.setattr(audit, "PROJECT_ROOT", historical_p0_repository)
     before = _external_audit_snapshot()
     descriptors_before = len(os.listdir("/proc/self/fd"))
 
@@ -602,7 +650,11 @@ def test_real_p0_audit_failure_is_read_only(
     not (audit.PROJECT_ROOT / audit.P0_SEQUENCE_PATH).is_file(),
     reason="The ignored P0 payload is restored only in an authorized data workspace",
 )
-def test_real_p0_audit_pass_is_read_only(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_real_p0_audit_pass_is_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    historical_p0_repository: Path,
+) -> None:
+    monkeypatch.setattr(audit, "PROJECT_ROOT", historical_p0_repository)
     before = _external_audit_snapshot()
 
     def forbidden(*_args: Any, **_kwargs: Any) -> Any:
@@ -633,10 +685,20 @@ def test_real_p0_audit_pass_is_read_only(monkeypatch: pytest.MonkeyPatch) -> Non
     not (audit.PROJECT_ROOT / audit.P0_SEQUENCE_PATH).is_file(),
     reason="The ignored P0 payload is restored only in an authorized data workspace",
 )
-def test_real_p0_cli_is_repeatable_and_read_only() -> None:
+def test_real_p0_cli_is_repeatable_and_read_only(
+    monkeypatch: pytest.MonkeyPatch,
+    historical_p0_repository: Path,
+) -> None:
+    monkeypatch.setattr(audit, "PROJECT_ROOT", historical_p0_repository)
     before = _external_audit_snapshot()
     environment = os.environ.copy()
     environment["PYTHONDONTWRITEBYTECODE"] = "1"
+    environment["PYTHONPATH"] = os.pathsep.join(
+        filter(
+            None,
+            (str(REPOSITORY_ROOT), environment.get("PYTHONPATH", "")),
+        )
+    )
     command = [sys.executable, "-B", audit.AUDITOR_PATH.as_posix(), "--check-only"]
     completed = [
         subprocess.run(

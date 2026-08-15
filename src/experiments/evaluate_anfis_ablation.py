@@ -41,6 +41,9 @@ PREDICTION_COLUMNS = (
     "seed",
     "source_id",
     "site_id",
+    "common_origin_id",
+    "evaluation_cohort",
+    "evaluation_role",
     "horizon_months",
     "target_year_month",
     "status",
@@ -48,11 +51,11 @@ PREDICTION_COLUMNS = (
     "y_prob",
 )
 OUTPUT_PATHS = (
-    "reports/closure_v1/07_anfis_ablation/ablation_metrics.csv",
-    "reports/closure_v1/07_anfis_ablation/ablation_pairwise.csv",
-    "reports/closure_v1/07_anfis_ablation/membership_stability.csv",
-    "reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv",
-    "reports/closure_v1/07_anfis_ablation/anfis_ablation_report.md",
+    "reports/closure_v1/07_anfis_ablation_evaluation/ablation_metrics.csv",
+    "reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv",
+    "reports/closure_v1/07_anfis_ablation_evaluation/membership_stability.csv",
+    "reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv",
+    "reports/closure_v1/07_anfis_ablation_evaluation/anfis_ablation_report.md",
 )
 CONTEXT_KEYS = frozenset(
     {
@@ -93,9 +96,22 @@ COMPONENT_CONTRACT = MappingProxyType(
             "seed",
             "source_id",
             "site_id",
+            "common_origin_id",
+            "evaluation_cohort",
+            "evaluation_role",
             "horizon_months",
             "target_year_month",
         ],
+        "source_id": "wqp",
+        "evaluation_cohort": "location_holdout",
+        "evaluation_role": "test",
+        "outcome_boundary": "target_year_month_after_2021_12",
+        "common_origin_time_rule": "target_year_month_minus_horizon_is_constant",
+        "learning_curve_historical_status_map": {
+            "completed": "available",
+            "resource_failure_recorded": "not_available",
+        },
+        "saturation_claim_authorized": False,
         "output_paths": list(OUTPUT_PATHS),
         "pure_in_memory": True,
     }
@@ -249,20 +265,53 @@ def _require_columns(frame: pd.DataFrame, columns: Sequence[str], *, context: st
 
 
 def _normalize_predictions(frame: pd.DataFrame) -> pd.DataFrame:
-    _require_columns(frame, PREDICTION_COLUMNS, context="e7_predictions")
-    out = frame.loc[:, list(dict.fromkeys((*PREDICTION_COLUMNS, *frame.columns)))].copy()
+    if tuple(frame.columns) != PREDICTION_COLUMNS:
+        raise ClosureAnfisAblationError("e7_predictions columns are not exact")
+    out = frame.copy(deep=True)
     out["model_id"] = out["model_id"].astype(str)
     out["status"] = out["status"].astype(str)
-    out["seed"] = pd.to_numeric(out["seed"], errors="raise").astype("int64")
-    out["horizon_months"] = pd.to_numeric(out["horizon_months"], errors="raise").astype("int64")
-    out["y_true"] = pd.to_numeric(out["y_true"], errors="coerce")
-    out["y_prob"] = pd.to_numeric(out["y_prob"], errors="coerce")
-    for column in ("source_id", "site_id", "target_year_month"):
+    for column in ("seed", "horizon_months"):
+        numeric = pd.to_numeric(out[column], errors="raise")
+        values = numeric.to_numpy(dtype="float64")
+        if not np.isfinite(values).all() or not np.equal(values, np.floor(values)).all():
+            raise ClosureAnfisAblationError(
+                f"e7_predictions {column} is not exact integer"
+            )
+        out[column] = numeric.astype("int64")
+    for column in ("y_true", "y_prob"):
+        raw = out[column]
+        numeric = pd.to_numeric(raw, errors="coerce")
+        if bool((raw.notna() & numeric.isna()).any()):
+            raise ClosureAnfisAblationError(
+                f"e7_predictions {column} contains a nonnumeric value"
+            )
+        out[column] = numeric
+    for column in (
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "evaluation_cohort",
+        "evaluation_role",
+        "target_year_month",
+    ):
         out[column] = out[column].astype(str)
         if bool(out[column].eq("").any()):
             raise ClosureAnfisAblationError(f"e7_predictions {column} is empty")
+    if (
+        not out["source_id"].eq("wqp").all()
+        or not out["evaluation_cohort"].eq("location_holdout").all()
+        or not out["evaluation_role"].eq("test").all()
+    ):
+        raise ClosureAnfisAblationError(
+            "e7_predictions is not restricted to locked WQP location-holdout test rows"
+        )
+    if not out["common_origin_id"].str.fullmatch(r"[0-9a-f]{64}").all():
+        raise ClosureAnfisAblationError("e7_predictions common-origin identity is not canonical")
     if not out["target_year_month"].str.fullmatch(r"\d{4}-(0[1-9]|1[0-2])").all():
         raise ClosureAnfisAblationError("e7_predictions target month is not canonical")
+    target_periods = pd.PeriodIndex(out["target_year_month"], freq="M")
+    if not (target_periods > pd.Period("2021-12", freq="M")).all():
+        raise ClosureAnfisAblationError("e7_predictions target month is outside post-2021")
     if not set(out["model_id"]).issubset(MODEL_IDS):
         raise ClosureAnfisAblationError("e7_predictions contains an unknown model")
     if not set(out["seed"]).issubset(REGISTERED_SEEDS):
@@ -276,6 +325,9 @@ def _normalize_predictions(frame: pd.DataFrame) -> pd.DataFrame:
         "seed",
         "source_id",
         "site_id",
+        "common_origin_id",
+        "evaluation_cohort",
+        "evaluation_role",
         "horizon_months",
         "target_year_month",
     ]
@@ -284,6 +336,9 @@ def _normalize_predictions(frame: pd.DataFrame) -> pd.DataFrame:
     identity = [
         "source_id",
         "site_id",
+        "common_origin_id",
+        "evaluation_cohort",
+        "evaluation_role",
         "horizon_months",
         "target_year_month",
     ]
@@ -296,18 +351,58 @@ def _normalize_predictions(frame: pd.DataFrame) -> pd.DataFrame:
         raise ClosureAnfisAblationError(
             "e7_predictions omits a registered model-by-seed intent"
         )
+    intent = out.loc[:, identity].drop_duplicates()
+    base_identity = [
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "evaluation_cohort",
+        "evaluation_role",
+    ]
+    implied_origins = pd.PeriodIndex(intent["target_year_month"], freq="M") - intent[
+        "horizon_months"
+    ].to_numpy(dtype="int64")
+    intent = intent.assign(_implied_origin=implied_origins.astype(str))
+    origin_counts = intent.groupby(base_identity, sort=True)["_implied_origin"].nunique()
+    horizon_sets = intent.groupby(base_identity, sort=True)["horizon_months"].apply(set)
+    if (
+        bool(origin_counts.ne(1).any())
+        or any(horizons != set(HORIZONS_MONTHS) for horizons in horizon_sets)
+    ):
+        raise ClosureAnfisAblationError("e7_predictions common-origin time identity drifted")
+    common_identity_counts = (
+        intent.groupby("common_origin_id", sort=True)[
+            ["source_id", "site_id", "evaluation_cohort", "evaluation_role", "_implied_origin"]
+        ]
+        .nunique()
+    )
+    if bool(common_identity_counts.gt(1).any().any()):
+        raise ClosureAnfisAblationError("e7_predictions common-origin mapping drifted")
     success = out["status"].eq("success")
     if bool((success & (~np.isfinite(out["y_true"]) | ~np.isfinite(out["y_prob"]))).any()):
         raise ClosureAnfisAblationError("successful E7 rows contain nonfinite values")
     if bool((success & ~out["y_prob"].between(0.0, 1.0, inclusive="both")).any()):
         raise ClosureAnfisAblationError("successful E7 probabilities leave [0,1]")
+    if bool((success & ~out["y_true"].isin([0.0, 1.0])).any()):
+        raise ClosureAnfisAblationError("successful E7 targets are not binary")
+    target_present = out["y_true"].notna()
+    if bool(
+        (
+            target_present
+            & (~np.isfinite(out["y_true"]) | ~out["y_true"].isin([0.0, 1.0]))
+        ).any()
+    ):
+        raise ClosureAnfisAblationError("available E7 targets are not finite binary values")
     if bool(out.loc[~success, "y_prob"].notna().any()):
         raise ClosureAnfisAblationError("failed E7 rows contain invented predictions")
-    target_counts = (
-        out.groupby(identity, sort=True)["y_true"].nunique(dropna=True)
-    )
-    if bool(target_counts.gt(1).any()):
+    target_counts = out.groupby(identity, sort=True)["y_true"].nunique(dropna=True)
+    target_presence = out.assign(_target_present=out["y_true"].notna()).groupby(
+        identity, sort=True
+    )["_target_present"].nunique()
+    if bool(target_counts.gt(1).any()) or bool(target_presence.gt(1).any()):
         raise ClosureAnfisAblationError("E7 targets drifted within an exact intent")
+    if bool(out.loc[out["status"].eq("target_unavailable"), "y_true"].notna().any()):
+        raise ClosureAnfisAblationError("target-unavailable E7 row contains an observed target")
     return out.sort_values(duplicate_key, kind="mergesort").reset_index(drop=True)
 
 
@@ -366,6 +461,8 @@ def _metric_rows(
                 for metric, value in values.items():
                     rows.append(
                         {
+                            "evaluation_cohort": "location_holdout",
+                            "evaluation_role": "test",
                             "model_id": model_id,
                             "seed": seed,
                             "horizon_months": horizon,
@@ -382,7 +479,16 @@ def _metric_rows(
 def _pairwise_rows(
     predictions: pd.DataFrame, availability: Mapping[str, Any]
 ) -> pd.DataFrame:
-    keys = ["seed", "source_id", "site_id", "horizon_months", "target_year_month"]
+    keys = [
+        "seed",
+        "source_id",
+        "site_id",
+        "common_origin_id",
+        "evaluation_cohort",
+        "evaluation_role",
+        "horizon_months",
+        "target_year_month",
+    ]
     rows: list[dict[str, Any]] = []
     successful = predictions[predictions["status"].eq("success")].copy()
     for challenger, reference in PAIRWISE_CONTRASTS:
@@ -417,6 +523,8 @@ def _pairwise_rows(
                     )
             rows.append(
                 {
+                    "evaluation_cohort": "location_holdout",
+                    "evaluation_role": "test",
                     "challenger_model_id": challenger,
                     "reference_model_id": reference,
                     "horizon_months": horizon,
@@ -520,6 +628,9 @@ def _learning_curve(value: pd.DataFrame | None) -> pd.DataFrame:
     if "status" not in frame:
         frame["status"] = "available"
     frame["status"] = frame["status"].astype(str)
+    frame["status"] = frame["status"].replace(
+        {"completed": "available", "resource_failure_recorded": "not_available"}
+    )
     if not set(frame["status"]).issubset({"available", "not_available"}):
         raise ClosureAnfisAblationError("learning-curve status drifted")
     represented = set(frame["training_rows_per_module"])
@@ -542,7 +653,7 @@ def _learning_curve(value: pd.DataFrame | None) -> pd.DataFrame:
         frame = pd.concat([frame, supplement], ignore_index=True, sort=False)
     if "limitation" not in frame:
         frame["limitation"] = ""
-    frame["saturation_claim_authorized"] = completed == registered_sizes
+    frame["saturation_claim_authorized"] = False
     return frame.sort_values(["training_rows_per_module"], kind="mergesort").reset_index(drop=True)
 
 
@@ -563,7 +674,7 @@ def _report(metrics: pd.DataFrame, pairwise: pd.DataFrame, learning: pd.DataFram
             f"- Unavailable/no-success variants: `{', '.join(unavailable_models) or 'none'}`",
             f"- Pairwise records: `{len(pairwise)}`",
             f"- Completed learning-curve sizes: `{completed_sizes}`",
-            f"- Saturation claim authorized: `{len(completed_sizes) == 3}`",
+            "- Saturation claim authorized: `False`",
             "",
             "Correlation with an expert anchor is fidelity evidence, not predictive validity.",
             "",

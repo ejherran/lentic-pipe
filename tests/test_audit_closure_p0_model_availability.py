@@ -50,7 +50,7 @@ def _fake_git_bound(path: str | Path, commit: str = "a" * 40) -> dict[str, Any]:
 
 def test_public_policy_and_five_published_slots_pass_read_only_audit() -> None:
     policy = availability.load_and_validate_policy()
-    summary = availability.audit_repository(policy)
+    summary = availability.audit_p0_closure_snapshot(policy)
 
     assert policy["gate"] == "E0-MA"
     assert summary["status"] == "ready_to_register"
@@ -71,7 +71,7 @@ def test_public_policy_and_five_published_slots_pass_read_only_audit() -> None:
 
 
 def test_p0_evidence_chain_and_git_blobs_are_exact() -> None:
-    summary = availability.audit_repository()
+    summary = availability.audit_p0_closure_snapshot()
     slots = summary["slots"]
 
     assert [slot["base_seed"] for slot in slots] == list(availability.EXPECTED_SEEDS)
@@ -89,8 +89,102 @@ def test_p0_evidence_chain_and_git_blobs_are_exact() -> None:
     assert all(len(slot["report"]["git_blob"]) == 40 for slot in slots)
 
 
+def test_historical_source_records_use_slot_git_blob_not_current_physical_file(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    commit = "a" * 40
+    record = {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "bytes": 17,
+        "sha256": "b" * 64,
+    }
+    monkeypatch.setattr(availability, "_require_exact_commit", lambda observed: None)
+    monkeypatch.setattr(
+        availability,
+        "_git_blob_record",
+        lambda observed_commit, path: {
+            **record,
+            "git_commit": observed_commit,
+            "git_blob": "c" * 40,
+            "git_mode": "100644",
+        },
+    )
+    monkeypatch.setattr(
+        availability,
+        "_file_record",
+        lambda path: pytest.fail(f"historical source read physical bytes: {path}"),
+    )
+
+    assert availability._validate_historical_git_records(
+        [record],
+        expected_count=1,
+        context="slot source_code",
+        evidence_commit=commit,
+    ) == [record]
+
+
+def test_slot_inputs_keep_data_and_config_physical_but_bind_code_historically(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    source = {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "bytes": 17,
+        "sha256": "b" * 64,
+    }
+    data = {
+        "path": "configs/closure_v1/development_runtime.yaml",
+        "bytes": 23,
+        "sha256": "d" * 64,
+    }
+    physical_reads: list[str] = []
+
+    def physical(path: str | Path) -> dict[str, Any]:
+        physical_reads.append(Path(path).as_posix())
+        return dict(data)
+
+    monkeypatch.setattr(availability, "_file_record", physical)
+
+    assert availability._validate_slot_input_records(
+        [data, source],
+        expected_count=2,
+        context="slot inputs",
+        historical_sources=[source],
+    ) == [data, source]
+    assert physical_reads == [data["path"]]
+
+
+def test_historical_source_record_rejects_git_blob_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    record = {
+        "path": "src/experiments/build_closure_pipe_sequences.py",
+        "bytes": 17,
+        "sha256": "b" * 64,
+    }
+    monkeypatch.setattr(availability, "_require_exact_commit", lambda observed: None)
+    monkeypatch.setattr(
+        availability,
+        "_git_blob_record",
+        lambda *_args: {
+            **record,
+            "sha256": "c" * 64,
+            "git_commit": "a" * 40,
+            "git_blob": "d" * 40,
+            "git_mode": "100644",
+        },
+    )
+
+    with pytest.raises(availability.P0ModelAvailabilityError, match="sealed Git blob"):
+        availability._validate_historical_git_records(
+            [record],
+            expected_count=1,
+            context="slot source_code",
+            evidence_commit="a" * 40,
+        )
+
+
 def test_denominator_authority_reconstructs_role_and_fit_counts() -> None:
-    denominator = availability.audit_repository()["denominator_authority"]
+    denominator = availability.audit_p0_closure_snapshot()["denominator_authority"]
 
     assert denominator["intent_origins"] == 9732
     assert denominator["successful_origins"] == 9227
@@ -190,7 +284,7 @@ def test_caller_cannot_replace_the_closed_physical_policy() -> None:
 
 def test_p0_namespace_is_exact_and_records_all_absences() -> None:
     paths = availability.p0_slot_paths(1729)
-    slot = availability.audit_repository()["slots"][0]
+    slot = availability.audit_p0_closure_snapshot()["slots"][0]
 
     assert len(paths) == 19
     assert paths["report"].as_posix().endswith("seed_1729_report.md")
@@ -269,7 +363,7 @@ def test_registry_payload_is_non_self_authorizing_and_has_no_placeholder_values(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     policy = availability.load_and_validate_policy()
-    audit = availability.audit_repository(policy)
+    audit = availability.audit_p0_closure_snapshot(policy)
     monkeypatch.setattr(
         availability,
         "_git_bound_record",
@@ -309,7 +403,7 @@ def test_companion_uses_generic_completed_manifest_dialect(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     policy = availability.load_and_validate_policy()
-    audit = availability.audit_repository(policy)
+    audit = availability.audit_p0_closure_snapshot(policy)
     monkeypatch.setattr(
         availability,
         "_git_bound_record",
@@ -351,7 +445,7 @@ def _complete_registry_contract(
     dict[str, Any],
 ]:
     policy = availability.load_and_validate_policy()
-    audit = availability.audit_repository(policy)
+    audit = availability.audit_p0_closure_snapshot(policy)
     publication = _publication_fixture(h_slice_head)
     monkeypatch.setattr(
         availability,
@@ -882,7 +976,7 @@ def test_check_only_never_invokes_remote_or_dvc(
 
     monkeypatch.setattr(availability.subprocess, "run", tracked_run)
 
-    summary = availability.audit_repository()
+    summary = availability.audit_p0_closure_snapshot()
 
     assert summary["side_effects"]["network_commands_executed"] is False
     assert all("ls-remote" not in command for command in commands)

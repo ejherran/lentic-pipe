@@ -4,7 +4,6 @@ import hashlib
 import inspect
 import json
 import os
-import shutil
 import stat
 import subprocess
 from pathlib import Path
@@ -105,6 +104,19 @@ def _record(path: Path, *, role: str) -> dict[str, Any]:
     }
 
 
+def _copy_regular_0644(source: Path, target: Path) -> None:
+    """Copy bytes with the historical mode and timestamps used by the bundle."""
+
+    source_metadata = source.stat()
+    target.write_bytes(source.read_bytes())
+    target.chmod(0o644)
+    os.utime(
+        target,
+        ns=(source_metadata.st_atime_ns, source_metadata.st_mtime_ns),
+        follow_symlinks=False,
+    )
+
+
 def _copy_family_tree(repo_root: Path) -> None:
     """Copy the sealed 80 finals into an isolated namespace fixture."""
 
@@ -115,7 +127,17 @@ def _copy_family_tree(repo_root: Path) -> None:
             source = ROOT / raw_path
             target = repo_root / raw_path
             target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source, target)
+            _copy_regular_0644(source, target)
+
+
+def _copy_pre_registration_tree(repo_root: Path) -> None:
+    """Rebuild the historical pre-registration namespace without live pointers."""
+
+    _copy_family_tree(repo_root)
+    models_dvc = repo_root / patch.MODELS_DVC_PATH
+    models_dvc.parent.mkdir(parents=True, exist_ok=True)
+    models_dvc.write_bytes(patch._base_models_dvc_bytes())
+    models_dvc.chmod(0o644)
 
 
 def _write_pointer(repo_root: Path, index: int) -> Path:
@@ -282,7 +304,9 @@ def test_companion_physical_and_historical_partitions_are_exact(
     assert not any(record["path"] == ".gitignore" for record in historical)
 
 
-def test_registration_inventory_set_validation_and_canonical_commands_are_closed() -> None:
+def test_registration_inventory_set_validation_and_canonical_commands_are_closed(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     inventory = yaml.safe_load(
         (ROOT / patch.DVC_INVENTORY_PATH).read_text(encoding="utf-8")
     )
@@ -310,12 +334,19 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     )
 
     configured = precommit_artifacts.load_configured_dvc_artifacts(
-        precommit_artifacts.DEFAULT_DVC_MANIFEST
+        ROOT / precommit_artifacts.DEFAULT_DVC_MANIFEST
     )
-    registration = precommit_artifacts.load_anfis_ablation_registration_artifacts()
-    discovered = precommit_artifacts.declared_artifacts_missing_pointers(
-        [*configured, *registration]
+    registration = precommit_artifacts.load_anfis_ablation_registration_artifacts(
+        ROOT / precommit_artifacts.DEFAULT_CLOSURE_DVC_MANIFEST
     )
+    historical_root = tmp_path / "pre-registration-discovery"
+    historical_root.mkdir()
+    _copy_pre_registration_tree(historical_root)
+    with monkeypatch.context() as historical_cwd:
+        historical_cwd.chdir(historical_root)
+        discovered = precommit_artifacts.declared_artifacts_missing_pointers(
+            [*configured, *registration]
+        )
     discovered_paths = [artifact.path.as_posix() for artifact in discovered]
     assert discovered_paths == sorted(expected_payloads)
     assert discovered_paths != expected_payloads
@@ -500,8 +531,26 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     assert configuration["local_cache_override_absent"] is True
     assert configuration["autostage_override_absent"] is True
 
-    gitignore = ROOT / patch.GITIGNORE_PATH
-    adopted = gitignore.read_bytes()
+    gitignore_root = tmp_path / "historical-gitignore"
+    gitignore_root.mkdir()
+    subprocess.run(
+        ["git", "-C", gitignore_root.as_posix(), "init", "--quiet"], check=True
+    )
+    gitignore = gitignore_root / patch.GITIGNORE_PATH
+    adopted = subprocess.run(
+        [
+            "git",
+            "-C",
+            ROOT.as_posix(),
+            "cat-file",
+            "blob",
+            patch.ADOPTED_GITIGNORE_GIT_OID,
+        ],
+        check=True,
+        capture_output=True,
+    ).stdout
+    gitignore.write_bytes(adopted)
+    gitignore.chmod(0o644)
     base = subprocess.run(
         ["git", "-C", ROOT.as_posix(), "show", f"{P_MZB_COMMIT}:.gitignore"],
         check=True,
@@ -519,15 +568,31 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     assert stat.S_IMODE(before.st_mode) == 0o644
     assert before.st_nlink == 1
     assert subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "check-ignore", "--quiet", "--no-index", "models"],
+        [
+            "git",
+            "-C",
+            gitignore_root.as_posix(),
+            "check-ignore",
+            "--quiet",
+            "--no-index",
+            "models",
+        ],
         check=False,
     ).returncode == 0
     assert subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "check-ignore", "--quiet", "--no-index", "models.dvc"],
+        [
+            "git",
+            "-C",
+            gitignore_root.as_posix(),
+            "check-ignore",
+            "--quiet",
+            "--no-index",
+            "models.dvc",
+        ],
         check=False,
     ).returncode == 1
     assert subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "ls-files", "--", "models"],
+        ["git", "-C", gitignore_root.as_posix(), "ls-files", "--", "models"],
         check=True,
         capture_output=True,
         text=True,
@@ -575,21 +640,36 @@ def test_registration_inventory_set_validation_and_canonical_commands_are_closed
     )
 
 
-def test_complete_family_is_exact80_with_all50_lights_tracked() -> None:
-    records = patch._family_records(ROOT, registered=False)
+def test_complete_family_is_exact80_with_all50_lights_tracked(
+    tmp_path: Path,
+) -> None:
+    historical_root = tmp_path / "pre-registration-family"
+    historical_root.mkdir()
+    _copy_pre_registration_tree(historical_root)
+    records = patch._family_records(historical_root, registered=False)
     assert len(records) == patch.FAMILY_FINAL_COUNT == 80
     assert patch._digest_records(records) == FAMILY_RECORDS_SHA256
     assert sum(record["bytes"] for record in records) == 3_790_938
     assert sum(record["role"] in patch.LIGHT_SLOT_ROLES for record in records) == 50
     assert sum(record["role"] in patch.HEAVY_SLOT_ROLES for record in records) == 30
     for record in records:
-        metadata = (ROOT / record["path"]).lstat()
+        metadata = (historical_root / record["path"]).lstat()
         assert stat.S_ISREG(metadata.st_mode)
         assert stat.S_IMODE(metadata.st_mode) == 0o644
         assert metadata.st_nlink == 1
 
     tracked_lights = subprocess.run(
-        ["git", "-C", ROOT.as_posix(), "ls-files", "--", *patch._light_paths()],
+        [
+            "git",
+            "-C",
+            ROOT.as_posix(),
+            "ls-tree",
+            "-r",
+            "--name-only",
+            patch.BASE_COMMIT,
+            "--",
+            *patch._light_paths(),
+        ],
         check=True,
         capture_output=True,
         text=True,
@@ -599,7 +679,10 @@ def test_complete_family_is_exact80_with_all50_lights_tracked() -> None:
             "git",
             "-C",
             ROOT.as_posix(),
-            "ls-files",
+            "ls-tree",
+            "-r",
+            "--name-only",
+            patch.BASE_COMMIT,
             "--",
             *(record["path"] for record in records if record["role"] in patch.HEAVY_SLOT_ROLES),
         ],
@@ -616,18 +699,21 @@ def test_complete_family_is_exact80_with_all50_lights_tracked() -> None:
 def test_pre_registration_namespace_and_models_owner_are_exact(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    patch._validate_family_namespace(registered=False, repo_root=ROOT)
+    historical_root = tmp_path / "pre-registration-authority"
+    historical_root.mkdir()
+    _copy_pre_registration_tree(historical_root)
+    patch._validate_family_namespace(registered=False, repo_root=historical_root)
     assert not [
         path.as_posix()
         for path in patch._selection_pointer_paths()
-        if (ROOT / path).exists() or (ROOT / path).is_symlink()
+        if (historical_root / path).exists() or (historical_root / path).is_symlink()
     ]
     assert not [
         path.as_posix()
         for path in patch._forbidden_family_namespace_paths()
-        if (ROOT / path).exists() or (ROOT / path).is_symlink()
+        if (historical_root / path).exists() or (historical_root / path).is_symlink()
     ]
-    models_dvc = ROOT / patch.MODELS_DVC_PATH
+    models_dvc = historical_root / patch.MODELS_DVC_PATH
     metadata = models_dvc.lstat()
     assert stat.S_ISREG(metadata.st_mode)
     assert stat.S_IMODE(metadata.st_mode) == 0o644
@@ -715,7 +801,7 @@ def test_pre_registration_namespace_and_models_owner_are_exact(
         precommit_artifacts.snapshot_anfis_ablation_family_bundle(
             repo_root=prefix_root, expected_pointer_count=10
         )
-    shutil.copy2(
+    _copy_regular_0644(
         ROOT / precommit_artifacts.ANFIS_ABLATION_SELECTION_PREDICTION_PATHS[0],
         payload,
     )

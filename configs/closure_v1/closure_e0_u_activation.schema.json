@@ -1,0 +1,376 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_e0_u_activation_v1.json",
+  "title": "Closure V1 E0-U activation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "base_r_commit",
+    "dvc_policy",
+    "execution_id",
+    "experiment_id",
+    "expected_artifact_paths_sha256",
+    "expected_publication_order_sha256",
+    "gate",
+    "git_remote_url",
+    "h_commit",
+    "h_scope",
+    "p_commit",
+    "p_scope",
+    "phase3_overlay_deep_validation",
+    "schema_version",
+    "sealed_batch_command",
+    "sealed_batch_contract_sha256",
+    "sealed_component_source_records",
+    "sealed_context_builder_source_record",
+    "sealed_runner_source_record",
+    "sealed_runtime_environment_record",
+    "sealed_support_source_records"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_e0_u_activation_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-U"},
+    "base_r_commit": {
+      "const": "4c92ed7249a91b7dd541fd22dde68b61574556b2"
+    },
+    "h_commit": {"$ref": "#/$defs/gitCommit"},
+    "p_commit": {"$ref": "#/$defs/gitCommit"},
+    "execution_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$"
+    },
+    "git_remote_url": {
+      "const": "https://github.com/ejherran/lentic-pipe.git"
+    },
+    "sealed_batch_command": {
+      "const": "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"
+    },
+    "h_scope": {"$ref": "#/$defs/scope"},
+    "p_scope": {
+      "allOf": [
+        {"$ref": "#/$defs/scope"},
+        {
+          "minItems": 10,
+          "maxItems": 10,
+          "items": {
+            "type": "object",
+            "properties": {
+              "mode": {"const": "100644"},
+              "path": {
+                "enum": [
+                  "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet.dvc",
+                  "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz.dvc",
+                  "reports/closure_v1/00_protocol/software_evidence_source/end_to_end_report.md",
+                  "reports/closure_v1/00_protocol/software_evidence_source/environment.json",
+                  "reports/closure_v1/00_protocol/software_evidence_source/openapi.json",
+                  "reports/closure_v1/00_protocol/software_evidence_source/openapi_contract_report.md",
+                  "reports/closure_v1/00_protocol/software_evidence_source/public_tests.xml",
+                  "reports/closure_v1/00_protocol/software_evidence_source/software_evidence_source_manifest.json",
+                  "reports/closure_v1/00_protocol/software_evidence_source/test_report.md",
+                  "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
+                ]
+              },
+              "status": {"const": "A"}
+            }
+          }
+        }
+      ]
+    },
+    "phase3_overlay_deep_validation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "builder_source",
+        "checkpoint_count",
+        "checkpoint_identity_revalidated",
+        "expected_h_commit",
+        "experiment_id",
+        "gate",
+        "history_projection",
+        "manifest",
+        "manifest_regenerated_byte_equality",
+        "npz_regenerated_byte_equality",
+        "numpy_torch_parity_recomputed",
+        "opened_outcome_path_count",
+        "opened_target_path_count",
+        "panel_projection",
+        "physical_outputs",
+        "projection_contains_chlorophyll",
+        "projection_contains_target",
+        "schema_version",
+        "source_input_count",
+        "source_inputs",
+        "source_inputs_sha256",
+        "state_dict_array_count",
+        "status",
+        "surface_id",
+        "warmup_projection_recomputed",
+        "warmup_regenerated_byte_equality",
+        "warmup_row_count",
+        "warmup_site_count",
+        "writes_performed"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "closure_phase3_input_overlay_deep_validation_v1"
+        },
+        "status": {"const": "passed"},
+        "experiment_id": {"const": "closure_v1"},
+        "surface_id": {"const": "closure_v1_phase3_input_overlay"},
+        "gate": {"const": "pre_E0-U"},
+        "expected_h_commit": {"$ref": "#/$defs/gitCommit"},
+        "builder_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bytes", "path", "role", "sha256"],
+          "properties": {
+            "role": {"const": "phase3_input_overlay_builder"},
+            "path": {
+              "const": "src/experiments/build_closure_phase3_input_overlay.py"
+            },
+            "bytes": {"type": "integer", "minimum": 1},
+            "sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "source_inputs": {
+          "type": "array",
+          "minItems": 27,
+          "maxItems": 27,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/overlaySourceRecord"}
+        },
+        "source_input_count": {"const": 27},
+        "source_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bytes", "path", "sha256"],
+          "properties": {
+            "path": {
+              "const": "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
+            },
+            "bytes": {"type": "integer", "minimum": 1},
+            "sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "physical_outputs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bytes", "path", "sha256"],
+            "properties": {
+              "path": {
+                "enum": [
+                  "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz",
+                  "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet"
+                ]
+              },
+              "bytes": {"type": "integer", "minimum": 1},
+              "sha256": {"$ref": "#/$defs/sha256"}
+            }
+          }
+        },
+        "checkpoint_count": {"const": 25},
+        "state_dict_array_count": {"const": 195},
+        "warmup_row_count": {"const": 88},
+        "warmup_site_count": {"const": 88},
+        "npz_regenerated_byte_equality": {"const": true},
+        "warmup_regenerated_byte_equality": {"const": true},
+        "manifest_regenerated_byte_equality": {"const": true},
+        "checkpoint_identity_revalidated": {"const": true},
+        "numpy_torch_parity_recomputed": {"const": true},
+        "warmup_projection_recomputed": {"const": true},
+        "history_projection": {
+          "const": [
+            "source_id",
+            "site_id",
+            "holdout_group_id",
+            "assignment_role",
+            "history_year_month"
+          ]
+        },
+        "panel_projection": {
+          "const": [
+            "source_id",
+            "site_id",
+            "year_month",
+            "mean_TP_ugL",
+            "std_TP_ugL",
+            "n_obs_TP_ugL",
+            "n_bad_TP_ugL",
+            "qc_ok_rate_TP_ugL",
+            "mean_TN_ugL",
+            "std_TN_ugL",
+            "n_obs_TN_ugL",
+            "n_bad_TN_ugL",
+            "qc_ok_rate_TN_ugL",
+            "mean_temperature_C",
+            "std_temperature_C",
+            "n_obs_temperature_C",
+            "n_bad_temperature_C",
+            "qc_ok_rate_temperature_C",
+            "mean_secchi_depth_m",
+            "std_secchi_depth_m",
+            "n_obs_secchi_depth_m",
+            "n_bad_secchi_depth_m",
+            "qc_ok_rate_secchi_depth_m",
+            "mean_turbidity_NTU",
+            "std_turbidity_NTU",
+            "n_obs_turbidity_NTU",
+            "n_bad_turbidity_NTU",
+            "qc_ok_rate_turbidity_NTU",
+            "mean_DO_mgL",
+            "std_DO_mgL",
+            "n_obs_DO_mgL",
+            "n_bad_DO_mgL",
+            "qc_ok_rate_DO_mgL",
+            "mean_pH",
+            "std_pH",
+            "n_obs_pH",
+            "n_bad_pH",
+            "qc_ok_rate_pH",
+            "log_TP",
+            "log_TN",
+            "TN_TP_ratio",
+            "season_sin_1",
+            "season_cos_1",
+            "season_sin_2",
+            "season_cos_2"
+          ]
+        },
+        "projection_contains_chlorophyll": {"const": false},
+        "projection_contains_target": {"const": false},
+        "opened_outcome_path_count": {"const": 0},
+        "opened_target_path_count": {"const": 0},
+        "writes_performed": {"const": false}
+      }
+    },
+    "sealed_batch_contract_sha256": {"$ref": "#/$defs/sha256"},
+    "expected_artifact_paths_sha256": {"$ref": "#/$defs/sha256"},
+    "expected_publication_order_sha256": {"$ref": "#/$defs/sha256"},
+    "sealed_runner_source_record": {"$ref": "#/$defs/sourceRecord"},
+    "sealed_context_builder_source_record": {"$ref": "#/$defs/sourceRecord"},
+    "sealed_component_source_records": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {"$ref": "#/$defs/sourceRecord"}
+    },
+    "sealed_support_source_records": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/sourceRecord"}
+    },
+    "sealed_runtime_environment_record": {
+      "type": "object",
+      "minProperties": 1
+    },
+    "dvc_policy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "direct_git_artifact_paths",
+        "dvc_add_after_success_only",
+        "dvc_pointer_paths",
+        "dvc_push_after_audit_only",
+        "heavy_artifact_paths",
+        "implicit_dvc_forbidden"
+      ],
+      "properties": {
+        "direct_git_artifact_paths": {
+          "type": "array",
+          "minItems": 48,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/path"}
+        },
+        "dvc_pointer_paths": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^.+\\.parquet\\.dvc$"}
+        },
+        "heavy_artifact_paths": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^.+\\.parquet$"}
+        },
+        "dvc_add_after_success_only": {"const": true},
+        "dvc_push_after_audit_only": {"const": true},
+        "implicit_dvc_forbidden": {"const": true}
+      }
+    }
+  },
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "path": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(reports|data)/closure_v1/"
+    },
+    "overlaySourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "path", "role", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "scope": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["bytes", "mode", "path", "sha256", "status"],
+        "properties": {
+          "bytes": {"type": "integer", "minimum": 0},
+          "mode": {"enum": ["100644", "100755"]},
+          "path": {"type": "string", "minLength": 1},
+          "sha256": {"$ref": "#/$defs/sha256"},
+          "status": {"enum": ["A", "M"]}
+        }
+      }
+    },
+    "sourceRecord": {
+      "type": "object",
+      "minProperties": 5,
+      "required": ["bytes", "mode", "nlink", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "source_path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "status": {"type": "string"}
+      },
+      "anyOf": [
+        {"required": ["path"]},
+        {"required": ["source_path"]}
+      ]
+    }
+  }
+}
