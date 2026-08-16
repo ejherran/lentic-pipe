@@ -14,7 +14,7 @@ import shutil
 import stat
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -934,6 +934,47 @@ CLOSURE_PHASE3_U_RUNNER_REWRITE_BYTES = 34368
 CLOSURE_PHASE3_U_RUNNER_REWRITE_SHA256 = (
     "6b1f149e53e5304e846794a98e06f2ad7b87800d05c4ae6059c9107d2af7c137"
 )
+CLOSURE_PHASE3_H_RECOVERY_COMMIT = (
+    "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
+)
+CLOSURE_PHASE3_P_RECOVERY_COMMIT = (
+    "caaf2d6d0a00a31febeed89b54ea078b60d7f92a"
+)
+CLOSURE_PHASE3_U_RECOVERY_COMMIT = (
+    "4aecf19cd913b82a6a3d26669f09684e67efda8a"
+)
+CLOSURE_PHASE3_U_RECOVERY_BYTES = 34368
+CLOSURE_PHASE3_U_RECOVERY_SHA256 = (
+    "8f04bd4429717be662b6166c913fb1d15adaa69b1c0ba147d75162eb0a39bc94"
+)
+CLOSURE_PHASE3_RECOVERY_OUTCOME_LOG_BYTES = 256
+CLOSURE_PHASE3_RECOVERY_OUTCOME_LOG_SHA256 = (
+    "ae3e47dd6ad1f05cd79e6a494174f951f1c71fa9336514640bd4c15855c1b038"
+)
+CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_EXECUTION_ID = (
+    "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
+)
+CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_GUARD_PATH = Path(
+    "tmp/closure_v1_e0_u/sealed_batch.guard"
+)
+CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_GUARD_DEVICE = 2069
+CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_GUARD_INODE = 80609290
+CLOSURE_PHASE3_RECOVERY_RECEIPT_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"
+)
+CLOSURE_PHASE3_RECOVERY_COMMAND_PATH = Path(
+    "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt"
+)
+CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json"
+)
+CLOSURE_E0_U_RECOVERY_ACTIVATION_SCHEMA_PATH = Path(
+    "configs/closure_v1/closure_e0_u_recovery_activation.schema.json"
+)
+CLOSURE_PHASE3_RECOVERY_E10_MANIFEST_PATH = Path(
+    "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+    "software_evidence_source_manifest.json"
+)
 CLOSURE_PHASE3_LIVE_REMOTE_URL = "https://github.com/ejherran/lentic-pipe.git"
 CLOSURE_PHASE3_H_STAGED_SCOPE = {
     ".gitignore": "M",
@@ -1011,6 +1052,22 @@ CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE = {
     "tests/test_closure_e0_u_authority.py": "M",
     "tests/test_prepare_commit_artifacts.py": "M",
 }
+CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE = {
+    "configs/closure_v1/closure_e0_u_recovery_activation.schema.json": "A",
+    "docs/closure_v1/E0_U_PHASE3_RECOVERY_BATCH.md": "A",
+    "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json": "A",
+    "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt": "A",
+    "reports/closure_v1/00_protocol/outcome_access_log.jsonl": "M",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/build_closure_e10_source_evidence.py": "M",
+    "src/experiments/closure_e0_u_authority.py": "M",
+    "src/experiments/lock_closure_e0_u_activation.py": "M",
+    "src/experiments/run_closure_benchmark.py": "M",
+    "tests/test_build_closure_e10_source_evidence.py": "M",
+    "tests/test_closure_e0_u_activation_lock.py": "M",
+    "tests/test_closure_e0_u_authority.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
 CLOSURE_PHASE3_P_HISTORICAL_SCOPE = {
     "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet.dvc": "A",
     "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz.dvc": "A",
@@ -1026,6 +1083,48 @@ CLOSURE_PHASE3_P_HISTORICAL_SCOPE = {
     "reports/closure_v1/00_protocol/software_evidence_source/test_report.md": "A",
     "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json": "A",
 }
+CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE = {
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "end_to_end_report.md"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "environment.json"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "openapi.json"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "openapi_contract_report.md"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "public_tests.xml"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "software_evidence_source_manifest.json"
+    ): "A",
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/"
+        "test_report.md"
+    ): "A",
+}
+CLOSURE_PHASE3_U_RECOVERY_STAGED_SCOPE = {
+    CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(): "A",
+}
+CLOSURE_PHASE3_P_RECOVERY_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE
+}
+CLOSURE_PHASE3_P_RECOVERY_PHYSICAL_MODES = {
+    path: 0o600 for path in CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE
+}
+CLOSURE_PHASE3_RECOVERY_NEW_GUARD_PATH = Path(
+    "tmp/closure_v1_e0_u_recovery_1/sealed_batch.guard"
+)
 CLOSURE_PHASE3_H_GIT_MODES = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
     for path in CLOSURE_PHASE3_H_STAGED_SCOPE
@@ -1045,6 +1144,10 @@ CLOSURE_PHASE3_H_AUTHORITY_REWRITE_GIT_MODES = {
 CLOSURE_PHASE3_H_RUNNER_REWRITE_GIT_MODES = {
     path: CLOSURE_PHASE3_H_GIT_MODES[path]
     for path in CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+}
+CLOSURE_PHASE3_H_RECOVERY_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE
 }
 CLOSURE_PHASE3_P_HISTORICAL_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE3_P_HISTORICAL_SCOPE
@@ -1075,6 +1178,9 @@ CLOSURE_PHASE3_H_AUTHORITY_REWRITE_MARKER_PATHS = frozenset(
 )
 CLOSURE_PHASE3_H_RUNNER_REWRITE_MARKER_PATHS = frozenset(
     CLOSURE_PHASE3_H_RUNNER_REWRITE_STAGED_SCOPE
+)
+CLOSURE_PHASE3_H_RECOVERY_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE
 )
 CLOSURE_PHASE3_H_AUTHORITY_REWRITE_FORBIDDEN_GUARDS = (
     Path("tmp/closure_v1_e0_u_activation/activation.guard"),
@@ -7973,6 +8079,7 @@ def is_experiment_manifest_path(path: Path) -> bool:
         CLOSURE_PROTOCOL_LOCK_PATH,
         CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH,
         CLOSURE_E0_U_ACTIVATION_PATH,
+        CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH,
     }:
         return True
     if path.name == CLOSURE_COMMON_ORIGIN_MANIFEST_PATH.name:
@@ -8213,8 +8320,24 @@ def _validate_closure_e0_u_schema_node(
             raise ClosureE0UActivationManifestAdapterError(
                 f"Closure E0-U schema uniqueItems rejected {instance_path}"
             )
+        prefix_items = schema.get("prefixItems", [])
+        if not isinstance(prefix_items, list):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U schema prefixItems are malformed"
+            )
+        for index, child in enumerate(prefix_items):
+            if index >= len(instance):
+                break
+            _validate_closure_e0_u_schema_node(
+                instance[index],
+                child,
+                root_schema=root_schema,
+                instance_path=f"{instance_path}[{index}]",
+            )
         child = schema.get("items", True)
-        for index, item in enumerate(instance):
+        for index, item in enumerate(
+            instance[len(prefix_items) :], start=len(prefix_items)
+        ):
             _validate_closure_e0_u_schema_node(
                 item,
                 child,
@@ -8475,6 +8598,91 @@ def validate_closure_e0_u_activation_manifest(
             (
                 "Closure E0-U canonical authority, public schema, exact52 dialect, "
                 "and staged R-H-P topology passed without an outputs list."
+            ),
+        )
+    ]
+
+
+def validate_closure_e0_u_recovery_activation_manifest(
+    payload: Any,
+    manifest_path: Path,
+    *,
+    staged_paths: set[Path],
+) -> list[ReproducibilityFinding]:
+    """Validate exact U2 without treating it as an experiment output."""
+
+    try:
+        if (
+            manifest_path != CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH
+            or staged_paths != {CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH}
+            or not isinstance(payload, Mapping)
+        ):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U recovery staging is not exact1 activation-only"
+            )
+        p2_commit = _git_output(Path("."), "rev-parse", "HEAD^{commit}").strip()
+        h2_commit = _require_closure_phase3_recovery_p2_history(
+            repo_root=Path("."), p2_commit=p2_commit
+        )
+        payload_sink: list[bytes] = []
+        identity = _snapshot_closure_phase3_recovery_u2_file(
+            repo_root=Path("."),
+            h2_commit=h2_commit,
+            p2_commit=p2_commit,
+            _payload_sink=payload_sink,
+        )
+        schema = json.loads(
+            CLOSURE_E0_U_RECOVERY_ACTIVATION_SCHEMA_PATH.read_text(
+                encoding="utf-8"
+            )
+        )
+        if not isinstance(schema, Mapping):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U recovery schema is not an object"
+            )
+        _validate_closure_e0_u_schema_node(
+            payload,
+            schema,
+            root_schema=schema,
+            instance_path="$",
+        )
+        canonical = (
+            json.dumps(
+                dict(payload),
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+        ).encode("utf-8")
+        if payload_sink != [canonical] or identity.size != len(canonical):
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U recovery activation is not canonical"
+            )
+        if validate_closure_phase3_recovery_u2_staged_transaction(
+            repo_root=Path(".")
+        ) != identity:
+            raise ClosureE0UActivationManifestAdapterError(
+                "Closure E0-U recovery activation changed during validation"
+            )
+    except Exception as exc:
+        return [
+            ReproducibilityFinding(
+                "fail",
+                "manifest",
+                manifest_path.as_posix(),
+                f"Closure E0-U recovery activation validation failed: {exc}",
+            )
+        ]
+    return [
+        ReproducibilityFinding(
+            "ok",
+            "manifest",
+            manifest_path.as_posix(),
+            (
+                "Closure E0-U recovery authority, schema, exact1 staged "
+                "topology, attempt-1 prefix, and exact52 absence passed."
             ),
         )
     ]
@@ -9670,6 +9878,9 @@ def validate_experiment_manifests(
         is_closure_e0_u_activation = (
             manifest_path == CLOSURE_E0_U_ACTIVATION_PATH
         )
+        is_closure_e0_u_recovery_activation = (
+            manifest_path == CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH
+        )
         is_closure_e0_u_final_batch = (
             manifest_path == CLOSURE_E0_U_FINAL_BENCHMARK_MANIFEST_PATH
         )
@@ -9690,6 +9901,15 @@ def validate_experiment_manifests(
         if is_closure_e0_u_activation:
             findings.extend(
                 validate_closure_e0_u_activation_manifest(
+                    payload,
+                    manifest_path,
+                    staged_paths=staged_paths,
+                )
+            )
+            continue
+        if is_closure_e0_u_recovery_activation:
+            findings.extend(
+                validate_closure_e0_u_recovery_activation_manifest(
                     payload,
                     manifest_path,
                     staged_paths=staged_paths,
@@ -14477,6 +14697,780 @@ def closure_phase3_h_runner_rewrite_pre_stage_scope(
     return True
 
 
+def _closure_phase3_recovery_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase3_recovery_history(*, repo_root: Path) -> None:
+    """Bind the published first-attempt R-H-P-U chain without rewriting it."""
+
+    expected_ancestry = (
+        (CLOSURE_PHASE3_U_RECOVERY_COMMIT, CLOSURE_PHASE3_P_RECOVERY_COMMIT),
+        (CLOSURE_PHASE3_P_RECOVERY_COMMIT, CLOSURE_PHASE3_H_RECOVERY_COMMIT),
+        (CLOSURE_PHASE3_H_RECOVERY_COMMIT, CLOSURE_PHASE3_H_BASE_COMMIT),
+    )
+    for commit, parent in expected_ancestry:
+        observed = _git_output(
+            repo_root, "rev-list", "--parents", "-n", "1", commit
+        ).strip()
+        if observed != f"{commit} {parent}":
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery requires the exact published "
+                "R 4c92ed7 -> H 9e66478 -> P caaf2d6 -> U 4aecf19 chain"
+            )
+    for commit, expected, context in (
+        (
+            CLOSURE_PHASE3_H_RECOVERY_COMMIT,
+            CLOSURE_PHASE3_H_STAGED_SCOPE,
+            "Closure Phase 3 recovery H1 exact40 scope",
+        ),
+        (
+            CLOSURE_PHASE3_P_RECOVERY_COMMIT,
+            CLOSURE_PHASE3_P_HISTORICAL_SCOPE,
+            "Closure Phase 3 recovery P1 exact10 scope",
+        ),
+        (
+            CLOSURE_PHASE3_U_RECOVERY_COMMIT,
+            {CLOSURE_E0_U_ACTIVATION_PATH.as_posix(): "A"},
+            "Closure Phase 3 recovery U1 exact1 scope",
+        ),
+    ):
+        try:
+            validate_anfis_ablation_git_name_status_map(
+                _git_output(
+                    repo_root,
+                    "diff-tree",
+                    "--no-commit-id",
+                    "--name-status",
+                    "--no-renames",
+                    "-r",
+                    commit,
+                ),
+                expected=expected,
+                context=context,
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+
+
+def _require_closure_phase3_recovery_refs(*, repo_root: Path) -> None:
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {CLOSURE_PHASE3_U_RECOVERY_COMMIT}
+        or _git_output(repo_root, "symbolic-ref", "--quiet", "HEAD").strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery requires every local publication ref "
+            "at consumed U1 4aecf19"
+        )
+    _require_closure_phase3_recovery_history(repo_root=repo_root)
+
+
+def _require_closure_phase3_recovery_live_remote(*, repo_root: Path) -> None:
+    result = run_command(
+        [
+            "git",
+            "-C",
+            repo_root.as_posix(),
+            "ls-remote",
+            "--heads",
+            CLOSURE_PHASE3_LIVE_REMOTE_URL,
+            "refs/heads/main",
+        ],
+        check=False,
+    )
+    if (
+        result.returncode != 0
+        or result.stdout
+        != f"{CLOSURE_PHASE3_U_RECOVERY_COMMIT}\trefs/heads/main\n"
+        or result.stderr.strip()
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery requires live public main at consumed "
+            "U1 4aecf19"
+        )
+
+
+def _closure_phase3_recovery_log_identity(
+    *, repo_root: Path
+) -> RegistrationFileIdentity:
+    path = repo_root / CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH
+    sink: list[bytes] = []
+    try:
+        identity = _registration_file_identity(
+            path,
+            repo_root=repo_root,
+            mode=0o644,
+            _payload_sink=sink,
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if (
+        identity.nlink != 1
+        or identity.size != CLOSURE_PHASE3_RECOVERY_OUTCOME_LOG_BYTES
+        or identity.sha256 != CLOSURE_PHASE3_RECOVERY_OUTCOME_LOG_SHA256
+        or len(sink) != 1
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery requires the exact immutable first "
+            "attempt access-log prefix"
+        )
+    try:
+        record = json.loads(sink[0].decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery access-log prefix is not canonical JSON"
+        ) from exc
+    expected = {
+        "event": "sealed_outcome_context_opened",
+        "execution_id": CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_EXECUTION_ID,
+        "experiment_id": "closure_v1",
+        "gate": "E0-U",
+        "one_shot_consumed": True,
+        "outcome_access_authorized": True,
+        "schema_version": "closure_e0_u_access_log_v1",
+    }
+    canonical = (
+        json.dumps(
+            expected,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    if record != expected or sink[0] != canonical:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery access-log prefix payload drifted"
+        )
+    return identity
+
+
+def _snapshot_closure_phase3_recovery_candidate_files(
+    *, repo_root: Path
+) -> dict[str, RegistrationFileIdentity]:
+    snapshot: dict[str, RegistrationFileIdentity] = {}
+    for raw_path in sorted(CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE):
+        mode = (
+            0o755
+            if CLOSURE_PHASE3_H_RECOVERY_GIT_MODES[raw_path] == "100755"
+            else 0o644
+        )
+        try:
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=mode,
+            )
+        except DeferredDvcTargetError as exc:
+            raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+        if identity.nlink != 1:
+            raise ClosurePhase3HPrecommitAdapterError(
+                f"Closure Phase 3 recovery candidate is hardlinked: {raw_path}"
+            )
+        snapshot[raw_path] = identity
+    return snapshot
+
+
+def _require_closure_phase3_recovery_guard(
+    *, repo_root: Path, require_present: bool
+) -> tuple[int, int, int, int, int] | None:
+    """Preserve the failed guard locally; never treat it as reusable ownership."""
+
+    path = repo_root / CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_GUARD_PATH
+    if not os.path.lexists(path):
+        if require_present:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery lost the observed attempt-1 guard"
+            )
+        return None
+    metadata = path.lstat()
+    if (
+        not stat.S_ISREG(metadata.st_mode)
+        or metadata.st_dev
+        != CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_GUARD_DEVICE
+        or metadata.st_ino
+        != CLOSURE_PHASE3_RECOVERY_ATTEMPT_1_GUARD_INODE
+        or stat.S_IMODE(metadata.st_mode) != 0o600
+        or metadata.st_nlink != 1
+        or metadata.st_size != 0
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery attempt-1 guard identity drifted"
+        )
+    return (
+        metadata.st_dev,
+        metadata.st_ino,
+        stat.S_IMODE(metadata.st_mode),
+        metadata.st_nlink,
+        metadata.st_size,
+    )
+
+
+def closure_phase3_recovery_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize exact H2 recovery evidence on the published consumed U1."""
+
+    scope = CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE
+    if (
+        len(scope) != 14
+        or sum(value == "M" for value in scope.values()) != 10
+        or sum(value == "A" for value in scope.values()) != 4
+        or set(CLOSURE_PHASE3_H_RECOVERY_GIT_MODES) != set(scope)
+        or CLOSURE_PHASE3_H_RECOVERY_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE3_H_RECOVERY_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery H2 exact14 (10M+4A) contract drifted"
+        )
+    if (
+        _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        != CLOSURE_PHASE3_U_RECOVERY_COMMIT
+    ):
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_recovery_expected_short_scope(staged=False),
+            context="Closure Phase 3 recovery H2 pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(
+            marker in status_output or marker in staged_status
+            for marker in CLOSURE_PHASE3_H_RECOVERY_MARKER_PATHS
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery candidate must be exact14 and "
+                "fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery requires an empty Git index"
+        )
+    _require_closure_phase3_recovery_refs(repo_root=repo_root)
+    _closure_phase3_recovery_log_identity(repo_root=repo_root)
+    _require_closure_phase3_recovery_guard(
+        repo_root=repo_root, require_present=True
+    )
+    return True
+
+
+def _closure_phase3_recovery_p2_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _closure_phase3_recovery_u2_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE3_U_RECOVERY_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase3_recovery_refs_at(
+    *, repo_root: Path, expected_commit: str, label: str
+) -> None:
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {expected_commit}
+        or _git_output(repo_root, "symbolic-ref", "--quiet", "HEAD").strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            f"Closure Phase 3 recovery {label} publication refs drifted"
+        )
+
+
+def _require_closure_phase3_recovery_live_remote_at(
+    *, repo_root: Path, expected_commit: str, label: str
+) -> None:
+    result = run_command(
+        [
+            "git",
+            "-C",
+            repo_root.as_posix(),
+            "ls-remote",
+            "--heads",
+            CLOSURE_PHASE3_LIVE_REMOTE_URL,
+            "refs/heads/main",
+        ],
+        check=False,
+    )
+    if (
+        result.returncode != 0
+        or result.stdout != f"{expected_commit}\trefs/heads/main\n"
+        or result.stderr.strip()
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            f"Closure Phase 3 recovery live public main is not {label}"
+        )
+
+
+def _require_closure_phase3_recovery_h2_history(
+    *, repo_root: Path, h2_commit: str
+) -> None:
+    ancestry = _git_output(
+        repo_root, "rev-list", "--parents", "-n", "1", h2_commit
+    ).strip()
+    if ancestry != f"{h2_commit} {CLOSURE_PHASE3_U_RECOVERY_COMMIT}":
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery H2 is not a direct child of consumed U1"
+        )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff-tree",
+                "--no-commit-id",
+                "--name-status",
+                "--no-renames",
+                "-r",
+                h2_commit,
+            ),
+            expected=CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE,
+            context="Closure Phase 3 recovery published H2 exact14 scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    _require_closure_phase3_recovery_history(repo_root=repo_root)
+
+
+def _require_closure_phase3_recovery_p2_history(
+    *, repo_root: Path, p2_commit: str
+) -> str:
+    parent_fields = _git_output(
+        repo_root, "rev-list", "--parents", "-n", "1", p2_commit
+    ).strip().split()
+    if len(parent_fields) != 2 or parent_fields[0] != p2_commit:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery P2 is not a direct non-merge commit"
+        )
+    h2_commit = parent_fields[1]
+    _require_closure_phase3_recovery_h2_history(
+        repo_root=repo_root, h2_commit=h2_commit
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff-tree",
+                "--no-commit-id",
+                "--name-status",
+                "--no-renames",
+                "-r",
+                p2_commit,
+            ),
+            expected=CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE,
+            context="Closure Phase 3 recovery published P2 exact7A scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    return h2_commit
+
+
+def _closure_phase3_recovery_log_head_identity(
+    *, repo_root: Path
+) -> RegistrationFileIdentity:
+    identity = _closure_phase3_recovery_log_identity(repo_root=repo_root)
+    raw_path = CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix()
+    fields = _git_output(
+        repo_root, "ls-files", "-s", "--", raw_path
+    ).strip().split(maxsplit=3)
+    head_oid = _git_output(repo_root, "rev-parse", f"HEAD:{raw_path}").strip()
+    worktree_oid = _git_output(
+        repo_root, "hash-object", "--no-filters", "--", raw_path
+    ).strip()
+    if (
+        len(fields) != 4
+        or fields[0] != "100644"
+        or fields[1] != head_oid
+        or fields[2] != "0"
+        or fields[3] != raw_path
+        or worktree_oid != head_oid
+        or len(head_oid) != 40
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery log prefix is not the exact HEAD blob"
+        )
+    return identity
+
+
+def _require_closure_phase3_recovery_post_h2_paths_absent(
+    *, repo_root: Path, allow_recovery_activation: bool = False
+) -> None:
+    from src.experiments import run_closure_benchmark as runner
+
+    exact52 = tuple(Path(path) for path in runner.EXPECTED_ARTIFACT_PATHS)
+    pointers = tuple(
+        Path(f"{path}.dvc")
+        for path in runner.EXPECTED_ARTIFACT_PATHS
+        if runner.EXPECTED_ARTIFACT_FORMATS.get(path) == "parquet"
+    )
+    if len(exact52) != 52 or len(set(exact52)) != 52 or len(pointers) != 4:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery post-H2 exact52 contract drifted"
+        )
+    optional_activation = (
+        ()
+        if allow_recovery_activation
+        else (CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH,)
+    )
+    forbidden = (
+        *exact52,
+        *pointers,
+        *optional_activation,
+        CLOSURE_PHASE3_RECOVERY_NEW_GUARD_PATH,
+    )
+    present = [
+        path.as_posix()
+        for path in forbidden
+        if os.path.lexists(repo_root / path)
+    ]
+    if present:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery forbids U2/exact52/pointers/new guard: "
+            + ", ".join(present)
+        )
+
+
+def _snapshot_closure_phase3_recovery_p2_files(
+    *, repo_root: Path
+) -> dict[str, RegistrationFileIdentity]:
+    snapshot: dict[str, RegistrationFileIdentity] = {}
+    try:
+        for raw_path in sorted(CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE):
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=CLOSURE_PHASE3_P_RECOVERY_PHYSICAL_MODES[raw_path],
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 recovery P2 evidence is hardlinked: "
+                    + raw_path
+                )
+            snapshot[raw_path] = identity
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if len(snapshot) != 7:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery P2 physical snapshot is not exact7"
+        )
+    return snapshot
+
+
+def _validate_closure_phase3_recovery_p2_index_bindings(
+    snapshot: Mapping[str, RegistrationFileIdentity],
+    *,
+    repo_root: Path,
+) -> None:
+    for raw_path in sorted(CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE):
+        fields = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip().split(maxsplit=3)
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            raw_path not in snapshot
+            or len(fields) != 4
+            or fields[0] != "100644"
+            or fields[1] != worktree_oid
+            or fields[2] != "0"
+            or fields[3] != raw_path
+            or len(worktree_oid) != 40
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 staged blob drifted: " + raw_path
+            )
+
+
+def _validate_closure_phase3_recovery_p2_bundle(
+    *,
+    repo_root: Path,
+    h2_commit: str,
+    require_git_publication: bool = False,
+    allowed_dirty_paths: Sequence[str] = (),
+) -> dict[str, Any]:
+    from src.experiments import build_closure_e10_source_evidence as evidence
+
+    try:
+        loaded = evidence.load_closure_e10_software_evidence(
+            repo_root=repo_root,
+            expected_h_commit=h2_commit,
+            require_git_publication=require_git_publication,
+            allowed_dirty_paths=allowed_dirty_paths,
+            include_source_snapshot=True,
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_1,
+        )
+    except Exception as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery P2 E10 bundle failed strict loading"
+        ) from exc
+    if (
+        not isinstance(loaded, Mapping)
+        or set(loaded) != {"software_evidence", "source_snapshot"}
+        or not isinstance(loaded.get("software_evidence"), Mapping)
+        or set(cast(Mapping[str, Any], loaded["software_evidence"]))
+        != set(evidence.SOURCE_EVIDENCE_KEYS)
+        or not isinstance(loaded.get("source_snapshot"), Mapping)
+        or cast(Mapping[str, Any], loaded["source_snapshot"]).get(
+            "file_count"
+        )
+        != 7
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery P2 E10 loader result drifted"
+        )
+    return dict(loaded)
+
+
+def _snapshot_closure_phase3_recovery_u2_file(
+    *,
+    repo_root: Path,
+    h2_commit: str,
+    p2_commit: str,
+    _payload_sink: list[bytes] | None = None,
+) -> RegistrationFileIdentity:
+    """Bind the unpublished U2 bytes to the published recovery chain."""
+
+    from src.experiments import lock_closure_e0_u_activation as activation
+
+    sink: list[bytes] = []
+    try:
+        identity = _registration_file_identity(
+            repo_root / CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH,
+            repo_root=repo_root,
+            mode=0o644,
+            _payload_sink=sink,
+        )
+        if identity.nlink != 1 or len(sink) != 1:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 is not a single-link regular file"
+            )
+        validated = activation.validate_recovery_activation_payload(
+            sink[0],
+            repo_root=repo_root,
+            verify_remote=False,
+        )
+    except ClosurePhase3HPrecommitAdapterError:
+        raise
+    except Exception as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U2 payload failed exact recapture"
+        ) from exc
+    if (
+        not isinstance(validated, Mapping)
+        or not isinstance(validated.get("recovery_chain"), Mapping)
+        or cast(Mapping[str, Any], validated["recovery_chain"]).get(
+            "h2_commit"
+        )
+        != h2_commit
+        or cast(Mapping[str, Any], validated["recovery_chain"]).get(
+            "p2_commit"
+        )
+        != p2_commit
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U2 validator returned a malformed result"
+        )
+    if _payload_sink is not None:
+        _payload_sink.append(sink[0])
+    return identity
+
+
+def _validate_closure_phase3_recovery_u2_index_binding(
+    *, repo_root: Path, physical_payload: bytes
+) -> None:
+    raw_path = CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix()
+    fields = _git_output(
+        repo_root, "ls-files", "-s", "--", raw_path
+    ).strip().split(maxsplit=3)
+    worktree_oid = _git_output(
+        repo_root, "hash-object", "--no-filters", "--", raw_path
+    ).strip()
+    if (
+        len(fields) != 4
+        or fields[0] != "100644"
+        or fields[1] != worktree_oid
+        or fields[2] != "0"
+        or fields[3] != raw_path
+        or len(worktree_oid) != 40
+        or not physical_payload
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U2 staged blob drifted"
+        )
+
+
+def closure_phase3_recovery_p2_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize only exact7 unpublished recovery evidence on published H2."""
+
+    markers = set(CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE)
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    ancestry = _git_output(
+        repo_root, "rev-list", "--parents", "-n", "1", head
+    ).strip()
+    if ancestry != f"{head} {CLOSURE_PHASE3_U_RECOVERY_COMMIT}":
+        if any(marker in status_output or marker in staged_status for marker in markers):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 requires published H2 directly on U1"
+            )
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_recovery_p2_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 3 recovery P2 pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if any(marker in status_output or marker in staged_status for marker in markers):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 candidate must be exact7A and "
+                "fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery P2 requires an empty Git index"
+        )
+    _require_closure_phase3_recovery_h2_history(
+        repo_root=repo_root, h2_commit=head
+    )
+    _require_closure_phase3_recovery_refs_at(
+        repo_root=repo_root, expected_commit=head, label="H2"
+    )
+    _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+    _require_closure_phase3_recovery_guard(
+        repo_root=repo_root, require_present=False
+    )
+    _require_closure_phase3_recovery_post_h2_paths_absent(repo_root=repo_root)
+    _validate_closure_phase3_recovery_p2_bundle(
+        repo_root=repo_root, h2_commit=head
+    )
+    return True
+
+
+def closure_phase3_recovery_u2_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize only the exact unpublished U2 activation on published P2."""
+
+    marker = CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix()
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    try:
+        h2_commit = _require_closure_phase3_recovery_p2_history(
+            repo_root=repo_root, p2_commit=head
+        )
+    except ClosurePhase3HPrecommitAdapterError:
+        if marker in status_output or marker in staged_status:
+            raise
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase3_recovery_u2_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 3 recovery U2 pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        if marker in status_output or marker in staged_status:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 candidate must be exact1A and "
+                "fully unstaged"
+            ) from exc
+        return False
+    if staged_status.strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U2 requires an empty Git index"
+        )
+    _require_closure_phase3_recovery_refs_at(
+        repo_root=repo_root, expected_commit=head, label="P2"
+    )
+    _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+    _require_closure_phase3_recovery_guard(
+        repo_root=repo_root, require_present=False
+    )
+    _require_closure_phase3_recovery_post_h2_paths_absent(
+        repo_root=repo_root, allow_recovery_activation=True
+    )
+    _validate_closure_phase3_recovery_p2_bundle(
+        repo_root=repo_root,
+        h2_commit=h2_commit,
+        require_git_publication=True,
+        allowed_dirty_paths=(
+            CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+        ),
+    )
+    return True
+
+
 def _closure_phase3_h_authority_rewrite_expected_short_scope(
     *, staged: bool
 ) -> dict[str, str]:
@@ -15838,6 +16832,447 @@ def _validate_closure_phase3_h_index_bindings(
             )
 
 
+def _require_closure_phase3_recovery_future_paths_absent(
+    *, repo_root: Path
+) -> None:
+    from src.experiments import run_closure_benchmark as runner
+
+    exact52 = [Path(path) for path in runner.EXPECTED_ARTIFACT_PATHS]
+    pointers = [
+        Path(f"{path}.dvc")
+        for path in runner.EXPECTED_ARTIFACT_PATHS
+        if runner.EXPECTED_ARTIFACT_FORMATS.get(path) == "parquet"
+    ]
+    if len(exact52) != 52 or len(set(exact52)) != 52 or len(pointers) != 4:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery exact52/pointer contract drifted"
+        )
+    present = [
+        path.as_posix()
+        for path in (
+            *exact52,
+            *pointers,
+            *(Path(path) for path in CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE),
+            CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH,
+            CLOSURE_PHASE3_RECOVERY_NEW_GUARD_PATH,
+        )
+        if os.path.lexists(repo_root / path)
+    ]
+    if present:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery forbids P2/U2/exact52/new-guard paths: "
+            + ", ".join(present)
+        )
+
+
+def _snapshot_closure_phase3_recovery_u1(
+    *, repo_root: Path, _payload_sink: list[bytes] | None = None
+) -> RegistrationFileIdentity:
+    raw_path = CLOSURE_E0_U_ACTIVATION_PATH.as_posix()
+    sink: list[bytes] = []
+    try:
+        identity = _registration_file_identity(
+            repo_root / CLOSURE_E0_U_ACTIVATION_PATH,
+            repo_root=repo_root,
+            mode=0o644,
+            _payload_sink=sink,
+        )
+        manifest = json.loads(sink[0].decode("utf-8"))
+    except (DeferredDvcTargetError, UnicodeDecodeError, ValueError) as exc:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U1 is not canonical JSON"
+        ) from exc
+    payload = sink[0]
+    canonical = (
+        json.dumps(
+            manifest,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    index = _git_output(repo_root, "ls-files", "-s", "--", raw_path).strip()
+    fields = index.split(maxsplit=3)
+    head_oid = _git_output(
+        repo_root,
+        "rev-parse",
+        f"{CLOSURE_PHASE3_U_RECOVERY_COMMIT}:{raw_path}",
+    ).strip()
+    if (
+        identity.nlink != 1
+        or identity.size != CLOSURE_PHASE3_U_RECOVERY_BYTES
+        or identity.sha256 != CLOSURE_PHASE3_U_RECOVERY_SHA256
+        or payload != canonical
+        or not isinstance(manifest, dict)
+        or manifest.get("schema_version") != "closure_e0_u_activation_v1"
+        or manifest.get("base_r_commit") != CLOSURE_PHASE3_H_BASE_COMMIT
+        or manifest.get("h_commit") != CLOSURE_PHASE3_H_RECOVERY_COMMIT
+        or manifest.get("p_commit") != CLOSURE_PHASE3_P_RECOVERY_COMMIT
+        or len(fields) != 4
+        or fields[0] != "100644"
+        or fields[1] != head_oid
+        or fields[2] != "0"
+        or fields[3] != raw_path
+        or _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        != head_oid
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U1 byte/schema/Git binding drifted"
+        )
+    if _payload_sink is not None:
+        _payload_sink.append(payload)
+    return identity
+
+
+def _run_closure_phase3_recovery_publication_check(
+    *, repo_root: Path
+) -> tuple[CommandResult, bool]:
+    sink: list[bytes] = []
+    _snapshot_closure_phase3_recovery_u1(
+        repo_root=repo_root, _payload_sink=sink
+    )
+    result = run_command(["scripts/check_repo_publication_ready.sh"], check=False)
+    compensated = _validate_closure_phase3_h_runner_rewrite_publication_result(
+        result,
+        activation_payload=sink[0],
+    )
+    return result, compensated
+
+
+def _compensate_closure_phase3_recovery_manifest_findings(
+    findings: Sequence[ReproducibilityFinding],
+) -> list[ReproducibilityFinding]:
+    """Replace only the two directly sealed recovery-authority findings."""
+
+    expected_paths = {
+        CLOSURE_PHASE3_RECOVERY_RECEIPT_PATH.as_posix(),
+        CLOSURE_PHASE3_RECOVERY_COMMAND_PATH.as_posix(),
+    }
+    expected_message = (
+        "Staged report artifact is not listed in any experiment manifest output."
+    )
+    compensated_paths: set[str] = set()
+    compensated: list[ReproducibilityFinding] = []
+    for finding in findings:
+        if (
+            finding.level == "fail"
+            and finding.check == "manifest"
+            and finding.path in expected_paths
+            and finding.message == expected_message
+        ):
+            if finding.path in compensated_paths:
+                raise ClosurePhase3HPrecommitAdapterError(
+                    "Closure Phase 3 recovery manifest compensation duplicated"
+                )
+            compensated_paths.add(finding.path)
+            compensated.append(
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_direct_authority",
+                    finding.path,
+                    "Exact recovery receipt/command artifact is validated "
+                    "directly by the H2 adapter and recovery authority.",
+                )
+            )
+        else:
+            compensated.append(finding)
+    if compensated_paths != expected_paths:
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery manifest compensation is not exact2"
+        )
+    return compensated
+
+
+def _run_closure_phase3_recovery_u2_publication_check(
+    *, repo_root: Path, h2_commit: str, p2_commit: str
+) -> CommandResult:
+    """Accept only the two sealed runtime-path findings in U1 and U2."""
+
+    u1_sink: list[bytes] = []
+    u2_sink: list[bytes] = []
+    _snapshot_closure_phase3_recovery_u1(
+        repo_root=repo_root, _payload_sink=u1_sink
+    )
+    _snapshot_closure_phase3_recovery_u2_file(
+        repo_root=repo_root,
+        h2_commit=h2_commit,
+        p2_commit=p2_commit,
+        _payload_sink=u2_sink,
+    )
+    sealed_home = "/" + "home" + "/" + "zero"
+    expected_values = [
+        (
+            ("sealed_runtime_environment_record", "purelib_path"),
+            sealed_home
+            + "/repos/lentic-pipe/.venv/lib/python3.14/site-packages",
+        ),
+        (
+            (
+                "sealed_runtime_environment_record",
+                "python_executable",
+                "link_path",
+            ),
+            sealed_home + "/repos/lentic-pipe/.venv/bin/python",
+        ),
+    ]
+
+    def require_payload(raw: bytes, *, label: str) -> str:
+        try:
+            value = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError) as exc:
+            raise ClosurePhase3HPrecommitAdapterError(
+                f"Closure Phase 3 recovery {label} is not JSON"
+            ) from exc
+        if (
+            not isinstance(value, dict)
+            or not raw.endswith(b"\n")
+            or raw.count(b"\n") != 1
+            or (b'"type":"' + b"service_" + b'account"') in raw
+            or (b'"private_' + b'key":') in raw
+            or b"gs://" in raw
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                f"Closure Phase 3 recovery {label} publication bytes drifted"
+            )
+        observed: list[tuple[tuple[str | int, ...], str]] = []
+
+        def collect(item: Any, path: tuple[str | int, ...] = ()) -> None:
+            if isinstance(item, dict):
+                for key, nested in item.items():
+                    collect(nested, (*path, key))
+            elif isinstance(item, list):
+                for index, nested in enumerate(item):
+                    collect(nested, (*path, index))
+            elif isinstance(item, str) and re.search(
+                r"/home/(?:zero|wolf)(?:/|$)", item
+            ):
+                observed.append((path, item))
+
+        collect(value)
+        if observed != expected_values:
+            raise ClosurePhase3HPrecommitAdapterError(
+                f"Closure Phase 3 recovery {label} absolute-path inventory drifted"
+            )
+        return raw[:-1].decode("utf-8")
+
+    u1_line = require_payload(u1_sink[0], label="U1")
+    u2_line = require_payload(u2_sink[0], label="U2")
+    result = run_command(["scripts/check_repo_publication_ready.sh"], check=False)
+    expected_stdout = (
+        "Checking tracked files before publication...\n\n"
+        "Local absolute paths found in versionable files:\n"
+        f"{CLOSURE_E0_U_ACTIVATION_PATH.as_posix()}:1:{u1_line}\n"
+        f"{CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix()}:1:{u2_line}\n\n"
+        "Publication readiness check failed.\n"
+    )
+    if (
+        result.returncode != 1
+        or result.stderr
+        or result.stdout != expected_stdout
+    ):
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U2 publication guard failed beyond "
+            "the exact U1/U2 runtime-path exception"
+        )
+    return result
+
+
+def _validate_closure_phase3_recovery_index_bindings(
+    snapshot: Mapping[str, RegistrationFileIdentity],
+    *,
+    repo_root: Path,
+) -> None:
+    for raw_path in sorted(CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE):
+        fields = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip().split(maxsplit=3)
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            raw_path not in snapshot
+            or len(fields) != 4
+            or fields[0] != CLOSURE_PHASE3_H_RECOVERY_GIT_MODES[raw_path]
+            or fields[1] != worktree_oid
+            or len(worktree_oid) != 40
+            or fields[2] != "0"
+            or fields[3] != raw_path
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                f"Closure Phase 3 recovery staged mode/blob drifted: {raw_path}"
+            )
+
+
+def validate_closure_phase3_recovery_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> dict[str, RegistrationFileIdentity]:
+    staged = _git_output(
+        repo_root,
+        "diff",
+        "--cached",
+        "--name-status",
+        "--no-renames",
+    )
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            staged,
+            expected=CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE,
+            context="Closure Phase 3 recovery H2 staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            expected=_closure_phase3_recovery_expected_short_scope(staged=True),
+            context="Closure Phase 3 recovery H2 staged worktree",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(repo_root, "diff", "--name-status", "--no-renames").strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery has unstaged tracked drift"
+        )
+    snapshot = _snapshot_closure_phase3_recovery_candidate_files(
+        repo_root=repo_root
+    )
+    _validate_closure_phase3_recovery_index_bindings(
+        snapshot, repo_root=repo_root
+    )
+    _require_closure_phase3_recovery_refs(repo_root=repo_root)
+    _closure_phase3_recovery_log_identity(repo_root=repo_root)
+    _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+    _require_closure_phase3_recovery_guard(
+        repo_root=repo_root, require_present=True
+    )
+    _require_closure_phase3_recovery_future_paths_absent(repo_root=repo_root)
+    return snapshot
+
+
+def validate_closure_phase3_recovery_p2_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> dict[str, RegistrationFileIdentity]:
+    """Bind exact7A recovery evidence staged on published H2."""
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE,
+            context="Closure Phase 3 recovery P2 staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            expected=_closure_phase3_recovery_p2_expected_short_scope(
+                staged=True
+            ),
+            context="Closure Phase 3 recovery P2 staged worktree",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(repo_root, "diff", "--name-status", "--no-renames").strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery P2 has unstaged tracked drift"
+        )
+    h2_commit = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    _require_closure_phase3_recovery_h2_history(
+        repo_root=repo_root, h2_commit=h2_commit
+    )
+    _require_closure_phase3_recovery_refs_at(
+        repo_root=repo_root, expected_commit=h2_commit, label="H2"
+    )
+    snapshot = _snapshot_closure_phase3_recovery_p2_files(repo_root=repo_root)
+    _validate_closure_phase3_recovery_p2_index_bindings(
+        snapshot, repo_root=repo_root
+    )
+    _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+    _require_closure_phase3_recovery_guard(
+        repo_root=repo_root, require_present=False
+    )
+    _require_closure_phase3_recovery_post_h2_paths_absent(repo_root=repo_root)
+    _validate_closure_phase3_recovery_p2_bundle(
+        repo_root=repo_root, h2_commit=h2_commit
+    )
+    return snapshot
+
+
+def validate_closure_phase3_recovery_u2_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> RegistrationFileIdentity:
+    """Bind exact1A recovery activation staged on published P2."""
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE3_U_RECOVERY_STAGED_SCOPE,
+            context="Closure Phase 3 recovery U2 staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            expected=_closure_phase3_recovery_u2_expected_short_scope(
+                staged=True
+            ),
+            context="Closure Phase 3 recovery U2 staged worktree",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase3HPrecommitAdapterError(str(exc)) from exc
+    if _git_output(repo_root, "diff", "--name-status", "--no-renames").strip():
+        raise ClosurePhase3HPrecommitAdapterError(
+            "Closure Phase 3 recovery U2 has unstaged tracked drift"
+        )
+    p2_commit = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    h2_commit = _require_closure_phase3_recovery_p2_history(
+        repo_root=repo_root, p2_commit=p2_commit
+    )
+    _require_closure_phase3_recovery_refs_at(
+        repo_root=repo_root, expected_commit=p2_commit, label="P2"
+    )
+    payload_sink: list[bytes] = []
+    identity = _snapshot_closure_phase3_recovery_u2_file(
+        repo_root=repo_root,
+        h2_commit=h2_commit,
+        p2_commit=p2_commit,
+        _payload_sink=payload_sink,
+    )
+    _validate_closure_phase3_recovery_u2_index_binding(
+        repo_root=repo_root, physical_payload=payload_sink[0]
+    )
+    _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+    _require_closure_phase3_recovery_guard(
+        repo_root=repo_root, require_present=False
+    )
+    _require_closure_phase3_recovery_post_h2_paths_absent(
+        repo_root=repo_root, allow_recovery_activation=True
+    )
+    _validate_closure_phase3_recovery_p2_bundle(
+        repo_root=repo_root,
+        h2_commit=h2_commit,
+        require_git_publication=True,
+        allowed_dirty_paths=(
+            CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+        ),
+    )
+    return identity
+
+
 def validate_closure_phase3_h_runner_rewrite_staged_transaction(
     *, repo_root: Path = Path(".")
 ) -> tuple[RegistrationFileIdentity, ...]:
@@ -16363,6 +17798,1252 @@ def _abort_closure_phase3_h_post_add(
             file=sys.stderr,
         )
     return 2
+
+
+def _rollback_closure_phase3_recovery_staging(
+    *,
+    candidate_before: Mapping[str, RegistrationFileIdentity],
+    log_before: RegistrationFileIdentity,
+    u1_before: RegistrationFileIdentity,
+    guard_before: tuple[int, int, int, int, int],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    artifacts: list[DvcArtifact],
+    unmanaged_before: list[Path],
+    repo_root: Path,
+) -> str | None:
+    """Restore only H2's index entries and recapture every durable boundary."""
+
+    errors: list[str] = []
+    try:
+        result = run_command(
+            [
+                "git",
+                "restore",
+                "--staged",
+                "--",
+                *sorted(CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE),
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            errors.append(
+                "directed git restore --staged failed: "
+                f"exit={result.returncode}; stderr={result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed git restore --staged raised: {exc}")
+    try:
+        status = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if staged.strip() or not closure_phase3_recovery_pre_stage_scope(
+            status,
+            staged,
+            repo_root=repo_root,
+        ):
+            errors.append(
+                "directed rollback did not restore exact14 fully unstaged"
+            )
+    except BaseException as exc:
+        errors.append(f"post-rollback Git scope validation failed: {exc}")
+    try:
+        if (
+            _snapshot_closure_phase3_recovery_candidate_files(
+                repo_root=repo_root
+            )
+            != candidate_before
+        ):
+            errors.append("post-rollback exact14 worktree snapshot drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback exact14 recapture failed: {exc}")
+    try:
+        if _closure_phase3_recovery_log_identity(
+            repo_root=repo_root
+        ) != log_before:
+            errors.append("post-rollback durable log prefix drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback durable log validation failed: {exc}")
+    try:
+        if _snapshot_closure_phase3_recovery_u1(
+            repo_root=repo_root
+        ) != u1_before:
+            errors.append("post-rollback consumed U1 identity drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback U1 validation failed: {exc}")
+    try:
+        if _require_closure_phase3_recovery_guard(
+            repo_root=repo_root, require_present=True
+        ) != guard_before:
+            errors.append("post-rollback consumed guard identity drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback consumed guard validation failed: {exc}")
+    try:
+        _require_closure_phase3_recovery_future_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_recovery_live_remote(repo_root=repo_root)
+    except BaseException as exc:
+        errors.append(f"post-rollback recovery boundary failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback DVC validation failed: {exc}")
+    try:
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            errors.append("post-rollback ignored-heavy inventory drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback ignored-heavy validation failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _abort_closure_phase3_recovery_post_add(
+    primary: BaseException,
+    *,
+    candidate_before: Mapping[str, RegistrationFileIdentity],
+    log_before: RegistrationFileIdentity,
+    u1_before: RegistrationFileIdentity,
+    guard_before: tuple[int, int, int, int, int],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    artifacts: list[DvcArtifact],
+    unmanaged_before: list[Path],
+    repo_root: Path,
+) -> int:
+    rollback_error = _rollback_closure_phase3_recovery_staging(
+        candidate_before=candidate_before,
+        log_before=log_before,
+        u1_before=u1_before,
+        guard_before=guard_before,
+        dvc_bin=dvc_bin,
+        dvc_status_before=dvc_status_before,
+        artifacts=artifacts,
+        unmanaged_before=unmanaged_before,
+        repo_root=repo_root,
+    )
+    if rollback_error is None:
+        print(
+            "Closure Phase 3 recovery H2 failed after staging: "
+            f"{primary}; the directed index rollback restored exact14 and "
+            "preserved the durable attempt-1 evidence.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            "Closure Phase 3 recovery H2 failed after staging: "
+            f"{primary}; ROLLBACK FAILED CLOSED: {rollback_error}",
+            file=sys.stderr,
+        )
+    return 2
+
+
+def _run_closure_phase3_recovery_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage the append-only H2 recovery transition on consumed U1."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_recovery_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery H2 exact14 scope disappeared"
+            )
+        candidate_before = (
+            _snapshot_closure_phase3_recovery_candidate_files(
+                repo_root=repo_root
+            )
+        )
+        log_before = _closure_phase3_recovery_log_identity(repo_root=repo_root)
+        u1_before = _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+        guard_before = _require_closure_phase3_recovery_guard(
+            repo_root=repo_root, require_present=True
+        )
+        if guard_before is None:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery consumed guard disappeared"
+            )
+        _require_closure_phase3_recovery_future_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_recovery_live_remote(repo_root=repo_root)
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery requires exact empty repository "
+                "DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    try:
+        publication_check_result, publication_compensated = (
+            _run_closure_phase3_recovery_publication_check(repo_root=repo_root)
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    publication_report_result = publication_check_result
+    if publication_compensated:
+        publication_report_result = CommandResult(
+            publication_check_result.command,
+            0,
+            "OK: exact consumed-U1 two-path publication exception "
+            "compensated; no other findings.\n",
+            "",
+        )
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_recovery_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery H2 changed during publication checks"
+            )
+        if (
+            _snapshot_closure_phase3_recovery_candidate_files(
+                repo_root=repo_root
+            )
+            != candidate_before
+            or _closure_phase3_recovery_log_identity(repo_root=repo_root)
+            != log_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=True
+            )
+            != guard_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery durable inputs changed before staging"
+            )
+        _require_closure_phase3_recovery_future_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_recovery_live_remote(repo_root=repo_root)
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 ignored-heavy inventory changed before "
+                "recovery staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_result: CommandResult | None = None
+    try:
+        git_add_result = run_command(
+            [
+                "git",
+                "add",
+                "-A",
+                "--",
+                *sorted(CLOSURE_PHASE3_H_RECOVERY_STAGED_SCOPE),
+            ],
+            check=False,
+        )
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_snapshot = validate_closure_phase3_recovery_staged_transaction(
+            repo_root=repo_root
+        )
+        if (
+            staged_snapshot != candidate_before
+            or _closure_phase3_recovery_log_identity(repo_root=repo_root)
+            != log_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=True
+            )
+            != guard_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery durable inputs changed across staging"
+            )
+        _require_closure_phase3_recovery_future_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_recovery_live_remote(repo_root=repo_root)
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 DVC status changed during recovery staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        findings = _compensate_closure_phase3_recovery_manifest_findings(
+            reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+            )
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery generic reproducibility checks "
+                "contain warnings or failures: "
+                + "; ".join(
+                    finding.message for finding in non_ok_findings
+                )
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_scope",
+                    "-",
+                    "Exact H2 10M+4A staged as a direct append-only child "
+                    "of consumed U1; no history rewrite is required.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_attempt_1",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "The canonical 256-byte first-attempt log prefix, "
+                    "failure receipt, consumed U1, and observed old guard "
+                    "remained exact; the old guard was not removed or reused.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_future",
+                    "-",
+                    "P2 exact7, U2 exact1, exact52 outputs, four future "
+                    "pointers, and the recovery guard remain absent.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_dvc",
+                    "-",
+                    "DVC stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_publication_guard",
+                    CLOSURE_E0_U_ACTIVATION_PATH.as_posix(),
+                    (
+                        "Generic publication guard passed without compensation."
+                        if not publication_compensated
+                        else "Generic publication guard real rc=1 was "
+                        "compensated only for the exact byte-bound consumed "
+                        "U1 line containing its two sealed .venv paths."
+                    ),
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_report_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_recovery_staged_transaction(
+                repo_root=repo_root
+            )
+            != candidate_before
+            or _closure_phase3_recovery_log_identity(repo_root=repo_root)
+            != log_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=True
+            )
+            != guard_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery changed while writing its report"
+            )
+        _require_closure_phase3_recovery_future_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_recovery_live_remote(repo_root=repo_root)
+    except BaseException as exc:
+        return _abort_closure_phase3_recovery_post_add(
+            exc,
+            candidate_before=candidate_before,
+            log_before=log_before,
+            u1_before=u1_before,
+            guard_before=guard_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 recovery H2 10M+4A is staged; no DVC "
+        "add or push ran. Publish H2 linearly, then generate P2 and U2."
+    )
+    return 0
+
+
+def _rollback_closure_phase3_recovery_p2_staging(
+    *,
+    p2_before: Mapping[str, RegistrationFileIdentity],
+    p1_before: tuple[RegistrationFileIdentity, ...],
+    u1_before: RegistrationFileIdentity,
+    log_before: RegistrationFileIdentity,
+    guard_before: tuple[int, int, int, int, int] | None,
+    h2_commit: str,
+    dvc_bin: str,
+    dvc_status_before: Any,
+    artifacts: list[DvcArtifact],
+    unmanaged_before: list[Path],
+    repo_root: Path,
+) -> str | None:
+    errors: list[str] = []
+    try:
+        result = run_command(
+            [
+                "git",
+                "restore",
+                "--staged",
+                "--",
+                *sorted(CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE),
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            errors.append(
+                "directed P2 git restore --staged failed: "
+                f"exit={result.returncode}; stderr={result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed P2 git restore --staged raised: {exc}")
+    try:
+        status = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if staged.strip() or not closure_phase3_recovery_p2_pre_stage_scope(
+            status,
+            staged,
+            repo_root=repo_root,
+        ):
+            errors.append("P2 rollback did not restore exact7 fully unstaged")
+    except BaseException as exc:
+        errors.append(f"post-rollback P2 scope validation failed: {exc}")
+    checks: tuple[tuple[str, Callable[[], Any], Any], ...] = (
+        (
+            "P2 exact7",
+            lambda: _snapshot_closure_phase3_recovery_p2_files(
+                repo_root=repo_root
+            ),
+            p2_before,
+        ),
+        (
+            "P1 exact10",
+            lambda: _snapshot_closure_phase3_p_files_at_commit(
+                repo_root=repo_root,
+                commit=CLOSURE_PHASE3_P_RECOVERY_COMMIT,
+                context="recovery inherited",
+            ),
+            p1_before,
+        ),
+        (
+            "U1",
+            lambda: _snapshot_closure_phase3_recovery_u1(
+                repo_root=repo_root
+            ),
+            u1_before,
+        ),
+        (
+            "durable log",
+            lambda: _closure_phase3_recovery_log_head_identity(
+                repo_root=repo_root
+            ),
+            log_before,
+        ),
+        (
+            "old guard",
+            lambda: _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=False
+            ),
+            guard_before,
+        ),
+    )
+    for label, recapture, expected in checks:
+        try:
+            if recapture() != expected:
+                errors.append(f"post-rollback {label} identity drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback {label} validation failed: {exc}")
+    try:
+        _require_closure_phase3_recovery_refs_at(
+            repo_root=repo_root, expected_commit=h2_commit, label="H2"
+        )
+        _require_closure_phase3_recovery_live_remote_at(
+            repo_root=repo_root, expected_commit=h2_commit, label="H2"
+        )
+        _require_closure_phase3_recovery_post_h2_paths_absent(
+            repo_root=repo_root
+        )
+    except BaseException as exc:
+        errors.append(f"post-rollback P2 boundary failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback P2 DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback P2 DVC validation failed: {exc}")
+    try:
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            errors.append("post-rollback P2 ignored-heavy inventory drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback P2 ignored-heavy validation failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _run_closure_phase3_recovery_p2_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact7A recovery evidence without touching inherited P1."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase3_recovery_p2_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 exact7 scope disappeared"
+            )
+        h2_commit = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        p2_before = _snapshot_closure_phase3_recovery_p2_files(
+            repo_root=repo_root
+        )
+        p1_before = _snapshot_closure_phase3_p_files_at_commit(
+            repo_root=repo_root,
+            commit=CLOSURE_PHASE3_P_RECOVERY_COMMIT,
+            context="recovery inherited",
+        )
+        u1_before = _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+        log_before = _closure_phase3_recovery_log_head_identity(
+            repo_root=repo_root
+        )
+        guard_before = _require_closure_phase3_recovery_guard(
+            repo_root=repo_root, require_present=False
+        )
+        _require_closure_phase3_recovery_post_h2_paths_absent(repo_root=repo_root)
+        _require_closure_phase3_recovery_live_remote_at(
+            repo_root=repo_root, expected_commit=h2_commit, label="H2"
+        )
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 requires exact empty DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    try:
+        publication_result, publication_compensated = (
+            _run_closure_phase3_recovery_publication_check(repo_root=repo_root)
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    publication_report = publication_result
+    if publication_compensated:
+        publication_report = CommandResult(
+            publication_result.command,
+            0,
+            "OK: exact consumed-U1 two-path publication exception "
+            "compensated; no other findings.\n",
+            "",
+        )
+
+    try:
+        if not closure_phase3_recovery_p2_pre_stage_scope(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 changed before staging"
+            )
+        if (
+            _snapshot_closure_phase3_recovery_p2_files(repo_root=repo_root)
+            != p2_before
+            or _snapshot_closure_phase3_p_files_at_commit(
+                repo_root=repo_root,
+                commit=CLOSURE_PHASE3_P_RECOVERY_COMMIT,
+                context="recovery inherited",
+            )
+            != p1_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+            != log_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=False
+            )
+            != guard_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 inputs changed before staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    try:
+        git_add_result = run_command(
+            [
+                "git",
+                "add",
+                "-A",
+                "--",
+                *sorted(CLOSURE_PHASE3_P_RECOVERY_STAGED_SCOPE),
+            ],
+            check=False,
+        )
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 directed git add failed"
+            )
+        if (
+            validate_closure_phase3_recovery_p2_staged_transaction(
+                repo_root=repo_root
+            )
+            != p2_before
+            or _snapshot_closure_phase3_p_files_at_commit(
+                repo_root=repo_root,
+                commit=CLOSURE_PHASE3_P_RECOVERY_COMMIT,
+                context="recovery inherited",
+            )
+            != p1_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+            != log_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=False
+            )
+            != guard_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 inputs changed across staging"
+            )
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 DVC status changed"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok = [finding for finding in findings if finding.level != "ok"]
+        if non_ok:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 reproducibility warning/failure: "
+                + "; ".join(finding.message for finding in non_ok)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_p2_scope",
+                    "-",
+                    "Exact7A append-only E10 recovery evidence staged; "
+                    "P1 exact10 remains inherited and unchanged.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_p2_outcomes",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "Attempt-1 log prefix and guard policy remain exact; "
+                    "U2, exact52, pointers, and recovery guard remain absent.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_p2_dvc",
+                    "-",
+                    "DVC stayed empty; P2 ran no DVC add or push.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_report,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_recovery_p2_staged_transaction(
+                repo_root=repo_root
+            )
+            != p2_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery P2 changed while writing report"
+            )
+        _require_closure_phase3_recovery_live_remote_at(
+            repo_root=repo_root, expected_commit=h2_commit, label="H2"
+        )
+    except BaseException as exc:
+        rollback_error = _rollback_closure_phase3_recovery_p2_staging(
+            p2_before=p2_before,
+            p1_before=p1_before,
+            u1_before=u1_before,
+            log_before=log_before,
+            guard_before=guard_before,
+            h2_commit=h2_commit,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+        )
+        if rollback_error is None:
+            print(
+                "Closure Phase 3 recovery P2 failed after staging: "
+                f"{exc}; directed rollback restored exact7 unstaged.",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "Closure Phase 3 recovery P2 failed after staging: "
+                f"{exc}; ROLLBACK FAILED CLOSED: {rollback_error}",
+                file=sys.stderr,
+            )
+        return 2
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 recovery P2 exact7A is staged; inherited P1 "
+        "and DVC were unchanged. Publish P2, then generate U2."
+    )
+    return 0
+
+
+def _rollback_closure_phase3_recovery_u2_staging(
+    *,
+    u2_before: RegistrationFileIdentity,
+    p2_before: Mapping[str, RegistrationFileIdentity],
+    u1_before: RegistrationFileIdentity,
+    log_before: RegistrationFileIdentity,
+    guard_before: tuple[int, int, int, int, int] | None,
+    h2_commit: str,
+    p2_commit: str,
+    dvc_bin: str,
+    dvc_status_before: Any,
+    artifacts: list[DvcArtifact],
+    unmanaged_before: list[Path],
+    repo_root: Path,
+) -> str | None:
+    errors: list[str] = []
+    try:
+        result = run_command(
+            [
+                "git",
+                "restore",
+                "--staged",
+                "--",
+                CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            errors.append(
+                "directed U2 git restore --staged failed: "
+                f"exit={result.returncode}; stderr={result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed U2 git restore --staged raised: {exc}")
+    try:
+        status = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        staged = _git_output(
+            repo_root, "diff", "--cached", "--name-status", "--no-renames"
+        )
+        if staged.strip() or not closure_phase3_recovery_u2_pre_stage_scope(
+            status, staged, repo_root=repo_root
+        ):
+            errors.append("U2 rollback did not restore exact1 fully unstaged")
+    except BaseException as exc:
+        errors.append(f"post-rollback U2 scope validation failed: {exc}")
+    checks: tuple[tuple[str, Callable[[], Any], Any], ...] = (
+        (
+            "U2",
+            lambda: _snapshot_closure_phase3_recovery_u2_file(
+                repo_root=repo_root,
+                h2_commit=h2_commit,
+                p2_commit=p2_commit,
+            ),
+            u2_before,
+        ),
+        (
+            "P2 exact7",
+            lambda: _snapshot_closure_phase3_recovery_p2_files(
+                repo_root=repo_root
+            ),
+            p2_before,
+        ),
+        (
+            "U1",
+            lambda: _snapshot_closure_phase3_recovery_u1(
+                repo_root=repo_root
+            ),
+            u1_before,
+        ),
+        (
+            "durable log",
+            lambda: _closure_phase3_recovery_log_head_identity(
+                repo_root=repo_root
+            ),
+            log_before,
+        ),
+        (
+            "old guard",
+            lambda: _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=False
+            ),
+            guard_before,
+        ),
+    )
+    for label, recapture, expected in checks:
+        try:
+            if recapture() != expected:
+                errors.append(f"post-rollback {label} identity drifted")
+        except BaseException as exc:
+            errors.append(f"post-rollback {label} validation failed: {exc}")
+    try:
+        _require_closure_phase3_recovery_refs_at(
+            repo_root=repo_root, expected_commit=p2_commit, label="P2"
+        )
+        _require_closure_phase3_recovery_live_remote_at(
+            repo_root=repo_root, expected_commit=p2_commit, label="P2"
+        )
+        _require_closure_phase3_recovery_post_h2_paths_absent(
+            repo_root=repo_root, allow_recovery_activation=True
+        )
+        _validate_closure_phase3_recovery_p2_bundle(
+            repo_root=repo_root,
+            h2_commit=h2_commit,
+            require_git_publication=True,
+            allowed_dirty_paths=(
+                CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+            ),
+        )
+    except BaseException as exc:
+        errors.append(f"post-rollback U2 boundary failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback U2 DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback U2 DVC validation failed: {exc}")
+    try:
+        if unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before:
+            errors.append("post-rollback U2 ignored-heavy inventory drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback U2 ignored-heavy validation failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _run_closure_phase3_recovery_u2_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact1A recovery authority without touching attempt-one evidence."""
+
+    try:
+        validate_closure_phase3_h_invocation(args)
+        initial_staged = _git_output(
+            repo_root, "diff", "--cached", "--name-status", "--no-renames"
+        )
+        if not closure_phase3_recovery_u2_pre_stage_scope(
+            initial_status, initial_staged, repo_root=repo_root
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 exact1 scope disappeared"
+            )
+        p2_commit = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        h2_commit = _require_closure_phase3_recovery_p2_history(
+            repo_root=repo_root, p2_commit=p2_commit
+        )
+        u2_before = _snapshot_closure_phase3_recovery_u2_file(
+            repo_root=repo_root, h2_commit=h2_commit, p2_commit=p2_commit
+        )
+        p2_before = _snapshot_closure_phase3_recovery_p2_files(
+            repo_root=repo_root
+        )
+        u1_before = _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+        log_before = _closure_phase3_recovery_log_head_identity(
+            repo_root=repo_root
+        )
+        guard_before = _require_closure_phase3_recovery_guard(
+            repo_root=repo_root, require_present=False
+        )
+        _require_closure_phase3_recovery_post_h2_paths_absent(
+            repo_root=repo_root, allow_recovery_activation=True
+        )
+        _require_closure_phase3_recovery_live_remote_at(
+            repo_root=repo_root, expected_commit=p2_commit, label="P2"
+        )
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        unmanaged_before = unmanaged_ignored_heavy_paths(artifacts)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 requires exact empty DVC status"
+            )
+    except (
+        ClosurePhase3HPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    try:
+        publication_result = _run_closure_phase3_recovery_u2_publication_check(
+            repo_root=repo_root,
+            h2_commit=h2_commit,
+            p2_commit=p2_commit,
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    publication_report = CommandResult(
+        publication_result.command,
+        0,
+        "OK: exact U1/U2 sealed-runtime path findings compensated; "
+        "no other publication findings.\n",
+        "",
+    )
+
+    try:
+        if not closure_phase3_recovery_u2_pre_stage_scope(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            _git_output(
+                repo_root, "diff", "--cached", "--name-status", "--no-renames"
+            ),
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 changed before staging"
+            )
+        if (
+            _snapshot_closure_phase3_recovery_u2_file(
+                repo_root=repo_root,
+                h2_commit=h2_commit,
+                p2_commit=p2_commit,
+            )
+            != u2_before
+            or _snapshot_closure_phase3_recovery_p2_files(repo_root=repo_root)
+            != p2_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+            != log_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=False
+            )
+            != guard_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 inputs changed before staging"
+            )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    try:
+        git_add_result = run_command(
+            [
+                "git",
+                "add",
+                "-A",
+                "--",
+                CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+            ],
+            check=False,
+        )
+        if git_add_result.returncode != 0:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 directed git add failed"
+            )
+        if (
+            validate_closure_phase3_recovery_u2_staged_transaction(
+                repo_root=repo_root
+            )
+            != u2_before
+            or _snapshot_closure_phase3_recovery_p2_files(repo_root=repo_root)
+            != p2_before
+            or _snapshot_closure_phase3_recovery_u1(repo_root=repo_root)
+            != u1_before
+            or _closure_phase3_recovery_log_head_identity(repo_root=repo_root)
+            != log_before
+            or _require_closure_phase3_recovery_guard(
+                repo_root=repo_root, require_present=False
+            )
+            != guard_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 inputs changed across staging"
+            )
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 DVC status changed"
+            )
+        staged_status = _git_output(
+            repo_root, "diff", "--cached", "--name-status", "--no-renames"
+        )
+        findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok = [finding for finding in findings if finding.level != "ok"]
+        if non_ok:
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 reproducibility warning/failure: "
+                + "; ".join(finding.message for finding in non_ok)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_u2_scope",
+                    CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+                    "Exact1A recovery activation staged on published P2.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_u2_attempt_1",
+                    CLOSURE_E0_U_OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                    "Attempt-1 log prefix and optional historical guard "
+                    "remain byte/identity exact.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_u2_future",
+                    CLOSURE_PHASE3_RECOVERY_NEW_GUARD_PATH.as_posix(),
+                    "Exact52, future pointers, and recovery guard remain absent.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase3_recovery_u2_publication_guard",
+                    CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH.as_posix(),
+                    "The generic publication guard returned rc=1 solely for "
+                    "the exact two sealed .venv paths in U1 and U2.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=unmanaged_before,
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_report,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase3_recovery_u2_staged_transaction(
+                repo_root=repo_root
+            )
+            != u2_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+            or unmanaged_ignored_heavy_paths(artifacts) != unmanaged_before
+        ):
+            raise ClosurePhase3HPrecommitAdapterError(
+                "Closure Phase 3 recovery U2 changed while writing report"
+            )
+        _require_closure_phase3_recovery_live_remote_at(
+            repo_root=repo_root, expected_commit=p2_commit, label="P2"
+        )
+    except BaseException as exc:
+        rollback_error = _rollback_closure_phase3_recovery_u2_staging(
+            u2_before=u2_before,
+            p2_before=p2_before,
+            u1_before=u1_before,
+            log_before=log_before,
+            guard_before=guard_before,
+            h2_commit=h2_commit,
+            p2_commit=p2_commit,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            artifacts=artifacts,
+            unmanaged_before=unmanaged_before,
+            repo_root=repo_root,
+        )
+        if rollback_error is None:
+            print(
+                "Closure Phase 3 recovery U2 failed after staging: "
+                f"{exc}; directed rollback restored exact1 unstaged.",
+                file=sys.stderr,
+            )
+        else:
+            print(
+                "Closure Phase 3 recovery U2 failed after staging: "
+                f"{exc}; ROLLBACK FAILED CLOSED: {rollback_error}",
+                file=sys.stderr,
+            )
+        return 2
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact Closure Phase 3 recovery U2 exact1A is staged; no DVC add or "
+        "push ran. Publish U2 before requesting a new recovery execution."
+    )
+    return 0
 
 
 def _run_closure_phase3_h_runner_rewrite_precommit(
@@ -17847,6 +20528,51 @@ def main() -> int:
         "--name-status",
         "--no-renames",
     )
+    try:
+        phase3_recovery_active = closure_phase3_recovery_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_recovery_active:
+        return _run_closure_phase3_recovery_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase3_recovery_p2_active = closure_phase3_recovery_p2_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_recovery_p2_active:
+        return _run_closure_phase3_recovery_p2_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase3_recovery_u2_active = closure_phase3_recovery_u2_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase3HPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase3_recovery_u2_active:
+        return _run_closure_phase3_recovery_u2_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
     try:
         phase3_h_runner_rewrite_active = (
             closure_phase3_h_runner_rewrite_pre_stage_scope(

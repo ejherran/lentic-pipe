@@ -7,7 +7,7 @@ import inspect
 import os
 import sys
 from pathlib import Path
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 from collections.abc import Generator
 from typing import Any
 
@@ -193,6 +193,8 @@ def _reset_state() -> None:
     authority._STATE.update(
         {
             "required": False,
+            "recovery": False,
+            "run_guard_path": authority.RUN_GUARD_PATH,
             "opened": False,
             "published": False,
             "failed": False,
@@ -1243,6 +1245,8 @@ def test_authority_source_is_stdlib_only_and_definition_only(
 def test_runner_and_authority_share_exact_capability_and_commit_contracts(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    import pandas as pd
+
     assert set(authority.AUTHORITY_RESULT_KEYS) == runner.E0_U_AUTHORITY_RESULT_KEYS
     assert runner.HISTORICAL_E0_M_COMMIT == authority.BASE_R_COMMIT
     assert runner.E0_U_COMMIT_BINDING_KEYS == (
@@ -1346,6 +1350,100 @@ def test_runner_and_authority_share_exact_capability_and_commit_contracts(
         runner._validate_authority_commit_bindings(
             public,
             {"git_head": "3" * 40},
+        )
+
+    full_tables = {
+        table_name: pd.DataFrame({"table_name": [table_name]})
+        for table_name in runner.OPENED_CONTEXT_TABLES
+    }
+    full_context = runner._validate_opened_batch_context(
+        {
+            "execution_id": "synthetic-e1-least-privilege-view",
+            "rng_seed": runner.RNG_SEED,
+            "tables": full_tables,
+            "stage_results": {},
+            "model_availability": dict(runner.CURRENT_MODEL_AVAILABILITY),
+            "software_evidence": {
+                key: f"synthetic-{key}" for key in runner.SOFTWARE_EVIDENCE_KEYS
+            },
+        }
+    )
+    e1_view = runner._component_context(
+        full_context,
+        component_id="E1_benchmark_scientific_executor",
+    )
+    assert len(full_context["tables"]) == 9
+    assert set(full_context["tables"]) == runner.OPENED_CONTEXT_TABLES
+    assert len(e1_view["tables"]) == 3
+    assert set(e1_view["tables"]) == set(runner.E1_INPUT_TABLES)
+    assert e1_view["software_evidence"] == {}
+    with pytest.raises(
+        runner.ClosureBenchmarkError,
+        match="opened logical table scope",
+    ):
+        runner._validate_opened_batch_context(e1_view)
+    observed_e1_table_views: list[set[str]] = []
+
+    class E1ViewReached(RuntimeError):
+        pass
+
+    def normalize_e1_view(tables: dict[str, Any]) -> Any:
+        observed_e1_table_views.append(set(tables))
+        raise E1ViewReached
+
+    monkeypatch.setattr(runner, "_normalize_e1_prediction_surface", normalize_e1_view)
+    with pytest.raises(E1ViewReached):
+        runner._execute_e1_locked_benchmark_stage(
+            {
+                "gate": runner.UNBLINDING_GATE,
+                "effective_authority": True,
+                "sealed_batch_execution_authorized": True,
+                "e0_m_authorized": True,
+                "e0_u_authorized": True,
+                "evaluation_authorized": True,
+                "outcome_access_authorized": True,
+            },
+            runner.sealed_batch_contract(),
+            e1_view,
+            Path("."),
+        )
+    assert observed_e1_table_views == [set(runner.E1_INPUT_TABLES)]
+
+    context_module = ModuleType("synthetic_recovery_context")
+
+    def legacy_e10_loader(*args: Any, **kwargs: Any) -> dict[str, Any]:
+        return {"args": args, "kwargs": kwargs}
+
+    context_module.__dict__["EVIDENCE_ROOT"] = runner.LEGACY_E10_SOURCE_DIRECTORY
+    context_module.__dict__["EVIDENCE_MANIFEST_PATH"] = (
+        runner.LEGACY_E10_SOURCE_PATHS[-1]
+    )
+    context_module.__dict__["EVIDENCE_SOURCE_PATHS"] = (
+        runner.LEGACY_E10_SOURCE_PATHS
+    )
+    context_module.__dict__["load_closure_e10_software_evidence"] = (
+        legacy_e10_loader
+    )
+    expected_adapter_bindings = runner._configure_recovery_context_e10_adapter(
+        context_module
+    )
+    runner._recapture_recovery_context_e10_adapter(
+        context_module, expected_adapter_bindings
+    )
+    foreign_loader = lambda *_args, **_kwargs: {"foreign": True}
+    context_module.__dict__["load_closure_e10_software_evidence"] = foreign_loader
+    context_module.__dict__["_RECOVERY_E10_ADAPTER_BINDINGS"] = {
+        "root": runner.RECOVERY_E10_SOURCE_DIRECTORY,
+        "manifest": runner.RECOVERY_E10_SOURCE_PATHS[-1],
+        "paths": runner.RECOVERY_E10_SOURCE_PATHS,
+        "loader": foreign_loader,
+    }
+    with pytest.raises(
+        runner.ClosureBenchmarkError,
+        match="recovery context E10 adapter changed",
+    ):
+        runner._recapture_recovery_context_e10_adapter(
+            context_module, expected_adapter_bindings
         )
 
     import subprocess
@@ -1690,6 +1788,38 @@ def test_activation_binding_accepts_exact_ten_components_and_three_supports(
     with pytest.raises(RuntimeError, match="support source record scope"):
         authority._validate_manifest_bindings(tmp_path, "f" * 40, manifest)
 
+    receipt = json.loads(
+        Path(authority.ATTEMPT_1_FAILURE_RECEIPT_PATH).read_text(
+            encoding="utf-8"
+        )
+    )
+    assert authority._validate_attempt_1_failure_receipt(receipt) == receipt
+    repository_root = Path.cwd().resolve()
+    historical_guard_present = os.path.lexists(
+        repository_root / authority.RUN_GUARD_PATH
+    )
+    assert authority._validate_historical_guard_policy(
+        repository_root,
+        receipt,
+    ) == {
+        "path": authority.RUN_GUARD_PATH,
+        "state": (
+            "present_matches_origin_observation"
+            if historical_guard_present
+            else "absent_fresh_clone_compatible"
+        ),
+        "receipt_is_authority": True,
+    }
+    assert authority._validate_historical_guard_policy(tmp_path, receipt) == {
+        "path": authority.RUN_GUARD_PATH,
+        "state": "absent_fresh_clone_compatible",
+        "receipt_is_authority": True,
+    }
+    drifted_receipt = copy.deepcopy(receipt)
+    drifted_receipt["guard_observation"]["inode"] += 1
+    with pytest.raises(RuntimeError, match="stale-guard observation"):
+        authority._validate_attempt_1_failure_receipt(drifted_receipt)
+
 
 def test_context_builder_runs_only_after_durable_first_record(tmp_path: Path) -> None:
     contract = _contract()
@@ -1874,6 +2004,7 @@ def test_repository_replacement_after_require_before_guard_writes_nothing(
 
 def test_builder_failure_consumes_open_and_nonempty_log_blocks_retry(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _contract()
     public = _prime(tmp_path, contract)
@@ -1899,6 +2030,55 @@ def test_builder_failure_consumes_open_and_nonempty_log_blocks_retry(
             repo_root=tmp_path,
             context_builder=fail_after_log,
         )
+
+    _reset_state()
+    recovery_root = tmp_path / "recovery"
+    recovery_root.mkdir()
+    recovery_public = _prime(recovery_root, contract)
+    recovery_log = recovery_root / authority.OUTCOME_ACCESS_LOG_PATH
+    recovery_log.write_bytes(authority._attempt_1_access_log_payload())
+    old_guard = recovery_root / authority.RUN_GUARD_PATH
+    old_guard.parent.mkdir(parents=True, exist_ok=True)
+    old_guard.write_bytes(b"")
+    old_guard.chmod(0o600)
+    authority._STATE.update(
+        {
+            "recovery": True,
+            "run_guard_path": authority.RECOVERY_RUN_GUARD_PATH,
+            "execution_id": "closure-v1-e0-u-recovery-test-execution",
+        }
+    )
+    monkeypatch.setattr(
+        authority,
+        "_load_attempt_1_failure_receipt",
+        lambda *_args, **_kwargs: ({"guard_observation": {}}, {}),
+    )
+    monkeypatch.setattr(
+        authority,
+        "_validate_historical_guard_policy",
+        lambda *_args, **_kwargs: {"state": "test-sealed"},
+    )
+
+    def fail_recovery_after_log(**kwargs: Any) -> dict[str, Any]:
+        del kwargs
+        assert recovery_log.read_bytes() == authority._recovery_access_log_payload(
+            "closure-v1-e0-u-recovery-test-execution"
+        )
+        assert old_guard.exists()
+        raise ValueError("intentional recovery builder failure")
+
+    with pytest.raises(ValueError, match="intentional recovery"):
+        authority.open_sealed_recovery_batch_context(
+            authority=recovery_public,
+            sealed_batch_contract=contract,
+            repo_root=recovery_root,
+            context_builder=fail_recovery_after_log,
+        )
+    assert recovery_log.read_bytes().startswith(
+        authority._attempt_1_access_log_payload()
+    )
+    assert old_guard.exists()
+    assert (recovery_root / authority.RECOVERY_RUN_GUARD_PATH).exists()
 
 
 def test_guard_cleanup_capture_restores_boundary_replacement(

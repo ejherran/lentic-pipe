@@ -1,0 +1,968 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_e0_u_recovery_activation_v1.json",
+  "title": "Closure V1 E0-U recovery activation",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "attempt_1_failure_receipt",
+    "attempt_ordinal",
+    "dvc_policy",
+    "execution_id",
+    "expected_artifact_paths_sha256",
+    "expected_publication_order_sha256",
+    "experiment_id",
+    "first_attempt",
+    "gate",
+    "git_remote_url",
+    "historical_chain",
+    "outcome_access_log_prefix",
+    "phase3_overlay_deep_validation",
+    "recovery_authority_source_record",
+    "recovery_chain",
+    "recovery_guard_path",
+    "recovery_source_records",
+    "schema_version",
+    "sealed_batch_contract_sha256",
+    "sealed_component_source_records",
+    "sealed_context_builder_source_record",
+    "sealed_recovery_batch_command",
+    "sealed_runner_source_record",
+    "sealed_runtime_environment_record",
+    "sealed_support_source_records"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_e0_u_recovery_activation_v1"},
+    "experiment_id": {"const": "closure_v1"},
+    "gate": {"const": "E0-U"},
+    "attempt_ordinal": {"const": 2},
+    "first_attempt": {"const": false},
+    "execution_id": {
+      "type": "string",
+      "minLength": 16,
+      "maxLength": 128,
+      "pattern": "^[A-Za-z0-9_-]+$",
+      "not": {
+        "const": "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
+      }
+    },
+    "git_remote_url": {
+      "const": "https://github.com/ejherran/lentic-pipe.git"
+    },
+    "sealed_recovery_batch_command": {
+      "const": "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-recovery-batch\n"
+    },
+    "recovery_guard_path": {
+      "const": "tmp/closure_v1_e0_u_recovery_1/sealed_batch.guard"
+    },
+    "historical_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "base_r_commit",
+        "h1_commit",
+        "p1_commit",
+        "u1_activation",
+        "u1_commit"
+      ],
+      "properties": {
+        "base_r_commit": {
+          "const": "4c92ed7249a91b7dd541fd22dde68b61574556b2"
+        },
+        "h1_commit": {
+          "const": "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
+        },
+        "p1_commit": {
+          "const": "caaf2d6d0a00a31febeed89b54ea078b60d7f92a"
+        },
+        "u1_commit": {
+          "const": "4aecf19cd913b82a6a3d26669f09684e67efda8a"
+        },
+        "u1_activation": {"$ref": "#/$defs/u1Activation"}
+      }
+    },
+    "recovery_chain": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["h2_commit", "h2_scope", "p2_commit", "p2_scope"],
+      "properties": {
+        "h2_commit": {"$ref": "#/$defs/gitCommit"},
+        "p2_commit": {"$ref": "#/$defs/gitCommit"},
+        "h2_scope": {
+          "type": "array",
+          "minItems": 14,
+          "maxItems": 14,
+          "uniqueItems": true,
+          "prefixItems": [
+            {"$ref": "#/$defs/h2SchemaRecord"},
+            {"$ref": "#/$defs/h2DocumentRecord"},
+            {"$ref": "#/$defs/h2ReceiptRecord"},
+            {"$ref": "#/$defs/h2CommandRecord"},
+            {"$ref": "#/$defs/h2AccessLogRecord"},
+            {"$ref": "#/$defs/h2PrecommitRecord"},
+            {"$ref": "#/$defs/h2E10BuilderRecord"},
+            {"$ref": "#/$defs/h2AuthorityRecord"},
+            {"$ref": "#/$defs/h2LockerRecord"},
+            {"$ref": "#/$defs/h2RunnerRecord"},
+            {"$ref": "#/$defs/h2E10TestRecord"},
+            {"$ref": "#/$defs/h2LockerTestRecord"},
+            {"$ref": "#/$defs/h2AuthorityTestRecord"},
+            {"$ref": "#/$defs/h2PrecommitTestRecord"}
+          ],
+          "items": false
+        },
+        "p2_scope": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "prefixItems": [
+            {"$ref": "#/$defs/p2EndToEndRecord"},
+            {"$ref": "#/$defs/p2EnvironmentRecord"},
+            {"$ref": "#/$defs/p2OpenapiRecord"},
+            {"$ref": "#/$defs/p2OpenapiContractRecord"},
+            {"$ref": "#/$defs/p2PublicTestsRecord"},
+            {"$ref": "#/$defs/p2ManifestRecord"},
+            {"$ref": "#/$defs/p2TestReportRecord"}
+          ],
+          "items": false
+        }
+      }
+    },
+    "attempt_1_failure_receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "decoded", "path", "sha256"],
+      "properties": {
+        "path": {
+          "const": "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"
+        },
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "decoded": {"$ref": "#/$defs/attempt1FailureReceipt"}
+      }
+    },
+    "outcome_access_log_prefix": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bytes",
+        "first_execution_id",
+        "path",
+        "record_count",
+        "sha256"
+      ],
+      "properties": {
+        "path": {
+          "const": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
+        },
+        "bytes": {"const": 256},
+        "sha256": {
+          "const": "ae3e47dd6ad1f05cd79e6a494174f951f1c71fa9336514640bd4c15855c1b038"
+        },
+        "record_count": {"const": 1},
+        "first_execution_id": {
+          "const": "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
+        }
+      }
+    },
+    "sealed_batch_contract_sha256": {"$ref": "#/$defs/sha256"},
+    "expected_artifact_paths_sha256": {"$ref": "#/$defs/sha256"},
+    "expected_publication_order_sha256": {"$ref": "#/$defs/sha256"},
+    "recovery_authority_source_record": {
+      "$ref": "#/$defs/authoritySourceRecord"
+    },
+    "recovery_source_records": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "uniqueItems": true,
+      "prefixItems": [
+        {"$ref": "#/$defs/recoverySchemaSourceRecord"},
+        {"$ref": "#/$defs/recoveryDocumentSourceRecord"},
+        {"$ref": "#/$defs/recoveryReceiptSourceRecord"},
+        {"$ref": "#/$defs/recoveryCommandSourceRecord"},
+        {"$ref": "#/$defs/recoveryLockerSourceRecord"}
+      ],
+      "items": false
+    },
+    "sealed_runner_source_record": {"$ref": "#/$defs/runnerSourceRecord"},
+    "sealed_context_builder_source_record": {
+      "$ref": "#/$defs/contextBuilderSourceRecord"
+    },
+    "sealed_component_source_records": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "items": {"$ref": "#/$defs/componentSourceRecord"}
+    },
+    "sealed_support_source_records": {
+      "type": "array",
+      "minItems": 3,
+      "maxItems": 3,
+      "items": {"$ref": "#/$defs/supportSourceRecord"}
+    },
+    "sealed_runtime_environment_record": {
+      "$ref": "#/$defs/runtimeEnvironmentRecord"
+    },
+    "phase3_overlay_deep_validation": {
+      "$ref": "#/$defs/phase3OverlayDeepValidation"
+    },
+    "dvc_policy": {
+      "$ref": "#/$defs/dvcPolicy"
+    }
+  },
+  "$defs": {
+    "gitCommit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "gitObject": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "closurePath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(reports|data)/closure_v1/"
+    },
+    "overlaySourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "path", "role", "sha256"],
+      "properties": {
+        "role": {"type": "string", "minLength": 1},
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"}
+      }
+    },
+    "phase3OverlayDeepValidation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "builder_source",
+        "checkpoint_count",
+        "checkpoint_identity_revalidated",
+        "expected_h_commit",
+        "experiment_id",
+        "gate",
+        "history_projection",
+        "manifest",
+        "manifest_regenerated_byte_equality",
+        "npz_regenerated_byte_equality",
+        "numpy_torch_parity_recomputed",
+        "opened_outcome_path_count",
+        "opened_target_path_count",
+        "panel_projection",
+        "physical_outputs",
+        "projection_contains_chlorophyll",
+        "projection_contains_target",
+        "schema_version",
+        "source_input_count",
+        "source_inputs",
+        "source_inputs_sha256",
+        "state_dict_array_count",
+        "status",
+        "surface_id",
+        "warmup_projection_recomputed",
+        "warmup_regenerated_byte_equality",
+        "warmup_row_count",
+        "warmup_site_count",
+        "writes_performed"
+      ],
+      "properties": {
+        "schema_version": {"const": "closure_phase3_input_overlay_deep_validation_v1"},
+        "status": {"const": "passed"},
+        "experiment_id": {"const": "closure_v1"},
+        "surface_id": {"const": "closure_v1_phase3_input_overlay"},
+        "gate": {"const": "pre_E0-U"},
+        "expected_h_commit": {
+          "const": "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
+        },
+        "builder_source": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bytes", "path", "role", "sha256"],
+          "properties": {
+            "role": {"const": "phase3_input_overlay_builder"},
+            "path": {"const": "src/experiments/build_closure_phase3_input_overlay.py"},
+            "bytes": {"type": "integer", "minimum": 1},
+            "sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "source_inputs": {
+          "type": "array",
+          "minItems": 27,
+          "maxItems": 27,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/overlaySourceRecord"}
+        },
+        "source_input_count": {"const": 27},
+        "source_inputs_sha256": {"$ref": "#/$defs/sha256"},
+        "manifest": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bytes", "path", "sha256"],
+          "properties": {
+            "path": {"const": "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"},
+            "bytes": {"type": "integer", "minimum": 1},
+            "sha256": {"$ref": "#/$defs/sha256"}
+          }
+        },
+        "physical_outputs": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["bytes", "path", "sha256"],
+            "properties": {
+              "path": {
+                "enum": [
+                  "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz",
+                  "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet"
+                ]
+              },
+              "bytes": {"type": "integer", "minimum": 1},
+              "sha256": {"$ref": "#/$defs/sha256"}
+            }
+          }
+        },
+        "checkpoint_count": {"const": 25},
+        "state_dict_array_count": {"const": 195},
+        "warmup_row_count": {"const": 88},
+        "warmup_site_count": {"const": 88},
+        "npz_regenerated_byte_equality": {"const": true},
+        "warmup_regenerated_byte_equality": {"const": true},
+        "manifest_regenerated_byte_equality": {"const": true},
+        "checkpoint_identity_revalidated": {"const": true},
+        "numpy_torch_parity_recomputed": {"const": true},
+        "warmup_projection_recomputed": {"const": true},
+        "history_projection": {
+          "const": ["source_id", "site_id", "holdout_group_id", "assignment_role", "history_year_month"]
+        },
+        "panel_projection": {
+          "const": [
+            "source_id",
+            "site_id",
+            "year_month",
+            "mean_TP_ugL",
+            "std_TP_ugL",
+            "n_obs_TP_ugL",
+            "n_bad_TP_ugL",
+            "qc_ok_rate_TP_ugL",
+            "mean_TN_ugL",
+            "std_TN_ugL",
+            "n_obs_TN_ugL",
+            "n_bad_TN_ugL",
+            "qc_ok_rate_TN_ugL",
+            "mean_temperature_C",
+            "std_temperature_C",
+            "n_obs_temperature_C",
+            "n_bad_temperature_C",
+            "qc_ok_rate_temperature_C",
+            "mean_secchi_depth_m",
+            "std_secchi_depth_m",
+            "n_obs_secchi_depth_m",
+            "n_bad_secchi_depth_m",
+            "qc_ok_rate_secchi_depth_m",
+            "mean_turbidity_NTU",
+            "std_turbidity_NTU",
+            "n_obs_turbidity_NTU",
+            "n_bad_turbidity_NTU",
+            "qc_ok_rate_turbidity_NTU",
+            "mean_DO_mgL",
+            "std_DO_mgL",
+            "n_obs_DO_mgL",
+            "n_bad_DO_mgL",
+            "qc_ok_rate_DO_mgL",
+            "mean_pH",
+            "std_pH",
+            "n_obs_pH",
+            "n_bad_pH",
+            "qc_ok_rate_pH",
+            "log_TP",
+            "log_TN",
+            "TN_TP_ratio",
+            "season_sin_1",
+            "season_cos_1",
+            "season_sin_2",
+            "season_cos_2"
+          ]
+        },
+        "projection_contains_chlorophyll": {"const": false},
+        "projection_contains_target": {"const": false},
+        "opened_outcome_path_count": {"const": 0},
+        "opened_target_path_count": {"const": 0},
+        "writes_performed": {"const": false}
+      }
+    },
+    "dvcPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["direct_git_artifact_paths", "dvc_add_after_success_only", "dvc_pointer_paths", "dvc_push_after_audit_only", "heavy_artifact_paths", "implicit_dvc_forbidden"],
+      "properties": {
+        "direct_git_artifact_paths": {
+          "type": "array",
+          "minItems": 48,
+          "maxItems": 48,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/closurePath"}
+        },
+        "dvc_pointer_paths": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^.+\\.parquet\\.dvc$"}
+        },
+        "heavy_artifact_paths": {
+          "type": "array",
+          "minItems": 4,
+          "maxItems": 4,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^.+\\.parquet$"}
+        },
+        "dvc_add_after_success_only": {"const": true},
+        "dvc_push_after_audit_only": {"const": true},
+        "implicit_dvc_forbidden": {"const": true}
+      }
+    },
+    "u1Activation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "git_blob_oid", "path", "sha256"],
+      "properties": {
+        "path": {
+          "const": "reports/closure_v1/00_protocol/closure_e0_u_activation.json"
+        },
+        "bytes": {"const": 34368},
+        "sha256": {
+          "const": "8f04bd4429717be662b6166c913fb1d15adaa69b1c0ba147d75162eb0a39bc94"
+        },
+        "git_blob_oid": {
+          "const": "32d90942b8a683aebacf44ca5fe6c2b12d1a3c7c"
+        }
+      }
+    },
+    "scopeRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "mode", "path", "sha256", "status"],
+      "properties": {
+        "bytes": {"type": "integer", "minimum": 0},
+        "mode": {"enum": ["100644", "100755"]},
+        "path": {"type": "string", "minLength": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "status": {"enum": ["A", "M"]}
+      }
+    },
+    "h2SchemaRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "configs/closure_v1/closure_e0_u_recovery_activation.schema.json"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2DocumentRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "docs/closure_v1/E0_U_PHASE3_RECOVERY_BATCH.md"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2ReceiptRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2CommandRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2AccessLogRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2PrecommitRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "src/data/prepare_commit_artifacts.py"}, "status": {"const": "M"}, "mode": {"const": "100755"}}}
+      ]
+    },
+    "h2E10BuilderRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "src/experiments/build_closure_e10_source_evidence.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2AuthorityRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "src/experiments/closure_e0_u_authority.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2LockerRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "src/experiments/lock_closure_e0_u_activation.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2RunnerRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "src/experiments/run_closure_benchmark.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2E10TestRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "tests/test_build_closure_e10_source_evidence.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2LockerTestRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "tests/test_closure_e0_u_activation_lock.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2AuthorityTestRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "tests/test_closure_e0_u_authority.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "h2PrecommitTestRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "tests/test_prepare_commit_artifacts.py"}, "status": {"const": "M"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2EndToEndRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/end_to_end_report.md"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2EnvironmentRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/environment.json"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2OpenapiRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/openapi.json"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2OpenapiContractRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/openapi_contract_report.md"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2PublicTestsRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/public_tests.xml"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2ManifestRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/software_evidence_source_manifest.json"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "p2TestReportRecord": {
+      "allOf": [
+        {"$ref": "#/$defs/scopeRecord"},
+        {"properties": {"path": {"const": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/test_report.md"}, "status": {"const": "A"}, "mode": {"const": "100644"}}}
+      ]
+    },
+    "attempt1FailureReceipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "access_log_prefix",
+        "activation",
+        "attempt_ordinal",
+        "execution_id",
+        "experiment_id",
+        "failure",
+        "gate",
+        "guard_observation",
+        "historical_chain",
+        "publication",
+        "schema_version"
+      ],
+      "properties": {
+        "schema_version": {"const": "closure_e0_u_attempt_1_failure_v1"},
+        "experiment_id": {"const": "closure_v1"},
+        "gate": {"const": "E0-U"},
+        "attempt_ordinal": {"const": 1},
+        "execution_id": {
+          "const": "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
+        },
+        "historical_chain": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["base_r_commit", "h1_commit", "p1_commit", "u1_commit"],
+          "properties": {
+            "base_r_commit": {"const": "4c92ed7249a91b7dd541fd22dde68b61574556b2"},
+            "h1_commit": {"const": "9e66478d7c071067a750e7dd9a6a318fa93a2c88"},
+            "p1_commit": {"const": "caaf2d6d0a00a31febeed89b54ea078b60d7f92a"},
+            "u1_commit": {"const": "4aecf19cd913b82a6a3d26669f09684e67efda8a"}
+          }
+        },
+        "activation": {"$ref": "#/$defs/u1Activation"},
+        "access_log_prefix": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["bytes", "path", "record_count", "sha256"],
+          "properties": {
+            "path": {"const": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"},
+            "bytes": {"const": 256},
+            "sha256": {"const": "ae3e47dd6ad1f05cd79e6a494174f951f1c71fa9336514640bd4c15855c1b038"},
+            "record_count": {"const": 1}
+          }
+        },
+        "guard_observation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["device", "file_type", "inode", "mode", "nlink", "ownership_identity_recoverable", "path", "sha256", "size"],
+          "properties": {
+            "path": {"const": "tmp/closure_v1_e0_u/sealed_batch.guard"},
+            "file_type": {"const": "regular_file"},
+            "mode": {"const": 384},
+            "size": {"const": 0},
+            "nlink": {"const": 1},
+            "device": {"const": 2069},
+            "inode": {"const": 80609290},
+            "sha256": {"const": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+            "ownership_identity_recoverable": {"const": false}
+          }
+        },
+        "failure": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["context_materialized", "diagnosed_source_phase", "e1_metrics_computed", "e1_normalization_started", "error", "outcomes_opened", "process_exit_code", "result_constructed"],
+          "properties": {
+            "process_exit_code": {"const": 2},
+            "error": {"const": "E0-U opened logical table scope drifted"},
+            "diagnosed_source_phase": {"const": "after_full_context_validation_before_e1_normalization"},
+            "context_materialized": {"const": true},
+            "outcomes_opened": {"const": true},
+            "e1_normalization_started": {"const": false},
+            "e1_metrics_computed": {"const": false},
+            "result_constructed": {"const": false}
+          }
+        },
+        "publication": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["expected_output_count", "published_output_count"],
+          "properties": {
+            "expected_output_count": {"const": 52},
+            "published_output_count": {"const": 0}
+          }
+        }
+      }
+    },
+    "simpleSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "mode", "path", "sha256"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"enum": [420, 493]}
+      }
+    },
+    "recoverySchemaSourceRecord": {
+      "allOf": [{"$ref": "#/$defs/simpleSourceRecord"}, {"properties": {"path": {"const": "configs/closure_v1/closure_e0_u_recovery_activation.schema.json"}, "mode": {"const": 420}}}]
+    },
+    "recoveryDocumentSourceRecord": {
+      "allOf": [{"$ref": "#/$defs/simpleSourceRecord"}, {"properties": {"path": {"const": "docs/closure_v1/E0_U_PHASE3_RECOVERY_BATCH.md"}, "mode": {"const": 420}}}]
+    },
+    "recoveryReceiptSourceRecord": {
+      "allOf": [{"$ref": "#/$defs/simpleSourceRecord"}, {"properties": {"path": {"const": "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"}, "mode": {"const": 420}}}]
+    },
+    "recoveryCommandSourceRecord": {
+      "allOf": [{"$ref": "#/$defs/simpleSourceRecord"}, {"properties": {"path": {"const": "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt"}, "mode": {"const": 420}}}]
+    },
+    "recoveryLockerSourceRecord": {
+      "allOf": [{"$ref": "#/$defs/simpleSourceRecord"}, {"properties": {"path": {"const": "src/experiments/lock_closure_e0_u_activation.py"}, "mode": {"const": 420}}}]
+    },
+    "runnerSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "contract_sha256", "mode", "nlink", "path", "sealed_command", "sha256"],
+      "properties": {
+        "path": {"const": "src/experiments/run_closure_benchmark.py"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "contract_sha256": {"$ref": "#/$defs/sha256"},
+        "sealed_command": {
+          "enum": [
+            "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n",
+            "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-recovery-batch\n"
+          ]
+        }
+      }
+    },
+    "contextBuilderSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "mode", "module_name", "nlink", "required_api", "sha256", "source_path", "status", "support_id"],
+      "properties": {
+        "support_id": {"const": "phase3_context_builder"},
+        "module_name": {"const": "src.experiments.closure_phase3_context"},
+        "source_path": {"const": "src/experiments/closure_phase3_context.py"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "required_api": {"const": "materialize_sealed_batch_context"},
+        "status": {"const": "ready"}
+      }
+    },
+    "componentSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "component_id", "missing_apis", "mode", "module_name", "nlink", "required_apis", "sha256", "source_path", "stage_id", "status"],
+      "properties": {
+        "component_id": {"type": "string", "minLength": 1},
+        "stage_id": {"pattern": "^E(?:[2-9]|10)$"},
+        "module_name": {"type": "string", "minLength": 1},
+        "source_path": {"type": "string", "pattern": "^src/.+\\.py$"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "required_apis": {
+          "const": ["preflight_closure_sealed_batch_component", "execute_closure_sealed_batch_component"]
+        },
+        "missing_apis": {"const": []},
+        "status": {"const": "ready"}
+      }
+    },
+    "supportSourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "missing_symbols", "mode", "module_name", "nlink", "required_symbols", "sha256", "source_path", "status", "support_id"],
+      "properties": {
+        "support_id": {"type": "string", "minLength": 1},
+        "module_name": {"type": "string", "minLength": 1},
+        "source_path": {"type": "string", "pattern": "^src/.+\\.py$"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "required_symbols": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "missing_symbols": {"const": []},
+        "status": {"const": "ready"}
+      }
+    },
+    "authoritySourceRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "content_addressed_commit_tree_blob", "git_head", "git_mode", "git_oid", "head_ref", "index_mode", "index_oid", "live_remote_main", "live_remote_url", "mode", "nlink", "origin_head_ref", "path", "refs_aligned", "sha256", "staged_changes_present", "untracked"],
+      "properties": {
+        "path": {"const": "src/experiments/closure_e0_u_authority.py"},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "mode": {"const": 420},
+        "nlink": {"const": 1},
+        "git_head": {"$ref": "#/$defs/gitCommit"},
+        "git_oid": {"$ref": "#/$defs/gitObject"},
+        "git_mode": {"const": "100644"},
+        "index_oid": {"$ref": "#/$defs/gitObject"},
+        "index_mode": {"const": "100644"},
+        "head_ref": {"const": "refs/heads/main"},
+        "origin_head_ref": {"const": "refs/remotes/origin/main"},
+        "refs_aligned": {"const": true},
+        "live_remote_url": {"const": "https://github.com/ejherran/lentic-pipe.git"},
+        "live_remote_main": {"$ref": "#/$defs/gitCommit"},
+        "content_addressed_commit_tree_blob": {"const": true},
+        "staged_changes_present": {"const": false},
+        "untracked": {"const": false}
+      }
+    },
+    "runtimeFileRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "ctime_ns", "device", "gid", "inode", "mode", "mtime_ns", "nlink", "path", "sha256", "uid"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "ctime_ns": {"type": "integer", "minimum": 0},
+        "device": {"type": "integer", "minimum": 0},
+        "gid": {"type": "integer", "minimum": 0},
+        "inode": {"type": "integer", "minimum": 1},
+        "mode": {"type": "integer", "minimum": 0},
+        "mtime_ns": {"type": "integer", "minimum": 0},
+        "nlink": {"type": "integer", "minimum": 1},
+        "uid": {"type": "integer", "minimum": 0}
+      }
+    },
+    "wheelRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["bytes", "outside_runtime_paths", "path", "row_count", "sha256", "unrecorded_pyc_count"],
+      "properties": {
+        "path": {"type": "string", "minLength": 1},
+        "bytes": {"type": "integer", "minimum": 1},
+        "sha256": {"$ref": "#/$defs/sha256"},
+        "row_count": {"type": "integer", "minimum": 1},
+        "unrecorded_pyc_count": {"type": "integer", "minimum": 0},
+        "outside_runtime_paths": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "distributionRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name", "record_count", "records_sha256", "roots", "wheel_record"],
+      "properties": {
+        "name": {"type": "string", "minLength": 1},
+        "record_count": {"type": "integer", "minimum": 1},
+        "records_sha256": {"$ref": "#/$defs/sha256"},
+        "roots": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "wheel_record": {"$ref": "#/$defs/wheelRecord"}
+      }
+    },
+    "runtimeEnvironmentRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["distribution_count", "distributions", "distributions_sha256", "env_executable", "git_config", "git_executable", "git_https_helper", "import_roots", "process_environment", "pth_processing_performed", "purelib_identity", "purelib_path", "purelib_top_level_count", "purelib_top_level_sha256", "python_executable", "python_implementation", "python_version", "schema_version", "sealed_launch_command", "sealed_python_argv", "site_imported"],
+      "properties": {
+        "schema_version": {"const": "closure_sealed_runtime_environment_v1"},
+        "distribution_count": {"const": 10},
+        "distributions": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/distributionRecord"}
+        },
+        "distributions_sha256": {"$ref": "#/$defs/sha256"},
+        "env_executable": {"$ref": "#/$defs/runtimeFileRecord"},
+        "git_config": {"$ref": "#/$defs/runtimeFileRecord"},
+        "git_executable": {"$ref": "#/$defs/runtimeFileRecord"},
+        "git_https_helper": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["link_gid", "link_mode", "link_nlink", "link_path", "link_target", "link_uid", "target"],
+          "properties": {
+            "link_gid": {"type": "integer", "minimum": 0},
+            "link_mode": {"type": "integer", "minimum": 0},
+            "link_nlink": {"type": "integer", "minimum": 1},
+            "link_path": {"type": "string", "minLength": 1},
+            "link_target": {"type": "string", "minLength": 1},
+            "link_uid": {"type": "integer", "minimum": 0},
+            "target": {"$ref": "#/$defs/runtimeFileRecord"}
+          }
+        },
+        "import_roots": {
+          "type": "array",
+          "minItems": 10,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "process_environment": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["LANG", "LC_ALL"],
+          "properties": {"LANG": {"const": "C"}, "LC_ALL": {"const": "C"}}
+        },
+        "pth_processing_performed": {"const": false},
+        "purelib_identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["ctime_ns", "device", "inode", "mode", "mtime_ns", "nlink"],
+          "properties": {
+            "ctime_ns": {"type": "integer", "minimum": 0},
+            "device": {"type": "integer", "minimum": 0},
+            "inode": {"type": "integer", "minimum": 1},
+            "mode": {"type": "integer", "minimum": 0},
+            "mtime_ns": {"type": "integer", "minimum": 0},
+            "nlink": {"type": "integer", "minimum": 1}
+          }
+        },
+        "purelib_path": {"type": "string", "minLength": 1},
+        "purelib_top_level_count": {"type": "integer", "minimum": 1},
+        "purelib_top_level_sha256": {"$ref": "#/$defs/sha256"},
+        "python_executable": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["link_ctime_ns", "link_device", "link_gid", "link_inode", "link_mode", "link_mtime_ns", "link_nlink", "link_path", "link_target", "link_uid", "target"],
+          "properties": {
+            "link_ctime_ns": {"type": "integer", "minimum": 0},
+            "link_device": {"type": "integer", "minimum": 0},
+            "link_gid": {"type": "integer", "minimum": 0},
+            "link_inode": {"type": "integer", "minimum": 1},
+            "link_mode": {"type": "integer", "minimum": 0},
+            "link_mtime_ns": {"type": "integer", "minimum": 0},
+            "link_nlink": {"type": "integer", "minimum": 1},
+            "link_path": {"type": "string", "minLength": 1},
+            "link_target": {"type": "string", "minLength": 1},
+            "link_uid": {"type": "integer", "minimum": 0},
+            "target": {"$ref": "#/$defs/runtimeFileRecord"}
+          }
+        },
+        "python_implementation": {"const": "cpython"},
+        "python_version": {"type": "string", "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"},
+        "sealed_launch_command": {
+          "enum": [
+            "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n",
+            "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-recovery-batch\n"
+          ]
+        },
+        "sealed_python_argv": {
+          "type": "array",
+          "minItems": 6,
+          "maxItems": 6,
+          "prefixItems": [
+            {"const": ".venv/bin/python"},
+            {"const": "-I"},
+            {"const": "-S"},
+            {"const": "-B"},
+            {"const": "src/experiments/run_closure_benchmark.py"},
+            {"enum": ["--execute-sealed-batch", "--execute-sealed-recovery-batch"]}
+          ],
+          "items": false
+        },
+        "site_imported": {"const": false}
+      }
+    }
+  }
+}
