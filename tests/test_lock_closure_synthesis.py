@@ -133,9 +133,26 @@ def _materialize_local_h(root: Path) -> None:
             path.write_text(path.read_text(encoding="utf-8") + "H-SYN\n", encoding="utf-8")
 
 
-def _publish_h(root: Path) -> str:
+def _publish_h1(root: Path) -> str:
     _run(root, "git", "add", *locker.H_SCOPE)
-    _run(root, "git", "commit", "-m", "H-SYN")
+    _run(root, "git", "commit", "-m", "H-SYN H1")
+    head = _run(root, "git", "rev-parse", "HEAD")
+    _run(root, "git", "push", "origin", "main")
+    return head
+
+
+def _materialize_local_h2(root: Path) -> None:
+    for path_text in locker.H2_SCOPE:
+        path = root / path_text
+        path.write_text(
+            path.read_text(encoding="utf-8") + "H-SYN H2\n",
+            encoding="utf-8",
+        )
+
+
+def _publish_h2(root: Path) -> str:
+    _run(root, "git", "add", *locker.H2_SCOPE)
+    _run(root, "git", "commit", "-m", "H-SYN H2")
     head = _run(root, "git", "rev-parse", "HEAD")
     _run(root, "git", "push", "origin", "main")
     return head
@@ -146,6 +163,10 @@ def _patch_source(
 ) -> SimpleNamespace:
     monkeypatch.setattr(locker, "SOURCE_COMMIT", source)
     return _install_contract_stubs(monkeypatch, source)
+
+
+def _patch_h1(monkeypatch: pytest.MonkeyPatch, h1: str) -> None:
+    monkeypatch.setattr(locker, "H1_COMMIT", h1)
 
 
 def _fake_state() -> dict[str, Any]:
@@ -213,6 +234,16 @@ def test_cli_is_closed_and_main_translates_domain_errors(
 
 def test_h_syn_modes_preserve_the_executable_precommit_adapter() -> None:
     assert set(locker.H_GIT_MODES) == set(locker.H_SCOPE)
+    assert locker.H2_SCOPE == {
+        "docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md": "M",
+        "src/data/prepare_commit_artifacts.py": "M",
+        "src/experiments/lock_closure_synthesis.py": "M",
+        "tests/test_lock_closure_synthesis.py": "M",
+        "tests/test_prepare_commit_artifacts.py": "M",
+    }
+    assert locker.H2_GIT_MODES == {
+        path: locker.H_GIT_MODES[path] for path in locker.H2_SCOPE
+    }
     assert locker.H_GIT_MODES["src/data/prepare_commit_artifacts.py"] == "100755"
     assert {
         mode
@@ -261,13 +292,41 @@ def test_check_only_rejects_path_or_ref_drift(
     assert not (root / locker.MANIFEST_PATH).exists()
 
 
-def test_published_preflight_requires_exact_direct_child_and_clean_refs(
+def test_check_only_accepts_exact_local_h2_scope_without_writes(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _remote, _base, source = _make_repository(tmp_path)
     _materialize_local_h(root)
     _patch_source(monkeypatch, source)
-    head = _publish_h(root)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    before = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
+
+    result = locker.check_only(root=root, verify_remote=True)
+
+    after = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
+    assert result["status"] == "ready_to_publish_h2"
+    assert result["synthesis_implementation_commit"] is None
+    assert result["writes_performed"] is False
+    assert before == after
+    assert {
+        line.lstrip().removeprefix("M ") for line in after.splitlines()
+    } == set(locker.H2_SCOPE)
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+def test_published_preflight_requires_exact_h1_h2_chain_and_clean_refs(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    head = _publish_h2(root)
 
     result = locker.check_only(root=root, verify_remote=True)
     assert result["status"] == "ready_to_generate"
@@ -278,7 +337,7 @@ def test_published_preflight_requires_exact_direct_child_and_clean_refs(
         locker.check_only(root=root, verify_remote=True)
 
 
-def test_published_preflight_rejects_nonexact_h_commit_scope(
+def test_published_preflight_rejects_nonexact_h1_commit_scope(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _remote, _base, source = _make_repository(tmp_path)
@@ -286,9 +345,110 @@ def test_published_preflight_rejects_nonexact_h_commit_scope(
     _write(root, "extra_in_h.txt", "not allowed\n")
     _patch_source(monkeypatch, source)
     _run(root, "git", "add", ".")
-    _run(root, "git", "commit", "-m", "bad H-SYN")
+    _run(root, "git", "commit", "-m", "bad H-SYN H1")
+    _run(root, "git", "push", "origin", "main")
+    h1 = _run(root, "git", "rev-parse", "HEAD")
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    with pytest.raises(synthesis.SynthesisContractError, match="scope"):
+        locker.check_only(root=root, verify_remote=True)
+
+
+def test_published_preflight_rejects_nonexact_h2_commit_scope(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    _write(root, "extra_in_h2.txt", "not allowed\n")
+    _run(root, "git", "add", ".")
+    _run(root, "git", "commit", "-m", "bad H-SYN H2")
     _run(root, "git", "push", "origin", "main")
     with pytest.raises(synthesis.SynthesisContractError, match="scope"):
+        locker.check_only(root=root, verify_remote=True)
+
+
+def test_published_preflight_rejects_h2_wrong_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    _publish_h2(root)
+    _run(root, "git", "commit", "--allow-empty", "-m", "foreign child")
+    _run(root, "git", "push", "origin", "main")
+    with pytest.raises(synthesis.SynthesisContractError, match="direct, single-parent"):
+        locker.check_only(root=root, verify_remote=True)
+
+
+def test_published_preflight_rejects_final_mode_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    path_text = "docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md"
+    (root / path_text).chmod(0o755)
+    _publish_h2(root)
+    with pytest.raises(synthesis.SynthesisContractError, match="Git blob"):
+        locker.check_only(root=root, verify_remote=True)
+
+
+def test_published_preflight_rejects_aggregate_source_h2_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    reverted = "src/data/prepare_commit_artifacts.py"
+    _write(root, reverted, f"source:{reverted}\n")
+    (root / reverted).chmod(0o755)
+    _publish_h2(root)
+    with pytest.raises(synthesis.SynthesisContractError, match="aggregate scope"):
+        locker.check_only(root=root, verify_remote=True)
+
+
+def test_published_preflight_rejects_h1_wrong_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _patch_source(monkeypatch, source)
+    _write(root, "detour.txt", "foreign parent\n")
+    _run(root, "git", "add", "detour.txt")
+    _run(root, "git", "commit", "-m", "detour")
+    _run(root, "git", "push", "origin", "main")
+    _materialize_local_h(root)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    with pytest.raises(synthesis.SynthesisContractError, match="H1 must be"):
+        locker.check_only(root=root, verify_remote=True)
+
+
+def test_published_preflight_rejects_tracking_ref_drift(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    _publish_h2(root)
+    _run(root, "git", "update-ref", "refs/remotes/origin/main", h1)
+    with pytest.raises(synthesis.SynthesisContractError, match="refs"):
         locker.check_only(root=root, verify_remote=True)
 
 
@@ -551,13 +711,44 @@ def test_generate_postlink_snapshot_drift_rolls_back_exact2a(
     assert not (root / locker.GUARD_PATH.parent).exists()
 
 
+def test_generate_binds_new_authority_to_h2_and_final_components(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, _base, source = _make_repository(tmp_path)
+    _materialize_local_h(root)
+    _patch_source(monkeypatch, source)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    h2 = _publish_h2(root)
+
+    result = locker.generate(root=root, verify_remote=True)
+
+    authority_bytes = (root / locker.AUTHORITY_PATH).read_bytes()
+    authority = json.loads(authority_bytes)
+    assert result["synthesis_implementation_commit"] == h2
+    assert authority["synthesis_implementation_commit"] == h2
+    assert [record["path"] for record in authority["h_component_records"]] == sorted(
+        locker.H_SCOPE
+    )
+    for record in authority["h_component_records"]:
+        tree = _run(root, "git", "ls-tree", h2, "--", record["path"])
+        assert tree.split()[2] == record["git_blob_oid"]
+    manifest = json.loads((root / locker.MANIFEST_PATH).read_bytes())
+    assert manifest["synthesis_implementation_commit"] == h2
+    assert manifest["authority"]["sha256"] == synthesis.sha256_bytes(authority_bytes)
+
+
 def test_published_h_components_are_collected_once(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     root, _remote, _base, source = _make_repository(tmp_path)
     _materialize_local_h(root)
     _patch_source(monkeypatch, source)
-    _publish_h(root)
+    h1 = _publish_h1(root)
+    _patch_h1(monkeypatch, h1)
+    _materialize_local_h2(root)
+    h2 = _publish_h2(root)
     observed: list[str] = []
     original = locker._component_record
 
@@ -566,9 +757,11 @@ def test_published_h_components_are_collected_once(
         return original(repo, commit, path_text)
 
     monkeypatch.setattr(locker, "_component_record", record_once)
-    locker._collect_published_state(root, verify_remote=True)
+    state = locker._collect_published_state(root, verify_remote=True)
 
     assert observed == sorted(locker.H_SCOPE)
+    assert state["synthesis_implementation_commit"] == h2
+    assert all(record["git_blob_oid"] for record in state["h_components"])
 
 
 def test_authority_fixes_digests_invariants_and_all_mutating_flags_false() -> None:
@@ -588,6 +781,13 @@ def test_authority_fixes_digests_invariants_and_all_mutating_flags_false() -> No
     assert set(authority["authorizations"].values()) == {False}
     for record in authority["allowed_input_records"]:
         assert {"path", "bytes", "sha256", "git_mode", "git_blob_oid"} <= set(record)
+
+
+def test_authority_rejects_the_archived_h1_bound_p_syn() -> None:
+    state = _fake_state()
+    state["synthesis_implementation_commit"] = locker.H1_COMMIT
+    with pytest.raises(synthesis.SynthesisContractError, match="predates"):
+        locker._build_authority(state)
 
 
 def test_locker_source_has_no_scientific_or_dvc_execution_entrypoint() -> None:

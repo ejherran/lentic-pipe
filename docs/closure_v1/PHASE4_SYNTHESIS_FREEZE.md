@@ -1,6 +1,6 @@
 # Closure V1 Phase 4 synthesis freeze
 
-Status: `H-SYN implementation candidate`
+Status: `H-SYN corrective implementation candidate (H2)`
 Closure source: `ea8ddce7f8edb9a61db97e29178e52603fa371b1`
 Contract: `closure_v1_phase4_synthesis_v1`
 
@@ -18,10 +18,12 @@ The route is intentionally split into three publication gates:
 2. `P-SYN`: immutable data-only authority for the implementation and inputs;
 3. `R-SYN`: deterministic rendering of the exact 24-output synthesis bundle.
 
-Each gate must be published before the next one is executed. `P-SYN` must be
-the direct child of `H-SYN`, and `R-SYN` may be built only from a published and
-effective `P-SYN` authority. A local implementation or an unpublished lock is
-not sufficient authority for a later gate.
+Each gate must be published before the next one is executed. The logical
+`H-SYN` gate consists of the immutable H1 implementation commit followed by
+the corrective H2 overlay defined below. `P-SYN` must be the direct child of
+H2, and `R-SYN` may be built only from a published and effective `P-SYN`
+authority. A local implementation or an unpublished lock is not sufficient
+authority for a later gate.
 
 ## H-SYN publication scope
 
@@ -51,6 +53,42 @@ The H-SYN adapter accepts only the byte-exact, Git-bound finding set for those
 three records. Any additional path, credential, bucket, non-English text or
 other publication finding fails closed; the compensated report records no new
 finding rather than treating the historical exception as generic success.
+
+### Corrective H2 overlay
+
+H1 was published as
+`89f931aea9a4eeb8c468b697cd858eacbfd268f6`, the direct child of the closure
+source, with the exact eleven-path scope above. The first P-SYN authority was
+then generated correctly but its precommit transaction stopped before staging:
+the P/R adapter invoked the generic repository publication checker without the
+same byte-exact U1/U2/U3 compensation already required by the H-SYN adapter.
+That unpublished two-file authority is historical local evidence only. It is
+not effective authority and must not be published or restored to the live
+authority paths.
+
+H2 corrects only that publication route and the implementation-history gate.
+It is frozen as exactly five modifications, all within the original H-SYN
+scope:
+
+- `docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md`;
+- `src/data/prepare_commit_artifacts.py`;
+- `src/experiments/lock_closure_synthesis.py`;
+- `tests/test_prepare_commit_artifacts.py`;
+- `tests/test_lock_closure_synthesis.py`.
+
+H2 must be the single-parent direct child of H1. Its own diff must be exactly
+those five modifications, while the cumulative closure-source-to-H2 diff must
+remain the original H-SYN `9A+2M` eleven-path scope. H2 changes no scientific
+input, output schema, matrix row, claim, denominator, Holm family, table,
+figure or interpretation.
+
+The H2 precommit transaction has the same no-DVC, no-push, no-materialization
+and live-remote requirements as H1. P-SYN and R-SYN must use the same
+byte-exact, Git-bound U1/U2/U3 publication check as H-SYN; no generic bypass is
+permitted and every additional or altered finding fails closed. A fresh
+P-SYN authority must be generated after H2 is published. It must bind H2 as
+the synthesis implementation commit and reconstruct the final eleven H-SYN
+components from H2.
 
 ## Input boundary
 
@@ -201,7 +239,7 @@ H-SYN, P-SYN and R-SYN do not authorize:
 
 ## Gate commands
 
-Before H-SYN publication, the non-writing checks are:
+Before H1 publication, the non-writing checks are:
 
 ```bash
 poetry run python src/reporting/build_closure_synthesis.py --check-only
@@ -212,8 +250,13 @@ On the source commit, the first command must report `ready_for_p_syn`; the
 second must report `ready_to_publish_h`. Neither command may create P-SYN or
 R-SYN paths, guards or temporary files.
 
-After H-SYN has been committed and published as the direct child of the
-closure source, a separately authorized `--generate` creates only:
+With H1 published and the exact five-file H2 patch present locally, the locker
+check-only command must report `ready_to_publish_h2` without writes. The H2
+precommit transaction must then stage exactly those five modifications and no
+other path. It must not generate P-SYN as part of the H2 commit.
+
+After H1 and its exact H2 child have both been committed and published, a
+separately authorized `--generate` creates only:
 
 - `configs/closure_v1/phase4_synthesis_authority.json`;
 - `configs/closure_v1/phase4_synthesis_authority_manifest.json`.
@@ -228,12 +271,13 @@ Stop without retrying or widening scope if any of these conditions occurs:
 
 - Git refs, parentage, live remote `HEAD`/`refs/heads/main` or
   worktree/index state drift;
-- an H-SYN/P-SYN/R-SYN scope differs from its exact frozen set;
+- the H1, H2, cumulative H-SYN, P-SYN or R-SYN scope differs from its exact
+  frozen set;
 - an allowlisted file differs from its closure-source Git blob;
 - a forbidden namespace, symlink, hardlink anomaly or existing output appears;
 - the DVC status is not `{}` at the H-SYN publication boundary;
-- P-SYN is partial, non-canonical, unpublished or not the direct child of
-  H-SYN;
+- P-SYN is partial, non-canonical, unpublished, bound to H1 instead of H2 or
+  not the direct child of H2;
 - a model/denominator substitution, reduced Holm universe or invented numeric
   result is detected;
 - a guard, temporary file or rollback cannot be proven to be owned by the

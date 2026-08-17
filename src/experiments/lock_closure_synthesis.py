@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 """Validate H-SYN and publish the immutable, outcome-free P-SYN authority.
 
-``--check-only`` is deliberately non-writing and supports both legitimate
-states of the H-SYN transaction: the exact local patch over the Phase 3
-source commit, and the clean published H-SYN commit.  ``--generate`` accepts
-only the latter and publishes the two P-SYN JSON files atomically, with the
-companion manifest linked last.
+``--check-only`` is deliberately non-writing and supports the exact local H1
+patch over the Phase 3 source, the exact local H2 corrective overlay over the
+published H1 commit, and the clean published H2 commit.  ``--generate``
+accepts only the latter and publishes the two P-SYN JSON files atomically,
+with the companion manifest linked last.
 """
 
 from __future__ import annotations
@@ -33,6 +33,7 @@ GATE = "P-SYN"
 AUTHORITY_VERSION = "closure_v1_phase4_synthesis_authority_v1"
 MANIFEST_VERSION = "closure_v1_phase4_synthesis_authority_manifest_v1"
 SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
+H1_COMMIT = "89f931aea9a4eeb8c468b697cd858eacbfd268f6"
 BUILDER_PATH = "src/reporting/build_closure_synthesis.py"
 H_SCOPE: Mapping[str, str] = {
     "configs/closure_v1/phase4_synthesis.schema.json": "A",
@@ -50,6 +51,16 @@ H_SCOPE: Mapping[str, str] = {
 H_GIT_MODES: Mapping[str, str] = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
     for path in H_SCOPE
+}
+H2_SCOPE: Mapping[str, str] = {
+    "docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md": "M",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/lock_closure_synthesis.py": "M",
+    "tests/test_lock_closure_synthesis.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+H2_GIT_MODES: Mapping[str, str] = {
+    path: H_GIT_MODES[path] for path in H2_SCOPE
 }
 SCHEMA_AND_TEST_PATHS = (
     "configs/closure_v1/phase4_synthesis.schema.json",
@@ -267,12 +278,145 @@ def _commit_scope(root: Path, commit: str) -> dict[str, str]:
     return records
 
 
+def _diff_scope(root: Path, before: str, after: str) -> dict[str, str]:
+    output = cast(
+        str,
+        _git(
+            root,
+            "diff",
+            "--name-status",
+            "--no-renames",
+            before,
+            after,
+            "--",
+        ),
+    )
+    records: dict[str, str] = {}
+    for line in output.splitlines():
+        fields = line.split("\t")
+        if len(fields) != 2 or fields[0] not in {"A", "M", "D"}:
+            raise _error("H-SYN aggregate diff contains an unsupported record")
+        if fields[1] in records:
+            raise _error("H-SYN aggregate diff repeats a path")
+        records[fields[1]] = fields[0]
+    return records
+
+
+def _tree_blob_oid(
+    root: Path,
+    commit: str,
+    path_text: str,
+    *,
+    expected_mode: str,
+    context: str,
+) -> str:
+    output = cast(str, _git(root, "ls-tree", commit, "--", path_text)).strip()
+    fields = output.split(None, 3)
+    if (
+        len(fields) != 4
+        or fields[0] != expected_mode
+        or fields[1] != "blob"
+        or GIT_OID_RE.fullmatch(fields[2]) is None
+        or fields[3] != path_text
+    ):
+        raise _error(f"{context} is not one exact Git blob: {path_text}")
+    return fields[2]
+
+
+def _validate_published_h1(root: Path) -> None:
+    parents = cast(
+        str, _git(root, "rev-list", "--parents", "-n", "1", H1_COMMIT)
+    ).split()
+    if parents != [H1_COMMIT, SOURCE_COMMIT]:
+        raise _error("Published H-SYN H1 must be the direct, single-parent child of source")
+    if _commit_scope(root, H1_COMMIT) != dict(H_SCOPE):
+        raise _error("Published H-SYN H1 scope is not the exact frozen 9A+2M set")
+    for path_text, kind in H_SCOPE.items():
+        h1_oid = _tree_blob_oid(
+            root,
+            H1_COMMIT,
+            path_text,
+            expected_mode=H_GIT_MODES[path_text],
+            context="Published H-SYN H1 component",
+        )
+        source = cast(
+            str, _git(root, "ls-tree", SOURCE_COMMIT, "--", path_text)
+        ).strip()
+        if kind == "A":
+            if source:
+                raise _error(f"H-SYN H1 addition already exists at source: {path_text}")
+            continue
+        fields = source.split(None, 3)
+        if (
+            len(fields) != 4
+            or fields[0] != H_GIT_MODES[path_text]
+            or fields[1] != "blob"
+            or GIT_OID_RE.fullmatch(fields[2]) is None
+            or fields[3] != path_text
+            or fields[2] == h1_oid
+        ):
+            raise _error(f"H-SYN H1 modification lacks one changed source blob: {path_text}")
+
+
+def _validate_local_h2_scope(root: Path) -> None:
+    _validate_published_h1(root)
+    status = _parse_status(root)
+    if set(status) != set(H2_SCOPE):
+        raise _error("Local H-SYN H2 scope is not the exact frozen 5M path set")
+    for path_text in H_SCOPE:
+        path, metadata = _validate_regular_file(root, path_text)
+        payload = _read_regular_file(path, metadata)
+        h1_oid = _tree_blob_oid(
+            root,
+            H1_COMMIT,
+            path_text,
+            expected_mode=H_GIT_MODES[path_text],
+            context="Published H-SYN H1 component",
+        )
+        h1_payload = cast(
+            bytes, _git(root, "cat-file", "blob", h1_oid, text=False)
+        )
+        if path_text in H2_SCOPE:
+            if status[path_text] not in {"M ", " M"}:
+                raise _error(
+                    f"Local H-SYN H2 status drifted for {path_text}: "
+                    f"{status[path_text]!r}"
+                )
+            if payload == h1_payload:
+                raise _error(f"H-SYN H2 modification has unchanged bytes: {path_text}")
+        elif payload != h1_payload:
+            raise _error(f"Local H-SYN H2 aggregate bytes drifted: {path_text}")
+
+
 def _validate_published_h(root: Path, head: str) -> list[dict[str, Any]]:
+    """Reconstruct the exact source -> H1 -> H2 implementation chain."""
+
+    _validate_published_h1(root)
     parents = cast(str, _git(root, "rev-list", "--parents", "-n", "1", head)).split()
-    if parents != [head, SOURCE_COMMIT]:
-        raise _error("Published H-SYN must be the direct, single-parent child of source")
-    if _commit_scope(root, head) != dict(H_SCOPE):
-        raise _error("Published H-SYN commit scope is not the exact frozen 9A+2M set")
+    if parents != [head, H1_COMMIT]:
+        raise _error("Published H-SYN H2 must be the direct, single-parent child of H1")
+    if _commit_scope(root, head) != dict(H2_SCOPE):
+        raise _error("Published H-SYN H2 scope is not the exact frozen 5M set")
+    if _diff_scope(root, SOURCE_COMMIT, head) != dict(H_SCOPE):
+        raise _error("Published H-SYN aggregate scope is not the exact frozen 9A+2M set")
+    for path_text in H_SCOPE:
+        final_oid = _tree_blob_oid(
+            root,
+            head,
+            path_text,
+            expected_mode=H_GIT_MODES[path_text],
+            context="Published H-SYN H2 component",
+        )
+        if path_text in H2_SCOPE:
+            h1_oid = _tree_blob_oid(
+                root,
+                H1_COMMIT,
+                path_text,
+                expected_mode=H2_GIT_MODES[path_text],
+                context="Published H-SYN H1 component",
+            )
+            if final_oid == h1_oid:
+                raise _error(f"Published H-SYN H2 has unchanged bytes: {path_text}")
     return [
         _component_record(root, head, path_text) for path_text in sorted(H_SCOPE)
     ]
@@ -420,6 +564,17 @@ def check_only(
         implementation_commit: str | None = None
         component_count = len(H_SCOPE)
         input_count = len(contract.allowed_inputs)
+    elif head == H1_COMMIT:
+        refs = _validate_refs(root, H1_COMMIT, verify_remote=verify_remote)
+        _validate_local_h2_scope(root)
+        contract = synthesis.load_contract(root=root, verify_inputs=True)
+        if contract.closure_source_commit != SOURCE_COMMIT:
+            raise _error("Synthesis contract source commit drifted")
+        _validate_empty_publication_namespace(root, contract)
+        state = "ready_to_publish_h2"
+        implementation_commit = None
+        component_count = len(H_SCOPE)
+        input_count = len(contract.allowed_inputs)
     else:
         published = _collect_published_state(root, verify_remote=verify_remote)
         refs = cast(dict[str, str], published["repository"])
@@ -515,6 +670,8 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
     implementation = payload["synthesis_implementation_commit"]
     if not isinstance(implementation, str) or GIT_OID_RE.fullmatch(implementation) is None:
         raise _error("P-SYN implementation commit is invalid")
+    if implementation in {SOURCE_COMMIT, H1_COMMIT}:
+        raise _error("P-SYN implementation commit predates the effective H-SYN H2")
     paths = payload["allowed_input_paths"]
     records = payload["allowed_input_records"]
     outputs = payload["ordered_output_paths"]
