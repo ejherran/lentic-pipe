@@ -84,7 +84,9 @@ def _e4_predictions() -> pd.DataFrame:
 
 def test_e4_keeps_locked_cohort_and_endpoint_denominators() -> None:
     references = e4_reference.build_trophic_reference_targets(_e4_future_indicators())
-    evaluated = e4_evaluation.evaluate_trophic_state(_e4_predictions(), references)
+    predictions = runner._e1_trophic_predictions(_e4_predictions())
+    assert tuple(predictions.columns) == e4_evaluation.PREDICTION_COLUMNS
+    evaluated = e4_evaluation.evaluate_trophic_state(predictions, references)
 
     proxy = evaluated["trophic_proxy_metrics"]
     assert proxy["evaluation_cohort"].eq("location_holdout").all()

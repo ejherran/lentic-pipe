@@ -17,13 +17,25 @@ BASE_R_COMMIT = "4c92ed7249a91b7dd541fd22dde68b61574556b2"
 HISTORICAL_H1_COMMIT = "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
 HISTORICAL_P1_COMMIT = "caaf2d6d0a00a31febeed89b54ea078b60d7f92a"
 HISTORICAL_U1_COMMIT = "4aecf19cd913b82a6a3d26669f09684e67efda8a"
+HISTORICAL_H2_COMMIT = "b768c5b1251bde50b01f0c066be07fb931924537"
+HISTORICAL_P2_COMMIT = "f0d203c75ba6943b6817339d651ece5cbccec492"
+HISTORICAL_U2_COMMIT = "a4f39173ec14aa7cd80d0fd38fb720f98cf88159"
 ACTIVATION_MANIFEST_PATH = "reports/closure_v1/00_protocol/closure_e0_u_activation.json"
 RECOVERY_ACTIVATION_SCHEMA_VERSION = "closure_e0_u_recovery_activation_v1"
 RECOVERY_ACTIVATION_MANIFEST_PATH = (
     "reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json"
 )
+RECOVERY_2_ACTIVATION_SCHEMA_VERSION = (
+    "closure_e0_u_recovery_2_activation_v1"
+)
+RECOVERY_2_ACTIVATION_MANIFEST_PATH = (
+    "reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json"
+)
 ATTEMPT_1_FAILURE_RECEIPT_PATH = (
     "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"
+)
+ATTEMPT_2_FAILURE_RECEIPT_PATH = (
+    "reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json"
 )
 RECOVERY_ACTIVATION_SCHEMA_PATH = (
     "configs/closure_v1/closure_e0_u_recovery_activation.schema.json"
@@ -32,16 +44,29 @@ RECOVERY_DOCUMENT_PATH = "docs/closure_v1/E0_U_PHASE3_RECOVERY_BATCH.md"
 RECOVERY_COMMAND_PATH = (
     "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt"
 )
+RECOVERY_2_ACTIVATION_SCHEMA_PATH = (
+    "configs/closure_v1/closure_e0_u_recovery_2_activation.schema.json"
+)
+RECOVERY_2_DOCUMENT_PATH = (
+    "docs/closure_v1/E0_U_PHASE3_RECOVERY_2_BATCH.md"
+)
+RECOVERY_2_COMMAND_PATH = (
+    "reports/closure_v1/00_protocol/locked_recovery_2_batch_command.txt"
+)
 OUTCOME_ACCESS_LOG_PATH = "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
 RUN_GUARD_PATH = "tmp/closure_v1_e0_u/sealed_batch.guard"
 RECOVERY_RUN_GUARD_PATH = (
     "tmp/closure_v1_e0_u_recovery_1/sealed_batch.guard"
+)
+RECOVERY_2_RUN_GUARD_PATH = (
+    "tmp/closure_v1_e0_u_recovery_2/sealed_batch.guard"
 )
 AUTHORITY_SOURCE_PATH = "src/experiments/closure_e0_u_authority.py"
 RUNNER_SOURCE_PATH = "src/experiments/run_closure_benchmark.py"
 CONTEXT_BUILDER_SOURCE_PATH = "src/experiments/closure_phase3_context.py"
 SEALED_BATCH_COMMAND = "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-batch\n"
 RECOVERY_SEALED_BATCH_COMMAND = "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-recovery-batch\n"
+RECOVERY_2_SEALED_BATCH_COMMAND = "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-recovery-2-batch\n"
 ATTEMPT_1_EXECUTION_ID = (
     "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
 )
@@ -57,6 +82,27 @@ ATTEMPT_1_ACTIVATION_SHA256 = (
 )
 ATTEMPT_1_ACTIVATION_GIT_OID = "32d90942b8a683aebacf44ca5fe6c2b12d1a3c7c"
 RECOVERY_ACCESS_LOG_SCHEMA_VERSION = "closure_e0_u_recovery_access_log_v1"
+ATTEMPT_2_EXECUTION_ID = (
+    "closure-v1-e0-u-recovery-1-f0d203c75ba6943b-8efea2943fa7feb2"
+)
+ATTEMPT_2_ACCESS_LOG_BYTES = 738
+ATTEMPT_2_ACCESS_LOG_SHA256 = (
+    "0645151a995bb61e3cef170b6a2e0563ec9b28e740ee01075505cd0c27fed1bf"
+)
+ATTEMPT_2_ACCESS_RECORD_BYTES = 482
+ATTEMPT_2_ACCESS_RECORD_SHA256 = (
+    "781043a890d85ba2c1ac86a34397b22478f29ce89579285059fb35c3ffc3dd23"
+)
+ATTEMPT_2_GUARD_DEVICE = 2069
+ATTEMPT_2_GUARD_INODE = 80495779
+ATTEMPT_2_ACTIVATION_BYTES = 33393
+ATTEMPT_2_ACTIVATION_SHA256 = (
+    "4eaa82b5584ad8b8518acd6b70cbb7a25cf24bfae33abf4802e04ac865335f6f"
+)
+ATTEMPT_2_ACTIVATION_GIT_OID = "9f8c5199349935d804590b079bfd0588458ada4a"
+RECOVERY_2_ACCESS_LOG_SCHEMA_VERSION = (
+    "closure_e0_u_recovery_2_access_log_v1"
+)
 LIVE_REMOTE_URL = "https://github.com/ejherran/lentic-pipe.git"
 CONFIGURED_ORIGIN_URL = "git@github.com:ejherran/lentic-pipe.git"
 GIT_EXECUTABLE_PATH = "/usr/bin/git"
@@ -166,6 +212,56 @@ EXPECTED_RECOVERY_P_SCOPE_PATHS = (
     "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/public_tests.xml",
     "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/software_evidence_source_manifest.json",
     "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/test_report.md",
+)
+EXPECTED_RECOVERY_2_H_SCOPE = (
+    ("configs/closure_v1/closure_e0_u_recovery_2_activation.schema.json", "A"),
+    ("docs/closure_v1/E0_U_PHASE3_RECOVERY_2_BATCH.md", "A"),
+    ("reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json", "A"),
+    ("reports/closure_v1/00_protocol/locked_recovery_2_batch_command.txt", "A"),
+    ("reports/closure_v1/00_protocol/outcome_access_log.jsonl", "M"),
+    ("src/data/prepare_commit_artifacts.py", "M"),
+    ("src/experiments/build_closure_e10_source_evidence.py", "M"),
+    ("src/experiments/closure_e0_u_authority.py", "M"),
+    ("src/experiments/lock_closure_e0_u_activation.py", "M"),
+    ("src/experiments/run_closure_benchmark.py", "M"),
+    ("tests/test_build_closure_e10_source_evidence.py", "M"),
+    ("tests/test_closure_e0_u_activation_lock.py", "M"),
+    ("tests/test_closure_e0_u_authority.py", "M"),
+    ("tests/test_closure_phase3_e4_e7_contracts.py", "M"),
+    ("tests/test_prepare_commit_artifacts.py", "M"),
+)
+RECOVERY_2_E10_SOURCE_DIRECTORY = (
+    "reports/closure_v1/00_protocol/software_evidence_source_recovery_2"
+)
+EXPECTED_RECOVERY_2_P_SCOPE_PATHS = (
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "end_to_end_report.md"
+    ),
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "environment.json"
+    ),
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "openapi.json"
+    ),
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "openapi_contract_report.md"
+    ),
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "public_tests.xml"
+    ),
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "software_evidence_source_manifest.json"
+    ),
+    (
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/"
+        "test_report.md"
+    ),
 )
 PHASE3_OVERLAY_MANIFEST_PATH = (
     "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
@@ -469,6 +565,35 @@ RECOVERY_ACTIVATION_MANIFEST_KEYS = (
     "sealed_runtime_environment_record",
     "sealed_support_source_records",
 )
+RECOVERY_2_ACTIVATION_MANIFEST_KEYS = (
+    "attempt_1_failure_receipt",
+    "attempt_2_failure_receipt",
+    "attempt_ordinal",
+    "dvc_policy",
+    "execution_id",
+    "expected_artifact_paths_sha256",
+    "expected_publication_order_sha256",
+    "experiment_id",
+    "first_attempt",
+    "gate",
+    "git_remote_url",
+    "historical_chain",
+    "outcome_access_log_prefix",
+    "phase3_overlay_deep_validation",
+    "recovery_2_authority_source_record",
+    "recovery_2_chain",
+    "recovery_2_guard_path",
+    "recovery_2_source_records",
+    "recovery_chain",
+    "schema_version",
+    "sealed_batch_contract_sha256",
+    "sealed_component_source_records",
+    "sealed_context_builder_source_record",
+    "sealed_recovery_2_batch_command",
+    "sealed_runner_source_record",
+    "sealed_runtime_environment_record",
+    "sealed_support_source_records",
+)
 SCOPE_RECORD_KEYS = ("bytes", "mode", "path", "sha256", "status")
 DVC_POLICY_KEYS = (
     "direct_git_artifact_paths",
@@ -545,6 +670,7 @@ _STATE: dict[str, object] = {
     "access_log_identity": None,
     "access_log_lease": None,
     "recovery": False,
+    "recovery_attempt": 0,
     "run_guard_path": "tmp/closure_v1_e0_u/sealed_batch.guard",
 }
 
@@ -2825,6 +2951,43 @@ def _load_historical_u1_activation(repo_root):
     return activation, blob
 
 
+def _load_historical_u2_activation(repo_root):
+    import json
+
+    blob = _git_blob_record(
+        repo_root,
+        HISTORICAL_U2_COMMIT,
+        RECOVERY_ACTIVATION_MANIFEST_PATH,
+    )
+    payload = blob["payload"]
+    if (
+        blob["git_oid"] != ATTEMPT_2_ACTIVATION_GIT_OID
+        or blob["bytes"] != ATTEMPT_2_ACTIVATION_BYTES
+        or blob["sha256"] != ATTEMPT_2_ACTIVATION_SHA256
+        or blob["mode"] != 0o644
+    ):
+        _fail("historical U2 activation Git blob drifted")
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise RuntimeError(
+            "Closure E0-U historical recovery activation is not JSON"
+        ) from exc
+    if not isinstance(raw, dict) or _canonical_json_bytes(raw) != payload:
+        _fail("historical U2 activation is not canonical")
+    activation = _validate_recovery_activation_without_contract(raw)
+    if (
+        activation.get("attempt_ordinal") != 2
+        or activation.get("execution_id") != ATTEMPT_2_EXECUTION_ID
+        or activation["recovery_chain"].get("h2_commit")
+        != HISTORICAL_H2_COMMIT
+        or activation["recovery_chain"].get("p2_commit")
+        != HISTORICAL_P2_COMMIT
+    ):
+        _fail("historical U2 activation identity drifted")
+    return activation, blob
+
+
 def _validate_recovery_git_topology(repo_root, manifest, verify_remote):
     head = _git_oid(repo_root, "HEAD^{commit}")
     refs = {
@@ -2923,6 +3086,143 @@ def _validate_recovery_git_topology(repo_root, manifest, verify_remote):
         if _https_helper_record() != helper_before:
             _fail("HTTPS Git helper changed during recovery authentication")
     return head, h2_commit, p2_commit
+
+
+def _validate_recovery_2_git_topology(repo_root, manifest, verify_remote):
+    head = _git_oid(repo_root, "HEAD^{commit}")
+    refs = {
+        _git_oid(repo_root, "refs/heads/main^{commit}"),
+        _git_oid(repo_root, "refs/remotes/origin/main^{commit}"),
+        _git_oid(repo_root, "refs/remotes/origin/HEAD^{commit}"),
+    }
+    commits = {
+        "p3": _git_oid(repo_root, "HEAD~1^{commit}"),
+        "h3": _git_oid(repo_root, "HEAD~2^{commit}"),
+        "u2": _git_oid(repo_root, "HEAD~3^{commit}"),
+        "p2": _git_oid(repo_root, "HEAD~4^{commit}"),
+        "h2": _git_oid(repo_root, "HEAD~5^{commit}"),
+        "u1": _git_oid(repo_root, "HEAD~6^{commit}"),
+        "p1": _git_oid(repo_root, "HEAD~7^{commit}"),
+        "h1": _git_oid(repo_root, "HEAD~8^{commit}"),
+        "r": _git_oid(repo_root, "HEAD~9^{commit}"),
+    }
+    historical = manifest["historical_chain"]
+    recovery = manifest["recovery_chain"]
+    recovery_2 = manifest["recovery_2_chain"]
+    if (
+        refs != {head}
+        or commits["r"] != BASE_R_COMMIT
+        or commits["h1"] != HISTORICAL_H1_COMMIT
+        or commits["p1"] != HISTORICAL_P1_COMMIT
+        or commits["u1"] != HISTORICAL_U1_COMMIT
+        or commits["h2"] != HISTORICAL_H2_COMMIT
+        or commits["p2"] != HISTORICAL_P2_COMMIT
+        or commits["u2"] != HISTORICAL_U2_COMMIT
+        or historical["base_r_commit"] != commits["r"]
+        or historical["h1_commit"] != commits["h1"]
+        or historical["p1_commit"] != commits["p1"]
+        or historical["u1_commit"] != commits["u1"]
+        or recovery["h2_commit"] != commits["h2"]
+        or recovery["p2_commit"] != commits["p2"]
+        or recovery["u2_commit"] != commits["u2"]
+        or recovery_2["h3_commit"] != commits["h3"]
+        or recovery_2["p3_commit"] != commits["p3"]
+        or _git_text(repo_root, ["symbolic-ref", "--quiet", "HEAD"]).strip()
+        != "refs/heads/main"
+        or _git_text(
+            repo_root,
+            ["symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"],
+        ).strip()
+        != "refs/remotes/origin/main"
+        or _git_text(repo_root, ["remote", "get-url", "origin"]).strip()
+        != CONFIGURED_ORIGIN_URL
+    ):
+        _fail("recovery-2 R-H1-P1-U1-H2-P2-U2-H3-P3-U3 topology drifted")
+    for child, parent, label in (
+        (commits["h1"], commits["r"], "historical H1"),
+        (commits["p1"], commits["h1"], "historical P1"),
+        (commits["u1"], commits["p1"], "historical U1"),
+        (commits["h2"], commits["u1"], "historical H2"),
+        (commits["p2"], commits["h2"], "historical P2"),
+        (commits["u2"], commits["p2"], "historical U2"),
+        (commits["h3"], commits["u2"], "recovery-2 H3"),
+        (commits["p3"], commits["h3"], "recovery-2 P3"),
+        (head, commits["p3"], "recovery-2 U3"),
+    ):
+        _require_direct_parent(repo_root, child, parent, label)
+    if _git(repo_root, ["status", "--porcelain=v1", "-z", "--untracked-files=all"]):
+        _fail("recovery-2 repository worktree or index is not clean")
+    historical_u1, u1_blob = _load_historical_u1_activation(repo_root)
+    historical_u2, u2_blob = _load_historical_u2_activation(repo_root)
+    if (
+        u1_blob["payload"]
+        != _read_regular_relative(repo_root, ACTIVATION_MANIFEST_PATH, 0o644, 1)[0]
+        or u2_blob["payload"]
+        != _read_regular_relative(
+            repo_root, RECOVERY_ACTIVATION_MANIFEST_PATH, 0o644, 1
+        )[0]
+        or _git_diff_scope(repo_root, BASE_R_COMMIT, commits["h1"])
+        != historical_u1["h_scope"]
+        or _git_diff_scope(repo_root, commits["h1"], commits["p1"])
+        != historical_u1["p_scope"]
+        or _git_diff_scope(repo_root, commits["u1"], commits["h2"])
+        != historical_u2["recovery_chain"]["h2_scope"]
+        or _git_diff_scope(repo_root, commits["h2"], commits["p2"])
+        != historical_u2["recovery_chain"]["p2_scope"]
+    ):
+        _fail("historical recovery authorities drifted")
+    historical_u2_scope = _git_diff_scope(
+        repo_root, commits["p2"], commits["u2"]
+    )
+    if historical_u2_scope != [
+        {
+            "path": RECOVERY_ACTIVATION_MANIFEST_PATH,
+            "status": "A",
+            "mode": "100644",
+            "bytes": u2_blob["bytes"],
+            "sha256": u2_blob["sha256"],
+        }
+    ]:
+        _fail("historical U2 is not exact1A")
+    if (
+        _git_diff_scope(repo_root, commits["u2"], commits["h3"])
+        != recovery_2["h3_scope"]
+        or _git_diff_scope(repo_root, commits["h3"], commits["p3"])
+        != recovery_2["p3_scope"]
+    ):
+        _fail("recovery-2 H3/P3 scopes differ from activation binding")
+    u3_record = _git_blob_record(
+        repo_root,
+        head,
+        RECOVERY_2_ACTIVATION_MANIFEST_PATH,
+    )
+    if _git_diff_scope(repo_root, commits["p3"], head) != [
+        {
+            "path": RECOVERY_2_ACTIVATION_MANIFEST_PATH,
+            "status": "A",
+            "mode": "100644",
+            "bytes": u3_record["bytes"],
+            "sha256": u3_record["sha256"],
+        }
+    ]:
+        _fail("recovery-2 U3 is not exact1A")
+    if verify_remote:
+        helper_before = _https_helper_record()
+        remote = _git(
+            repo_root,
+            ["ls-remote", "--heads", LIVE_REMOTE_URL, "refs/heads/main"],
+        )
+        try:
+            fields = remote.decode("ascii").strip().split()
+        except UnicodeDecodeError as exc:
+            raise RuntimeError(
+                "Closure E0-U recovery-2 live remote response is malformed"
+            ) from exc
+        if fields != [head, "refs/heads/main"]:
+            _fail("live remote main is not aligned to recovery-2 U3")
+        if _https_helper_record() != helper_before:
+            _fail("HTTPS Git helper changed during recovery-2 authentication")
+    return head, commits["h3"], commits["p3"]
 
 
 def _git_bound_authority_source_record(repo_root, head, verify_remote):
@@ -3097,6 +3397,76 @@ def _validate_recovery_manifest_bindings(repo_root, head, h2_commit, manifest):
     ):
         _fail("recovery activation log-prefix binding drifted")
     guard_policy = _validate_historical_guard_policy(repo_root, receipt)
+    return (*bindings, authority, guard_policy)
+
+
+def _validate_recovery_2_manifest_bindings(repo_root, head, h3_commit, manifest):
+    bindings = _validate_manifest_bindings(repo_root, head, manifest)
+    authority = _validate_source_record(
+        repo_root,
+        head,
+        manifest["recovery_2_authority_source_record"],
+        AUTHORITY_SOURCE_PATH,
+    )
+    for record in manifest["recovery_2_source_records"]:
+        path = record["path"]
+        physical, metadata = _read_regular_relative(
+            repo_root,
+            path,
+            record["mode"],
+            1,
+        )
+        blob = _git_blob_record(repo_root, h3_commit, path)
+        if (
+            len(physical) != record["bytes"]
+            or _sha256_bytes(physical) != record["sha256"]
+            or blob["payload"] != physical
+            or blob["bytes"] != record["bytes"]
+            or blob["sha256"] != record["sha256"]
+            or blob["mode"] != record["mode"]
+            or metadata.st_size != record["bytes"]
+        ):
+            _fail("recovery-2 source differs from H3: " + path)
+    command_payload, _ = _read_regular_relative(
+        repo_root,
+        RECOVERY_2_COMMAND_PATH,
+        0o644,
+        1,
+    )
+    if command_payload != RECOVERY_2_SEALED_BATCH_COMMAND.encode("utf-8"):
+        _fail("locked recovery-2 command bytes drifted")
+    receipt_1, receipt_1_record = _load_attempt_1_failure_receipt(
+        repo_root,
+        h2_commit=HISTORICAL_H2_COMMIT,
+    )
+    binding_1 = manifest["attempt_1_failure_receipt"]
+    if (
+        binding_1["decoded"] != receipt_1
+        or binding_1["path"] != receipt_1_record["path"]
+        or binding_1["bytes"] != receipt_1_record["bytes"]
+        or binding_1["sha256"] != receipt_1_record["sha256"]
+    ):
+        _fail("recovery-2 attempt-1 receipt binding drifted")
+    receipt_2, receipt_2_record = _load_attempt_2_failure_receipt(
+        repo_root,
+        h3_commit=h3_commit,
+    )
+    binding_2 = manifest["attempt_2_failure_receipt"]
+    if (
+        binding_2["decoded"] != receipt_2
+        or binding_2["path"] != receipt_2_record["path"]
+        or binding_2["bytes"] != receipt_2_record["bytes"]
+        or binding_2["sha256"] != receipt_2_record["sha256"]
+    ):
+        _fail("recovery-2 attempt-2 receipt binding drifted")
+    if manifest["outcome_access_log_prefix"] != _require_attempt_2_access_log_prefix(
+        repo_root
+    ):
+        _fail("recovery-2 activation log-prefix binding drifted")
+    guard_policy = _validate_historical_recovery_guard_policy(
+        repo_root,
+        receipt_2,
+    )
     return (*bindings, authority, guard_policy)
 
 
@@ -3360,6 +3730,241 @@ def _validate_recovery_activation_without_contract(manifest):
     return result
 
 
+def _validate_recovery_2_source_records(value):
+    from collections.abc import Mapping
+
+    expected_paths = (
+        RECOVERY_2_ACTIVATION_SCHEMA_PATH,
+        RECOVERY_2_DOCUMENT_PATH,
+        ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        RECOVERY_2_COMMAND_PATH,
+        "src/experiments/lock_closure_e0_u_activation.py",
+    )
+    if type(value) is not list or len(value) != len(expected_paths):
+        _fail("recovery-2 source-record scope drifted")
+    records = []
+    for raw, expected_path in zip(value, expected_paths, strict=True):
+        if (
+            not isinstance(raw, Mapping)
+            or set(raw) != {"path", "bytes", "sha256", "mode"}
+            or raw.get("path") != expected_path
+            or type(raw.get("bytes")) is not int
+            or raw.get("bytes") <= 0
+            or not _is_sha256(raw.get("sha256"))
+            or raw.get("mode") not in (0o644, 0o755)
+        ):
+            _fail("recovery-2 source record drifted: " + expected_path)
+        records.append(dict(raw))
+    return records
+
+
+def _validate_receipt_binding(value, *, path, validator, label):
+    from collections.abc import Mapping
+
+    if not isinstance(value, Mapping) or set(value) != {
+        "bytes",
+        "decoded",
+        "path",
+        "sha256",
+    }:
+        _fail(label + " receipt binding keys drifted")
+    binding = dict(value)
+    if (
+        binding.get("path") != path
+        or type(binding.get("bytes")) is not int
+        or binding["bytes"] <= 0
+        or not _is_sha256(binding.get("sha256"))
+    ):
+        _fail(label + " receipt binding drifted")
+    validator(binding.get("decoded"))
+    return binding
+
+
+def _validate_recovery_2_activation_without_contract(manifest):
+    from collections.abc import Mapping
+    from typing import cast
+
+    if not isinstance(manifest, Mapping) or set(manifest) != set(
+        RECOVERY_2_ACTIVATION_MANIFEST_KEYS
+    ):
+        _fail("recovery-2 activation manifest keys drifted")
+    result = dict(manifest)
+    expected_scalars = {
+        "schema_version": RECOVERY_2_ACTIVATION_SCHEMA_VERSION,
+        "experiment_id": EXPERIMENT_ID,
+        "gate": GATE,
+        "attempt_ordinal": 3,
+        "first_attempt": False,
+        "git_remote_url": LIVE_REMOTE_URL,
+        "sealed_recovery_2_batch_command": RECOVERY_2_SEALED_BATCH_COMMAND,
+        "recovery_2_guard_path": RECOVERY_2_RUN_GUARD_PATH,
+    }
+    for key, expected in expected_scalars.items():
+        if type(result.get(key)) is not type(expected) or result.get(key) != expected:
+            _fail("recovery-2 activation scalar drifted: " + key)
+    for key in (
+        "sealed_batch_contract_sha256",
+        "expected_artifact_paths_sha256",
+        "expected_publication_order_sha256",
+    ):
+        if not _is_sha256(result.get(key)):
+            _fail("recovery-2 activation digest is malformed: " + key)
+    execution_id = result.get("execution_id")
+    if (
+        type(execution_id) is not str
+        or not (16 <= len(execution_id) <= 128)
+        or any(
+            character
+            not in "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+            for character in execution_id
+        )
+        or execution_id in (ATTEMPT_1_EXECUTION_ID, ATTEMPT_2_EXECUTION_ID)
+    ):
+        _fail("recovery-2 activation execution id is malformed or reused")
+    historical = result.get("historical_chain")
+    if not isinstance(historical, Mapping) or set(historical) != {
+        "base_r_commit",
+        "h1_commit",
+        "p1_commit",
+        "u1_activation",
+        "u1_commit",
+    }:
+        _fail("recovery-2 historical chain keys drifted")
+    historical = cast(Mapping, historical)
+    if (
+        historical.get("base_r_commit") != BASE_R_COMMIT
+        or historical.get("h1_commit") != HISTORICAL_H1_COMMIT
+        or historical.get("p1_commit") != HISTORICAL_P1_COMMIT
+        or historical.get("u1_commit") != HISTORICAL_U1_COMMIT
+        or historical.get("u1_activation")
+        != {
+            "path": ACTIVATION_MANIFEST_PATH,
+            "bytes": ATTEMPT_1_ACTIVATION_BYTES,
+            "sha256": ATTEMPT_1_ACTIVATION_SHA256,
+            "git_blob_oid": ATTEMPT_1_ACTIVATION_GIT_OID,
+        }
+    ):
+        _fail("recovery-2 historical U1 chain drifted")
+    recovery = result.get("recovery_chain")
+    if not isinstance(recovery, Mapping) or set(recovery) != {
+        "h2_commit",
+        "h2_scope",
+        "p2_commit",
+        "p2_scope",
+        "u2_activation",
+        "u2_commit",
+    }:
+        _fail("recovery-2 historical H2-P2-U2 keys drifted")
+    recovery = cast(Mapping, recovery)
+    if (
+        recovery.get("h2_commit") != HISTORICAL_H2_COMMIT
+        or recovery.get("p2_commit") != HISTORICAL_P2_COMMIT
+        or recovery.get("u2_commit") != HISTORICAL_U2_COMMIT
+        or recovery.get("u2_activation")
+        != {
+            "path": RECOVERY_ACTIVATION_MANIFEST_PATH,
+            "bytes": ATTEMPT_2_ACTIVATION_BYTES,
+            "sha256": ATTEMPT_2_ACTIVATION_SHA256,
+            "git_blob_oid": ATTEMPT_2_ACTIVATION_GIT_OID,
+        }
+    ):
+        _fail("recovery-2 historical U2 chain drifted")
+    h2_scope = _validate_scope_records(recovery["h2_scope"], "H2")
+    p2_scope = _validate_scope_records(recovery["p2_scope"], "P2")
+    if tuple((record["path"], record["status"]) for record in h2_scope) != (
+        EXPECTED_RECOVERY_H_SCOPE
+    ) or any(
+        record["mode"]
+        != (
+            "100755"
+            if record["path"] == "src/data/prepare_commit_artifacts.py"
+            else "100644"
+        )
+        for record in h2_scope
+    ):
+        _fail("historical H2 recovery scope is not exact14")
+    if (
+        tuple(record["path"] for record in p2_scope)
+        != EXPECTED_RECOVERY_P_SCOPE_PATHS
+        or any(
+            record["status"] != "A" or record["mode"] != "100644"
+            for record in p2_scope
+        )
+    ):
+        _fail("historical P2 recovery evidence scope is not exact7A")
+    recovery_2 = result.get("recovery_2_chain")
+    if not isinstance(recovery_2, Mapping) or set(recovery_2) != {
+        "h3_commit",
+        "h3_scope",
+        "p3_commit",
+        "p3_scope",
+    }:
+        _fail("recovery-2 chain keys drifted")
+    recovery_2 = cast(Mapping, recovery_2)
+    for key in ("h3_commit", "p3_commit"):
+        value = recovery_2.get(key)
+        if (
+            type(value) is not str
+            or len(value) != 40
+            or any(character not in "0123456789abcdef" for character in value)
+        ):
+            _fail("recovery-2 chain commit is malformed: " + key)
+    h3_scope = _validate_scope_records(recovery_2["h3_scope"], "H3")
+    p3_scope = _validate_scope_records(recovery_2["p3_scope"], "P3")
+    if tuple((record["path"], record["status"]) for record in h3_scope) != (
+        EXPECTED_RECOVERY_2_H_SCOPE
+    ) or any(
+        record["mode"]
+        != (
+            "100755"
+            if record["path"] == "src/data/prepare_commit_artifacts.py"
+            else "100644"
+        )
+        for record in h3_scope
+    ):
+        _fail("H3 recovery-2 scope is not exact15")
+    if (
+        tuple(record["path"] for record in p3_scope)
+        != EXPECTED_RECOVERY_2_P_SCOPE_PATHS
+        or any(
+            record["status"] != "A" or record["mode"] != "100644"
+            for record in p3_scope
+        )
+    ):
+        _fail("P3 recovery-2 evidence scope is not exact7A")
+    _validate_receipt_binding(
+        result.get("attempt_1_failure_receipt"),
+        path=ATTEMPT_1_FAILURE_RECEIPT_PATH,
+        validator=_validate_attempt_1_failure_receipt,
+        label="attempt-1",
+    )
+    _validate_receipt_binding(
+        result.get("attempt_2_failure_receipt"),
+        path=ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        validator=_validate_attempt_2_failure_receipt,
+        label="attempt-2",
+    )
+    if result.get("outcome_access_log_prefix") != {
+        "path": OUTCOME_ACCESS_LOG_PATH,
+        "bytes": ATTEMPT_2_ACCESS_LOG_BYTES,
+        "sha256": ATTEMPT_2_ACCESS_LOG_SHA256,
+        "record_count": 2,
+        "first_execution_id": ATTEMPT_1_EXECUTION_ID,
+        "second_execution_id": ATTEMPT_2_EXECUTION_ID,
+    }:
+        _fail("recovery-2 activation access-log prefix drifted")
+    if not isinstance(result.get("dvc_policy"), Mapping):
+        _fail("recovery-2 activation DVC policy is absent")
+    _validate_phase3_overlay_deep_validation(
+        result["phase3_overlay_deep_validation"],
+        HISTORICAL_H1_COMMIT,
+    )
+    _validate_recovery_2_source_records(
+        result.get("recovery_2_source_records")
+    )
+    return result
+
+
 def _require_empty_access_log(repo_root):
     payload, metadata = _read_regular_relative(
         repo_root,
@@ -3573,6 +4178,240 @@ def _validate_historical_guard_policy(repo_root, receipt):
         "state": "present_matches_origin_observation",
         "receipt_is_authority": True,
     }
+
+
+def _attempt_2_access_record():
+    return {
+        "attempt_ordinal": 2,
+        "event": "sealed_outcome_context_reopened_under_recovery_authority",
+        "execution_id": ATTEMPT_2_EXECUTION_ID,
+        "experiment_id": EXPERIMENT_ID,
+        "first_attempt": False,
+        "gate": GATE,
+        "one_shot_consumed": True,
+        "outcome_access_authorized": True,
+        "prior_execution_id": ATTEMPT_1_EXECUTION_ID,
+        "recovery_authorization_consumed": True,
+        "retry_authorized": False,
+        "schema_version": RECOVERY_ACCESS_LOG_SCHEMA_VERSION,
+    }
+
+
+def _attempt_2_access_log_payload():
+    first = _attempt_1_access_log_payload()
+    second = _canonical_json_bytes(_attempt_2_access_record())
+    payload = first + second
+    if (
+        len(second) != ATTEMPT_2_ACCESS_RECORD_BYTES
+        or _sha256_bytes(second) != ATTEMPT_2_ACCESS_RECORD_SHA256
+        or len(payload) != ATTEMPT_2_ACCESS_LOG_BYTES
+        or _sha256_bytes(payload) != ATTEMPT_2_ACCESS_LOG_SHA256
+    ):
+        _fail("sealed attempt-2 access-log constants drifted")
+    return payload
+
+
+def _require_attempt_2_access_log_prefix(repo_root):
+    payload, metadata = _read_regular_relative(
+        repo_root,
+        OUTCOME_ACCESS_LOG_PATH,
+        0o644,
+        1,
+    )
+    expected = _attempt_2_access_log_payload()
+    if payload != expected or metadata.st_size != len(expected):
+        _fail("outcome access log is not the exact consumed attempt-2 prefix")
+    return {
+        "path": OUTCOME_ACCESS_LOG_PATH,
+        "bytes": len(payload),
+        "sha256": _sha256_bytes(payload),
+        "record_count": 2,
+        "first_execution_id": ATTEMPT_1_EXECUTION_ID,
+        "second_execution_id": ATTEMPT_2_EXECUTION_ID,
+    }
+
+
+def _guard_observation(
+    *, path, device, inode
+):
+    return {
+        "device": device,
+        "file_type": "regular_file",
+        "inode": inode,
+        "mode": 0o600,
+        "nlink": 1,
+        "ownership_identity_recoverable": False,
+        "path": path,
+        "sha256": _sha256_bytes(b""),
+        "size": 0,
+    }
+
+
+def _validate_attempt_2_failure_receipt(value):
+    from collections.abc import Mapping
+
+    if not isinstance(value, Mapping) or set(value) != {
+        "access_log",
+        "activation",
+        "attempt_ordinal",
+        "execution_id",
+        "experiment_id",
+        "failure",
+        "gate",
+        "guard_observations",
+        "historical_chain",
+        "publication",
+        "schema_version",
+    }:
+        _fail("attempt-2 failure receipt keys drifted")
+    receipt = dict(value)
+    expected_scalars = {
+        "schema_version": "closure_e0_u_attempt_2_failure_v1",
+        "experiment_id": EXPERIMENT_ID,
+        "gate": GATE,
+        "attempt_ordinal": 2,
+        "execution_id": ATTEMPT_2_EXECUTION_ID,
+    }
+    for key, expected in expected_scalars.items():
+        if type(receipt.get(key)) is not type(expected) or receipt.get(key) != expected:
+            _fail("attempt-2 failure receipt scalar drifted: " + key)
+    if receipt.get("historical_chain") != {
+        "base_r_commit": BASE_R_COMMIT,
+        "h1_commit": HISTORICAL_H1_COMMIT,
+        "h2_commit": HISTORICAL_H2_COMMIT,
+        "p1_commit": HISTORICAL_P1_COMMIT,
+        "p2_commit": HISTORICAL_P2_COMMIT,
+        "u1_commit": HISTORICAL_U1_COMMIT,
+        "u2_commit": HISTORICAL_U2_COMMIT,
+    }:
+        _fail("attempt-2 historical chain drifted")
+    if receipt.get("activation") != {
+        "path": RECOVERY_ACTIVATION_MANIFEST_PATH,
+        "bytes": ATTEMPT_2_ACTIVATION_BYTES,
+        "sha256": ATTEMPT_2_ACTIVATION_SHA256,
+        "git_blob_oid": ATTEMPT_2_ACTIVATION_GIT_OID,
+    }:
+        _fail("attempt-2 activation receipt drifted")
+    if receipt.get("access_log") != {
+        "path": OUTCOME_ACCESS_LOG_PATH,
+        "bytes": ATTEMPT_2_ACCESS_LOG_BYTES,
+        "record_count": 2,
+        "sha256": ATTEMPT_2_ACCESS_LOG_SHA256,
+        "attempt_1_prefix": {
+            "bytes": ATTEMPT_1_ACCESS_LOG_BYTES,
+            "sha256": ATTEMPT_1_ACCESS_LOG_SHA256,
+        },
+        "record_2": {
+            "bytes": ATTEMPT_2_ACCESS_RECORD_BYTES,
+            "sha256": ATTEMPT_2_ACCESS_RECORD_SHA256,
+        },
+    }:
+        _fail("attempt-2 access-log receipt drifted")
+    if receipt.get("guard_observations") != [
+        _guard_observation(
+            path=RUN_GUARD_PATH,
+            device=ATTEMPT_1_GUARD_DEVICE,
+            inode=ATTEMPT_1_GUARD_INODE,
+        ),
+        _guard_observation(
+            path=RECOVERY_RUN_GUARD_PATH,
+            device=ATTEMPT_2_GUARD_DEVICE,
+            inode=ATTEMPT_2_GUARD_INODE,
+        ),
+    ]:
+        _fail("attempt-2 stale-guard observations drifted")
+    if receipt.get("failure") != {
+        "component_id": "E4_trophic_evaluation",
+        "component_metrics_computed": False,
+        "diagnosis_outcome_free": True,
+        "diagnosed_source_phase": (
+            "outcome_free_synthetic_e1_to_e4_interface_reproduction"
+        ),
+        "error": "E0-U component execution failed: E4_trophic_evaluation",
+        "outcomes_opened": True,
+        "process_exit_code": 2,
+        "publication_started": False,
+        "result_constructed": False,
+        "root_cause": (
+            "E1 trophic prediction column order differed from the exact E4 "
+            "prediction input contract"
+        ),
+    }:
+        _fail("attempt-2 failure diagnosis drifted")
+    if receipt.get("publication") != {
+        "expected_output_count": EXPECTED_ARTIFACT_COUNT,
+        "published_output_count": 0,
+    }:
+        _fail("attempt-2 publication observation drifted")
+    return receipt
+
+
+def _load_attempt_2_failure_receipt(repo_root, *, h3_commit=None):
+    import json
+
+    payload, metadata = _read_regular_relative(
+        repo_root,
+        ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        0o644,
+        1,
+    )
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise RuntimeError(
+            "Closure E0-U attempt-2 failure receipt is not JSON"
+        ) from exc
+    if not isinstance(raw, dict) or _canonical_json_bytes(raw) != payload:
+        _fail("attempt-2 failure receipt is not canonical")
+    receipt = _validate_attempt_2_failure_receipt(raw)
+    if metadata.st_size != len(payload):
+        _fail("attempt-2 failure receipt size drifted")
+    if h3_commit is not None:
+        blob = _git_blob_record(repo_root, h3_commit, ATTEMPT_2_FAILURE_RECEIPT_PATH)
+        if blob["payload"] != payload or blob["mode"] != 0o644:
+            _fail("attempt-2 failure receipt differs from H3 Git")
+    return receipt, {
+        "path": ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        "bytes": len(payload),
+        "sha256": _sha256_bytes(payload),
+    }
+
+
+def _validate_historical_recovery_guard_policy(repo_root, receipt):
+    import os
+    import stat
+
+    states = []
+    for observation in receipt["guard_observations"]:
+        path = observation["path"]
+        try:
+            metadata = os.lstat(repo_root / path)
+        except FileNotFoundError:
+            states.append(
+                {
+                    "path": path,
+                    "state": "absent_fresh_clone_compatible",
+                    "receipt_is_authority": True,
+                }
+            )
+            continue
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or stat.S_IMODE(metadata.st_mode) != observation["mode"]
+            or metadata.st_nlink != observation["nlink"]
+            or metadata.st_size != observation["size"]
+            or (metadata.st_dev, metadata.st_ino)
+            != (observation["device"], observation["inode"])
+        ):
+            _fail("present historical guard differs from sealed observation: " + path)
+        states.append(
+            {
+                "path": path,
+                "state": "present_matches_origin_observation",
+                "receipt_is_authority": True,
+            }
+        )
+    return states
 
 
 def _require_outputs_absent(repo_root, expected_paths):
@@ -3817,7 +4656,120 @@ def require_closure_e0_u_recovery_authority(verify_remote=True, repo_root=None):
         _fail("repository root changed during recovery authority require")
     _STATE["required"] = True
     _STATE["recovery"] = True
+    _STATE["recovery_attempt"] = 1
     _STATE["run_guard_path"] = RECOVERY_RUN_GUARD_PATH
+    _STATE["repo_root"] = root
+    _STATE["repo_root_identity"] = root_identity
+    _STATE["manifest"] = dict(manifest)
+    _STATE["public_authority"] = dict(result)
+    _STATE["contract_sha256"] = manifest["sealed_batch_contract_sha256"]
+    _STATE["execution_id"] = manifest["execution_id"]
+    return result
+
+
+def require_closure_e0_u_recovery_2_authority(verify_remote=True, repo_root=None):
+    """Validate published recovery-2 U3 without reusing earlier authority."""
+
+    if type(verify_remote) is not bool or repo_root is None:
+        _fail("recovery-2 authority arguments are malformed")
+    if _STATE["required"] or _STATE["opened"] or _STATE["published"]:
+        _fail("recovery-2 authority require may run only once per process")
+    root = _resolved_repo_root(repo_root)
+    root_identity = _repository_root_identity(root)
+    git_record = _absolute_executable_record(
+        GIT_EXECUTABLE_PATH,
+        GIT_EXECUTABLE_SHA256,
+    )
+    env_record = _absolute_executable_record(
+        ENV_EXECUTABLE_PATH,
+        ENV_EXECUTABLE_SHA256,
+    )
+    payload, _ = _read_regular_relative(
+        root,
+        RECOVERY_2_ACTIVATION_MANIFEST_PATH,
+        0o644,
+        1,
+    )
+    import json
+
+    try:
+        raw = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise RuntimeError(
+            "Closure E0-U recovery-2 activation cannot be decoded"
+        ) from exc
+    if not isinstance(raw, dict) or _canonical_json_bytes(raw) != payload:
+        _fail("recovery-2 activation is not canonical JSON")
+    manifest = _validate_recovery_2_activation_without_contract(raw)
+    head, h3_commit, p3_commit = _validate_recovery_2_git_topology(
+        root,
+        manifest,
+        verify_remote,
+    )
+    bindings = _validate_recovery_2_manifest_bindings(
+        root,
+        head,
+        h3_commit,
+        manifest,
+    )
+    overlay_record = _validate_phase3_overlay_bundle(
+        root,
+        HISTORICAL_H1_COMMIT,
+        HISTORICAL_P1_COMMIT,
+    )
+    _validate_phase3_overlay_deep_validation(
+        manifest["phase3_overlay_deep_validation"],
+        HISTORICAL_H1_COMMIT,
+        overlay_record,
+        root,
+    )
+    _require_attempt_2_access_log_prefix(root)
+    if _relative_leaf_state(root, RECOVERY_2_RUN_GUARD_PATH) is not None:
+        _fail("recovery-2 run guard already exists")
+    authority_source = _git_bound_authority_source_record(
+        root,
+        head,
+        verify_remote,
+    )
+    if _absolute_executable_record(
+        GIT_EXECUTABLE_PATH,
+        GIT_EXECUTABLE_SHA256,
+    ) != git_record or _absolute_executable_record(
+        ENV_EXECUTABLE_PATH,
+        ENV_EXECUTABLE_SHA256,
+    ) != env_record:
+        _fail("sealed executable changed during recovery-2 validation")
+    result = {
+        "gate": GATE,
+        "historical_e0_m_commit": BASE_R_COMMIT,
+        "phase3_code_commit": h3_commit,
+        "phase3_evidence_commit": p3_commit,
+        "phase3_activation_commit": head,
+        "effective_authority": True,
+        "sealed_batch_execution_authorized": True,
+        "e0_m_authorized": True,
+        "e0_u_authorized": True,
+        "evaluation_authorized": True,
+        "outcome_access_authorized": True,
+        "writes_performed": False,
+        "sealed_batch_command": RECOVERY_2_SEALED_BATCH_COMMAND,
+        "sealed_authority_source_record": authority_source,
+        "sealed_runner_source_record": bindings[0],
+        "sealed_context_builder_source_record": bindings[1],
+        "sealed_component_source_records": bindings[2],
+        "sealed_support_source_records": bindings[3],
+        "sealed_runtime_environment_record": bindings[4],
+        "sealed_git_executable_record": git_record,
+        "sealed_env_executable_record": env_record,
+    }
+    if set(result) != set(AUTHORITY_RESULT_KEYS):
+        _fail("recovery-2 authority result keys drifted")
+    if _repository_root_identity(root) != root_identity:
+        _fail("repository root changed during recovery-2 authority require")
+    _STATE["required"] = True
+    _STATE["recovery"] = True
+    _STATE["recovery_attempt"] = 2
+    _STATE["run_guard_path"] = RECOVERY_2_RUN_GUARD_PATH
     _STATE["repo_root"] = root
     _STATE["repo_root_identity"] = root_identity
     _STATE["manifest"] = dict(manifest)
@@ -3829,7 +4781,11 @@ def require_closure_e0_u_recovery_authority(verify_remote=True, repo_root=None):
 
 def _active_run_guard_path():
     path = _STATE.get("run_guard_path")
-    if path not in (RUN_GUARD_PATH, RECOVERY_RUN_GUARD_PATH):
+    if path not in (
+        RUN_GUARD_PATH,
+        RECOVERY_RUN_GUARD_PATH,
+        RECOVERY_2_RUN_GUARD_PATH,
+    ):
         _fail("active run-guard path is malformed")
     return path
 
@@ -3839,7 +4795,11 @@ def _create_guard(repo_root, expected_root_identity, guard_path=None):
     import stat
 
     selected_guard_path = RUN_GUARD_PATH if guard_path is None else guard_path
-    if selected_guard_path not in (RUN_GUARD_PATH, RECOVERY_RUN_GUARD_PATH):
+    if selected_guard_path not in (
+        RUN_GUARD_PATH,
+        RECOVERY_RUN_GUARD_PATH,
+        RECOVERY_2_RUN_GUARD_PATH,
+    ):
         _fail("requested run-guard path is not registered")
     owned_directories = []
     parent_anchor = _open_parent_directory_anchor(
@@ -4078,13 +5038,47 @@ def _recovery_access_log_payload(execution_id):
     )
 
 
-def _append_recovery_access_record(repo_root, execution_id):
+def _recovery_2_access_record(execution_id):
+    return {
+        "attempt_ordinal": 3,
+        "event": "sealed_outcome_context_reopened_under_recovery_2_authority",
+        "execution_id": execution_id,
+        "experiment_id": EXPERIMENT_ID,
+        "first_attempt": False,
+        "gate": GATE,
+        "one_shot_consumed": True,
+        "outcome_access_authorized": True,
+        "prior_execution_id": ATTEMPT_2_EXECUTION_ID,
+        "recovery_2_authorization_consumed": True,
+        "retry_authorized": False,
+        "schema_version": RECOVERY_2_ACCESS_LOG_SCHEMA_VERSION,
+    }
+
+
+def _recovery_2_access_log_payload(execution_id):
+    return _attempt_2_access_log_payload() + _canonical_json_bytes(
+        _recovery_2_access_record(execution_id)
+    )
+
+
+def _append_recovery_access_record(
+    repo_root,
+    execution_id,
+    *,
+    recovery_attempt=1,
+):
     import os
     import stat
     from typing import cast
 
-    prefix = _attempt_1_access_log_payload()
-    record = _recovery_access_record(execution_id)
+    if recovery_attempt == 1:
+        prefix = _attempt_1_access_log_payload()
+        record = _recovery_access_record(execution_id)
+    elif recovery_attempt == 2:
+        prefix = _attempt_2_access_log_payload()
+        record = _recovery_2_access_record(execution_id)
+    else:
+        _fail("recovery access-log append mode drifted")
     appended_payload = _canonical_json_bytes(record)
     expected_payload = prefix + appended_payload
     guard_anchor = cast(dict, _STATE["guard_parent_anchor"])
@@ -4127,7 +5121,7 @@ def _append_recovery_access_record(repo_root, execution_id):
             or (before.st_dev, before.st_ino, before.st_size, before.st_mode)
             != (opened.st_dev, opened.st_ino, opened.st_size, opened.st_mode)
         ):
-            _fail("outcome access log is not the exact attempt-1 prefix")
+            _fail("outcome access log is not the exact prior-attempt prefix")
         os.lseek(descriptor, 0, os.SEEK_SET)
         observed_prefix = b""
         while len(observed_prefix) < len(prefix):
@@ -4136,7 +5130,7 @@ def _append_recovery_access_record(repo_root, execution_id):
                 break
             observed_prefix += chunk
         if observed_prefix != prefix:
-            _fail("attempt-1 log bytes drifted before recovery append")
+            _fail("prior-attempt log bytes drifted before recovery append")
         position = 0
         while position < len(appended_payload):
             written = os.write(descriptor, appended_payload[position:])
@@ -4360,8 +5354,32 @@ def _require_exact_recovery_access_records(repo_root):
     return payload
 
 
+def _require_exact_recovery_2_access_records(repo_root):
+    from typing import cast
+
+    expected = _recovery_2_access_log_payload(_STATE["execution_id"])
+    payload, metadata = _read_regular_relative(
+        repo_root,
+        OUTCOME_ACCESS_LOG_PATH,
+        0o644,
+        1,
+    )
+    identity = cast(dict, _STATE["access_log_identity"])
+    if (
+        payload != expected
+        or metadata.st_size != len(expected)
+        or not isinstance(identity, dict)
+        or (metadata.st_dev, metadata.st_ino)
+        != (identity.get("device"), identity.get("inode"))
+    ):
+        _fail("recovery-2 access-log records or inode drifted")
+    return payload
+
+
 def _require_active_access_record(repo_root):
-    if _STATE.get("recovery") is True:
+    if _STATE.get("recovery_attempt") == 2:
+        return _require_exact_recovery_2_access_records(repo_root)
+    if _STATE.get("recovery_attempt") == 1:
         return _require_exact_recovery_access_records(repo_root)
     return _require_exact_access_record(repo_root)
 
@@ -4438,6 +5456,11 @@ def open_sealed_batch_context(
 
     if (
         not _STATE["required"]
+        or _STATE.get(
+            "recovery_attempt",
+            1 if _STATE.get("recovery") else 0,
+        )
+        != 0
         or _STATE["opened"]
         or _STATE["published"]
         or _STATE["failed"]
@@ -4549,7 +5572,11 @@ def open_sealed_recovery_batch_context(
 
     if (
         not _STATE["required"]
-        or _STATE.get("recovery") is not True
+        or _STATE.get(
+            "recovery_attempt",
+            1 if _STATE.get("recovery") else 0,
+        )
+        != 1
         or _STATE["opened"]
         or _STATE["published"]
         or _STATE["failed"]
@@ -4648,6 +5675,124 @@ def open_sealed_recovery_batch_context(
     if not isinstance(raw, Mapping) or raw.get("execution_id") != execution_id:
         _STATE["failed"] = True
         _fail("recovery context builder returned a malformed context")
+    return dict(raw)
+
+
+def open_sealed_recovery_2_batch_context(
+    authority,
+    sealed_batch_contract,
+    repo_root,
+    context_builder,
+):
+    """Consume attempt three under U3 while preserving both prior attempts."""
+
+    from collections.abc import Mapping
+    from typing import cast
+
+    if (
+        not _STATE["required"]
+        or _STATE.get("recovery_attempt") != 2
+        or _STATE["opened"]
+        or _STATE["published"]
+        or _STATE["failed"]
+        or not callable(context_builder)
+    ):
+        _fail(
+            "recovery-2 context may be opened exactly once after recovery-2 require"
+        )
+    _public_authority_matches(authority)
+    root = _resolved_repo_root(repo_root)
+    if (
+        root != _STATE["repo_root"]
+        or _repository_root_identity(root) != _STATE["repo_root_identity"]
+    ):
+        _fail("repository root changed after recovery-2 authority require")
+    layout = _contract_matches(sealed_batch_contract)
+    manifest = cast(dict, _STATE["manifest"])
+    if manifest["expected_artifact_paths_sha256"] != _sha256_bytes(
+        _canonical_json_bytes(list(layout["expected_paths"]))
+    ) or manifest["expected_publication_order_sha256"] != _sha256_bytes(
+        _canonical_json_bytes(list(layout["publication_order"]))
+    ):
+        _fail("recovery-2 activation does not bind the live exact52 layout")
+    _validate_dvc_policy(
+        manifest["dvc_policy"],
+        layout["expected_paths"],
+        layout["formats_by_path"],
+    )
+    _require_attempt_2_access_log_prefix(root)
+    _require_outputs_absent(root, layout["expected_paths"])
+    receipt, _ = _load_attempt_2_failure_receipt(root)
+    _validate_historical_recovery_guard_policy(root, receipt)
+    if _relative_leaf_state(root, RECOVERY_2_RUN_GUARD_PATH) is not None:
+        _fail("E0-U recovery-2 run guard already exists")
+    try:
+        descriptor, guard_record, owned_directories, guard_anchor = _create_guard(
+            root,
+            _STATE["repo_root_identity"],
+            RECOVERY_2_RUN_GUARD_PATH,
+        )
+    except BaseException:
+        _STATE["failed"] = True
+        raise
+    _STATE["guard_fd"] = descriptor
+    _STATE["guard_record"] = guard_record
+    _STATE["guard_parent_anchor"] = guard_anchor
+    _STATE["guard_owned_directories"] = owned_directories
+    _STATE["opened"] = True
+    _STATE["expected_artifact_paths"] = layout["expected_paths"]
+    _STATE["expected_publication_order"] = layout["publication_order"]
+    _STATE["manifest_last_paths"] = layout["manifest_by_stage"]
+    _STATE["stage_count"] = len(layout["stage_ids"])
+    execution_id = _STATE["execution_id"]
+    try:
+        _, log_identity, log_lease = _append_recovery_access_record(
+            root,
+            execution_id,
+            recovery_attempt=2,
+        )
+    except BaseException as log_error:
+        _STATE["failed"] = True
+        try:
+            _release_owned_guard(True)
+        except BaseException as cleanup_error:
+            raise log_error from cleanup_error
+        raise
+    _STATE["access_log_identity"] = log_identity
+    _STATE["access_log_lease"] = log_lease
+    try:
+        _recapture_access_log_lease(
+            log_lease,
+            "before recovery-2 context materialization",
+        )
+        _recapture_parent_directory_anchor(
+            _STATE["guard_parent_anchor"],
+            "recovery-2 run guard before context materialization",
+        )
+        raw = context_builder(
+            authority=dict(authority),
+            sealed_batch_contract=dict(sealed_batch_contract),
+            repo_root=root,
+            execution_id=execution_id,
+        )
+        _recapture_access_log_lease(
+            log_lease,
+            "after recovery-2 context materialization",
+        )
+        _recapture_parent_directory_anchor(
+            _STATE["guard_parent_anchor"],
+            "recovery-2 run guard after context materialization",
+        )
+    except BaseException:
+        _STATE["failed"] = True
+        _close_access_log_lease(log_lease)
+        _STATE["access_log_lease"] = None
+        raise
+    _close_access_log_lease(log_lease)
+    _STATE["access_log_lease"] = None
+    if not isinstance(raw, Mapping) or raw.get("execution_id") != execution_id:
+        _STATE["failed"] = True
+        _fail("recovery-2 context builder returned a malformed context")
     return dict(raw)
 
 

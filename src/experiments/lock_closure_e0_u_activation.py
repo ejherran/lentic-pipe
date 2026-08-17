@@ -28,6 +28,9 @@ BASE_R_COMMIT = "4c92ed7249a91b7dd541fd22dde68b61574556b2"
 HISTORICAL_H1_COMMIT = "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
 HISTORICAL_P1_COMMIT = "caaf2d6d0a00a31febeed89b54ea078b60d7f92a"
 HISTORICAL_U1_COMMIT = "4aecf19cd913b82a6a3d26669f09684e67efda8a"
+HISTORICAL_H2_COMMIT = "b768c5b1251bde50b01f0c066be07fb931924537"
+HISTORICAL_P2_COMMIT = "f0d203c75ba6943b6817339d651ece5cbccec492"
+HISTORICAL_U2_COMMIT = "a4f39173ec14aa7cd80d0fd38fb720f98cf88159"
 LIVE_REMOTE_URL = "https://github.com/ejherran/lentic-pipe.git"
 CONFIGURED_ORIGIN_URL = "git@github.com:ejherran/lentic-pipe.git"
 ACTIVATION_PATH = Path(
@@ -36,8 +39,14 @@ ACTIVATION_PATH = Path(
 RECOVERY_ACTIVATION_PATH = Path(
     "reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json"
 )
+RECOVERY_2_ACTIVATION_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json"
+)
 ATTEMPT_1_FAILURE_RECEIPT_PATH = Path(
     "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"
+)
+ATTEMPT_2_FAILURE_RECEIPT_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json"
 )
 RECOVERY_ACTIVATION_SCHEMA_PATH = Path(
     "configs/closure_v1/closure_e0_u_recovery_activation.schema.json"
@@ -47,6 +56,15 @@ RECOVERY_DOCUMENT_PATH = Path(
 )
 RECOVERY_COMMAND_PATH = Path(
     "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt"
+)
+RECOVERY_2_ACTIVATION_SCHEMA_PATH = Path(
+    "configs/closure_v1/closure_e0_u_recovery_2_activation.schema.json"
+)
+RECOVERY_2_DOCUMENT_PATH = Path(
+    "docs/closure_v1/E0_U_PHASE3_RECOVERY_2_BATCH.md"
+)
+RECOVERY_2_COMMAND_PATH = Path(
+    "reports/closure_v1/00_protocol/locked_recovery_2_batch_command.txt"
 )
 ACCESS_LOG_PATH = Path("reports/closure_v1/00_protocol/outcome_access_log.jsonl")
 RUNNER_PATH = Path("src/experiments/run_closure_benchmark.py")
@@ -88,6 +106,24 @@ RECOVERY_SEALED_BATCH_COMMAND = (
     "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B "
     "src/experiments/run_closure_benchmark.py --execute-sealed-recovery-batch\n"
 )
+RECOVERY_2_GENERATION_COMMAND = (
+    "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B "
+    "src/experiments/lock_closure_e0_u_activation.py --generate-recovery-2\n"
+)
+RECOVERY_2_CHECK_ONLY_COMMAND = (
+    "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B "
+    "src/experiments/lock_closure_e0_u_activation.py --check-recovery-2\n"
+)
+RECOVERY_2_VALIDATE_COMMAND = (
+    "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B "
+    "src/experiments/lock_closure_e0_u_activation.py "
+    "--validate-published-recovery-2\n"
+)
+RECOVERY_2_SEALED_BATCH_COMMAND = (
+    "/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B "
+    "src/experiments/run_closure_benchmark.py --execute-sealed-recovery-2-batch\n"
+)
+RECOVERY_ATTEMPT_2 = "recovery-attempt-2"
 EXPECTED_P_SCOPE_PATHS = (
     "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet.dvc",
     "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz.dvc",
@@ -131,6 +167,38 @@ EXPECTED_RECOVERY_P_SCOPE_PATHS = tuple(
         "test_report.md",
     )
 )
+EXPECTED_RECOVERY_2_H_SCOPE = (
+    ("configs/closure_v1/closure_e0_u_recovery_2_activation.schema.json", "A"),
+    ("docs/closure_v1/E0_U_PHASE3_RECOVERY_2_BATCH.md", "A"),
+    ("reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json", "A"),
+    ("reports/closure_v1/00_protocol/locked_recovery_2_batch_command.txt", "A"),
+    ("reports/closure_v1/00_protocol/outcome_access_log.jsonl", "M"),
+    ("src/data/prepare_commit_artifacts.py", "M"),
+    ("src/experiments/build_closure_e10_source_evidence.py", "M"),
+    ("src/experiments/closure_e0_u_authority.py", "M"),
+    ("src/experiments/lock_closure_e0_u_activation.py", "M"),
+    ("src/experiments/run_closure_benchmark.py", "M"),
+    ("tests/test_build_closure_e10_source_evidence.py", "M"),
+    ("tests/test_closure_e0_u_activation_lock.py", "M"),
+    ("tests/test_closure_e0_u_authority.py", "M"),
+    ("tests/test_closure_phase3_e4_e7_contracts.py", "M"),
+    ("tests/test_prepare_commit_artifacts.py", "M"),
+)
+RECOVERY_2_E10_SOURCE_DIRECTORY = (
+    "reports/closure_v1/00_protocol/software_evidence_source_recovery_2"
+)
+EXPECTED_RECOVERY_2_P_SCOPE_PATHS = tuple(
+    RECOVERY_2_E10_SOURCE_DIRECTORY + "/" + name
+    for name in (
+        "end_to_end_report.md",
+        "environment.json",
+        "openapi.json",
+        "openapi_contract_report.md",
+        "public_tests.xml",
+        "software_evidence_source_manifest.json",
+        "test_report.md",
+    )
+)
 ATTEMPT_1_EXECUTION_ID = (
     "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
 )
@@ -143,6 +211,22 @@ ATTEMPT_1_ACTIVATION_SHA256 = (
     "8f04bd4429717be662b6166c913fb1d15adaa69b1c0ba147d75162eb0a39bc94"
 )
 ATTEMPT_1_ACTIVATION_GIT_OID = "32d90942b8a683aebacf44ca5fe6c2b12d1a3c7c"
+ATTEMPT_2_EXECUTION_ID = (
+    "closure-v1-e0-u-recovery-1-f0d203c75ba6943b-8efea2943fa7feb2"
+)
+ATTEMPT_2_ACCESS_LOG_BYTES = 738
+ATTEMPT_2_ACCESS_LOG_SHA256 = (
+    "0645151a995bb61e3cef170b6a2e0563ec9b28e740ee01075505cd0c27fed1bf"
+)
+ATTEMPT_2_ACCESS_RECORD_BYTES = 482
+ATTEMPT_2_ACCESS_RECORD_SHA256 = (
+    "781043a890d85ba2c1ac86a34397b22478f29ce89579285059fb35c3ffc3dd23"
+)
+ATTEMPT_2_ACTIVATION_BYTES = 33393
+ATTEMPT_2_ACTIVATION_SHA256 = (
+    "4eaa82b5584ad8b8518acd6b70cbb7a25cf24bfae33abf4802e04ac865335f6f"
+)
+ATTEMPT_2_ACTIVATION_GIT_OID = "9f8c5199349935d804590b079bfd0588458ada4a"
 PHASE3_OVERLAY_MANIFEST_PATH = (
     "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
 )
@@ -886,6 +970,34 @@ def _attempt_1_log_payload() -> bytes:
     return payload
 
 
+def _attempt_2_log_payload() -> bytes:
+    second = _canonical_json_bytes(
+        {
+            "attempt_ordinal": 2,
+            "event": "sealed_outcome_context_reopened_under_recovery_authority",
+            "execution_id": ATTEMPT_2_EXECUTION_ID,
+            "experiment_id": "closure_v1",
+            "first_attempt": False,
+            "gate": "E0-U",
+            "one_shot_consumed": True,
+            "outcome_access_authorized": True,
+            "prior_execution_id": ATTEMPT_1_EXECUTION_ID,
+            "recovery_authorization_consumed": True,
+            "retry_authorized": False,
+            "schema_version": "closure_e0_u_recovery_access_log_v1",
+        }
+    )
+    payload = _attempt_1_log_payload() + second
+    if (
+        len(second) != ATTEMPT_2_ACCESS_RECORD_BYTES
+        or _sha256_bytes(second) != ATTEMPT_2_ACCESS_RECORD_SHA256
+        or len(payload) != ATTEMPT_2_ACCESS_LOG_BYTES
+        or _sha256_bytes(payload) != ATTEMPT_2_ACCESS_LOG_SHA256
+    ):
+        raise ActivationLockError("attempt-2 access-log constants drifted")
+    return payload
+
+
 def _recovery_topology(
     *,
     repo_root: Path,
@@ -1028,6 +1140,202 @@ def _recovery_topology(
     }
 
 
+def _recovery_2_topology(
+    *,
+    repo_root: Path,
+    published_u: bool,
+    verify_remote: bool,
+    allow_recovery_activation_candidate: bool = False,
+) -> dict[str, Any]:
+    head = _git_oid(repo_root, "HEAD^{commit}")
+    refs = {
+        _git_oid(repo_root, "refs/heads/main^{commit}"),
+        _git_oid(repo_root, "refs/remotes/origin/main^{commit}"),
+        _git_oid(repo_root, "refs/remotes/origin/HEAD^{commit}"),
+    }
+    if refs != {head}:
+        raise ActivationLockError("recovery-2 local Git refs are not aligned")
+    offsets = (
+        {
+            "u3": 0,
+            "p3": 1,
+            "h3": 2,
+            "u2": 3,
+            "p2": 4,
+            "h2": 5,
+            "u1": 6,
+            "p1": 7,
+            "h1": 8,
+            "r": 9,
+        }
+        if published_u
+        else {
+            "p3": 0,
+            "h3": 1,
+            "u2": 2,
+            "p2": 3,
+            "h2": 4,
+            "u1": 5,
+            "p1": 6,
+            "h1": 7,
+            "r": 8,
+        }
+    )
+    commits = {
+        key: (
+            head
+            if offset == 0
+            else _git_oid(repo_root, f"HEAD~{offset}^{{commit}}")
+        )
+        for key, offset in offsets.items()
+    }
+    u3_commit = commits.get("u3")
+    if (
+        commits["r"] != BASE_R_COMMIT
+        or commits["h1"] != HISTORICAL_H1_COMMIT
+        or commits["p1"] != HISTORICAL_P1_COMMIT
+        or commits["u1"] != HISTORICAL_U1_COMMIT
+        or commits["h2"] != HISTORICAL_H2_COMMIT
+        or commits["p2"] != HISTORICAL_P2_COMMIT
+        or commits["u2"] != HISTORICAL_U2_COMMIT
+        or _git_text(repo_root, ("symbolic-ref", "--quiet", "HEAD")).strip()
+        != "refs/heads/main"
+        or _git_text(
+            repo_root,
+            ("symbolic-ref", "--quiet", "refs/remotes/origin/HEAD"),
+        ).strip()
+        != "refs/remotes/origin/main"
+        or _git_text(repo_root, ("remote", "get-url", "origin")).strip()
+        != CONFIGURED_ORIGIN_URL
+    ):
+        raise ActivationLockError(
+            "recovery-2 R-H1-P1-U1-H2-P2-U2-H3-P3-U3 topology drifted"
+        )
+    chain = (
+        (commits["h1"], commits["r"], "historical H1"),
+        (commits["p1"], commits["h1"], "historical P1"),
+        (commits["u1"], commits["p1"], "historical U1"),
+        (commits["h2"], commits["u1"], "historical H2"),
+        (commits["p2"], commits["h2"], "historical P2"),
+        (commits["u2"], commits["p2"], "historical U2"),
+        (commits["h3"], commits["u2"], "recovery-2 H3"),
+        (commits["p3"], commits["h3"], "recovery-2 P3"),
+    )
+    for child, parent, label in chain:
+        _require_direct_parent(
+            repo_root,
+            child=child,
+            expected_parent=parent,
+            label=label,
+        )
+    if u3_commit is not None:
+        _require_direct_parent(
+            repo_root,
+            child=u3_commit,
+            expected_parent=commits["p3"],
+            label="recovery-2 U3",
+        )
+    if allow_recovery_activation_candidate:
+        status = _git(
+            repo_root,
+            ("status", "--porcelain=v1", "-z", "--untracked-files=all"),
+        )
+        path = RECOVERY_2_ACTIVATION_PATH.as_posix().encode("utf-8") + b"\0"
+        if status not in (b"A  " + path, b"?? " + path):
+            raise ActivationLockError(
+                "repository has changes beyond the recovery-2 activation candidate"
+            )
+    else:
+        _require_clean_repository(repo_root)
+    if verify_remote:
+        _verify_live_remote(repo_root, head)
+    h2_scope = _git_diff_scope(repo_root, commits["u1"], commits["h2"])
+    p2_scope = _git_diff_scope(repo_root, commits["h2"], commits["p2"])
+    h3_scope = _git_diff_scope(repo_root, commits["u2"], commits["h3"])
+    p3_scope = _git_diff_scope(repo_root, commits["h3"], commits["p3"])
+    if tuple((record["path"], record["status"]) for record in h2_scope) != (
+        EXPECTED_RECOVERY_H_SCOPE
+    ):
+        raise ActivationLockError("historical recovery H2 is not exact14")
+    if (
+        tuple(record["path"] for record in p2_scope)
+        != EXPECTED_RECOVERY_P_SCOPE_PATHS
+        or any(record["status"] != "A" for record in p2_scope)
+    ):
+        raise ActivationLockError("historical recovery P2 is not exact7A")
+    if tuple((record["path"], record["status"]) for record in h3_scope) != (
+        EXPECTED_RECOVERY_2_H_SCOPE
+    ):
+        raise ActivationLockError("recovery-2 H3 is not exact15")
+    if (
+        tuple(record["path"] for record in p3_scope)
+        != EXPECTED_RECOVERY_2_P_SCOPE_PATHS
+        or any(record["status"] != "A" for record in p3_scope)
+    ):
+        raise ActivationLockError("recovery-2 P3 is not exact7A")
+    u1_payload = _git(
+        repo_root,
+        ("cat-file", "blob", f"{commits['u1']}:{ACTIVATION_PATH.as_posix()}"),
+    )
+    u2_payload = _git(
+        repo_root,
+        (
+            "cat-file",
+            "blob",
+            f"{commits['u2']}:{RECOVERY_ACTIVATION_PATH.as_posix()}",
+        ),
+    )
+    if (
+        u1_payload != _regular_bytes(ACTIVATION_PATH, repo_root=repo_root)
+        or len(u1_payload) != ATTEMPT_1_ACTIVATION_BYTES
+        or _sha256_bytes(u1_payload) != ATTEMPT_1_ACTIVATION_SHA256
+        or u2_payload
+        != _regular_bytes(RECOVERY_ACTIVATION_PATH, repo_root=repo_root)
+        or len(u2_payload) != ATTEMPT_2_ACTIVATION_BYTES
+        or _sha256_bytes(u2_payload) != ATTEMPT_2_ACTIVATION_SHA256
+    ):
+        raise ActivationLockError("historical U1/U2 activation bytes drifted")
+    if _regular_bytes(ACCESS_LOG_PATH, repo_root=repo_root) != _attempt_2_log_payload():
+        raise ActivationLockError("attempt-2 access-log prefix drifted")
+    if published_u:
+        u3_scope = _git_diff_scope(repo_root, commits["p3"], head)
+        if (
+            len(u3_scope) != 1
+            or u3_scope[0]["path"] != RECOVERY_2_ACTIVATION_PATH.as_posix()
+            or u3_scope[0]["status"] != "A"
+        ):
+            raise ActivationLockError("recovery-2 U3 is not exact1A")
+    else:
+        u3_scope = []
+        if (
+            not allow_recovery_activation_candidate
+            and os.path.lexists(repo_root / RECOVERY_2_ACTIVATION_PATH)
+        ):
+            raise ActivationLockError(
+                "recovery-2 activation already exists before U3"
+            )
+        if allow_recovery_activation_candidate:
+            _regular_bytes(RECOVERY_2_ACTIVATION_PATH, repo_root=repo_root)
+    return {
+        "r_commit": commits["r"],
+        "h1_commit": commits["h1"],
+        "p1_commit": commits["p1"],
+        "u1_commit": commits["u1"],
+        "h2_commit": commits["h2"],
+        "p2_commit": commits["p2"],
+        "u2_commit": commits["u2"],
+        "h3_commit": commits["h3"],
+        "p3_commit": commits["p3"],
+        "u3_commit": u3_commit,
+        "h2_scope": h2_scope,
+        "p2_scope": p2_scope,
+        "h3_scope": h3_scope,
+        "p3_scope": p3_scope,
+        "u3_scope": u3_scope,
+        "head": head,
+    }
+
+
 def _require_isolated_capture_environment() -> None:
     if (
         dict(os.environ) != {"LANG": "C", "LC_ALL": "C"}
@@ -1044,7 +1352,7 @@ def _require_isolated_capture_environment() -> None:
 
 
 def _capture_material(
-    *, repo_root: Path, recovery_attempt: bool = False
+    *, repo_root: Path, recovery_attempt: bool | str = False
 ) -> tuple[dict[str, Any], dict[str, Any], dict[str, Any]]:
     _require_isolated_capture_environment()
     runner = _load_source_namespace(
@@ -1062,26 +1370,22 @@ def _capture_material(
     if not callable(collect) or not callable(contract):
         raise ActivationLockError("runner activation material API is absent")
     try:
-        material = dict(
-            collect(
-                repo_root=repo_root,
-                **({"recovery_attempt": True} if recovery_attempt else {}),
-            )
+        kwargs = (
+            {"recovery_attempt": recovery_attempt}
+            if recovery_attempt
+            else {}
         )
-        sealed_contract = dict(
-            contract(
-                **({"recovery_attempt": True} if recovery_attempt else {})
-            )
-        )
+        material = dict(collect(repo_root=repo_root, **kwargs))
+        sealed_contract = dict(contract(**kwargs))
     except BaseException as exc:
         raise ActivationLockError("runner activation material capture failed") from exc
     if (
         material.get("status")
-        != (
-            "e0_u_recovery_activation_material_ready"
-            if recovery_attempt
-            else "e0_u_activation_material_ready"
-        )
+        != {
+            False: "e0_u_activation_material_ready",
+            True: "e0_u_recovery_activation_material_ready",
+            RECOVERY_ATTEMPT_2: "e0_u_recovery_2_activation_material_ready",
+        }.get(recovery_attempt)
         or material.get("outcome_paths_opened") is not False
         or material.get("future_outcomes_accessed") is not False
         or material.get("writes_performed") is not False
@@ -1346,6 +1650,192 @@ def _recovery_manifest(
         ) from exc
     if validated != value:
         raise ActivationLockError("authority changed the recovery activation")
+    return value
+
+
+def _recovery_2_source_records(
+    *, repo_root: Path, h3_commit: str
+) -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path in (
+        RECOVERY_2_ACTIVATION_SCHEMA_PATH,
+        RECOVERY_2_DOCUMENT_PATH,
+        ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        RECOVERY_2_COMMAND_PATH,
+        Path("src/experiments/lock_closure_e0_u_activation.py"),
+    ):
+        payload = _regular_bytes(path, repo_root=repo_root)
+        blob = _git_blob_record(repo_root, h3_commit, path.as_posix())
+        if (
+            blob["mode"] != "100644"
+            or blob["bytes"] != len(payload)
+            or blob["sha256"] != _sha256_bytes(payload)
+        ):
+            raise ActivationLockError(
+                f"recovery-2 source differs from H3: {path.as_posix()}"
+            )
+        records.append(
+            {
+                "path": path.as_posix(),
+                "bytes": len(payload),
+                "sha256": _sha256_bytes(payload),
+                "mode": 0o644,
+            }
+        )
+    return records
+
+
+def _recovery_2_manifest(
+    *,
+    repo_root: Path,
+    topology: Mapping[str, Any],
+    material: Mapping[str, Any],
+    authority: Mapping[str, Any],
+    authority_source_record: Mapping[str, Any],
+    receipt_1: Mapping[str, Any],
+    receipt_1_record: Mapping[str, Any],
+    receipt_2: Mapping[str, Any],
+    receipt_2_record: Mapping[str, Any],
+    recovery_source_records: Sequence[Mapping[str, Any]],
+    phase3_overlay_deep_validation: Mapping[str, Any],
+    expected_artifact_paths: Sequence[str],
+    expected_artifact_formats: Mapping[str, str],
+) -> dict[str, Any]:
+    exact_material = {
+        "recovery_attempt": RECOVERY_ATTEMPT_2,
+        "attempt_ordinal": 3,
+        "first_attempt": False,
+        "sealed_recovery_batch_command": RECOVERY_2_SEALED_BATCH_COMMAND,
+        "recovery_guard_path": (
+            "tmp/closure_v1_e0_u_recovery_2/sealed_batch.guard"
+        ),
+        "outcome_access_log_prefix": {
+            "path": ACCESS_LOG_PATH.as_posix(),
+            "bytes": ATTEMPT_2_ACCESS_LOG_BYTES,
+            "sha256": ATTEMPT_2_ACCESS_LOG_SHA256,
+            "record_count": 2,
+            "first_execution_id": ATTEMPT_1_EXECUTION_ID,
+            "second_execution_id": ATTEMPT_2_EXECUTION_ID,
+        },
+    }
+    if any(material.get(key) != expected for key, expected in exact_material.items()):
+        raise ActivationLockError("recovery-2 runner material drifted")
+    contract_sha = str(material["sealed_batch_contract_sha256"])
+    execution_id = (
+        "closure-v1-e0-u-recovery-2-"
+        + str(topology["p3_commit"])[:16]
+        + "-"
+        + contract_sha[:16]
+    )
+    u1_payload = _regular_bytes(ACTIVATION_PATH, repo_root=repo_root)
+    u2_payload = _regular_bytes(RECOVERY_ACTIVATION_PATH, repo_root=repo_root)
+    if (
+        len(u1_payload) != ATTEMPT_1_ACTIVATION_BYTES
+        or _sha256_bytes(u1_payload) != ATTEMPT_1_ACTIVATION_SHA256
+        or len(u2_payload) != ATTEMPT_2_ACTIVATION_BYTES
+        or _sha256_bytes(u2_payload) != ATTEMPT_2_ACTIVATION_SHA256
+    ):
+        raise ActivationLockError("historical U1/U2 activation bytes drifted")
+    value = {
+        "schema_version": "closure_e0_u_recovery_2_activation_v1",
+        "experiment_id": "closure_v1",
+        "gate": "E0-U",
+        "attempt_ordinal": 3,
+        "first_attempt": False,
+        "historical_chain": {
+            "base_r_commit": topology["r_commit"],
+            "h1_commit": topology["h1_commit"],
+            "p1_commit": topology["p1_commit"],
+            "u1_commit": topology["u1_commit"],
+            "u1_activation": {
+                "path": ACTIVATION_PATH.as_posix(),
+                "bytes": len(u1_payload),
+                "sha256": _sha256_bytes(u1_payload),
+                "git_blob_oid": ATTEMPT_1_ACTIVATION_GIT_OID,
+            },
+        },
+        "recovery_chain": {
+            "h2_commit": topology["h2_commit"],
+            "h2_scope": topology["h2_scope"],
+            "p2_commit": topology["p2_commit"],
+            "p2_scope": topology["p2_scope"],
+            "u2_commit": topology["u2_commit"],
+            "u2_activation": {
+                "path": RECOVERY_ACTIVATION_PATH.as_posix(),
+                "bytes": len(u2_payload),
+                "sha256": _sha256_bytes(u2_payload),
+                "git_blob_oid": ATTEMPT_2_ACTIVATION_GIT_OID,
+            },
+        },
+        "recovery_2_chain": {
+            "h3_commit": topology["h3_commit"],
+            "h3_scope": topology["h3_scope"],
+            "p3_commit": topology["p3_commit"],
+            "p3_scope": topology["p3_scope"],
+        },
+        "attempt_1_failure_receipt": {
+            **dict(receipt_1_record),
+            "decoded": dict(receipt_1),
+        },
+        "attempt_2_failure_receipt": {
+            **dict(receipt_2_record),
+            "decoded": dict(receipt_2),
+        },
+        "outcome_access_log_prefix": dict(
+            material["outcome_access_log_prefix"]
+        ),
+        "sealed_recovery_2_batch_command": RECOVERY_2_SEALED_BATCH_COMMAND,
+        "recovery_2_guard_path": exact_material["recovery_guard_path"],
+        "git_remote_url": LIVE_REMOTE_URL,
+        "execution_id": execution_id,
+        "sealed_batch_contract_sha256": contract_sha,
+        "expected_artifact_paths_sha256": material[
+            "expected_artifact_paths_sha256"
+        ],
+        "expected_publication_order_sha256": material[
+            "expected_publication_order_sha256"
+        ],
+        "phase3_overlay_deep_validation": dict(
+            phase3_overlay_deep_validation
+        ),
+        "dvc_policy": material["dvc_policy"],
+        "sealed_runner_source_record": material["runner_source_record"],
+        "recovery_2_authority_source_record": dict(authority_source_record),
+        "sealed_context_builder_source_record": material[
+            "context_builder_source_record"
+        ],
+        "sealed_component_source_records": material[
+            "component_source_records"
+        ],
+        "sealed_support_source_records": material[
+            "support_source_records"
+        ],
+        "sealed_runtime_environment_record": material[
+            "runtime_environment_record"
+        ],
+        "recovery_2_source_records": [
+            dict(record) for record in recovery_source_records
+        ],
+    }
+    validate_shape = authority.get(
+        "_validate_recovery_2_activation_without_contract"
+    )
+    validate_dvc = authority.get("_validate_dvc_policy")
+    if not callable(validate_shape) or not callable(validate_dvc):
+        raise ActivationLockError("recovery-2 authority validation API is absent")
+    try:
+        validated = dict(validate_shape(value))
+        validate_dvc(
+            value["dvc_policy"],
+            tuple(expected_artifact_paths),
+            dict(expected_artifact_formats),
+        )
+    except BaseException as exc:
+        raise ActivationLockError(
+            "recovery-2 activation manifest rejected by authority"
+        ) from exc
+    if validated != value:
+        raise ActivationLockError("authority changed the recovery-2 activation")
     return value
 
 
@@ -1769,6 +2259,175 @@ def _expected_recovery_manifest(
         authority_source_record=authority_source_record,
         receipt=receipt,
         receipt_record=receipt_record,
+        recovery_source_records=recovery_sources,
+        phase3_overlay_deep_validation=deep_validation,
+        expected_artifact_paths=expected_paths,
+        expected_artifact_formats=expected_formats,
+    )
+    return value, topology
+
+
+def _expected_recovery_2_manifest(
+    *,
+    repo_root: Path,
+    published_u: bool,
+    verify_remote: bool,
+    allow_recovery_activation_candidate: bool = False,
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    topology = _recovery_2_topology(
+        repo_root=repo_root,
+        published_u=published_u,
+        verify_remote=verify_remote,
+        allow_recovery_activation_candidate=allow_recovery_activation_candidate,
+    )
+    material, sealed_contract, authority = _capture_material(
+        repo_root=repo_root,
+        recovery_attempt=RECOVERY_ATTEMPT_2,
+    )
+    validate_overlay = authority.get("_validate_phase3_overlay_bundle")
+    if not callable(validate_overlay):
+        raise ActivationLockError(
+            "recovery-2 authority P-overlay validator is absent"
+        )
+    try:
+        overlay_record = _validate_overlay_preflight_record(
+            validate_overlay(
+                repo_root,
+                topology["h1_commit"],
+                topology["p1_commit"],
+            )
+        )
+    except BaseException as exc:
+        raise ActivationLockError(
+            "historical P1 overlay failed recovery-2 preflight"
+        ) from exc
+    overlay_builder_git_record = _git_blob_record(
+        repo_root,
+        topology["h1_commit"],
+        PHASE3_OVERLAY_BUILDER_PATH.as_posix(),
+    )
+    overlay_builder_namespace = _load_source_namespace(
+        PHASE3_OVERLAY_BUILDER_PATH,
+        repo_root=repo_root,
+        module_name="closure_phase3_recovery_2_activation_overlay_builder",
+        expected_git_record=overlay_builder_git_record,
+    )
+    deep_validate = overlay_builder_namespace.get(
+        "validate_materialized_phase3_input_overlay"
+    )
+    if not callable(deep_validate):
+        raise ActivationLockError(
+            "Phase 3 overlay recovery-2 deep-validation API is absent"
+        )
+    try:
+        deep_validation = _validate_phase3_overlay_deep_validation(
+            deep_validate(
+                repo_root=repo_root,
+                expected_h_commit=topology["h1_commit"],
+            ),
+            expected_h_commit=topology["h1_commit"],
+            expected_builder_record=overlay_builder_git_record,
+            expected_overlay_record=overlay_record,
+        )
+    except BaseException as exc:
+        raise ActivationLockError(
+            "historical P1 overlay failed deep recovery-2 validation"
+        ) from exc
+    e10_namespace = _load_source_namespace(
+        E10_SOURCE_EVIDENCE_PATH,
+        repo_root=repo_root,
+        module_name="closure_phase3_recovery_2_activation_e10_source",
+    )
+    e10_loader = e10_namespace.get("load_closure_e10_software_evidence")
+    if not callable(e10_loader):
+        raise ActivationLockError(
+            "recovery-2 E10 source-evidence loader is absent"
+        )
+    try:
+        software_evidence = e10_loader(
+            repo_root=repo_root,
+            expected_h_commit=topology["h3_commit"],
+            require_git_publication=True,
+            recovery_attempt=RECOVERY_ATTEMPT_2,
+        )
+    except BaseException as exc:
+        raise ActivationLockError(
+            "published P3 E10 recovery-2 evidence failed outcome-free preflight"
+        ) from exc
+    if not isinstance(software_evidence, Mapping) or set(software_evidence) != {
+        "public_tests_xml",
+        "test_report",
+        "openapi",
+        "openapi_contract_report",
+        "end_to_end_report",
+        "environment",
+    }:
+        raise ActivationLockError("published P3 E10 evidence keys drifted")
+    runner_namespace = sys.modules[
+        "closure_phase3_activation_runner"
+    ].__dict__
+    expected_paths = tuple(runner_namespace["EXPECTED_ARTIFACT_PATHS"])
+    expected_formats = dict(runner_namespace["EXPECTED_ARTIFACT_FORMATS"])
+    if any(
+        (repo_root / path).exists() or (repo_root / path).is_symlink()
+        for path in expected_paths
+    ):
+        raise ActivationLockError("one or more recovery-2 outputs already exist")
+    contract_bytes = _canonical_json_bytes(sealed_contract)
+    if _sha256_bytes(contract_bytes) != material["sealed_batch_contract_sha256"]:
+        raise ActivationLockError(
+            "recovery-2 sealed batch contract digest drifted"
+        )
+    receipt_1_loader = authority.get("_load_attempt_1_failure_receipt")
+    receipt_2_loader = authority.get("_load_attempt_2_failure_receipt")
+    guard_validator = authority.get(
+        "_validate_historical_recovery_guard_policy"
+    )
+    authority_record_loader = authority.get(
+        "_git_bound_authority_source_record"
+    )
+    if (
+        not callable(receipt_1_loader)
+        or not callable(receipt_2_loader)
+        or not callable(guard_validator)
+        or not callable(authority_record_loader)
+    ):
+        raise ActivationLockError(
+            "recovery-2 authority material APIs are absent"
+        )
+    try:
+        receipt_1, receipt_1_record = receipt_1_loader(
+            repo_root,
+            h2_commit=topology["h2_commit"],
+        )
+        receipt_2, receipt_2_record = receipt_2_loader(
+            repo_root,
+            h3_commit=topology["h3_commit"],
+        )
+        guard_validator(repo_root, receipt_2)
+        authority_source_record = authority_record_loader(
+            repo_root,
+            topology["p3_commit"],
+            False,
+        )
+    except BaseException as exc:
+        raise ActivationLockError(
+            "recovery-2 receipts, guards, or authority source preflight failed"
+        ) from exc
+    recovery_sources = _recovery_2_source_records(
+        repo_root=repo_root,
+        h3_commit=topology["h3_commit"],
+    )
+    value = _recovery_2_manifest(
+        repo_root=repo_root,
+        topology=topology,
+        material=material,
+        authority=authority,
+        authority_source_record=authority_source_record,
+        receipt_1=receipt_1,
+        receipt_1_record=receipt_1_record,
+        receipt_2=receipt_2,
+        receipt_2_record=receipt_2_record,
         recovery_source_records=recovery_sources,
         phase3_overlay_deep_validation=deep_validation,
         expected_artifact_paths=expected_paths,
@@ -3230,6 +3889,271 @@ def validate_published_recovery(
     }
 
 
+def validate_recovery_2_activation_payload(
+    payload: bytes,
+    *,
+    repo_root: Path = PROJECT_ROOT,
+    verify_remote: bool = False,
+    expected_material: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Validate the sole staged/untracked U3 candidate without requiring U3."""
+
+    if type(payload) is not bytes or type(verify_remote) is not bool:
+        raise ActivationLockError(
+            "recovery-2 activation payload arguments drifted"
+        )
+    root = Path(repo_root).resolve(strict=True)
+    try:
+        observed = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ActivationLockError(
+            "recovery-2 activation payload is not JSON"
+        ) from exc
+    if not isinstance(observed, dict) or _canonical_json_bytes(observed) != payload:
+        raise ActivationLockError(
+            "recovery-2 activation payload is not canonical"
+        )
+    physical = _regular_bytes(RECOVERY_2_ACTIVATION_PATH, repo_root=root)
+    if physical != payload:
+        raise ActivationLockError(
+            "recovery-2 activation payload differs from worktree"
+        )
+    topology = _recovery_2_topology(
+        repo_root=root,
+        published_u=False,
+        verify_remote=verify_remote,
+        allow_recovery_activation_candidate=True,
+    )
+    authority = _load_source_namespace(
+        AUTHORITY_PATH,
+        repo_root=root,
+        module_name="closure_phase3_recovery_2_payload_authority",
+    )
+    validate_shape = authority.get(
+        "_validate_recovery_2_activation_without_contract"
+    )
+    validate_bindings = authority.get(
+        "_validate_recovery_2_manifest_bindings"
+    )
+    if not callable(validate_shape) or not callable(validate_bindings):
+        raise ActivationLockError(
+            "recovery-2 payload authority APIs are absent"
+        )
+    try:
+        manifest = dict(validate_shape(observed))
+        validate_bindings(
+            root,
+            topology["p3_commit"],
+            topology["h3_commit"],
+            manifest,
+        )
+    except BaseException as exc:
+        raise ActivationLockError(
+            "recovery-2 activation payload authority validation failed"
+        ) from exc
+    chain = manifest["recovery_2_chain"]
+    if (
+        chain["h3_commit"] != topology["h3_commit"]
+        or chain["p3_commit"] != topology["p3_commit"]
+        or chain["h3_scope"] != topology["h3_scope"]
+        or chain["p3_scope"] != topology["p3_scope"]
+    ):
+        raise ActivationLockError(
+            "recovery-2 payload topology binding drifted"
+        )
+    runner_record = manifest["sealed_runner_source_record"]
+    runtime_record = manifest["sealed_runtime_environment_record"]
+    if (
+        not isinstance(runner_record, Mapping)
+        or runner_record.get("sealed_command")
+        != RECOVERY_2_SEALED_BATCH_COMMAND
+        or runner_record.get("contract_sha256")
+        != manifest["sealed_batch_contract_sha256"]
+        or not isinstance(runtime_record, Mapping)
+        or runtime_record.get("sealed_launch_command")
+        != RECOVERY_2_SEALED_BATCH_COMMAND
+        or runtime_record.get("sealed_python_argv")
+        != [
+            ".venv/bin/python",
+            "-I",
+            "-S",
+            "-B",
+            RUNNER_PATH.as_posix(),
+            "--execute-sealed-recovery-2-batch",
+        ]
+    ):
+        raise ActivationLockError(
+            "recovery-2 payload runner/runtime binding drifted"
+        )
+    if expected_material is not None:
+        expected_fields = {
+            "sealed_batch_contract_sha256": "sealed_batch_contract_sha256",
+            "expected_artifact_paths_sha256": "expected_artifact_paths_sha256",
+            "expected_publication_order_sha256": (
+                "expected_publication_order_sha256"
+            ),
+            "outcome_access_log_prefix": "outcome_access_log_prefix",
+        }
+        if any(
+            manifest[manifest_key] != expected_material.get(material_key)
+            for manifest_key, material_key in expected_fields.items()
+        ):
+            raise ActivationLockError(
+                "recovery-2 payload expected material drifted"
+            )
+    return manifest
+
+
+def check_recovery_2(
+    *, repo_root: Path = PROJECT_ROOT, verify_remote: bool = True
+) -> dict[str, Any]:
+    value, topology = _expected_recovery_2_manifest(
+        repo_root=repo_root,
+        published_u=False,
+        verify_remote=verify_remote,
+    )
+    payload = _canonical_json_bytes(value)
+    return {
+        "gate": "E0-U",
+        "status": "ready_to_generate_recovery_2_activation",
+        "attempt_ordinal": 3,
+        "h3_commit": topology["h3_commit"],
+        "p3_commit": topology["p3_commit"],
+        "activation_path": RECOVERY_2_ACTIVATION_PATH.as_posix(),
+        "activation_bytes": len(payload),
+        "activation_sha256": _sha256_bytes(payload),
+        "outcome_paths_opened": False,
+        "future_outcomes_accessed": False,
+        "writes_performed": False,
+    }
+
+
+def generate_recovery_2(
+    *, repo_root: Path = PROJECT_ROOT, verify_remote: bool = True
+) -> dict[str, Any]:
+    guard = _acquire_guard(repo_root=repo_root)
+    publication_lease: ActivationPublicationLease | None = None
+    try:
+        value, topology = _expected_recovery_2_manifest(
+            repo_root=repo_root,
+            published_u=False,
+            verify_remote=verify_remote,
+        )
+        payload = _canonical_json_bytes(value)
+        publication = _publish_activation(
+            payload,
+            repo_root=repo_root,
+            expected_temp_directory_identity=guard.directory_identity,
+            guard_lease=guard,
+            retain_anchor=True,
+            activation_path=RECOVERY_2_ACTIVATION_PATH,
+        )
+        if (
+            not isinstance(publication, tuple)
+            or len(publication) != 2
+            or not isinstance(publication[0], dict)
+            or not isinstance(publication[1], ActivationPublicationLease)
+        ):
+            raise ActivationLockError(
+                "recovery-2 activation publication lease is malformed"
+            )
+        publication_record, publication_lease = publication
+        _assert_guard_lease(guard, label="post-recovery-2-publication")
+    except BaseException as primary_error:
+        try:
+            _release_guard_lease(guard)
+        except BaseException:
+            if not guard.closed:
+                _close_guard_lease(guard)
+        rollback_error = None
+        if publication_lease is not None:
+            try:
+                _rollback_activation_publication(publication_lease)
+            except BaseException as exc:
+                rollback_error = exc
+        if rollback_error is not None:
+            raise ActivationLockError(
+                "recovery-2 activation transaction rollback was not exact"
+            ) from rollback_error
+        raise primary_error
+    if publication_lease is None:
+        raise ActivationLockError(
+            "recovery-2 activation publication lease is absent"
+        )
+    try:
+        _release_guard_lease(guard)
+    except BaseException as guard_error:
+        try:
+            _rollback_activation_publication(publication_lease)
+        except BaseException as rollback_error:
+            raise ActivationLockError(
+                "recovery-2 activation transaction rollback was not exact"
+            ) from rollback_error
+        raise ActivationLockError(
+            "recovery-2 activation guard failed after publication; rolled back"
+        ) from guard_error
+    try:
+        _commit_activation_publication(publication_lease)
+    except BaseException as commit_error:
+        try:
+            _rollback_activation_publication(publication_lease)
+        except BaseException as rollback_error:
+            raise ActivationLockError(
+                "recovery-2 activation transaction rollback was not exact"
+            ) from rollback_error
+        raise commit_error
+    return {
+        "gate": "E0-U",
+        "status": "recovery_2_activation_written_unpublished",
+        "attempt_ordinal": 3,
+        "h3_commit": topology["h3_commit"],
+        "p3_commit": topology["p3_commit"],
+        "publication": publication_record,
+        "outcome_paths_opened": False,
+        "future_outcomes_accessed": False,
+        "writes_performed": True,
+    }
+
+
+def validate_published_recovery_2(
+    *, repo_root: Path = PROJECT_ROOT, verify_remote: bool = True
+) -> dict[str, Any]:
+    expected, topology = _expected_recovery_2_manifest(
+        repo_root=repo_root,
+        published_u=True,
+        verify_remote=verify_remote,
+    )
+    payload = _regular_bytes(RECOVERY_2_ACTIVATION_PATH, repo_root=repo_root)
+    try:
+        observed = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ActivationLockError(
+            "published recovery-2 activation is not JSON"
+        ) from exc
+    if not isinstance(observed, dict) or _canonical_json_bytes(observed) != payload:
+        raise ActivationLockError(
+            "published recovery-2 activation is not canonical"
+        )
+    if observed != expected:
+        raise ActivationLockError(
+            "published recovery-2 activation differs from recaptured material"
+        )
+    return {
+        "gate": "E0-U",
+        "status": "published_recovery_2_activation_valid",
+        "attempt_ordinal": 3,
+        "h3_commit": topology["h3_commit"],
+        "p3_commit": topology["p3_commit"],
+        "u3_commit": topology["u3_commit"],
+        "activation_path": RECOVERY_2_ACTIVATION_PATH.as_posix(),
+        "activation_bytes": len(payload),
+        "activation_sha256": _sha256_bytes(payload),
+        "outcome_paths_opened": False,
+        "future_outcomes_accessed": False,
+        "writes_performed": False,
+    }
+
+
 def _parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group(required=True)
@@ -3239,6 +4163,9 @@ def _parser() -> argparse.ArgumentParser:
     modes.add_argument("--check-recovery", action="store_true")
     modes.add_argument("--generate-recovery", action="store_true")
     modes.add_argument("--validate-published-recovery", action="store_true")
+    modes.add_argument("--check-recovery-2", action="store_true")
+    modes.add_argument("--generate-recovery-2", action="store_true")
+    modes.add_argument("--validate-published-recovery-2", action="store_true")
     parser.add_argument(
         "--no-verify-remote",
         action="store_true",
@@ -3261,8 +4188,16 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = check_recovery(verify_remote=verify_remote)
         elif arguments.generate_recovery:
             result = generate_recovery(verify_remote=verify_remote)
-        else:
+        elif arguments.validate_published_recovery:
             result = validate_published_recovery(verify_remote=verify_remote)
+        elif arguments.check_recovery_2:
+            result = check_recovery_2(verify_remote=verify_remote)
+        elif arguments.generate_recovery_2:
+            result = generate_recovery_2(verify_remote=verify_remote)
+        else:
+            result = validate_published_recovery_2(
+                verify_remote=verify_remote
+            )
     except ActivationLockError as exc:
         print(str(exc), file=sys.stderr)
         return 2

@@ -45,8 +45,12 @@ if __package__ in {None, ""} and str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 SCHEMA_VERSION = "closure_e10_source_evidence_bundle_v1"
 RECOVERY_SCHEMA_VERSION = "closure_e10_source_evidence_recovery_bundle_v1"
+RECOVERY_2_SCHEMA_VERSION = (
+    "closure_e10_source_evidence_recovery_attempt_2_bundle_v1"
+)
 GATE = "E10-S"
 RECOVERY_ATTEMPT_1 = "recovery-attempt-1"
+RECOVERY_ATTEMPT_2 = "recovery-attempt-2"
 INITIAL_PHASE3_H_COMMIT = "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
 BUILDER_SOURCE_PATH = Path(
     "src/experiments/build_closure_e10_source_evidence.py"
@@ -79,6 +83,17 @@ RECOVERY_SOURCE_EVIDENCE_PATHS = {
 RECOVERY_SOURCE_MANIFEST_PATH = (
     RECOVERY_SOURCE_EVIDENCE_DIRECTORY / "software_evidence_source_manifest.json"
 )
+RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY = Path(
+    "reports/closure_v1/00_protocol/software_evidence_source_recovery_2"
+)
+RECOVERY_2_SOURCE_EVIDENCE_PATHS = {
+    key: RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY / path.name
+    for key, path in SOURCE_EVIDENCE_PATHS.items()
+}
+RECOVERY_2_SOURCE_MANIFEST_PATH = (
+    RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY
+    / "software_evidence_source_manifest.json"
+)
 
 FINAL_E10_DIRECTORY = Path("reports/closure_v1/10_api")
 OUTCOME_ACCESS_LOG_PATH = Path(
@@ -87,6 +102,9 @@ OUTCOME_ACCESS_LOG_PATH = Path(
 RECOVERY_ACTIVATION_PATH = Path(
     "reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json"
 )
+RECOVERY_2_ACTIVATION_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json"
+)
 ATTEMPT_1_FAILURE_RECEIPT_PATH = Path(
     "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"
 )
@@ -94,9 +112,34 @@ ATTEMPT_1_FAILURE_RECEIPT_BYTES = 1501
 ATTEMPT_1_FAILURE_RECEIPT_SHA256 = (
     "57d2a6f7560d40c61a7e4d370825cb68b5cabaaeda6131420a2fd63787ea3b06"
 )
+ATTEMPT_2_FAILURE_RECEIPT_PATH = Path(
+    "reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json"
+)
 RECOVERY_OUTCOME_LOG_BYTES = 256
 RECOVERY_OUTCOME_LOG_SHA256 = (
     "ae3e47dd6ad1f05cd79e6a494174f951f1c71fa9336514640bd4c15855c1b038"
+)
+RECOVERY_2_OUTCOME_LOG_BYTES = 738
+RECOVERY_2_OUTCOME_LOG_SHA256 = (
+    "0645151a995bb61e3cef170b6a2e0563ec9b28e740ee01075505cd0c27fed1bf"
+)
+RECOVERY_2_OUTCOME_LOG_RECORD_2_BYTES = 482
+RECOVERY_2_OUTCOME_LOG_RECORD_2_SHA256 = (
+    "781043a890d85ba2c1ac86a34397b22478f29ce89579285059fb35c3ffc3dd23"
+)
+RECOVERY_ACTIVATION_BYTES = 33393
+RECOVERY_ACTIVATION_SHA256 = (
+    "4eaa82b5584ad8b8518acd6b70cbb7a25cf24bfae33abf4802e04ac865335f6f"
+)
+RECOVERY_ACTIVATION_GIT_BLOB_OID = "9f8c5199349935d804590b079bfd0588458ada4a"
+ATTEMPT_2_EXECUTION_ID = (
+    "closure-v1-e0-u-recovery-1-f0d203c75ba6943b-8efea2943fa7feb2"
+)
+ATTEMPT_1_EXECUTION_ID = (
+    "closure-v1-e0-u-caaf2d6d0a00a31f-735c2cf8ab3715aa"
+)
+ATTEMPT_2_FAILURE_ERROR = (
+    "E0-U component execution failed: E4_trophic_evaluation"
 )
 PHASE3_OVERLAY_MANIFEST_PATH = Path(
     "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
@@ -111,11 +154,37 @@ RECOVERY_INHERITED_P1_PATHS = (
     *PHASE3_OVERLAY_POINTER_PATHS,
     PHASE3_OVERLAY_MANIFEST_PATH,
 )
+RECOVERY_2_INHERITED_P2_PATHS = (
+    *(RECOVERY_SOURCE_EVIDENCE_PATHS[key] for key in SOURCE_EVIDENCE_KEYS),
+    RECOVERY_SOURCE_MANIFEST_PATH,
+)
+RECOVERY_2_INHERITED_P1_PATHS = (
+    *PHASE3_OVERLAY_POINTER_PATHS,
+    PHASE3_OVERLAY_MANIFEST_PATH,
+)
+RECOVERY_2_INHERITED_PATHS = (
+    *RECOVERY_2_INHERITED_P2_PATHS,
+    *RECOVERY_2_INHERITED_P1_PATHS,
+)
 RECOVERY_HISTORICAL_CHAIN = {
     "base_r_commit": "4c92ed7249a91b7dd541fd22dde68b61574556b2",
     "h1_commit": INITIAL_PHASE3_H_COMMIT,
     "p1_commit": "caaf2d6d0a00a31febeed89b54ea078b60d7f92a",
     "u1_commit": "4aecf19cd913b82a6a3d26669f09684e67efda8a",
+}
+RECOVERY_2_HISTORICAL_CHAIN = {
+    **RECOVERY_HISTORICAL_CHAIN,
+    "h2_commit": "b768c5b1251bde50b01f0c066be07fb931924537",
+    "p2_commit": "f0d203c75ba6943b6817339d651ece5cbccec492",
+    "u2_commit": "a4f39173ec14aa7cd80d0fd38fb720f98cf88159",
+}
+ATTEMPT_1_GUARD_PATH = Path("tmp/closure_v1_e0_u/sealed_batch.guard")
+ATTEMPT_2_GUARD_PATH = Path(
+    "tmp/closure_v1_e0_u_recovery_1/sealed_batch.guard"
+)
+RECOVERY_2_GUARD_IDENTITIES = {
+    ATTEMPT_1_GUARD_PATH: {"device": 2069, "inode": 80609290},
+    ATTEMPT_2_GUARD_PATH: {"device": 2069, "inode": 80495779},
 }
 FORBIDDEN_OUTCOME_PREFIXES = (
     "data/targets",
@@ -186,11 +255,11 @@ PUBLIC_PHASE3_PRECOMMIT_TEST_NODES = (
     "tests/test_prepare_commit_artifacts.py::test_closure_phase3_h_rollback_failure_reports_primary_and_rollback_errors",
     "tests/test_prepare_commit_artifacts.py::test_closure_phase3_h_rollback_preserves_concurrent_foreign_staged_path",
 )
-PUBLIC_PHASE3_EXPECTED_TEST_COUNT = 344
-PUBLIC_PHASE3_EXPECTED_PASS_COUNT = 335
+PUBLIC_PHASE3_EXPECTED_TEST_COUNT = 347
+PUBLIC_PHASE3_EXPECTED_PASS_COUNT = 338
 PUBLIC_PHASE3_EXPECTED_SKIP_COUNT = 9
 PUBLIC_TEST_NODEIDS_SHA256 = (
-    "a7892dc9ef8ad163867e108c60860a154ff7b0693364a693f93d1a0614eb2ec6"
+    "3a37a3fb3b022b2b36f6a64b6571aecd83858a270c8fcf4985036c2633504a42"
 )
 E2E_TEST_NODES = (
     "tests/test_api_predictions_alerts.py::test_api_exposes_current_state_predictions_and_alerts",
@@ -425,11 +494,32 @@ class ClosureE10SourceEvidenceError(RuntimeError):
 
 
 def _require_recovery_attempt(value: str | None) -> str | None:
-    if value not in {None, RECOVERY_ATTEMPT_1}:
+    if value not in {None, RECOVERY_ATTEMPT_1, RECOVERY_ATTEMPT_2}:
         raise ClosureE10SourceEvidenceError(
-            "E10 source recovery mode is not exact recovery-attempt-1"
+            "E10 source recovery mode is not an exact supported attempt"
         )
     return value
+
+
+def _recovery_log_identity(
+    recovery_attempt: str | None,
+) -> tuple[int, str, int, str]:
+    mode = _require_recovery_attempt(recovery_attempt)
+    if mode == RECOVERY_ATTEMPT_1:
+        return (
+            RECOVERY_OUTCOME_LOG_BYTES,
+            RECOVERY_OUTCOME_LOG_SHA256,
+            1,
+            "present_exact_consumed_attempt_1_unopened_by_e10",
+        )
+    if mode == RECOVERY_ATTEMPT_2:
+        return (
+            RECOVERY_2_OUTCOME_LOG_BYTES,
+            RECOVERY_2_OUTCOME_LOG_SHA256,
+            2,
+            "present_exact_consumed_attempt_2_unopened_by_e10",
+        )
+    return 0, _sha256(b""), 0, "present_empty_unopened"
 
 
 def _source_bundle_layout(
@@ -442,7 +532,22 @@ def _source_bundle_layout(
             RECOVERY_SOURCE_EVIDENCE_PATHS,
             RECOVERY_SOURCE_MANIFEST_PATH,
         )
+    if mode == RECOVERY_ATTEMPT_2:
+        return (
+            RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY,
+            RECOVERY_2_SOURCE_EVIDENCE_PATHS,
+            RECOVERY_2_SOURCE_MANIFEST_PATH,
+        )
     return SOURCE_EVIDENCE_DIRECTORY, SOURCE_EVIDENCE_PATHS, SOURCE_MANIFEST_PATH
+
+
+def _source_bundle_schema_version(recovery_attempt: str | None) -> str:
+    mode = _require_recovery_attempt(recovery_attempt)
+    if mode == RECOVERY_ATTEMPT_1:
+        return RECOVERY_SCHEMA_VERSION
+    if mode == RECOVERY_ATTEMPT_2:
+        return RECOVERY_2_SCHEMA_VERSION
+    return SCHEMA_VERSION
 
 
 def _resolve_loader_recovery_attempt(
@@ -454,6 +559,8 @@ def _resolve_loader_recovery_attempt(
     commit = _require_commit(expected_h_commit, context="loader H commit")
     if mode is not None or commit == INITIAL_PHASE3_H_COMMIT:
         return mode
+    if os.path.lexists(repo_root / RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY):
+        return RECOVERY_ATTEMPT_2
     if os.path.lexists(repo_root / RECOVERY_SOURCE_EVIDENCE_DIRECTORY):
         return RECOVERY_ATTEMPT_1
     return None
@@ -1544,8 +1651,7 @@ def _capture_host_outcome_log_state(
 
     commit = _require_commit(repository_commit)
     mode = _require_recovery_attempt(recovery_attempt)
-    expected_bytes = RECOVERY_OUTCOME_LOG_BYTES if mode else 0
-    expected_sha256 = RECOVERY_OUTCOME_LOG_SHA256 if mode else _sha256(b"")
+    expected_bytes, expected_sha256, _, _ = _recovery_log_identity(mode)
     _require_real_directory_chain(repo_root, repo_root / OUTCOME_ACCESS_LOG_PATH.parent)
     path = repo_root / OUTCOME_ACCESS_LOG_PATH
     try:
@@ -1559,10 +1665,7 @@ def _capture_host_outcome_log_state(
         or stat.S_ISLNK(metadata.st_mode)
         or metadata.st_nlink != 1
         or metadata.st_size != expected_bytes
-        or (
-            mode == RECOVERY_ATTEMPT_1
-            and stat.S_IMODE(metadata.st_mode) != 0o644
-        )
+        or (mode is not None and stat.S_IMODE(metadata.st_mode) != 0o644)
     ):
         raise ClosureE10SourceEvidenceError(
             "host outcome log metadata does not match the sealed E10 state"
@@ -1650,6 +1753,124 @@ def _git_bound_recovery_input_record(
         "physical_equals_h2_git_blob": True,
         "git_blob_command": command,
     }
+
+
+def _git_bound_recovery_2_input_record(
+    repo_root: Path,
+    repository_commit: str,
+    path: Path,
+    *,
+    role: str,
+) -> dict[str, Any]:
+    """Bind a recovery-2 input to the exact H3 blob and physical leaf."""
+
+    physical = _read_regular(path, repo_root=repo_root, context=role)
+    command, stdout, stderr = _run(
+        ("git", "show", f"{repository_commit}:{path.as_posix()}"),
+        repo_root=repo_root,
+        environment={"GIT_OPTIONAL_LOCKS": "0"},
+    )
+    blob = stdout.encode("utf-8")
+    if stderr or blob != physical:
+        raise ClosureE10SourceEvidenceError(
+            f"recovery-2 input differs from exact H3 Git blob: {path}"
+        )
+    return {
+        "path": path.as_posix(),
+        "role": role,
+        "bytes": len(blob),
+        "sha256": _sha256(blob),
+        "repository_commit": repository_commit,
+        "physical_equals_h3_git_blob": True,
+        "git_blob_command": command,
+    }
+
+
+def _git_bound_recovery_2_historical_input_record(
+    repo_root: Path,
+    repository_commit: str,
+    historical_commit: str,
+    path: Path,
+    *,
+    role: str,
+) -> dict[str, Any]:
+    """Bind one unchanged input to both H3 and its historical authority."""
+
+    record = _git_bound_recovery_2_input_record(
+        repo_root,
+        repository_commit,
+        path,
+        role=role,
+    )
+    historical = _require_commit(
+        historical_commit,
+        context="recovery-2 historical input commit",
+    )
+    command, stdout, stderr = _run(
+        ("git", "show", f"{historical}:{path.as_posix()}"),
+        repo_root=repo_root,
+        environment={"GIT_OPTIONAL_LOCKS": "0"},
+    )
+    blob = stdout.encode("utf-8")
+    if (
+        stderr
+        or len(blob) != record["bytes"]
+        or _sha256(blob) != record["sha256"]
+    ):
+        raise ClosureE10SourceEvidenceError(
+            f"recovery-2 inherited input drifted from historical Git: {path}"
+        )
+    return {
+        **record,
+        "historical_repository_commit": historical,
+        "physical_equals_historical_git_blob": True,
+        "historical_git_blob_command": command,
+    }
+
+
+def _capture_recovery_2_guard_records(repo_root: Path) -> list[dict[str, Any]]:
+    """Capture only sealed guard metadata; never open either guard leaf."""
+
+    records: list[dict[str, Any]] = []
+    roles = {
+        ATTEMPT_1_GUARD_PATH: "sealed_attempt_1_guard_retained",
+        ATTEMPT_2_GUARD_PATH: "sealed_attempt_2_guard_retained",
+    }
+    for path, identity in RECOVERY_2_GUARD_IDENTITIES.items():
+        _require_real_directory_chain(repo_root, repo_root / path.parent)
+        try:
+            metadata = (repo_root / path).lstat()
+        except OSError as exc:
+            raise ClosureE10SourceEvidenceError(
+                f"recovery-2 retained guard is absent: {path}"
+            ) from exc
+        if (
+            not stat.S_ISREG(metadata.st_mode)
+            or stat.S_ISLNK(metadata.st_mode)
+            or stat.S_IMODE(metadata.st_mode) != 0o600
+            or metadata.st_nlink != 1
+            or metadata.st_size != 0
+            or metadata.st_dev != identity["device"]
+            or metadata.st_ino != identity["inode"]
+        ):
+            raise ClosureE10SourceEvidenceError(
+                f"recovery-2 retained guard identity drifted: {path}"
+            )
+        records.append(
+            {
+                "path": path.as_posix(),
+                "role": roles[path],
+                "entry_type": "regular_file",
+                "device": metadata.st_dev,
+                "inode": metadata.st_ino,
+                "mode": "600",
+                "nlink": metadata.st_nlink,
+                "bytes": metadata.st_size,
+                "sha256": _sha256(b""),
+                "physical_contents_opened": False,
+            }
+        )
+    return records
 
 
 def _collect_recovery_attempt_1_record(
@@ -1847,6 +2068,306 @@ def _collect_recovery_attempt_1_record(
     }
 
 
+def _attempt_2_guard_receipt_records() -> list[dict[str, Any]]:
+    records: list[dict[str, Any]] = []
+    for path, identity in RECOVERY_2_GUARD_IDENTITIES.items():
+        records.append(
+            {
+                "device": identity["device"],
+                "file_type": "regular_file",
+                "inode": identity["inode"],
+                "mode": 0o600,
+                "nlink": 1,
+                "ownership_identity_recoverable": False,
+                "path": path.as_posix(),
+                "sha256": _sha256(b""),
+                "size": 0,
+            }
+        )
+    return records
+
+
+def _validate_attempt_2_failure_receipt(payload: bytes) -> dict[str, Any]:
+    try:
+        decoded = json.loads(payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClosureE10SourceEvidenceError(
+            "attempt-2 failure receipt is not canonical JSON"
+        ) from exc
+    expected_keys = {
+        "schema_version",
+        "experiment_id",
+        "gate",
+        "attempt_ordinal",
+        "execution_id",
+        "historical_chain",
+        "activation",
+        "access_log",
+        "guard_observations",
+        "failure",
+        "publication",
+    }
+    if (
+        not isinstance(decoded, Mapping)
+        or set(decoded) != expected_keys
+        or _canonical_json(dict(decoded)) != payload
+        or decoded.get("schema_version") != "closure_e0_u_attempt_2_failure_v1"
+        or decoded.get("experiment_id") != "closure_v1"
+        or decoded.get("gate") != "E0-U"
+        or decoded.get("attempt_ordinal") != 2
+        or decoded.get("execution_id") != ATTEMPT_2_EXECUTION_ID
+        or decoded.get("historical_chain") != RECOVERY_2_HISTORICAL_CHAIN
+        or decoded.get("activation")
+        != {
+            "bytes": RECOVERY_ACTIVATION_BYTES,
+            "git_blob_oid": RECOVERY_ACTIVATION_GIT_BLOB_OID,
+            "path": RECOVERY_ACTIVATION_PATH.as_posix(),
+            "sha256": RECOVERY_ACTIVATION_SHA256,
+        }
+        or decoded.get("access_log")
+        != {
+            "path": OUTCOME_ACCESS_LOG_PATH.as_posix(),
+            "bytes": RECOVERY_2_OUTCOME_LOG_BYTES,
+            "record_count": 2,
+            "sha256": RECOVERY_2_OUTCOME_LOG_SHA256,
+            "attempt_1_prefix": {
+                "bytes": RECOVERY_OUTCOME_LOG_BYTES,
+                "sha256": RECOVERY_OUTCOME_LOG_SHA256,
+            },
+            "record_2": {
+                "bytes": RECOVERY_2_OUTCOME_LOG_RECORD_2_BYTES,
+                "sha256": RECOVERY_2_OUTCOME_LOG_RECORD_2_SHA256,
+            },
+        }
+        or decoded.get("guard_observations")
+        != _attempt_2_guard_receipt_records()
+        or decoded.get("publication")
+        != {"expected_output_count": 52, "published_output_count": 0}
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "attempt-2 failure receipt identity drifted"
+        )
+    failure = decoded.get("failure")
+    expected_failure_keys = {
+        "component_id",
+        "component_metrics_computed",
+        "diagnosis_outcome_free",
+        "diagnosed_source_phase",
+        "error",
+        "outcomes_opened",
+        "process_exit_code",
+        "publication_started",
+        "result_constructed",
+        "root_cause",
+    }
+    if (
+        not isinstance(failure, Mapping)
+        or set(failure) != expected_failure_keys
+        or failure.get("component_id") != "E4_trophic_evaluation"
+        or failure.get("component_metrics_computed") is not False
+        or failure.get("diagnosis_outcome_free") is not True
+        or failure.get("diagnosed_source_phase")
+        != "outcome_free_synthetic_e1_to_e4_interface_reproduction"
+        or failure.get("error") != ATTEMPT_2_FAILURE_ERROR
+        or failure.get("outcomes_opened") is not True
+        or failure.get("process_exit_code") != 2
+        or failure.get("publication_started") is not False
+        or failure.get("result_constructed") is not False
+        or failure.get("root_cause")
+        != (
+            "E1 trophic prediction column order differed from the exact E4 "
+            "prediction input contract"
+        )
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "attempt-2 failure receipt diagnosis drifted"
+        )
+    return copy.deepcopy(dict(decoded))
+
+
+def _collect_recovery_attempt_2_record(
+    repo_root: Path, repository_commit: str
+) -> dict[str, Any]:
+    """Bind recovery attempt 2 without opening the physical outcome log."""
+
+    commit = _require_commit(repository_commit, context="recovery H3 commit")
+    inherited: list[dict[str, Any]] = []
+    for path in RECOVERY_2_INHERITED_PATHS:
+        if path in RECOVERY_2_INHERITED_P2_PATHS:
+            role = "inherited_p2_source_evidence_bundle"
+            historical_commit = RECOVERY_2_HISTORICAL_CHAIN["p2_commit"]
+        elif path in PHASE3_OVERLAY_POINTER_PATHS:
+            role = "inherited_p1_phase3_dvc_pointer"
+            historical_commit = RECOVERY_2_HISTORICAL_CHAIN["p1_commit"]
+        else:
+            role = "inherited_p1_phase3_overlay_manifest"
+            historical_commit = RECOVERY_2_HISTORICAL_CHAIN["p1_commit"]
+        inherited.append(
+            _git_bound_recovery_2_historical_input_record(
+                repo_root,
+                commit,
+                historical_commit,
+                path,
+                role=role,
+            )
+        )
+    if [record["path"] for record in inherited] != [
+        path.as_posix() for path in RECOVERY_2_INHERITED_PATHS
+    ]:
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 inherited input order drifted"
+        )
+
+    activation = _git_bound_recovery_2_historical_input_record(
+        repo_root,
+        commit,
+        RECOVERY_2_HISTORICAL_CHAIN["u2_commit"],
+        RECOVERY_ACTIVATION_PATH,
+        role="published_u2_recovery_activation",
+    )
+    activation_payload = _read_regular(
+        RECOVERY_ACTIVATION_PATH,
+        repo_root=repo_root,
+        context="published U2 recovery activation",
+    )
+    try:
+        decoded_activation = json.loads(activation_payload.decode("utf-8"))
+    except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ClosureE10SourceEvidenceError(
+            "published U2 recovery activation is invalid"
+        ) from exc
+    activation_chain = (
+        decoded_activation.get("recovery_chain")
+        if isinstance(decoded_activation, Mapping)
+        else None
+    )
+    if (
+        _canonical_json(decoded_activation) != activation_payload
+        or len(activation_payload) != RECOVERY_ACTIVATION_BYTES
+        or _sha256(activation_payload) != RECOVERY_ACTIVATION_SHA256
+        or activation.get("bytes") != len(activation_payload)
+        or activation.get("sha256") != _sha256(activation_payload)
+        or not isinstance(decoded_activation, Mapping)
+        or decoded_activation.get("schema_version")
+        != "closure_e0_u_recovery_activation_v1"
+        or decoded_activation.get("attempt_ordinal") != 2
+        or decoded_activation.get("execution_id") != ATTEMPT_2_EXECUTION_ID
+        or not isinstance(activation_chain, Mapping)
+        or activation_chain.get("p2_commit")
+        != RECOVERY_2_HISTORICAL_CHAIN["p2_commit"]
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "published U2 recovery activation identity drifted"
+        )
+
+    receipt = _git_bound_recovery_2_input_record(
+        repo_root,
+        commit,
+        ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        role="closure_e0_u_attempt_2_failure_receipt",
+    )
+    receipt_payload = _read_regular(
+        ATTEMPT_2_FAILURE_RECEIPT_PATH,
+        repo_root=repo_root,
+        context="attempt-2 failure receipt",
+    )
+    decoded_receipt = _validate_attempt_2_failure_receipt(receipt_payload)
+    if (
+        receipt.get("bytes") != len(receipt_payload)
+        or receipt.get("sha256") != _sha256(receipt_payload)
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "attempt-2 failure receipt changed across its H3-bound read"
+        )
+    host_log_state = _capture_host_outcome_log_state(
+        repo_root,
+        commit,
+        recovery_attempt=RECOVERY_ATTEMPT_2,
+    )
+    guard_records = _capture_recovery_2_guard_records(repo_root)
+    receipt_guards = cast(list[Mapping[str, Any]], decoded_receipt["guard_observations"])
+    if [
+        {
+            "device": record["device"],
+            "file_type": record["entry_type"],
+            "inode": record["inode"],
+            "mode": int(record["mode"], 8),
+            "nlink": record["nlink"],
+            "ownership_identity_recoverable": False,
+            "path": record["path"],
+            "sha256": record["sha256"],
+            "size": record["bytes"],
+        }
+        for record in guard_records
+    ] != receipt_guards:
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 physical guards differ from the H3 receipt"
+        )
+    log_input = {
+        "path": OUTCOME_ACCESS_LOG_PATH.as_posix(),
+        "role": "sealed_attempt_2_outcome_log_from_h3_git_blob",
+        "bytes": RECOVERY_2_OUTCOME_LOG_BYTES,
+        "sha256": RECOVERY_2_OUTCOME_LOG_SHA256,
+        "repository_commit": commit,
+        "physical_metadata_matches_h3_git_blob_size": True,
+        "physical_contents_opened": False,
+        "git_blob_command": copy.deepcopy(host_log_state["h_blob_command"]),
+    }
+    sealed_inputs = [
+        *copy.deepcopy(inherited),
+        copy.deepcopy(activation),
+        copy.deepcopy(receipt),
+        log_input,
+        *copy.deepcopy(guard_records),
+    ]
+    return {
+        "mode": RECOVERY_ATTEMPT_2,
+        "repository_commit": commit,
+        "historical_chain": copy.deepcopy(RECOVERY_2_HISTORICAL_CHAIN),
+        "outcome_access_log_state": (
+            "present_exact_consumed_attempt_2_unopened_by_e10"
+        ),
+        "outcome_access_log": {
+            "path": OUTCOME_ACCESS_LOG_PATH.as_posix(),
+            "bytes": RECOVERY_2_OUTCOME_LOG_BYTES,
+            "record_count": 2,
+            "sha256": RECOVERY_2_OUTCOME_LOG_SHA256,
+            "source": "exact_h3_git_blob_and_host_lstat_without_host_content_open",
+            "physical_contents_opened": False,
+        },
+        "host_outcome_log_state": host_log_state,
+        "u2_activation": activation,
+        "u2_activation_payload_sha256": _sha256(activation_payload),
+        "attempt_2_failure_receipt": receipt,
+        "attempt_2_failure_receipt_payload_sha256": _sha256(receipt_payload),
+        "guard_records": guard_records,
+        "guard_records_sha256": _records_digest(guard_records),
+        "inherited_p2_input_count": len(RECOVERY_2_INHERITED_P2_PATHS),
+        "inherited_p1_input_count": len(RECOVERY_2_INHERITED_P1_PATHS),
+        "inherited_inputs": inherited,
+        "inherited_inputs_sha256": _records_digest(inherited),
+        "sealed_inputs": sealed_inputs,
+        "sealed_inputs_sha256": _records_digest(sealed_inputs),
+        "p2_inputs_overwritten": False,
+        "p1_inputs_overwritten": False,
+        "target_paths_opened": False,
+        "outcome_paths_opened": False,
+    }
+
+
+def _collect_recovery_record(
+    repo_root: Path,
+    repository_commit: str,
+    recovery_attempt: str,
+) -> dict[str, Any]:
+    mode = _require_recovery_attempt(recovery_attempt)
+    if mode == RECOVERY_ATTEMPT_1:
+        return _collect_recovery_attempt_1_record(repo_root, repository_commit)
+    if mode == RECOVERY_ATTEMPT_2:
+        return _collect_recovery_attempt_2_record(repo_root, repository_commit)
+    raise ClosureE10SourceEvidenceError("recovery record requested without a mode")
+
+
 def _require_host_outcome_directories_absent(repo_root: Path) -> None:
     paths = (
         Path("data/closure_v1/unblinded"),
@@ -1876,8 +2397,16 @@ def _require_pre_generation_namespace(
         raise ClosureE10SourceEvidenceError(
             f"E10 source/final namespace is not pristine: {existing}"
         )
+    inherited_bundle_directories: tuple[Path, ...] = ()
     if mode == RECOVERY_ATTEMPT_1:
-        original_directory = repo_root / SOURCE_EVIDENCE_DIRECTORY
+        inherited_bundle_directories = (SOURCE_EVIDENCE_DIRECTORY,)
+    elif mode == RECOVERY_ATTEMPT_2:
+        inherited_bundle_directories = (
+            SOURCE_EVIDENCE_DIRECTORY,
+            RECOVERY_SOURCE_EVIDENCE_DIRECTORY,
+        )
+    for inherited_directory in inherited_bundle_directories:
+        original_directory = repo_root / inherited_directory
         _require_real_directory_chain(repo_root, original_directory)
         try:
             original_entries = sorted(
@@ -1885,7 +2414,7 @@ def _require_pre_generation_namespace(
             )
         except OSError as exc:
             raise ClosureE10SourceEvidenceError(
-                "recovery requires the inherited P1 source bundle"
+                "recovery requires every inherited source bundle"
             ) from exc
         expected_original_entries = sorted(
             [
@@ -1895,20 +2424,17 @@ def _require_pre_generation_namespace(
         )
         if original_entries != expected_original_entries:
             raise ClosureE10SourceEvidenceError(
-                "recovery inherited P1 source bundle is not exact seven"
+                "recovery inherited source bundle is not exact seven"
             )
     log_path = repo_root / OUTCOME_ACCESS_LOG_PATH
     metadata = log_path.lstat()
-    expected_log_bytes = RECOVERY_OUTCOME_LOG_BYTES if mode else 0
+    expected_log_bytes, _, _, _ = _recovery_log_identity(mode)
     if (
         not stat.S_ISREG(metadata.st_mode)
         or stat.S_ISLNK(metadata.st_mode)
         or metadata.st_nlink != 1
         or metadata.st_size != expected_log_bytes
-        or (
-            mode == RECOVERY_ATTEMPT_1
-            and stat.S_IMODE(metadata.st_mode) != 0o644
-        )
+        or (mode is not None and stat.S_IMODE(metadata.st_mode) != 0o644)
     ):
         raise ClosureE10SourceEvidenceError(
             "E10 source evidence outcome-log metadata does not match its mode"
@@ -2142,21 +2668,18 @@ def check_closure_e10_source_evidence(
     _require_pre_generation_namespace(root, recovery_attempt=mode)
     repository = _collect_exact_h_repository_state(root, expected_h_commit)
     recovery = (
-        _collect_recovery_attempt_1_record(root, expected_h_commit)
-        if mode == RECOVERY_ATTEMPT_1
+        _collect_recovery_record(root, expected_h_commit, mode)
+        if mode is not None
         else None
     )
+    _, _, _, outcome_log_state = _recovery_log_identity(mode)
     result = {
         "status": "ready_to_generate",
         "gate": GATE,
         "repository": repository,
         "source_artifact_count": 6,
         "manifest_path": manifest_path.as_posix(),
-        "outcome_access_log_state": (
-            "present_exact_consumed_attempt_1_unopened_by_e10"
-            if mode == RECOVERY_ATTEMPT_1
-            else "present_empty_unopened"
-        ),
+        "outcome_access_log_state": outcome_log_state,
         "public_test_database_configured": True,
         "public_test_database_dialect": "postgresql_asyncpg",
         "verification_commands_run": False,
@@ -2167,7 +2690,11 @@ def check_closure_e10_source_evidence(
         "writes_performed": False,
     }
     if recovery is not None:
-        result["recovery_attempt"] = RECOVERY_ATTEMPT_1
+        if mode is None:
+            raise ClosureE10SourceEvidenceError(
+                "recovery record exists without an exact recovery mode"
+            )
+        result["recovery_attempt"] = mode
         result["recovery"] = recovery
     return result
 
@@ -2565,10 +3092,12 @@ def _validate_filesystem_isolation(
     recovery_attempt: str | None = None,
 ) -> Mapping[str, Any]:
     mode = _require_recovery_attempt(recovery_attempt)
-    expected_log_bytes = RECOVERY_OUTCOME_LOG_BYTES if mode else 0
-    expected_log_sha256 = (
-        RECOVERY_OUTCOME_LOG_SHA256 if mode else _sha256(b"")
-    )
+    (
+        expected_log_bytes,
+        expected_log_sha256,
+        expected_log_line_count,
+        _,
+    ) = _recovery_log_identity(mode)
     if not isinstance(value, Mapping) or set(value) != {
         "schema_version",
         "backend",
@@ -2669,10 +3198,7 @@ def _validate_filesystem_isolation(
         or cast(int, host_log_pre["inode"]) <= 0
         or re.fullmatch(r"[0-7]{3}", str(host_log_pre.get("mode"))) is None
         or int(str(host_log_pre["mode"]), 8) & 0o111
-        or (
-            mode == RECOVERY_ATTEMPT_1
-            and host_log_pre.get("mode") != "644"
-        )
+        or (mode is not None and host_log_pre.get("mode") != "644")
         or host_log_pre.get("nlink") != 1
         or host_log_pre.get("bytes") != expected_log_bytes
         or type(host_log_pre.get("mtime_ns")) is not int
@@ -2685,7 +3211,7 @@ def _validate_filesystem_isolation(
             and host_log_pre.get("index_blob_sha1") != EMPTY_GIT_BLOB_SHA1
         )
         or (
-            mode == RECOVERY_ATTEMPT_1
+            mode is not None
             and re.fullmatch(
                 r"[0-9a-f]{40}",
                 str(host_log_pre.get("index_blob_sha1", "")),
@@ -2713,7 +3239,7 @@ def _validate_filesystem_isolation(
         or host_log_command.get("stdout_sha256") != expected_log_sha256
         or host_log_command.get("stderr_sha256") != _sha256(b"")
         or host_log_command.get("stdout_line_count")
-        != (1 if mode == RECOVERY_ATTEMPT_1 else 0)
+        != expected_log_line_count
         or host_log_command.get("stderr_line_count") != 0
     ):
         raise ClosureE10SourceEvidenceError(
@@ -4065,13 +4591,21 @@ def validate_closure_e10_environment_payload(
     host_log_pre = filesystem_isolation.get(
         "host_outcome_log_pre_verification"
     )
-    if (
-        mode is None
-        and isinstance(host_log_pre, Mapping)
-        and host_log_pre.get("bytes") == RECOVERY_OUTCOME_LOG_BYTES
-        and host_log_pre.get("h_blob_sha256") == RECOVERY_OUTCOME_LOG_SHA256
-    ):
-        mode = RECOVERY_ATTEMPT_1
+    if mode is None and isinstance(host_log_pre, Mapping):
+        observed_log_identity = (
+            host_log_pre.get("bytes"),
+            host_log_pre.get("h_blob_sha256"),
+        )
+        if observed_log_identity == (
+            RECOVERY_OUTCOME_LOG_BYTES,
+            RECOVERY_OUTCOME_LOG_SHA256,
+        ):
+            mode = RECOVERY_ATTEMPT_1
+        elif observed_log_identity == (
+            RECOVERY_2_OUTCOME_LOG_BYTES,
+            RECOVERY_2_OUTCOME_LOG_SHA256,
+        ):
+            mode = RECOVERY_ATTEMPT_2
     validated_isolation = _validate_filesystem_isolation(
         filesystem_isolation,
         repository_commit=commit,
@@ -4730,12 +5264,12 @@ def build_closure_e10_source_manifest(
     mode = _require_recovery_attempt(recovery_attempt)
     if set(artifacts) != set(SOURCE_EVIDENCE_KEYS):
         raise ClosureE10SourceEvidenceError("source evidence artifact keys are not exact")
-    if mode == RECOVERY_ATTEMPT_1 and (
+    if mode is not None and (
         not isinstance(recovery, Mapping)
         or not isinstance(recovery.get("sealed_inputs"), list)
     ):
         raise ClosureE10SourceEvidenceError(
-            "recovery manifest requires its exact attempt-1 record"
+            "recovery manifest requires its exact attempt record"
         )
     records = [
         _source_record(
@@ -4748,13 +5282,11 @@ def build_closure_e10_source_manifest(
     ]
     builder_source = copy.deepcopy(dict(repository_state.get("builder_source", {})))
     manifest = {
-        "schema_version": (
-            RECOVERY_SCHEMA_VERSION if mode == RECOVERY_ATTEMPT_1 else SCHEMA_VERSION
-        ),
+        "schema_version": _source_bundle_schema_version(mode),
         "status": "completed",
         "publication_status": (
             "source_evidence_recovery_written_unpublished"
-            if mode == RECOVERY_ATTEMPT_1
+            if mode is not None
             else "source_evidence_written_unpublished"
         ),
         "gate": GATE,
@@ -4763,7 +5295,7 @@ def build_closure_e10_source_manifest(
         "script": builder_source,
         "inputs": (
             copy.deepcopy(list(cast(Mapping[str, Any], recovery)["sealed_inputs"]))
-            if mode == RECOVERY_ATTEMPT_1
+            if mode is not None
             else []
         ),
         "outputs": copy.deepcopy(records),
@@ -4826,12 +5358,12 @@ def build_closure_e10_source_manifest(
             "dvc_push_performed": False,
         },
     }
-    if mode == RECOVERY_ATTEMPT_1:
+    if mode is not None:
         if not isinstance(recovery, Mapping):
             raise ClosureE10SourceEvidenceError(
-                "recovery manifest requires its exact attempt-1 record"
+                "recovery manifest requires its exact attempt record"
             )
-        manifest["recovery_attempt"] = RECOVERY_ATTEMPT_1
+        manifest["recovery_attempt"] = mode
         manifest["recovery"] = copy.deepcopy(dict(recovery))
     elif recovery is not None:
         raise ClosureE10SourceEvidenceError(
@@ -4955,6 +5487,215 @@ def _validate_recovery_attempt_1_manifest_record(
     return copy.deepcopy(dict(value))
 
 
+def _validate_recovery_attempt_2_manifest_record(
+    value: Any, *, repository_commit: str
+) -> dict[str, Any]:
+    expected_keys = {
+        "mode",
+        "repository_commit",
+        "historical_chain",
+        "outcome_access_log_state",
+        "outcome_access_log",
+        "host_outcome_log_state",
+        "u2_activation",
+        "u2_activation_payload_sha256",
+        "attempt_2_failure_receipt",
+        "attempt_2_failure_receipt_payload_sha256",
+        "guard_records",
+        "guard_records_sha256",
+        "inherited_p2_input_count",
+        "inherited_p1_input_count",
+        "inherited_inputs",
+        "inherited_inputs_sha256",
+        "sealed_inputs",
+        "sealed_inputs_sha256",
+        "p2_inputs_overwritten",
+        "p1_inputs_overwritten",
+        "target_paths_opened",
+        "outcome_paths_opened",
+    }
+    if not isinstance(value, Mapping) or set(value) != expected_keys:
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 manifest record keys drifted"
+        )
+    inherited = value.get("inherited_inputs")
+    activation = value.get("u2_activation")
+    receipt = value.get("attempt_2_failure_receipt")
+    guards = value.get("guard_records")
+    sealed_inputs = value.get("sealed_inputs")
+    if (
+        value.get("mode") != RECOVERY_ATTEMPT_2
+        or value.get("repository_commit") != repository_commit
+        or value.get("historical_chain") != RECOVERY_2_HISTORICAL_CHAIN
+        or value.get("outcome_access_log_state")
+        != "present_exact_consumed_attempt_2_unopened_by_e10"
+        or value.get("outcome_access_log")
+        != {
+            "path": OUTCOME_ACCESS_LOG_PATH.as_posix(),
+            "bytes": RECOVERY_2_OUTCOME_LOG_BYTES,
+            "record_count": 2,
+            "sha256": RECOVERY_2_OUTCOME_LOG_SHA256,
+            "source": (
+                "exact_h3_git_blob_and_host_lstat_without_host_content_open"
+            ),
+            "physical_contents_opened": False,
+        }
+        or value.get("inherited_p2_input_count")
+        != len(RECOVERY_2_INHERITED_P2_PATHS)
+        or value.get("inherited_p1_input_count")
+        != len(RECOVERY_2_INHERITED_P1_PATHS)
+        or not isinstance(inherited, list)
+        or len(inherited) != len(RECOVERY_2_INHERITED_PATHS)
+        or not isinstance(activation, Mapping)
+        or not isinstance(receipt, Mapping)
+        or not isinstance(guards, list)
+        or len(guards) != len(RECOVERY_2_GUARD_IDENTITIES)
+        or not isinstance(sealed_inputs, list)
+        or value.get("p2_inputs_overwritten") is not False
+        or value.get("p1_inputs_overwritten") is not False
+        or value.get("target_paths_opened") is not False
+        or value.get("outcome_paths_opened") is not False
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 manifest identity drifted"
+        )
+    if [
+        record.get("path") for record in inherited if isinstance(record, Mapping)
+    ] != [path.as_posix() for path in RECOVERY_2_INHERITED_PATHS]:
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 inherited paths drifted"
+        )
+    for record in [*inherited, activation, receipt]:
+        if (
+            not isinstance(record, Mapping)
+            or record.get("repository_commit") != repository_commit
+            or type(record.get("bytes")) is not int
+            or cast(int, record["bytes"]) <= 0
+            or re.fullmatch(r"[0-9a-f]{64}", str(record.get("sha256", "")))
+            is None
+            or record.get("physical_equals_h3_git_blob") is not True
+            or not isinstance(record.get("git_blob_command"), Mapping)
+        ):
+            raise ClosureE10SourceEvidenceError(
+                "recovery-2 Git-bound input record drifted"
+            )
+    for record in [*inherited, activation]:
+        path = str(record["path"])
+        expected_historical_commit = (
+            RECOVERY_2_HISTORICAL_CHAIN["u2_commit"]
+            if path == RECOVERY_ACTIVATION_PATH.as_posix()
+            else (
+                RECOVERY_2_HISTORICAL_CHAIN["p2_commit"]
+                if Path(path) in RECOVERY_2_INHERITED_P2_PATHS
+                else RECOVERY_2_HISTORICAL_CHAIN["p1_commit"]
+            )
+        )
+        if (
+            record.get("historical_repository_commit")
+            != expected_historical_commit
+            or record.get("physical_equals_historical_git_blob") is not True
+            or not isinstance(record.get("historical_git_blob_command"), Mapping)
+        ):
+            raise ClosureE10SourceEvidenceError(
+                "recovery-2 historical Git input binding drifted"
+            )
+    if (
+        activation.get("path") != RECOVERY_ACTIVATION_PATH.as_posix()
+        or activation.get("role") != "published_u2_recovery_activation"
+        or activation.get("bytes") != RECOVERY_ACTIVATION_BYTES
+        or activation.get("sha256") != RECOVERY_ACTIVATION_SHA256
+        or value.get("u2_activation_payload_sha256")
+        != RECOVERY_ACTIVATION_SHA256
+        or receipt.get("path") != ATTEMPT_2_FAILURE_RECEIPT_PATH.as_posix()
+        or receipt.get("role") != "closure_e0_u_attempt_2_failure_receipt"
+        or value.get("attempt_2_failure_receipt_payload_sha256")
+        != receipt.get("sha256")
+        or value.get("inherited_inputs_sha256")
+        != _records_digest(inherited)
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 input hashes drifted"
+        )
+    expected_guard_records = [
+        {
+            "path": path.as_posix(),
+            "role": (
+                "sealed_attempt_1_guard_retained"
+                if path == ATTEMPT_1_GUARD_PATH
+                else "sealed_attempt_2_guard_retained"
+            ),
+            "entry_type": "regular_file",
+            "device": identity["device"],
+            "inode": identity["inode"],
+            "mode": "600",
+            "nlink": 1,
+            "bytes": 0,
+            "sha256": _sha256(b""),
+            "physical_contents_opened": False,
+        }
+        for path, identity in RECOVERY_2_GUARD_IDENTITIES.items()
+    ]
+    if (
+        guards != expected_guard_records
+        or value.get("guard_records_sha256") != _records_digest(guards)
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 retained guard records drifted"
+        )
+    host_log_state = value.get("host_outcome_log_state")
+    if not isinstance(host_log_state, Mapping):
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 host log state is absent"
+        )
+    expected_log_input = {
+        "path": OUTCOME_ACCESS_LOG_PATH.as_posix(),
+        "role": "sealed_attempt_2_outcome_log_from_h3_git_blob",
+        "bytes": RECOVERY_2_OUTCOME_LOG_BYTES,
+        "sha256": RECOVERY_2_OUTCOME_LOG_SHA256,
+        "repository_commit": repository_commit,
+        "physical_metadata_matches_h3_git_blob_size": True,
+        "physical_contents_opened": False,
+        "git_blob_command": copy.deepcopy(host_log_state.get("h_blob_command")),
+    }
+    expected_sealed_inputs = [
+        *copy.deepcopy(inherited),
+        dict(activation),
+        dict(receipt),
+        expected_log_input,
+        *copy.deepcopy(guards),
+    ]
+    if (
+        sealed_inputs != expected_sealed_inputs
+        or value.get("sealed_inputs_sha256") != _records_digest(sealed_inputs)
+    ):
+        raise ClosureE10SourceEvidenceError(
+            "recovery-2 sealed inputs drifted"
+        )
+    return copy.deepcopy(dict(value))
+
+
+def _validate_recovery_manifest_record(
+    value: Any,
+    *,
+    repository_commit: str,
+    recovery_attempt: str,
+) -> dict[str, Any]:
+    mode = _require_recovery_attempt(recovery_attempt)
+    if mode == RECOVERY_ATTEMPT_1:
+        return _validate_recovery_attempt_1_manifest_record(
+            value,
+            repository_commit=repository_commit,
+        )
+    if mode == RECOVERY_ATTEMPT_2:
+        return _validate_recovery_attempt_2_manifest_record(
+            value,
+            repository_commit=repository_commit,
+        )
+    raise ClosureE10SourceEvidenceError(
+        "recovery manifest validation requested without a mode"
+    )
+
+
 def validate_closure_e10_source_payloads(
     *,
     artifacts: Mapping[str, bytes],
@@ -4984,13 +5725,12 @@ def validate_closure_e10_source_payloads(
         "outcome_safety",
         "publication",
     }
-    if mode == RECOVERY_ATTEMPT_1:
+    if mode is not None:
         required_manifest_keys.update({"recovery_attempt", "recovery"})
     if set(manifest) != required_manifest_keys:
         raise ClosureE10SourceEvidenceError("source manifest keys are not exact")
     if (
-        manifest.get("schema_version")
-        != (RECOVERY_SCHEMA_VERSION if mode else SCHEMA_VERSION)
+        manifest.get("schema_version") != _source_bundle_schema_version(mode)
         or manifest.get("status") != "completed"
         or manifest.get("publication_status")
         != (
@@ -5031,12 +5771,13 @@ def validate_closure_e10_source_payloads(
     ):
         raise ClosureE10SourceEvidenceError("H-bound builder source record drifted")
     recovery_record = None
-    if mode == RECOVERY_ATTEMPT_1:
-        if manifest.get("recovery_attempt") != RECOVERY_ATTEMPT_1:
+    if mode is not None:
+        if manifest.get("recovery_attempt") != mode:
             raise ClosureE10SourceEvidenceError("source recovery mode drifted")
-        recovery_record = _validate_recovery_attempt_1_manifest_record(
+        recovery_record = _validate_recovery_manifest_record(
             manifest.get("recovery"),
             repository_commit=commit,
+            recovery_attempt=mode,
         )
     if manifest.get("script") != builder_source or manifest.get("inputs") != (
         recovery_record["sealed_inputs"] if recovery_record is not None else []
@@ -6464,12 +7205,11 @@ def _publish_closure_e10_source_bundle_transaction(
     )
     expected_recovery_record = (
         cast(Mapping[str, Any], manifest["recovery"])
-        if mode == RECOVERY_ATTEMPT_1
+        if mode is not None
         else None
     )
-    if mode == RECOVERY_ATTEMPT_1 and _collect_recovery_attempt_1_record(
-        root,
-        expected_h_commit,
+    if mode is not None and _collect_recovery_record(
+        root, expected_h_commit, mode
     ) != expected_recovery_record:
         raise ClosureE10SourceEvidenceError(
             "recovery source publication inputs drifted before transaction"
@@ -6481,7 +7221,7 @@ def _publish_closure_e10_source_bundle_transaction(
         raise ClosureE10SourceEvidenceError(
             "final E10 namespace must remain absent during source publication"
         )
-    if mode == RECOVERY_ATTEMPT_1:
+    if mode is not None:
         publication_log_state = _capture_host_outcome_log_state(
             root,
             expected_h_commit,
@@ -6679,12 +7419,11 @@ def _publish_closure_e10_source_bundle_transaction(
         )
         if set(loaded) != set(SOURCE_EVIDENCE_KEYS):
             raise ClosureE10SourceEvidenceError("post-publication load drifted")
-        if mode == RECOVERY_ATTEMPT_1 and _collect_recovery_attempt_1_record(
-            root,
-            expected_h_commit,
+        if mode is not None and _collect_recovery_record(
+            root, expected_h_commit, mode
         ) != expected_recovery_record:
             raise ClosureE10SourceEvidenceError(
-                "recovery inherited P1 inputs changed during publication"
+                "recovery inherited inputs changed during publication"
             )
         _require_directory_entry_identity(
             parent_fd,
@@ -6880,7 +7619,7 @@ def _publish_closure_e10_source_bundle_transaction(
     return {
         "status": (
             "source_evidence_recovery_written_unpublished"
-            if mode == RECOVERY_ATTEMPT_1
+            if mode is not None
             else "source_evidence_written_unpublished"
         ),
         "gate": GATE,
@@ -6899,8 +7638,8 @@ def _publish_closure_e10_source_bundle_transaction(
         "private_full_opened": False,
         "writes_performed": True,
         **(
-            {"recovery_attempt": RECOVERY_ATTEMPT_1}
-            if mode == RECOVERY_ATTEMPT_1
+            {"recovery_attempt": mode}
+            if mode is not None
             else {}
         ),
     }
@@ -7108,6 +7847,8 @@ def _validate_loader_worktree_status(
     permitted = {OUTCOME_ACCESS_LOG_PATH.as_posix()}
     if mode == RECOVERY_ATTEMPT_1:
         permitted.add(RECOVERY_ACTIVATION_PATH.as_posix())
+    elif mode == RECOVERY_ATTEMPT_2:
+        permitted.add(RECOVERY_2_ACTIVATION_PATH.as_posix())
     if len(allowed) != len(set(allowed)) or any(
         path not in permitted for path in allowed
     ):
@@ -7115,8 +7856,12 @@ def _validate_loader_worktree_status(
             "published E10 source loader received an invalid dirty-path allowance"
         )
     observed_status = status.splitlines() if status else []
-    activation = RECOVERY_ACTIVATION_PATH.as_posix()
-    activation_allowed = mode == RECOVERY_ATTEMPT_1 and activation in allowed
+    activation = (
+        RECOVERY_2_ACTIVATION_PATH.as_posix()
+        if mode == RECOVERY_ATTEMPT_2
+        else RECOVERY_ACTIVATION_PATH.as_posix()
+    )
+    activation_allowed = mode is not None and activation in allowed
     accepted_recovery_status = len(observed_status) == 1 and observed_status[0] in {
         f"?? {activation}",
         f"A  {activation}",
@@ -7275,6 +8020,16 @@ def load_closure_e10_software_evidence(
             if stdout.encode("utf-8") != captured_payload:
                 raise ClosureE10SourceEvidenceError(
                     f"captured E10 source differs from anchored HEAD: {path}"
+                )
+        if mode is not None:
+            expected_recovery = manifest.get("recovery")
+            if _collect_recovery_record(
+                root,
+                expected_h_commit,
+                mode,
+            ) != expected_recovery:
+                raise ClosureE10SourceEvidenceError(
+                    "published recovery source inputs drifted from exact H"
                 )
         repeated_published_state = _capture_published_loader_state(root)
         if repeated_published_state != published_state:
@@ -7686,7 +8441,7 @@ def generate_closure_e10_source_evidence(
     repository_state = cast(Mapping[str, Any], check["repository"])
     recovery_record = (
         copy.deepcopy(cast(Mapping[str, Any], check["recovery"]))
-        if mode == RECOVERY_ATTEMPT_1
+        if mode is not None
         else None
     )
     owned_guard: OwnedGuard | None = None
@@ -7967,10 +8722,11 @@ def generate_closure_e10_source_evidence(
         filesystem_isolation["host_outcome_log_post_verification"] = (
             repeated_host_log_state
         )
-        if mode == RECOVERY_ATTEMPT_1:
-            repeated_recovery = _collect_recovery_attempt_1_record(
+        if mode is not None:
+            repeated_recovery = _collect_recovery_record(
                 root,
                 expected_h_commit,
+                mode,
             )
             if repeated_recovery != recovery_record:
                 raise ClosureE10SourceEvidenceError(
@@ -8204,20 +8960,24 @@ def _parser() -> argparse.ArgumentParser:
     modes.add_argument("--emit-openapi", type=Path)
     modes.add_argument("--runtime-probe", action="store_true")
     parser.add_argument("--repository-commit")
-    parser.add_argument("--recovery-attempt-1", action="store_true")
+    recovery_modes = parser.add_mutually_exclusive_group()
+    recovery_modes.add_argument("--recovery-attempt-1", action="store_true")
+    recovery_modes.add_argument("--recovery-attempt-2", action="store_true")
     return parser
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = _parser().parse_args(argv)
-    recovery_attempt = (
-        RECOVERY_ATTEMPT_1 if args.recovery_attempt_1 else None
-    )
+    recovery_attempt = None
+    if args.recovery_attempt_1:
+        recovery_attempt = RECOVERY_ATTEMPT_1
+    elif args.recovery_attempt_2:
+        recovery_attempt = RECOVERY_ATTEMPT_2
     if recovery_attempt is not None and (
         args.runtime_probe or args.emit_openapi is not None
     ):
         raise ClosureE10SourceEvidenceError(
-            "--recovery-attempt-1 is only valid with check/generate/validate"
+            "recovery attempt flags are only valid with check/generate/validate"
         )
     if args.runtime_probe:
         print(_canonical_json(_runtime_probe()).decode("utf-8"), end="")
@@ -8255,8 +9015,8 @@ def main(argv: Sequence[str] | None = None) -> int:
             "private_full_opened": False,
             "writes_performed": False,
             **(
-                {"recovery_attempt": RECOVERY_ATTEMPT_1}
-                if recovery_attempt == RECOVERY_ATTEMPT_1
+                {"recovery_attempt": recovery_attempt}
+                if recovery_attempt is not None
                 else {}
             ),
         }

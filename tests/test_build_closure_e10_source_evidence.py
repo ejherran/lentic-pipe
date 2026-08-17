@@ -365,6 +365,257 @@ def _recovery_record() -> dict[str, Any]:
     }
 
 
+def _recovery_2_host_outcome_log_state() -> dict[str, Any]:
+    blob_oid = "4" * 40
+    state = _host_outcome_log_state()
+    state.update(
+        {
+            "mode": "644",
+            "bytes": evidence.RECOVERY_2_OUTCOME_LOG_BYTES,
+            "h_blob_bytes": evidence.RECOVERY_2_OUTCOME_LOG_BYTES,
+            "h_blob_sha256": evidence.RECOVERY_2_OUTCOME_LOG_SHA256,
+            "index_blob_sha1": blob_oid,
+        }
+    )
+    state["h_blob_command"]["stdout_sha256"] = (
+        evidence.RECOVERY_2_OUTCOME_LOG_SHA256
+    )
+    state["h_blob_command"]["stdout_line_count"] = 2
+    expected_index = (
+        f"100644 {blob_oid} 0\t{evidence.OUTCOME_ACCESS_LOG_PATH.as_posix()}\n"
+    ).encode("utf-8")
+    state["index_entry_command"] = _command(
+        [
+            "git",
+            "ls-files",
+            "--stage",
+            "--",
+            evidence.OUTCOME_ACCESS_LOG_PATH.as_posix(),
+        ],
+        {"GIT_OPTIONAL_LOCKS": "0"},
+        stdout=expected_index,
+    )
+    return state
+
+
+def _attempt_2_receipt_payload() -> bytes:
+    return evidence._canonical_json(
+        {
+            "schema_version": "closure_e0_u_attempt_2_failure_v1",
+            "experiment_id": "closure_v1",
+            "gate": "E0-U",
+            "attempt_ordinal": 2,
+            "execution_id": evidence.ATTEMPT_2_EXECUTION_ID,
+            "historical_chain": evidence.RECOVERY_2_HISTORICAL_CHAIN,
+            "activation": {
+                "bytes": evidence.RECOVERY_ACTIVATION_BYTES,
+                "git_blob_oid": evidence.RECOVERY_ACTIVATION_GIT_BLOB_OID,
+                "path": evidence.RECOVERY_ACTIVATION_PATH.as_posix(),
+                "sha256": evidence.RECOVERY_ACTIVATION_SHA256,
+            },
+            "access_log": {
+                "path": evidence.OUTCOME_ACCESS_LOG_PATH.as_posix(),
+                "bytes": evidence.RECOVERY_2_OUTCOME_LOG_BYTES,
+                "record_count": 2,
+                "sha256": evidence.RECOVERY_2_OUTCOME_LOG_SHA256,
+                "attempt_1_prefix": {
+                    "bytes": evidence.RECOVERY_OUTCOME_LOG_BYTES,
+                    "sha256": evidence.RECOVERY_OUTCOME_LOG_SHA256,
+                },
+                "record_2": {
+                    "bytes": evidence.RECOVERY_2_OUTCOME_LOG_RECORD_2_BYTES,
+                    "sha256": evidence.RECOVERY_2_OUTCOME_LOG_RECORD_2_SHA256,
+                },
+            },
+            "guard_observations": evidence._attempt_2_guard_receipt_records(),
+            "failure": {
+                "component_id": "E4_trophic_evaluation",
+                "component_metrics_computed": False,
+                "diagnosis_outcome_free": True,
+                "diagnosed_source_phase": (
+                    "outcome_free_synthetic_e1_to_e4_interface_reproduction"
+                ),
+                "error": evidence.ATTEMPT_2_FAILURE_ERROR,
+                "outcomes_opened": True,
+                "process_exit_code": 2,
+                "publication_started": False,
+                "result_constructed": False,
+                "root_cause": (
+                    "E1 trophic prediction column order differed from the exact "
+                    "E4 prediction input contract"
+                ),
+            },
+            "publication": {
+                "expected_output_count": 52,
+                "published_output_count": 0,
+            },
+        }
+    )
+
+
+def _recovery_2_record() -> dict[str, Any]:
+    host_log_state = _recovery_2_host_outcome_log_state()
+    inherited = [
+        {
+            "path": path.as_posix(),
+            "role": (
+                "inherited_p2_source_evidence_bundle"
+                if path in evidence.RECOVERY_2_INHERITED_P2_PATHS
+                else (
+                    "inherited_p1_phase3_dvc_pointer"
+                    if path in evidence.PHASE3_OVERLAY_POINTER_PATHS
+                    else "inherited_p1_phase3_overlay_manifest"
+                )
+            ),
+            "bytes": 10,
+            "sha256": hashlib.sha256(path.as_posix().encode()).hexdigest(),
+            "repository_commit": H_COMMIT,
+            "physical_equals_h3_git_blob": True,
+            "git_blob_command": _command(
+                ["git", "show", f"{H_COMMIT}:{path.as_posix()}"],
+                {"GIT_OPTIONAL_LOCKS": "0"},
+            ),
+            "historical_repository_commit": (
+                evidence.RECOVERY_2_HISTORICAL_CHAIN["p2_commit"]
+                if path in evidence.RECOVERY_2_INHERITED_P2_PATHS
+                else evidence.RECOVERY_2_HISTORICAL_CHAIN["p1_commit"]
+            ),
+            "physical_equals_historical_git_blob": True,
+            "historical_git_blob_command": _command(
+                [
+                    "git",
+                    "show",
+                    (
+                        f"{evidence.RECOVERY_2_HISTORICAL_CHAIN['p2_commit']}:"
+                        if path in evidence.RECOVERY_2_INHERITED_P2_PATHS
+                        else f"{evidence.RECOVERY_2_HISTORICAL_CHAIN['p1_commit']}:"
+                    )
+                    + path.as_posix(),
+                ],
+                {"GIT_OPTIONAL_LOCKS": "0"},
+            ),
+        }
+        for path in evidence.RECOVERY_2_INHERITED_PATHS
+    ]
+    activation = {
+        "path": evidence.RECOVERY_ACTIVATION_PATH.as_posix(),
+        "role": "published_u2_recovery_activation",
+        "bytes": evidence.RECOVERY_ACTIVATION_BYTES,
+        "sha256": evidence.RECOVERY_ACTIVATION_SHA256,
+        "repository_commit": H_COMMIT,
+        "physical_equals_h3_git_blob": True,
+        "git_blob_command": _command(
+            [
+                "git",
+                "show",
+                f"{H_COMMIT}:{evidence.RECOVERY_ACTIVATION_PATH.as_posix()}",
+            ],
+            {"GIT_OPTIONAL_LOCKS": "0"},
+        ),
+        "historical_repository_commit": evidence.RECOVERY_2_HISTORICAL_CHAIN[
+            "u2_commit"
+        ],
+        "physical_equals_historical_git_blob": True,
+        "historical_git_blob_command": _command(
+            [
+                "git",
+                "show",
+                (
+                    f"{evidence.RECOVERY_2_HISTORICAL_CHAIN['u2_commit']}:"
+                    f"{evidence.RECOVERY_ACTIVATION_PATH.as_posix()}"
+                ),
+            ],
+            {"GIT_OPTIONAL_LOCKS": "0"},
+        ),
+    }
+    receipt_payload = _attempt_2_receipt_payload()
+    receipt = {
+        "path": evidence.ATTEMPT_2_FAILURE_RECEIPT_PATH.as_posix(),
+        "role": "closure_e0_u_attempt_2_failure_receipt",
+        "bytes": len(receipt_payload),
+        "sha256": hashlib.sha256(receipt_payload).hexdigest(),
+        "repository_commit": H_COMMIT,
+        "physical_equals_h3_git_blob": True,
+        "git_blob_command": _command(
+            [
+                "git",
+                "show",
+                f"{H_COMMIT}:{evidence.ATTEMPT_2_FAILURE_RECEIPT_PATH.as_posix()}",
+            ],
+            {"GIT_OPTIONAL_LOCKS": "0"},
+        ),
+    }
+    guards = [
+        {
+            "path": path.as_posix(),
+            "role": (
+                "sealed_attempt_1_guard_retained"
+                if path == evidence.ATTEMPT_1_GUARD_PATH
+                else "sealed_attempt_2_guard_retained"
+            ),
+            "entry_type": "regular_file",
+            "device": identity["device"],
+            "inode": identity["inode"],
+            "mode": "600",
+            "nlink": 1,
+            "bytes": 0,
+            "sha256": hashlib.sha256(b"").hexdigest(),
+            "physical_contents_opened": False,
+        }
+        for path, identity in evidence.RECOVERY_2_GUARD_IDENTITIES.items()
+    ]
+    log_input = {
+        "path": evidence.OUTCOME_ACCESS_LOG_PATH.as_posix(),
+        "role": "sealed_attempt_2_outcome_log_from_h3_git_blob",
+        "bytes": evidence.RECOVERY_2_OUTCOME_LOG_BYTES,
+        "sha256": evidence.RECOVERY_2_OUTCOME_LOG_SHA256,
+        "repository_commit": H_COMMIT,
+        "physical_metadata_matches_h3_git_blob_size": True,
+        "physical_contents_opened": False,
+        "git_blob_command": copy.deepcopy(host_log_state["h_blob_command"]),
+    }
+    sealed_inputs = [
+        *copy.deepcopy(inherited),
+        copy.deepcopy(activation),
+        copy.deepcopy(receipt),
+        log_input,
+        *copy.deepcopy(guards),
+    ]
+    return {
+        "mode": evidence.RECOVERY_ATTEMPT_2,
+        "repository_commit": H_COMMIT,
+        "historical_chain": copy.deepcopy(evidence.RECOVERY_2_HISTORICAL_CHAIN),
+        "outcome_access_log_state": (
+            "present_exact_consumed_attempt_2_unopened_by_e10"
+        ),
+        "outcome_access_log": {
+            "path": evidence.OUTCOME_ACCESS_LOG_PATH.as_posix(),
+            "bytes": evidence.RECOVERY_2_OUTCOME_LOG_BYTES,
+            "record_count": 2,
+            "sha256": evidence.RECOVERY_2_OUTCOME_LOG_SHA256,
+            "source": "exact_h3_git_blob_and_host_lstat_without_host_content_open",
+            "physical_contents_opened": False,
+        },
+        "host_outcome_log_state": host_log_state,
+        "u2_activation": activation,
+        "u2_activation_payload_sha256": evidence.RECOVERY_ACTIVATION_SHA256,
+        "attempt_2_failure_receipt": receipt,
+        "attempt_2_failure_receipt_payload_sha256": receipt["sha256"],
+        "guard_records": guards,
+        "guard_records_sha256": evidence._records_digest(guards),
+        "inherited_p2_input_count": len(evidence.RECOVERY_2_INHERITED_P2_PATHS),
+        "inherited_p1_input_count": len(evidence.RECOVERY_2_INHERITED_P1_PATHS),
+        "inherited_inputs": inherited,
+        "inherited_inputs_sha256": evidence._records_digest(inherited),
+        "sealed_inputs": sealed_inputs,
+        "sealed_inputs_sha256": evidence._records_digest(sealed_inputs),
+        "p2_inputs_overwritten": False,
+        "p1_inputs_overwritten": False,
+        "target_paths_opened": False,
+        "outcome_paths_opened": False,
+    }
+
+
 def _filesystem_isolation(
     commands: dict[str, dict[str, Any]],
 ) -> dict[str, Any]:
@@ -815,6 +1066,40 @@ def _fixture_recovery_bundle() -> tuple[dict[str, bytes], dict[str, Any]]:
     return artifacts, manifest
 
 
+def _fixture_recovery_2_bundle() -> tuple[dict[str, bytes], dict[str, Any]]:
+    artifacts, initial_manifest = _fixture_bundle()
+    commands = _commands()
+    isolation = _filesystem_isolation(commands)
+    recovery_host_log = _recovery_2_host_outcome_log_state()
+    isolation["host_outcome_log_pre_verification"] = copy.deepcopy(
+        recovery_host_log
+    )
+    isolation["host_outcome_log_post_verification"] = copy.deepcopy(
+        recovery_host_log
+    )
+    environment = json.loads(artifacts["environment"])
+    environment["filesystem_isolation"] = copy.deepcopy(isolation)
+    artifacts["environment"] = evidence._pretty_json(environment)
+    verification = initial_manifest["verification"]
+    recovery = _recovery_2_record()
+    manifest = evidence.build_closure_e10_source_manifest(
+        repository_commit=H_COMMIT,
+        artifacts=artifacts,
+        repository_state=_repository_state(),
+        commands=commands,
+        public_totals=verification["public_tests"],
+        public_skip_ledger=verification["public_skip_ledger"],
+        e2e_totals=verification["end_to_end_tests"],
+        contract_validation=verification["openapi_contract"],
+        dvc_restore=verification["dvc_restore"],
+        filesystem_isolation=isolation,
+        generated_at_utc="2026-08-16T01:00:00+00:00",
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+        recovery=recovery,
+    )
+    return artifacts, manifest
+
+
 def _repository_layout(root: Path) -> None:
     (root / "reports/closure_v1/00_protocol").mkdir(parents=True)
     (root / "reports/closure_v1/00_protocol/outcome_access_log.jsonl").write_bytes(b"")
@@ -884,6 +1169,21 @@ def test_source_namespace_is_distinct_and_loader_api_is_exact() -> None:
     )
     assert len(evidence.RECOVERY_SOURCE_EVIDENCE_PATHS) == 6
     assert len(evidence.RECOVERY_INHERITED_P1_PATHS) == 10
+    assert evidence.RECOVERY_ATTEMPT_2 == "recovery-attempt-2"
+    assert evidence.RECOVERY_2_ACTIVATION_PATH == Path(
+        "reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json"
+    )
+    assert evidence.RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY == Path(
+        "reports/closure_v1/00_protocol/software_evidence_source_recovery_2"
+    )
+    assert evidence.RECOVERY_2_SOURCE_MANIFEST_PATH == (
+        evidence.RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY
+        / "software_evidence_source_manifest.json"
+    )
+    assert len(evidence.RECOVERY_2_SOURCE_EVIDENCE_PATHS) == 6
+    assert len(evidence.RECOVERY_2_INHERITED_P2_PATHS) == 7
+    assert len(evidence.RECOVERY_2_INHERITED_P1_PATHS) == 3
+    assert len(evidence.RECOVERY_2_INHERITED_PATHS) == 10
     parsed = evidence._parser().parse_args(
         [
             "--check-only",
@@ -894,6 +1194,26 @@ def test_source_namespace_is_distinct_and_loader_api_is_exact() -> None:
     )
     assert parsed.check_only is True
     assert parsed.recovery_attempt_1 is True
+    parsed_2 = evidence._parser().parse_args(
+        [
+            "--check-only",
+            "--repository-commit",
+            H_COMMIT,
+            "--recovery-attempt-2",
+        ]
+    )
+    assert parsed_2.check_only is True
+    assert parsed_2.recovery_attempt_2 is True
+    with pytest.raises(SystemExit):
+        evidence._parser().parse_args(
+            [
+                "--check-only",
+                "--repository-commit",
+                H_COMMIT,
+                "--recovery-attempt-1",
+                "--recovery-attempt-2",
+            ]
+        )
 
 
 def test_pure_payload_validation_returns_exact_e10_dialect(
@@ -940,7 +1260,7 @@ def test_pure_payload_validation_returns_exact_e10_dialect(
         recovery_attempt=evidence.RECOVERY_ATTEMPT_1,
     )
     assert set(recovery_loaded) == set(evidence.SOURCE_EVIDENCE_KEYS)
-    assert recovery_loaded["test_report"]["test_count"] == 344
+    assert recovery_loaded["test_report"]["test_count"] == 347
     assert recovery_loaded["test_report"]["skipped_count"] == 9
     assert recovery_manifest["recovery_attempt"] == "recovery-attempt-1"
     assert len(recovery_manifest["inputs"]) == 12
@@ -969,6 +1289,61 @@ def test_pure_payload_validation_returns_exact_e10_dialect(
             manifest=changed_recovery,
             expected_h_commit=H_COMMIT,
             recovery_attempt=evidence.RECOVERY_ATTEMPT_1,
+        )
+
+    recovery_2_artifacts, recovery_2_manifest = _fixture_recovery_2_bundle()
+    recovery_2_loaded = evidence.validate_closure_e10_source_payloads(
+        artifacts=recovery_2_artifacts,
+        manifest=recovery_2_manifest,
+        expected_h_commit=H_COMMIT,
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    assert set(recovery_2_loaded) == set(evidence.SOURCE_EVIDENCE_KEYS)
+    assert recovery_2_manifest["schema_version"] == (
+        evidence.RECOVERY_2_SCHEMA_VERSION
+    )
+    assert recovery_2_manifest["recovery_attempt"] == "recovery-attempt-2"
+    assert len(recovery_2_manifest["inputs"]) == 15
+    assert [record["path"] for record in recovery_2_manifest["outputs"]] == [
+        evidence.RECOVERY_2_SOURCE_EVIDENCE_PATHS[key].as_posix()
+        for key in evidence.SOURCE_EVIDENCE_KEYS
+    ]
+    assert recovery_2_manifest["recovery"]["p2_inputs_overwritten"] is False
+    assert recovery_2_manifest["recovery"]["p1_inputs_overwritten"] is False
+    changed_recovery_2 = copy.deepcopy(recovery_2_manifest)
+    changed_recovery_2["recovery"]["guard_records"][1]["inode"] += 1
+    with pytest.raises(
+        evidence.ClosureE10SourceEvidenceError,
+        match="retained guard records",
+    ):
+        evidence.validate_closure_e10_source_payloads(
+            artifacts=recovery_2_artifacts,
+            manifest=changed_recovery_2,
+            expected_h_commit=H_COMMIT,
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+        )
+    changed_historical = copy.deepcopy(recovery_2_manifest)
+    changed_historical["recovery"]["inherited_inputs"][0][
+        "historical_repository_commit"
+    ] = OTHER_COMMIT
+    with pytest.raises(
+        evidence.ClosureE10SourceEvidenceError,
+        match="historical Git input binding drifted",
+    ):
+        evidence.validate_closure_e10_source_payloads(
+            artifacts=recovery_2_artifacts,
+            manifest=changed_historical,
+            expected_h_commit=H_COMMIT,
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+        )
+    changed_receipt = json.loads(_attempt_2_receipt_payload())
+    changed_receipt["failure"]["publication_started"] = True
+    with pytest.raises(
+        evidence.ClosureE10SourceEvidenceError,
+        match="diagnosis drifted",
+    ):
+        evidence._validate_attempt_2_failure_receipt(
+            evidence._canonical_json(changed_receipt)
         )
 
     def git_bound_input(
@@ -1003,7 +1378,9 @@ def test_pure_payload_validation_returns_exact_e10_dialect(
         evidence,
         "_capture_host_outcome_log_state",
         lambda root, commit, *, recovery_attempt=None: (
-            _recovery_host_outcome_log_state()
+            _recovery_2_host_outcome_log_state()
+            if recovery_attempt == evidence.RECOVERY_ATTEMPT_2
+            else _recovery_host_outcome_log_state()
         ),
     )
     collected_recovery = evidence._collect_recovery_attempt_1_record(
@@ -1013,6 +1390,103 @@ def test_pure_payload_validation_returns_exact_e10_dialect(
     assert collected_recovery["inherited_p1_input_count"] == 10
     assert collected_recovery["attempt_1_failure_receipt"]["bytes"] == 1501
     assert collected_recovery["outcome_paths_opened"] is False
+
+    receipt_payload = _attempt_2_receipt_payload()
+    original_read_regular = evidence._read_regular
+
+    def read_recovery_2_input(
+        path: Path,
+        *,
+        repo_root: Path,
+        context: str,
+    ) -> bytes:
+        if path == evidence.ATTEMPT_2_FAILURE_RECEIPT_PATH:
+            return receipt_payload
+        return original_read_regular(path, repo_root=repo_root, context=context)
+
+    def git_bound_recovery_2_input(
+        root: Path,
+        commit: str,
+        path: Path,
+        *,
+        role: str,
+    ) -> dict[str, Any]:
+        del root
+        if path == evidence.RECOVERY_ACTIVATION_PATH:
+            bytes_count = evidence.RECOVERY_ACTIVATION_BYTES
+            digest = evidence.RECOVERY_ACTIVATION_SHA256
+        elif path == evidence.ATTEMPT_2_FAILURE_RECEIPT_PATH:
+            bytes_count = len(receipt_payload)
+            digest = hashlib.sha256(receipt_payload).hexdigest()
+        else:
+            bytes_count = 10
+            digest = hashlib.sha256(path.as_posix().encode()).hexdigest()
+        return {
+            "path": path.as_posix(),
+            "role": role,
+            "bytes": bytes_count,
+            "sha256": digest,
+            "repository_commit": commit,
+            "physical_equals_h3_git_blob": True,
+            "git_blob_command": _command(
+                ["git", "show", f"{commit}:{path.as_posix()}"],
+                {"GIT_OPTIONAL_LOCKS": "0"},
+            ),
+        }
+
+    def git_bound_recovery_2_historical_input(
+        root: Path,
+        commit: str,
+        historical_commit: str,
+        path: Path,
+        *,
+        role: str,
+    ) -> dict[str, Any]:
+        record = git_bound_recovery_2_input(
+            root,
+            commit,
+            path,
+            role=role,
+        )
+        return {
+            **record,
+            "historical_repository_commit": historical_commit,
+            "physical_equals_historical_git_blob": True,
+            "historical_git_blob_command": _command(
+                ["git", "show", f"{historical_commit}:{path.as_posix()}"],
+                {"GIT_OPTIONAL_LOCKS": "0"},
+            ),
+        }
+
+    monkeypatch.setattr(evidence, "_read_regular", read_recovery_2_input)
+    monkeypatch.setattr(
+        evidence,
+        "_git_bound_recovery_2_input_record",
+        git_bound_recovery_2_input,
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_git_bound_recovery_2_historical_input_record",
+        git_bound_recovery_2_historical_input,
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_capture_recovery_2_guard_records",
+        lambda root: copy.deepcopy(_recovery_2_record()["guard_records"]),
+    )
+    collected_recovery_2 = evidence._collect_recovery_attempt_2_record(
+        evidence.PROJECT_ROOT,
+        H_COMMIT,
+    )
+    assert collected_recovery_2["inherited_p2_input_count"] == 7
+    assert collected_recovery_2["inherited_p1_input_count"] == 3
+    assert collected_recovery_2["attempt_2_failure_receipt"]["bytes"] == len(
+        receipt_payload
+    )
+    assert collected_recovery_2["guard_records"] == (
+        _recovery_2_record()["guard_records"]
+    )
+    assert collected_recovery_2["outcome_paths_opened"] is False
 
 
 def test_filesystem_denial_probe_and_read_only_policy_are_fail_closed() -> None:
@@ -1024,6 +1498,39 @@ def test_filesystem_denial_probe_and_read_only_policy_are_fail_closed() -> None:
         repository_commit=H_COMMIT,
         commands=commands,
     )
+    recovery_2_policy = copy.deepcopy(policy)
+    recovery_2_log = _recovery_2_host_outcome_log_state()
+    recovery_2_policy["host_outcome_log_pre_verification"] = copy.deepcopy(
+        recovery_2_log
+    )
+    recovery_2_policy["host_outcome_log_post_verification"] = copy.deepcopy(
+        recovery_2_log
+    )
+    evidence._validate_filesystem_isolation(
+        recovery_2_policy,
+        repository_commit=H_COMMIT,
+        commands=commands,
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    changed_recovery_2_policy = copy.deepcopy(recovery_2_policy)
+    changed_recovery_2_policy["host_outcome_log_pre_verification"][
+        "h_blob_command"
+    ]["stdout_line_count"] = 1
+    changed_recovery_2_policy["host_outcome_log_post_verification"] = (
+        copy.deepcopy(
+            changed_recovery_2_policy["host_outcome_log_pre_verification"]
+        )
+    )
+    with pytest.raises(
+        evidence.ClosureE10SourceEvidenceError,
+        match="host outcome-log H command drifted",
+    ):
+        evidence._validate_filesystem_isolation(
+            changed_recovery_2_policy,
+            repository_commit=H_COMMIT,
+            commands=commands,
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+        )
 
     changed = copy.deepcopy(policy)
     changed["denial_probe_results"][0]["read_errno"] = 0
@@ -1251,6 +1758,50 @@ def test_check_only_is_zero_write_and_does_not_launch_suites(
     assert result["target_paths_opened"] is False
     assert result["outcome_paths_opened"] is False
 
+    for directory, paths, manifest_path in (
+        (
+            evidence.SOURCE_EVIDENCE_DIRECTORY,
+            evidence.SOURCE_EVIDENCE_PATHS,
+            evidence.SOURCE_MANIFEST_PATH,
+        ),
+        (
+            evidence.RECOVERY_SOURCE_EVIDENCE_DIRECTORY,
+            evidence.RECOVERY_SOURCE_EVIDENCE_PATHS,
+            evidence.RECOVERY_SOURCE_MANIFEST_PATH,
+        ),
+    ):
+        bundle = tmp_path / directory
+        bundle.mkdir()
+        for path in paths.values():
+            (bundle / path.name).write_bytes(b"fixture")
+        (bundle / manifest_path.name).write_bytes(b"fixture")
+    (tmp_path / evidence.OUTCOME_ACCESS_LOG_PATH).write_bytes(
+        b"x" * evidence.RECOVERY_2_OUTCOME_LOG_BYTES
+    )
+    namespace_before = sorted(
+        path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*")
+    )
+    evidence._require_pre_generation_namespace(
+        tmp_path,
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    assert namespace_before == sorted(
+        path.relative_to(tmp_path).as_posix() for path in tmp_path.rglob("*")
+    )
+    extra = (
+        tmp_path / evidence.RECOVERY_SOURCE_EVIDENCE_DIRECTORY / "extra.json"
+    )
+    extra.write_bytes(b"{}")
+    with pytest.raises(
+        evidence.ClosureE10SourceEvidenceError,
+        match="not exact seven",
+    ):
+        evidence._require_pre_generation_namespace(
+            tmp_path,
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+        )
+    extra.unlink()
+
     monkeypatch.setattr(
         evidence,
         "_require_pre_generation_namespace",
@@ -1260,6 +1811,11 @@ def test_check_only_is_zero_write_and_does_not_launch_suites(
         evidence,
         "_collect_recovery_attempt_1_record",
         lambda root, commit: _recovery_record(),
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_collect_recovery_attempt_2_record",
+        lambda root, commit: _recovery_2_record(),
     )
     recovery_result = evidence.check_closure_e10_source_evidence(
         repo_root=tmp_path,
@@ -1274,6 +1830,19 @@ def test_check_only_is_zero_write_and_does_not_launch_suites(
         evidence.RECOVERY_SOURCE_MANIFEST_PATH.as_posix()
     )
     assert recovery_result["writes_performed"] is False
+    recovery_2_result = evidence.check_closure_e10_source_evidence(
+        repo_root=tmp_path,
+        expected_h_commit=H_COMMIT,
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    assert recovery_2_result["recovery_attempt"] == "recovery-attempt-2"
+    assert recovery_2_result["outcome_access_log_state"] == (
+        "present_exact_consumed_attempt_2_unopened_by_e10"
+    )
+    assert recovery_2_result["manifest_path"] == (
+        evidence.RECOVERY_2_SOURCE_MANIFEST_PATH.as_posix()
+    )
+    assert recovery_2_result["writes_performed"] is False
 
 
 def test_publication_is_exclusive_manifest_last_and_loadable(
@@ -1364,7 +1933,9 @@ def test_publication_is_exclusive_manifest_last_and_loadable(
         evidence,
         "_capture_host_outcome_log_state",
         lambda root, commit, *, recovery_attempt=None: (
-            _recovery_host_outcome_log_state()
+            _recovery_2_host_outcome_log_state()
+            if recovery_attempt == evidence.RECOVERY_ATTEMPT_2
+            else _recovery_host_outcome_log_state()
         ),
     )
     monkeypatch.setattr(
@@ -1404,6 +1975,53 @@ def test_publication_is_exclusive_manifest_last_and_loadable(
         require_git_publication=False,
     )
     assert auto_recovery_loaded == recovery_loaded
+
+    recovery_bytes = {
+        path.name: path.read_bytes() for path in recovery_published.iterdir()
+    }
+    recovery_2_artifacts, recovery_2_manifest = _fixture_recovery_2_bundle()
+    (tmp_path / evidence.OUTCOME_ACCESS_LOG_PATH).write_bytes(
+        b"x" * evidence.RECOVERY_2_OUTCOME_LOG_BYTES
+    )
+    monkeypatch.setattr(
+        evidence,
+        "_collect_recovery_attempt_2_record",
+        lambda root, commit: _recovery_2_record(),
+    )
+    order.clear()
+    work.mkdir()
+    recovery_2_result = _publish_fixture_bundle(
+        root=tmp_path,
+        work=work,
+        artifacts=recovery_2_artifacts,
+        manifest=recovery_2_manifest,
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    assert recovery_2_result["status"] == (
+        "source_evidence_recovery_written_unpublished"
+    )
+    assert recovery_2_result["recovery_attempt"] == "recovery-attempt-2"
+    assert order[-1] == evidence.RECOVERY_2_SOURCE_MANIFEST_PATH.name
+    recovery_2_published = (
+        tmp_path / evidence.RECOVERY_2_SOURCE_EVIDENCE_DIRECTORY
+    )
+    assert len(list(recovery_2_published.iterdir())) == 7
+    assert recovery_bytes == {
+        path.name: path.read_bytes() for path in recovery_published.iterdir()
+    }
+    recovery_2_loaded = evidence.load_closure_e10_software_evidence(
+        repo_root=tmp_path,
+        expected_h_commit=H_COMMIT,
+        require_git_publication=False,
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    assert set(recovery_2_loaded) == set(evidence.SOURCE_EVIDENCE_KEYS)
+    auto_recovery_2_loaded = evidence.load_closure_e10_software_evidence(
+        repo_root=tmp_path,
+        expected_h_commit=H_COMMIT,
+        require_git_publication=False,
+    )
+    assert auto_recovery_2_loaded == recovery_2_loaded
 
 
 def test_owned_postgresql_fixture_is_fresh_unique_and_dropped(
@@ -3386,11 +4004,11 @@ def test_public_suite_and_e2e_commands_are_closed_and_outcome_guarded() -> None:
     assert evidence.E2E_FIXTURE_CONTRACT["future_target_used"] is False
     assert evidence.E2E_FIXTURE_CONTRACT["outcome_access_log_opened"] is False
     assert evidence.PUBLIC_SUITE_KIND == "closure_phase3_public"
-    assert evidence.PUBLIC_PHASE3_EXPECTED_TEST_COUNT == 344
-    assert evidence.PUBLIC_PHASE3_EXPECTED_PASS_COUNT == 335
+    assert evidence.PUBLIC_PHASE3_EXPECTED_TEST_COUNT == 347
+    assert evidence.PUBLIC_PHASE3_EXPECTED_PASS_COUNT == 338
     assert evidence.PUBLIC_PHASE3_EXPECTED_SKIP_COUNT == 9
     assert evidence.PUBLIC_TEST_NODEIDS_SHA256 == (
-        "a7892dc9ef8ad163867e108c60860a154ff7b0693364a693f93d1a0614eb2ec6"
+        "3a37a3fb3b022b2b36f6a64b6571aecd83858a270c8fcf4985036c2633504a42"
     )
     assert len(evidence.PUBLIC_PHASE3_TEST_PATHS) == 11
     assert len(set(evidence.PUBLIC_PHASE3_TEST_PATHS)) == 11
@@ -3456,14 +4074,14 @@ def test_manifest_or_command_drift_is_rejected() -> None:
 
     totals, skipped = evidence._parse_junit(artifacts["public_tests_xml"])
     inconsistent_junit = artifacts["public_tests_xml"].replace(
-        b'tests="344"', b'tests="343"', 1
+        b'tests="347"', b'tests="346"', 1
     )
     with pytest.raises(
         evidence.ClosureE10SourceEvidenceError,
         match="concrete testcase ledger",
     ):
         evidence._parse_junit(inconsistent_junit)
-    for changed_count in (343, 345):
+    for changed_count in (346, 348):
         changed_totals = dict(totals)
         changed_totals["tests"] = changed_count
         with pytest.raises(
@@ -3502,10 +4120,24 @@ def test_manifest_or_command_drift_is_rejected() -> None:
 def test_loader_status_excludes_only_the_separately_bound_outcome_log() -> None:
     log = evidence.OUTCOME_ACCESS_LOG_PATH.as_posix()
     activation = evidence.RECOVERY_ACTIVATION_PATH.as_posix()
+    activation_2 = evidence.RECOVERY_2_ACTIVATION_PATH.as_posix()
     evidence._validate_loader_worktree_status("", ())
     evidence._validate_loader_worktree_status("", (log,))
     evidence._validate_loader_worktree_status(
         "", (), recovery_attempt=evidence.RECOVERY_ATTEMPT_1
+    )
+    evidence._validate_loader_worktree_status(
+        "", (), recovery_attempt=evidence.RECOVERY_ATTEMPT_2
+    )
+    evidence._validate_loader_worktree_status(
+        f"?? {activation_2}",
+        (activation_2,),
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+    )
+    evidence._validate_loader_worktree_status(
+        f"A  {activation_2}",
+        (log, activation_2),
+        recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
     )
     evidence._validate_loader_worktree_status(
         f"?? {activation}",
@@ -3529,6 +4161,18 @@ def test_loader_status_excludes_only_the_separately_bound_outcome_log() -> None:
     with pytest.raises(evidence.ClosureE10SourceEvidenceError, match="invalid"):
         evidence._validate_loader_worktree_status(
             f"?? {activation}",
+            (activation,),
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
+        )
+    with pytest.raises(evidence.ClosureE10SourceEvidenceError, match="invalid"):
+        evidence._validate_loader_worktree_status(
+            f"?? {activation_2}",
+            (activation_2,),
+            recovery_attempt=evidence.RECOVERY_ATTEMPT_1,
+        )
+    with pytest.raises(evidence.ClosureE10SourceEvidenceError, match="invalid"):
+        evidence._validate_loader_worktree_status(
+            f"?? {activation}",
             (activation, activation),
             recovery_attempt=evidence.RECOVERY_ATTEMPT_1,
         )
@@ -3546,6 +4190,14 @@ def test_loader_status_excludes_only_the_separately_bound_outcome_log() -> None:
                 f"{status_code} {activation}",
                 (activation,),
                 recovery_attempt=evidence.RECOVERY_ATTEMPT_1,
+            )
+        with pytest.raises(
+            evidence.ClosureE10SourceEvidenceError, match="scope drifted"
+        ):
+            evidence._validate_loader_worktree_status(
+                f"{status_code} {activation_2}",
+                (activation_2,),
+                recovery_attempt=evidence.RECOVERY_ATTEMPT_2,
             )
     with pytest.raises(evidence.ClosureE10SourceEvidenceError, match="scope drifted"):
         evidence._validate_loader_worktree_status(

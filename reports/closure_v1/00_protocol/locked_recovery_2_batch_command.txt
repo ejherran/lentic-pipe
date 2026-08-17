@@ -1,0 +1,1 @@
+/usr/bin/env -i LANG=C LC_ALL=C .venv/bin/python -I -S -B src/experiments/run_closure_benchmark.py --execute-sealed-recovery-2-batch

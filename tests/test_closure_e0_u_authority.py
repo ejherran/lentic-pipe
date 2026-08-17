@@ -194,6 +194,7 @@ def _reset_state() -> None:
         {
             "required": False,
             "recovery": False,
+            "recovery_attempt": 0,
             "run_guard_path": authority.RUN_GUARD_PATH,
             "opened": False,
             "published": False,
@@ -2044,6 +2045,7 @@ def test_builder_failure_consumes_open_and_nonempty_log_blocks_retry(
     authority._STATE.update(
         {
             "recovery": True,
+            "recovery_attempt": 1,
             "run_guard_path": authority.RECOVERY_RUN_GUARD_PATH,
             "execution_id": "closure-v1-e0-u-recovery-test-execution",
         }
@@ -2488,6 +2490,88 @@ def test_guard_parent_symlink_fails_before_consuming_log(tmp_path: Path) -> None
     with pytest.raises(OSError):
         _open(tmp_path, contract, public)
     assert (tmp_path / authority.OUTCOME_ACCESS_LOG_PATH).read_bytes() == b""
+
+
+def test_attempt_2_failure_receipt_and_two_record_prefix_are_exact() -> None:
+    payload = authority.ATTEMPT_2_FAILURE_RECEIPT_PATH
+    physical = Path(payload).read_bytes()
+    receipt = json.loads(physical)
+    assert authority._canonical_json_bytes(receipt) == physical
+    assert authority._validate_attempt_2_failure_receipt(receipt) == receipt
+    access_log = authority._attempt_2_access_log_payload()
+    assert len(access_log) == authority.ATTEMPT_2_ACCESS_LOG_BYTES
+    assert authority._sha256_bytes(access_log) == (
+        authority.ATTEMPT_2_ACCESS_LOG_SHA256
+    )
+    first = access_log[: authority.ATTEMPT_1_ACCESS_LOG_BYTES]
+    assert first == authority._attempt_1_access_log_payload()
+    second = access_log[authority.ATTEMPT_1_ACCESS_LOG_BYTES :]
+    assert len(second) == authority.ATTEMPT_2_ACCESS_RECORD_BYTES
+    assert authority._sha256_bytes(second) == (
+        authority.ATTEMPT_2_ACCESS_RECORD_SHA256
+    )
+    assert second == authority._canonical_json_bytes(
+        authority._attempt_2_access_record()
+    )
+
+
+def test_recovery_2_context_appends_only_third_record_under_guard3(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = _contract()
+    public = _prime(tmp_path, contract)
+    execution_id = "closure-v1-e0-u-recovery-2-test-execution"
+    log_path = tmp_path / authority.OUTCOME_ACCESS_LOG_PATH
+    log_path.write_bytes(authority._attempt_2_access_log_payload())
+    receipt = json.loads(
+        Path(authority.ATTEMPT_2_FAILURE_RECEIPT_PATH).read_bytes()
+    )
+    authority._STATE.update(
+        {
+            "recovery": True,
+            "recovery_attempt": 2,
+            "run_guard_path": authority.RECOVERY_2_RUN_GUARD_PATH,
+            "execution_id": execution_id,
+        }
+    )
+    monkeypatch.setattr(
+        authority,
+        "_load_attempt_2_failure_receipt",
+        lambda *_args, **_kwargs: (receipt, {}),
+    )
+    monkeypatch.setattr(
+        authority,
+        "_validate_historical_recovery_guard_policy",
+        lambda *_args, **_kwargs: [{"state": "test-sealed"}] * 2,
+    )
+    observations: list[bytes] = []
+
+    def builder(**kwargs: Any) -> dict[str, Any]:
+        observations.append(log_path.read_bytes())
+        assert (tmp_path / authority.RECOVERY_2_RUN_GUARD_PATH).is_file()
+        return {
+            "execution_id": kwargs["execution_id"],
+            "rng_seed": 1729,
+            "tables": {},
+            "stage_results": {},
+            "model_availability": {},
+            "software_evidence": {},
+        }
+
+    context = authority.open_sealed_recovery_2_batch_context(
+        authority=public,
+        sealed_batch_contract=contract,
+        repo_root=tmp_path,
+        context_builder=builder,
+    )
+    expected = authority._recovery_2_access_log_payload(execution_id)
+    assert context["execution_id"] == execution_id
+    assert observations == [expected]
+    assert log_path.read_bytes() == expected
+    assert authority._STATE["opened"] is True
+    authority._release_owned_guard(True)
+    assert not (tmp_path / authority.RECOVERY_2_RUN_GUARD_PATH).exists()
 
 
 def test_dvc_policy_must_partition_exact52() -> None:

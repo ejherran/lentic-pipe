@@ -37,6 +37,7 @@ GATE = FORMAL_MODEL_LOCK_GATE
 PATCH_GATE = FORMAL_MODEL_LOCK_GATE
 SEALED_BATCH_MODE = "--execute-sealed-batch"
 SEALED_RECOVERY_BATCH_MODE = "--execute-sealed-recovery-batch"
+SEALED_RECOVERY_2_BATCH_MODE = "--execute-sealed-recovery-2-batch"
 CHECK_ONLY_MODE = "--check-only"
 SEALED_BATCH_PYTHON_ARGV = (
     ".venv/bin/python",
@@ -76,9 +77,32 @@ SEALED_RECOVERY_BATCH_LAUNCH_ARGV = (
 SEALED_RECOVERY_BATCH_COMMAND = (
     " ".join(SEALED_RECOVERY_BATCH_LAUNCH_ARGV) + "\n"
 )
+SEALED_RECOVERY_2_BATCH_PYTHON_ARGV = (
+    ".venv/bin/python",
+    "-I",
+    "-S",
+    "-B",
+    SCRIPT_PATH.as_posix(),
+    SEALED_RECOVERY_2_BATCH_MODE,
+)
+SEALED_RECOVERY_2_BATCH_LAUNCH_ARGV = (
+    "/usr/bin/env",
+    "-i",
+    "LANG=C",
+    "LC_ALL=C",
+    *SEALED_RECOVERY_2_BATCH_PYTHON_ARGV,
+)
+SEALED_RECOVERY_2_BATCH_COMMAND = (
+    " ".join(SEALED_RECOVERY_2_BATCH_LAUNCH_ARGV) + "\n"
+)
 RECOVERY_ATTEMPT = "recovery-attempt-1"
 RECOVERY_ATTEMPT_ORDINAL = 2
 RECOVERY_RUN_GUARD_PATH = "tmp/closure_v1_e0_u_recovery_1/sealed_batch.guard"
+RECOVERY_ATTEMPT_2 = "recovery-attempt-2"
+RECOVERY_ATTEMPT_2_ORDINAL = 3
+RECOVERY_2_RUN_GUARD_PATH = (
+    "tmp/closure_v1_e0_u_recovery_2/sealed_batch.guard"
+)
 OUTCOME_ACCESS_LOG_PATH = Path(
     "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
 )
@@ -88,6 +112,17 @@ ATTEMPT_1_EXECUTION_ID = (
 ATTEMPT_1_ACCESS_LOG_BYTES = 256
 ATTEMPT_1_ACCESS_LOG_SHA256 = (
     "ae3e47dd6ad1f05cd79e6a494174f951f1c71fa9336514640bd4c15855c1b038"
+)
+ATTEMPT_2_EXECUTION_ID = (
+    "closure-v1-e0-u-recovery-1-f0d203c75ba6943b-8efea2943fa7feb2"
+)
+ATTEMPT_2_ACCESS_LOG_BYTES = 738
+ATTEMPT_2_ACCESS_LOG_SHA256 = (
+    "0645151a995bb61e3cef170b6a2e0563ec9b28e740ee01075505cd0c27fed1bf"
+)
+ATTEMPT_2_ACCESS_RECORD_BYTES = 482
+ATTEMPT_2_ACCESS_RECORD_SHA256 = (
+    "781043a890d85ba2c1ac86a34397b22478f29ce89579285059fb35c3ffc3dd23"
 )
 RECOVERY_E10_SOURCE_DIRECTORY = Path(
     "reports/closure_v1/00_protocol/software_evidence_source_recovery_1"
@@ -119,12 +154,21 @@ RECOVERY_E10_SOURCE_PATHS = tuple(
         "software_evidence_source_manifest.json",
     )
 )
+RECOVERY_2_E10_SOURCE_DIRECTORY = Path(
+    "reports/closure_v1/00_protocol/software_evidence_source_recovery_2"
+)
+RECOVERY_2_E10_SOURCE_PATHS = tuple(
+    RECOVERY_2_E10_SOURCE_DIRECTORY / path.name
+    for path in RECOVERY_E10_SOURCE_PATHS
+)
 E0_U_AUTHORITY_MODULE = "src.experiments.closure_e0_u_authority"
 E0_U_AUTHORITY_API = "require_closure_e0_u_authority"
 E0_U_RECOVERY_AUTHORITY_API = "require_closure_e0_u_recovery_authority"
+E0_U_RECOVERY_2_AUTHORITY_API = "require_closure_e0_u_recovery_2_authority"
 E0_U_AUTHORITY_PATH = Path("src/experiments/closure_e0_u_authority.py")
 E0_U_CONTEXT_FACTORY_API = "open_sealed_batch_context"
 E0_U_RECOVERY_CONTEXT_FACTORY_API = "open_sealed_recovery_batch_context"
+E0_U_RECOVERY_2_CONTEXT_FACTORY_API = "open_sealed_recovery_2_batch_context"
 E0_U_TRANSACTION_PUBLISHER_API = "publish_sealed_batch_artifacts"
 E0_U_PUBLICATION_AUDITOR_API = "validate_published_sealed_batch_artifacts"
 E0_U_CONTEXT_BUILDER_MODULE = "src.experiments.closure_phase3_context"
@@ -144,6 +188,9 @@ HISTORICAL_E0_M_COMMIT = "4c92ed7249a91b7dd541fd22dde68b61574556b2"
 HISTORICAL_H1_COMMIT = "9e66478d7c071067a750e7dd9a6a318fa93a2c88"
 HISTORICAL_P1_COMMIT = "caaf2d6d0a00a31febeed89b54ea078b60d7f92a"
 HISTORICAL_U1_COMMIT = "4aecf19cd913b82a6a3d26669f09684e67efda8a"
+HISTORICAL_H2_COMMIT = "b768c5b1251bde50b01f0c066be07fb931924537"
+HISTORICAL_P2_COMMIT = "f0d203c75ba6943b6817339d651ece5cbccec492"
+HISTORICAL_U2_COMMIT = "a4f39173ec14aa7cd80d0fd38fb720f98cf88159"
 E0_U_COMMIT_BINDING_KEYS = (
     "historical_e0_m_commit",
     "phase3_code_commit",
@@ -689,6 +736,26 @@ E1_OUTPUT_TABLES = (
     "e1_model_comparisons",
 )
 E1_REQUIRED_NONEMPTY_TABLES = E1_OUTPUT_TABLES
+E4_TROPHIC_PREDICTION_COLUMNS = (
+    "source_id",
+    "site_id",
+    "holdout_group_id",
+    "common_origin_id",
+    "origin_year_month",
+    "target_year_month",
+    "horizon_months",
+    "evaluation_cohort",
+    "evaluation_role",
+    "model_id",
+    "model_seed",
+    "seed_slot",
+    "terminal_status",
+    "ordinal_status",
+    "ordinal_score",
+    "cutpoint_1",
+    "cutpoint_2",
+    "cutpoint_3",
+)
 PUBLICATION_RECEIPT_KEYS = frozenset(
     {
         "status",
@@ -1824,36 +1891,44 @@ BATCH_CONTRACT = MappingProxyType(
 )
 
 
-def _require_recovery_mode(value: bool) -> bool:
-    if type(value) is not bool:
-        raise ClosureBenchmarkError("E0-U recovery mode flag is malformed")
+def _recovery_attempt_number(value: bool | str) -> int:
+    if type(value) is bool:
+        return 1 if value else 0
+    if value == RECOVERY_ATTEMPT_2:
+        return 2
+    raise ClosureBenchmarkError("E0-U recovery mode flag is malformed")
+
+
+def _require_recovery_mode(value: bool | str) -> bool | str:
+    _recovery_attempt_number(value)
     return value
 
 
-def _sealed_python_argv(*, recovery_attempt: bool) -> tuple[str, ...]:
-    _require_recovery_mode(recovery_attempt)
-    return (
-        SEALED_RECOVERY_BATCH_PYTHON_ARGV
-        if recovery_attempt
-        else SEALED_BATCH_PYTHON_ARGV
-    )
+def _sealed_python_argv(*, recovery_attempt: bool | str) -> tuple[str, ...]:
+    attempt = _recovery_attempt_number(recovery_attempt)
+    return {
+        0: SEALED_BATCH_PYTHON_ARGV,
+        1: SEALED_RECOVERY_BATCH_PYTHON_ARGV,
+        2: SEALED_RECOVERY_2_BATCH_PYTHON_ARGV,
+    }[attempt]
 
 
-def _sealed_launch_argv(*, recovery_attempt: bool) -> tuple[str, ...]:
-    _require_recovery_mode(recovery_attempt)
-    return (
-        SEALED_RECOVERY_BATCH_LAUNCH_ARGV
-        if recovery_attempt
-        else SEALED_BATCH_LAUNCH_ARGV
-    )
+def _sealed_launch_argv(*, recovery_attempt: bool | str) -> tuple[str, ...]:
+    attempt = _recovery_attempt_number(recovery_attempt)
+    return {
+        0: SEALED_BATCH_LAUNCH_ARGV,
+        1: SEALED_RECOVERY_BATCH_LAUNCH_ARGV,
+        2: SEALED_RECOVERY_2_BATCH_LAUNCH_ARGV,
+    }[attempt]
 
 
-def _sealed_command(*, recovery_attempt: bool) -> str:
-    return (
-        SEALED_RECOVERY_BATCH_COMMAND
-        if _require_recovery_mode(recovery_attempt)
-        else SEALED_BATCH_COMMAND
-    )
+def _sealed_command(*, recovery_attempt: bool | str) -> str:
+    attempt = _recovery_attempt_number(recovery_attempt)
+    return {
+        0: SEALED_BATCH_COMMAND,
+        1: SEALED_RECOVERY_BATCH_COMMAND,
+        2: SEALED_RECOVERY_2_BATCH_COMMAND,
+    }[attempt]
 
 
 def _recovery_batch_contract() -> dict[str, Any]:
@@ -1897,24 +1972,76 @@ def _recovery_batch_contract() -> dict[str, Any]:
     return contract
 
 
+def _recovery_2_batch_contract() -> dict[str, Any]:
+    contract = cast(
+        dict[str, Any], json.loads(_canonical_json_bytes(BATCH_CONTRACT))
+    )
+    contract["sealed_argv"] = list(SEALED_RECOVERY_2_BATCH_PYTHON_ARGV)
+    contract["sealed_command"] = SEALED_RECOVERY_2_BATCH_COMMAND
+    startup = cast(dict[str, Any], contract["startup_contract"])
+    startup["external_launch_argv"] = list(
+        SEALED_RECOVERY_2_BATCH_LAUNCH_ARGV
+    )
+    startup["external_launch_command"] = SEALED_RECOVERY_2_BATCH_COMMAND
+    startup["python_argv"] = list(SEALED_RECOVERY_2_BATCH_PYTHON_ARGV)
+    startup["python_command"] = (
+        " ".join(SEALED_RECOVERY_2_BATCH_PYTHON_ARGV) + "\n"
+    )
+    authority_require = cast(dict[str, Any], startup["authority_require"])
+    authority_require["commit_parent_chain"] = (
+        "R_HEAD~9__H1_HEAD~8__P1_HEAD~7__U1_HEAD~6__"
+        "H2_HEAD~5__P2_HEAD~4__U2_HEAD~3__"
+        "H3_HEAD~2__P3_HEAD~1__U3_HEAD"
+    )
+    source_execution = cast(dict[str, Any], contract["source_execution"])
+    source_execution["authority_commit_topology"] = (
+        "historical_R_H1_P1_U1_H2_P2_U2__recovery_2_H3_P3_U3"
+    )
+    source_execution["authority_commit_parent_chain"] = {
+        "historical_e0_m_commit": "HEAD~9",
+        "historical_h1_commit": "HEAD~8",
+        "historical_p1_commit": "HEAD~7",
+        "historical_u1_commit": "HEAD~6",
+        "historical_h2_commit": "HEAD~5",
+        "historical_p2_commit": "HEAD~4",
+        "historical_u2_commit": "HEAD~3",
+        "phase3_code_commit": "HEAD~2",
+        "phase3_evidence_commit": "HEAD~1",
+        "phase3_activation_commit": "HEAD",
+    }
+    source_execution["external_launch_argv"] = list(
+        SEALED_RECOVERY_2_BATCH_LAUNCH_ARGV
+    )
+    source_execution["external_launch_command"] = (
+        SEALED_RECOVERY_2_BATCH_COMMAND
+    )
+    contract["authority_context_factory_api"] = (
+        E0_U_RECOVERY_2_CONTEXT_FACTORY_API
+    )
+    return contract
+
+
 def sealed_batch_contract(
-    *, recovery_attempt: bool = False
+    *, recovery_attempt: bool | str = False
 ) -> dict[str, Any]:
     """Return the public, mutation-free batch contract used by E0-M."""
 
-    if _require_recovery_mode(recovery_attempt):
+    attempt = _recovery_attempt_number(recovery_attempt)
+    if attempt == 2:
+        return _recovery_2_batch_contract()
+    if attempt == 1:
         return _recovery_batch_contract()
     return cast(dict[str, Any], json.loads(_canonical_json_bytes(BATCH_CONTRACT)))
 
 
-def sealed_batch_contract_sha256(*, recovery_attempt: bool = False) -> str:
+def sealed_batch_contract_sha256(*, recovery_attempt: bool | str = False) -> str:
     contract = sealed_batch_contract(recovery_attempt=recovery_attempt)
     return _sha256_bytes(_canonical_json_bytes(contract))
 
 
 def validate_sealed_batch_contract(value: Mapping[str, Any]) -> dict[str, Any]:
     observed = dict(value)
-    for recovery_attempt in (False, True):
+    for recovery_attempt in (False, True, RECOVERY_ATTEMPT_2):
         expected = sealed_batch_contract(recovery_attempt=recovery_attempt)
         if observed == expected:
             return expected
@@ -1922,7 +2049,7 @@ def validate_sealed_batch_contract(value: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def validate_sealed_batch_command(
-    value: str | bytes, *, recovery_attempt: bool = False
+    value: str | bytes, *, recovery_attempt: bool | str = False
 ) -> str:
     """Accept only the exact newline-terminated, non-shell batch command."""
 
@@ -2452,11 +2579,15 @@ def _git_bound_e0_u_authority_source_record() -> dict[str, Any]:
     }
 
 
-def _require_sealed_startup_environment(*, recovery_attempt: bool = False) -> None:
+def _require_sealed_startup_environment(
+    *, recovery_attempt: bool | str = False
+) -> None:
     expected_argv = _sealed_python_argv(recovery_attempt=recovery_attempt)
-    expected_mode = (
-        SEALED_RECOVERY_BATCH_MODE if recovery_attempt else SEALED_BATCH_MODE
-    )
+    expected_mode = {
+        0: SEALED_BATCH_MODE,
+        1: SEALED_RECOVERY_BATCH_MODE,
+        2: SEALED_RECOVERY_2_BATCH_MODE,
+    }[_recovery_attempt_number(recovery_attempt)]
     if (
         sys.flags.isolated != 1
         or sys.flags.no_site != 1
@@ -3105,7 +3236,7 @@ def _validate_runtime_distribution_record(
 
 
 def _runtime_environment_record(
-    *, recovery_attempt: bool = False
+    *, recovery_attempt: bool | str = False
 ) -> dict[str, Any]:
     sealed_launch_command = _sealed_command(recovery_attempt=recovery_attempt)
     sealed_python_argv = _sealed_python_argv(recovery_attempt=recovery_attempt)
@@ -3505,7 +3636,7 @@ def _pycache_blocker_record() -> dict[str, int]:
 
 
 def _activate_sealed_runtime_environment(
-    authority: Mapping[str, Any], *, recovery_attempt: bool = False
+    authority: Mapping[str, Any], *, recovery_attempt: bool | str = False
 ) -> dict[str, Any]:
     if "site" in sys.modules:
         raise ClosureBenchmarkError("E0-U site was imported before runtime activation")
@@ -3593,9 +3724,14 @@ def _recapture_runtime_environment(state: Mapping[str, Any]) -> None:
     ):
         raise ClosureBenchmarkError("E0-U runtime recapture state is malformed")
     recovery_attempt = state.get("recovery_attempt")
-    if type(recovery_attempt) is not bool:
+    typed_recovery_attempt = cast(bool | str, recovery_attempt)
+    try:
+        _recovery_attempt_number(typed_recovery_attempt)
+    except ClosureBenchmarkError:
         raise ClosureBenchmarkError("E0-U runtime recovery mode is malformed")
-    observed = _runtime_environment_record(recovery_attempt=recovery_attempt)
+    observed = _runtime_environment_record(
+        recovery_attempt=typed_recovery_attempt
+    )
     observed["bootstrap_import_state"] = baseline.get("bootstrap_import_state")
     current_meta = tuple(sys.meta_path)
     sealed_meta = cast(tuple[Any, ...], state.get("meta_path"))
@@ -3707,7 +3843,7 @@ def _recapture_runtime_environment(state: Mapping[str, Any]) -> None:
 
 
 def runner_source_record(
-    *, repo_root: Path | None = None, recovery_attempt: bool = False
+    *, repo_root: Path | None = None, recovery_attempt: bool | str = False
 ) -> dict[str, Any]:
     """Return the source record that the formal E0-M lock must seal."""
 
@@ -3726,7 +3862,7 @@ def validate_runner_source_record(
     record: Mapping[str, Any],
     *,
     repo_root: Path | None = None,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> dict[str, Any]:
     observed = runner_source_record(
         repo_root=repo_root,
@@ -4029,8 +4165,68 @@ def _attempt_1_access_log_prefix(*, repo_root: Path) -> dict[str, Any]:
     }
 
 
+def _attempt_2_access_log_prefix(*, repo_root: Path) -> dict[str, Any]:
+    first = _canonical_json_bytes(
+        {
+            "event": "sealed_outcome_context_opened",
+            "execution_id": ATTEMPT_1_EXECUTION_ID,
+            "experiment_id": "closure_v1",
+            "gate": "E0-U",
+            "one_shot_consumed": True,
+            "outcome_access_authorized": True,
+            "schema_version": "closure_e0_u_access_log_v1",
+        }
+    )
+    second = _canonical_json_bytes(
+        {
+            "attempt_ordinal": 2,
+            "event": (
+                "sealed_outcome_context_reopened_under_recovery_authority"
+            ),
+            "execution_id": ATTEMPT_2_EXECUTION_ID,
+            "experiment_id": "closure_v1",
+            "first_attempt": False,
+            "gate": "E0-U",
+            "one_shot_consumed": True,
+            "outcome_access_authorized": True,
+            "prior_execution_id": ATTEMPT_1_EXECUTION_ID,
+            "recovery_authorization_consumed": True,
+            "retry_authorized": False,
+            "schema_version": "closure_e0_u_recovery_access_log_v1",
+        }
+    )
+    expected = first + second
+    if (
+        len(first) != ATTEMPT_1_ACCESS_LOG_BYTES
+        or _sha256_bytes(first) != ATTEMPT_1_ACCESS_LOG_SHA256
+        or len(second) != ATTEMPT_2_ACCESS_RECORD_BYTES
+        or _sha256_bytes(second) != ATTEMPT_2_ACCESS_RECORD_SHA256
+        or len(expected) != ATTEMPT_2_ACCESS_LOG_BYTES
+        or _sha256_bytes(expected) != ATTEMPT_2_ACCESS_LOG_SHA256
+    ):
+        raise ClosureBenchmarkError("E0-U attempt-2 log constants drifted")
+    payload, metadata = _read_anchored_regular_bytes(
+        OUTCOME_ACCESS_LOG_PATH,
+        repo_root=repo_root,
+        expected_mode=0o644,
+        expected_nlink=1,
+    )
+    if payload != expected or metadata.st_size != len(expected):
+        raise ClosureBenchmarkError(
+            "E0-U recovery-2 access-log prefix drifted"
+        )
+    return {
+        "path": OUTCOME_ACCESS_LOG_PATH.as_posix(),
+        "bytes": len(payload),
+        "sha256": _sha256_bytes(payload),
+        "record_count": 2,
+        "first_execution_id": ATTEMPT_1_EXECUTION_ID,
+        "second_execution_id": ATTEMPT_2_EXECUTION_ID,
+    }
+
+
 def collect_e0_u_activation_material(
-    *, repo_root: Path | None = None, recovery_attempt: bool = False
+    *, repo_root: Path | None = None, recovery_attempt: bool | str = False
 ) -> dict[str, Any]:
     """Capture the outcome-free material sealed by the future E0-U activation.
 
@@ -4041,7 +4237,7 @@ def collect_e0_u_activation_material(
     """
 
     root = PROJECT_ROOT if repo_root is None else Path(repo_root).resolve()
-    _require_recovery_mode(recovery_attempt)
+    attempt = _recovery_attempt_number(recovery_attempt)
     if root != PROJECT_ROOT:
         raise ClosureBenchmarkError("E0-U activation material repository drifted")
     source_before = runner_source_record(
@@ -4054,7 +4250,7 @@ def collect_e0_u_activation_material(
             "E0-U activation material cannot seal incomplete components"
         )
     runtime_environment = _runtime_environment_record(
-        **({"recovery_attempt": True} if recovery_attempt else {})
+        recovery_attempt=recovery_attempt
     )
     source_after = runner_source_record(
         repo_root=root,
@@ -4075,9 +4271,13 @@ def collect_e0_u_activation_material(
         raise ClosureBenchmarkError("E0-U activation DVC partition drifted")
     result = {
         "status": (
-            "e0_u_recovery_activation_material_ready"
-            if recovery_attempt
-            else "e0_u_activation_material_ready"
+            "e0_u_activation_material_ready"
+            if attempt == 0
+            else (
+                "e0_u_recovery_activation_material_ready"
+                if attempt == 1
+                else "e0_u_recovery_2_activation_material_ready"
+            )
         ),
         "runner_source_record": source_before,
         "component_source_records": readiness_before["component_source_records"],
@@ -4103,19 +4303,38 @@ def collect_e0_u_activation_material(
         "future_outcomes_accessed": False,
         "writes_performed": False,
     }
-    if recovery_attempt:
+    if attempt:
+        recovery_name = (
+            RECOVERY_ATTEMPT if attempt == 1 else RECOVERY_ATTEMPT_2
+        )
+        recovery_ordinal = (
+            RECOVERY_ATTEMPT_ORDINAL
+            if attempt == 1
+            else RECOVERY_ATTEMPT_2_ORDINAL
+        )
+        recovery_command = (
+            SEALED_RECOVERY_BATCH_COMMAND
+            if attempt == 1
+            else SEALED_RECOVERY_2_BATCH_COMMAND
+        )
+        recovery_guard = (
+            RECOVERY_RUN_GUARD_PATH
+            if attempt == 1
+            else RECOVERY_2_RUN_GUARD_PATH
+        )
+        access_prefix = (
+            _attempt_1_access_log_prefix(repo_root=root)
+            if attempt == 1
+            else _attempt_2_access_log_prefix(repo_root=root)
+        )
         result.update(
             {
-                "recovery_attempt": RECOVERY_ATTEMPT,
-                "attempt_ordinal": RECOVERY_ATTEMPT_ORDINAL,
+                "recovery_attempt": recovery_name,
+                "attempt_ordinal": recovery_ordinal,
                 "first_attempt": False,
-                "sealed_recovery_batch_command": (
-                    SEALED_RECOVERY_BATCH_COMMAND
-                ),
-                "recovery_guard_path": RECOVERY_RUN_GUARD_PATH,
-                "outcome_access_log_prefix": _attempt_1_access_log_prefix(
-                    repo_root=root
-                ),
+                "sealed_recovery_batch_command": recovery_command,
+                "recovery_guard_path": recovery_guard,
+                "outcome_access_log_prefix": access_prefix,
             }
         )
     return result
@@ -4144,15 +4363,15 @@ def _validate_authority_commit_bindings(
     authority: Mapping[str, Any],
     authority_source_record: Mapping[str, Any],
     *,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> dict[str, str]:
     """Reconstruct and validate the exact historical R -> H -> P -> U chain."""
 
-    _require_recovery_mode(recovery_attempt)
+    attempt = _recovery_attempt_number(recovery_attempt)
     observed_head = authority_source_record.get("git_head")
     if type(observed_head) is not str:
         raise ClosureBenchmarkError("E0-U authority activation commit is absent")
-    historical_offset = 6 if recovery_attempt else 3
+    historical_offset = {0: 3, 1: 6, 2: 9}[attempt]
     expected = {
         "historical_e0_m_commit": _git_oid_output(
             _sealed_git(
@@ -4181,18 +4400,29 @@ def _validate_authority_commit_bindings(
         or len(set(expected.values())) != 4
     ):
         raise ClosureBenchmarkError("E0-U authority R-H-P-U topology drifted")
-    if recovery_attempt:
+    if attempt:
+        offsets = (
+            {"h1": 5, "p1": 4, "u1": 3}
+            if attempt == 1
+            else {"h1": 8, "p1": 7, "u1": 6}
+        )
         historical_recovery_chain = {
             "h1": _git_oid_output(
-                _sealed_git("rev-parse", "--verify", "HEAD~5^{commit}"),
+                _sealed_git(
+                    "rev-parse", "--verify", f"HEAD~{offsets['h1']}^{{commit}}"
+                ),
                 context="historical H1 commit",
             ),
             "p1": _git_oid_output(
-                _sealed_git("rev-parse", "--verify", "HEAD~4^{commit}"),
+                _sealed_git(
+                    "rev-parse", "--verify", f"HEAD~{offsets['p1']}^{{commit}}"
+                ),
                 context="historical P1 commit",
             ),
             "u1": _git_oid_output(
-                _sealed_git("rev-parse", "--verify", "HEAD~3^{commit}"),
+                _sealed_git(
+                    "rev-parse", "--verify", f"HEAD~{offsets['u1']}^{{commit}}"
+                ),
                 context="historical U1 commit",
             ),
         }
@@ -4203,6 +4433,29 @@ def _validate_authority_commit_bindings(
         }:
             raise ClosureBenchmarkError(
                 "E0-U recovery historical R-H1-P1-U1 chain drifted"
+            )
+    if attempt == 2:
+        historical_recovery_2_chain = {
+            "h2": _git_oid_output(
+                _sealed_git("rev-parse", "--verify", "HEAD~5^{commit}"),
+                context="historical H2 commit",
+            ),
+            "p2": _git_oid_output(
+                _sealed_git("rev-parse", "--verify", "HEAD~4^{commit}"),
+                context="historical P2 commit",
+            ),
+            "u2": _git_oid_output(
+                _sealed_git("rev-parse", "--verify", "HEAD~3^{commit}"),
+                context="historical U2 commit",
+            ),
+        }
+        if historical_recovery_2_chain != {
+            "h2": HISTORICAL_H2_COMMIT,
+            "p2": HISTORICAL_P2_COMMIT,
+            "u2": HISTORICAL_U2_COMMIT,
+        }:
+            raise ClosureBenchmarkError(
+                "E0-U recovery-2 historical H2-P2-U2 chain drifted"
             )
     for key in E0_U_COMMIT_BINDING_KEYS:
         value = authority.get(key)
@@ -4301,11 +4554,11 @@ def _require_clean_repository_snapshot_before_outcome_log(
 def _require_e0_u_authority_first(
     expected_source_record: Mapping[str, Any],
     *,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> dict[str, Any]:
     """Perform the mandatory first sealed-execution operation."""
 
-    _require_recovery_mode(recovery_attempt)
+    attempt = _recovery_attempt_number(recovery_attempt)
     _require_sealed_startup_environment(recovery_attempt=recovery_attempt)
     _require_no_preactivated_runtime()
     module, observed_physical_source = _load_e0_u_authority_module(
@@ -4318,11 +4571,11 @@ def _require_e0_u_authority_first(
         observed_physical_source,
         context=E0_U_AUTHORITY_MODULE,
     )
-    authority_api = (
-        E0_U_RECOVERY_AUTHORITY_API
-        if recovery_attempt
-        else E0_U_AUTHORITY_API
-    )
+    authority_api = {
+        0: E0_U_AUTHORITY_API,
+        1: E0_U_RECOVERY_AUTHORITY_API,
+        2: E0_U_RECOVERY_2_AUTHORITY_API,
+    }[attempt]
     require = getattr(module, authority_api, None)
     if not callable(require):
         raise ClosureBenchmarkError("E0-U authority API is absent")
@@ -4392,12 +4645,12 @@ def _require_e0_u_authority_first(
         raise ClosureBenchmarkError("E0-U authority overlay validator is absent")
     overlay_h_commit = (
         HISTORICAL_H1_COMMIT
-        if recovery_attempt
+        if attempt
         else authority["phase3_code_commit"]
     )
     overlay_p_commit = (
         HISTORICAL_P1_COMMIT
-        if recovery_attempt
+        if attempt
         else authority["phase3_evidence_commit"]
     )
     try:
@@ -4412,11 +4665,11 @@ def _require_e0_u_authority_first(
         raise ClosureBenchmarkError(
             "E0-U authority Phase 3 overlay recapture failed"
         ) from exc
-    context_factory_source_api = (
-        E0_U_RECOVERY_CONTEXT_FACTORY_API
-        if recovery_attempt
-        else E0_U_CONTEXT_FACTORY_API
-    )
+    context_factory_source_api = {
+        0: E0_U_CONTEXT_FACTORY_API,
+        1: E0_U_RECOVERY_CONTEXT_FACTORY_API,
+        2: E0_U_RECOVERY_2_CONTEXT_FACTORY_API,
+    }[attempt]
     for storage_name, source_name in (
         (E0_U_CONTEXT_FACTORY_API, context_factory_source_api),
         (E0_U_TRANSACTION_PUBLISHER_API, E0_U_TRANSACTION_PUBLISHER_API),
@@ -5212,26 +5465,7 @@ def _e1_comparisons(paired: Any) -> Any:
 
 
 def _e1_trophic_predictions(surface: Any) -> Any:
-    columns = [
-        "source_id",
-        "site_id",
-        "holdout_group_id",
-        "common_origin_id",
-        "origin_year_month",
-        "target_year_month",
-        "horizon_months",
-        "model_id",
-        "model_seed",
-        "seed_slot",
-        "evaluation_cohort",
-        "evaluation_role",
-        "terminal_status",
-        "ordinal_status",
-        "ordinal_score",
-        "cutpoint_1",
-        "cutpoint_2",
-        "cutpoint_3",
-    ]
+    columns = list(E4_TROPHIC_PREDICTION_COLUMNS)
     evaluation = surface.loc[
         surface["evaluation_role"].eq("test")
         & surface["evaluation_cohort"].eq("location_holdout"),
@@ -5429,10 +5663,46 @@ def _load_ready_components(
     return tuple(loaded)
 
 
+def _validate_outcome_free_component_table_interfaces(
+    components: Sequence[tuple[BatchComponent, ModuleType]],
+) -> None:
+    by_id = {component.component_id: module for component, module in components}
+    evaluator = by_id.get("E4_trophic_evaluation")
+    if evaluator is None:
+        raise ClosureBenchmarkError(
+            "E0-U E4 trophic evaluator is absent before outcome logging"
+        )
+    consumer_columns = getattr(evaluator, "PREDICTION_COLUMNS", None)
+    if (
+        type(consumer_columns) is not tuple
+        or consumer_columns != E4_TROPHIC_PREDICTION_COLUMNS
+    ):
+        raise ClosureBenchmarkError(
+            "E0-U E1/E4 trophic prediction interface drifted before outcome logging"
+        )
+
+
 def _configure_recovery_context_e10_adapter(
     module: ModuleType,
-) -> tuple[Path, Path, tuple[Path, ...], Any]:
-    """Bind the byte-preserved context builder to the real P2 E10 namespace."""
+    *,
+    recovery_attempt: bool | str = True,
+) -> tuple[Path, Path, tuple[Path, ...], Any, str]:
+    """Bind the byte-preserved context builder to the selected E10 namespace."""
+
+    attempt = _recovery_attempt_number(recovery_attempt)
+    if attempt not in (1, 2):
+        raise ClosureBenchmarkError("E0-U recovery E10 adapter mode drifted")
+    recovery_name = RECOVERY_ATTEMPT if attempt == 1 else RECOVERY_ATTEMPT_2
+    recovery_root = (
+        RECOVERY_E10_SOURCE_DIRECTORY
+        if attempt == 1
+        else RECOVERY_2_E10_SOURCE_DIRECTORY
+    )
+    recovery_paths = (
+        RECOVERY_E10_SOURCE_PATHS
+        if attempt == 1
+        else RECOVERY_2_E10_SOURCE_PATHS
+    )
 
     original_loader = getattr(module, "load_closure_e10_software_evidence", None)
     legacy_bindings = {
@@ -5456,32 +5726,42 @@ def _configure_recovery_context_e10_adapter(
         return original_loader(
             *args,
             **kwargs,
-            recovery_attempt=RECOVERY_ATTEMPT,
+            recovery_attempt=recovery_name,
         )
 
-    module.__dict__["EVIDENCE_ROOT"] = RECOVERY_E10_SOURCE_DIRECTORY
-    module.__dict__["EVIDENCE_MANIFEST_PATH"] = RECOVERY_E10_SOURCE_PATHS[-1]
-    module.__dict__["EVIDENCE_SOURCE_PATHS"] = RECOVERY_E10_SOURCE_PATHS
+    module.__dict__["EVIDENCE_ROOT"] = recovery_root
+    module.__dict__["EVIDENCE_MANIFEST_PATH"] = recovery_paths[-1]
+    module.__dict__["EVIDENCE_SOURCE_PATHS"] = recovery_paths
     module.__dict__["load_closure_e10_software_evidence"] = recovery_loader
     return (
-        RECOVERY_E10_SOURCE_DIRECTORY,
-        RECOVERY_E10_SOURCE_PATHS[-1],
-        RECOVERY_E10_SOURCE_PATHS,
+        recovery_root,
+        recovery_paths[-1],
+        recovery_paths,
         recovery_loader,
+        recovery_name,
     )
 
 
 def _recapture_recovery_context_e10_adapter(
     module: ModuleType,
-    expected_bindings: tuple[Path, Path, tuple[Path, ...], Any],
+    expected_bindings: tuple[Path, Path, tuple[Path, ...], Any, str],
 ) -> None:
-    expected_root, expected_manifest, expected_paths, expected_loader = (
+    expected_root, expected_manifest, expected_paths, expected_loader, mode = (
         expected_bindings
     )
+    expected_root_by_mode = {
+        RECOVERY_ATTEMPT: RECOVERY_E10_SOURCE_DIRECTORY,
+        RECOVERY_ATTEMPT_2: RECOVERY_2_E10_SOURCE_DIRECTORY,
+    }
+    expected_paths_by_mode = {
+        RECOVERY_ATTEMPT: RECOVERY_E10_SOURCE_PATHS,
+        RECOVERY_ATTEMPT_2: RECOVERY_2_E10_SOURCE_PATHS,
+    }
     if (
-        expected_root is not RECOVERY_E10_SOURCE_DIRECTORY
-        or expected_manifest is not RECOVERY_E10_SOURCE_PATHS[-1]
-        or expected_paths is not RECOVERY_E10_SOURCE_PATHS
+        mode not in expected_root_by_mode
+        or expected_root is not expected_root_by_mode[mode]
+        or expected_manifest is not expected_paths_by_mode[mode][-1]
+        or expected_paths is not expected_paths_by_mode[mode]
         or not callable(expected_loader)
         or getattr(module, "EVIDENCE_ROOT", None) is not expected_root
         or getattr(module, "EVIDENCE_MANIFEST_PATH", None)
@@ -5499,7 +5779,7 @@ def _load_ready_context_builder(
     readiness: Mapping[str, Any],
     authority: Mapping[str, Any],
     *,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> tuple[Any, Any, dict[str, Any]]:
     readiness_record = readiness.get("context_builder_source_record")
     authority_record = authority.get(E0_U_CONTEXT_BUILDER_SOURCE_RECORD_KEY)
@@ -5531,8 +5811,11 @@ def _load_ready_context_builder(
     preflight = getattr(module, E0_U_CONTEXT_PREFLIGHT_API, None)
     if not callable(builder) or not callable(preflight):
         raise ClosureBenchmarkError("E0-U context-builder/preflight API drifted")
-    if recovery_attempt:
-        expected_adapter_bindings = _configure_recovery_context_e10_adapter(module)
+    if _recovery_attempt_number(recovery_attempt):
+        expected_adapter_bindings = _configure_recovery_context_e10_adapter(
+            module,
+            recovery_attempt=recovery_attempt,
+        )
         _recapture_recovery_context_e10_adapter(
             module, expected_adapter_bindings
         )
@@ -5672,9 +5955,9 @@ def _load_ready_support_sources(
     readiness: Mapping[str, Any],
     authority: Mapping[str, Any],
     *,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> tuple[dict[str, Any], ...]:
-    _require_recovery_mode(recovery_attempt)
+    attempt = _recovery_attempt_number(recovery_attempt)
     readiness_records = readiness.get("support_source_records")
     authority_records = authority.get(E0_U_SUPPORT_SOURCE_RECORDS_KEY)
     if (
@@ -5718,8 +6001,14 @@ def _load_ready_support_sources(
                     expected_h_commit=authority["phase3_code_commit"],
                     require_git_publication=True,
                     **(
-                        {"recovery_attempt": RECOVERY_ATTEMPT}
-                        if recovery_attempt
+                        {
+                            "recovery_attempt": (
+                                RECOVERY_ATTEMPT
+                                if attempt == 1
+                                else RECOVERY_ATTEMPT_2
+                            )
+                        }
+                        if attempt
                         else {}
                     ),
                 )
@@ -5739,7 +6028,7 @@ def _validate_authority_source_bindings(
     authority: Mapping[str, Any],
     readiness: Mapping[str, Any],
     *,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> None:
     observed_runner = runner_source_record(
         repo_root=PROJECT_ROOT,
@@ -5777,7 +6066,7 @@ def _validate_authority_source_bindings(
 
 
 def _recapture_authority_source(
-    authority: Mapping[str, Any], *, recovery_attempt: bool = False
+    authority: Mapping[str, Any], *, recovery_attempt: bool | str = False
 ) -> None:
     observed = _git_bound_e0_u_authority_source_record()
     _validate_authority_commit_bindings(
@@ -6719,12 +7008,12 @@ def _execute_with_verified_e0_u_authority(
     readiness: Mapping[str, Any],
     runtime_state: Mapping[str, Any],
     *,
-    recovery_attempt: bool = False,
+    recovery_attempt: bool | str = False,
 ) -> dict[str, Any]:
     # No component or outcome may be opened until the authority returned.
     if not sys.dont_write_bytecode:
         raise ClosureBenchmarkError("E0-U sealed execution requires -B")
-    _require_recovery_mode(recovery_attempt)
+    attempt = _recovery_attempt_number(recovery_attempt)
     contract = sealed_batch_contract(recovery_attempt=recovery_attempt)
     contract_sha256 = sealed_batch_contract_sha256(
         recovery_attempt=recovery_attempt
@@ -6736,6 +7025,7 @@ def _execute_with_verified_e0_u_authority(
     )
     public_authority = _public_authority_payload(authority)
     components = _load_ready_components(readiness)
+    _validate_outcome_free_component_table_interfaces(components)
     support_source_records = _load_ready_support_sources(
         readiness,
         authority,
@@ -7017,9 +7307,13 @@ def _execute_with_verified_e0_u_authority(
     result = {
         "gate": UNBLINDING_GATE,
         "status": (
-            "sealed_recovery_batch_completed"
-            if recovery_attempt
-            else "sealed_batch_completed"
+            "sealed_batch_completed"
+            if attempt == 0
+            else (
+                "sealed_recovery_batch_completed"
+                if attempt == 1
+                else "sealed_recovery_2_batch_completed"
+            )
         ),
         "execution_id": context["execution_id"],
         "batch_contract_sha256": contract_sha256,
@@ -7044,7 +7338,7 @@ def _execute_with_verified_e0_u_authority(
     return result
 
 
-def _execute_sealed_batch(*, recovery_attempt: bool) -> dict[str, Any]:
+def _execute_sealed_batch(*, recovery_attempt: bool | str) -> dict[str, Any]:
     # The authenticated, outcome-free bootstrap establishes the exact process,
     # repository, remote and future-authority source. E0-U require is then the
     # first capability-bearing operation; no scientific dependency is importable
@@ -7087,12 +7381,17 @@ def execute_sealed_recovery_batch() -> dict[str, Any]:
     return _execute_sealed_batch(recovery_attempt=True)
 
 
+def execute_sealed_recovery_2_batch() -> dict[str, Any]:
+    return _execute_sealed_batch(recovery_attempt=RECOVERY_ATTEMPT_2)
+
+
 def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     modes = parser.add_mutually_exclusive_group(required=True)
     modes.add_argument(CHECK_ONLY_MODE, action="store_true")
     modes.add_argument(SEALED_BATCH_MODE, action="store_true")
     modes.add_argument(SEALED_RECOVERY_BATCH_MODE, action="store_true")
+    modes.add_argument(SEALED_RECOVERY_2_BATCH_MODE, action="store_true")
     return parser.parse_args(argv)
 
 
@@ -7103,8 +7402,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = check_only()
         elif args.execute_sealed_batch:
             result = execute_sealed_batch()
-        else:
+        elif args.execute_sealed_recovery_batch:
             result = execute_sealed_recovery_batch()
+        else:
+            result = execute_sealed_recovery_2_batch()
     except ClosureBenchmarkError as exc:
         print(str(exc), file=sys.stderr)
         return 2

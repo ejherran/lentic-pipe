@@ -442,6 +442,139 @@ def test_manifest_is_exact_and_authority_validated() -> None:
     assert recovery_manifest["attempt_1_failure_receipt"]["decoded"] == receipt
 
 
+def test_recovery_2_manifest_binds_both_failures_and_exact_h3_p3() -> None:
+    paths = [f"reports/closure_v1/result_{index}.csv" for index in range(52)]
+    formats = {
+        path: ("parquet" if index < 4 else "csv")
+        for index, path in enumerate(paths)
+    }
+    receipt_1_payload = activation.ATTEMPT_1_FAILURE_RECEIPT_PATH.read_bytes()
+    receipt_2_payload = activation.ATTEMPT_2_FAILURE_RECEIPT_PATH.read_bytes()
+    receipt_1 = json.loads(receipt_1_payload)
+    receipt_2 = json.loads(receipt_2_payload)
+    material = {
+        **_material(paths),
+        "recovery_attempt": activation.RECOVERY_ATTEMPT_2,
+        "attempt_ordinal": 3,
+        "first_attempt": False,
+        "sealed_recovery_batch_command": (
+            activation.RECOVERY_2_SEALED_BATCH_COMMAND
+        ),
+        "recovery_guard_path": (
+            "tmp/closure_v1_e0_u_recovery_2/sealed_batch.guard"
+        ),
+        "outcome_access_log_prefix": {
+            "path": activation.ACCESS_LOG_PATH.as_posix(),
+            "bytes": activation.ATTEMPT_2_ACCESS_LOG_BYTES,
+            "sha256": activation.ATTEMPT_2_ACCESS_LOG_SHA256,
+            "record_count": 2,
+            "first_execution_id": activation.ATTEMPT_1_EXECUTION_ID,
+            "second_execution_id": activation.ATTEMPT_2_EXECUTION_ID,
+        },
+    }
+
+    def recovery_scope(path: str, status: str = "A") -> dict[str, Any]:
+        record = _scope(path, status)
+        if path == "src/data/prepare_commit_artifacts.py":
+            record["mode"] = "100755"
+        return record
+
+    topology = {
+        "r_commit": activation.BASE_R_COMMIT,
+        "h1_commit": activation.HISTORICAL_H1_COMMIT,
+        "p1_commit": activation.HISTORICAL_P1_COMMIT,
+        "u1_commit": activation.HISTORICAL_U1_COMMIT,
+        "h2_commit": activation.HISTORICAL_H2_COMMIT,
+        "p2_commit": activation.HISTORICAL_P2_COMMIT,
+        "u2_commit": activation.HISTORICAL_U2_COMMIT,
+        "h3_commit": "5" * 40,
+        "p3_commit": "6" * 40,
+        "h2_scope": [
+            recovery_scope(path, status)
+            for path, status in activation.EXPECTED_RECOVERY_H_SCOPE
+        ],
+        "p2_scope": [
+            _scope(path)
+            for path in activation.EXPECTED_RECOVERY_P_SCOPE_PATHS
+        ],
+        "h3_scope": [
+            recovery_scope(path, status)
+            for path, status in activation.EXPECTED_RECOVERY_2_H_SCOPE
+        ],
+        "p3_scope": [
+            _scope(path)
+            for path in activation.EXPECTED_RECOVERY_2_P_SCOPE_PATHS
+        ],
+    }
+    authority_namespace = activation._load_source_namespace(
+        activation.AUTHORITY_PATH,
+        repo_root=activation.PROJECT_ROOT,
+        module_name="closure_recovery_2_activation_test_authority",
+    )
+
+    def validate_shape(value: Any) -> Any:
+        assert set(value) == set(
+            authority_namespace["RECOVERY_2_ACTIVATION_MANIFEST_KEYS"]
+        )
+        return authority_namespace[
+            "_validate_recovery_2_activation_without_contract"
+        ](value)
+
+    manifest = activation._recovery_2_manifest(
+        repo_root=activation.PROJECT_ROOT,
+        topology=topology,
+        material=material,
+        authority={
+            "_validate_recovery_2_activation_without_contract": validate_shape,
+            "_validate_dvc_policy": lambda value, *_args: value,
+        },
+        authority_source_record={"path": activation.AUTHORITY_PATH.as_posix()},
+        receipt_1=receipt_1,
+        receipt_1_record={
+            "path": activation.ATTEMPT_1_FAILURE_RECEIPT_PATH.as_posix(),
+            "bytes": len(receipt_1_payload),
+            "sha256": activation._sha256_bytes(receipt_1_payload),
+        },
+        receipt_2=receipt_2,
+        receipt_2_record={
+            "path": activation.ATTEMPT_2_FAILURE_RECEIPT_PATH.as_posix(),
+            "bytes": len(receipt_2_payload),
+            "sha256": activation._sha256_bytes(receipt_2_payload),
+        },
+        recovery_source_records=[
+            {
+                "path": path,
+                "bytes": 1,
+                "sha256": "a" * 64,
+                "mode": 0o644,
+            }
+            for path in (
+                activation.RECOVERY_2_ACTIVATION_SCHEMA_PATH.as_posix(),
+                activation.RECOVERY_2_DOCUMENT_PATH.as_posix(),
+                activation.ATTEMPT_2_FAILURE_RECEIPT_PATH.as_posix(),
+                activation.RECOVERY_2_COMMAND_PATH.as_posix(),
+                "src/experiments/lock_closure_e0_u_activation.py",
+            )
+        ],
+        phase3_overlay_deep_validation=_deep_validation_receipt(
+            h_commit=activation.HISTORICAL_H1_COMMIT
+        ),
+        expected_artifact_paths=paths,
+        expected_artifact_formats=formats,
+    )
+    assert manifest["attempt_ordinal"] == 3
+    assert manifest["historical_chain"]["u1_commit"] == (
+        activation.HISTORICAL_U1_COMMIT
+    )
+    assert manifest["recovery_chain"]["u2_commit"] == (
+        activation.HISTORICAL_U2_COMMIT
+    )
+    assert manifest["recovery_2_chain"]["h3_commit"] == "5" * 40
+    assert manifest["recovery_2_chain"]["p3_commit"] == "6" * 40
+    assert manifest["attempt_2_failure_receipt"]["decoded"] == receipt_2
+    assert activation._canonical_json_bytes(manifest).endswith(b"\n")
+
+
 def test_topology_separates_configured_origin_from_live_https(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
@@ -596,6 +729,41 @@ def test_public_runner_activation_material_is_exact_and_outcome_free(
         recovery_contract
     )
 
+    recovery_2_prefix = {
+        "path": runner.OUTCOME_ACCESS_LOG_PATH.as_posix(),
+        "bytes": runner.ATTEMPT_2_ACCESS_LOG_BYTES,
+        "sha256": runner.ATTEMPT_2_ACCESS_LOG_SHA256,
+        "record_count": 2,
+        "first_execution_id": runner.ATTEMPT_1_EXECUTION_ID,
+        "second_execution_id": runner.ATTEMPT_2_EXECUTION_ID,
+    }
+    monkeypatch.setattr(
+        runner,
+        "_attempt_2_access_log_prefix",
+        lambda **_kwargs: recovery_2_prefix,
+    )
+    recovery_2 = runner.collect_e0_u_activation_material(
+        recovery_attempt=runner.RECOVERY_ATTEMPT_2
+    )
+    recovery_2_contract = runner.sealed_batch_contract(
+        recovery_attempt=runner.RECOVERY_ATTEMPT_2
+    )
+    assert recovery_2["status"] == "e0_u_recovery_2_activation_material_ready"
+    assert recovery_2["attempt_ordinal"] == 3
+    assert recovery_2["outcome_access_log_prefix"] == recovery_2_prefix
+    assert recovery_2["recovery_guard_path"] == (
+        runner.RECOVERY_2_RUN_GUARD_PATH
+    )
+    assert recovery_2["sealed_recovery_batch_command"] == (
+        runner.SEALED_RECOVERY_2_BATCH_COMMAND
+    )
+    assert recovery_2_contract["authority_context_factory_api"] == (
+        runner.E0_U_RECOVERY_2_CONTEXT_FACTORY_API
+    )
+    assert runner.validate_sealed_batch_contract(recovery_2_contract) == (
+        recovery_2_contract
+    )
+
     adapter_calls: list[dict[str, Any]] = []
     context_module = ModuleType("synthetic_recovery_context")
     context_module.__dict__["EVIDENCE_ROOT"] = runner.LEGACY_E10_SOURCE_DIRECTORY
@@ -632,6 +800,30 @@ def test_public_runner_activation_material_is_exact_and_outcome_free(
         runner._recapture_recovery_context_e10_adapter(
             context_module, expected_adapter_bindings
         )
+
+    context_module.__dict__["EVIDENCE_ROOT"] = runner.LEGACY_E10_SOURCE_DIRECTORY
+    context_module.__dict__["EVIDENCE_MANIFEST_PATH"] = (
+        runner.LEGACY_E10_SOURCE_PATHS[-1]
+    )
+    context_module.__dict__["EVIDENCE_SOURCE_PATHS"] = (
+        runner.LEGACY_E10_SOURCE_PATHS
+    )
+    context_module.__dict__["load_closure_e10_software_evidence"] = legacy_loader
+    recovery_2_bindings = runner._configure_recovery_context_e10_adapter(
+        context_module,
+        recovery_attempt=runner.RECOVERY_ATTEMPT_2,
+    )
+    assert context_module.__dict__["load_closure_e10_software_evidence"](
+        value=2
+    ) == {"ok": True}
+    assert adapter_calls[-1] == {
+        "value": 2,
+        "recovery_attempt": runner.RECOVERY_ATTEMPT_2,
+    }
+    runner._recapture_recovery_context_e10_adapter(
+        context_module,
+        recovery_2_bindings,
+    )
 
 
 def test_activation_publication_is_no_clobber_and_canonical(tmp_path: Path) -> None:
@@ -1144,12 +1336,18 @@ def test_commands_preserve_isolated_outcome_free_boundary() -> None:
         activation.RECOVERY_CHECK_ONLY_COMMAND,
         activation.RECOVERY_GENERATION_COMMAND,
         activation.RECOVERY_VALIDATE_COMMAND,
+        activation.RECOVERY_2_CHECK_ONLY_COMMAND,
+        activation.RECOVERY_2_GENERATION_COMMAND,
+        activation.RECOVERY_2_VALIDATE_COMMAND,
     ):
         assert command.startswith("/usr/bin/env -i LANG=C LC_ALL=C ")
         assert ".venv/bin/python -I -S -B " in command
         assert "run_closure_benchmark.py --execute-sealed-batch" not in command
     assert activation.RECOVERY_SEALED_BATCH_COMMAND == (
         activation.RECOVERY_COMMAND_PATH.read_text(encoding="utf-8")
+    )
+    assert activation.RECOVERY_2_SEALED_BATCH_COMMAND == (
+        activation.RECOVERY_2_COMMAND_PATH.read_text(encoding="utf-8")
     )
     assert runner.parse_args(
         [runner.SEALED_RECOVERY_BATCH_MODE]
@@ -1163,6 +1361,18 @@ def test_commands_preserve_isolated_outcome_free_boundary() -> None:
     assert activation._parser().parse_args(
         ["--validate-published-recovery"]
     ).validate_published_recovery is True
+    assert runner.parse_args(
+        [runner.SEALED_RECOVERY_2_BATCH_MODE]
+    ).execute_sealed_recovery_2_batch is True
+    assert activation._parser().parse_args(
+        ["--check-recovery-2"]
+    ).check_recovery_2 is True
+    assert activation._parser().parse_args(
+        ["--generate-recovery-2"]
+    ).generate_recovery_2 is True
+    assert activation._parser().parse_args(
+        ["--validate-published-recovery-2"]
+    ).validate_published_recovery_2 is True
 
 
 def test_direct_parent_guard_rejects_merge_parent(
@@ -1238,3 +1448,18 @@ def test_public_schema_matches_authority_manifest_keys() -> None:
     assert tuple(authority_namespace["EXPECTED_RECOVERY_P_SCOPE_PATHS"]) == (
         activation.EXPECTED_RECOVERY_P_SCOPE_PATHS
     )
+    recovery_2_schema = json.loads(
+        activation.RECOVERY_2_ACTIVATION_SCHEMA_PATH.read_text(encoding="utf-8")
+    )
+    assert recovery_2_schema["additionalProperties"] is False
+    assert set(recovery_2_schema["required"]) == set(
+        authority_namespace["RECOVERY_2_ACTIVATION_MANIFEST_KEYS"]
+    )
+    assert recovery_2_schema["properties"]["attempt_ordinal"]["const"] == 3
+    assert recovery_2_schema["properties"]["first_attempt"]["const"] is False
+    assert tuple(authority_namespace["EXPECTED_RECOVERY_2_H_SCOPE"]) == (
+        activation.EXPECTED_RECOVERY_2_H_SCOPE
+    )
+    assert tuple(
+        authority_namespace["EXPECTED_RECOVERY_2_P_SCOPE_PATHS"]
+    ) == activation.EXPECTED_RECOVERY_2_P_SCOPE_PATHS
