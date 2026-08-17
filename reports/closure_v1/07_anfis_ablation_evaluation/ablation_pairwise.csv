@@ -1,0 +1,16 @@
+evaluation_cohort,evaluation_role,challenger_model_id,reference_model_id,horizon_months,common_row_count,status,delta_brier,delta_mae,delta_pr_auc
+location_holdout,test,P1,P0,1,0,model_unavailable,,,
+location_holdout,test,P1,P0,2,0,model_unavailable,,,
+location_holdout,test,P1,P0,3,0,model_unavailable,,,
+location_holdout,test,P1,A0,1,0,model_unavailable,,,
+location_holdout,test,P1,A0,2,0,model_unavailable,,,
+location_holdout,test,P1,A0,3,0,model_unavailable,,,
+location_holdout,test,P0,A0,1,0,model_unavailable,,,
+location_holdout,test,P0,A0,2,0,model_unavailable,,,
+location_holdout,test,P0,A0,3,0,model_unavailable,,,
+location_holdout,test,A1,A0,1,3175,available,-0.0055873694068042101,-0.0044093911790035537,0.007430428936703759
+location_holdout,test,A1,A0,2,3125,available,-0.00027788486043783507,0.00021571684585856247,0.0071748850518099649
+location_holdout,test,A1,A0,3,3045,available,-0.011067882514110934,-0.0019947931772137948,0.020202996374883986
+location_holdout,test,A1,P1,1,0,model_unavailable,,,
+location_holdout,test,A1,P1,2,0,model_unavailable,,,
+location_holdout,test,A1,P1,3,0,model_unavailable,,,

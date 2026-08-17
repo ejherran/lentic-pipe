@@ -1,0 +1,1 @@
+scenario_id,degradation_seed,horizon_months,target_event,model_id,model_seed,rows,site_count,pr_auc,brier,recall,f2,availability,failure_rate

@@ -1,0 +1,10 @@
+scenario_id,row_count,cluster_count,estimate,ci95_lower,ci95_upper,p_value_greater,p_holm,reject_holm_0_05,status
+tp_reduction_10,13464,88,,,,,,False,model_unavailable
+tp_reduction_25,13464,88,,,,,,False,model_unavailable
+tn_reduction_10,13464,88,,,,,,False,model_unavailable
+tp_tn_reduction_10,13464,88,,,,,,False,model_unavailable
+clarity_mild,13464,88,,,,,,False,model_unavailable
+clarity_strong,13464,88,,,,,,False,model_unavailable
+oxygen_support_05,13464,88,,,,,,False,model_unavailable
+nutrient_clarity_mild,13464,88,,,,,,False,model_unavailable
+nutrient_clarity_strong,13464,88,,,,,,False,model_unavailable

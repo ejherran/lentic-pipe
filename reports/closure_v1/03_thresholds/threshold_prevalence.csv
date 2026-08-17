@@ -1,0 +1,13 @@
+evaluation_cohort,evaluation_role,horizon_months,threshold_ug_l,origin_count,positive_count,positive_rate,positive_site_count
+location_holdout,test,1,25,827,289,0.34945586457073763,25
+location_holdout,test,1,30,827,236,0.28536880290205563,25
+location_holdout,test,1,33,827,203,0.24546553808948005,23
+location_holdout,test,1,50,827,74,0.089480048367593712,14
+location_holdout,test,2,25,858,310,0.36130536130536128,26
+location_holdout,test,2,30,858,261,0.30419580419580422,26
+location_holdout,test,2,33,858,228,0.26573426573426573,24
+location_holdout,test,2,50,858,98,0.11421911421911422,16
+location_holdout,test,3,25,819,278,0.33943833943833945,26
+location_holdout,test,3,30,819,232,0.28327228327228327,25
+location_holdout,test,3,33,819,197,0.24053724053724054,23
+location_holdout,test,3,50,819,72,0.087912087912087919,14

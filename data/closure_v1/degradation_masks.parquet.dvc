@@ -1,0 +1,5 @@
+outs:
+- md5: c483aab92229b79d5f77d4024c768be6
+  size: 6037
+  hash: md5
+  path: degradation_masks.parquet

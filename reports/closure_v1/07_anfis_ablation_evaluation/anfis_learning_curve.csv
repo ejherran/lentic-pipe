@@ -1,0 +1,4 @@
+training_rows_per_module,status,limitation,saturation_claim_authorized
+4096,not_available,training_size_not_completed,False
+16384,not_available,training_size_not_completed,False
+65536,not_available,training_size_not_completed,False

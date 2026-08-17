@@ -1,0 +1,10 @@
+scenario_id,row_count,positive_objective_row_fraction,ecologically_coherent_row_fraction,mean_delta_irc,mean_delta_bloom,mean_delta_u,mean_support_violation,mean_relative_cost,confirmatory_delta_objective,ci95_lower,ci95_upper,p_holm,dictamen
+tp_reduction_10,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+tp_reduction_25,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+tn_reduction_10,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+tp_tn_reduction_10,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+clarity_mild,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+clarity_strong,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+oxygen_support_05,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+nutrient_clarity_mild,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
+nutrient_clarity_strong,13464,,,,,,,,,,,,not_estimable_model_or_rows_unavailable
