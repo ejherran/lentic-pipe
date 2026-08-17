@@ -1,0 +1,465 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/phase4_synthesis.schema.json",
+  "title": "Closure V1 Phase 4 synthesis freeze",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "closure_source_commit",
+    "topology",
+    "input_policy",
+    "allowed_inputs",
+    "matrices",
+    "outputs",
+    "invariants",
+    "rounding",
+    "captions",
+    "adjudication"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "closure_v1_phase4_synthesis_v1"
+    },
+    "closure_source_commit": {
+      "const": "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
+    },
+    "topology": {
+      "type": "object",
+      "required": [
+        "ordered_stages",
+        "H-SYN",
+        "P-SYN",
+        "R-SYN",
+        "closure_source_commit_must_remain_ancestor",
+        "direct_parent_publication_required",
+        "clean_worktree_and_index_required_at_each_gate",
+        "aligned_refs_and_live_remote_required"
+      ],
+      "properties": {
+        "ordered_stages": {"const": ["H-SYN", "P-SYN", "R-SYN"]},
+        "H-SYN": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "synthesis_outputs_authorized", "outcome_access_authorized"],
+          "properties": {
+            "role": {"const": "implementation_schema_tests_and_freeze"},
+            "synthesis_outputs_authorized": {"const": false},
+            "outcome_access_authorized": {"const": false}
+          }
+        },
+        "P-SYN": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_SYN", "outcome_access_authorized", "ordered_outputs", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_synthesis_authority"},
+            "requires_published_H_SYN": {"const": true},
+            "outcome_access_authorized": {"const": false},
+            "ordered_outputs": {
+              "const": [
+                "configs/closure_v1/phase4_synthesis_authority.json",
+                "configs/closure_v1/phase4_synthesis_authority_manifest.json"
+              ]
+            },
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "R-SYN": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_P_SYN", "outcome_access_authorized", "output_count", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "deterministic_synthesis_render"},
+            "requires_published_P_SYN": {"const": true},
+            "outcome_access_authorized": {"const": false},
+            "output_count": {"const": 24},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "closure_source_commit_must_remain_ancestor": {"const": true},
+        "direct_parent_publication_required": {"const": true},
+        "clean_worktree_and_index_required_at_each_gate": {"const": true},
+        "aligned_refs_and_live_remote_required": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "input_policy": {
+      "type": "object",
+      "required": [
+        "closed_allowlist",
+        "discovery_forbidden",
+        "follow_manifest_paths",
+        "follow_symlinks",
+        "recursive_walk_forbidden",
+        "resolve_dvc_pointers",
+        "read_dvc_payloads",
+        "inputs_are_read_only",
+        "forbidden_prefixes",
+        "forbidden_suffixes",
+        "markdown_and_xml_as_numerical_sources",
+        "dvc_pointers_are_identity_evidence_only",
+        "embedded_path_strings_are_not_inputs"
+      ],
+      "properties": {
+        "closed_allowlist": {"const": true},
+        "discovery_forbidden": {"const": true},
+        "follow_manifest_paths": {"const": false},
+        "follow_symlinks": {"const": false},
+        "recursive_walk_forbidden": {"const": true},
+        "resolve_dvc_pointers": {"const": false},
+        "read_dvc_payloads": {"const": false},
+        "inputs_are_read_only": {"const": true},
+        "forbidden_prefixes": {"const": ["private/", "data/targets/"]},
+        "forbidden_suffixes": {"const": [".parquet", ".jsonl", ".md", ".xml"]},
+        "markdown_and_xml_as_numerical_sources": {"const": "forbidden"},
+        "dvc_pointers_are_identity_evidence_only": {"const": true},
+        "embedded_path_strings_are_not_inputs": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "allowed_inputs": {
+      "type": "array",
+      "minItems": 83,
+      "maxItems": 83,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role", "format"],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1,
+            "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?/)(?!private/)(?!data/targets/)(?!.*[?*\\[\\]{}]).+$",
+            "not": {"pattern": "(?:\\.parquet|\\.jsonl|\\.md|\\.xml)$"}
+          },
+          "role": {"type": "string", "minLength": 1},
+          "format": {"enum": ["csv", "json", "yaml", "dvc"]},
+          "allow_empty": {"type": "boolean", "default": false}
+        }
+      }
+    },
+    "matrices": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["final_closure_matrix", "thesis_claim_evidence_matrix"],
+      "properties": {
+        "final_closure_matrix": {
+          "type": "object",
+          "required": ["path", "columns", "sort_key"],
+          "properties": {
+            "path": {"const": "reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv"},
+            "columns": {
+              "const": [
+                "hypothesis_id",
+                "hypothesis_text",
+                "decisive_experiments",
+                "estimand",
+                "population",
+                "model_or_pair",
+                "availability_state",
+                "attempted_denominator",
+                "successful_denominator",
+                "metric",
+                "estimate",
+                "uncertainty",
+                "multiplicity_family",
+                "verdict",
+                "limitation_code",
+                "evidence_paths",
+                "authority_commit"
+              ]
+            },
+            "sort_key": {"const": ["hypothesis_id", "metric", "estimand", "model_or_pair"]}
+          },
+          "additionalProperties": false
+        },
+        "thesis_claim_evidence_matrix": {
+          "type": "object",
+          "required": ["path", "columns", "sort_key"],
+          "properties": {
+            "path": {"const": "reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv"},
+            "columns": {
+              "const": [
+                "claim_id",
+                "chapter",
+                "section",
+                "claim_text",
+                "claim_status",
+                "artifact_path",
+                "row_filter_or_record",
+                "metric",
+                "value_or_state",
+                "denominator",
+                "authority_commit",
+                "limitation",
+                "allowed_wording",
+                "forbidden_wording"
+              ]
+            },
+            "sort_key": {"const": ["claim_id", "chapter", "section", "artifact_path", "row_filter_or_record"]}
+          },
+          "additionalProperties": false
+        }
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["root", "atomic_bundle", "no_clobber", "manifest_written_last", "ordered_paths"],
+      "properties": {
+        "root": {"const": "reports/closure_v1/11_synthesis"},
+        "atomic_bundle": {"const": true},
+        "no_clobber": {"const": true},
+        "manifest_written_last": {"const": true},
+        "ordered_paths": {
+          "const": [
+            "reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv",
+            "reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv",
+            "reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T01_model_experiment_availability.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T02_intent_to_predict_funnel.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T03_dual_benchmark.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T04_descriptive_deltas.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T05_site_transfer.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T06_threshold_sensitivity.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T07_trophic_performance.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T08_multiplicity_ledger.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T09_anfis_ablation.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T10_uncertainty.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T11_e6_e9_unavailability.csv",
+            "reports/closure_v1/11_synthesis/THESIS_TABLES/T12_software_evidence.csv",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F01_intent_to_predict_funnel.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F02_benchmark_metrics.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F03_descriptive_deltas.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F04_threshold_sensitivity.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F05_trophic_heatmap.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F06_uncertainty_coverage.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F07_hypothesis_verdicts.svg",
+            "reports/closure_v1/11_synthesis/THESIS_FIGURES/F08_provenance.svg",
+            "reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json"
+          ]
+        }
+      }
+    },
+    "invariants": {
+      "type": "object",
+      "required": [
+        "availability_states",
+        "non_estimable_states",
+        "required_unavailable_models",
+        "required_hypotheses",
+        "holm_universes",
+        "final_closure_row_count",
+        "holm_cell_count",
+        "claim_evidence_row_count",
+        "table_row_counts",
+        "unavailable_hypotheses_remain_in_holm_universe",
+        "not_estimable_is_not_zero_effect",
+        "unavailable_is_not_negative_result",
+        "no_model_substitution",
+        "no_denominator_substitution",
+        "preserve_estimand_labels",
+        "no_cross_estimand_or_cross_freeze_pooling",
+        "confidence_intervals_precede_p_values",
+        "descriptive_results_are_not_confirmatory"
+      ],
+      "properties": {
+        "availability_states": {
+          "const": [
+            "not_applicable",
+            "model_unavailable",
+            "insufficient_support",
+            "descriptive_available",
+            "confirmatory_available"
+          ]
+        },
+        "non_estimable_states": {"const": ["not_applicable", "model_unavailable", "insufficient_support"]},
+        "required_unavailable_models": {"const": ["P0", "P1", "A2"]},
+        "required_hypotheses": {"const": ["H1", "H2", "H3", "H4", "H5a", "H5b"]},
+        "holm_universes": {
+          "const": {"A": 3, "B": 78, "C": 1, "D": 9, "E": 1}
+        },
+        "final_closure_row_count": {"const": 130},
+        "holm_cell_count": {"const": 92},
+        "claim_evidence_row_count": {"const": 20},
+        "table_row_counts": {
+          "const": {
+            "T01": 99,
+            "T02": 33,
+            "T03": 198,
+            "T04": 24,
+            "T05": 11,
+            "T06": 48,
+            "T07": 31,
+            "T08": 92,
+            "T09": 7,
+            "T10": 36,
+            "T11": 87,
+            "T12": 5
+          }
+        },
+        "unavailable_hypotheses_remain_in_holm_universe": {"const": true},
+        "not_estimable_is_not_zero_effect": {"const": true},
+        "unavailable_is_not_negative_result": {"const": true},
+        "no_model_substitution": {"const": true},
+        "no_denominator_substitution": {"const": true},
+        "preserve_estimand_labels": {"const": true},
+        "no_cross_estimand_or_cross_freeze_pooling": {"const": true},
+        "confidence_intervals_precede_p_values": {"const": true},
+        "descriptive_results_are_not_confirmatory": {"const": true}
+      },
+      "additionalProperties": false
+    },
+    "rounding": {
+      "const": {
+        "decision_values_use_unrounded_source": true,
+        "round_only_at_render_boundary": true,
+        "decimal_mode": "half_even",
+        "metric_decimal_places": 4,
+        "interval_decimal_places": 4,
+        "p_value_decimal_places": 6,
+        "counts_are_integers": true,
+        "negative_zero": "0",
+        "nonfinite_values": "forbidden",
+        "csv_missing_numeric": "",
+        "csv_missing_text": "N/A",
+        "markdown_and_svg_missing": "N/A",
+        "json_missing": null,
+        "zero_for_missing": "forbidden"
+      }
+    },
+    "captions": {
+      "type": "object",
+      "required": ["required_elements", "svg_title_equals_caption", "svg_desc_records_sources_and_filters", "literal_by_artifact"],
+      "properties": {
+        "required_elements": {"const": ["population", "weighting", "horizon", "denominator", "authority", "limitation"]},
+        "svg_title_equals_caption": {"const": true},
+        "svg_desc_records_sources_and_filters": {"const": true},
+        "literal_by_artifact": {
+          "type": "object",
+          "required": [
+            "T01", "T02", "T03", "T04", "T05", "T06",
+            "T07", "T08", "T09", "T10", "T11", "T12",
+            "F01", "F02", "F03", "F04", "F05", "F06", "F07", "F08"
+          ],
+          "properties": {
+            "T01": {"type": "string", "minLength": 1},
+            "T02": {"type": "string", "minLength": 1},
+            "T03": {"type": "string", "minLength": 1},
+            "T04": {"type": "string", "minLength": 1},
+            "T05": {"type": "string", "minLength": 1},
+            "T06": {"type": "string", "minLength": 1},
+            "T07": {"type": "string", "minLength": 1},
+            "T08": {"type": "string", "minLength": 1},
+            "T09": {"type": "string", "minLength": 1},
+            "T10": {"type": "string", "minLength": 1},
+            "T11": {"type": "string", "minLength": 1},
+            "T12": {"type": "string", "minLength": 1},
+            "F01": {"type": "string", "minLength": 1},
+            "F02": {"type": "string", "minLength": 1},
+            "F03": {"type": "string", "minLength": 1},
+            "F04": {"type": "string", "minLength": 1},
+            "F05": {"type": "string", "minLength": 1},
+            "F06": {"type": "string", "minLength": 1},
+            "F07": {"type": "string", "minLength": 1},
+            "F08": {"type": "string", "minLength": 1}
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "adjudication": {
+      "type": "object",
+      "required": [
+        "hypothesis_order",
+        "decisive_experiments",
+        "registered_hypotheses",
+        "verdict_vocabulary",
+        "global_thesis_verdict",
+        "causal_field_claims",
+        "official_management_recommendations",
+        "rerun_E0_U_or_E1_E10",
+        "refit_or_reconstruct_P0_P1_A2",
+        "recalibrate_or_change_thresholds",
+        "edit_manuscript_before_matrix_and_report_approval"
+      ],
+      "properties": {
+        "hypothesis_order": {"const": ["H1", "H2", "H3", "H4", "H5a", "H5b"]},
+        "decisive_experiments": {
+          "const": {
+            "H1": ["E7", "E4"],
+            "H2": ["E1", "E2"],
+            "H3": ["E8", "E6"],
+            "H4": ["E6"],
+            "H5a": ["E9"],
+            "H5b": ["E9"]
+          }
+        },
+        "registered_hypotheses": {
+          "const": {
+            "H1": ["H1_P1_vs_P0", "H_surface_A2_vs_P1"],
+            "H2": ["H2_P1_vs_B1", "H2_P1_vs_B2"],
+            "H3": ["H_E_uncertainty_before_vs_after_recalibration"],
+            "H4": [
+              "H4_M0_vs_P1_control",
+              "H4_M0_vs_P1_mcar_10",
+              "H4_M0_vs_P1_mcar_25",
+              "H4_M0_vs_P1_mcar_50",
+              "H4_M0_vs_P1_block_1m_10",
+              "H4_M0_vs_P1_block_3m_10",
+              "H4_M0_vs_P1_block_6m_25",
+              "H4_M0_vs_P1_ablate_nutrients",
+              "H4_M0_vs_P1_ablate_physchem",
+              "H4_M0_vs_P1_ablate_light",
+              "H4_M0_vs_P1_ablate_temperature",
+              "H4_M0_vs_P1_combined_moderate",
+              "H4_M0_vs_P1_combined_severe"
+            ],
+            "H5a": [
+              "H_D_tp_reduction_10_vs_no_action",
+              "H_D_tp_reduction_25_vs_no_action",
+              "H_D_tn_reduction_10_vs_no_action",
+              "H_D_tp_tn_reduction_10_vs_no_action",
+              "H_D_clarity_mild_vs_no_action",
+              "H_D_clarity_strong_vs_no_action",
+              "H_D_oxygen_support_05_vs_no_action",
+              "H_D_nutrient_clarity_mild_vs_no_action",
+              "H_D_nutrient_clarity_strong_vs_no_action"
+            ],
+            "H5b": [
+              "H_D_tp_reduction_10_vs_no_action",
+              "H_D_tp_reduction_25_vs_no_action",
+              "H_D_tn_reduction_10_vs_no_action",
+              "H_D_tp_tn_reduction_10_vs_no_action",
+              "H_D_clarity_mild_vs_no_action",
+              "H_D_clarity_strong_vs_no_action",
+              "H_D_oxygen_support_05_vs_no_action",
+              "H_D_nutrient_clarity_mild_vs_no_action",
+              "H_D_nutrient_clarity_strong_vs_no_action"
+            ]
+          }
+        },
+        "verdict_vocabulary": {
+          "const": [
+            "limited_descriptive_support",
+            "not_estimable_primary_architecture",
+            "partial_descriptive_only",
+            "not_estimable",
+            "not_confirmed_scientifically"
+          ]
+        },
+        "global_thesis_verdict": {"const": "no_conclusive_predictive_corroboration_with_reproducible_engineering_and_methodological_contribution"},
+        "causal_field_claims": {"const": "forbidden"},
+        "official_management_recommendations": {"const": "forbidden"},
+        "rerun_E0_U_or_E1_E10": {"const": "forbidden"},
+        "refit_or_reconstruct_P0_P1_A2": {"const": "forbidden"},
+        "recalibrate_or_change_thresholds": {"const": "forbidden"},
+        "edit_manuscript_before_matrix_and_report_approval": {"const": "forbidden"}
+      },
+      "additionalProperties": false
+    }
+  }
+}

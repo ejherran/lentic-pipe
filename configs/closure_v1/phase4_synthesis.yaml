@@ -1,0 +1,567 @@
+contract_version: closure_v1_phase4_synthesis_v1
+closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+
+topology:
+  ordered_stages:
+    - H-SYN
+    - P-SYN
+    - R-SYN
+  H-SYN:
+    role: implementation_schema_tests_and_freeze
+    synthesis_outputs_authorized: false
+    outcome_access_authorized: false
+  P-SYN:
+    role: data_only_synthesis_authority
+    requires_published_H_SYN: true
+    outcome_access_authorized: false
+    ordered_outputs:
+      - configs/closure_v1/phase4_synthesis_authority.json
+      - configs/closure_v1/phase4_synthesis_authority_manifest.json
+    manifest_written_last: true
+  R-SYN:
+    role: deterministic_synthesis_render
+    requires_published_P_SYN: true
+    outcome_access_authorized: false
+    output_count: 24
+    manifest_written_last: true
+  closure_source_commit_must_remain_ancestor: true
+  direct_parent_publication_required: true
+  clean_worktree_and_index_required_at_each_gate: true
+  aligned_refs_and_live_remote_required: true
+
+input_policy:
+  closed_allowlist: true
+  discovery_forbidden: true
+  follow_manifest_paths: false
+  follow_symlinks: false
+  recursive_walk_forbidden: true
+  resolve_dvc_pointers: false
+  read_dvc_payloads: false
+  inputs_are_read_only: true
+  forbidden_prefixes:
+    - private/
+    - data/targets/
+  forbidden_suffixes:
+    - .parquet
+    - .jsonl
+    - .md
+    - .xml
+  markdown_and_xml_as_numerical_sources: forbidden
+  dvc_pointers_are_identity_evidence_only: true
+  embedded_path_strings_are_not_inputs: true
+
+allowed_inputs:
+  - path: configs/closure_v1/analysis_plan.yaml
+    role: registered_analysis_plan
+    format: yaml
+  - path: configs/closure_v1/formal_model_lock_authority.json
+    role: formal_model_lock_authority
+    format: json
+  - path: configs/closure_v1/formal_model_lock_authority_manifest.json
+    role: formal_model_lock_authority_manifest
+    format: json
+  - path: data/closure_v1/degradation_masks.parquet.dvc
+    role: final_dvc_pointer_identity
+    format: dvc
+  - path: data/closure_v1/predictions_long.parquet.dvc
+    role: final_dvc_pointer_identity
+    format: dvc
+  - path: reports/closure_v1/00_protocol/closure_e0_u_activation.json
+    role: U1_activation
+    format: json
+  - path: reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json
+    role: U1_failure_receipt
+    format: json
+  - path: reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json
+    role: U2_failure_receipt
+    format: json
+  - path: reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json
+    role: U3_activation
+    format: json
+  - path: reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json
+    role: U2_activation
+    format: json
+  - path: reports/closure_v1/00_protocol/cohort_flow_preoutcome.csv
+    role: cohort_flow_authority
+    format: csv
+  - path: reports/closure_v1/00_protocol/holdout_manifest.json
+    role: holdout_assignment_authority
+    format: json
+  - path: reports/closure_v1/00_protocol/holdout_summary_pre_cutoff.csv
+    role: holdout_pre_cutoff_summary
+    format: csv
+  - path: reports/closure_v1/00_protocol/hypothesis_registry.csv
+    role: registered_hypothesis_authority
+    format: csv
+  - path: reports/closure_v1/00_protocol/software_evidence_source_recovery_2/software_evidence_source_manifest.json
+    role: final_software_evidence_manifest
+    format: json
+  - path: reports/closure_v1/01_benchmark/benchmark_manifest.json
+    role: E1_final_structured_output
+    format: json
+  - path: reports/closure_v1/01_benchmark/model_comparison_paired.csv
+    role: E1_final_structured_output
+    format: csv
+  - path: reports/closure_v1/01_benchmark/model_metrics_long.csv
+    role: E1_final_structured_output
+    format: csv
+  - path: reports/closure_v1/01_surface/locked_evaluation_input_manifest.json
+    role: locked_surface_authority
+    format: json
+  - path: reports/closure_v1/01_surface/locked_evaluation_input_summary.json
+    role: locked_surface_authority
+    format: json
+  - path: reports/closure_v1/01_surface/phase3_input_overlay_manifest.json
+    role: locked_surface_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json
+    role: P0_sequence_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv
+    role: P0_sequence_authority
+    format: csv
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json
+    role: P1_sequence_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv
+    role: P1_sequence_authority
+    format: csv
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_20260612_manifest.json
+    role: P1_sequence_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_20260612_summary.csv
+    role: P1_sequence_authority
+    format: csv
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_20260613_manifest.json
+    role: P1_sequence_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_20260613_summary.csv
+    role: P1_sequence_authority
+    format: csv
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_20260614_manifest.json
+    role: P1_sequence_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_20260614_summary.csv
+    role: P1_sequence_authority
+    format: csv
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_314159_manifest.json
+    role: P1_sequence_authority
+    format: json
+  - path: reports/closure_v1/01_surface/sequences/P1/seed_314159_summary.csv
+    role: P1_sequence_authority
+    format: csv
+  - path: reports/closure_v1/02_models/P0/seed_1729_manifest.json
+    role: P0_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P0/seed_20260612_manifest.json
+    role: P0_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P0/seed_20260613_manifest.json
+    role: P0_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P0/seed_20260614_manifest.json
+    role: P0_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P0/seed_314159_manifest.json
+    role: P0_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P1/seed_1729_manifest.json
+    role: P1_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P1/seed_20260612_manifest.json
+    role: P1_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P1/seed_20260613_manifest.json
+    role: P1_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P1/seed_20260614_manifest.json
+    role: P1_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_models/P1/seed_314159_manifest.json
+    role: P1_terminal_model_manifest
+    format: json
+  - path: reports/closure_v1/02_site_transfer/fold_assignments.csv
+    role: E2_final_structured_output
+    format: csv
+  - path: reports/closure_v1/02_site_transfer/generalization_gap.csv
+    role: E2_final_structured_output
+    format: csv
+  - path: reports/closure_v1/02_site_transfer/location_holdout_metrics.csv
+    role: E2_final_structured_output
+    format: csv
+  - path: reports/closure_v1/02_site_transfer/site_level_metrics.csv
+    role: E2_final_structured_output
+    format: csv
+  - path: reports/closure_v1/03_calibration/alert_thresholds.csv
+    role: final_calibration_authority
+    format: csv
+  - path: reports/closure_v1/03_calibration/calibration_metrics.csv
+    role: final_calibration_authority
+    format: csv
+  - path: reports/closure_v1/03_calibration/calibrator_specs.json
+    role: final_calibration_authority
+    format: json
+  - path: reports/closure_v1/03_calibration/final_calibration_manifest.json
+    role: final_calibration_authority
+    format: json
+  - path: reports/closure_v1/03_calibration/model_availability.csv
+    role: final_calibration_authority
+    format: csv
+  - path: reports/closure_v1/03_calibration/ordinal_cutpoints.csv
+    role: final_calibration_authority
+    format: csv
+  - path: reports/closure_v1/03_thresholds/rank_stability.csv
+    role: E3_final_structured_output
+    format: csv
+  - path: reports/closure_v1/03_thresholds/threshold_metrics.csv
+    role: E3_final_structured_output
+    format: csv
+  - path: reports/closure_v1/03_thresholds/threshold_pairwise_differences.csv
+    role: E3_final_structured_output
+    format: csv
+  - path: reports/closure_v1/03_thresholds/threshold_prevalence.csv
+    role: E3_final_structured_output
+    format: csv
+  - path: reports/closure_v1/04_trophic/carlson_reference_metrics.csv
+    role: E4_final_structured_output
+    format: csv
+  - path: reports/closure_v1/04_trophic/nla_semantic_metrics.csv
+    role: E4_final_structured_output
+    format: csv
+    allow_empty: true
+  - path: reports/closure_v1/04_trophic/trophic_confusion_matrices.csv
+    role: E4_final_structured_output
+    format: csv
+  - path: reports/closure_v1/04_trophic/trophic_proxy_metrics.csv
+    role: E4_final_structured_output
+    format: csv
+  - path: reports/closure_v1/05_inference/bootstrap_distributions.parquet.dvc
+    role: final_dvc_pointer_identity
+    format: dvc
+  - path: reports/closure_v1/05_inference/multiplicity_report.csv
+    role: E5_final_structured_output
+    format: csv
+  - path: reports/closure_v1/05_inference/pairwise_effects.csv
+    role: E5_final_structured_output
+    format: csv
+  - path: reports/closure_v1/05_inference/site_level_losses.csv
+    role: E5_final_structured_output
+    format: csv
+  - path: reports/closure_v1/06_degradation/failure_registry.csv
+    role: E6_final_structured_output
+    format: csv
+  - path: reports/closure_v1/06_degradation/matched_degradation_metrics.csv
+    role: E6_final_structured_output
+    format: csv
+  - path: reports/closure_v1/06_degradation/matched_degradation_pairwise.csv
+    role: E6_final_structured_output
+    format: csv
+  - path: reports/closure_v1/06_degradation/robustness_auc.csv
+    role: E6_final_structured_output
+    format: csv
+  - path: reports/closure_v1/07_anfis_ablation_evaluation/ablation_metrics.csv
+    role: E7_final_structured_output
+    format: csv
+  - path: reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv
+    role: E7_final_structured_output
+    format: csv
+  - path: reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv
+    role: E7_final_structured_output
+    format: csv
+  - path: reports/closure_v1/07_anfis_ablation_evaluation/membership_stability.csv
+    role: E7_final_structured_output
+    format: csv
+  - path: reports/closure_v1/08_uncertainty/conditional_coverage.csv
+    role: E8_final_structured_output
+    format: csv
+  - path: reports/closure_v1/08_uncertainty/recalibration_comparison.csv
+    role: E8_final_structured_output
+    format: csv
+  - path: reports/closure_v1/08_uncertainty/reliability_bins.csv
+    role: E8_final_structured_output
+    format: csv
+  - path: reports/closure_v1/08_uncertainty/uncertainty_ledger.csv
+    role: E8_final_structured_output
+    format: csv
+  - path: reports/closure_v1/09_planning/ecological_coherence.csv
+    role: E9_final_structured_output
+    format: csv
+  - path: reports/closure_v1/09_planning/planning_bootstrap.csv
+    role: E9_final_structured_output
+    format: csv
+  - path: reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc
+    role: final_dvc_pointer_identity
+    format: dvc
+  - path: reports/closure_v1/09_planning/planning_sensitivity.csv
+    role: E9_final_structured_output
+    format: csv
+  - path: reports/closure_v1/10_api/environment.json
+    role: E10_final_structured_output
+    format: json
+  - path: reports/closure_v1/10_api/openapi.json
+    role: E10_final_structured_output
+    format: json
+
+matrices:
+  final_closure_matrix:
+    path: reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv
+    columns:
+      - hypothesis_id
+      - hypothesis_text
+      - decisive_experiments
+      - estimand
+      - population
+      - model_or_pair
+      - availability_state
+      - attempted_denominator
+      - successful_denominator
+      - metric
+      - estimate
+      - uncertainty
+      - multiplicity_family
+      - verdict
+      - limitation_code
+      - evidence_paths
+      - authority_commit
+    sort_key:
+      - hypothesis_id
+      - metric
+      - estimand
+      - model_or_pair
+  thesis_claim_evidence_matrix:
+    path: reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv
+    columns:
+      - claim_id
+      - chapter
+      - section
+      - claim_text
+      - claim_status
+      - artifact_path
+      - row_filter_or_record
+      - metric
+      - value_or_state
+      - denominator
+      - authority_commit
+      - limitation
+      - allowed_wording
+      - forbidden_wording
+    sort_key:
+      - claim_id
+      - chapter
+      - section
+      - artifact_path
+      - row_filter_or_record
+
+outputs:
+  root: reports/closure_v1/11_synthesis
+  atomic_bundle: true
+  no_clobber: true
+  manifest_written_last: true
+  ordered_paths:
+    - reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv
+    - reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv
+    - reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T01_model_experiment_availability.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T02_intent_to_predict_funnel.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T03_dual_benchmark.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T04_descriptive_deltas.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T05_site_transfer.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T06_threshold_sensitivity.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T07_trophic_performance.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T08_multiplicity_ledger.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T09_anfis_ablation.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T10_uncertainty.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T11_e6_e9_unavailability.csv
+    - reports/closure_v1/11_synthesis/THESIS_TABLES/T12_software_evidence.csv
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F01_intent_to_predict_funnel.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F02_benchmark_metrics.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F03_descriptive_deltas.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F04_threshold_sensitivity.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F05_trophic_heatmap.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F06_uncertainty_coverage.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F07_hypothesis_verdicts.svg
+    - reports/closure_v1/11_synthesis/THESIS_FIGURES/F08_provenance.svg
+    - reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+
+invariants:
+  availability_states:
+    - not_applicable
+    - model_unavailable
+    - insufficient_support
+    - descriptive_available
+    - confirmatory_available
+  non_estimable_states:
+    - not_applicable
+    - model_unavailable
+    - insufficient_support
+  required_unavailable_models:
+    - P0
+    - P1
+    - A2
+  required_hypotheses:
+    - H1
+    - H2
+    - H3
+    - H4
+    - H5a
+    - H5b
+  holm_universes:
+    A: 3
+    B: 78
+    C: 1
+    D: 9
+    E: 1
+  final_closure_row_count: 130
+  holm_cell_count: 92
+  claim_evidence_row_count: 20
+  table_row_counts:
+    T01: 99
+    T02: 33
+    T03: 198
+    T04: 24
+    T05: 11
+    T06: 48
+    T07: 31
+    T08: 92
+    T09: 7
+    T10: 36
+    T11: 87
+    T12: 5
+  unavailable_hypotheses_remain_in_holm_universe: true
+  not_estimable_is_not_zero_effect: true
+  unavailable_is_not_negative_result: true
+  no_model_substitution: true
+  no_denominator_substitution: true
+  preserve_estimand_labels: true
+  no_cross_estimand_or_cross_freeze_pooling: true
+  confidence_intervals_precede_p_values: true
+  descriptive_results_are_not_confirmatory: true
+
+rounding:
+  decision_values_use_unrounded_source: true
+  round_only_at_render_boundary: true
+  decimal_mode: half_even
+  metric_decimal_places: 4
+  interval_decimal_places: 4
+  p_value_decimal_places: 6
+  counts_are_integers: true
+  negative_zero: "0"
+  nonfinite_values: forbidden
+  csv_missing_numeric: ""
+  csv_missing_text: "N/A"
+  markdown_and_svg_missing: "N/A"
+  json_missing: null
+  zero_for_missing: forbidden
+
+captions:
+  required_elements:
+    - population
+    - weighting
+    - horizon
+    - denominator
+    - authority
+    - limitation
+  svg_title_equals_caption: true
+  svg_desc_records_sources_and_filters: true
+  literal_by_artifact:
+    T01: "T01. Model and experiment availability in the internal WQP holdout; weighting not applicable; horizons of 1, 2, and 3 months; intent_to_predict and successful denominators as recorded; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: P0, P1, and A2 remain model_unavailable without substitution."
+    T02: "T02. Intent-to-predict funnel for the internal WQP holdout; weighting preserved by estimand; horizons of 1, 2, and 3 months; attempted and successful denominators published in E1; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: failures remain in the denominator and no complete-case filtering is applied."
+    T03: "T03. Dual benchmark in the internal WQP holdout; observation_weighted and site_weighted estimands kept separate; horizons of 1, 2, and 3 months; metric_evaluable_origins denominators published by row; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: no universal winner is inferred and unavailable models are not substituted."
+    T04: "T04. Paired descriptive F1-F0 and A1-A0 deltas in the internal WQP holdout; weighting preserved by contrast; horizons of 1, 2, and 3 months; exact_shared_success_intersection or common_row_count denominator as applicable to each row; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: no intervals or confirmatory significance are invented."
+    T05: "T05. Transfer across locations within the internal WQP holdout; weighting preserved for each estimand; horizons of 1, 2, and 3 months; per-location and per-origin denominators declared in E2; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: internal WQP transfer, not external geographic validation."
+    T06: "T06. Threshold sensitivity in the internal WQP holdout; E3 weighting preserved; horizons of 1, 2, and 3 months; metric_evaluable_origins denominator for each threshold; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: project thresholds, not official ecological standards."
+    T07: "T07. Trophic performance by proxy and reference in the internal WQP holdout; E4 weighting preserved; horizons of 1, 2, and 3 months when applicable; denominator published for each reference and proxy; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: NLA provides semantic provenance, not direct monthly transfer of WQP targets."
+    T08: "T08. Multiplicity ledger for the internal WQP holdout; weighting defined by each registered estimand; horizons of 1, 2, and 3 months; Holm universes A=3, B=78, C=1, D=9, and E=1 without reduction; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: not_estimable does not mean zero effect or equivalence."
+    T09: "T09. ANFIS ablation in the locked WQP cohort; weighting and per-seed summary preserved from E7; horizons of 1, 2, and 3 months when applicable; denominators published by module and seed; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: descriptive evidence does not replace unavailable confirmatory comparisons."
+    T10: "T10. Calibration and uncertainty in the internal WQP holdout; equal_weight_endpoints_and_horizons weighting for the registered contrast and published weights for diagnostics; horizons of 1, 2, and 3 months; exact_shared_rows denominator; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: the confirmatory contrast requiring P1 is not_estimable without additional recalibration."
+    T11: "T11. E6/E9 unavailability in the internal WQP holdout; registered paired-degradation and planning estimands; horizons of 1, 2, and 3 months; published intended_prediction_row_count and row_count denominators; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: E6 is completed_unavailable and nine E9 actions are model_unavailable, without reconstruction or field causality."
+    T12: "T12. Software reproducibility evidence for Closure V1; weighting and horizon not applicable; test and contract counts declared in the recovery_2 manifest; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: certification of the published artifact, not prospective field validation."
+    F01: "F01. Cohort flow and availability for the locked internal WQP holdout; weighting not applicable; horizons of 1, 2, and 3 months; registered cohort and availability denominators; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: P0, P1, and A2 are shown as unavailable, never as zero."
+    F02: "F02. Primary performance in the internal WQP holdout; separate panels for observation_weighted and site_weighted; horizons of 1, 2, and 3 months; denominator published by metric; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: estimands are not mixed and unavailable models are labeled N/A."
+    F03: "F03. Paired descriptive deltas in the internal WQP holdout; weighting preserved by contrast; horizons of 1, 2, and 3 months; common denominators published by E1/E7; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: descriptive points without invented intervals or a universal conclusion."
+    F04: "F04. Metric sensitivity to thresholds in the internal WQP holdout; E3 weighting preserved; horizons of 1, 2, and 3 months; metric_evaluable_origins denominator by threshold; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: project thresholds, not official ecological standards."
+    F05: "F05. Semantic and proxy-based trophic evidence for WQP and the declared references; E4 weighting preserved; horizons of 1, 2, and 3 months when applicable; denominator published by reference; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: NLA does not directly validate monthly WQP targets."
+    F06: "F06. Raw and locked uncertainty coverage in the internal WQP holdout; published weights and the equal_weight_endpoints_and_horizons contrast; horizons of 1, 2, and 3 months; denominator by group and exact_shared_rows when applicable; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: no recalibration is performed and the contrast requiring P1 remains N/A."
+    F07: "F07. H1-H5b verdicts for the internal WQP holdout; weighting defined by each estimand; horizons of 1, 2, and 3 months; registered denominators and Holm universes without substitution; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: for H1, direct ANFIS evidence is separated from auxiliary B1/B2 context, descriptive support is not elevated to confirmation, and not_estimable remains explicit."
+    F08: "F08. Closure V1 provenance R-H1/P1/U1-H2/P2/U2-H3/P3/U3-H4-F; weighting and horizon not applicable; component and artifact denominators declared by each freeze; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: reproducible traceability does not demonstrate scientific effectiveness or field causality."
+
+adjudication:
+  hypothesis_order:
+    - H1
+    - H2
+    - H3
+    - H4
+    - H5a
+    - H5b
+  decisive_experiments:
+    H1:
+      - E7
+      - E4
+    H2:
+      - E1
+      - E2
+    H3:
+      - E8
+      - E6
+    H4:
+      - E6
+    H5a:
+      - E9
+    H5b:
+      - E9
+  registered_hypotheses:
+    H1:
+      - H1_P1_vs_P0
+      - H_surface_A2_vs_P1
+    H2:
+      - H2_P1_vs_B1
+      - H2_P1_vs_B2
+    H3:
+      - H_E_uncertainty_before_vs_after_recalibration
+    H4:
+      - H4_M0_vs_P1_control
+      - H4_M0_vs_P1_mcar_10
+      - H4_M0_vs_P1_mcar_25
+      - H4_M0_vs_P1_mcar_50
+      - H4_M0_vs_P1_block_1m_10
+      - H4_M0_vs_P1_block_3m_10
+      - H4_M0_vs_P1_block_6m_25
+      - H4_M0_vs_P1_ablate_nutrients
+      - H4_M0_vs_P1_ablate_physchem
+      - H4_M0_vs_P1_ablate_light
+      - H4_M0_vs_P1_ablate_temperature
+      - H4_M0_vs_P1_combined_moderate
+      - H4_M0_vs_P1_combined_severe
+    H5a:
+      - H_D_tp_reduction_10_vs_no_action
+      - H_D_tp_reduction_25_vs_no_action
+      - H_D_tn_reduction_10_vs_no_action
+      - H_D_tp_tn_reduction_10_vs_no_action
+      - H_D_clarity_mild_vs_no_action
+      - H_D_clarity_strong_vs_no_action
+      - H_D_oxygen_support_05_vs_no_action
+      - H_D_nutrient_clarity_mild_vs_no_action
+      - H_D_nutrient_clarity_strong_vs_no_action
+    H5b:
+      - H_D_tp_reduction_10_vs_no_action
+      - H_D_tp_reduction_25_vs_no_action
+      - H_D_tn_reduction_10_vs_no_action
+      - H_D_tp_tn_reduction_10_vs_no_action
+      - H_D_clarity_mild_vs_no_action
+      - H_D_clarity_strong_vs_no_action
+      - H_D_oxygen_support_05_vs_no_action
+      - H_D_nutrient_clarity_mild_vs_no_action
+      - H_D_nutrient_clarity_strong_vs_no_action
+  verdict_vocabulary:
+    - limited_descriptive_support
+    - not_estimable_primary_architecture
+    - partial_descriptive_only
+    - not_estimable
+    - not_confirmed_scientifically
+  global_thesis_verdict: no_conclusive_predictive_corroboration_with_reproducible_engineering_and_methodological_contribution
+  causal_field_claims: forbidden
+  official_management_recommendations: forbidden
+  rerun_E0_U_or_E1_E10: forbidden
+  refit_or_reconstruct_P0_P1_A2: forbidden
+  recalibrate_or_change_thresholds: forbidden
+  edit_manuscript_before_matrix_and_report_approval: forbidden

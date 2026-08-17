@@ -1334,6 +1334,47 @@ CLOSURE_PHASE3_H_FORBIDDEN_UNPUBLISHED_PATHS = tuple(
         "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json",
     )
 )
+CLOSURE_PHASE4_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
+CLOSURE_PHASE4_H_SYN_STAGED_SCOPE = {
+    "configs/closure_v1/phase4_synthesis.schema.json": "A",
+    "configs/closure_v1/phase4_synthesis.yaml": "A",
+    "docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/experiments/lock_closure_synthesis.py": "A",
+    "src/reporting/build_closure_synthesis.py": "A",
+    "src/reporting/closure_synthesis_contract.py": "A",
+    "tests/test_build_closure_synthesis.py": "A",
+    "tests/test_closure_synthesis_contract.py": "A",
+    "tests/test_lock_closure_synthesis.py": "A",
+    "tests/test_prepare_commit_artifacts.py": "M",
+}
+CLOSURE_PHASE4_H_SYN_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE4_H_SYN_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_SYN_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE4_H_SYN_STAGED_SCOPE
+)
+CLOSURE_PHASE4_H_SYN_FORBIDDEN_FUTURE_PATHS = (
+    Path("configs/closure_v1/phase4_synthesis_authority.json"),
+    Path("configs/closure_v1/phase4_synthesis_authority_manifest.json"),
+    Path("reports/closure_v1/11_synthesis"),
+    Path("tmp/closure_v1_phase4_synthesis"),
+)
+CLOSURE_PHASE4_P_SYN_STAGED_SCOPE = {
+    "configs/closure_v1/phase4_synthesis_authority.json": "A",
+    "configs/closure_v1/phase4_synthesis_authority_manifest.json": "A",
+}
+CLOSURE_PHASE4_P_SYN_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_P_SYN_STAGED_SCOPE
+}
+CLOSURE_PHASE4_P_SYN_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE4_P_SYN_STAGED_SCOPE
+)
+CLOSURE_PHASE4_SYNTHESIS_TMP_NAMESPACE = Path(
+    "tmp/closure_v1_phase4_synthesis"
+)
+CLOSURE_PHASE4_SYNTHESIS_ROOT = Path("reports/closure_v1/11_synthesis")
 CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/development_runtime_lock.json"
 )
@@ -14876,6 +14917,2015 @@ def _run_anfis_ablation_model_family_registration(args: Any) -> int:
     return 0
 
 
+class ClosurePhase4HSynPrecommitAdapterError(RuntimeError):
+    """Raised when the outcome-free H-SYN publication boundary drifts."""
+
+
+def _closure_phase4_h_syn_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE4_H_SYN_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase4_h_syn_contract() -> None:
+    scope = CLOSURE_PHASE4_H_SYN_STAGED_SCOPE
+    if (
+        len(scope) != 11
+        or sum(status == "A" for status in scope.values()) != 9
+        or sum(status == "M" for status in scope.values()) != 2
+        or set(scope.values()) != {"A", "M"}
+        or set(CLOSURE_PHASE4_H_SYN_GIT_MODES) != set(scope)
+        or CLOSURE_PHASE4_H_SYN_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE4_H_SYN_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+        or CLOSURE_PHASE4_H_SYN_MARKER_PATHS != frozenset(scope)
+        or set(CLOSURE_PHASE4_H_SYN_FORBIDDEN_FUTURE_PATHS)
+        != {
+            Path("configs/closure_v1/phase4_synthesis_authority.json"),
+            Path(
+                "configs/closure_v1/"
+                "phase4_synthesis_authority_manifest.json"
+            ),
+            Path("reports/closure_v1/11_synthesis"),
+            Path("tmp/closure_v1_phase4_synthesis"),
+        }
+    ):
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN exact 9A+2M contract drifted"
+        )
+
+
+def _require_closure_phase4_h_syn_base_refs(*, repo_root: Path) -> None:
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {CLOSURE_PHASE4_SOURCE_COMMIT}
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN requires HEAD/main/origin refs at exact "
+            "Phase 3 source ea8ddce"
+        )
+
+
+def _closure_phase4_live_remote_matches(
+    expected_commit: str,
+    *,
+    repo_root: Path,
+) -> bool:
+    result = run_command(
+        [
+            "git",
+            "-C",
+            repo_root.as_posix(),
+            "ls-remote",
+            "origin",
+            "HEAD",
+            "refs/heads/main",
+        ],
+        check=False,
+    )
+    if result.returncode != 0 or result.stderr.strip():
+        return False
+    records = [line.split("\t") for line in result.stdout.splitlines()]
+    return len(records) == 2 and {
+        tuple(record) for record in records if len(record) == 2
+    } == {
+        (expected_commit, "HEAD"),
+        (expected_commit, "refs/heads/main"),
+    }
+
+
+def _require_closure_phase4_h_syn_live_remote(*, repo_root: Path) -> None:
+    if not _closure_phase4_live_remote_matches(
+        CLOSURE_PHASE4_SOURCE_COMMIT,
+        repo_root=repo_root,
+    ):
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN requires live origin HEAD and main at "
+            "exact Phase 3 source ea8ddce"
+        )
+
+
+def closure_phase4_h_syn_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize only exact, fully unstaged H-SYN on the Phase 3 freeze."""
+
+    _require_closure_phase4_h_syn_contract()
+    candidate = any(
+        marker in status_output or marker in staged_status
+        for marker in CLOSURE_PHASE4_H_SYN_MARKER_PATHS
+    )
+    if not candidate:
+        return False
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    if head != CLOSURE_PHASE4_SOURCE_COMMIT:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN candidate is not based on exact source "
+            "ea8ddce"
+        )
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase4_h_syn_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 4 H-SYN pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN candidate must be exact 9A+2M and fully "
+            "unstaged"
+        ) from exc
+    if staged_status.strip():
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN pre-stage requires an empty Git index"
+        )
+    _require_closure_phase4_h_syn_base_refs(repo_root=repo_root)
+    return True
+
+
+def validate_closure_phase4_h_syn_invocation(
+    args: Any,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Require the exact no-DVC-mutation H-SYN assistant invocation."""
+
+    source = os.environ if env is None else env
+    dvc_site_cache = source.get("DVC_SITE_CACHE_DIR")
+    if (
+        tuple(Path(value) for value in args.target)
+        or tuple(args.defer_dvc_target)
+        or bool(
+            getattr(args, "register_anfis_ablation_model_family", False)
+        )
+        or not args.no_push
+        or not args.allow_unmanaged
+        or args.yes
+        or args.dry_run
+        or args.skip_publication_check
+        or args.jobs is not None
+        or args.dvc_bin is not None
+        or args.manifest != DEFAULT_DVC_MANIFEST
+        or args.report is not None
+        or args.verify_manifest_inputs
+        or args.max_manifest_hash_bytes != DEFAULT_MAX_MANIFEST_HASH_BYTES
+        or source.get("DVC_NO_ANALYTICS") != "1"
+        or "DVC_BIN" in source
+        or (
+            dvc_site_cache is not None
+            and dvc_site_cache != DEFAULT_DVC_SITE_CACHE_DIR.as_posix()
+        )
+    ):
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN precommit requires exact "
+            "--allow-unmanaged --no-push, default paths, mandatory "
+            "publication checks, an empty DVC target set, and "
+            "analytics-disabled repository DVC"
+        )
+
+
+def _require_closure_phase4_h_syn_future_namespace_absent(
+    *, repo_root: Path
+) -> None:
+    try:
+        root_metadata = repo_root.lstat()
+    except OSError as exc:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN repository root cannot be inspected"
+        ) from exc
+    if not stat.S_ISDIR(root_metadata.st_mode):
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN repository root is not a directory"
+        )
+
+    present: list[str] = []
+    for path in CLOSURE_PHASE4_H_SYN_FORBIDDEN_FUTURE_PATHS:
+        current = repo_root
+        for index, part in enumerate(path.parts):
+            current = current / part
+            try:
+                metadata = current.lstat()
+            except FileNotFoundError:
+                break
+            except OSError as exc:
+                raise ClosurePhase4HSynPrecommitAdapterError(
+                    "Closure Phase 4 H-SYN future namespace cannot be "
+                    f"inspected without following links: {path}"
+                ) from exc
+            if index == len(path.parts) - 1:
+                present.append(path.as_posix())
+                break
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise ClosurePhase4HSynPrecommitAdapterError(
+                    "Closure Phase 4 H-SYN future namespace has an unsafe "
+                    f"non-directory ancestor: {current}"
+                )
+    if present:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN forbids premature P-SYN/R-SYN outputs "
+            "and guards: "
+            + ", ".join(present)
+        )
+
+
+def _snapshot_closure_phase4_h_syn_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE4_H_SYN_STAGED_SCOPE):
+            git_mode = CLOSURE_PHASE4_H_SYN_GIT_MODES[raw_path]
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(git_mode[-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase4HSynPrecommitAdapterError(
+                    f"Closure Phase 4 H-SYN path is not single-link: {raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4HSynPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 11:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN physical snapshot is not exact11"
+        )
+    return tuple(records)
+
+
+def _closure_phase4_h_syn_publication_payloads(
+    *, repo_root: Path
+) -> dict[str, bytes]:
+    """Bind the three historical sealed-runtime exceptions to ea8ddce."""
+
+    specifications = (
+        (
+            CLOSURE_E0_U_ACTIVATION_PATH,
+            CLOSURE_PHASE3_U_RECOVERY_BYTES,
+            CLOSURE_PHASE3_U_RECOVERY_SHA256,
+        ),
+        (
+            CLOSURE_E0_U_RECOVERY_ACTIVATION_PATH,
+            CLOSURE_PHASE3_U_RECOVERY_2_BYTES,
+            CLOSURE_PHASE3_U_RECOVERY_2_SHA256,
+        ),
+        (
+            CLOSURE_E0_U_RECOVERY_2_ACTIVATION_PATH,
+            CLOSURE_PHASE3_U3_BYTES,
+            CLOSURE_PHASE3_U3_SHA256,
+        ),
+    )
+    sealed_home = "/" + "home" + "/" + "zero"
+    expected_absolute_values = [
+        (
+            ("sealed_runtime_environment_record", "purelib_path"),
+            sealed_home
+            + "/repos/lentic-pipe/.venv/lib/python3.14/site-packages",
+        ),
+        (
+            (
+                "sealed_runtime_environment_record",
+                "python_executable",
+                "link_path",
+            ),
+            sealed_home + "/repos/lentic-pipe/.venv/bin/python",
+        ),
+    ]
+    payloads: dict[str, bytes] = {}
+    for path, expected_size, expected_sha256 in specifications:
+        raw_path = path.as_posix()
+        sink: list[bytes] = []
+        try:
+            identity = _registration_file_identity(
+                repo_root / path,
+                repo_root=repo_root,
+                mode=0o644,
+                _payload_sink=sink,
+            )
+            payload = json.loads(sink[0].decode("utf-8"))
+        except (
+            DeferredDvcTargetError,
+            UnicodeDecodeError,
+            ValueError,
+        ) as exc:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN historical publication exception "
+                f"is not canonical JSON: {raw_path}"
+            ) from exc
+        canonical = (
+            json.dumps(
+                payload,
+                ensure_ascii=False,
+                separators=(",", ":"),
+                sort_keys=True,
+                allow_nan=False,
+            )
+            + "\n"
+        ).encode("utf-8")
+        index_fields = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip().split(maxsplit=3)
+        source_oid = _git_output(
+            repo_root,
+            "rev-parse",
+            f"{CLOSURE_PHASE4_SOURCE_COMMIT}:{raw_path}",
+        ).strip()
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        absolute_values: list[tuple[tuple[str | int, ...], str]] = []
+
+        def collect(item: Any, key_path: tuple[str | int, ...] = ()) -> None:
+            if isinstance(item, dict):
+                for key, nested in item.items():
+                    collect(nested, (*key_path, key))
+            elif isinstance(item, list):
+                for index, nested in enumerate(item):
+                    collect(nested, (*key_path, index))
+            elif isinstance(item, str) and re.search(
+                r"/home/(?:zero|wolf)(?:/|$)", item
+            ):
+                absolute_values.append((key_path, item))
+
+        collect(payload)
+        if (
+            not isinstance(payload, dict)
+            or identity.nlink != 1
+            or identity.size != expected_size
+            or identity.sha256 != expected_sha256
+            or sink != [canonical]
+            or canonical.count(b"\n") != 1
+            or absolute_values != expected_absolute_values
+            or (b'"type":"' + b"service_" + b'account"') in canonical
+            or (b'"private_' + b'key":') in canonical
+            or b"gs://" in canonical
+            or len(index_fields) != 4
+            or index_fields[0] != "100644"
+            or index_fields[1] != source_oid
+            or index_fields[2] != "0"
+            or index_fields[3] != raw_path
+            or worktree_oid != source_oid
+            or len(source_oid) != 40
+        ):
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN historical publication exception "
+                f"drifted from the exact source freeze: {raw_path}"
+            )
+        payloads[raw_path] = canonical
+    if len(payloads) != 3:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN historical publication exception is not "
+            "exact U1/U2/U3"
+        )
+    return payloads
+
+
+def _run_closure_phase4_h_syn_publication_check(
+    *, repo_root: Path
+) -> CommandResult:
+    """Accept only the exact three Git-bound historical path findings."""
+
+    payloads = _closure_phase4_h_syn_publication_payloads(repo_root=repo_root)
+    hits = [
+        f"{path}:1:{payloads[path][:-1].decode('utf-8')}"
+        for path in sorted(payloads)
+    ]
+    result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    expected_stdout = (
+        "Checking tracked files before publication...\n\n"
+        "Local absolute paths found in versionable files:\n"
+        + "\n".join(hits)
+        + "\n\nPublication readiness check failed.\n"
+    )
+    if (
+        result.returncode != 1
+        or result.stderr
+        or result.stdout != expected_stdout
+    ):
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN publication guard failed beyond the "
+            "exact Git-bound U1/U2/U3 sealed-runtime exception"
+        )
+    return result
+
+
+def _validate_closure_phase4_h_syn_index_bindings(
+    physical: tuple[RegistrationFileIdentity, ...],
+    *,
+    repo_root: Path,
+) -> None:
+    if len(physical) != 11:
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN staged identity set is not exact11"
+        )
+    for identity in physical:
+        raw_path = identity.path
+        fields = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip().split(maxsplit=3)
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            len(fields) != 4
+            or fields[0] != CLOSURE_PHASE4_H_SYN_GIT_MODES[raw_path]
+            or fields[1] != worktree_oid
+            or len(worktree_oid) != 40
+            or fields[2] != "0"
+            or fields[3] != raw_path
+        ):
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN staged mode/blob binding drifted: "
+                f"{raw_path}"
+            )
+
+
+def validate_closure_phase4_h_syn_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind exact11 staged blobs, modes, worktree, refs, and absent P/R."""
+
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE4_H_SYN_STAGED_SCOPE,
+            context="Closure Phase 4 H-SYN staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+            ),
+            expected=_closure_phase4_h_syn_expected_short_scope(staged=True),
+            context="Closure Phase 4 H-SYN staged workspace",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4HSynPrecommitAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase4HSynPrecommitAdapterError(
+            "Closure Phase 4 H-SYN left an unstaged tracked change"
+        )
+    _require_closure_phase4_h_syn_base_refs(repo_root=repo_root)
+    _require_closure_phase4_h_syn_future_namespace_absent(
+        repo_root=repo_root
+    )
+    physical = _snapshot_closure_phase4_h_syn_files(repo_root=repo_root)
+    _validate_closure_phase4_h_syn_index_bindings(
+        physical,
+        repo_root=repo_root,
+    )
+    return physical
+
+
+def _rollback_closure_phase4_h_syn_staging(
+    *,
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    repo_root: Path,
+) -> str | None:
+    """Restore only H-SYN-owned index entries and recapture the boundary."""
+
+    errors: list[str] = []
+    command = [
+        "git",
+        "restore",
+        "--staged",
+        "--",
+        *sorted(CLOSURE_PHASE4_H_SYN_STAGED_SCOPE),
+    ]
+    try:
+        result = run_command(command, check=False)
+        if result.returncode != 0:
+            errors.append(
+                "directed git restore --staged failed: "
+                f"exit={result.returncode}; stderr={result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed git restore --staged raised: {exc}")
+    try:
+        status = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if staged.strip() or not closure_phase4_h_syn_pre_stage_scope(
+            status,
+            staged,
+            repo_root=repo_root,
+        ):
+            errors.append(
+                "directed rollback did not restore exact11 fully unstaged"
+            )
+    except BaseException as exc:
+        errors.append(f"post-rollback Git scope validation failed: {exc}")
+    try:
+        if (
+            _snapshot_closure_phase4_h_syn_files(repo_root=repo_root)
+            != physical_before
+        ):
+            errors.append("post-rollback exact11 worktree snapshot drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback exact11 recapture failed: {exc}")
+    try:
+        _require_closure_phase4_h_syn_future_namespace_absent(
+            repo_root=repo_root
+        )
+    except BaseException as exc:
+        errors.append(f"post-rollback P-SYN/R-SYN boundary failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback DVC validation failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _abort_closure_phase4_h_syn_post_add(
+    primary: BaseException,
+    *,
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    repo_root: Path,
+) -> int:
+    rollback_error = _rollback_closure_phase4_h_syn_staging(
+        physical_before=physical_before,
+        dvc_bin=dvc_bin,
+        dvc_status_before=dvc_status_before,
+        repo_root=repo_root,
+    )
+    if rollback_error is None:
+        print(
+            "Closure Phase 4 H-SYN failed after staging: "
+            f"{primary}; the directed index rollback restored exact11 "
+            "fully unstaged.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            "Closure Phase 4 H-SYN failed after staging: "
+            f"{primary}; ROLLBACK FAILED CLOSED: {rollback_error}",
+            file=sys.stderr,
+        )
+    return 2
+
+
+def _run_closure_phase4_h_syn_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Prepare exact outcome-free H-SYN without DVC or remote mutation."""
+
+    try:
+        validate_closure_phase4_h_syn_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase4_h_syn_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN exact pre-stage scope disappeared"
+            )
+        _require_closure_phase4_h_syn_live_remote(repo_root=repo_root)
+        physical_before = _snapshot_closure_phase4_h_syn_files(
+            repo_root=repo_root
+        )
+        _require_closure_phase4_h_syn_future_namespace_absent(
+            repo_root=repo_root
+        )
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN requires exact empty repository DVC "
+                "status"
+            )
+    except (
+        ClosurePhase4HSynPrecommitAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    try:
+        sealed_runtime_publication_result = (
+            _run_closure_phase4_h_syn_publication_check(
+                repo_root=repo_root,
+            )
+        )
+    except ClosurePhase4HSynPrecommitAdapterError as exc:
+        print(
+            "Closure Phase 4 H-SYN publication check failed beyond the "
+            f"exact published U1/U2/U3 sealed-runtime exception: {exc}",
+            file=sys.stderr,
+        )
+        return 2
+    publication_check_result = CommandResult(
+        sealed_runtime_publication_result.command,
+        0,
+        "OK: exact published U1/U2/U3 sealed-runtime path exception "
+        "compensated; no new publication findings.\n",
+        "",
+    )
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase4_h_syn_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN scope changed during publication checks"
+            )
+        if (
+            _snapshot_closure_phase4_h_syn_files(repo_root=repo_root)
+            != physical_before
+        ):
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN files changed before staging"
+            )
+        _require_closure_phase4_h_syn_future_namespace_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase4_h_syn_live_remote(repo_root=repo_root)
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN DVC status changed before staging"
+            )
+    except ClosurePhase4HSynPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    git_add_command = [
+        "git",
+        "add",
+        "-A",
+        "--",
+        *sorted(CLOSURE_PHASE4_H_SYN_STAGED_SCOPE),
+    ]
+    try:
+        git_add_result = run_command(git_add_command, check=False)
+        if git_add_result.returncode != 0:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = validate_closure_phase4_h_syn_staged_transaction(
+            repo_root=repo_root
+        )
+        if staged_physical != physical_before:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN files changed across exact staging"
+            )
+        _require_closure_phase4_h_syn_live_remote(repo_root=repo_root)
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN DVC status changed during staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok_findings = [
+            finding for finding in findings if finding.level != "ok"
+        ]
+        if non_ok_findings:
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN generic reproducibility checks contain "
+                "warnings or failures: "
+                + "; ".join(
+                    finding.message for finding in non_ok_findings
+                )
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    "phase4_h_syn_scope",
+                    "-",
+                    "Exact outcome-free H-SYN scope staged: 11 paths "
+                    "(9A+2M) on ea8ddce.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase4_h_syn_dvc",
+                    "-",
+                    "DVC status stayed empty; no DVC add or push was run.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase4_h_syn_boundary",
+                    "-",
+                    "P-SYN/R-SYN outputs and guards stayed absent; the "
+                    "H-SYN transaction selected no target, Parquet, private, "
+                    "or outcome path.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=[],
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validate_closure_phase4_h_syn_staged_transaction(
+                repo_root=repo_root
+            )
+            != physical_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+        ):
+            raise ClosurePhase4HSynPrecommitAdapterError(
+                "Closure Phase 4 H-SYN transaction changed while writing its "
+                "report"
+            )
+        _require_closure_phase4_h_syn_future_namespace_absent(
+            repo_root=repo_root
+        )
+        _require_closure_phase4_h_syn_live_remote(repo_root=repo_root)
+    except BaseException as exc:
+        return _abort_closure_phase4_h_syn_post_add(
+            exc,
+            physical_before=physical_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            repo_root=repo_root,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        "Exact outcome-free Closure Phase 4 H-SYN is staged; no DVC add or "
+        "push ran."
+    )
+    return 0
+
+
+class ClosurePhase4SynthesisPublicationAdapterError(RuntimeError):
+    """Raised when an exact P-SYN or R-SYN publication boundary drifts."""
+
+
+def _closure_phase4_p_syn_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE4_P_SYN_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _closure_phase4_r_syn_scope(
+    *, repo_root: Path
+) -> dict[str, str]:
+    try:
+        from src.reporting.closure_synthesis_contract import load_contract
+
+        contract = load_contract(root=repo_root, verify_inputs=False)
+    except BaseException as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            f"Closure Phase 4 R-SYN contract cannot be loaded: {exc}"
+        ) from exc
+    scope = {path: "A" for path in contract.output_paths}
+    if (
+        len(scope) != 24
+        or tuple(scope) != tuple(contract.output_paths)
+        or tuple(scope)[-1]
+        != "reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json"
+    ):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 R-SYN exact24 output contract drifted"
+        )
+    return scope
+
+
+def _closure_phase4_r_syn_expected_short_scope(
+    *, staged: bool, repo_root: Path
+) -> dict[str, str]:
+    return _expected_short_scope(
+        _closure_phase4_r_syn_scope(repo_root=repo_root),
+        staged=staged,
+    )
+
+
+def _closure_phase4_commit_parents(
+    commit: str,
+    *,
+    repo_root: Path,
+) -> tuple[str, ...]:
+    fields = _git_output(
+        repo_root,
+        "rev-list",
+        "--parents",
+        "-n",
+        "1",
+        commit,
+    ).strip().split()
+    if not fields or fields[0] != commit:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            f"Closure Phase 4 cannot resolve commit parents for {commit}"
+        )
+    return tuple(fields[1:])
+
+
+def _closure_phase4_commit_scope(
+    commit: str,
+    *,
+    repo_root: Path,
+) -> dict[str, str]:
+    try:
+        return _parse_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff-tree",
+                "--no-commit-id",
+                "--name-status",
+                "--no-renames",
+                "-r",
+                f"{commit}^",
+                commit,
+            ),
+            context=f"Closure Phase 4 commit scope {commit}",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(str(exc)) from exc
+
+
+def _require_closure_phase4_published_h(
+    h_commit: str,
+    *,
+    repo_root: Path,
+) -> None:
+    if (
+        h_commit == CLOSURE_PHASE4_SOURCE_COMMIT
+        or _closure_phase4_commit_parents(
+            h_commit,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_SOURCE_COMMIT,)
+        or _closure_phase4_commit_scope(
+            h_commit,
+            repo_root=repo_root,
+        )
+        != CLOSURE_PHASE4_H_SYN_STAGED_SCOPE
+    ):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 requires published H-SYN as the exact 9A+2M "
+            "direct child of ea8ddce"
+        )
+
+
+def _require_closure_phase4_published_p(
+    p_commit: str,
+    *,
+    repo_root: Path,
+) -> str:
+    parents = _closure_phase4_commit_parents(
+        p_commit,
+        repo_root=repo_root,
+    )
+    if len(parents) != 1:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN must have exactly one H-SYN parent"
+        )
+    h_commit = parents[0]
+    _require_closure_phase4_published_h(h_commit, repo_root=repo_root)
+    if (
+        _closure_phase4_commit_scope(
+            p_commit,
+            repo_root=repo_root,
+        )
+        != CLOSURE_PHASE4_P_SYN_STAGED_SCOPE
+    ):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 effective P-SYN commit scope is not exact2A"
+        )
+    return h_commit
+
+
+def _require_closure_phase4_publication_refs(
+    expected_commit: str,
+    *,
+    repo_root: Path,
+) -> None:
+    refs = {
+        _git_output(repo_root, "rev-parse", ref).strip()
+        for ref in (
+            "HEAD^{commit}",
+            "refs/heads/main^{commit}",
+            "refs/remotes/origin/main^{commit}",
+            "refs/remotes/origin/HEAD^{commit}",
+        )
+    }
+    if (
+        refs != {expected_commit}
+        or _git_output(
+            repo_root, "symbolic-ref", "--quiet", "HEAD"
+        ).strip()
+        != "refs/heads/main"
+        or _git_output(
+            repo_root,
+            "symbolic-ref",
+            "--quiet",
+            "refs/remotes/origin/HEAD",
+        ).strip()
+        != "refs/remotes/origin/main"
+    ):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 publication requires aligned "
+            "HEAD/main/origin refs"
+        )
+
+
+def _require_closure_phase4_live_remote(
+    expected_commit: str,
+    *,
+    repo_root: Path,
+) -> None:
+    if not _closure_phase4_live_remote_matches(
+        expected_commit,
+        repo_root=repo_root,
+    ):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 publication requires live origin HEAD and main "
+            "at the exact local publication commit"
+        )
+
+
+def _require_closure_phase4_coordination_absent(
+    *, repo_root: Path
+) -> None:
+    path = repo_root / CLOSURE_PHASE4_SYNTHESIS_TMP_NAMESPACE
+    try:
+        path.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 coordination namespace cannot be inspected"
+        ) from exc
+    raise ClosurePhase4SynthesisPublicationAdapterError(
+        "Closure Phase 4 forbids residual guards or temporary materialization"
+    )
+
+
+def _require_closure_phase4_p_syn_no_temps(
+    *, repo_root: Path
+) -> None:
+    _require_closure_phase4_coordination_absent(repo_root=repo_root)
+    parent = repo_root / "configs/closure_v1"
+    try:
+        entries = tuple(parent.iterdir())
+    except OSError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN config namespace cannot be inspected"
+        ) from exc
+    residual = sorted(
+        entry.name
+        for entry in entries
+        if entry.name.startswith(".closure_v1_phase4_synthesis_authority.")
+    )
+    if residual:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN temporary files remain: "
+            + ", ".join(residual)
+        )
+    synthesis_root = repo_root / CLOSURE_PHASE4_SYNTHESIS_ROOT
+    try:
+        synthesis_root.lstat()
+    except FileNotFoundError:
+        return
+    except OSError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 premature R-SYN namespace cannot be inspected"
+        ) from exc
+    raise ClosurePhase4SynthesisPublicationAdapterError(
+        "Closure Phase 4 P-SYN forbids premature R-SYN outputs"
+    )
+
+
+def _snapshot_closure_phase4_publication_files(
+    scope: Mapping[str, str],
+    *,
+    repo_root: Path,
+) -> tuple[RegistrationFileIdentity, ...]:
+    if not scope or set(scope.values()) != {"A"}:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 publication scope is malformed"
+        )
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(scope):
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=0o644,
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase4SynthesisPublicationAdapterError(
+                    "Closure Phase 4 publication path is not single-link: "
+                    f"{raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 publication path is not a safe regular "
+            f"non-symlink file: {exc}"
+        ) from exc
+    if len(records) != len(scope):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 publication physical scope is incomplete"
+        )
+    return tuple(records)
+
+
+def _require_closure_phase4_r_syn_namespace_exact(
+    scope: Mapping[str, str],
+    *,
+    repo_root: Path,
+) -> None:
+    root = repo_root / CLOSURE_PHASE4_SYNTHESIS_ROOT
+    expected = set(scope)
+    observed: set[str] = set()
+    pending = [root]
+    allowed_directories = {
+        CLOSURE_PHASE4_SYNTHESIS_ROOT.as_posix(),
+        (CLOSURE_PHASE4_SYNTHESIS_ROOT / "THESIS_TABLES").as_posix(),
+        (CLOSURE_PHASE4_SYNTHESIS_ROOT / "THESIS_FIGURES").as_posix(),
+    }
+    while pending:
+        directory = pending.pop()
+        try:
+            metadata = directory.lstat()
+        except OSError as exc:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 R-SYN directory cannot be inspected: {directory}"
+            ) from exc
+        if directory.is_symlink() or not stat.S_ISDIR(metadata.st_mode):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 R-SYN has an unsafe directory: {directory}"
+            )
+        relative_directory = directory.relative_to(repo_root).as_posix()
+        if relative_directory not in allowed_directories:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 R-SYN has an extra directory: "
+                f"{relative_directory}"
+            )
+        try:
+            children = tuple(directory.iterdir())
+        except OSError as exc:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 R-SYN directory walk failed: {directory}"
+            ) from exc
+        for child in children:
+            child_metadata = child.lstat()
+            relative = child.relative_to(repo_root).as_posix()
+            if child.is_symlink():
+                raise ClosurePhase4SynthesisPublicationAdapterError(
+                    f"Closure Phase 4 R-SYN forbids symlinks: {relative}"
+                )
+            if stat.S_ISDIR(child_metadata.st_mode):
+                pending.append(child)
+            elif stat.S_ISREG(child_metadata.st_mode):
+                observed.add(relative)
+            else:
+                raise ClosurePhase4SynthesisPublicationAdapterError(
+                    f"Closure Phase 4 R-SYN has a special file: {relative}"
+                )
+    if observed != expected:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 R-SYN namespace is not the exact24 output set"
+        )
+
+
+def _validate_closure_phase4_index_bindings(
+    physical: tuple[RegistrationFileIdentity, ...],
+    scope: Mapping[str, str],
+    *,
+    repo_root: Path,
+) -> None:
+    if len(physical) != len(scope):
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 staged identity count drifted"
+        )
+    for identity in physical:
+        raw_path = identity.path
+        fields = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip().split(maxsplit=3)
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            raw_path not in scope
+            or len(fields) != 4
+            or fields[0] != "100644"
+            or fields[1] != worktree_oid
+            or len(worktree_oid) != 40
+            or fields[2] != "0"
+            or fields[3] != raw_path
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 staged mode/blob binding drifted: "
+                f"{raw_path}"
+            )
+
+
+def _validate_closure_phase4_p_syn_payload(
+    *, repo_root: Path
+) -> None:
+    try:
+        from src.experiments import lock_closure_synthesis as locker
+        from src.reporting import build_closure_synthesis as builder
+        from src.reporting import closure_synthesis_contract as synthesis
+
+        contract = synthesis.load_contract(root=repo_root, verify_inputs=True)
+        head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+        authority_path = repo_root / locker.AUTHORITY_PATH
+        manifest_path = repo_root / locker.MANIFEST_PATH
+        authority_bytes = authority_path.read_bytes()
+        manifest_bytes = manifest_path.read_bytes()
+        authority = json.loads(authority_bytes)
+        manifest = json.loads(manifest_bytes)
+        if (
+            not isinstance(authority, Mapping)
+            or not isinstance(manifest, Mapping)
+            or synthesis.canonical_json_bytes(authority) != authority_bytes
+            or synthesis.canonical_json_bytes(manifest) != manifest_bytes
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 P-SYN bundle is not canonical JSON"
+            )
+        components = [
+            locker._component_record(repo_root, head, path)
+            for path in sorted(locker.H_SCOPE)
+        ]
+        inputs = synthesis.collect_input_records(contract, root=repo_root)
+        expected_state = {
+            "synthesis_implementation_commit": head,
+            "h_components": components,
+            "allowed_inputs": inputs,
+            "allowed_input_paths": list(contract.allowed_input_paths),
+            "output_paths": list(contract.output_paths),
+            "required_unavailable_models": list(
+                contract.required_unavailable_models
+            ),
+            "required_hypotheses": list(contract.required_hypotheses),
+            "holm_universes": dict(contract.holm_universes),
+            "final_closure_row_count": contract.final_closure_row_count,
+            "claim_evidence_row_count": contract.claim_evidence_row_count,
+            "table_row_counts": dict(contract.table_row_counts),
+        }
+        expected_authority = locker._build_authority(expected_state)
+        expected_authority_bytes = synthesis.canonical_json_bytes(
+            expected_authority
+        )
+        expected_manifest = locker._build_manifest(
+            expected_authority_bytes,
+            head,
+        )
+        if (
+            authority_bytes != expected_authority_bytes
+            or manifest_bytes
+            != synthesis.canonical_json_bytes(expected_manifest)
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 P-SYN bundle differs from the complete "
+                "canonical H-SYN/input reconstruction"
+            )
+        locker.validate_authority(authority)
+        validated = builder.validate_authority(
+            contract,
+            root=repo_root,
+            verify_publication=False,
+            verify_remote=False,
+        )
+        if dict(validated) != dict(authority):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 P-SYN authority loaders disagree"
+            )
+    except ClosurePhase4SynthesisPublicationAdapterError:
+        raise
+    except BaseException as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            f"Closure Phase 4 P-SYN payload validation failed: {exc}"
+        ) from exc
+
+
+def _validate_closure_phase4_r_syn_payload(
+    *, repo_root: Path
+) -> None:
+    try:
+        from src.experiments import lock_closure_synthesis as locker
+        from src.reporting import build_closure_synthesis as builder
+        from src.reporting import closure_synthesis_contract as synthesis
+
+        contract = synthesis.load_contract(root=repo_root, verify_inputs=True)
+        p_commit = _git_output(
+            repo_root, "rev-parse", "HEAD^{commit}"
+        ).strip()
+        h_commit = _require_closure_phase4_published_p(
+            p_commit,
+            repo_root=repo_root,
+        )
+        authority = builder.validate_authority(
+            contract,
+            root=repo_root,
+            verify_publication=False,
+            verify_remote=False,
+        )
+        locker.validate_authority(authority)
+        authority_path = repo_root / locker.AUTHORITY_PATH
+        manifest_path = repo_root / locker.MANIFEST_PATH
+        authority_bytes = authority_path.read_bytes()
+        manifest_bytes = manifest_path.read_bytes()
+        components = [
+            locker._component_record(repo_root, h_commit, path)
+            for path in sorted(locker.H_SCOPE)
+        ]
+        inputs = synthesis.collect_input_records(contract, root=repo_root)
+        expected_authority = locker._build_authority(
+            {
+                "synthesis_implementation_commit": h_commit,
+                "h_components": components,
+                "allowed_inputs": inputs,
+                "allowed_input_paths": list(contract.allowed_input_paths),
+                "output_paths": list(contract.output_paths),
+                "required_unavailable_models": list(
+                    contract.required_unavailable_models
+                ),
+                "required_hypotheses": list(contract.required_hypotheses),
+                "holm_universes": dict(contract.holm_universes),
+                "final_closure_row_count": contract.final_closure_row_count,
+                "claim_evidence_row_count": contract.claim_evidence_row_count,
+                "table_row_counts": dict(contract.table_row_counts),
+            }
+        )
+        if (
+            authority_bytes
+            != synthesis.canonical_json_bytes(expected_authority)
+            or manifest_bytes
+            != synthesis.canonical_json_bytes(
+                locker._build_manifest(authority_bytes, h_commit)
+            )
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 effective P-SYN authority is not the exact "
+                "canonical child of H-SYN"
+            )
+        for relative, payload in (
+            (locker.AUTHORITY_PATH, authority_bytes),
+            (locker.MANIFEST_PATH, manifest_bytes),
+        ):
+            fields = _git_output(
+                repo_root,
+                "ls-tree",
+                p_commit,
+                "--",
+                relative.as_posix(),
+            ).strip().split(maxsplit=3)
+            committed = subprocess.run(
+                ["git", "show", f"{p_commit}:{relative.as_posix()}"],
+                cwd=repo_root,
+                check=False,
+                capture_output=True,
+            )
+            if (
+                len(fields) != 4
+                or fields[0] != "100644"
+                or fields[1] != "blob"
+                or fields[3] != relative.as_posix()
+                or committed.returncode != 0
+                or committed.stdout != payload
+            ):
+                raise ClosurePhase4SynthesisPublicationAdapterError(
+                    "Closure Phase 4 effective P-SYN mode/blob drifted: "
+                    f"{relative}"
+                )
+        expected = builder.build_payloads(
+            contract,
+            authority,
+            p_syn_commit=p_commit,
+            authority_manifest_sha256=synthesis.sha256_bytes(manifest_bytes),
+            root=repo_root,
+        )
+        expected_relative = tuple(
+            str(Path(path).relative_to(CLOSURE_PHASE4_SYNTHESIS_ROOT))
+            for path in contract.output_paths
+        )
+        if tuple(expected) != expected_relative:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 R-SYN builder order is not exact24"
+            )
+        for relative, expected_bytes in expected.items():
+            path = repo_root / CLOSURE_PHASE4_SYNTHESIS_ROOT / relative
+            if path.read_bytes() != expected_bytes:
+                raise ClosurePhase4SynthesisPublicationAdapterError(
+                    "Closure Phase 4 R-SYN output differs from deterministic "
+                    f"rendering: {relative}"
+                )
+        manifest_bytes = (
+            repo_root
+            / CLOSURE_PHASE4_SYNTHESIS_ROOT
+            / "synthesis_bundle_manifest.json"
+        ).read_bytes()
+        manifest = json.loads(manifest_bytes)
+        if (
+            not isinstance(manifest, Mapping)
+            or synthesis.canonical_json_bytes(manifest) != manifest_bytes
+            or manifest.get("manifest_last") is not True
+            or manifest.get("manifest_path") != contract.output_paths[-1]
+            or manifest.get("output_paths_and_order_digest")
+            != synthesis.digest_strings(contract.output_paths)
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 R-SYN manifest/order binding drifted"
+            )
+        records = manifest.get("outputs")
+        if not isinstance(records, list) or [
+            record.get("path") if isinstance(record, Mapping) else None
+            for record in records
+        ] != list(contract.output_paths[:-1]):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 R-SYN manifest output records drifted"
+            )
+        captions = contract.artifact_captions
+        expected_caption_ids = tuple(
+            [f"T{index:02d}" for index in range(1, 13)]
+            + [f"F{index:02d}" for index in range(1, 9)]
+        )
+        figure_bytes = tuple(expected.values())[15:23]
+        if (
+            tuple(captions) != expected_caption_ids
+            or any(
+                not caption
+                or CLOSURE_PHASE4_SOURCE_COMMIT not in caption
+                for caption in captions.values()
+            )
+            or any(
+                captions[f"F{index:02d}"].encode("utf-8")
+                not in payload
+                for index, payload in enumerate(figure_bytes, start=1)
+            )
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                "Closure Phase 4 R-SYN literal caption binding drifted"
+            )
+    except ClosurePhase4SynthesisPublicationAdapterError:
+        raise
+    except BaseException as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            f"Closure Phase 4 R-SYN payload validation failed: {exc}"
+        ) from exc
+
+
+def closure_phase4_p_syn_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize exact2A P-SYN only on a published exact H-SYN."""
+
+    candidate = any(
+        marker in status_output or marker in staged_status
+        for marker in CLOSURE_PHASE4_P_SYN_MARKER_PATHS
+    )
+    if not candidate:
+        return False
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    _require_closure_phase4_published_h(head, repo_root=repo_root)
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase4_p_syn_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 4 P-SYN pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN candidate must be exact2A and fully "
+            "unstaged"
+        ) from exc
+    if staged_status.strip():
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN pre-stage requires an empty Git index"
+        )
+    _require_closure_phase4_publication_refs(head, repo_root=repo_root)
+    _require_closure_phase4_live_remote(head, repo_root=repo_root)
+    _require_closure_phase4_p_syn_no_temps(repo_root=repo_root)
+    return True
+
+
+def closure_phase4_r_syn_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize exact24 R-SYN only on a published exact P-SYN."""
+
+    marker = CLOSURE_PHASE4_SYNTHESIS_ROOT.as_posix() + "/"
+    if marker not in status_output and marker not in staged_status:
+        return False
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    _require_closure_phase4_published_p(head, repo_root=repo_root)
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase4_r_syn_expected_short_scope(
+                staged=False,
+                repo_root=repo_root,
+            ),
+            context="Closure Phase 4 R-SYN pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 R-SYN candidate must be exact24 and fully "
+            "unstaged"
+        ) from exc
+    if staged_status.strip():
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 R-SYN pre-stage requires an empty Git index"
+        )
+    _require_closure_phase4_publication_refs(head, repo_root=repo_root)
+    _require_closure_phase4_live_remote(head, repo_root=repo_root)
+    scope = _closure_phase4_r_syn_scope(repo_root=repo_root)
+    _require_closure_phase4_r_syn_namespace_exact(
+        scope,
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_coordination_absent(repo_root=repo_root)
+    return True
+
+
+def validate_closure_phase4_synthesis_publication_invocation(
+    args: Any,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    """Forbid every DVC, push, target, and optional precommit mutation."""
+
+    try:
+        validate_closure_phase4_h_syn_invocation(args, env=env)
+    except ClosurePhase4HSynPrecommitAdapterError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN/R-SYN precommit requires exact "
+            "--allow-unmanaged --no-push with no DVC target, push, dry-run, "
+            "or publication-check bypass"
+        ) from exc
+
+
+def validate_closure_phase4_p_syn_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    scope = CLOSURE_PHASE4_P_SYN_STAGED_SCOPE
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=scope,
+            context="Closure Phase 4 P-SYN staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            expected=_closure_phase4_p_syn_expected_short_scope(staged=True),
+            context="Closure Phase 4 P-SYN staged workspace",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 P-SYN left an unstaged tracked change"
+        )
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    _require_closure_phase4_published_h(head, repo_root=repo_root)
+    _require_closure_phase4_publication_refs(head, repo_root=repo_root)
+    _require_closure_phase4_live_remote(head, repo_root=repo_root)
+    _require_closure_phase4_p_syn_no_temps(repo_root=repo_root)
+    physical = _snapshot_closure_phase4_publication_files(
+        scope,
+        repo_root=repo_root,
+    )
+    _validate_closure_phase4_index_bindings(
+        physical,
+        scope,
+        repo_root=repo_root,
+    )
+    _validate_closure_phase4_p_syn_payload(repo_root=repo_root)
+    return physical
+
+
+def validate_closure_phase4_r_syn_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    scope = _closure_phase4_r_syn_scope(repo_root=repo_root)
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=scope,
+            context="Closure Phase 4 R-SYN staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            expected=_closure_phase4_r_syn_expected_short_scope(
+                staged=True,
+                repo_root=repo_root,
+            ),
+            context="Closure Phase 4 R-SYN staged workspace",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4SynthesisPublicationAdapterError(str(exc)) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            "Closure Phase 4 R-SYN left an unstaged tracked change"
+        )
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    _require_closure_phase4_published_p(head, repo_root=repo_root)
+    _require_closure_phase4_publication_refs(head, repo_root=repo_root)
+    _require_closure_phase4_live_remote(head, repo_root=repo_root)
+    _require_closure_phase4_r_syn_namespace_exact(
+        scope,
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_coordination_absent(repo_root=repo_root)
+    physical = _snapshot_closure_phase4_publication_files(
+        scope,
+        repo_root=repo_root,
+    )
+    _validate_closure_phase4_index_bindings(
+        physical,
+        scope,
+        repo_root=repo_root,
+    )
+    _validate_closure_phase4_r_syn_payload(repo_root=repo_root)
+    return physical
+
+
+def _rollback_closure_phase4_publication_staging(
+    *,
+    scope: Mapping[str, str],
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    repo_root: Path,
+) -> str | None:
+    """Restore only adapter-owned index entries; preserve foreign entries."""
+
+    errors: list[str] = []
+    owned_paths = set(scope)
+    try:
+        result = run_command(
+            ["git", "restore", "--staged", "--", *sorted(scope)],
+            check=False,
+        )
+        if result.returncode != 0:
+            errors.append(
+                "directed git restore --staged failed: "
+                f"exit={result.returncode}; stderr={result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed git restore --staged raised: {exc}")
+    try:
+        staged_rows = parse_git_name_status(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            )
+        )
+        remaining_owned = sorted(
+            path.as_posix()
+            for _status, path in staged_rows
+            if path.as_posix() in owned_paths
+        )
+        if remaining_owned:
+            errors.append(
+                "directed rollback left owned staged paths: "
+                + ", ".join(remaining_owned)
+            )
+    except BaseException as exc:
+        errors.append(f"post-rollback owned-index validation failed: {exc}")
+    try:
+        if (
+            _snapshot_closure_phase4_publication_files(
+                scope,
+                repo_root=repo_root,
+            )
+            != physical_before
+        ):
+            errors.append("post-rollback publication worktree snapshot drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback worktree recapture failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback DVC validation failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _abort_closure_phase4_publication_post_add(
+    primary: BaseException,
+    *,
+    gate: str,
+    scope: Mapping[str, str],
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    repo_root: Path,
+) -> int:
+    rollback_error = _rollback_closure_phase4_publication_staging(
+        scope=scope,
+        physical_before=physical_before,
+        dvc_bin=dvc_bin,
+        dvc_status_before=dvc_status_before,
+        repo_root=repo_root,
+    )
+    if rollback_error is None:
+        print(
+            f"Closure Phase 4 {gate} failed after staging: {primary}; "
+            "directed index rollback restored every owned path and preserved "
+            "foreign entries.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            f"Closure Phase 4 {gate} failed after staging: {primary}; "
+            f"ROLLBACK FAILED CLOSED: {rollback_error}",
+            file=sys.stderr,
+        )
+    return 2
+
+
+def _run_closure_phase4_publication_precommit(
+    args: Any,
+    *,
+    gate: str,
+    initial_status: str,
+    repo_root: Path,
+) -> int:
+    if gate == "P-SYN":
+        scope = CLOSURE_PHASE4_P_SYN_STAGED_SCOPE
+        selector = closure_phase4_p_syn_pre_stage_scope
+        validator = validate_closure_phase4_p_syn_staged_transaction
+        payload_validator = _validate_closure_phase4_p_syn_payload
+    elif gate == "R-SYN":
+        scope = _closure_phase4_r_syn_scope(repo_root=repo_root)
+        selector = closure_phase4_r_syn_pre_stage_scope
+        validator = validate_closure_phase4_r_syn_staged_transaction
+        payload_validator = _validate_closure_phase4_r_syn_payload
+    else:
+        raise ClosurePhase4SynthesisPublicationAdapterError(
+            f"Unsupported Closure Phase 4 publication gate: {gate}"
+        )
+
+    try:
+        validate_closure_phase4_synthesis_publication_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not selector(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} exact pre-stage scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase4_publication_files(
+            scope,
+            repo_root=repo_root,
+        )
+        payload_validator(repo_root=repo_root)
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} requires exact empty repository "
+                "DVC status"
+            )
+    except (
+        ClosurePhase4SynthesisPublicationAdapterError,
+        ClosureLockedEvaluationInputBundleAdapterError,
+    ) as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    report_path = default_report_path()
+    publication_check_result = run_command(
+        ["scripts/check_repo_publication_ready.sh"], check=False
+    )
+    if publication_check_result.returncode != 0:
+        print(publication_check_result.stdout)
+        print(publication_check_result.stderr, file=sys.stderr)
+        print(
+            f"Publication check failed; not staging Closure Phase 4 {gate}.",
+            file=sys.stderr,
+        )
+        return publication_check_result.returncode
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not selector(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} scope changed during checks"
+            )
+        if (
+            _snapshot_closure_phase4_publication_files(
+                scope,
+                repo_root=repo_root,
+            )
+            != physical_before
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} files changed before staging"
+            )
+        payload_validator(repo_root=repo_root)
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} DVC status changed before staging"
+            )
+    except ClosurePhase4SynthesisPublicationAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+
+    try:
+        git_add_result = run_command(
+            ["git", "add", "-A", "--", *sorted(scope)],
+            check=False,
+        )
+        if git_add_result.returncode != 0:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_physical = validator(repo_root=repo_root)
+        if staged_physical != physical_before:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} files changed across staging"
+            )
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} DVC status changed during staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok = [finding for finding in findings if finding.level != "ok"]
+        if non_ok:
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} reproducibility checks contain "
+                "warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok)
+            )
+        findings.extend(
+            [
+                ReproducibilityFinding(
+                    "ok",
+                    f"phase4_{gate.lower().replace('-', '_')}_scope",
+                    "-",
+                    f"Exact {gate} scope staged: {len(scope)} additions.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    f"phase4_{gate.lower().replace('-', '_')}_dvc",
+                    "-",
+                    "DVC status stayed empty; no DVC add or push was run.",
+                ),
+            ]
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=[],
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if (
+            validator(repo_root=repo_root) != physical_before
+            or dvc_status_json(dvc_bin) != dvc_status_before
+        ):
+            raise ClosurePhase4SynthesisPublicationAdapterError(
+                f"Closure Phase 4 {gate} transaction changed while writing "
+                "its report"
+            )
+    except BaseException as exc:
+        return _abort_closure_phase4_publication_post_add(
+            exc,
+            gate=gate,
+            scope=scope,
+            physical_before=physical_before,
+            dvc_bin=dvc_bin,
+            dvc_status_before=dvc_status_before,
+            repo_root=repo_root,
+        )
+
+    print()
+    print(f"Report written: {report_path}")
+    print(
+        f"Exact Closure Phase 4 {gate} is staged; no DVC add or push ran."
+    )
+    return 0
+
+
+def _run_closure_phase4_p_syn_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    return _run_closure_phase4_publication_precommit(
+        args,
+        gate="P-SYN",
+        initial_status=initial_status,
+        repo_root=repo_root,
+    )
+
+
+def _run_closure_phase4_r_syn_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    return _run_closure_phase4_publication_precommit(
+        args,
+        gate="R-SYN",
+        initial_status=initial_status,
+        repo_root=repo_root,
+    )
+
+
 class ClosurePhase3HPrecommitAdapterError(RuntimeError):
     """Raised when the outcome-free Phase 3 H publication boundary drifts."""
 
@@ -23638,6 +25688,51 @@ def main() -> int:
         "--name-status",
         "--no-renames",
     )
+    try:
+        phase4_r_syn_active = closure_phase4_r_syn_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase4SynthesisPublicationAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase4_r_syn_active:
+        return _run_closure_phase4_r_syn_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase4_p_syn_active = closure_phase4_p_syn_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase4SynthesisPublicationAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase4_p_syn_active:
+        return _run_closure_phase4_p_syn_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase4_h_syn_active = closure_phase4_h_syn_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase4HSynPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase4_h_syn_active:
+        return _run_closure_phase4_h_syn_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
     try:
         phase3_recovery_active = closure_phase3_recovery_pre_stage_scope(
             phase3_h_initial_status,
