@@ -14,6 +14,7 @@
     "test_certification",
     "openapi_certification",
     "isolation",
+    "failure_diagnostics",
     "outputs",
     "stop_rules"
   ],
@@ -63,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v2"
+      "const": "closure_v1_phase4_final_certification_v3"
     },
     "authorities": {
       "type": "object",
@@ -74,6 +75,8 @@
         "editorial_commit",
         "h1_cert_commit",
         "p1_cert_commit",
+        "h2_cert_commit",
+        "p2_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -94,8 +97,14 @@
         "p1_cert_commit": {
           "const": "67983d8ea823a59eb4af55b59da04fb4ae298dcb"
         },
+        "h2_cert_commit": {
+          "const": "8e01709c54330502aee318500ab9248e90fe17c5"
+        },
+        "p2_cert_commit": {
+          "const": "72273b52d47df83acc7618fe98a887b74d690a13"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v2_commit"},
+        "certification_target": {"const": "published_P_CERT_v3_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -106,6 +115,8 @@
         "ordered_stages",
         "H-CERT1",
         "P-CERT1",
+        "H-CERT2",
+        "P-CERT2",
         "H-CERT",
         "P-CERT",
         "R-CERT",
@@ -117,7 +128,7 @@
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT", "P-CERT", "R-CERT"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT", "P-CERT", "R-CERT"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -145,30 +156,67 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "H-CERT": {
+        "H-CERT2": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_runtime_contract_tests_and_freeze"},
+            "commit": {"const": "h2_cert_commit"},
             "direct_parent": {"const": "p1_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["post_clone_nlink_delta_exact_one", "clone_registered_for_early_cleanup", "primary_error_preserved_when_safe_cleanup_passes"]}
           }
         },
-        "P-CERT": {
+        "P-CERT2": {
           "type": "object",
           "additionalProperties": false,
           "required": [
             "role",
-            "requires_published_H_CERT",
+            "commit",
+            "requires_published_H_CERT2",
             "supersedes_P_CERT1",
-            "certification_execution_authorized_while_unpublished",
+            "certification_execution_authorized",
+            "failure_stage",
+            "dvc_pull_success_count",
+            "r_cert_output_count",
+            "retry_authorized",
+            "cleanup_status",
             "manifest_written_last"
           ],
           "properties": {
             "role": {"const": "data_only_final_certification_authority_v2"},
+            "commit": {"const": "p2_cert_commit"},
+            "requires_published_H_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "first_directed_dvc_pull"},
+            "dvc_pull_success_count": {"const": 0},
+            "r_cert_output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "cleanup_status": {"const": "failed_closed_namespace_preserved"},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "H-CERT": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_failure_diagnostics_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p2_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["do_not_adopt_failed_dvc_partial_tree_for_cleanup", "sanitize_active_verification_error", "preserve_namespace_and_emit_composite_on_nonexact_cleanup"]}
+          }
+        },
+        "P-CERT": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v3"},
             "requires_published_H_CERT": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
             "supersedes_P_CERT1": {"const": true},
             "certification_execution_authorized_while_unpublished": {"const": false},
             "manifest_written_last": {"const": true}
@@ -196,7 +244,7 @@
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT", "P-CERT", "R-CERT"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT", "P-CERT", "R-CERT"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -211,6 +259,30 @@
           ]
         },
         "P-CERT1": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "H-CERT2": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT2": {
           "allOf": [
             {"$ref": "#/$defs/stageScope"},
             {
@@ -419,8 +491,8 @@
               "properties": {
                 "status": {"const": "locked"},
                 "selector_count": {"const": 39},
-                  "collected_test_count": {"const": 905},
-                  "nodeids_sha256": {"const": "679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03"},
+                  "collected_test_count": {"const": 920},
+                  "nodeids_sha256": {"const": "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"},
                 "allowed_skip_count": {"const": 7}
               }
             }
@@ -485,6 +557,10 @@
         "early_cleanup_inventory_claim_required",
         "primary_error_preserved_when_safe_cleanup_passes",
         "superseded_p1_retry_authorized",
+        "failed_dvc_partial_tree_not_adopted_for_cleanup",
+        "nonexact_cleanup_preserves_namespace",
+        "composite_error_identifies_sanitized_active_error_and_cleanup_failure",
+        "superseded_p2_retry_authorized",
         "no_clobber",
         "cleanup_before_precommit"
       ],
@@ -562,8 +638,40 @@
         "early_cleanup_inventory_claim_required": {"const": true},
         "primary_error_preserved_when_safe_cleanup_passes": {"const": true},
         "superseded_p1_retry_authorized": {"const": false},
+        "failed_dvc_partial_tree_not_adopted_for_cleanup": {"const": true},
+        "nonexact_cleanup_preserves_namespace": {"const": true},
+        "composite_error_identifies_sanitized_active_error_and_cleanup_failure": {"const": true},
+        "superseded_p2_retry_authorized": {"const": false},
         "no_clobber": {"const": true},
         "cleanup_before_precommit": {"const": true}
+      }
+    },
+    "failure_diagnostics": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "sanitized_command_preservation_authorized",
+        "returncode_preservation_authorized",
+        "safe_stderr_category_preservation_authorized",
+        "raw_stdout_preservation_authorized",
+        "raw_stderr_preservation_authorized",
+        "credentials_preservation_authorized",
+        "absolute_paths_preservation_authorized",
+        "nonexact_cleanup_preserves_namespace",
+        "composite_error_identifies_sanitized_active_error",
+        "composite_error_identifies_cleanup_failure"
+      ],
+      "properties": {
+        "sanitized_command_preservation_authorized": {"const": true},
+        "returncode_preservation_authorized": {"const": true},
+        "safe_stderr_category_preservation_authorized": {"const": true},
+        "raw_stdout_preservation_authorized": {"const": false},
+        "raw_stderr_preservation_authorized": {"const": false},
+        "credentials_preservation_authorized": {"const": false},
+        "absolute_paths_preservation_authorized": {"const": false},
+        "nonexact_cleanup_preserves_namespace": {"const": true},
+        "composite_error_identifies_sanitized_active_error": {"const": true},
+        "composite_error_identifies_cleanup_failure": {"const": true}
       }
     },
     "outputs": {
@@ -599,8 +707,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 13,
-      "maxItems": 13,
+      "minItems": 15,
+      "maxItems": 15,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }

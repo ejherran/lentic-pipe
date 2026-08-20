@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v2
+contract_version: closure_v1_phase4_final_certification_v3
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -6,14 +6,18 @@ authorities:
   editorial_commit: d1daa3059462854d6ddf5199fbc05515cec76982
   h1_cert_commit: 003ca2282af5d7156b5814b59d8f1ddfb7fc681e
   p1_cert_commit: 67983d8ea823a59eb4af55b59da04fb4ae298dcb
+  h2_cert_commit: 8e01709c54330502aee318500ab9248e90fe17c5
+  p2_cert_commit: 72273b52d47df83acc7618fe98a887b74d690a13
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v2_commit
+  certification_target: published_P_CERT_v3_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
   ordered_stages:
     - H-CERT1
     - P-CERT1
+    - H-CERT2
+    - P-CERT2
     - H-CERT
     - P-CERT
     - R-CERT
@@ -32,17 +36,39 @@ topology:
     r_cert_output_count: 0
     retry_authorized: false
     manifest_written_last: true
-  H-CERT:
+  H-CERT2:
     role: corrective_runtime_contract_tests_and_freeze
+    commit: h2_cert_commit
     direct_parent: p1_cert_commit
     certification_execution_authorized: false
     corrections:
       - post_clone_nlink_delta_exact_one
       - clone_registered_for_early_cleanup
       - primary_error_preserved_when_safe_cleanup_passes
-  P-CERT:
+  P-CERT2:
     role: data_only_final_certification_authority_v2
+    commit: p2_cert_commit
+    requires_published_H_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: first_directed_dvc_pull
+    dvc_pull_success_count: 0
+    r_cert_output_count: 0
+    retry_authorized: false
+    cleanup_status: failed_closed_namespace_preserved
+    manifest_written_last: true
+  H-CERT:
+    role: corrective_failure_diagnostics_contract_tests_and_freeze
+    direct_parent: p2_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - do_not_adopt_failed_dvc_partial_tree_for_cleanup
+      - sanitize_active_verification_error
+      - preserve_namespace_and_emit_composite_on_nonexact_cleanup
+  P-CERT:
+    role: data_only_final_certification_authority_v3
     requires_published_H_CERT: true
+    supersedes_P_CERT2: true
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
@@ -106,6 +132,53 @@ publication_scopes:
       - path: configs/closure_v1/phase4_final_certification_authority_manifest.json
         status: A
         git_mode: "100644"
+  H-CERT2:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT2:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v2.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v2.json
+        status: A
+        git_mode: "100644"
   H-CERT:
     additions: 0
     modifications: 11
@@ -147,10 +220,10 @@ publication_scopes:
     additions: 2
     modifications: 0
     ordered_paths:
-      - path: configs/closure_v1/phase4_final_certification_authority_v2.json
+      - path: configs/closure_v1/phase4_final_certification_authority_v3.json
         status: A
         git_mode: "100644"
-      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v2.json
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v3.json
         status: A
         git_mode: "100644"
   R-CERT:
@@ -337,8 +410,8 @@ test_certification:
   suite_lock:
     status: locked
     selector_count: 39
-    collected_test_count: 905
-    nodeids_sha256: 679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03
+    collected_test_count: 920
+    nodeids_sha256: b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367
     allowed_skip_count: 7
 
 openapi_certification:
@@ -401,6 +474,22 @@ isolation:
   early_cleanup_inventory_claim_required: true
   primary_error_preserved_when_safe_cleanup_passes: true
   superseded_p1_retry_authorized: false
+  failed_dvc_partial_tree_not_adopted_for_cleanup: true
+  nonexact_cleanup_preserves_namespace: true
+  composite_error_identifies_sanitized_active_error_and_cleanup_failure: true
+  superseded_p2_retry_authorized: false
+
+failure_diagnostics:
+  sanitized_command_preservation_authorized: true
+  returncode_preservation_authorized: true
+  safe_stderr_category_preservation_authorized: true
+  raw_stdout_preservation_authorized: false
+  raw_stderr_preservation_authorized: false
+  credentials_preservation_authorized: false
+  absolute_paths_preservation_authorized: false
+  nonexact_cleanup_preserves_namespace: true
+  composite_error_identifies_sanitized_active_error: true
+  composite_error_identifies_cleanup_failure: true
 
 outputs:
   root: reports/closure_v1/12_certification
@@ -423,8 +512,10 @@ stop_rules:
   - topology_scope_mode_or_blob_drift
   - pending_or_changed_test_suite_lock
   - attempt_to_execute_from_superseded_p1
+  - attempt_to_execute_from_superseded_p2
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
+  - unsanitized_active_error_or_cleanup_failure_masking
   - non_pristine_clone_or_cache
   - forbidden_path_or_parquet_open
   - dvc_pull_scope_or_pointer_drift

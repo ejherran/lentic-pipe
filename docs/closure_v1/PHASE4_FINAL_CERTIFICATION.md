@@ -1,8 +1,8 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT2 publication candidate; suite locked`
+Status: `H-CERT3 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v2`
+Contract: `closure_v1_phase4_final_certification_v3`
 
 Authorities:
 
@@ -10,7 +10,9 @@ Authorities:
 - R-SYN: `528dcb74a7c08b65f262901e4562a67b784db8c9`;
 - editorial manuscript receipt: `d1daa3059462854d6ddf5199fbc05515cec76982`;
 - historical H-CERT1: `003ca2282af5d7156b5814b59d8f1ddfb7fc681e`;
-- superseded P-CERT1: `67983d8ea823a59eb4af55b59da04fb4ae298dcb`.
+- superseded P-CERT1: `67983d8ea823a59eb4af55b59da04fb4ae298dcb`;
+- historical H-CERT2: `8e01709c54330502aee318500ab9248e90fe17c5`;
+- superseded P-CERT2: `72273b52d47df83acc7618fe98a887b74d690a13`.
 
 ## Purpose and boundary
 
@@ -32,8 +34,10 @@ not authorize work after Phase 4.
 
 ## Publication topology
 
-The chain is single-parent and exact. H-CERT1/P-CERT1 remain immutable
-historical evidence; H-CERT2/P-CERT2 are the only future effective authority:
+The chain is single-parent and exact. H-CERT1/P-CERT1 and H-CERT2/P-CERT2
+remain immutable historical evidence; H-CERT3/P-CERT3 are the only future
+effective authority. The compatibility names `H-CERT` and `P-CERT` refer to
+H-CERT3 and P-CERT3:
 
 ```text
 ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
@@ -42,10 +46,13 @@ ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
                       003ca22 H-CERT1 -> 67983d8 P-CERT1 (superseded failure)
                                                  |
                                                  v
-                                    H-CERT2 -> P-CERT2 -> R-CERT
-                                                              |
+                                    8e01709 H-CERT2 -> 72273b5 P-CERT2
+                                                              | (superseded failure)
                                                               v
-                                                     thesis-closure-v1
+                                                   H-CERT3 -> P-CERT3 -> R-CERT
+                                                                            |
+                                                                            v
+                                                                   thesis-closure-v1
 ```
 
 The gates have distinct roles:
@@ -53,19 +60,23 @@ The gates have distinct roles:
 1. **H-CERT1** and **P-CERT1** preserve the first implementation and authority.
    The consumed R-CERT launch failed immediately after `git clone`, before any
    DVC pull or R output, and P-CERT1 never authorizes another launch.
-2. **H-CERT2** publishes the minimal correction, schema, freeze, and tests. It cannot
-   execute the certification.
-3. **P-CERT2** publishes a new two-file, data-only authority. It explicitly
-   supersedes P-CERT1. An unpublished P-CERT2 is
-   ineffective.
-4. **R-CERT** executes only from a clean, published P-CERT2 and publishes eight
+2. **H-CERT2** and **P-CERT2** preserve the first corrective overlay and its
+   two-file authority. Their R-CERT launch reached the first directed DVC
+   pull, which failed before any successful pull or R output. Cleanup then
+   failed closed and preserved the owned run namespace. P-CERT2 authorizes no
+   retry.
+3. **H-CERT3** publishes the minimal diagnostic and cleanup correction,
+   schema, freeze, and tests. It cannot execute the certification.
+4. **P-CERT3** publishes a new two-file, data-only authority. It explicitly
+   supersedes P-CERT2 and P-CERT1. An unpublished P-CERT3 is ineffective.
+5. **R-CERT** executes only from a clean, published P-CERT3 and publishes eight
    evidence files, manifest last.
-5. The repository owner manually publishes the final R commit and the
+6. The repository owner manually publishes the final R commit and the
    `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT2 commit. Executing from
-P-CERT1, adopting its failed temporary namespace, or treating it as effective
-after H-CERT2 exists is forbidden. This avoids a circular
+The executable target is the published P-CERT3 commit. Executing from
+P-CERT1 or P-CERT2, adopting either failed temporary namespace, or treating a
+superseded authority as effective is forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
 R-CERT may add only the exact eight regular evidence files, so its executable
 tree must equal P-CERT's executable tree. The final tag points to published R.
@@ -117,6 +128,16 @@ configs/closure_v1/phase4_final_certification_authority_v2.json
 configs/closure_v1/phase4_final_certification_authority_manifest_v2.json
 ```
 
+H-CERT3 is exactly `11M` over P-CERT2, with the same eleven paths and modes.
+Every path is modified; none is added or deleted.
+
+P-CERT3 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v3.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v3.json
+```
+
 R-CERT is exactly eight additions below a new namespace:
 
 ```text
@@ -130,7 +151,7 @@ reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
 reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
-All P1/P2/R files are single-link regular `100644` files. The final manifest is
+All P1/P2/P3/R files are single-link regular `100644` files. The final manifest is
 created and linked last. An existing path is never adopted, replaced, or
 truncated.
 
@@ -156,7 +177,7 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT creates a fresh clone of live `origin/main` at the exact published P-CERT2
+R-CERT creates a fresh clone of live `origin/main` at the exact published P-CERT3
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets. The builder runs exactly eight commands, one pointer
 per command, in the YAML order:
@@ -214,24 +235,23 @@ not repeated as a CLI selector. Consequently the exact non-duplicating command
 selector count is 39: 33 file selectors plus six supplemental node selectors.
 The skip ledger count is seven. Any other skip is critical and fails closed.
 
-The H-CERT2 public suite lock is final:
+The H-CERT3 suite lock is final. Two independent outcome-free collections over
+the frozen bytes produced the same exact identity:
 
 ```yaml
 suite_lock:
   status: locked
   selector_count: 39
-  collected_test_count: 905
-  nodeids_sha256: 679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03
+  collected_test_count: 920
+  nodeids_sha256: b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367
   allowed_skip_count: 7
 ```
 
-Two independent collections over the unchanged 39 selectors and frozen test
-bytes produced the same 905 unique node IDs and the same ordered-node digest
-shown above, with the outcome-free guard active. Closure outcomes, raw targets
-and restored Parquet payloads remained forbidden. The schema's
-`pending_integration` branch and `allow_pending_suite=True` remain limited to
-integration fixtures; the public YAML is locked, and P-CERT2 generation and
-R-CERT reject pending state.
+The 39 selectors, 920 collected nodes, ordered-node digest and seven allowed
+skips matched in both runs with the outcome-free guard active. The schema's
+pending branch remains available only for integration fixtures; P-CERT3
+generation and R-CERT reject it. Closure outcomes, raw targets and restored
+Parquet payloads remained forbidden during both collections.
 
 The public suite requires zero failures/errors, exactly the seven registered
 skips, a full `ty check`, and `poetry check --lock`. E2E is exactly the three
@@ -246,7 +266,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P-CERT2 clone with its tracked tree read-only, the
+Verification runs from the exact P-CERT3 clone with its tracked tree read-only, the
 host virtual environment read-only, and an owned writable temporary namespace.
 OS masks plus the Python audit hook deny:
 
@@ -268,14 +288,15 @@ those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P-CERT2 authority is canonical JSON. It reconstructs every historical
-H-CERT1 and P-CERT1 component from Git, every H-CERT2 component, all ten
+The P-CERT3 authority is canonical JSON. It reconstructs every historical
+H-CERT1/P-CERT1/H-CERT2/P-CERT2 component from Git, every active H-CERT3
+component, all ten
 anchors, all eight pointer records, the exact suite lock, output order,
-isolation policy and authorization policy. It records P-CERT1 as a superseded
-failed launch with zero DVC pulls, zero R outputs and no retry authorization.
+isolation, diagnostic and authorization policies. It records P-CERT1 and
+P-CERT2 as superseded failed launches with no retry authorization.
 Its companion is written last. Execution becomes effective only after the
-exact two-file P-CERT2 commit is observed as the single-parent child of
-H-CERT2 in local refs and live origin.
+exact two-file P-CERT3 commit is observed as the single-parent child of
+H-CERT3 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -309,8 +330,27 @@ cannot be established as safe or itself fails, the cleanup/composite failure
 prevails fail-closed; the contract does not claim preservation of the primary
 error in that case.
 
-The final manifest binds the seven preceding outputs, P-CERT2 authority and
-companion, historical H1/P1 and active H2 components, public anchors, eight pointer/restoration records,
+The failed P-CERT2 launch established a narrower diagnostic requirement. The
+active verification error may preserve only a portable, sanitized command,
+its return code when available, and a safe stderr category when available.
+Raw stdout, raw stderr, credentials and absolute paths are never preserved or
+serialized. In the historical run the inner return code and safe stderr
+category were not persisted, so P-CERT3 records them as `null` and
+`unavailable_not_persisted`; it does not infer them from the orchestrator's
+exit code.
+
+The builder retains its pre-DVC cleanup snapshot while configuration, pull and
+status commands run. A partial tree left by a failed DVC command is never
+adopted into cleanup ownership and no unrecognized name is deleted. If final
+cleanup cannot prove the namespace is still the exact owned namespace, the
+builder preserves it. The surfaced composite error
+must identify both the sanitized active verification error and the cleanup
+failure; the cleanup failure cannot mask the active stage. No raw stream,
+secret or absolute path may appear in that composite.
+
+The final manifest binds the seven preceding outputs, P-CERT3 authority and
+companion, historical H1/P1/H2/P2 and active H3 components, public anchors,
+eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
 human report must retain this claim boundary:
 
@@ -319,7 +359,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT, P-CERT2, H-CERT2, then earlier Phase 4
+The precommit selector order is R-CERT, P-CERT3, H-CERT3, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -333,11 +373,11 @@ real generic manifests, exact paths/modes/blobs, aligned refs, clean DVC,
 targeted staging and rollback that preserves foreign index entries. The legacy
 guard path remains absent.
 
-H-CERT2 and P-CERT2 precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT3 and P-CERT3 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P-CERT2 parent,
+After the owner publishes R, the final audit must prove direct P-CERT3 parent,
 exact8 scope, local/remote refs, clean Git/DVC, effective manifest, and no
 owned temporary state. The owner then creates and publishes
 `thesis-closure-v1` at exact R. Once the local and remote peeled tag both equal
@@ -348,13 +388,16 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
-- any attempt to execute R-CERT from superseded P-CERT1 or reuse/adopt its
-  retained failed-run namespace;
+- any attempt to execute R-CERT from superseded P-CERT1 or P-CERT2, or
+  reuse/adopt either retained failed-run namespace;
 - a post-clone directory-link delta other than exactly `+1` at
   `after_git_clone`, or failure to register the clone after that exact
   transition check and before subsequent validation;
 - loss of the primary error after safe owned cleanup, or any unsafe/unowned
   cleanup attempt; cleanup failure itself remains a fail-closed error;
+- raw stdout/stderr, credentials or absolute paths in diagnostics; failure to
+  preserve a non-exact namespace; or a cleanup error that masks the sanitized
+  active stage instead of surfacing a composite failure;
 - a non-pristine clone/cache, pointer mismatch, non-exact pull, missing
   restored object, or main-worktree DVC change;
 - any forbidden/private/raw/Parquet read or unexpected network access;

@@ -52,17 +52,25 @@ def _pending_payload() -> dict[str, Any]:
     return payload
 
 
-def test_real_locked_contract_loads_without_opening_payloads() -> None:
-    contract = certification.load_contract(root=ROOT, verify_inputs=True)
+def test_real_pending_contract_loads_without_opening_payloads() -> None:
+    contract = certification.load_contract(
+        root=ROOT,
+        verify_inputs=True,
+        allow_pending_suite=True,
+    )
 
     assert contract.closure_source_commit == certification.CLOSURE_SOURCE_COMMIT
     assert contract.r_syn_commit == certification.R_SYN_COMMIT
     assert contract.editorial_commit == certification.EDITORIAL_COMMIT
     assert contract.h1_cert_commit == certification.H1_CERT_COMMIT
     assert contract.p1_cert_commit == certification.P1_CERT_COMMIT
+    assert contract.h2_cert_commit == certification.H2_CERT_COMMIT
+    assert contract.p2_cert_commit == certification.P2_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
+    assert len(contract.h2_scope) == 11
+    assert len(contract.p2_scope) == 2
     assert len(contract.r_scope) == 8
     assert len(contract.anchor_inputs) == 10
     assert len(contract.dvc_pointers) == 8
@@ -102,22 +110,19 @@ def test_real_locked_contract_loads_without_opening_payloads() -> None:
         "primary_error_preserved_when_safe_cleanup_passes"
     ] is True
     assert contract.raw["isolation"]["superseded_p1_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p2_retry_authorized"] is False
+    assert contract.raw["isolation"][
+        "failed_dvc_partial_tree_not_adopted_for_cleanup"
+    ] is True
+    assert contract.raw["isolation"]["nonexact_cleanup_preserves_namespace"] is True
+    assert contract.failure_diagnostics == certification.FAILURE_DIAGNOSTICS_POLICY
     assert "guard_path" not in contract.raw["isolation"]
     assert "rollback_owned_inodes_only" not in contract.raw["isolation"]
     assert contract.test_suite.status == certification.LOCKED_SUITE_STATUS
-    assert (
-        contract.test_suite.selector_count
-        == certification.LOCKED_SUITE_SELECTOR_COUNT
-    )
-    assert (
-        contract.test_suite.collected_test_count
-        == certification.LOCKED_SUITE_COLLECTED_TEST_COUNT
-        == 905
-    )
-    assert (
-        contract.test_suite.nodeids_sha256
-        == certification.LOCKED_SUITE_NODEIDS_SHA256
-        == "679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03"
+    assert contract.test_suite.selector_count == 39
+    assert contract.test_suite.collected_test_count == 920
+    assert contract.test_suite.nodeids_sha256 == (
+        "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"
     )
     assert (
         contract.test_suite.allowed_skip_count
@@ -191,11 +196,15 @@ def test_locked_suite_identity_has_exact_nonduplicating_selectors() -> None:
     [
         lambda value: value.update(contract_version="closure_v2"),
         lambda value: value["authorities"].update(final_tag="wrong"),
+        lambda value: value["authorities"].update(p2_cert_commit="0" * 40),
         lambda value: value["topology"].update(
             single_parent_commits_required=False
         ),
         lambda value: value["publication_scopes"]["H-CERT"].update(
             additions=8
+        ),
+        lambda value: value["publication_scopes"]["P-CERT2"].update(
+            additions=1
         ),
         lambda value: value["anchor_inputs"].reverse(),
         lambda value: value["dvc_restoration"].update(
@@ -233,6 +242,9 @@ def test_locked_suite_identity_has_exact_nonduplicating_selectors() -> None:
         ),
         lambda value: value["isolation"].update(no_clobber=False),
         lambda value: value["isolation"].update(cleanup_before_precommit=False),
+        lambda value: value["failure_diagnostics"].update(
+            raw_stderr_preservation_authorized=True
+        ),
         lambda value: value["outputs"]["ordered_paths"].reverse(),
         lambda value: value["stop_rules"].pop(),
     ],
@@ -393,9 +405,15 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert scopes["H-CERT1"]["allOf"][1]["properties"]["modifications"][
         "const"
     ] == 2
-    assert scopes["H-CERT"]["allOf"][1]["properties"]["additions"]["const"] == 0
-    assert scopes["H-CERT"]["allOf"][1]["properties"]["modifications"]["const"] == 11
+    assert scopes["H-CERT2"]["allOf"][1]["properties"]["additions"]["const"] == 0
+    assert scopes["H-CERT2"]["allOf"][1]["properties"]["modifications"]["const"] == 11
     assert scopes["P-CERT1"]["allOf"][1]["properties"]["additions"]["const"] == 2
+    assert scopes["P-CERT2"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["H-CERT"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
     assert scopes["P-CERT"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 2
@@ -472,10 +490,21 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
         "const": True
     }
     assert boundary["superseded_p1_retry_authorized"] == {"const": False}
+    assert boundary["superseded_p2_retry_authorized"] == {"const": False}
+    assert boundary["failed_dvc_partial_tree_not_adopted_for_cleanup"] == {
+        "const": True
+    }
+    assert boundary["nonexact_cleanup_preserves_namespace"] == {"const": True}
     assert boundary["no_clobber"] == {"const": True}
     assert boundary["cleanup_before_precommit"] == {"const": True}
     assert "guard_path" not in boundary
     assert "rollback_owned_inodes_only" not in boundary
+    diagnostics = properties["failure_diagnostics"]
+    assert set(diagnostics["required"]) == set(diagnostics["properties"])
+    assert diagnostics["properties"] == {
+        key: {"const": value}
+        for key, value in certification.FAILURE_DIAGNOSTICS_POLICY.items()
+    }
 
 
 def test_canonical_json_and_digest_helpers_are_deterministic() -> None:
@@ -761,7 +790,13 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "status": "locked_unpublished",
         "h1_cert_commit": contract.h1_cert_commit,
         "p1_cert_commit": contract.p1_cert_commit,
+        "h2_cert_commit": contract.h2_cert_commit,
+        "p2_cert_commit": contract.p2_cert_commit,
+        "h3_cert_commit": h_commit,
+        "p3_cert_commit": None,
         "h_cert_commit": h_commit,
+        "p_cert_commit": None,
+        "supersedes_p2": True,
         "supersedes_p1": True,
         "manifest_last": True,
         "ordered_paths": [
@@ -777,7 +812,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p1_cert_commit,),
+            h_commit: (contract.p2_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -815,8 +850,8 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_records",
-        lambda *_args, **_kwargs: ([], []),
+        "_historical_h1_p1_h2_p2_records",
+        lambda *_args, **_kwargs: ([], [], [], []),
     )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
@@ -840,8 +875,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p2_cert_commit"] == p_commit
-    assert result["h2_cert_commit"] == h_commit
+    assert result["p3_cert_commit"] == p_commit
+    assert result["h3_cert_commit"] == h_commit
+    assert result["p2_cert_commit"] == contract.p2_cert_commit
+    assert result["h2_cert_commit"] == contract.h2_cert_commit
     assert result["p1_cert_commit"] == contract.p1_cert_commit
     assert result["h1_cert_commit"] == contract.h1_cert_commit
     assert result["authority"] == expected_authority
@@ -902,8 +939,8 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_records",
-        lambda *_args, **_kwargs: ([], []),
+        "_historical_h1_p1_h2_p2_records",
+        lambda *_args, **_kwargs: ([], [], [], []),
     )
     monkeypatch.setattr(
         certification,
@@ -931,5 +968,42 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["isolation"]["expected_runtime_versions"] == dict(
         certification.EXPECTED_RUNTIME_VERSIONS
     )
+    assert authority["failure_diagnostics"] == dict(
+        certification.FAILURE_DIAGNOSTICS_POLICY
+    )
+    assert authority["p2_failure"] == certification.expected_p2_failure_record()
+    assert authority["h3_component_records"] == authority["h_component_records"]
+    assert authority["h3_scope"] == authority["h_scope"]
+    assert authority["p3_scope"] == authority["p_scope"]
     assert "guard_path" not in authority["isolation"]
     assert "rollback_owned_inodes_only" not in authority["isolation"]
+
+
+def test_historical_p2_is_byte_exact_and_diagnostics_are_sanitized() -> None:
+    contract = certification.validate_contract_payload(
+        _locked_payload(),
+        root=ROOT,
+        verify_inputs=False,
+    )
+    h1, p1, h2, p2 = certification._historical_h1_p1_h2_p2_records(  # noqa: SLF001
+        contract,
+        root=ROOT,
+    )
+
+    assert [len(h1), len(p1), len(h2), len(p2)] == [11, 2, 11, 2]
+    assert [row["path"] for row in p2] == [
+        certification.H2_AUTHORITY_PATH.as_posix(),
+        certification.H2_AUTHORITY_MANIFEST_PATH.as_posix(),
+    ]
+    failure = certification.expected_p2_failure_record()
+    assert set(failure) == {"status", "active_error", "cleanup", "retry_authorized"}
+    assert failure["active_error"]["returncode"] is None
+    assert failure["active_error"]["safe_stderr_category"] == (
+        "unavailable_not_persisted"
+    )
+    assert failure["cleanup"] == {
+        "status": "failed_closed",
+        "namespace_preserved": True,
+        "active_error_was_masked": True,
+    }
+    assert failure["retry_authorized"] is False

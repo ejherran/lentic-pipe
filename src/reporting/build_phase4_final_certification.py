@@ -114,13 +114,55 @@ SANDBOX_ABSENT_FORBIDDEN_PATHS = (
 )
 JUNIT_SKIP_TYPE = "pytest.skip"
 
+SAFE_COMMAND_FAILURE_CATEGORIES = frozenset(
+    {"authn", "authz", "network", "remote_object_missing", "nonzero_exit"}
+)
+
+
+@dataclass(frozen=True)
+class CommandFailureEvidence:
+    """Sanitized command-failure facts safe to retain after cleanup failure."""
+
+    stage: str
+    sanitized_command: tuple[str, ...]
+    returncode: int | None
+    safe_stderr_category: str
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "stage": self.stage,
+            "sanitized_command": list(self.sanitized_command),
+            "returncode": self.returncode,
+            "safe_stderr_category": self.safe_stderr_category,
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        }
+
 
 class FinalCertificationBuildError(FinalCertificationContractError):
     """Raised when certification cannot proceed without weakening P-CERT."""
 
+    def __init__(
+        self,
+        message: str,
+        *,
+        command_failure: CommandFailureEvidence | None = None,
+    ) -> None:
+        super().__init__(message)
+        self.command_failure = command_failure
 
-def _error(message: str) -> FinalCertificationBuildError:
-    return FinalCertificationBuildError(message)
+
+def _error(
+    message: str,
+    *,
+    command_failure: CommandFailureEvidence | None = None,
+) -> FinalCertificationBuildError:
+    return FinalCertificationBuildError(
+        message,
+        command_failure=command_failure,
+    )
 
 
 @dataclass(frozen=True)
@@ -740,6 +782,179 @@ def _portable_argv(argv: Sequence[str]) -> list[str]:
     return rendered
 
 
+def _safe_command_failure_stage(value: str) -> str:
+    """Project an internal static context onto a path-free diagnostic token."""
+
+    if (
+        not isinstance(value, str)
+        or re.fullmatch(r"[A-Za-z0-9 ._-]{1,96}", value) is None
+    ):
+        raise _error("command failure stage is not a safe static label")
+    stage = re.sub(r"[^a-z0-9]+", "_", value.casefold()).strip("_")
+    if stage == "directed_dvc_pull_1":
+        return "first_directed_dvc_pull"
+    if not stage:
+        raise _error("command failure stage is empty")
+    return stage
+
+
+def _classify_command_stderr(stderr: str) -> str:
+    """Reduce an ephemeral stderr stream to one closed, non-sensitive enum."""
+
+    lowered = stderr.casefold() if isinstance(stderr, str) else ""
+    categories = (
+        (
+            "authn",
+            (
+                "unauthenticated",
+                "authentication failed",
+                "invalid credential",
+                "credentials are invalid",
+                "could not automatically determine credentials",
+                "default credentials were not found",
+                "anonymous caller",
+                "refresherror",
+                "invalid_grant",
+                "http 401",
+                "status code 401",
+                "401 unauthorized",
+            ),
+        ),
+        (
+            "authz",
+            (
+                "permission denied",
+                "access denied",
+                "forbidden",
+                "not authorized",
+                "authorization failed",
+                "storage.objects.",
+                "http 403",
+                "status code 403",
+                "403 forbidden",
+            ),
+        ),
+        (
+            "remote_object_missing",
+            (
+                "remote object missing",
+                "remote object was not found",
+                "no such object",
+                "nosuchkey",
+                "blobnotfound",
+                "missing cache file",
+                "not in cache",
+                "checkout failed for following targets",
+                "is your cache up to date",
+                "does not exist in remote storage",
+                "http 404",
+                "status code 404",
+                "404 not found",
+                "404 get",
+            ),
+        ),
+        (
+            "network",
+            (
+                "network is unreachable",
+                "connection refused",
+                "connection reset",
+                "connection aborted",
+                "temporary failure in name resolution",
+                "name or service not known",
+                "could not resolve",
+                "dns failure",
+                "connectionerror",
+                "max retries exceeded",
+                "service unavailable",
+                "httpsconnectionpool",
+                "timed out",
+                "timeout",
+                "proxyerror",
+                "ssl error",
+                "tls error",
+            ),
+        ),
+    )
+    for category, markers in categories:
+        if any(marker in lowered for marker in markers):
+            return category
+    return "nonzero_exit"
+
+
+def _command_failure_error(
+    *,
+    stage: str,
+    command: Sequence[str],
+    returncode: int | None,
+    stderr: str,
+) -> FinalCertificationBuildError:
+    safe_command = tuple(_portable_argv(command))
+    category = _classify_command_stderr(stderr)
+    if category not in SAFE_COMMAND_FAILURE_CATEGORIES:
+        category = "nonzero_exit"
+    evidence = CommandFailureEvidence(
+        stage=_safe_command_failure_stage(stage),
+        sanitized_command=safe_command,
+        returncode=returncode,
+        safe_stderr_category=category,
+    )
+    diagnostic = json.dumps(
+        evidence.as_record(),
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _error(
+        f"verification command failed closed: {diagnostic}",
+        command_failure=evidence,
+    )
+
+
+def _execution_cleanup_composite_error(
+    active_error: BaseException,
+) -> FinalCertificationBuildError:
+    """Retain only safe primary facts when failed cleanup preserves a namespace."""
+
+    evidence = (
+        active_error.command_failure
+        if isinstance(active_error, FinalCertificationBuildError)
+        else None
+    )
+    primary = (
+        evidence.as_record()
+        if evidence is not None
+        else {
+            "stage": "execution",
+            "sanitized_command": [],
+            "returncode": None,
+            "safe_stderr_category": "unavailable_not_persisted",
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        }
+    )
+    diagnostic = json.dumps(
+        {
+            "status": "execution_and_cleanup_failed_closed",
+            "active_error": primary,
+            "cleanup": {
+                "status": "failed_closed",
+                "namespace_preserved": True,
+                "active_error_was_masked": False,
+            },
+            "retry_authorized": False,
+        },
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _error(
+        "final certification execution failed and temporary cleanup failed closed: "
+        f"{diagnostic}",
+        command_failure=evidence,
+    )
+
+
 def _run(
     argv: Sequence[str],
     *,
@@ -751,6 +966,7 @@ def _run(
     require_success: bool = True,
     portable_argv: Sequence[str] | None = None,
     pass_fds: Sequence[int] = (),
+    failure_stage: str = "verification command",
 ) -> CommandResult:
     if type(timeout_seconds) is not int or timeout_seconds <= 0:
         raise _error("command timeout must be a positive integer")
@@ -782,14 +998,24 @@ def _run(
             timeout=timeout_seconds,
             pass_fds=inherited_descriptors,
         )
-    except subprocess.TimeoutExpired as exc:
-        raise _error(f"verification command exceeded {timeout_seconds}s: {recorded}") from exc
+    except subprocess.TimeoutExpired:
+        raise _command_failure_error(
+            stage=failure_stage,
+            command=recorded,
+            returncode=None,
+            stderr="",
+        ) from None
     # Stdout/stderr commonly contain elapsed times, random temporary paths, or
     # DVC transfer speeds.  They are used to diagnose a failing invocation but
     # deliberately excluded from the deterministic public evidence record.
     record = {"argv": recorded, "returncode": completed.returncode}
     if require_success and completed.returncode != 0:
-        raise _error(f"verification command failed: {recorded}")
+        raise _command_failure_error(
+            stage=failure_stage,
+            command=recorded,
+            returncode=completed.returncode,
+            stderr=completed.stderr,
+        ) from None
     return CommandResult(record=record, stdout=completed.stdout, stderr=completed.stderr)
 
 
@@ -872,6 +1098,7 @@ def _run_python_script_runtime(
             runtime.interpreter.venv_fd,
             runtime.script.fd,
         ),
+        failure_stage=context,
     )
     runtime.revalidate(context=f"{context} after execution")
     return result
@@ -2916,11 +3143,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate the complete P2/H2/P1/H1 authority lineage projection."""
+    """Validate the complete P3/H3/P2/H2/P1/H1 lineage projection."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p3_cert_commit",
+        "h3_cert_commit",
         "p2_cert_commit",
         "h2_cert_commit",
         "p1_cert_commit",
@@ -2935,8 +3164,10 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p2_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h2_cert_commit"]
+        or commits["p3_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h3_cert_commit"]
+        or commits["p2_cert_commit"] != contract.p2_cert_commit
+        or commits["h2_cert_commit"] != contract.h2_cert_commit
         or commits["p1_cert_commit"] != contract.p1_cert_commit
         or commits["h1_cert_commit"] != contract.h1_cert_commit
     ):
@@ -3034,6 +3265,7 @@ def _clone_exact_p(
             "<OWNED_CLONE>",
         ),
         timeout_seconds=600,
+        failure_stage="git clone",
     )
     if namespace_validator is not None:
         namespace_validator("after_git_clone")
@@ -3265,6 +3497,11 @@ def _restore_dvc_objects_with_anchored_executable(
 ) -> list[dict[str, Any]]:
     if any(cache_root.iterdir()):
         raise _error("isolated DVC cache is not initially empty")
+    # DVC may update clone-local `.dvc/config.local` and create `.dvc/tmp` as soon
+    # as configuration or the first pull starts.  Those writes necessarily
+    # precede the post-restore inventory freeze.  A command failure in this
+    # interval therefore leaves an unproven residual: cleanup must preserve
+    # the namespace, never adopt it or guess which entries DVC owns.
     # The copied ignored config supplies only the remote.  Point its private
     # clone-local cache at the owned empty directory and force copy checkout so
     # every restored payload remains a single-link inode.  These operational
@@ -4053,6 +4290,7 @@ def _start_owned_postgres(
                 "listen_addresses=",
             ),
             timeout_seconds=120,
+            failure_stage="postgres start",
         )
     except BaseException as primary:
         # Docker can accept ``run`` and then lose the client response.  Since
@@ -4128,6 +4366,7 @@ def _start_owned_postgres(
                 ),
                 timeout_seconds=10,
                 require_success=False,
+                failure_stage="postgres readiness probe",
             )
             if namespace_validator is not None:
                 namespace_validator(f"after_postgres_probe_{attempt}")
@@ -4174,6 +4413,7 @@ def _inspect_container_identity(target: str) -> tuple[int, str]:
         ),
         timeout_seconds=30,
         require_success=False,
+        failure_stage="postgres identity inspection",
     )
     value = result.stdout.strip()
     if result.record["returncode"] == 0 and not SHA256_RE.fullmatch(value):
@@ -4207,6 +4447,7 @@ def _stop_owned_postgres(owner: OwnedPostgres) -> Mapping[str, Any]:
         cwd=PROJECT_ROOT,
         portable_argv=("docker", "rm", "--force", "<OWNED_CONTAINER>"),
         timeout_seconds=120,
+        failure_stage="postgres cleanup",
     )
     name_returncode, name_identity = _inspect_container_identity(owner.name)
     id_returncode, id_identity = _inspect_container_identity(owner.container_id)
@@ -4344,6 +4585,7 @@ def _run_verification_with_runtime(
         inherit_environment=False,
         timeout_seconds=3600,
         pass_fds=runtime.pass_fds,
+        failure_stage="public tests",
     )
     runtime.revalidate(context="after public test execution")
     if namespace_validator is not None:
@@ -4395,6 +4637,7 @@ def _run_verification_with_runtime(
         inherit_environment=False,
         timeout_seconds=600,
         pass_fds=runtime.pass_fds,
+        failure_stage="openapi generation",
     )
     runtime.revalidate(context="after OpenAPI execution")
     if namespace_validator is not None:
@@ -4427,6 +4670,7 @@ def _run_verification_with_runtime(
         inherit_environment=False,
         timeout_seconds=1800,
         pass_fds=runtime.pass_fds,
+        failure_stage="synthetic e2e",
     )
     runtime.revalidate(context="after synthetic E2E execution")
     if namespace_validator is not None:
@@ -4454,6 +4698,7 @@ def _run_verification_with_runtime(
         inherit_environment=False,
         timeout_seconds=1800,
         pass_fds=runtime.pass_fds,
+        failure_stage="ty check",
     )
     runtime.revalidate(context="after ty execution")
     if namespace_validator is not None:
@@ -4479,6 +4724,7 @@ def _run_verification_with_runtime(
         inherit_environment=False,
         timeout_seconds=600,
         pass_fds=runtime.pass_fds,
+        failure_stage="poetry lock check",
     )
     runtime.revalidate(context="after Poetry execution")
     if namespace_validator is not None:
@@ -4640,6 +4886,7 @@ def _run_anchored_executable(
         portable_argv=portable_argv,
         timeout_seconds=timeout_seconds,
         pass_fds=(executable.fd,),
+        failure_stage=context,
     )
     executable.revalidate(context=f"{context} after execution")
     return result
@@ -4700,6 +4947,7 @@ def _runtime_versions(
                 },
                 timeout_seconds=120,
                 pass_fds=(python.fd, python.venv_fd),
+                failure_stage="python version",
             )
             python.revalidate(context="Python version after execution")
             return result
@@ -4735,6 +4983,7 @@ def _runtime_versions(
                 cwd=root,
                 portable_argv=("git", "--version"),
                 timeout_seconds=120,
+                failure_stage="git version",
             ),
         )
         capture(
@@ -4776,6 +5025,7 @@ def _runtime_versions(
                         "<CLIENT_VERSION>" if key == "docker_client" else "<SERVER_VERSION>",
                     ),
                     timeout_seconds=120,
+                    failure_stage=f"{key} version",
                 ),
             )
         return versions
@@ -6431,6 +6681,11 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             configured_clone_inventory,
         )
         validate_execution_namespace("after private DVC configuration copy")
+        # Keep the exact pre-DVC snapshot until every config/pull/status step
+        # has succeeded and the resulting clone/cache inventories can be
+        # frozen atomically below.  Refreshing it from a failing command's
+        # partial tree would silently adopt `.dvc/config.local`, `.dvc/tmp`, or a
+        # foreign concurrent entry and make destructive cleanup unsafe.
         restores = _restore_dvc_objects(
             source_root=root,
             clone_root=clone_root,
@@ -6635,7 +6890,11 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     except BaseException as exc:
         cleanup_error = cleanup_error or exc
     if cleanup_error is not None:
-        raise _error("final certification temporary cleanup failed closed") from cleanup_error
+        if active_error is not None:
+            raise _execution_cleanup_composite_error(active_error) from None
+        raise _error(
+            "final certification temporary cleanup failed closed; namespace preserved"
+        ) from None
     if active_error is not None:
         if isinstance(active_error, FinalCertificationBuildError):
             raise active_error

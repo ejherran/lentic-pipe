@@ -82,8 +82,10 @@ def _authority() -> dict[str, Any]:
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p2_cert_commit": P_COMMIT,
-        "h2_cert_commit": H_COMMIT,
+        "p3_cert_commit": P_COMMIT,
+        "h3_cert_commit": H_COMMIT,
+        "p2_cert_commit": contract_module.P2_CERT_COMMIT,
+        "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
         "h1_cert_commit": contract_module.H1_CERT_COMMIT,
         "repository": {"HEAD": P_COMMIT},
@@ -658,8 +660,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p2_cert_commit": P_COMMIT,
-        "h2_cert_commit": H_COMMIT,
+        "p3_cert_commit": P_COMMIT,
+        "h3_cert_commit": H_COMMIT,
+        "p2_cert_commit": contract_module.P2_CERT_COMMIT,
+        "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
         "h1_cert_commit": contract_module.H1_CERT_COMMIT,
     }
@@ -669,8 +673,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p2_cert_commit": P_COMMIT,
-        "h2_cert_commit": H_COMMIT,
+        "p3_cert_commit": P_COMMIT,
+        "h3_cert_commit": H_COMMIT,
+        "p2_cert_commit": contract_module.P2_CERT_COMMIT,
+        "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
         "h1_cert_commit": contract_module.H1_CERT_COMMIT,
     }
@@ -683,11 +689,13 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     )
 
 
-def test_payload_builder_requires_complete_exact_cert2_commit_lineage() -> None:
+def test_payload_builder_requires_complete_exact_cert3_commit_lineage() -> None:
     contract = _locked_contract()
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p3_cert_commit",
+        "h3_cert_commit",
         "p2_cert_commit",
         "h2_cert_commit",
         "p1_cert_commit",
@@ -710,12 +718,14 @@ def test_payload_builder_requires_complete_exact_cert2_commit_lineage() -> None:
             _products(contract, authority=drifted)
 
 
-def test_reconstructive_validator_rejects_cert2_lineage_omission_and_drift() -> None:
+def test_reconstructive_validator_rejects_cert3_lineage_omission_and_drift() -> None:
     contract = _locked_contract()
     products = _products(contract)
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p3_cert_commit",
+        "h3_cert_commit",
         "p2_cert_commit",
         "h2_cert_commit",
         "p1_cert_commit",
@@ -2231,6 +2241,83 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     assert source.index("runtime_versions=runtime_before") > after
 
 
+@pytest.mark.parametrize(
+    ("stderr", "expected_category"),
+    [
+        (
+            "Could not automatically determine credentials; token=RAW_AUTHN "
+            "https://storage.invalid/object /home/operator/credential.json",
+            "authn",
+        ),
+        (
+            "HTTP 403 Forbidden; RAW_AUTHZ https://storage.invalid/private",
+            "authz",
+        ),
+        (
+            "NoSuchKey RAW_MISSING https://storage.invalid/missing-object",
+            "remote_object_missing",
+        ),
+        (
+            "connection reset by peer RAW_NETWORK /home/operator/socket",
+            "network",
+        ),
+        (
+            "opaque backend failure RAW_NONZERO secret=do-not-retain",
+            "nonzero_exit",
+        ),
+    ],
+)
+def test_nonzero_command_failure_retains_only_closed_safe_diagnostics(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    stderr: str,
+    expected_category: str,
+) -> None:
+    monkeypatch.setattr(
+        builder.subprocess,
+        "run",
+        lambda *args, **kwargs: SimpleNamespace(
+            returncode=23,
+            stdout="RAW_STDOUT_MUST_NOT_SURVIVE",
+            stderr=stderr,
+        ),
+    )
+    portable = (
+        ".venv/bin/dvc",
+        "pull",
+        "--no-run-cache",
+        "-j",
+        "1",
+        "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+    )
+    with pytest.raises(builder.FinalCertificationBuildError) as raised:
+        builder._run(
+            ("ignored-runtime",),
+            cwd=tmp_path,
+            portable_argv=portable,
+            failure_stage="directed DVC pull 1",
+        )
+
+    expected = builder.CommandFailureEvidence(
+        stage="first_directed_dvc_pull",
+        sanitized_command=portable,
+        returncode=23,
+        safe_stderr_category=expected_category,
+    )
+    assert raised.value.command_failure == expected
+    assert raised.value.__cause__ is None
+    rendered = str(raised.value)
+    assert json.loads(rendered.split(": ", 1)[1]) == expected.as_record()
+    for forbidden in (
+        "RAW_",
+        "RAW_STDOUT_MUST_NOT_SURVIVE",
+        "https://",
+        "/home/",
+        "do-not-retain",
+    ):
+        assert forbidden not in rendered
+
+
 def test_clone_work_transition_requires_exact_single_directory_link_delta() -> None:
     before = (
         11,
@@ -2384,6 +2471,203 @@ def test_post_clone_cleanup_preserves_unregistered_foreign_entry(
     )
     assert len(foreign) == 1
     assert foreign[0].read_text(encoding="utf-8") == "foreign"
+
+
+def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _publication_root(tmp_path)
+    contract, _ = _dvc_contract(tmp_path)
+    clean = {
+        "head": P_COMMIT,
+        "main": P_COMMIT,
+        "origin_main": P_COMMIT,
+        "origin_head": P_COMMIT,
+        "status": "",
+        "cached_diff": "",
+        "unstaged_diff": "",
+    }
+    authority = _authority()
+    preflight = {
+        "status": "ready_to_certify",
+        "writes": False,
+        "commands_executed": False,
+        "execution_commit": P_COMMIT,
+        "authority": authority,
+        "anchor_inputs": _anchor_records(contract),
+        "dvc_pointers": _pointer_records(contract),
+        "output_paths": list(contract.output_paths),
+        "main_dvc_status": {},
+        "local_dvc_remote_configuration": {"present": True},
+    }
+    subprocess_calls: list[tuple[str, ...]] = []
+
+    monkeypatch.setattr(builder, "load_contract", lambda **kwargs: contract)
+    monkeypatch.setattr(
+        builder,
+        "check_phase4_final_certification",
+        lambda **kwargs: preflight,
+    )
+    monkeypatch.setattr(builder, "_capture_main_state", lambda path: dict(clean))
+    monkeypatch.setattr(builder, "_authority_loader", lambda *args: authority)
+    monkeypatch.setattr(
+        builder,
+        "_sealed_runtime_versions",
+        lambda *args, **kwargs: dict(contract.expected_runtime_versions),
+    )
+
+    def clone_exact_p(
+        *,
+        source_root: Path,
+        clone_root: Path,
+        execution_commit: str,
+        namespace_validator: Any,
+    ) -> Mapping[str, Any]:
+        del source_root, execution_commit
+        namespace_validator("before_git_clone")
+        clone_root.mkdir()
+        (clone_root / ".git").mkdir()
+        (clone_root / "tracked.txt").write_text("owned", encoding="utf-8")
+        _prepare_pointers(clone_root, contract)
+        namespace_validator("after_git_clone")
+        return {"command": {"argv": ["git", "clone"], "returncode": 0}}
+
+    def install_private_config(
+        *, source_root: Path, clone_root: Path
+    ) -> Mapping[str, Any]:
+        del source_root
+        private_config = clone_root / contract_module.LOCAL_DVC_CONFIG_PATH
+        private_config.parent.mkdir(parents=True)
+        private_config.write_text("[remote]\n", encoding="utf-8")
+        private_config.chmod(0o600)
+        return {"present": True}
+
+    portable = (
+        ".venv/bin/dvc",
+        "pull",
+        "--no-run-cache",
+        "-j",
+        "1",
+        contract.dvc_pointers[0].path,
+    )
+
+    retained_runtime = SimpleNamespace(
+        interpreter=SimpleNamespace(
+            proc_path="retained-python",
+            venv_proc_path="retained-venv",
+            fd=0,
+            venv_fd=0,
+        ),
+        script=SimpleNamespace(proc_path="retained-dvc", fd=0),
+        revalidate=lambda **kwargs: None,
+    )
+
+    def fail_first_pull(
+        *,
+        source_root: Path,
+        clone_root: Path,
+        cache_root: Path,
+        contract: contract_module.FinalCertificationContract,
+        namespace_validator: Any,
+    ) -> list[dict[str, Any]]:
+        return builder._restore_dvc_objects_with_anchored_executable(
+            source_root=source_root,
+            clone_root=clone_root,
+            cache_root=cache_root,
+            contract=contract,
+            executable=cast(Any, retained_runtime),
+            namespace_validator=namespace_validator,
+        )
+
+    def failed_subprocess(argv: Any, **kwargs: Any) -> Any:
+        actual = tuple(argv)
+        if "config" in actual:
+            private_config = (
+                Path(kwargs["cwd"]) / contract_module.LOCAL_DVC_CONFIG_PATH
+            )
+            private_config.write_text(
+                private_config.read_text(encoding="utf-8")
+                + "DVC_CONFIG_MUTATION\n",
+                encoding="utf-8",
+            )
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        if "pull" not in actual:
+            return SimpleNamespace(returncode=0, stdout="", stderr="")
+        subprocess_calls.append(actual)
+        dvc_tmp = Path(kwargs["cwd"]) / ".dvc/tmp"
+        dvc_tmp.mkdir()
+        (dvc_tmp / "lock").write_text("DVC_PREFREEZE_RESIDUAL", encoding="utf-8")
+        return SimpleNamespace(
+            returncode=17,
+            stdout="RAW_STDOUT_WITH_/home/operator/private",
+            stderr=(
+                "Could not automatically determine credentials; token=RAW_TOKEN "
+                "https://storage.invalid/private /home/operator/key.json"
+            ),
+        )
+
+    monkeypatch.setattr(builder, "_clone_exact_p", clone_exact_p)
+    monkeypatch.setattr(
+        builder,
+        "_install_local_dvc_remote_configuration",
+        install_private_config,
+    )
+    monkeypatch.setattr(builder, "_restore_dvc_objects", fail_first_pull)
+    monkeypatch.setattr(builder.subprocess, "run", failed_subprocess)
+
+    with pytest.raises(builder.FinalCertificationBuildError) as raised:
+        builder.build_phase4_final_certification(repo_root=root)
+
+    diagnostic = json.loads(str(raised.value).split(": ", 1)[1])
+    assert diagnostic == {
+        "status": "execution_and_cleanup_failed_closed",
+        "active_error": {
+            "stage": "first_directed_dvc_pull",
+            "sanitized_command": list(portable),
+            "returncode": 17,
+            "safe_stderr_category": "authn",
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        },
+        "cleanup": {
+            "status": "failed_closed",
+            "namespace_preserved": True,
+            "active_error_was_masked": False,
+        },
+        "retry_authorized": False,
+    }
+    assert raised.value.command_failure == builder.CommandFailureEvidence(
+        stage="first_directed_dvc_pull",
+        sanitized_command=portable,
+        returncode=17,
+        safe_stderr_category="authn",
+    )
+    assert raised.value.__cause__ is None
+    rendered = str(raised.value)
+    for forbidden in (
+        "RAW_TOKEN",
+        "RAW_STDOUT",
+        "https://",
+        "/home/",
+        "storage.invalid",
+    ):
+        assert forbidden not in rendered
+    assert len(subprocess_calls) == 1
+
+    residuals = list(
+        (root / "tmp/closure_v1_phase4_final_certification").glob(
+            "run-*/clone/.dvc/tmp/lock"
+        )
+    )
+    assert len(residuals) == 1
+    assert residuals[0].read_text(encoding="utf-8") == "DVC_PREFREEZE_RESIDUAL"
+    assert (
+        residuals[0].parent.parent / "config.local"
+    ).read_text(encoding="utf-8").count("DVC_CONFIG_MUTATION") == 2
+    for output in contract.output_paths:
+        assert not os.path.lexists(root / output)
 
 
 def test_git_queries_ignore_path_and_clone_records_portable_git(
@@ -2657,6 +2941,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p3_cert_commit",
+            "h3_cert_commit",
             "p2_cert_commit",
             "h2_cert_commit",
             "p1_cert_commit",
@@ -2667,6 +2953,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p3_cert_commit",
+            "h3_cert_commit",
             "p2_cert_commit",
             "h2_cert_commit",
             "p1_cert_commit",
@@ -2678,6 +2966,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p3_cert_commit",
+        "h3_cert_commit",
         "p2_cert_commit",
         "h2_cert_commit",
         "p1_cert_commit",
