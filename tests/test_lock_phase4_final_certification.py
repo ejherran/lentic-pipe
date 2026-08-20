@@ -1,0 +1,1572 @@
+from __future__ import annotations
+
+import copy
+import errno
+import fcntl
+import json
+import os
+import subprocess
+from pathlib import Path
+from types import SimpleNamespace
+from typing import Any, Mapping
+
+import pytest
+
+from src.experiments import lock_phase4_final_certification as locker
+from src.reporting import phase4_final_certification_contract as certification
+
+
+def _run(root: Path, *args: str) -> str:
+    result = subprocess.run(
+        list(args),
+        cwd=root,
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+    return result.stdout.strip()
+
+
+def _write(root: Path, relative: str, payload: str, *, mode: int = 0o644) -> None:
+    path = root / relative
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(payload, encoding="utf-8")
+    path.chmod(mode)
+
+
+def _contract(
+    *,
+    closure_source: str,
+    r_syn: str,
+    editorial: str,
+    suite_status: str = "locked",
+) -> SimpleNamespace:
+    positive = certification.POSITIVE_TEST_PATHS
+    skipped = certification.EXACT_SKIPPED_NODES
+    supplemental = tuple(
+        node
+        for node in skipped
+        if node.split("::", 1)[0] not in set(positive)
+    )
+    selectors = positive + supplemental
+    suite = SimpleNamespace(
+        suite_kind="closure_phase4_final_public",
+        positive_test_paths=positive,
+        exact_skipped_nodes=skipped,
+        exact_skip_reason=certification.EXACT_SKIP_REASON,
+        e2e_nodes=certification.E2E_NODES,
+        command_template=certification.TEST_COMMAND_TEMPLATE,
+        static_commands=certification.STATIC_COMMANDS,
+        status=suite_status,
+        selector_count=(
+            certification.LOCKED_SUITE_SELECTOR_COUNT
+            if suite_status == certification.LOCKED_SUITE_STATUS
+            else None
+        ),
+        collected_test_count=(
+            certification.LOCKED_SUITE_COLLECTED_TEST_COUNT
+            if suite_status == certification.LOCKED_SUITE_STATUS
+            else None
+        ),
+        nodeids_sha256=(
+            certification.LOCKED_SUITE_NODEIDS_SHA256
+            if suite_status == certification.LOCKED_SUITE_STATUS
+            else None
+        ),
+        allowed_skip_count=certification.LOCKED_SUITE_ALLOWED_SKIP_COUNT,
+        selectors=selectors,
+    )
+    return SimpleNamespace(
+        closure_source_commit=closure_source,
+        r_syn_commit=r_syn,
+        editorial_commit=editorial,
+        final_tag="thesis-closure-v1",
+        h_scope=tuple(),
+        p_scope=tuple(),
+        r_scope=tuple(),
+        anchor_inputs=tuple(),
+        dvc_pointers=tuple(),
+        test_suite=suite,
+        output_paths=tuple(locker.R_SCOPE),
+    )
+
+
+def _anchor_records() -> list[dict[str, Any]]:
+    return [
+        {
+            "path": path,
+            "role": certification.ANCHOR_INPUTS[index].role,
+            "bytes": index + 10,
+            "sha256": f"{index + 101:064x}",
+            "git_mode": "100644",
+            "git_blob_oid": f"{index + 201:040x}",
+            "repository_commit": locker.EDITORIAL_COMMIT,
+        }
+        for index, path in enumerate(locker.ANCHOR_PATHS)
+    ]
+
+
+def _pointer_records() -> list[dict[str, Any]]:
+    return [
+        {
+            "path": spec.path,
+            "role": spec.role,
+            "output_path": spec.output_path,
+            "payload_md5": spec.md5,
+            "payload_bytes": spec.size,
+            "bytes": index + 20,
+            "sha256": f"{index + 301:064x}",
+            "git_mode": "100644",
+            "git_blob_oid": f"{index + 401:040x}",
+            "repository_commit": locker.EDITORIAL_COMMIT,
+            "parquet_payload_opened": False,
+        }
+        for index, spec in enumerate(certification.DVC_POINTERS)
+    ]
+
+
+def _install_contract_stubs(
+    monkeypatch: pytest.MonkeyPatch,
+    contract: SimpleNamespace,
+) -> None:
+    def load_contract(**kwargs: Any) -> SimpleNamespace:
+        if (
+            kwargs.get("allow_pending_suite", False) is False
+            and contract.test_suite.status != "locked"
+        ):
+            raise certification.FinalCertificationContractError(
+                "Final certification suite lock remains pending"
+            )
+        return contract
+
+    monkeypatch.setattr(certification, "load_contract", load_contract)
+    monkeypatch.setattr(
+        certification,
+        "expected_h_scope",
+        lambda: dict(locker.H_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p_scope",
+        lambda: dict(locker.P_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_r_scope",
+        lambda: dict(locker.R_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_h_modes",
+        lambda: dict(locker.H_GIT_MODES),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p_modes",
+        lambda: {path: "100644" for path in locker.P_SCOPE},
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_r_modes",
+        lambda: {path: "100644" for path in locker.R_SCOPE},
+    )
+    monkeypatch.setattr(
+        certification,
+        "collect_anchor_input_records",
+        lambda _contract, **_kwargs: _anchor_records(),
+    )
+    monkeypatch.setattr(
+        certification,
+        "collect_dvc_pointer_records",
+        lambda _contract, **_kwargs: _pointer_records(),
+    )
+
+
+def _make_repository(tmp_path: Path) -> tuple[Path, Path, str, str, str]:
+    root = tmp_path / "work"
+    remote = tmp_path / "origin.git"
+    root.mkdir()
+    _run(root, "git", "init", "--initial-branch=main")
+    _run(root, "git", "config", "user.name", "Certification Test")
+    _run(root, "git", "config", "user.email", "cert@example.invalid")
+    _write(root, ".gitignore", "tmp/\n")
+    for path_text, kind in locker.H_SCOPE.items():
+        if kind == "M":
+            _write(
+                root,
+                path_text,
+                f"base:{path_text}\n",
+                mode=int(locker.H_GIT_MODES[path_text][-3:], 8),
+            )
+    _write(root, "closure_source.txt", "closure\n")
+    _run(root, "git", "add", ".")
+    _run(root, "git", "commit", "-m", "closure source")
+    closure_source = _run(root, "git", "rev-parse", "HEAD")
+
+    _write(root, "r_syn.txt", "r-syn\n")
+    _run(root, "git", "add", "r_syn.txt")
+    _run(root, "git", "commit", "-m", "R-SYN")
+    r_syn = _run(root, "git", "rev-parse", "HEAD")
+
+    _write(root, "editorial.txt", "editorial\n")
+    _run(root, "git", "add", "editorial.txt")
+    _run(root, "git", "commit", "-m", "editorial")
+    editorial = _run(root, "git", "rev-parse", "HEAD")
+
+    _run(tmp_path, "git", "init", "--bare", "--initial-branch=main", str(remote))
+    _run(root, "git", "remote", "add", "origin", str(remote))
+    _run(root, "git", "push", "-u", "origin", "main")
+    _run(root, "git", "symbolic-ref", "refs/remotes/origin/HEAD", "refs/remotes/origin/main")
+    return root, remote, closure_source, r_syn, editorial
+
+
+def _patch_topology(
+    monkeypatch: pytest.MonkeyPatch,
+    *,
+    closure_source: str,
+    r_syn: str,
+    editorial: str,
+) -> SimpleNamespace:
+    monkeypatch.setattr(locker, "CLOSURE_SOURCE_COMMIT", closure_source)
+    monkeypatch.setattr(locker, "R_SYN_COMMIT", r_syn)
+    monkeypatch.setattr(locker, "EDITORIAL_COMMIT", editorial)
+    contract = _contract(
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+    )
+    _install_contract_stubs(monkeypatch, contract)
+    return contract
+
+
+def _materialize_h(root: Path) -> None:
+    for path_text, kind in locker.H_SCOPE.items():
+        mode = int(locker.H_GIT_MODES[path_text][-3:], 8)
+        if kind == "A":
+            _write(root, path_text, f"H-CERT:{path_text}\n", mode=mode)
+        else:
+            path = root / path_text
+            path.write_text(
+                path.read_text(encoding="utf-8") + "H-CERT\n",
+                encoding="utf-8",
+            )
+            path.chmod(mode)
+
+
+def _publish_h(root: Path) -> str:
+    _run(root, "git", "add", *locker.H_SCOPE)
+    _run(root, "git", "commit", "-m", "H-CERT")
+    head = _run(root, "git", "rev-parse", "HEAD")
+    _run(root, "git", "push", "origin", "main")
+    return head
+
+
+def _fake_state() -> dict[str, Any]:
+    components = [
+        {
+            "path": path,
+            "bytes": index + 1,
+            "sha256": f"{index + 1:064x}",
+            "git_mode": locker.H_GIT_MODES[path],
+            "git_blob_oid": f"{index + 1:040x}",
+            "filesystem_mode": int(locker.H_GIT_MODES[path][-3:], 8),
+        }
+        for index, path in enumerate(locker.H_SCOPE)
+    ]
+    suite = locker._suite_snapshot(  # noqa: SLF001 - direct authority unit test
+        _contract(
+            closure_source=locker.CLOSURE_SOURCE_COMMIT,
+            r_syn=locker.R_SYN_COMMIT,
+            editorial=locker.EDITORIAL_COMMIT,
+        )
+    )
+    return {
+        "h_cert_commit": "a" * 40,
+        "h_component_records": components,
+        "anchor_input_records": _anchor_records(),
+        "dvc_pointer_records": _pointer_records(),
+        "suite": suite,
+        "ordered_output_paths": list(locker.R_SCOPE),
+    }
+
+
+def _publication_root(tmp_path: Path) -> Path:
+    root = tmp_path / "publication"
+    (root / "configs/closure_v1").mkdir(parents=True)
+    (root / ".git").mkdir()
+    (root / "tmp").mkdir()
+    return root
+
+
+def test_scopes_modes_and_stop_boundary_are_exact() -> None:
+    assert list(locker.H_SCOPE.values()).count("A") == 9
+    assert list(locker.H_SCOPE.values()).count("M") == 2
+    assert locker.H_GIT_MODES["src/data/prepare_commit_artifacts.py"] == "100755"
+    assert {
+        mode
+        for path, mode in locker.H_GIT_MODES.items()
+        if path != "src/data/prepare_commit_artifacts.py"
+    } == {"100644"}
+    assert locker.P_SCOPE == {
+        "configs/closure_v1/phase4_final_certification_authority.json": "A",
+        "configs/closure_v1/phase4_final_certification_authority_manifest.json": "A",
+    }
+    assert len(locker.R_SCOPE) == 8
+    assert list(locker.R_SCOPE)[-1].endswith("final_certification_manifest.json")
+    assert locker.ANCHOR_PATHS == (
+        ".dvc/config",
+        "docs/API_DATASET_CONTRACT.md",
+        "docs/API_PROTOCOL.md",
+        "poetry.lock",
+        "pyproject.toml",
+        "reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv",
+        "reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json",
+        "reports/thesis/chapter_iv_evidence_matrix_manifest.json",
+        "reports/thesis/phase4_manuscript_build_receipt.json",
+        "reports/thesis/phase4_manuscript_build_receipt_manifest.json",
+    )
+
+
+def test_cli_is_closed_and_domain_errors_are_translated(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    assert locker.parse_args(["--check-only"]).check_only is True
+    assert locker.parse_args(["--generate"]).generate is True
+    for argv in ([], ["--check-only", "--generate"], ["--unknown"]):
+        with pytest.raises(SystemExit):
+            locker.parse_args(argv)
+
+    monkeypatch.setattr(locker, "check_only", lambda: {"status": "ready"})
+    assert locker.main(["--check-only"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"status": "ready"}
+
+    def fail() -> dict[str, Any]:
+        raise certification.FinalCertificationContractError("closed")
+
+    monkeypatch.setattr(locker, "generate", fail)
+    assert locker.main(["--generate"]) == 2
+    captured = capsys.readouterr()
+    assert captured.out == ""
+    assert captured.err.strip() == "closed"
+
+
+def test_suite_snapshot_fails_closed_until_suite_is_locked() -> None:
+    pending = _contract(
+        closure_source=locker.CLOSURE_SOURCE_COMMIT,
+        r_syn=locker.R_SYN_COMMIT,
+        editorial=locker.EDITORIAL_COMMIT,
+        suite_status="pending_integration",
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="locked public-test suite",
+    ):
+        locker._suite_snapshot(pending)  # noqa: SLF001
+
+    locked = _contract(
+        closure_source=locker.CLOSURE_SOURCE_COMMIT,
+        r_syn=locker.R_SYN_COMMIT,
+        editorial=locker.EDITORIAL_COMMIT,
+    )
+    snapshot = locker._suite_snapshot(locked)  # noqa: SLF001
+    assert snapshot["suite_lock"] == {
+        "status": certification.LOCKED_SUITE_STATUS,
+        "selector_count": certification.LOCKED_SUITE_SELECTOR_COUNT,
+        "collected_test_count": certification.LOCKED_SUITE_COLLECTED_TEST_COUNT,
+        "nodeids_sha256": certification.LOCKED_SUITE_NODEIDS_SHA256,
+        "allowed_skip_count": certification.LOCKED_SUITE_ALLOWED_SKIP_COUNT,
+    }
+    assert (
+        snapshot["suite_lock"]["nodeids_sha256"]
+        == "583e39e0f1093c51be2421f88df250b2fc84ecd88e52087134a80cc91b8ec5a2"
+    )
+    assert snapshot["selectors"] == list(locked.test_suite.selectors)
+
+    for field, drift in (
+        ("selector_count", certification.LOCKED_SUITE_SELECTOR_COUNT + 1),
+        (
+            "collected_test_count",
+            certification.LOCKED_SUITE_COLLECTED_TEST_COUNT - 1,
+        ),
+        ("nodeids_sha256", "2" * 64),
+        (
+            "allowed_skip_count",
+            certification.LOCKED_SUITE_ALLOWED_SKIP_COUNT - 1,
+        ),
+    ):
+        changed = _contract(
+            closure_source=locker.CLOSURE_SOURCE_COMMIT,
+            r_syn=locker.R_SYN_COMMIT,
+            editorial=locker.EDITORIAL_COMMIT,
+        )
+        setattr(changed.test_suite, field, drift)
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="exact locked public-test suite",
+        ):
+            locker._suite_snapshot(changed)  # noqa: SLF001
+
+
+def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    locker.validate_authority(authority)
+    assert authority["topology"] == {
+        "closure_source_commit": locker.CLOSURE_SOURCE_COMMIT,
+        "r_syn_commit": locker.R_SYN_COMMIT,
+        "editorial_commit": locker.EDITORIAL_COMMIT,
+        "h_cert_commit": "a" * 40,
+        "p_cert_commit": None,
+        "r_cert_executable_tree_must_equal_p_cert": True,
+    }
+    assert [record["path"] for record in authority["anchor_input_records"]] == list(
+        locker.ANCHOR_PATHS
+    )
+    assert len(authority["dvc_pointer_records"]) == 8
+    assert authority["ordered_r_cert_output_paths"] == list(locker.R_SCOPE)
+    assert authority["isolation"] == dict(certification._expected_isolation())
+    assert authority["isolation"]["expected_runtime_versions"] == dict(
+        certification.EXPECTED_RUNTIME_VERSIONS
+    )
+    assert "guard_path" not in authority["isolation"]
+    assert "rollback_owned_inodes_only" not in authority["isolation"]
+    assert authority["authorizations"] == dict(certification.AUTHORIZATION_POLICY)
+    assert all(authority["prohibitions"].values())
+
+    mutations: list[tuple[str, Any]] = [
+        ("topology", {**authority["topology"], "p_cert_commit": "b" * 40}),
+        ("h_scope", {}),
+        ("h_component_records_digest", "0" * 64),
+        ("anchor_input_records_digest", "0" * 64),
+        ("dvc_pointer_records", authority["dvc_pointer_records"][:-1]),
+        ("test_suite_digest", "0" * 64),
+        ("ordered_r_cert_output_paths", list(reversed(list(locker.R_SCOPE)))),
+        ("isolation", {}),
+        ("authorizations", {}),
+        ("prohibitions", {**authority["prohibitions"], "post_phase4_work": False}),
+    ]
+    for key, value in mutations:
+        changed = copy.deepcopy(authority)
+        changed[key] = value
+        with pytest.raises(certification.FinalCertificationContractError):
+            locker.validate_authority(changed)
+
+    missing_isolation = copy.deepcopy(authority)
+    del missing_isolation["isolation"]
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="authority keys drifted",
+    ):
+        locker.validate_authority(missing_isolation)
+
+    for runtime_drift in (
+        {**certification.EXPECTED_RUNTIME_VERSIONS, "python": "Python 3.14.8"},
+        {**certification.EXPECTED_RUNTIME_VERSIONS, "foreign": "1.0"},
+        {
+            key: value
+            for key, value in certification.EXPECTED_RUNTIME_VERSIONS.items()
+            if key != "docker_server"
+        },
+    ):
+        changed = copy.deepcopy(authority)
+        changed["isolation"]["expected_runtime_versions"] = runtime_drift
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="isolation boundary drifted",
+        ):
+            locker.validate_authority(changed)
+
+    for lock_drift in (
+        {
+            "collected_test_count": (
+                certification.LOCKED_SUITE_COLLECTED_TEST_COUNT - 1
+            )
+        },
+        {"selector_count": certification.LOCKED_SUITE_SELECTOR_COUNT + 1},
+        {"nodeids_sha256": "2" * 64},
+        {
+            "allowed_skip_count": (
+                certification.LOCKED_SUITE_ALLOWED_SKIP_COUNT - 1
+            )
+        },
+    ):
+        changed = copy.deepcopy(authority)
+        changed["test_suite"]["suite_lock"].update(lock_drift)
+        changed["test_suite_digest"] = certification.sha256_bytes(
+            certification.canonical_json_bytes(changed["test_suite"])
+        )
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="test suite is not locked",
+        ):
+            locker.validate_authority(changed)
+
+
+def test_manifest_is_canonical_and_binds_only_the_authority_output() -> None:
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    authority_bytes = certification.canonical_json_bytes(authority)
+    manifest = locker._build_manifest(authority_bytes, "a" * 40)  # noqa: SLF001
+    assert manifest["manifest_last"] is True
+    assert manifest["ordered_paths"] == list(locker.P_SCOPE)
+    assert manifest["outputs"] == [manifest["authority"]]
+    assert manifest["authority"] == {
+        "path": locker.AUTHORITY_PATH.as_posix(),
+        "bytes": len(authority_bytes),
+        "sha256": certification.sha256_bytes(authority_bytes),
+    }
+    encoded = certification.canonical_json_bytes(manifest)
+    assert encoded.endswith(b"\n")
+    assert certification.canonical_json_bytes(json.loads(encoded)) == encoded
+
+
+def test_check_only_accepts_exact_local_h_without_writing(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, closure_source, r_syn, editorial = _make_repository(tmp_path)
+    _materialize_h(root)
+    _patch_topology(
+        monkeypatch,
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+    )
+    before = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
+    result = locker.check_only(root=root)
+    after = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
+    assert result["status"] == "ready_to_publish_h"
+    assert result["writes_performed"] is False
+    assert result["dvc_status_checked"] is False
+    assert result["dvc_pull_commands_run"] is False
+    assert result["test_commands_run"] is False
+    assert result["parquet_payloads_opened"] is False
+    assert before == after
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+def test_check_only_rejects_pending_suite_through_default_loader(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, closure_source, r_syn, editorial = _make_repository(tmp_path)
+    _materialize_h(root)
+    contract = _patch_topology(
+        monkeypatch,
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+    )
+    contract.test_suite.status = "pending_integration"
+    contract.test_suite.selector_count = None
+    contract.test_suite.collected_test_count = None
+    contract.test_suite.nodeids_sha256 = None
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="suite lock remains pending",
+    ):
+        locker.check_only(root=root)
+
+
+@pytest.mark.parametrize(
+    "drift",
+    ["extra", "unchanged", "mode", "symlink", "empty_addition"],
+)
+def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    drift: str,
+) -> None:
+    root, _remote, closure_source, r_syn, editorial = _make_repository(tmp_path)
+    _materialize_h(root)
+    _patch_topology(
+        monkeypatch,
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+    )
+    if drift == "extra":
+        _write(root, "foreign.txt", "foreign\n")
+    elif drift == "unchanged":
+        target = root / "tests/test_prepare_commit_artifacts.py"
+        target.write_text(
+            f"base:tests/test_prepare_commit_artifacts.py\n", encoding="utf-8"
+        )
+    elif drift == "mode":
+        (root / "tests/test_lock_phase4_final_certification.py").chmod(0o755)
+    elif drift == "symlink":
+        target = root / "tests/test_lock_phase4_final_certification.py"
+        target.unlink()
+        target.symlink_to(root / "editorial.txt")
+    else:
+        (root / "tests/test_lock_phase4_final_certification.py").write_bytes(b"")
+    with pytest.raises(certification.FinalCertificationContractError):
+        locker.check_only(root=root)
+
+
+def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, closure_source, r_syn, editorial = _make_repository(tmp_path)
+    _materialize_h(root)
+    contract = _patch_topology(
+        monkeypatch,
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+    )
+    head = _publish_h(root)
+    calls: list[Path] = []
+    monkeypatch.setattr(locker, "_dvc_status", lambda value: calls.append(value) or {})
+    result = locker.check_only(root=root)
+    assert result["status"] == "ready_to_generate"
+    assert result["h_cert_commit"] == head
+    assert result["dvc_status_checked"] is True
+    assert calls == [root.resolve()]
+
+    _write(root, "foreign.txt", "drift\n")
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="clean worktree"
+    ):
+        locker.check_only(root=root)
+    (root / "foreign.txt").unlink()
+    contract.test_suite.status = "pending_integration"
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="remains pending"
+    ):
+        locker.check_only(root=root)
+
+
+def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root, _remote, closure_source, r_syn, editorial = _make_repository(tmp_path)
+    _materialize_h(root)
+    _patch_topology(
+        monkeypatch,
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+    )
+    head = _publish_h(root)
+    monkeypatch.setattr(locker, "_dvc_status", lambda _root: {})
+    link_order: list[str] = []
+    original_link = locker._link_no_clobber  # noqa: SLF001
+
+    def observed_link(
+        source: locker._OwnedFileAt,  # noqa: SLF001
+        parent_fd: int,
+        name: str,
+    ) -> locker._OwnedFileAt:  # noqa: SLF001
+        link_order.append(name)
+        return original_link(source, parent_fd, name)
+
+    monkeypatch.setattr(locker, "_link_no_clobber", observed_link)
+    result = locker.generate(root=root)
+    assert result["status"] == "authority_bundle_written_unpublished"
+    assert result["h_cert_commit"] == head
+    assert result["dvc_pull_commands_run"] is False
+    assert result["test_commands_run"] is False
+    assert result["parquet_payloads_opened"] is False
+    assert link_order == [locker.AUTHORITY_PATH.name, locker.MANIFEST_PATH.name]
+    assert _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all").splitlines() == [
+        f"?? {locker.AUTHORITY_PATH.as_posix()}",
+        f"?? {locker.MANIFEST_PATH.as_posix()}",
+    ]
+    authority_path = root / locker.AUTHORITY_PATH
+    manifest_path = root / locker.MANIFEST_PATH
+    authority_bytes = authority_path.read_bytes()
+    manifest_bytes = manifest_path.read_bytes()
+    assert certification.canonical_json_bytes(json.loads(authority_bytes)) == authority_bytes
+    assert certification.canonical_json_bytes(json.loads(manifest_bytes)) == manifest_bytes
+    manifest = json.loads(manifest_bytes)
+    assert manifest["authority"]["sha256"] == certification.sha256_bytes(
+        authority_bytes
+    )
+    assert not (root / locker.GUARD_PATH).exists()
+    assert not list((root / locker.AUTHORITY_PATH.parent).glob(f"{locker.TEMP_PREFIX}*"))
+    assert not list(root.rglob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_publication_no_clobber_preserves_existing_authority(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    existing = root / locker.AUTHORITY_PATH
+    existing.write_bytes(b"foreign\n")
+    before = existing.stat()
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="must be absent"
+    ):
+        locker.publish_authority_bundle(root, authority)
+    after = existing.stat()
+    assert existing.read_bytes() == b"foreign\n"
+    assert (before.st_dev, before.st_ino) == (after.st_dev, after.st_ino)
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+def test_publication_rolls_back_its_authority_if_manifest_link_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    original_link = locker._link_no_clobber  # noqa: SLF001
+    calls = 0
+
+    def fail_second_link(
+        source: locker._OwnedFileAt,  # noqa: SLF001
+        parent_fd: int,
+        name: str,
+    ) -> locker._OwnedFileAt:  # noqa: SLF001
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            raise OSError("injected manifest-last failure")
+        return original_link(source, parent_fd, name)
+
+    monkeypatch.setattr(locker, "_link_no_clobber", fail_second_link)
+    with pytest.raises(OSError, match="manifest-last failure"):
+        locker.publish_authority_bundle(root, authority)
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+    assert not (root / locker.GUARD_PATH).exists()
+    assert not list((root / locker.AUTHORITY_PATH.parent).glob(f"{locker.TEMP_PREFIX}*"))
+
+
+def test_publication_rejects_symlink_legacy_guard_parent_without_following(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    foreign = tmp_path / "foreign"
+    foreign.mkdir()
+    (root / locker.GUARD_PATH.parent).symlink_to(foreign, target_is_directory=True)
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="legacy guard ancestor"
+    ):
+        locker.publish_authority_bundle(root, authority)
+    assert list(foreign.iterdir()) == []
+    assert not (root / locker.AUTHORITY_PATH).exists()
+
+
+@pytest.mark.parametrize("phase", ["prepublish", "postpublish"])
+def test_publication_rejects_configs_ancestor_swap_and_rolls_back(
+    tmp_path: Path,
+    phase: str,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    moved_configs = root / "configs.moved"
+
+    def swap_configs() -> None:
+        os.rename(root / "configs", moved_configs)
+        (root / "configs/closure_v1").mkdir(parents=True)
+
+    validators = (
+        {"prepublish_validator": swap_configs}
+        if phase == "prepublish"
+        else {"postpublish_validator": swap_configs}
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="configs root ownership/path binding drifted",
+    ):
+        locker.publish_authority_bundle(root, authority, **validators)
+
+    for base in (root / "configs", moved_configs):
+        assert not (base / "closure_v1" / locker.AUTHORITY_PATH.name).exists()
+        assert not (base / "closure_v1" / locker.MANIFEST_PATH.name).exists()
+    assert not (root / locker.GUARD_PATH).exists()
+    assert not list(
+        (moved_configs / "closure_v1").glob(f"{locker.TEMP_PREFIX}*")
+    )
+    assert not list(root.rglob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_publication_detects_configs_swap_between_precheck_and_first_link(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    moved_configs = root / "configs.moved"
+    original_link = locker._link_no_clobber  # noqa: SLF001
+    swapped = False
+
+    def swap_then_link(
+        source: locker._OwnedFileAt,  # noqa: SLF001
+        destination_parent_fd: int,
+        destination_name: str,
+    ) -> locker._OwnedFileAt:  # noqa: SLF001
+        nonlocal swapped
+        if not swapped:
+            os.rename(root / "configs", moved_configs)
+            (root / "configs/closure_v1").mkdir(parents=True)
+            swapped = True
+        return original_link(source, destination_parent_fd, destination_name)
+
+    monkeypatch.setattr(locker, "_link_no_clobber", swap_then_link)
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="configs root ownership/path binding drifted",
+    ):
+        locker.publish_authority_bundle(root, authority)
+
+    assert swapped is True
+    for base in (root / "configs", moved_configs):
+        assert not (base / "closure_v1" / locker.AUTHORITY_PATH.name).exists()
+        assert not (base / "closure_v1" / locker.MANIFEST_PATH.name).exists()
+    assert not (root / locker.GUARD_PATH).exists()
+    assert not list(root.rglob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_publication_rejects_legacy_tmp_ancestor_swap_and_rolls_back(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    retained_tmp = root / "tmp.retained"
+
+    def swap_tmp_parent() -> None:
+        os.rename(root / "tmp", retained_tmp)
+        (root / "tmp").mkdir()
+        (root / "tmp/foreign.marker").write_bytes(b"foreign\n")
+
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="legacy guard tmp ancestor ownership/path binding drifted",
+    ):
+        locker.publish_authority_bundle(
+            root,
+            authority,
+            postpublish_validator=swap_tmp_parent,
+        )
+
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+    assert (root / "tmp/foreign.marker").read_bytes() == b"foreign\n"
+    assert not (retained_tmp / locker.GUARD_PATH.parent.name).exists()
+    assert not list(retained_tmp.rglob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+@pytest.mark.parametrize(
+    ("swap_kind", "error_pattern"),
+    [
+        ("root", "repository root ownership/path binding drifted"),
+        ("parent", "repository parent ownership/path binding drifted"),
+    ],
+)
+def test_publication_rejects_repository_root_or_parent_swap_and_rolls_back_by_fd(
+    tmp_path: Path,
+    swap_kind: str,
+    error_pattern: str,
+) -> None:
+    canonical_parent = tmp_path / "canonical-parent"
+    root = _publication_root(canonical_parent)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    if swap_kind == "root":
+        retained_root = canonical_parent / "publication.retained"
+    else:
+        retained_parent = tmp_path / "canonical-parent.retained"
+        retained_root = retained_parent / "publication"
+
+    def swap_repository_binding() -> None:
+        if swap_kind == "root":
+            os.rename(root, retained_root)
+        else:
+            os.rename(canonical_parent, retained_parent)
+        root.mkdir(parents=True)
+        (root / "foreign.marker").write_bytes(b"foreign repository\n")
+
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match=error_pattern,
+    ):
+        locker.publish_authority_bundle(
+            root,
+            authority,
+            postpublish_validator=swap_repository_binding,
+        )
+
+    assert (root / "foreign.marker").read_bytes() == b"foreign repository\n"
+    assert not (retained_root / locker.AUTHORITY_PATH).exists()
+    assert not (retained_root / locker.MANIFEST_PATH).exists()
+    assert not (retained_root / locker.GUARD_PATH).exists()
+    assert not list(retained_root.rglob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_publication_rechecks_r_cert_absence_after_postvalidator(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    foreign_output = root / certification.CERTIFICATION_ROOT / "foreign.marker"
+
+    def materialize_foreign_r_cert() -> None:
+        foreign_output.parent.mkdir(parents=True)
+        foreign_output.write_bytes(b"foreign R-CERT\n")
+
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="R-CERT output namespace must be absent",
+    ):
+        locker.publish_authority_bundle(
+            root,
+            authority,
+            postpublish_validator=materialize_foreign_r_cert,
+        )
+
+    assert foreign_output.read_bytes() == b"foreign R-CERT\n"
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+    assert not (root / locker.GUARD_PATH).exists()
+    assert not list(root.rglob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+@pytest.mark.parametrize("entry_kind", ["file", "symlink"])
+def test_publication_rejects_and_preserves_preexisting_legacy_guard(
+    tmp_path: Path,
+    entry_kind: str,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    guard = root / locker.GUARD_PATH
+    guard.parent.mkdir()
+    if entry_kind == "file":
+        guard.write_bytes(b"legacy foreign guard\n")
+    else:
+        target = tmp_path / "foreign-target"
+        target.write_bytes(b"foreign target\n")
+        guard.symlink_to(target)
+    before = guard.lstat()
+
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="legacy guard must be absent",
+    ):
+        locker.publish_authority_bundle(root, authority)
+
+    after = guard.lstat()
+    assert (before.st_dev, before.st_ino) == (after.st_dev, after.st_ino)
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+def test_publication_preserves_legacy_namespace_and_never_touches_guard_name(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    legacy_namespace = root / locker.GUARD_PATH.parent
+    legacy_namespace.mkdir()
+    marker = legacy_namespace / "foreign.marker"
+    marker.write_bytes(b"foreign namespace\n")
+    created: list[str] = []
+    removed: list[str] = []
+    original_create = locker._create_owned_file_at  # noqa: SLF001
+    original_unlink = locker._unlink_owned_file_at  # noqa: SLF001
+
+    def observed_create(*args: Any, **kwargs: Any) -> locker._OwnedFileAt:  # noqa: SLF001
+        created.append(args[1])
+        return original_create(*args, **kwargs)
+
+    def observed_unlink(
+        owner: locker._OwnedFileAt,  # noqa: SLF001
+        *,
+        context: str,
+        missing_is_error: bool = True,
+    ) -> None:
+        removed.append(owner.name)
+        original_unlink(
+            owner,
+            context=context,
+            missing_is_error=missing_is_error,
+        )
+
+    monkeypatch.setattr(locker, "_create_owned_file_at", observed_create)
+    monkeypatch.setattr(locker, "_unlink_owned_file_at", observed_unlink)
+    locker.publish_authority_bundle(root, authority)
+
+    assert marker.read_bytes() == b"foreign namespace\n"
+    assert not (legacy_namespace / locker.GUARD_PATH.name).exists()
+    assert locker.GUARD_PATH.name not in created
+    assert locker.GUARD_PATH.name not in removed
+
+
+@pytest.mark.parametrize("phase", ["prepublish", "postpublish"])
+def test_publication_stops_and_preserves_legacy_guard_that_appears(
+    tmp_path: Path,
+    phase: str,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    guard = root / locker.GUARD_PATH
+    guard.parent.mkdir()
+
+    def create_foreign_guard() -> None:
+        guard.write_bytes(b"foreign guard during publication\n")
+
+    validators = (
+        {"prepublish_validator": create_foreign_guard}
+        if phase == "prepublish"
+        else {"postpublish_validator": create_foreign_guard}
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="legacy guard must be absent",
+    ):
+        locker.publish_authority_bundle(root, authority, **validators)
+
+    assert guard.read_bytes() == b"foreign guard during publication\n"
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+def test_publication_flock_rejects_concurrent_cooperator_and_releases(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    competing_fd = os.open(root / ".git", os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        fcntl.flock(competing_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="holds the repository lock",
+        ):
+            locker.publish_authority_bundle(root, authority)
+        assert not (root / locker.AUTHORITY_PATH).exists()
+        assert not (root / locker.MANIFEST_PATH).exists()
+    finally:
+        fcntl.flock(competing_fd, fcntl.LOCK_UN)
+        os.close(competing_fd)
+
+    locker.publish_authority_bundle(root, authority)
+    probe_fd = os.open(root / ".git", os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        fcntl.flock(probe_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(probe_fd, fcntl.LOCK_UN)
+    finally:
+        os.close(probe_fd)
+
+
+@pytest.mark.parametrize("phase", ["prepublish", "postpublish"])
+def test_publication_retains_flock_through_every_validator(
+    tmp_path: Path,
+    phase: str,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    observed = False
+
+    def require_lock_held() -> None:
+        nonlocal observed
+        probe_fd = os.open(root / ".git", os.O_RDONLY | os.O_DIRECTORY)
+        try:
+            with pytest.raises(BlockingIOError):
+                fcntl.flock(probe_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            observed = True
+        finally:
+            os.close(probe_fd)
+
+    validators = (
+        {"prepublish_validator": require_lock_held}
+        if phase == "prepublish"
+        else {"postpublish_validator": require_lock_held}
+    )
+    locker.publish_authority_bundle(root, authority, **validators)
+    assert observed is True
+
+
+def test_publication_releases_flock_after_failure(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+
+    def fail_under_lock() -> None:
+        raise RuntimeError("injected publication failure")
+
+    with pytest.raises(RuntimeError, match="injected publication failure"):
+        locker.publish_authority_bundle(
+            root,
+            authority,
+            prepublish_validator=fail_under_lock,
+        )
+    probe_fd = os.open(root / ".git", os.O_RDONLY | os.O_DIRECTORY)
+    try:
+        fcntl.flock(probe_fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        fcntl.flock(probe_fd, fcntl.LOCK_UN)
+    finally:
+        os.close(probe_fd)
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+def test_publication_detects_git_directory_swap_and_preserves_foreign(
+    tmp_path: Path,
+) -> None:
+    root = _publication_root(tmp_path)
+    authority = locker._build_authority(_fake_state())  # noqa: SLF001
+    retained_git = root / ".git.retained"
+
+    def swap_git_directory() -> None:
+        os.rename(root / ".git", retained_git)
+        (root / ".git").mkdir()
+        (root / ".git/foreign.marker").write_bytes(b"foreign git directory\n")
+
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="Git directory ownership/path binding drifted",
+    ):
+        locker.publish_authority_bundle(
+            root,
+            authority,
+            prepublish_validator=swap_git_directory,
+        )
+
+    assert (root / ".git/foreign.marker").read_bytes() == b"foreign git directory\n"
+    assert retained_git.is_dir()
+    assert not (root / locker.AUTHORITY_PATH).exists()
+    assert not (root / locker.MANIFEST_PATH).exists()
+
+
+@pytest.mark.parametrize("entry_kind", ["file", "directory"])
+def test_atomic_cleanup_capture_restores_boundary_foreign_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    entry_kind: str,
+) -> None:
+    parent = tmp_path / "parent"
+    parent.mkdir()
+    canonical = parent / "owned"
+    saved_owned = parent / "owned.saved"
+    if entry_kind == "file":
+        canonical.write_bytes(b"owned\n")
+    else:
+        canonical.mkdir()
+    parent_fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY)
+    owned_fd: int | None = None
+    metadata = canonical.lstat()
+    if entry_kind == "directory":
+        owned_fd = os.open(
+            canonical.name,
+            os.O_RDONLY | os.O_DIRECTORY,
+            dir_fd=parent_fd,
+        )
+    original_rename = locker._rename_noreplace_at  # noqa: SLF001
+    replaced = False
+
+    def replace_at_capture_boundary(
+        source_directory_fd: int,
+        source_name: str,
+        target_directory_fd: int,
+        target_name: str,
+    ) -> None:
+        nonlocal replaced
+        if source_name == canonical.name and not replaced:
+            os.rename(
+                canonical.name,
+                saved_owned.name,
+                src_dir_fd=source_directory_fd,
+                dst_dir_fd=source_directory_fd,
+            )
+            if entry_kind == "file":
+                canonical.write_bytes(b"foreign\n")
+            else:
+                canonical.mkdir()
+                (canonical / "foreign.marker").write_bytes(b"foreign\n")
+            replaced = True
+        original_rename(
+            source_directory_fd,
+            source_name,
+            target_directory_fd,
+            target_name,
+        )
+
+    monkeypatch.setattr(
+        locker,
+        "_rename_noreplace_at",
+        replace_at_capture_boundary,
+    )
+    try:
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="foreign entry was restored",
+        ):
+            locker._remove_owned_name_atomic(  # noqa: SLF001
+                parent_fd,
+                canonical.name,
+                (metadata.st_dev, metadata.st_ino),
+                context="atomic boundary probe",
+                missing_is_error=True,
+                owned_fd=owned_fd,
+                expected_directory=entry_kind == "directory",
+            )
+        assert replaced is True
+        if entry_kind == "file":
+            assert canonical.read_bytes() == b"foreign\n"
+            assert saved_owned.read_bytes() == b"owned\n"
+        else:
+            assert (canonical / "foreign.marker").read_bytes() == b"foreign\n"
+            assert saved_owned.is_dir()
+        assert (saved_owned.stat().st_dev, saved_owned.stat().st_ino) == (
+            metadata.st_dev,
+            metadata.st_ino,
+        )
+        assert not list(parent.glob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+    finally:
+        if owned_fd is not None:
+            os.close(owned_fd)
+        os.close(parent_fd)
+
+
+def test_atomic_cleanup_restores_owned_nonempty_directory(
+    tmp_path: Path,
+) -> None:
+    parent = tmp_path / "parent"
+    canonical = parent / "owned"
+    canonical.mkdir(parents=True)
+    (canonical / "retained.marker").write_bytes(b"retained\n")
+    metadata = canonical.stat()
+    parent_fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY)
+    owned_fd = os.open(
+        canonical.name,
+        os.O_RDONLY | os.O_DIRECTORY,
+        dir_fd=parent_fd,
+    )
+    try:
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="owned cleanup directory is not empty",
+        ):
+            locker._remove_owned_name_atomic(  # noqa: SLF001
+                parent_fd,
+                canonical.name,
+                (metadata.st_dev, metadata.st_ino),
+                context="non-empty directory probe",
+                missing_is_error=True,
+                owned_fd=owned_fd,
+                expected_directory=True,
+            )
+    finally:
+        os.close(owned_fd)
+        os.close(parent_fd)
+
+    assert (canonical / "retained.marker").read_bytes() == b"retained\n"
+    assert (canonical.stat().st_dev, canonical.stat().st_ino) == (
+        metadata.st_dev,
+        metadata.st_ino,
+    )
+    assert not list(parent.glob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_atomic_cleanup_restores_owned_file_after_unlink_failure(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parent = tmp_path / "parent"
+    parent.mkdir()
+    canonical = parent / "owned"
+    canonical.write_bytes(b"owned\n")
+    metadata = canonical.stat()
+    parent_fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY)
+    original_unlink = locker.os.unlink
+
+    def fail_tombstone_unlink(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        if isinstance(path, str) and path.startswith(
+            locker.CLEANUP_TOMBSTONE_PREFIX
+        ):
+            raise OSError(errno.EIO, "injected tombstone unlink failure")
+        original_unlink(path, *args, **kwargs)
+
+    monkeypatch.setattr(locker.os, "unlink", fail_tombstone_unlink)
+    try:
+        with pytest.raises(OSError, match="injected tombstone unlink failure"):
+            locker._remove_owned_name_atomic(  # noqa: SLF001
+                parent_fd,
+                canonical.name,
+                (metadata.st_dev, metadata.st_ino),
+                context="unlink failure probe",
+                missing_is_error=True,
+            )
+    finally:
+        os.close(parent_fd)
+
+    assert canonical.read_bytes() == b"owned\n"
+    assert (canonical.stat().st_dev, canonical.stat().st_ino) == (
+        metadata.st_dev,
+        metadata.st_ino,
+    )
+    assert not list(parent.glob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_atomic_mkdir_never_adopts_foreign_final_name(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    parent = tmp_path / "parent"
+    parent.mkdir()
+    parent_fd = os.open(parent, os.O_RDONLY | os.O_DIRECTORY)
+    original_rename = locker._rename_noreplace_at  # noqa: SLF001
+    injected = False
+
+    def create_foreign_before_final_rename(
+        source_directory_fd: int,
+        source_name: str,
+        target_directory_fd: int,
+        target_name: str,
+    ) -> None:
+        nonlocal injected
+        if (
+            not injected
+            and source_name.startswith(locker.DIRECTORY_TEMP_PREFIX)
+            and target_name == "owned"
+        ):
+            os.mkdir(target_name, mode=0o700, dir_fd=target_directory_fd)
+            foreign_fd = os.open(
+                target_name,
+                os.O_RDONLY | os.O_DIRECTORY,
+                dir_fd=target_directory_fd,
+            )
+            try:
+                marker_fd = os.open(
+                    "foreign.marker",
+                    os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                    0o600,
+                    dir_fd=foreign_fd,
+                )
+                try:
+                    os.write(marker_fd, b"foreign directory\n")
+                finally:
+                    os.close(marker_fd)
+            finally:
+                os.close(foreign_fd)
+            injected = True
+        original_rename(
+            source_directory_fd,
+            source_name,
+            target_directory_fd,
+            target_name,
+        )
+
+    monkeypatch.setattr(
+        locker,
+        "_rename_noreplace_at",
+        create_foreign_before_final_rename,
+    )
+    try:
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="already exists",
+        ):
+            locker._mkdir_owned_at(  # noqa: SLF001
+                parent_fd,
+                "owned",
+                mode=0o700,
+                context="atomic mkdir probe",
+            )
+    finally:
+        os.close(parent_fd)
+
+    assert injected is True
+    assert (parent / "owned/foreign.marker").read_bytes() == (
+        b"foreign directory\n"
+    )
+    assert not list(parent.glob(f"{locker.DIRECTORY_TEMP_PREFIX}*"))
+    assert not list(parent.glob(f"{locker.CLEANUP_TOMBSTONE_PREFIX}*"))
+
+
+def test_regular_reader_restats_canonical_name_after_fd_read(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    target = tmp_path / "component.py"
+    target.write_bytes(b"owned bytes\n")
+    saved = tmp_path / "component.saved"
+    anchored = locker._regular_file(  # noqa: SLF001
+        tmp_path,
+        target.name,
+        expected_mode=0o644,
+        context="canonical relstat probe",
+    )
+    original_stat = locker.os.stat
+    file_restats = 0
+    swapped = False
+
+    def swap_before_final_relstat(
+        path: str | bytes | os.PathLike[str] | os.PathLike[bytes],
+        *args: Any,
+        **kwargs: Any,
+    ) -> os.stat_result:
+        nonlocal file_restats, swapped
+        if path == target.name and kwargs.get("dir_fd") == anchored.parent_fd:
+            file_restats += 1
+        if file_restats == 2 and not swapped:
+            os.rename(
+                target.name,
+                saved.name,
+                src_dir_fd=anchored.parent_fd,
+                dst_dir_fd=anchored.parent_fd,
+            )
+            descriptor = os.open(
+                target.name,
+                os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+                0o644,
+                dir_fd=anchored.parent_fd,
+            )
+            os.write(descriptor, b"owned bytes\n")
+            os.close(descriptor)
+            swapped = True
+        return original_stat(path, *args, **kwargs)
+
+    monkeypatch.setattr(locker.os, "stat", swap_before_final_relstat)
+    try:
+        with pytest.raises(
+            certification.FinalCertificationContractError,
+            match="name or identity drifted",
+        ):
+            locker._read_regular(  # noqa: SLF001
+                anchored,
+                context="canonical relstat probe",
+            )
+    finally:
+        certification._close_anchored_file(anchored)  # noqa: SLF001
+    assert target.read_bytes() == b"owned bytes\n"
+    assert saved.read_bytes() == b"owned bytes\n"
+
+
+def test_generation_does_not_contain_forbidden_execution_commands() -> None:
+    source = Path(locker.__file__).read_text(encoding="utf-8")
+    # The locker may inspect Git and DVC status only.  Effective certification
+    # work belongs exclusively to the separately published P-CERT consumer.
+    assert '"pull"' not in source
+    assert '"pytest"' not in source
+    assert '"dvc", "add"' not in source
+    assert '"dvc", "push"' not in source
+    assert "read_parquet" not in source
+    assert "data/targets" not in source
+    assert "evaluation_outcomes" not in source
+    assert "def _acquire_guard" not in source
+    assert "rollback_owned_inodes_only" not in source
+
+
+def test_contract_collection_rejects_wrong_anchor_pointer_and_output_cardinality(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = _contract(
+        closure_source=locker.CLOSURE_SOURCE_COMMIT,
+        r_syn=locker.R_SYN_COMMIT,
+        editorial=locker.EDITORIAL_COMMIT,
+    )
+    _install_contract_stubs(monkeypatch, contract)
+    state = locker._collect_contract_state(contract, Path("."))  # noqa: SLF001
+    assert len(state["anchor_input_records"]) == 10
+    assert len(state["dvc_pointer_records"]) == 8
+
+    monkeypatch.setattr(
+        certification,
+        "collect_anchor_input_records",
+        lambda *_args, **_kwargs: list(reversed(_anchor_records())),
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="anchor input path order"
+    ):
+        locker._collect_contract_state(contract, Path("."))  # noqa: SLF001
+
+    monkeypatch.setattr(
+        certification,
+        "collect_anchor_input_records",
+        lambda *_args, **_kwargs: _anchor_records(),
+    )
+    monkeypatch.setattr(
+        certification,
+        "collect_dvc_pointer_records",
+        lambda *_args, **_kwargs: _pointer_records()[:-1],
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="exactly eight"
+    ):
+        locker._collect_contract_state(contract, Path("."))  # noqa: SLF001
+
+
+def test_dvc_status_accepts_only_exact_empty_json(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = tmp_path / "root"
+    _write(root, ".venv/bin/dvc", "#!/bin/sh\n", mode=0o755)
+
+    def completed(stdout: str, returncode: int = 0) -> SimpleNamespace:
+        return SimpleNamespace(stdout=stdout, stderr="failure", returncode=returncode)
+
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: completed("{}\n"))
+    assert locker._dvc_status(root) == {}  # noqa: SLF001
+
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *_args, **_kwargs: completed('{"changed": ["models"]}\n'),
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="exact empty"
+    ):
+        locker._dvc_status(root)  # noqa: SLF001
+
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: completed("[]\n"))
+    with pytest.raises(
+        certification.FinalCertificationContractError, match="one JSON object"
+    ):
+        locker._dvc_status(root)  # noqa: SLF001
+
+    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: completed("", 2))
+    with pytest.raises(certification.FinalCertificationContractError, match="failed"):
+        locker._dvc_status(root)  # noqa: SLF001
+
+
+def test_dvc_status_executes_retained_fd_not_foreign_path_replacement(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    root = tmp_path / "root"
+    owned = root / ".venv/bin/dvc"
+    _write(
+        root,
+        ".venv/bin/dvc",
+        "#!/bin/sh\nprintf 'owned\\n' > owned-executed\nprintf '{}\\n'\n",
+        mode=0o755,
+    )
+    retained = root / ".venv/bin/dvc.retained"
+    original_run = locker.subprocess.run
+    injected = False
+
+    def swap_path_before_exec(*args: Any, **kwargs: Any) -> Any:
+        nonlocal injected
+        command = args[0]
+        if not injected:
+            assert command[0].startswith("/proc/self/fd/")
+            descriptor = int(command[0].rsplit("/", 1)[1])
+            assert kwargs["pass_fds"] == (descriptor,)
+            os.rename(owned, retained)
+            owned.write_text(
+                "#!/bin/sh\nprintf 'foreign\\n' > foreign-executed\nprintf '{}\\n'\n",
+                encoding="utf-8",
+            )
+            owned.chmod(0o755)
+            injected = True
+        return original_run(*args, **kwargs)
+
+    monkeypatch.setattr(locker.subprocess, "run", swap_path_before_exec)
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="name or identity drifted",
+    ):
+        locker._dvc_status(root)  # noqa: SLF001
+
+    assert injected is True
+    assert (root / "owned-executed").read_text(encoding="utf-8") == "owned\n"
+    assert not (root / "foreign-executed").exists()
+    assert retained.read_text(encoding="utf-8").startswith("#!/bin/sh\n")
+    assert owned.read_text(encoding="utf-8").startswith("#!/bin/sh\n")

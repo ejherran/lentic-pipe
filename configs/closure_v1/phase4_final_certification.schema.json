@@ -1,0 +1,532 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure_v1/phase4_final_certification.schema.json",
+  "title": "Closure V1 Phase 4 final doctoral certification contract",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "authorities",
+    "topology",
+    "publication_scopes",
+    "anchor_inputs",
+    "dvc_restoration",
+    "test_certification",
+    "openapi_certification",
+    "isolation",
+    "outputs",
+    "stop_rules"
+  ],
+  "$defs": {
+    "commit": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{40}$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "repoPath": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^(?!/)(?!.*(?:^|/)\\.\\.?/)(?!.*[?*\\[\\]{}]).+$"
+    },
+    "scopeRecord": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path", "status", "git_mode"],
+      "properties": {
+        "path": {"$ref": "#/$defs/repoPath"},
+        "status": {"enum": ["A", "M"]},
+        "git_mode": {"enum": ["100644", "100755"]}
+      }
+    },
+    "stageScope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["additions", "modifications", "ordered_paths"],
+      "properties": {
+        "additions": {"type": "integer", "minimum": 0},
+        "modifications": {"type": "integer", "minimum": 0},
+        "ordered_paths": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/scopeRecord"}
+        }
+      }
+    },
+    "stage": {
+      "type": "object",
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "contract_version": {
+      "const": "closure_v1_phase4_final_certification_v1"
+    },
+    "authorities": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "closure_source_commit",
+        "r_syn_commit",
+        "editorial_commit",
+        "final_tag",
+        "certification_target",
+        "r_cert_executable_tree_must_equal_p_cert"
+      ],
+      "properties": {
+        "closure_source_commit": {
+          "const": "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
+        },
+        "r_syn_commit": {
+          "const": "528dcb74a7c08b65f262901e4562a67b784db8c9"
+        },
+        "editorial_commit": {
+          "const": "d1daa3059462854d6ddf5199fbc05515cec76982"
+        },
+        "final_tag": {"const": "thesis-closure-v1"},
+        "certification_target": {"const": "published_P_CERT_commit"},
+        "r_cert_executable_tree_must_equal_p_cert": {"const": true}
+      }
+    },
+    "topology": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordered_stages",
+        "H-CERT",
+        "P-CERT",
+        "R-CERT",
+        "single_parent_commits_required",
+        "closure_source_commit_must_remain_ancestor",
+        "aligned_refs_and_live_remote_required",
+        "clean_worktree_and_index_required_at_each_gate",
+        "main_dvc_status_must_equal_empty_object",
+        "git_commit_push_and_tag_are_manual_user_actions"
+      ],
+      "properties": {
+        "ordered_stages": {"const": ["H-CERT", "P-CERT", "R-CERT"]},
+        "H-CERT": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized"],
+          "properties": {
+            "role": {"const": "implementation_schema_tests_and_freeze"},
+            "direct_parent": {"const": "editorial_commit"},
+            "certification_execution_authorized": {"const": false}
+          }
+        },
+        "P-CERT": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "role",
+            "requires_published_H_CERT",
+            "certification_execution_authorized_while_unpublished",
+            "manifest_written_last"
+          ],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority"},
+            "requires_published_H_CERT": {"const": true},
+            "certification_execution_authorized_while_unpublished": {"const": false},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "R-CERT": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_P_CERT", "output_count", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "final_doctoral_software_and_restorability_evidence"},
+            "requires_published_P_CERT": {"const": true},
+            "output_count": {"const": 8},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "single_parent_commits_required": {"const": true},
+        "closure_source_commit_must_remain_ancestor": {"const": true},
+        "aligned_refs_and_live_remote_required": {"const": true},
+        "clean_worktree_and_index_required_at_each_gate": {"const": true},
+        "main_dvc_status_must_equal_empty_object": {"const": true},
+        "git_commit_push_and_tag_are_manual_user_actions": {"const": true}
+      }
+    },
+    "publication_scopes": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["H-CERT", "P-CERT", "R-CERT"],
+      "properties": {
+        "H-CERT": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 9},
+                "modifications": {"const": 2},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "R-CERT": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 8},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 8, "maxItems": 8}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "anchor_inputs": {
+      "type": "array",
+      "minItems": 10,
+      "maxItems": 10,
+      "uniqueItems": true,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["path", "role"],
+        "properties": {
+          "path": {"$ref": "#/$defs/repoPath"},
+          "role": {"type": "string", "minLength": 1}
+        }
+      }
+    },
+    "dvc_restoration": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mode",
+        "pointer_count",
+        "pull_command_template",
+        "one_pointer_per_command",
+        "tracked_config_contains_remote",
+        "ignored_local_remote_configuration_required",
+        "ignored_local_remote_configuration_serialized",
+        "cache_initially_empty",
+        "main_worktree_written",
+        "dvc_add_authorized",
+        "dvc_push_authorized",
+        "parquet_open_or_decode_authorized",
+        "pointers"
+      ],
+      "properties": {
+        "mode": {"const": "remote_pull_in_isolated_clone_with_initially_empty_cache"},
+        "pointer_count": {"const": 8},
+        "pull_command_template": {
+          "const": [
+            ".venv/bin/dvc",
+            "pull",
+            "--no-run-cache",
+            "-j",
+            "1",
+            "{pointer_path}"
+          ]
+        },
+        "one_pointer_per_command": {"const": true},
+        "tracked_config_contains_remote": {"const": false},
+        "ignored_local_remote_configuration_required": {"const": true},
+        "ignored_local_remote_configuration_serialized": {"const": false},
+        "cache_initially_empty": {"const": true},
+        "main_worktree_written": {"const": false},
+        "dvc_add_authorized": {"const": false},
+        "dvc_push_authorized": {"const": false},
+        "parquet_open_or_decode_authorized": {"const": false},
+        "pointers": {
+          "type": "array",
+          "minItems": 8,
+          "maxItems": 8,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["path", "role", "output_path", "md5", "size"],
+            "properties": {
+              "path": {"type": "string", "pattern": "^[^/].+\\.parquet\\.dvc$"},
+              "role": {"enum": ["locked_evaluation_scientific_input", "final_scientific_output"]},
+              "output_path": {"type": "string", "pattern": "^[^/].+\\.parquet$"},
+              "md5": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+              "size": {"type": "integer", "minimum": 1}
+            }
+          }
+        }
+      }
+    },
+    "test_certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "suite_kind",
+        "positive_test_paths",
+        "exact_skipped_nodes",
+        "exact_skip_reason",
+        "e2e_nodes",
+        "command_template",
+        "static_commands",
+        "loopback_postgresql_required",
+        "unexpected_skips_authorized",
+        "failures_or_errors_authorized",
+        "suite_lock"
+      ],
+      "properties": {
+        "suite_kind": {"const": "closure_phase4_final_public"},
+        "positive_test_paths": {
+          "type": "array",
+          "minItems": 33,
+          "maxItems": 33,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^tests/test_[a-z0-9_]+\\.py$"}
+        },
+        "exact_skipped_nodes": {
+          "type": "array",
+          "minItems": 7,
+          "maxItems": 7,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^tests/test_.+::test_.+$"}
+        },
+        "exact_skip_reason": {"const": "final_certification_raw_or_historical_state_prohibited"},
+        "e2e_nodes": {
+          "type": "array",
+          "minItems": 3,
+          "maxItems": 3,
+          "uniqueItems": true,
+          "items": {"type": "string", "pattern": "^tests/test_.+::test_.+$"}
+        },
+        "command_template": {
+          "const": [
+            ".venv/bin/python",
+            "-m",
+            "pytest",
+            "{selectors}",
+            "-ra",
+            "-p",
+            "src.reporting.build_phase4_final_certification",
+            "-p",
+            "no:cacheprovider",
+            "--junitxml={junit_path}"
+          ]
+        },
+        "static_commands": {
+          "const": [
+            [".venv/bin/ty", "check"],
+            ["poetry", "check", "--lock"]
+          ]
+        },
+        "loopback_postgresql_required": {"const": true},
+        "unexpected_skips_authorized": {"const": false},
+        "failures_or_errors_authorized": {"const": false},
+        "suite_lock": {
+          "oneOf": [
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "selector_count", "collected_test_count", "nodeids_sha256", "allowed_skip_count"],
+              "properties": {
+                "status": {"const": "pending_integration"},
+                "selector_count": {"type": "null"},
+                "collected_test_count": {"type": "null"},
+                "nodeids_sha256": {"type": "null"},
+                "allowed_skip_count": {"const": 7}
+              }
+            },
+            {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["status", "selector_count", "collected_test_count", "nodeids_sha256", "allowed_skip_count"],
+              "properties": {
+                "status": {"const": "locked"},
+                "selector_count": {"const": 39},
+                "collected_test_count": {"const": 892},
+                "nodeids_sha256": {"const": "583e39e0f1093c51be2421f88df250b2fc84ecd88e52087134a80cc91b8ec5a2"},
+                "allowed_skip_count": {"const": 7}
+              }
+            }
+          ]
+        }
+      }
+    },
+    "openapi_certification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "version_prefix",
+        "expected_path_count",
+        "expected_operation_count",
+        "expected_documented_operation_count",
+        "operation_ids_unique",
+        "path_parameters_exact",
+        "missing_documented_operations"
+      ],
+      "properties": {
+        "version_prefix": {"const": "3."},
+        "expected_path_count": {"const": 69},
+        "expected_operation_count": {"const": 83},
+        "expected_documented_operation_count": {"const": 38},
+        "operation_ids_unique": {"const": true},
+        "path_parameters_exact": {"const": true},
+        "missing_documented_operations": {"const": 0}
+      }
+    },
+    "isolation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "clone_source",
+        "clone_must_be_exact_p_cert",
+        "clone_must_be_initially_clean",
+        "clone_and_cache_under_owned_temporary_root",
+        "source_worktree_read_only_during_verification",
+        "host_virtualenv_read_only",
+        "expected_runtime_versions",
+        "network_policy",
+        "forbidden_read_prefixes",
+        "forbidden_read_paths",
+        "restored_parquet_payloads_are_transport_evidence_only",
+        "absolute_paths_serialized",
+        "remote_urls_serialized",
+        "credentials_serialized",
+        "database_urls_serialized",
+        "orchestrator_git_commit_push_tag_authorized",
+        "fixture_git_commits_only_in_owned_tmp_repositories",
+        "rerun_e0_u_or_e1_e10_authorized",
+        "refit_rescore_recalibrate_authorized",
+        "concurrency_lock",
+        "legacy_guard_path_must_be_absent",
+        "external_namespace_mutation_is_stop_condition",
+        "noncooperating_same_uid_namespace_mutation",
+        "identity_revalidated_before_and_after_name_cleanup",
+        "conditional_unlink_by_inode_claimed",
+        "no_clobber",
+        "cleanup_before_precommit"
+      ],
+      "properties": {
+        "clone_source": {"const": "live_origin_main"},
+        "clone_must_be_exact_p_cert": {"const": true},
+        "clone_must_be_initially_clean": {"const": true},
+        "clone_and_cache_under_owned_temporary_root": {"const": true},
+        "source_worktree_read_only_during_verification": {"const": true},
+        "host_virtualenv_read_only": {"const": true},
+        "expected_runtime_versions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "python",
+            "dvc",
+            "ty",
+            "git",
+            "poetry",
+            "bubblewrap",
+            "docker_client",
+            "docker_server"
+          ],
+          "properties": {
+            "python": {"const": "Python 3.14.7"},
+            "dvc": {"const": "3.67.1"},
+            "ty": {"const": "ty 0.0.37"},
+            "git": {"const": "git version 2.55.0"},
+            "poetry": {"const": "Poetry (version 2.4.1)"},
+            "bubblewrap": {"const": "bubblewrap 0.11.2"},
+            "docker_client": {"const": "29.7.2"},
+            "docker_server": {"const": "29.7.2"}
+          }
+        },
+        "network_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["git_clone_from_origin", "eight_directed_dvc_pulls", "loopback_postgresql", "scientific_or_general_network"],
+          "properties": {
+            "git_clone_from_origin": {"const": "allowed"},
+            "eight_directed_dvc_pulls": {"const": "allowed"},
+            "loopback_postgresql": {"const": "allowed"},
+            "scientific_or_general_network": {"const": "forbidden"}
+          }
+        },
+        "forbidden_read_prefixes": {
+          "const": [
+            "private/",
+            "data/targets/",
+            "data/closure_v1/unblinded/",
+            "data/closure_v1/evaluation_outcomes/"
+          ]
+        },
+        "forbidden_read_paths": {
+          "const": ["reports/closure_v1/00_protocol/outcome_access_log.jsonl"]
+        },
+        "restored_parquet_payloads_are_transport_evidence_only": {"const": true},
+        "absolute_paths_serialized": {"const": false},
+        "remote_urls_serialized": {"const": false},
+        "credentials_serialized": {"const": false},
+        "database_urls_serialized": {"const": false},
+        "orchestrator_git_commit_push_tag_authorized": {"const": false},
+        "fixture_git_commits_only_in_owned_tmp_repositories": {"const": true},
+        "rerun_e0_u_or_e1_e10_authorized": {"const": false},
+        "refit_rescore_recalibrate_authorized": {"const": false},
+        "concurrency_lock": {"const": "flock_retained_git_directory"},
+        "legacy_guard_path_must_be_absent": {"const": "tmp/closure_v1_phase4_final_certification/certification.guard"},
+        "external_namespace_mutation_is_stop_condition": {"const": true},
+        "noncooperating_same_uid_namespace_mutation": {"const": "out_of_scope"},
+        "identity_revalidated_before_and_after_name_cleanup": {"const": true},
+        "conditional_unlink_by_inode_claimed": {"const": false},
+        "no_clobber": {"const": true},
+        "cleanup_before_precommit": {"const": true}
+      }
+    },
+    "outputs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "root",
+        "output_count",
+        "manifest_written_last",
+        "ordered_paths",
+        "final_manifest_status",
+        "final_report_claim_boundary"
+      ],
+      "properties": {
+        "root": {"const": "reports/closure_v1/12_certification"},
+        "output_count": {"const": 8},
+        "manifest_written_last": {"const": true},
+        "ordered_paths": {
+          "const": [
+            "reports/closure_v1/12_certification/public_tests.xml",
+            "reports/closure_v1/12_certification/test_report.md",
+            "reports/closure_v1/12_certification/openapi.json",
+            "reports/closure_v1/12_certification/openapi_contract_report.md",
+            "reports/closure_v1/12_certification/end_to_end_report.md",
+            "reports/closure_v1/12_certification/environment.json",
+            "reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md",
+            "reports/closure_v1/12_certification/final_certification_manifest.json"
+          ]
+        },
+        "final_manifest_status": {"const": "completed"},
+        "final_report_claim_boundary": {"const": "software_restorability_and_reproducibility_not_scientific_efficacy"}
+      }
+    },
+    "stop_rules": {
+      "type": "array",
+      "minItems": 13,
+      "maxItems": 13,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    }
+  }
+}
