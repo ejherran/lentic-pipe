@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
+import io
 import json
 import os
 import pwd
@@ -14,10 +16,11 @@ import shutil
 import stat
 import subprocess
 import sys
+import tempfile
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from types import MappingProxyType
 from typing import Any, cast
 
@@ -1392,6 +1395,130 @@ CLOSURE_PHASE4_SYNTHESIS_TMP_NAMESPACE = Path(
     "tmp/closure_v1_phase4_synthesis"
 )
 CLOSURE_PHASE4_SYNTHESIS_ROOT = Path("reports/closure_v1/11_synthesis")
+CLOSURE_PHASE4_R_SYN_COMMIT = (
+    "528dcb74a7c08b65f262901e4562a67b784db8c9"
+)
+CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE = {
+    "configs/thesis_evidence_matrix.yaml": "M",
+    "reports/thesis/chapter_iv_evidence_matrix.csv": "M",
+    "reports/thesis/chapter_iv_evidence_matrix.md": "M",
+    "reports/thesis/chapter_iv_evidence_matrix_manifest.json": "M",
+    "reports/thesis/phase4_manuscript_build_receipt.json": "A",
+    "reports/thesis/phase4_manuscript_build_receipt_manifest.json": "A",
+    "src/data/prepare_commit_artifacts.py": "M",
+    "src/reporting/build_thesis_evidence_matrix.py": "M",
+    "src/reporting/validate_phase4_manuscript.py": "A",
+    "tests/test_build_thesis_evidence_matrix.py": "M",
+    "tests/test_prepare_commit_artifacts.py": "M",
+    "tests/test_validate_phase4_manuscript.py": "A",
+}
+CLOSURE_PHASE4_EDITORIAL_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+}
+CLOSURE_PHASE4_EDITORIAL_MARKER_PATHS = frozenset(
+    CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+)
+CLOSURE_PHASE4_EDITORIAL_MATRIX_CONFIG = Path(
+    "configs/thesis_evidence_matrix.yaml"
+)
+CLOSURE_PHASE4_EDITORIAL_MATRIX_CSV = Path(
+    "reports/thesis/chapter_iv_evidence_matrix.csv"
+)
+CLOSURE_PHASE4_EDITORIAL_MATRIX_MARKDOWN = Path(
+    "reports/thesis/chapter_iv_evidence_matrix.md"
+)
+CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST = Path(
+    "reports/thesis/chapter_iv_evidence_matrix_manifest.json"
+)
+CLOSURE_PHASE4_EDITORIAL_RECEIPT = Path(
+    "reports/thesis/phase4_manuscript_build_receipt.json"
+)
+CLOSURE_PHASE4_EDITORIAL_RECEIPT_MANIFEST = Path(
+    "reports/thesis/phase4_manuscript_build_receipt_manifest.json"
+)
+CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT = Path(
+    "tmp/closure_v1_phase4_editorial"
+)
+CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD = Path(
+    "tmp/closure_v1_phase4_editorial_precommit.guard"
+)
+CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD_PAYLOAD = (
+    b"closure-phase4-editorial-precommit-active\n"
+)
+CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS = (
+    CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT / "build_a",
+    CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT / "build_b",
+)
+CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES = frozenset(
+    f"mifal_ed_modelo_tesis_v5{suffix}"
+    for suffix in (".aux", ".fls", ".log", ".out", ".pdf", ".toc")
+)
+CLOSURE_PHASE4_EDITORIAL_VALIDATOR = Path(
+    "src/reporting/validate_phase4_manuscript.py"
+)
+CLOSURE_PHASE4_EDITORIAL_CLAIM_MATRIX = Path(
+    "reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv"
+)
+CLOSURE_PHASE4_EDITORIAL_R_SYN_MANIFEST = Path(
+    "reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json"
+)
+CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST_BYTES = 13_260
+CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST_SHA256 = (
+    "cba9245537531351381893d5d0d023e6650fe2c7802379f62f66e2f2a8c0fa69"
+)
+CLOSURE_PHASE4_EDITORIAL_RECEIPT_BYTES = 10_994
+CLOSURE_PHASE4_EDITORIAL_RECEIPT_SHA256 = (
+    "43dcaa514b3e1dc3bdcc155bcb3de65d2d187fb3bc6177374eee741a97c9dc70"
+)
+CLOSURE_PHASE4_EDITORIAL_VALIDATOR_BYTES = 45_123
+CLOSURE_PHASE4_EDITORIAL_VALIDATOR_SHA256 = (
+    "3d9851e4e42e647289dd60ef2eb0ed3a1b64ffc7e24909e4f1dbf834eba6b147"
+)
+CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS = MappingProxyType(
+    {
+        "doctoral_manuscript_tex": Path(
+            "private/mifal_ed_t2/mifal_ed_modelo_tesis_v5.tex"
+        ),
+        "doctoral_manuscript_pdf": Path(
+            "private/mifal_ed_t2/mifal_ed_modelo_tesis_v5.pdf"
+        ),
+        "doctoral_listing_mifal_ed_v5": Path(
+            "private/mifal_ed_t2/mifal_ed_v5.py"
+        ),
+        "doctoral_listing_mifal_ed_v5_demo": Path(
+            "private/mifal_ed_t2/demo_mifal_ed_v5.py"
+        ),
+        "doctoral_listing_mifal_ed_v5_test": Path(
+            "private/mifal_ed_t2/test_mifal_ed_v5.py"
+        ),
+    }
+)
+CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS = MappingProxyType(
+    {
+        f"closure_v1_figure_F{index:02d}_pdf": (
+            Path(
+                "reports/closure_v1/11_synthesis/THESIS_FIGURES"
+            )
+            / source_name,
+            Path("private/mifal_ed_t2/closure_v1_figures")
+            / source_name.replace(".svg", ".pdf"),
+        )
+        for index, source_name in enumerate(
+            (
+                "F01_intent_to_predict_funnel.svg",
+                "F02_benchmark_metrics.svg",
+                "F03_descriptive_deltas.svg",
+                "F04_threshold_sensitivity.svg",
+                "F05_trophic_heatmap.svg",
+                "F06_uncertainty_coverage.svg",
+                "F07_hypothesis_verdicts.svg",
+                "F08_provenance.svg",
+            ),
+            start=1,
+        )
+    }
+)
 CLOSURE_DEVELOPMENT_RUNTIME_LOCK_PATH = Path(
     "reports/closure_v1/00_protocol/development_runtime_lock.json"
 )
@@ -17668,6 +17795,2408 @@ def _run_closure_phase4_r_syn_precommit(
     )
 
 
+class ClosurePhase4EditorialPrecommitAdapterError(RuntimeError):
+    """Raised when the exact Phase 4 editorial publication drifts."""
+
+
+def _closure_phase4_editorial_expected_short_scope(
+    *, staged: bool
+) -> dict[str, str]:
+    return _expected_short_scope(
+        CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE,
+        staged=staged,
+    )
+
+
+def _require_closure_phase4_editorial_contract() -> None:
+    scope = CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    if (
+        CLOSURE_PHASE4_R_SYN_COMMIT
+        != "528dcb74a7c08b65f262901e4562a67b784db8c9"
+        or len(scope) != 12
+        or sum(value == "M" for value in scope.values()) != 8
+        or sum(value == "A" for value in scope.values()) != 4
+        or set(scope.values()) != {"A", "M"}
+        or set(CLOSURE_PHASE4_EDITORIAL_GIT_MODES) != set(scope)
+        or CLOSURE_PHASE4_EDITORIAL_GIT_MODES.get(
+            "src/data/prepare_commit_artifacts.py"
+        )
+        != "100755"
+        or any(
+            mode != "100644"
+            for path, mode in CLOSURE_PHASE4_EDITORIAL_GIT_MODES.items()
+            if path != "src/data/prepare_commit_artifacts.py"
+        )
+        or CLOSURE_PHASE4_EDITORIAL_MARKER_PATHS != frozenset(scope)
+        or set(CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS)
+        != {
+            "doctoral_manuscript_tex",
+            "doctoral_manuscript_pdf",
+            "doctoral_listing_mifal_ed_v5",
+            "doctoral_listing_mifal_ed_v5_demo",
+            "doctoral_listing_mifal_ed_v5_test",
+        }
+        or len(CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS) != 8
+        or CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+        != Path("tmp/closure_v1_phase4_editorial_precommit.guard")
+        or CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD.parts[
+            : len(CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT.parts)
+        ]
+        == CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT.parts
+        or CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD_PAYLOAD
+        != b"closure-phase4-editorial-precommit-active\n"
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial exact12 (8M+4A) contract drifted"
+        )
+
+
+def _require_closure_phase4_editorial_base(*, repo_root: Path) -> None:
+    """Bind the editorial parent to the exact published R-SYN commit."""
+
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    if head != CLOSURE_PHASE4_R_SYN_COMMIT:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial publication requires exact R-SYN "
+            "parent 528dcb7"
+        )
+    try:
+        parents = _closure_phase4_commit_parents(head, repo_root=repo_root)
+        if len(parents) != 1:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 R-SYN baseline must have exactly one "
+                "P-SYN parent"
+            )
+        p_commit = parents[0]
+        p_parents = _closure_phase4_commit_parents(
+            p_commit,
+            repo_root=repo_root,
+        )
+        if len(p_parents) != 1:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 P-SYN baseline must have exactly one H2 "
+                "parent"
+            )
+        h2_commit = p_parents[0]
+        _require_closure_phase4_h_syn_h1_history(repo_root=repo_root)
+        if (
+            _closure_phase4_commit_parents(
+                h2_commit,
+                repo_root=repo_root,
+            )
+            != (CLOSURE_PHASE4_H_SYN_H1_COMMIT,)
+            or _closure_phase4_commit_scope(
+                h2_commit,
+                repo_root=repo_root,
+            )
+            != CLOSURE_PHASE4_H_SYN_H2_STAGED_SCOPE
+            or _closure_phase4_commit_range_scope(
+                CLOSURE_PHASE4_SOURCE_COMMIT,
+                h2_commit,
+                repo_root=repo_root,
+            )
+            != CLOSURE_PHASE4_H_SYN_STAGED_SCOPE
+            or _closure_phase4_commit_scope(
+                p_commit,
+                repo_root=repo_root,
+            )
+            != CLOSURE_PHASE4_P_SYN_STAGED_SCOPE
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial baseline topology is not exact "
+                "source -> H1 -> H2 -> P-SYN -> R-SYN"
+            )
+        r_scope = _closure_phase4_r_syn_scope(repo_root=repo_root)
+        if _closure_phase4_commit_scope(head, repo_root=repo_root) != r_scope:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 R-SYN baseline commit scope is not exact24"
+            )
+        _require_closure_phase4_publication_refs(head, repo_root=repo_root)
+        _require_closure_phase4_live_remote(head, repo_root=repo_root)
+        _require_closure_phase4_r_syn_namespace_exact(
+            r_scope,
+            repo_root=repo_root,
+        )
+        _require_closure_phase4_coordination_absent(repo_root=repo_root)
+    except ClosurePhase4SynthesisPublicationAdapterError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(str(exc)) from exc
+
+    def tree_record(commit: str, raw_path: str, expected_mode: str) -> tuple[str, ...]:
+        fields = tuple(
+            _git_output(
+                repo_root, "ls-tree", commit, "--", raw_path
+            ).strip().split(maxsplit=3)
+        )
+        if (
+            len(fields) != 4
+            or fields[0] != expected_mode
+            or fields[1] != "blob"
+            or len(fields[2]) != 40
+            or fields[3] != raw_path
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial historical tree binding drifted: "
+                f"{commit}:{raw_path}"
+            )
+        return fields
+
+    def require_current(raw_path: str, expected: tuple[str, ...]) -> None:
+        index_fields = tuple(
+            _git_output(
+                repo_root, "ls-files", "-s", "--", raw_path
+            ).strip().split(maxsplit=3)
+        )
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if (
+            len(index_fields) != 4
+            or index_fields[0] != expected[0]
+            or index_fields[1] != expected[2]
+            or index_fields[2] != "0"
+            or index_fields[3] != raw_path
+            or worktree_oid != expected[2]
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial preserved index/worktree binding "
+                f"drifted: {raw_path}"
+            )
+
+    for raw_path, expected_mode in sorted(
+        CLOSURE_PHASE4_H_SYN_GIT_MODES.items()
+    ):
+        h2_tree = tree_record(h2_commit, raw_path, expected_mode)
+        p_tree = tree_record(p_commit, raw_path, expected_mode)
+        r_tree = tree_record(head, raw_path, expected_mode)
+        if h2_tree != p_tree or h2_tree != r_tree:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial H-SYN blob was not preserved "
+                f"through P/R: {raw_path}"
+            )
+        if raw_path not in CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE:
+            require_current(raw_path, r_tree)
+    for raw_path, expected_mode in sorted(
+        CLOSURE_PHASE4_P_SYN_GIT_MODES.items()
+    ):
+        p_tree = tree_record(p_commit, raw_path, expected_mode)
+        r_tree = tree_record(head, raw_path, expected_mode)
+        if p_tree != r_tree:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial P-SYN blob was not preserved "
+                f"through R: {raw_path}"
+            )
+        require_current(raw_path, r_tree)
+
+    for raw_path in sorted(r_scope):
+        tree_fields = tree_record(head, raw_path, "100644")
+        require_current(raw_path, tree_fields)
+
+
+def _require_closure_phase4_editorial_pre_index_bindings(
+    *, repo_root: Path
+) -> None:
+    for raw_path, status_code in sorted(
+        CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE.items()
+    ):
+        expected_mode = CLOSURE_PHASE4_EDITORIAL_GIT_MODES[raw_path]
+        tree = _git_output(
+            repo_root,
+            "ls-tree",
+            CLOSURE_PHASE4_R_SYN_COMMIT,
+            "--",
+            raw_path,
+        ).strip()
+        index = _git_output(
+            repo_root, "ls-files", "-s", "--", raw_path
+        ).strip()
+        worktree_oid = _git_output(
+            repo_root, "hash-object", "--no-filters", "--", raw_path
+        ).strip()
+        if len(worktree_oid) != 40:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Closure Phase 4 editorial worktree blob is invalid: {raw_path}"
+            )
+        if status_code == "A":
+            if tree or index:
+                raise ClosurePhase4EditorialPrecommitAdapterError(
+                    "Closure Phase 4 editorial addition already exists in "
+                    f"R-SYN or the index: {raw_path}"
+                )
+            continue
+        tree_fields = tree.split(maxsplit=3)
+        index_fields = index.split(maxsplit=3)
+        if (
+            len(tree_fields) != 4
+            or tree_fields[0] != expected_mode
+            or tree_fields[1] != "blob"
+            or len(tree_fields[2]) != 40
+            or tree_fields[3] != raw_path
+            or len(index_fields) != 4
+            or index_fields[0] != expected_mode
+            or index_fields[1] != tree_fields[2]
+            or index_fields[2] != "0"
+            or index_fields[3] != raw_path
+            or worktree_oid == tree_fields[2]
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial modified-file base/index/blob "
+                f"binding drifted: {raw_path}"
+            )
+
+
+def closure_phase4_editorial_pre_stage_scope(
+    status_output: str,
+    staged_status: str,
+    *,
+    repo_root: Path = Path("."),
+) -> bool:
+    """Recognize exact12 fully unstaged editorial work on published R-SYN."""
+
+    _require_closure_phase4_editorial_contract()
+    candidate = any(
+        marker in status_output or marker in staged_status
+        for marker in CLOSURE_PHASE4_EDITORIAL_MARKER_PATHS
+    )
+    if not candidate:
+        return False
+    head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
+    if head != CLOSURE_PHASE4_R_SYN_COMMIT:
+        unique_markers = CLOSURE_PHASE4_EDITORIAL_MARKER_PATHS - {
+            "src/data/prepare_commit_artifacts.py",
+            "tests/test_prepare_commit_artifacts.py",
+        }
+        if any(
+            marker in status_output or marker in staged_status
+            for marker in unique_markers
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial candidate is not based on exact "
+                "published R-SYN 528dcb7"
+            )
+        return False
+    try:
+        validate_anfis_ablation_git_short_status_map(
+            status_output,
+            expected=_closure_phase4_editorial_expected_short_scope(
+                staged=False
+            ),
+            context="Closure Phase 4 editorial pre-stage scope",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial candidate must be exact12 (8M+4A) "
+            "and fully unstaged"
+        ) from exc
+    if staged_status.strip():
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial pre-stage requires an empty Git index"
+        )
+    _require_closure_phase4_editorial_base(repo_root=repo_root)
+    _require_closure_phase4_editorial_pre_index_bindings(repo_root=repo_root)
+    return True
+
+
+def validate_closure_phase4_editorial_invocation(
+    args: Any,
+    *,
+    env: Mapping[str, str] | None = None,
+) -> None:
+    try:
+        validate_closure_phase4_h_syn_invocation(args, env=env)
+    except ClosurePhase4HSynPrecommitAdapterError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial precommit requires exact "
+            "--allow-unmanaged --no-push with no DVC target, push, dry-run, "
+            "custom path, or publication-check bypass"
+        ) from exc
+
+
+def _snapshot_closure_phase4_editorial_files(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    records: list[RegistrationFileIdentity] = []
+    try:
+        for raw_path in sorted(CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE):
+            identity = _registration_file_identity(
+                repo_root / raw_path,
+                repo_root=repo_root,
+                mode=int(CLOSURE_PHASE4_EDITORIAL_GIT_MODES[raw_path][-3:], 8),
+            )
+            if identity.nlink != 1:
+                raise ClosurePhase4EditorialPrecommitAdapterError(
+                    "Closure Phase 4 editorial path is not single-link: "
+                    f"{raw_path}"
+                )
+            records.append(identity)
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(str(exc)) from exc
+    if len(records) != 12:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial physical snapshot is not exact12"
+        )
+    return tuple(records)
+
+
+def _phase4_editorial_safe_public_path(
+    value: Any,
+    *,
+    context: str,
+) -> str:
+    if (
+        not isinstance(value, str)
+        or not value
+        or value != value.strip()
+        or "\\" in value
+        or "\x00" in value
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} must be a normalized repository-relative path"
+        )
+    path = PurePosixPath(value)
+    lowered_parts = tuple(part.lower() for part in path.parts)
+    if (
+        path.is_absolute()
+        or not path.parts
+        or path.as_posix() != value
+        or any(part in {"", ".", ".."} for part in path.parts)
+        or lowered_parts[0] in {"private", ".git", "tmp"}
+        or value.lower().endswith(".parquet")
+        or lowered_parts[:2] == ("data", "targets")
+        or any("outcome" in part for part in lowered_parts)
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} violates the Phase 4 no-private/no-outcome read boundary"
+        )
+    return path.as_posix()
+
+
+def _phase4_editorial_read_canonical_json(
+    path: Path,
+    *,
+    repo_root: Path,
+    context: str,
+) -> tuple[dict[str, Any], RegistrationFileIdentity, bytes]:
+    sink: list[bytes] = []
+    try:
+        identity = _registration_file_identity(
+            repo_root / path,
+            repo_root=repo_root,
+            mode=0o644,
+            _payload_sink=sink,
+        )
+        payload = json.loads(sink[0].decode("utf-8"))
+    except (
+        DeferredDvcTargetError,
+        UnicodeDecodeError,
+        ValueError,
+    ) as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} is not readable canonical JSON"
+        ) from exc
+    if not isinstance(payload, dict):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} must contain a JSON object"
+        )
+    canonical = (
+        json.dumps(
+            payload,
+            indent=2,
+            ensure_ascii=False,
+            sort_keys=True,
+            allow_nan=False,
+        )
+        + "\n"
+    ).encode("utf-8")
+    if sink != [canonical] or identity.nlink != 1:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} is not byte-canonical single-link JSON"
+        )
+    return payload, identity, canonical
+
+
+def _phase4_editorial_validate_file_record(
+    record: Any,
+    *,
+    repo_root: Path,
+    context: str,
+    expected_path: str | None = None,
+    expected_role: str | None = None,
+    allow_role: bool = True,
+) -> RegistrationFileIdentity:
+    if not isinstance(record, dict):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} must be a file record"
+        )
+    required = {"path", "bytes", "sha256"}
+    if expected_role is not None:
+        required.add("role")
+    allowed = required | ({"role"} if allow_role else set())
+    if set(record) != allowed:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} keys are not exact"
+        )
+    raw_path = _phase4_editorial_safe_public_path(
+        record.get("path"), context=f"{context}.path"
+    )
+    if expected_path is not None and raw_path != expected_path:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} path is not exact"
+        )
+    if expected_role is not None and record.get("role") != expected_role:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} role is not exact"
+        )
+    if "role" in record and (
+        not isinstance(record["role"], str) or not record["role"]
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} role must be non-empty text"
+        )
+    try:
+        identity = _registration_file_identity(
+            repo_root / raw_path,
+            repo_root=repo_root,
+            mode=0o644,
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(str(exc)) from exc
+    if (
+        identity.nlink != 1
+        or type(record.get("bytes")) is not int
+        or record["bytes"] != identity.size
+        or not isinstance(record.get("sha256"), str)
+        or record["sha256"] != identity.sha256
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"{context} bytes/SHA-256 do not bind the physical file"
+        )
+    return identity
+
+
+def _phase4_editorial_matrix_payloads(
+    *, repo_root: Path
+) -> tuple[dict[str, Any], tuple[RegistrationFileIdentity, ...]]:
+    manifest, identity, _raw = _phase4_editorial_read_canonical_json(
+        CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST,
+        repo_root=repo_root,
+        context="Phase 4 editorial evidence matrix manifest",
+    )
+    if (
+        identity.size != CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST_BYTES
+        or identity.sha256
+        != CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST_SHA256
+        or manifest.get("schema_version") != "thesis_evidence_matrix_v1"
+        or manifest.get("status") != "completed"
+        or manifest.get("closure_source_commit") != CLOSURE_PHASE4_SOURCE_COMMIT
+        or manifest.get("synthesis_publication_commit")
+        != CLOSURE_PHASE4_R_SYN_COMMIT
+        or manifest.get("row_counts")
+        != {"columns": 10, "evidence_rows": 32}
+        or not isinstance(manifest.get("inputs"), list)
+        or len(manifest["inputs"]) != 52
+        or not isinstance(manifest.get("outputs"), list)
+        or len(manifest["outputs"]) != 2
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial evidence matrix manifest is not exact "
+            "32 rows/10 columns/52 inputs/2 outputs"
+        )
+    records: list[RegistrationFileIdentity] = []
+    seen: set[str] = set()
+    for index, record in enumerate(manifest["inputs"]):
+        identity = _phase4_editorial_validate_file_record(
+            record,
+            repo_root=repo_root,
+            context=f"Phase 4 evidence matrix input {index}",
+        )
+        if identity.path in seen:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Phase 4 evidence matrix contains a duplicate input path"
+            )
+        seen.add(identity.path)
+        records.append(identity)
+    expected_outputs = (
+        (CLOSURE_PHASE4_EDITORIAL_MATRIX_CSV.as_posix(), "csv_matrix"),
+        (
+            CLOSURE_PHASE4_EDITORIAL_MATRIX_MARKDOWN.as_posix(),
+            "markdown_matrix",
+        ),
+    )
+    for index, (record, (raw_path, role)) in enumerate(
+        zip(manifest["outputs"], expected_outputs, strict=True)
+    ):
+        records.append(
+            _phase4_editorial_validate_file_record(
+                record,
+                repo_root=repo_root,
+                context=f"Phase 4 evidence matrix output {index}",
+                expected_path=raw_path,
+                expected_role=role,
+            )
+        )
+    records.append(
+        _phase4_editorial_validate_file_record(
+            manifest.get("script"),
+            repo_root=repo_root,
+            context="Phase 4 evidence matrix script",
+            expected_path="src/reporting/build_thesis_evidence_matrix.py",
+            allow_role=False,
+        )
+    )
+
+    csv_sink: list[bytes] = []
+    try:
+        _registration_file_identity(
+            repo_root / CLOSURE_PHASE4_EDITORIAL_MATRIX_CSV,
+            repo_root=repo_root,
+            mode=0o644,
+            _payload_sink=csv_sink,
+        )
+        rows = list(
+            csv.DictReader(io.StringIO(csv_sink[0].decode("utf-8")))
+        )
+    except (DeferredDvcTargetError, UnicodeDecodeError, csv.Error) as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial evidence CSV cannot be parsed"
+        ) from exc
+    expected_columns = (
+        "component",
+        "evidence tier",
+        "authority commit",
+        "dataset/freeze used",
+        "execution date",
+        "commit/hash",
+        "artifact",
+        "split",
+        "includes NLA",
+        "allowed conclusion",
+    )
+    final_components = {
+        "Closure V1 final adjudication matrix",
+        "Closure V1 approved thesis claim map",
+        "Closure V1 cohort and intent-to-predict accounting",
+        "Closure V1 E1 dual benchmark",
+        "Closure V1 E2 internal site transfer",
+        "Closure V1 E3 threshold sensitivity",
+        "Closure V1 E4 trophic references",
+        "Closure V1 E5 multiplicity ledger",
+        "Closure V1 E6 degradation and E9 planning availability",
+        "Closure V1 E7 ANFIS ablation and diagnostics",
+        "Closure V1 E8 uncertainty diagnostics",
+        "Closure V1 E10 software evidence",
+        "Closure V1 final report and hypothesis verdicts",
+    }
+    final_rows = [row for row in rows if row.get("evidence tier") == "closure_v1_final"]
+    historical_rows = [
+        row
+        for row in rows
+        if row.get("evidence tier") == "historical_or_infrastructure"
+    ]
+    if (
+        tuple(rows[0]) if rows else tuple()
+    ) != expected_columns or (
+        len(rows) != 32
+        or len(final_rows) != 13
+        or len(historical_rows) != 19
+        or {row.get("component") for row in final_rows} != final_components
+        or any(
+            row.get("authority commit") != CLOSURE_PHASE4_SOURCE_COMMIT
+            for row in final_rows
+        )
+        or any(
+            row.get("authority commit")
+            != "row-specific historical provenance; see commit/hash"
+            for row in historical_rows
+        )
+        or any(
+            not str(row.get("allowed conclusion", "")).startswith(
+                "Historical or infrastructure context only; not final "
+                "Closure V1 evidence. "
+            )
+            for row in historical_rows
+        )
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial evidence matrix semantic rows drifted"
+        )
+    return manifest, tuple(records)
+
+
+def _reconstruct_closure_phase4_editorial_matrix(
+    *, repo_root: Path
+) -> None:
+    """Rebuild all three deterministic matrix products outside the worktree."""
+
+    from src.reporting import build_thesis_evidence_matrix as builder
+
+    config_path = repo_root / CLOSURE_PHASE4_EDITORIAL_MATRIX_CONFIG
+    csv_path = repo_root / CLOSURE_PHASE4_EDITORIAL_MATRIX_CSV
+    markdown_path = repo_root / CLOSURE_PHASE4_EDITORIAL_MATRIX_MARKDOWN
+    manifest_path = repo_root / CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST
+    before = tuple(
+        _registration_file_identity(
+            path,
+            repo_root=repo_root,
+            mode=0o644,
+        )
+        for path in (config_path, csv_path, markdown_path, manifest_path)
+    )
+    try:
+        document = builder.load_config_document(config_path)
+        entries = document.get("entries")
+        if not isinstance(entries, list):
+            raise ValueError("entries must be a list")
+        for index, entry in enumerate(entries):
+            if not isinstance(entry, dict):
+                raise ValueError(f"entry {index} is not a mapping")
+            typed_entry = cast(dict[str, Any], entry)
+            for key in ("artifact", "manifest"):
+                value = typed_entry.get(key)
+                if value is None and key == "manifest":
+                    continue
+                _phase4_editorial_safe_public_path(
+                    value,
+                    context=f"Phase 4 matrix entry {index} {key}",
+                )
+        configured_inputs_raw = document.get("manifest_inputs")
+        if not isinstance(configured_inputs_raw, list):
+            raise ValueError("manifest_inputs must be a list")
+        for index, record in enumerate(configured_inputs_raw):
+            if not isinstance(record, dict):
+                raise ValueError(f"manifest input {index} is not a mapping")
+            typed_record = cast(dict[str, Any], record)
+            _phase4_editorial_safe_public_path(
+                typed_record.get("path"),
+                context=f"Phase 4 configured matrix input {index}",
+            )
+        closure_source = builder.require_document_text(
+            document, "closure_source_commit"
+        )
+        synthesis_commit = builder.require_document_text(
+            document, "synthesis_publication_commit"
+        )
+        if (
+            closure_source != CLOSURE_PHASE4_SOURCE_COMMIT
+            or synthesis_commit != CLOSURE_PHASE4_R_SYN_COMMIT
+        ):
+            raise ValueError("matrix authorities drifted")
+        rows = builder.build_rows(
+            entries,
+            root=repo_root,
+            default_evidence_tier=builder.require_document_text(
+                document, "default_evidence_tier"
+            ),
+            default_authority_commit=builder.require_document_text(
+                document, "default_authority_commit"
+            ),
+        )
+        configured_inputs = builder.manifest_inputs(document, root=repo_root)
+        all_inputs = builder.evidence_inputs(
+            entries,
+            root=repo_root,
+            configured_inputs=configured_inputs,
+        )
+        if len(rows) != 32 or len(all_inputs) != 51:
+            # The config itself is prepended by write_manifest: 51 + 1 = 52.
+            raise ValueError("matrix reconstruction cardinality drifted")
+        with tempfile.TemporaryDirectory(
+            prefix="closure-phase4-editorial-matrix-"
+        ) as temporary:
+            temporary_root = Path(temporary)
+            rebuilt_csv = temporary_root / "matrix.csv"
+            rebuilt_markdown = temporary_root / "matrix.md"
+            rebuilt_manifest = temporary_root / "manifest.json"
+            builder.write_csv(rows, rebuilt_csv)
+            builder.write_markdown(
+                rows,
+                rebuilt_markdown,
+                config_path=CLOSURE_PHASE4_EDITORIAL_MATRIX_CONFIG,
+                closure_source_commit=closure_source,
+                synthesis_publication_commit=synthesis_commit,
+            )
+            builder.write_manifest(
+                path=rebuilt_manifest,
+                root=repo_root,
+                config_path=config_path,
+                csv_path=csv_path,
+                markdown_path=markdown_path,
+                row_count=len(rows),
+                generated_at_utc=builder.require_document_text(
+                    document, "generated_at_utc"
+                ),
+                report_version=builder.require_document_text(
+                    document, "report_version"
+                ),
+                closure_source_commit=closure_source,
+                synthesis_publication_commit=synthesis_commit,
+                additional_inputs=all_inputs,
+            )
+            for rebuilt, published in (
+                (rebuilt_csv, csv_path),
+                (rebuilt_markdown, markdown_path),
+                (rebuilt_manifest, manifest_path),
+            ):
+                if rebuilt.read_bytes() != published.read_bytes():
+                    raise ValueError(
+                        f"reconstructed output differs: {published}"
+                    )
+    except (OSError, UnicodeDecodeError, ValueError, yaml.YAMLError) as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 editorial matrix reconstruction failed: {exc}"
+        ) from exc
+    after = tuple(
+        _registration_file_identity(
+            path,
+            repo_root=repo_root,
+            mode=0o644,
+        )
+        for path in (config_path, csv_path, markdown_path, manifest_path)
+    )
+    if after != before:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial matrix files changed during reconstruction"
+        )
+
+
+def _phase4_editorial_require_ignored_untracked(
+    path: Path,
+    *,
+    repo_root: Path,
+) -> None:
+    raw_path = path.as_posix()
+    try:
+        ignored = run_command(
+            [
+                "git",
+                "-C",
+                repo_root.as_posix(),
+                "check-ignore",
+                "--",
+                raw_path,
+            ],
+            check=False,
+        )
+        tracked = _git_output(repo_root, "ls-files", "--", raw_path).strip()
+    except BaseException as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 ignored/untracked check failed: {raw_path}"
+        ) from exc
+    if (
+        ignored.returncode != 0
+        or ignored.stderr
+        or ignored.stdout.strip() != raw_path
+        or tracked
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 private build input must remain exactly ignored and "
+            f"untracked: {raw_path}"
+        )
+
+
+def _phase4_editorial_private_identity(
+    path: Path,
+    *,
+    repo_root: Path,
+) -> RegistrationFileIdentity:
+    try:
+        identity = _registration_file_identity(
+            repo_root / path,
+            repo_root=repo_root,
+            mode=0o644,
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(str(exc)) from exc
+    if identity.nlink != 1:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 private build input is not single-link: {path}"
+        )
+    _phase4_editorial_require_ignored_untracked(path, repo_root=repo_root)
+    return identity
+
+
+def _snapshot_closure_phase4_editorial_build_evidence(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Bind two ignored exact-six independent LaTeX build directories."""
+
+    root = repo_root / CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT
+    try:
+        _require_no_symlink_ancestors(root / "sentinel", anchor=repo_root)
+        root_metadata = root.lstat()
+        if not stat.S_ISDIR(root_metadata.st_mode):
+            raise OSError("build evidence root is not a directory")
+        root_entries = {entry.name for entry in root.iterdir()}
+    except (DeferredDvcTargetError, OSError) as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial build-evidence root is absent or unsafe"
+        ) from exc
+    if root_entries != {"build_a", "build_b"}:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial build-evidence root must contain exact build_a/build_b"
+        )
+    _phase4_editorial_require_ignored_untracked(
+        CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT,
+        repo_root=repo_root,
+    )
+    records: list[RegistrationFileIdentity] = []
+    for relative_directory in CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS:
+        directory = repo_root / relative_directory
+        try:
+            metadata = directory.lstat()
+            if not stat.S_ISDIR(metadata.st_mode):
+                raise OSError("build evidence child is not a directory")
+            entries = {entry.name for entry in directory.iterdir()}
+        except OSError as exc:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 editorial build directory is unsafe: {relative_directory}"
+            ) from exc
+        if entries != CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Phase 4 editorial build directory does not contain exact six: "
+                f"{relative_directory}"
+            )
+        _phase4_editorial_require_ignored_untracked(
+            relative_directory,
+            repo_root=repo_root,
+        )
+        for filename in sorted(CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES):
+            relative = relative_directory / filename
+            records.append(
+                _phase4_editorial_private_identity(
+                    relative,
+                    repo_root=repo_root,
+                )
+            )
+    if len(records) != 12:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial build evidence is not exact12 files"
+        )
+    return tuple(records)
+
+
+def _phase4_editorial_pdf_metadata(
+    path: Path,
+    *,
+    repo_root: Path,
+) -> tuple[int, str]:
+    try:
+        result = run_command(
+            ["pdfinfo", (repo_root / path).as_posix()],
+            check=False,
+        )
+    except BaseException as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript PDF metadata tool could not run"
+        ) from exc
+    if result.returncode != 0 or result.stderr:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript PDF metadata cannot be verified"
+        )
+    pages_match = re.search(r"(?m)^Pages:\s+(\d+)\s*$", result.stdout)
+    version_match = re.search(
+        r"(?m)^PDF version:\s+([^\s]+)\s*$", result.stdout
+    )
+    if pages_match is None or version_match is None:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript PDF metadata is incomplete"
+        )
+    return int(pages_match.group(1)), version_match.group(1)
+
+
+def _validate_closure_phase4_editorial_receipt(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    receipt, receipt_identity, receipt_raw = (
+        _phase4_editorial_read_canonical_json(
+            CLOSURE_PHASE4_EDITORIAL_RECEIPT,
+            repo_root=repo_root,
+            context="Phase 4 manuscript build receipt",
+        )
+    )
+    if (
+        receipt_identity.size != CLOSURE_PHASE4_EDITORIAL_RECEIPT_BYTES
+        or receipt_identity.sha256 != CLOSURE_PHASE4_EDITORIAL_RECEIPT_SHA256
+        or set(receipt)
+        != {
+            "authorities",
+            "declared_build_parameters",
+            "figure_bindings",
+            "private_bindings",
+            "schema_version",
+            "status",
+            "validated_build_evidence",
+            "validation",
+        }
+        or receipt.get("schema_version")
+        != "phase4_manuscript_build_receipt_v1"
+        or receipt.get("status") != "completed"
+        or b"private/mifal_ed_t2/" in receipt_raw
+        or b"/home/" in receipt_raw
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript receipt schema or path-redaction boundary drifted"
+        )
+    authorities = receipt.get("authorities")
+    if (
+        not isinstance(authorities, dict)
+        or set(authorities)
+        != {
+            "closure_source_commit",
+            "editorial_evidence_matrix_manifest",
+            "r_syn_commit",
+            "r_syn_manifest",
+        }
+        or authorities.get("closure_source_commit")
+        != CLOSURE_PHASE4_SOURCE_COMMIT
+        or authorities.get("r_syn_commit") != CLOSURE_PHASE4_R_SYN_COMMIT
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript receipt authority commits drifted"
+        )
+    identities = [
+        _phase4_editorial_validate_file_record(
+            authorities.get("editorial_evidence_matrix_manifest"),
+            repo_root=repo_root,
+            context="Phase 4 receipt evidence matrix authority",
+            expected_path=CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST.as_posix(),
+            allow_role=False,
+        ),
+        _phase4_editorial_validate_file_record(
+            authorities.get("r_syn_manifest"),
+            repo_root=repo_root,
+            context="Phase 4 receipt R-SYN authority",
+            expected_path=CLOSURE_PHASE4_EDITORIAL_R_SYN_MANIFEST.as_posix(),
+            allow_role=False,
+        ),
+    ]
+    build = receipt.get("declared_build_parameters")
+    expected_command = [
+        "pdflatex",
+        "-interaction=nonstopmode",
+        "-halt-on-error",
+        "-file-line-error",
+        "-no-shell-escape",
+        "-recorder",
+        "-output-directory=/build",
+        "mifal_ed_modelo_tesis_v5.tex",
+    ]
+    expected_environment = {
+        "FORCE_SOURCE_DATE": "1",
+        "LC_ALL": "C.UTF-8",
+        "SOURCE_DATE_EPOCH": "1787234099",
+        "TZ": "UTC",
+    }
+    expected_converter = {
+        "cairo_version": "1.18.4",
+        "fontconfig_version": "2.18.3",
+        "harfbuzz_version": "14.3.1",
+        "pango_version": "1.58.2",
+        "rsvg_convert_version": "2.62.3",
+    }
+    if (
+        not isinstance(build, dict)
+        or set(build)
+        != {
+            "compile_command",
+            "environment",
+            "figure_converter",
+            "independent_build_count",
+            "network",
+            "pdftex_version",
+            "repository_mount",
+            "shell_escape",
+            "tex_image",
+            "tex_passes_per_build",
+        }
+        or build.get("compile_command") != expected_command
+        or build.get("environment") != expected_environment
+        or build.get("figure_converter") != expected_converter
+        or build.get("independent_build_count") != 2
+        or build.get("tex_passes_per_build") != 3
+        or build.get("network") != "none"
+        or build.get("repository_mount") != "read_only"
+        or build.get("shell_escape") is not False
+        or build.get("tex_image")
+        != "texlive/texlive@sha256:"
+        "e2d3223f90be0c824a082f431d862e3341ba32a8eba541e1425b65bc7d4053a7"
+        or build.get("pdftex_version")
+        != "3.141592653-2.6-1.40.29 (TeX Live 2026)"
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript declared toolchain/build contract drifted"
+        )
+
+    build_evidence_before = (
+        _snapshot_closure_phase4_editorial_build_evidence(
+            repo_root=repo_root
+        )
+    )
+    validated_build_evidence = receipt.get("validated_build_evidence")
+    if (
+        not isinstance(validated_build_evidence, dict)
+        or set(validated_build_evidence)
+        != {
+            "build_a",
+            "build_b",
+            "expected_output_file_count",
+            "pdf_byte_identical",
+        }
+        or validated_build_evidence.get("expected_output_file_count") != 6
+        or validated_build_evidence.get("pdf_byte_identical") is not True
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript validated build evidence structure drifted"
+        )
+
+    private_records = receipt.get("private_bindings")
+    if not isinstance(private_records, list) or len(private_records) != 5:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript receipt must bind exactly five private files"
+        )
+    observed_private_ids: set[str] = set()
+    private_identities: dict[str, RegistrationFileIdentity] = {}
+    for record in private_records:
+        if not isinstance(record, dict) or "path" in record:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Phase 4 private receipt bindings must not serialize paths"
+            )
+        logical_id = record.get("logical_id")
+        if (
+            not isinstance(logical_id, str)
+            or logical_id not in CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS
+            or logical_id in observed_private_ids
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Phase 4 private receipt logical IDs are not exact"
+            )
+        expected_keys = {
+            "bytes",
+            "content_embedded",
+            "filesystem_mode",
+            "git_ignored",
+            "git_tracked",
+            "logical_id",
+            "regular_file",
+            "sha256",
+            "single_link",
+        }
+        if logical_id == "doctoral_manuscript_pdf":
+            expected_keys |= {
+                "creation_date_utc",
+                "pages",
+                "pdf_version",
+            }
+        if (
+            set(record) != expected_keys
+            or record.get("content_embedded") is not False
+            or record.get("filesystem_mode") != "0644"
+            or record.get("git_ignored") is not True
+            or record.get("git_tracked") is not False
+            or record.get("regular_file") is not True
+            or record.get("single_link") is not True
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 private receipt record drifted: {logical_id}"
+            )
+        identity = _phase4_editorial_private_identity(
+            CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS[logical_id],
+            repo_root=repo_root,
+        )
+        if (
+            type(record.get("bytes")) is not int
+            or record["bytes"] != identity.size
+            or record.get("sha256") != identity.sha256
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 private receipt hash/bytes drifted: {logical_id}"
+            )
+        observed_private_ids.add(logical_id)
+        private_identities[logical_id] = identity
+    if observed_private_ids != set(CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 private receipt binding set is incomplete"
+        )
+    pdf_record = next(
+        record
+        for record in private_records
+        if record["logical_id"] == "doctoral_manuscript_pdf"
+    )
+    pages, pdf_version = _phase4_editorial_pdf_metadata(
+        CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS[
+            "doctoral_manuscript_pdf"
+        ],
+        repo_root=repo_root,
+    )
+    if (
+        pages != 80
+        or pdf_record.get("pages") != 80
+        or pdf_record.get("pdf_version") != pdf_version
+        or pdf_version != "1.7"
+        or not isinstance(pdf_record.get("creation_date_utc"), str)
+        or not re.fullmatch(
+            r"2026-08-20T\d{2}:\d{2}:\d{2}Z",
+            cast(str, pdf_record.get("creation_date_utc")),
+        )
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript PDF must be the bound 80-page PDF 1.7 build"
+        )
+
+    figure_records = receipt.get("figure_bindings")
+    if not isinstance(figure_records, list) or len(figure_records) != 8:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript receipt must bind exactly eight figures"
+        )
+    observed_figure_ids: set[str] = set()
+    for index, binding in enumerate(figure_records, start=1):
+        if not isinstance(binding, dict) or set(binding) != {
+            "derived_pdf",
+            "source_svg",
+        }:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 figure binding {index} is malformed"
+            )
+        typed_binding = cast(dict[str, Any], binding)
+        derived = typed_binding.get("derived_pdf")
+        if not isinstance(derived, dict) or set(derived) != {
+            "bytes",
+            "content_embedded",
+            "logical_id",
+            "sha256",
+        }:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 derived figure binding {index} is malformed"
+            )
+        logical_id = derived.get("logical_id")
+        if (
+            not isinstance(logical_id, str)
+            or logical_id not in CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS
+            or logical_id in observed_figure_ids
+            or derived.get("content_embedded") is not False
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 derived figure logical ID {index} drifted"
+            )
+        source_path, derived_path = CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS[
+            logical_id
+        ]
+        identities.append(
+            _phase4_editorial_validate_file_record(
+                typed_binding.get("source_svg"),
+                repo_root=repo_root,
+                context=f"Phase 4 source figure {index}",
+                expected_path=source_path.as_posix(),
+                allow_role=False,
+            )
+        )
+        derived_identity = _phase4_editorial_private_identity(
+            derived_path,
+            repo_root=repo_root,
+        )
+        if (
+            type(derived.get("bytes")) is not int
+            or derived["bytes"] != derived_identity.size
+            or derived.get("sha256") != derived_identity.sha256
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 derived figure hash/bytes drifted: {logical_id}"
+            )
+        identities.append(derived_identity)
+        observed_figure_ids.add(logical_id)
+    if observed_figure_ids != set(CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript figure binding set is incomplete"
+        )
+
+    validation = receipt.get("validation")
+    expected_holm = {"A": 3, "B": 78, "C": 1, "D": 9, "E": 1}
+    expected_input_breakdown = {
+        "csv": 45,
+        "dvc": 4,
+        "json": 33,
+        "total": 83,
+        "yaml": 1,
+    }
+    if (
+        not isinstance(validation, dict)
+        or validation.get("status") != "validated"
+        or validation.get("writes_performed") is not False
+        or validation.get("claim_id_count") != 20
+        or validation.get("figure_count") != 8
+        or validation.get("holm_universes") != expected_holm
+        or validation.get("input_breakdown") != expected_input_breakdown
+        or validation.get("latex_errors") != 0
+        or validation.get("latex_overfull_boxes") != 0
+        or validation.get("latex_undefined_citations") != 0
+        or validation.get("latex_undefined_references") != 0
+        or validation.get("artifact_references")
+        != {"claim_matrix_unique": 15, "manuscript_unique": 49}
+        or validation.get("division_ids")
+        != ["Abstract", "Conclusion", "III", "IV", "Summary", "V"]
+        or validation.get("fls_derived_figure_count") != 8
+        or validation.get("fls_private_input_ids")
+        != [
+            "doctoral_listing_mifal_ed_v5",
+            "doctoral_listing_mifal_ed_v5_demo",
+            "doctoral_listing_mifal_ed_v5_test",
+            "doctoral_manuscript_tex",
+        ]
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript validation receipt drifted"
+        )
+    claim_identity = _phase4_editorial_validate_file_record(
+                validation.get("claim_matrix"),
+                repo_root=repo_root,
+                context="Phase 4 receipt claim matrix",
+                expected_path=CLOSURE_PHASE4_EDITORIAL_CLAIM_MATRIX.as_posix(),
+                allow_role=False,
+            )
+    validator_identity = _phase4_editorial_validate_file_record(
+                validation.get("manuscript_validator"),
+                repo_root=repo_root,
+                context="Phase 4 receipt manuscript validator",
+                expected_path=CLOSURE_PHASE4_EDITORIAL_VALIDATOR.as_posix(),
+                allow_role=False,
+            )
+    if (
+        validator_identity.size != CLOSURE_PHASE4_EDITORIAL_VALIDATOR_BYTES
+        or validator_identity.sha256
+        != CLOSURE_PHASE4_EDITORIAL_VALIDATOR_SHA256
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript validator final identity drifted"
+        )
+    identities.extend((claim_identity, validator_identity))
+
+    command = [
+        sys.executable,
+        (repo_root / CLOSURE_PHASE4_EDITORIAL_VALIDATOR).as_posix(),
+        "--tex",
+        (
+            repo_root
+            / CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS[
+                "doctoral_manuscript_tex"
+            ]
+        ).as_posix(),
+        "--claim-matrix",
+        (repo_root / CLOSURE_PHASE4_EDITORIAL_CLAIM_MATRIX).as_posix(),
+        "--repo-root",
+        repo_root.resolve().as_posix(),
+        "--pdf",
+        (
+            repo_root
+            / CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS[
+                "doctoral_manuscript_pdf"
+            ]
+        ).as_posix(),
+        "--build-dir-a",
+        (repo_root / CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS[0]).as_posix(),
+        "--build-dir-b",
+        (repo_root / CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS[1]).as_posix(),
+    ]
+    try:
+        cli = run_command(command, check=False)
+    except BaseException as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript validator CLI could not run"
+        ) from exc
+    try:
+        cli_payload = json.loads(cli.stdout)
+    except (UnicodeDecodeError, ValueError) as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript validator CLI did not return JSON"
+        ) from exc
+    expected_pdf_identity = private_identities["doctoral_manuscript_pdf"]
+    cli_claim_ids = (
+        cli_payload.get("claim_ids") if isinstance(cli_payload, dict) else None
+    )
+    cli_claim_occurrences = (
+        cli_payload.get("claim_occurrences")
+        if isinstance(cli_payload, dict)
+        else None
+    )
+    cli_figures = (
+        cli_payload.get("figures") if isinstance(cli_payload, dict) else None
+    )
+    if (
+        cli.returncode != 0
+        or cli.stderr
+        or not isinstance(cli_payload, dict)
+        or cli_payload.get("status") != "validated"
+        or cli_payload.get("writes_performed") is not False
+        or cli_payload.get("closure_source_commit")
+        != CLOSURE_PHASE4_SOURCE_COMMIT
+        or cli_payload.get("r_syn_commit") != CLOSURE_PHASE4_R_SYN_COMMIT[:7]
+        or cli_payload.get("holm_universes") != expected_holm
+        or cli_payload.get("input_breakdown") != expected_input_breakdown
+        or cli_payload.get("pdf")
+        != {
+            "bytes": expected_pdf_identity.size,
+            "sha256": expected_pdf_identity.sha256,
+        }
+        or not isinstance(cli_claim_ids, list)
+        or len(cli_claim_ids) != 20
+        or not isinstance(cli_claim_occurrences, dict)
+        or set(cli_claim_occurrences.values()) != {1}
+        or not isinstance(cli_figures, list)
+        or len(cli_figures) != 8
+        or cli_payload.get("artifact_references")
+        != validation.get("artifact_references")
+        or cli_payload.get("references") != validation.get("reference_counts")
+        or cli_payload.get("environment_count")
+        != validation.get("environment_count")
+        or cli_payload.get("divisions") != validation.get("division_ids")
+        or cli_payload.get("build_evidence") != validated_build_evidence
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript validator CLI did not reproduce the receipt"
+        )
+    build_evidence_after = _snapshot_closure_phase4_editorial_build_evidence(
+        repo_root=repo_root
+    )
+    if build_evidence_after != build_evidence_before:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript build evidence changed during validation"
+        )
+    return (
+        tuple(identities)
+        + tuple(private_identities.values())
+        + build_evidence_before
+    )
+
+
+def _validate_closure_phase4_editorial_receipt_manifest(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    payload, _identity, _raw = _phase4_editorial_read_canonical_json(
+        CLOSURE_PHASE4_EDITORIAL_RECEIPT_MANIFEST,
+        repo_root=repo_root,
+        context="Phase 4 manuscript receipt companion",
+    )
+    if (
+        set(payload)
+        != {
+            "generated_at_utc",
+            "inputs",
+            "manifest_version",
+            "outputs",
+            "script",
+            "script_role",
+            "status",
+        }
+        or payload.get("manifest_version")
+        != "phase4_manuscript_build_receipt_manifest_v1"
+        or payload.get("status") != "completed"
+        or payload.get("script_role") != "receipt_validator"
+        or payload.get("generated_at_utc")
+        != "2026-08-20T13:54:59+00:00"
+        or not isinstance(payload.get("inputs"), list)
+        or len(payload["inputs"]) != 3
+        or not isinstance(payload.get("outputs"), list)
+        or len(payload["outputs"]) != 1
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript receipt companion structure drifted"
+        )
+    expected_inputs = {
+        CLOSURE_PHASE4_EDITORIAL_R_SYN_MANIFEST.as_posix(): (
+            "published_r_syn_manifest"
+        ),
+        CLOSURE_PHASE4_EDITORIAL_CLAIM_MATRIX.as_posix(): (
+            "approved_thesis_claim_matrix"
+        ),
+        CLOSURE_PHASE4_EDITORIAL_MATRIX_MANIFEST.as_posix(): (
+            "editorial_evidence_matrix_manifest"
+        ),
+    }
+    identities: list[RegistrationFileIdentity] = []
+    observed_inputs: set[str] = set()
+    for index, record in enumerate(payload["inputs"]):
+        identity = _phase4_editorial_validate_file_record(
+            record,
+            repo_root=repo_root,
+            context=f"Phase 4 receipt companion input {index}",
+        )
+        typed_record = cast(dict[str, Any], record)
+        if typed_record.get("role") != expected_inputs.get(identity.path):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Phase 4 receipt companion input role drifted"
+            )
+        observed_inputs.add(identity.path)
+        identities.append(identity)
+    if observed_inputs != set(expected_inputs) or len(observed_inputs) != 3:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 manuscript receipt companion inputs are not exact3"
+        )
+    identities.append(
+        _phase4_editorial_validate_file_record(
+            payload["outputs"][0],
+            repo_root=repo_root,
+            context="Phase 4 receipt companion output",
+            expected_path=CLOSURE_PHASE4_EDITORIAL_RECEIPT.as_posix(),
+            expected_role="manuscript_build_receipt",
+        )
+    )
+    identities.append(
+        _phase4_editorial_validate_file_record(
+            payload.get("script"),
+            repo_root=repo_root,
+            context="Phase 4 receipt companion script",
+            expected_path=CLOSURE_PHASE4_EDITORIAL_VALIDATOR.as_posix(),
+            allow_role=False,
+        )
+    )
+    return tuple(identities)
+
+
+def _validate_closure_phase4_editorial_payload(
+    *, repo_root: Path
+) -> tuple[RegistrationFileIdentity, ...]:
+    physical = _snapshot_closure_phase4_editorial_files(repo_root=repo_root)
+    _matrix, matrix_identities = _phase4_editorial_matrix_payloads(
+        repo_root=repo_root
+    )
+    _reconstruct_closure_phase4_editorial_matrix(repo_root=repo_root)
+    receipt_identities = _validate_closure_phase4_editorial_receipt(
+        repo_root=repo_root
+    )
+    companion_identities = (
+        _validate_closure_phase4_editorial_receipt_manifest(
+            repo_root=repo_root
+        )
+    )
+    comprehensive = _canonicalize_closure_phase4_editorial_snapshot(
+        physical,
+        matrix_identities,
+        receipt_identities,
+        companion_identities,
+    )
+    return _recapture_closure_phase4_editorial_snapshot(
+        comprehensive,
+        repo_root=repo_root,
+        context="semantic payload validation",
+    )
+
+
+def _canonicalize_closure_phase4_editorial_snapshot(
+    *groups: tuple[RegistrationFileIdentity, ...],
+) -> tuple[RegistrationFileIdentity, ...]:
+    by_path: dict[str, RegistrationFileIdentity] = {}
+    for group in groups:
+        for identity in group:
+            previous = by_path.get(identity.path)
+            if previous is not None and previous != identity:
+                raise ClosurePhase4EditorialPrecommitAdapterError(
+                    "Phase 4 editorial bound file changed between semantic "
+                    f"reads: {identity.path}"
+                )
+            by_path[identity.path] = identity
+
+    private_paths = {
+        path.as_posix()
+        for path in CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS.values()
+    }
+    figure_paths = {
+        path.as_posix()
+        for binding in CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS.values()
+        for path in binding
+    }
+    build_paths = {
+        (directory / filename).as_posix()
+        for directory in CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS
+        for filename in CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES
+    }
+    required_paths = (
+        set(CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE)
+        | private_paths
+        | figure_paths
+        | build_paths
+    )
+    observed_build_paths = {
+        raw_path
+        for raw_path in by_path
+        if PurePosixPath(raw_path).parts[
+            : len(CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT.parts)
+        ]
+        == CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT.parts
+    }
+    if (
+        not required_paths.issubset(by_path)
+        or observed_build_paths != build_paths
+    ):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial comprehensive snapshot does not bind all "
+            "public/private/figure files and the exact build_a/build_b namespace"
+        )
+    return tuple(by_path[path] for path in sorted(by_path))
+
+
+def _closure_phase4_editorial_exact12_from_snapshot(
+    snapshot: tuple[RegistrationFileIdentity, ...],
+) -> tuple[RegistrationFileIdentity, ...]:
+    physical = tuple(
+        identity
+        for identity in snapshot
+        if identity.path in CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    )
+    if len(physical) != 12:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Phase 4 editorial comprehensive snapshot has no exact12 projection"
+        )
+    return physical
+
+
+def _recapture_closure_phase4_editorial_snapshot(
+    expected: tuple[RegistrationFileIdentity, ...],
+    *,
+    repo_root: Path,
+    context: str,
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Recapture every bound file without rerunning semantic CLIs or remotes."""
+
+    build_evidence_before = _snapshot_closure_phase4_editorial_build_evidence(
+        repo_root=repo_root
+    )
+    build_before_by_path = {
+        identity.path: identity for identity in build_evidence_before
+    }
+    expected_by_path = {identity.path: identity for identity in expected}
+    if len(expected_by_path) != len(expected):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 editorial {context} expected duplicate bound paths"
+        )
+    exact_build_paths = {
+        (directory / filename).as_posix()
+        for directory in CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS
+        for filename in CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES
+    }
+    if set(build_before_by_path) != exact_build_paths:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 editorial {context} build namespace is not exact"
+        )
+    private_paths = {
+        path.as_posix()
+        for path in CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS.values()
+    } | {
+        derived.as_posix()
+        for _source, derived in CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS.values()
+    }
+    recaptured_by_path: dict[str, RegistrationFileIdentity] = {}
+    try:
+        for expected_identity in expected:
+            raw_path = expected_identity.path
+            relative = PurePosixPath(raw_path)
+            if (
+                relative.is_absolute()
+                or relative.as_posix() != raw_path
+                or any(part in {"", ".", ".."} for part in relative.parts)
+            ):
+                raise ClosurePhase4EditorialPrecommitAdapterError(
+                    f"Phase 4 editorial {context} contains an unsafe bound path"
+                )
+            if raw_path in build_before_by_path:
+                continue
+            elif raw_path in private_paths:
+                identity = _phase4_editorial_private_identity(
+                    Path(*relative.parts),
+                    repo_root=repo_root,
+                )
+            else:
+                identity = _registration_file_identity(
+                    repo_root / Path(*relative.parts),
+                    repo_root=repo_root,
+                    mode=expected_identity.mode,
+                )
+                if identity.nlink != 1:
+                    raise ClosurePhase4EditorialPrecommitAdapterError(
+                        "Phase 4 editorial public bound file is not single-link: "
+                        f"{raw_path}"
+                    )
+            recaptured_by_path[raw_path] = identity
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(str(exc)) from exc
+    build_evidence_after = _snapshot_closure_phase4_editorial_build_evidence(
+        repo_root=repo_root
+    )
+    if build_evidence_after != build_evidence_before:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 editorial {context} build namespace changed during recapture"
+        )
+    build_after_by_path = {
+        identity.path: identity for identity in build_evidence_after
+    }
+    observed_records: list[RegistrationFileIdentity] = []
+    for identity in expected:
+        observed_identity = build_after_by_path.get(identity.path)
+        if observed_identity is None:
+            observed_identity = recaptured_by_path.get(identity.path)
+        if observed_identity is None:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                f"Phase 4 editorial {context} omitted a bound identity"
+            )
+        observed_records.append(observed_identity)
+    observed = tuple(observed_records)
+    if observed != expected:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Phase 4 editorial {context} comprehensive evidence snapshot drifted"
+        )
+    return observed
+
+
+def _validate_closure_phase4_editorial_index_bindings(
+    physical: tuple[RegistrationFileIdentity, ...],
+    *,
+    repo_root: Path,
+) -> None:
+    if len(physical) != 12:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial staged identity set is not exact12"
+        )
+    ordered_paths = tuple(identity.path for identity in physical)
+    if set(ordered_paths) != set(CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE):
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial staged identities do not cover exact12"
+        )
+    index_by_path: dict[str, list[str]] = {}
+    for line in _git_output(
+        repo_root,
+        "ls-files",
+        "-s",
+        "--",
+        *ordered_paths,
+    ).splitlines():
+        fields = line.split(maxsplit=3)
+        if len(fields) != 4 or fields[3] in index_by_path:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial staged index inventory drifted"
+            )
+        index_by_path[fields[3]] = fields
+    worktree_oids = _git_output(
+        repo_root,
+        "hash-object",
+        "--no-filters",
+        "--",
+        *ordered_paths,
+    ).splitlines()
+    if len(worktree_oids) != 12:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial worktree blob inventory drifted"
+        )
+    for identity, worktree_oid in zip(
+        physical,
+        worktree_oids,
+        strict=True,
+    ):
+        raw_path = identity.path
+        fields = index_by_path.get(raw_path, [])
+        if (
+            len(fields) != 4
+            or fields[0] != CLOSURE_PHASE4_EDITORIAL_GIT_MODES[raw_path]
+            or fields[1] != worktree_oid
+            or len(worktree_oid) != 40
+            or fields[2] != "0"
+            or fields[3] != raw_path
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial staged mode/blob binding drifted: "
+                f"{raw_path}"
+            )
+
+
+def _require_closure_phase4_editorial_exact_staged_git_state(
+    *,
+    repo_root: Path,
+    context: str,
+) -> None:
+    try:
+        validate_anfis_ablation_git_name_status_map(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            ),
+            expected=CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE,
+            context=f"Closure Phase 4 editorial {context} staged scope",
+        )
+        validate_anfis_ablation_git_short_status_map(
+            _git_output(
+                repo_root, "status", "--short", "--untracked-files=all"
+            ),
+            expected=_closure_phase4_editorial_expected_short_scope(
+                staged=True
+            ),
+            context=f"Closure Phase 4 editorial {context} workspace",
+        )
+    except DeferredDvcTargetError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Closure Phase 4 editorial Git state changed during {context}"
+        ) from exc
+    if _git_output(
+        repo_root, "diff", "--name-status", "--no-renames"
+    ).strip():
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Closure Phase 4 editorial gained an unstaged change during {context}"
+        )
+
+
+def _recapture_closure_phase4_editorial_local_staged_state(
+    *,
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    comprehensive_before: tuple[RegistrationFileIdentity, ...],
+    repo_root: Path,
+    context: str,
+) -> tuple[RegistrationFileIdentity, ...]:
+    """Perform only local, lightweight post-transaction recaptures."""
+
+    _recapture_closure_phase4_editorial_snapshot(
+        comprehensive_before,
+        repo_root=repo_root,
+        context=f"{context} opening boundary",
+    )
+    _require_closure_phase4_editorial_exact_staged_git_state(
+        repo_root=repo_root,
+        context=context,
+    )
+    physical_after = _snapshot_closure_phase4_editorial_files(
+        repo_root=repo_root
+    )
+    if physical_after != physical_before:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Closure Phase 4 editorial exact12 worktree changed during {context}"
+        )
+    _validate_closure_phase4_editorial_index_bindings(
+        physical_after,
+        repo_root=repo_root,
+    )
+    comprehensive_after = _recapture_closure_phase4_editorial_snapshot(
+        comprehensive_before,
+        repo_root=repo_root,
+        context=f"{context} closing boundary",
+    )
+    _require_closure_phase4_editorial_exact_staged_git_state(
+        repo_root=repo_root,
+        context=f"{context} final Git binding",
+    )
+    physical_final = _snapshot_closure_phase4_editorial_files(
+        repo_root=repo_root
+    )
+    if physical_final != physical_before:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            f"Closure Phase 4 editorial exact12 worktree changed during "
+            f"{context} final Git binding"
+        )
+    _validate_closure_phase4_editorial_index_bindings(
+        physical_final,
+        repo_root=repo_root,
+    )
+    return comprehensive_after
+
+
+def validate_closure_phase4_editorial_staged_transaction(
+    *, repo_root: Path = Path(".")
+) -> tuple[RegistrationFileIdentity, ...]:
+    _require_closure_phase4_editorial_exact_staged_git_state(
+        repo_root=repo_root,
+        context="initial staged validation",
+    )
+    _require_closure_phase4_editorial_base(repo_root=repo_root)
+    physical = _snapshot_closure_phase4_editorial_files(repo_root=repo_root)
+    _validate_closure_phase4_editorial_index_bindings(
+        physical,
+        repo_root=repo_root,
+    )
+    comprehensive = _validate_closure_phase4_editorial_payload(
+        repo_root=repo_root
+    )
+    _require_closure_phase4_editorial_base(repo_root=repo_root)
+    return _recapture_closure_phase4_editorial_local_staged_state(
+        physical_before=physical,
+        comprehensive_before=comprehensive,
+        repo_root=repo_root,
+        context="semantic payload validation",
+    )
+
+
+def _acquire_closure_phase4_editorial_precommit_guard(
+    *, repo_root: Path
+) -> tuple[int, RegistrationOwnedNode]:
+    guard_path = repo_root / CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+    parent_fd = -1
+    guard_fd = -1
+    ownership: RegistrationOwnedNode | None = None
+    acquired = False
+    try:
+        _require_no_symlink_ancestors(guard_path, anchor=repo_root)
+        parent_fd = os.open(
+            guard_path.parent,
+            os.O_RDONLY
+            | getattr(os, "O_DIRECTORY", 0)
+            | getattr(os, "O_NOFOLLOW", 0),
+        )
+        guard_fd = os.open(
+            guard_path.name,
+            os.O_WRONLY
+            | os.O_CREAT
+            | os.O_EXCL
+            | getattr(os, "O_NOFOLLOW", 0),
+            0o600,
+            dir_fd=parent_fd,
+        )
+        ownership = _registration_owned_file_from_fd(
+            guard_path,
+            guard_fd,
+            repo_root=repo_root,
+            expected_mode=0o600,
+        )
+        if os.write(
+            guard_fd,
+            CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD_PAYLOAD,
+        ) != len(CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD_PAYLOAD):
+            raise OSError("short Phase 4 editorial guard write")
+        os.fsync(guard_fd)
+        opened = os.fstat(guard_fd)
+        named = os.stat(
+            guard_path.name,
+            dir_fd=parent_fd,
+            follow_symlinks=False,
+        )
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or (opened.st_dev, opened.st_ino)
+            != (ownership.device, ownership.inode)
+            or (named.st_dev, named.st_ino)
+            != (ownership.device, ownership.inode)
+            or stat.S_IMODE(opened.st_mode) != 0o600
+            or opened.st_nlink != 1
+            or opened.st_size
+            != len(CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD_PAYLOAD)
+        ):
+            raise OSError("Phase 4 editorial guard identity drifted")
+        os.fsync(parent_fd)
+        acquired = True
+        return guard_fd, ownership
+    except FileExistsError as exc:
+        raise ClosurePhase4EditorialPrecommitAdapterError(
+            "Closure Phase 4 editorial precommit guard already exists; "
+            "rejecting concurrent, stale, symlink, or hardlink state"
+        ) from exc
+    except BaseException as exc:
+        cleanup_error: BaseException | None = None
+        if ownership is not None:
+            try:
+                _unlink_owned_registration_node(
+                    guard_path,
+                    ownership,
+                    repo_root=repo_root,
+                    expected_nlink=1,
+                )
+            except BaseException as cleanup_exc:
+                cleanup_error = cleanup_exc
+        message = f"Closure Phase 4 editorial guard acquisition failed: {exc}"
+        if cleanup_error is not None:
+            message += f"; owned guard cleanup failed closed: {cleanup_error}"
+        raise ClosurePhase4EditorialPrecommitAdapterError(message) from exc
+    finally:
+        if parent_fd >= 0:
+            os.close(parent_fd)
+        if guard_fd >= 0 and not acquired:
+            os.close(guard_fd)
+
+
+def _release_closure_phase4_editorial_precommit_guard(
+    guard_fd: int,
+    ownership: RegistrationOwnedNode,
+    *,
+    repo_root: Path,
+) -> str | None:
+    guard_path = repo_root / CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+    try:
+        opened = os.fstat(guard_fd)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or (opened.st_dev, opened.st_ino)
+            != (ownership.device, ownership.inode)
+            or stat.S_IMODE(opened.st_mode) != 0o600
+            or opened.st_nlink != 1
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "owned guard descriptor identity drifted"
+            )
+        _unlink_owned_registration_node(
+            guard_path,
+            ownership,
+            repo_root=repo_root,
+            expected_nlink=1,
+        )
+        if os.path.lexists(guard_path):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "foreign guard replacement appeared during cleanup"
+            )
+    except BaseException as exc:
+        return f"Phase 4 editorial guard cleanup failed closed: {exc}"
+    finally:
+        os.close(guard_fd)
+    return None
+
+
+def _rollback_closure_phase4_editorial_staging(
+    *,
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    comprehensive_before: tuple[RegistrationFileIdentity, ...],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    repo_root: Path,
+) -> str | None:
+    errors: list[str] = []
+    owned_paths = set(CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE)
+    try:
+        result = run_command(
+            [
+                "git",
+                "-C",
+                repo_root.as_posix(),
+                "restore",
+                f"--source={CLOSURE_PHASE4_R_SYN_COMMIT}",
+                "--staged",
+                "--",
+                *sorted(owned_paths),
+            ],
+            check=False,
+        )
+        if result.returncode != 0:
+            errors.append(
+                "directed git restore --staged failed: "
+                f"exit={result.returncode}; stderr={result.stderr.strip()}"
+            )
+    except BaseException as exc:
+        errors.append(f"directed git restore --staged raised: {exc}")
+    try:
+        _require_closure_phase4_editorial_base(repo_root=repo_root)
+    except BaseException as exc:
+        errors.append(f"post-rollback base/remote validation failed: {exc}")
+    try:
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            errors.append("post-rollback DVC status drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback DVC validation failed: {exc}")
+    try:
+        staged_rows = parse_git_name_status(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            )
+        )
+        remaining_owned = sorted(
+            path.as_posix()
+            for _status, path in staged_rows
+            if path.as_posix() in owned_paths
+        )
+        if remaining_owned:
+            errors.append(
+                "directed rollback left owned staged paths: "
+                + ", ".join(remaining_owned)
+            )
+    except BaseException as exc:
+        errors.append(f"post-rollback owned-index validation failed: {exc}")
+    try:
+        if (
+            _snapshot_closure_phase4_editorial_files(repo_root=repo_root)
+            != physical_before
+        ):
+            errors.append("post-rollback editorial worktree snapshot drifted")
+    except BaseException as exc:
+        errors.append(f"post-rollback worktree recapture failed: {exc}")
+    try:
+        _recapture_closure_phase4_editorial_snapshot(
+            comprehensive_before,
+            repo_root=repo_root,
+            context="post-rollback",
+        )
+    except BaseException as exc:
+        errors.append(
+            f"post-rollback comprehensive evidence recapture failed: {exc}"
+        )
+    try:
+        final_staged_rows = parse_git_name_status(
+            _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            )
+        )
+        final_remaining_owned = sorted(
+            path.as_posix()
+            for _status, path in final_staged_rows
+            if path.as_posix() in owned_paths
+        )
+        if final_remaining_owned:
+            errors.append(
+                "final directed rollback left owned staged paths: "
+                + ", ".join(final_remaining_owned)
+            )
+    except BaseException as exc:
+        errors.append(f"final post-rollback index validation failed: {exc}")
+    try:
+        if (
+            _snapshot_closure_phase4_editorial_files(repo_root=repo_root)
+            != physical_before
+        ):
+            errors.append("final post-rollback exact12 snapshot drifted")
+    except BaseException as exc:
+        errors.append(f"final post-rollback exact12 recapture failed: {exc}")
+    return "; ".join(errors) or None
+
+
+def _abort_closure_phase4_editorial_post_add(
+    primary: BaseException,
+    *,
+    physical_before: tuple[RegistrationFileIdentity, ...],
+    comprehensive_before: tuple[RegistrationFileIdentity, ...],
+    dvc_bin: str,
+    dvc_status_before: Any,
+    repo_root: Path,
+) -> int:
+    rollback_error = _rollback_closure_phase4_editorial_staging(
+        physical_before=physical_before,
+        comprehensive_before=comprehensive_before,
+        dvc_bin=dvc_bin,
+        dvc_status_before=dvc_status_before,
+        repo_root=repo_root,
+    )
+    if rollback_error is None:
+        print(
+            "Closure Phase 4 editorial publication failed after staging: "
+            f"{primary}; directed rollback restored all exact12 owned paths "
+            "and preserved foreign index entries.",
+            file=sys.stderr,
+        )
+    else:
+        print(
+            "Closure Phase 4 editorial publication failed after staging: "
+            f"{primary}; ROLLBACK FAILED CLOSED: {rollback_error}",
+            file=sys.stderr,
+        )
+    return 2
+
+
+def _run_closure_phase4_editorial_precommit(
+    args: Any,
+    *,
+    initial_status: str,
+    repo_root: Path = Path("."),
+) -> int:
+    """Stage exact12 editorial artifacts without DVC or remote mutation."""
+
+    guard_fd: int | None = None
+    guard_ownership: RegistrationOwnedNode | None = None
+
+    def release_guard() -> str | None:
+        nonlocal guard_fd, guard_ownership
+        if guard_fd is None or guard_ownership is None:
+            return None
+        owned_fd = guard_fd
+        ownership = guard_ownership
+        guard_fd = None
+        guard_ownership = None
+        return _release_closure_phase4_editorial_precommit_guard(
+            owned_fd,
+            ownership,
+            repo_root=repo_root,
+        )
+
+    def fail_before_staging(primary: BaseException) -> int:
+        guard_error = release_guard()
+        message = str(primary)
+        if guard_error is not None:
+            message += f"; GUARD CLEANUP FAILED CLOSED: {guard_error}"
+        print(message, file=sys.stderr)
+        return 2
+
+    try:
+        if repo_root.resolve() != Path(".").resolve():
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial runner requires repo_root to be "
+                "the current working repository before any effect"
+            )
+        guard_fd, guard_ownership = (
+            _acquire_closure_phase4_editorial_precommit_guard(
+                repo_root=repo_root
+            )
+        )
+        validate_closure_phase4_editorial_invocation(args)
+        initial_staged = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase4_editorial_pre_stage_scope(
+            initial_status,
+            initial_staged,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial exact pre-stage scope disappeared"
+            )
+        physical_before = _snapshot_closure_phase4_editorial_files(
+            repo_root=repo_root
+        )
+        comprehensive_before = _validate_closure_phase4_editorial_payload(
+            repo_root=repo_root
+        )
+        if (
+            _closure_phase4_editorial_exact12_from_snapshot(
+                comprehensive_before
+            )
+            != physical_before
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial exact12 changed while validating "
+                "the initial comprehensive payload"
+            )
+        artifacts = load_configured_dvc_artifacts(args.manifest)
+        dvc_bin, dvc_status_before = _initialize_precommit_dvc_observation(
+            args.dvc_bin,
+            formal_model_lock_active=False,
+            require_locked_input_binary=False,
+        )
+        if dvc_bin != DEFAULT_DVC_BIN.as_posix() or dvc_status_before:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial publication requires exact empty "
+                "repository DVC status"
+            )
+    except BaseException as exc:
+        return fail_before_staging(exc)
+
+    try:
+        report_path = default_report_path()
+        publication = _run_closure_phase4_h_syn_publication_check(
+            repo_root=repo_root
+        )
+    except BaseException as exc:
+        return fail_before_staging(
+            ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial publication check failed beyond "
+                f"the exact published U1/U2/U3 exception: {exc}"
+            )
+        )
+    publication_check_result = CommandResult(
+        publication.command,
+        0,
+        "OK: exact published U1/U2/U3 sealed-runtime path exception "
+        "compensated; no new publication findings.\n",
+        "",
+    )
+
+    try:
+        status_before_add = _git_output(
+            repo_root, "status", "--short", "--untracked-files=all"
+        )
+        index_before_add = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        if not closure_phase4_editorial_pre_stage_scope(
+            status_before_add,
+            index_before_add,
+            repo_root=repo_root,
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial scope changed during checks"
+            )
+        if (
+            _snapshot_closure_phase4_editorial_files(repo_root=repo_root)
+            != physical_before
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial files changed before staging"
+            )
+        if (
+            _validate_closure_phase4_editorial_payload(repo_root=repo_root)
+            != comprehensive_before
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial comprehensive evidence changed "
+                "before staging"
+            )
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial DVC status changed before staging"
+            )
+    except BaseException as exc:
+        return fail_before_staging(exc)
+
+    try:
+        git_add_result = run_command(
+            [
+                "git",
+                "-C",
+                repo_root.as_posix(),
+                "add",
+                "-A",
+                "--",
+                *sorted(CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE),
+            ],
+            check=False,
+        )
+        if git_add_result.returncode != 0:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial directed git add failed: "
+                f"exit={git_add_result.returncode}; "
+                f"stderr={git_add_result.stderr.strip()}"
+            )
+        staged_comprehensive = (
+            validate_closure_phase4_editorial_staged_transaction(
+                repo_root=repo_root
+            )
+        )
+        if staged_comprehensive != comprehensive_before:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial comprehensive evidence changed "
+                "across staging"
+            )
+        dvc_status_after = dvc_status_json(dvc_bin)
+        if dvc_status_after != dvc_status_before:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial DVC status changed during staging"
+            )
+        staged_status = _git_output(
+            repo_root,
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        findings = reproducibility_checks(
+            staged_status=staged_status,
+            selected_dvc_paths=[],
+            artifacts=artifacts,
+            max_manifest_hash_bytes=args.max_manifest_hash_bytes,
+            verify_manifest_inputs=args.verify_manifest_inputs,
+        )
+        non_ok = [finding for finding in findings if finding.level != "ok"]
+        if non_ok:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial generic reproducibility checks "
+                "contain warnings or failures: "
+                + "; ".join(finding.message for finding in non_ok)
+            )
+        findings.extend(
+            (
+                ReproducibilityFinding(
+                    "ok",
+                    "phase4_editorial_scope",
+                    "-",
+                    "Exact Phase 4 editorial scope staged: 12 paths (8M+4A) "
+                    "on published R-SYN 528dcb7.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase4_editorial_semantics",
+                    "-",
+                    "Matrix 32/52/2, canonical receipt companion, private "
+                    "bindings, 80-page PDF, eight figures, real validator "
+                    "CLI, and deterministic builder reconstruction passed.",
+                ),
+                ReproducibilityFinding(
+                    "ok",
+                    "phase4_editorial_dvc",
+                    "-",
+                    "DVC status stayed empty; no DVC add or push was run.",
+                ),
+            )
+        )
+        write_report(
+            report_path,
+            dry_run=False,
+            selected_dvc_paths=[],
+            deferred_dvc_paths=[],
+            deferred_snapshot_before=None,
+            deferred_snapshot_after=None,
+            rejected_unmanaged_paths=[],
+            git_status_before=initial_status,
+            dvc_status_before=dvc_status_before,
+            dvc_status_after=dvc_status_after,
+            cloud_status_before=None,
+            dvc_add_results=[],
+            dvc_push_result=None,
+            git_add_result=git_add_result,
+            publication_check_result=publication_check_result,
+            reproducibility_findings=findings,
+            staged_status=staged_status,
+            exclusive=True,
+        )
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial DVC status changed while writing "
+                "its report before full staged validation"
+            )
+        if (
+            validate_closure_phase4_editorial_staged_transaction(
+                repo_root=repo_root
+            )
+            != comprehensive_before
+        ):
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial comprehensive evidence changed "
+                "while writing its report"
+            )
+        if dvc_status_json(dvc_bin) != dvc_status_before:
+            raise ClosurePhase4EditorialPrecommitAdapterError(
+                "Closure Phase 4 editorial DVC status changed after its "
+                "post-report full staged validation"
+            )
+        _recapture_closure_phase4_editorial_local_staged_state(
+            physical_before=physical_before,
+            comprehensive_before=comprehensive_before,
+            repo_root=repo_root,
+            context="final post-report local validation",
+        )
+        guard_error = release_guard()
+        if guard_error is not None:
+            raise ClosurePhase4EditorialPrecommitAdapterError(guard_error)
+        print()
+        print(f"Report written: {report_path}")
+        print(
+            "Exact Closure Phase 4 editorial slice is staged; no DVC add or "
+            "push ran."
+        )
+        sys.stdout.flush()
+    except BaseException as exc:
+        try:
+            result = _abort_closure_phase4_editorial_post_add(
+                exc,
+                physical_before=physical_before,
+                comprehensive_before=comprehensive_before,
+                dvc_bin=dvc_bin,
+                dvc_status_before=dvc_status_before,
+                repo_root=repo_root,
+            )
+        finally:
+            guard_error = release_guard()
+        if guard_error is not None:
+            print(
+                "Closure Phase 4 editorial GUARD CLEANUP FAILED CLOSED: "
+                f"{guard_error}",
+                file=sys.stderr,
+            )
+        return result
+
+    return 0
+
+
 class ClosurePhase3HPrecommitAdapterError(RuntimeError):
     """Raised when the outcome-free Phase 3 H publication boundary drifts."""
 
@@ -26456,6 +28985,21 @@ def main() -> int:
         return 2
     if phase4_p_syn_active:
         return _run_closure_phase4_p_syn_precommit(
+            args,
+            initial_status=phase3_h_initial_status,
+            repo_root=Path("."),
+        )
+    try:
+        phase4_editorial_active = closure_phase4_editorial_pre_stage_scope(
+            phase3_h_initial_status,
+            phase3_h_initial_index,
+            repo_root=Path("."),
+        )
+    except ClosurePhase4EditorialPrecommitAdapterError as exc:
+        print(str(exc), file=sys.stderr)
+        return 2
+    if phase4_editorial_active:
+        return _run_closure_phase4_editorial_precommit(
             args,
             initial_status=phase3_h_initial_status,
             repo_root=Path("."),

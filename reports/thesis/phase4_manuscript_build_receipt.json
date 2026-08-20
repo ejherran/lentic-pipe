@@ -1,0 +1,340 @@
+{
+  "authorities": {
+    "closure_source_commit": "ea8ddce7f8edb9a61db97e29178e52603fa371b1",
+    "editorial_evidence_matrix_manifest": {
+      "bytes": 13260,
+      "path": "reports/thesis/chapter_iv_evidence_matrix_manifest.json",
+      "sha256": "cba9245537531351381893d5d0d023e6650fe2c7802379f62f66e2f2a8c0fa69"
+    },
+    "r_syn_commit": "528dcb74a7c08b65f262901e4562a67b784db8c9",
+    "r_syn_manifest": {
+      "bytes": 37713,
+      "path": "reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json",
+      "sha256": "fbe46962befbe708e77ea482477f61ec2bbe20c0dcde6d8913961b1b29180ac6"
+    }
+  },
+  "declared_build_parameters": {
+    "compile_command": [
+      "pdflatex",
+      "-interaction=nonstopmode",
+      "-halt-on-error",
+      "-file-line-error",
+      "-no-shell-escape",
+      "-recorder",
+      "-output-directory=/build",
+      "mifal_ed_modelo_tesis_v5.tex"
+    ],
+    "environment": {
+      "FORCE_SOURCE_DATE": "1",
+      "LC_ALL": "C.UTF-8",
+      "SOURCE_DATE_EPOCH": "1787234099",
+      "TZ": "UTC"
+    },
+    "figure_converter": {
+      "cairo_version": "1.18.4",
+      "fontconfig_version": "2.18.3",
+      "harfbuzz_version": "14.3.1",
+      "pango_version": "1.58.2",
+      "rsvg_convert_version": "2.62.3"
+    },
+    "independent_build_count": 2,
+    "network": "none",
+    "pdftex_version": "3.141592653-2.6-1.40.29 (TeX Live 2026)",
+    "repository_mount": "read_only",
+    "shell_escape": false,
+    "tex_image": "texlive/texlive@sha256:e2d3223f90be0c824a082f431d862e3341ba32a8eba541e1425b65bc7d4053a7",
+    "tex_passes_per_build": 3
+  },
+  "figure_bindings": [
+    {
+      "derived_pdf": {
+        "bytes": 27121,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F01_pdf",
+        "sha256": "222a7524d33f6d449a8679eec87fc59755812e63ca4c360b096997e0d60623ab"
+      },
+      "source_svg": {
+        "bytes": 24952,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F01_intent_to_predict_funnel.svg",
+        "sha256": "8b18331b8a3e9a94a04b2c41b27dbc55ea7402a9011227cc51e936be5cf84488"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 30641,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F02_pdf",
+        "sha256": "0eaa0a3f5919d97ef8063398131a5d5a7e7ec386a2d6b30873b5979ea3056492"
+      },
+      "source_svg": {
+        "bytes": 175272,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F02_benchmark_metrics.svg",
+        "sha256": "55c26c6cd12ad78f41eac3980476cf0535a14f4a971bde84a1cdee0da85d57dd"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 23171,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F03_pdf",
+        "sha256": "17214325065ecd179eef5e0eda14e38ad4a5b424d48cab463b66da964853b0d5"
+      },
+      "source_svg": {
+        "bytes": 10770,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F03_descriptive_deltas.svg",
+        "sha256": "cadbf524164dde14d24cfea20d951375ff7de223728875698549e2a2ed89959f"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 24869,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F04_pdf",
+        "sha256": "e9da907059d3b49b387ab9e9c24c718c2caaa653bb61b03ff61d4d8328977c4f"
+      },
+      "source_svg": {
+        "bytes": 22844,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F04_threshold_sensitivity.svg",
+        "sha256": "f6b62eea5405a219b8f4b209dfd8d0e4330c0b95991cf26c4b4dfd4ce091e803"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 24877,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F05_pdf",
+        "sha256": "84233146778659e8a86f0f0763e458facaa82a43b08fc72b13eefd443d33fde3"
+      },
+      "source_svg": {
+        "bytes": 50051,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F05_trophic_heatmap.svg",
+        "sha256": "cc8dc34b89df9d788606d338bab6d24141edd1f5e77bb575851c0aeff0945e5d"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 25768,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F06_pdf",
+        "sha256": "0f774f75d50cb4f939b81b4dbf87f815d61829be8a094f5b33b035af9cfe393c"
+      },
+      "source_svg": {
+        "bytes": 26193,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F06_uncertainty_coverage.svg",
+        "sha256": "67da50a777081c0da1a4cd87c6c0e65eed72d2238eac8b462445f53e52e9e992"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 24217,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F07_pdf",
+        "sha256": "ad0c5dd7a98a85234affc67482b2286ad0c1d3d7548c3fc26a2d8e57d8344c52"
+      },
+      "source_svg": {
+        "bytes": 6050,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F07_hypothesis_verdicts.svg",
+        "sha256": "1a4fa0b9280709bb596201cef544ea66268ac795a7d662bd605c29b17aa19b78"
+      }
+    },
+    {
+      "derived_pdf": {
+        "bytes": 24038,
+        "content_embedded": false,
+        "logical_id": "closure_v1_figure_F08_pdf",
+        "sha256": "96c838e4fa7839228dadb247a074874f0d719905e6947cee8d124e385c9dcb81"
+      },
+      "source_svg": {
+        "bytes": 10174,
+        "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F08_provenance.svg",
+        "sha256": "6621f5b5e6d9354fa32200115c71f6483729d1c49855da94e553a44d10742ee7"
+      }
+    }
+  ],
+  "private_bindings": [
+    {
+      "bytes": 112859,
+      "content_embedded": false,
+      "filesystem_mode": "0644",
+      "git_ignored": true,
+      "git_tracked": false,
+      "logical_id": "doctoral_manuscript_tex",
+      "regular_file": true,
+      "sha256": "c9510de37877b7452f1397e5e13d54f5825df7e1b09b9cfb6bad8035ec0525dd",
+      "single_link": true
+    },
+    {
+      "bytes": 863932,
+      "content_embedded": false,
+      "creation_date_utc": "2026-08-20T13:54:59Z",
+      "filesystem_mode": "0644",
+      "git_ignored": true,
+      "git_tracked": false,
+      "logical_id": "doctoral_manuscript_pdf",
+      "pages": 80,
+      "pdf_version": "1.7",
+      "regular_file": true,
+      "sha256": "b20908f37c93b8039431132ffb3def28fa08154b75cb5283011cf1f3bbb05044",
+      "single_link": true
+    },
+    {
+      "bytes": 44419,
+      "content_embedded": false,
+      "filesystem_mode": "0644",
+      "git_ignored": true,
+      "git_tracked": false,
+      "logical_id": "doctoral_listing_mifal_ed_v5",
+      "regular_file": true,
+      "sha256": "5dcbd4c1bd67ea0a32fed63e1835f538f10a5bbffd1f4dfa9cb447a8058b022b",
+      "single_link": true
+    },
+    {
+      "bytes": 1538,
+      "content_embedded": false,
+      "filesystem_mode": "0644",
+      "git_ignored": true,
+      "git_tracked": false,
+      "logical_id": "doctoral_listing_mifal_ed_v5_demo",
+      "regular_file": true,
+      "sha256": "7f462684e8f3e7585b18de8441aa2830a37e095d73c3ec85254675a9628b837f",
+      "single_link": true
+    },
+    {
+      "bytes": 7760,
+      "content_embedded": false,
+      "filesystem_mode": "0644",
+      "git_ignored": true,
+      "git_tracked": false,
+      "logical_id": "doctoral_listing_mifal_ed_v5_test",
+      "regular_file": true,
+      "sha256": "9452f4c35979ce75853cdd5862a93824db45b9b5ecda9909675e1e933072a25c",
+      "single_link": true
+    }
+  ],
+  "schema_version": "phase4_manuscript_build_receipt_v1",
+  "status": "completed",
+  "validated_build_evidence": {
+    "build_a": {
+      "fls": {
+        "build_input_record_count": 15,
+        "bytes": 23003,
+        "input_record_count": 334,
+        "output_record_count": 5,
+        "relative_input_record_count": 50,
+        "relative_input_unique_count": 12,
+        "sha256": "41944aaef34941b95e10c8dc8e8b68db3357a46fc3d77f277301fdcd546e695f",
+        "toolchain_input_record_count": 269,
+        "toolchain_input_unique_count": 151,
+        "working_directory_record_count": 1
+      },
+      "log": {
+        "bytes": 40241,
+        "duplicate_destination_count": 0,
+        "latex_error_count": 0,
+        "output_record_count": 1,
+        "overfull_count": 0,
+        "page_count": 80,
+        "rerun_request_count": 0,
+        "sha256": "47778b6fedb8c584d235d2ea4a2684e5d9f7beeca572407e3bf06c633214d10d",
+        "undefined_reference_or_citation_count": 0
+      },
+      "output_file_count": 6,
+      "pdf": {
+        "bytes": 863932,
+        "sha256": "b20908f37c93b8039431132ffb3def28fa08154b75cb5283011cf1f3bbb05044"
+      }
+    },
+    "build_b": {
+      "fls": {
+        "build_input_record_count": 15,
+        "bytes": 23003,
+        "input_record_count": 334,
+        "output_record_count": 5,
+        "relative_input_record_count": 50,
+        "relative_input_unique_count": 12,
+        "sha256": "41944aaef34941b95e10c8dc8e8b68db3357a46fc3d77f277301fdcd546e695f",
+        "toolchain_input_record_count": 269,
+        "toolchain_input_unique_count": 151,
+        "working_directory_record_count": 1
+      },
+      "log": {
+        "bytes": 40241,
+        "duplicate_destination_count": 0,
+        "latex_error_count": 0,
+        "output_record_count": 1,
+        "overfull_count": 0,
+        "page_count": 80,
+        "rerun_request_count": 0,
+        "sha256": "47778b6fedb8c584d235d2ea4a2684e5d9f7beeca572407e3bf06c633214d10d",
+        "undefined_reference_or_citation_count": 0
+      },
+      "output_file_count": 6,
+      "pdf": {
+        "bytes": 863932,
+        "sha256": "b20908f37c93b8039431132ffb3def28fa08154b75cb5283011cf1f3bbb05044"
+      }
+    },
+    "expected_output_file_count": 6,
+    "pdf_byte_identical": true
+  },
+  "validation": {
+    "artifact_references": {
+      "claim_matrix_unique": 15,
+      "manuscript_unique": 49
+    },
+    "claim_id_count": 20,
+    "claim_matrix": {
+      "bytes": 11882,
+      "path": "reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv",
+      "sha256": "67f6d6446822dfce2b94c6c5171251a310a57508ff98a161b8305bf0a57f6e6c"
+    },
+    "division_ids": [
+      "Abstract",
+      "Conclusion",
+      "III",
+      "IV",
+      "Summary",
+      "V"
+    ],
+    "environment_count": 171,
+    "figure_count": 8,
+    "fls_derived_figure_count": 8,
+    "fls_private_input_ids": [
+      "doctoral_listing_mifal_ed_v5",
+      "doctoral_listing_mifal_ed_v5_demo",
+      "doctoral_listing_mifal_ed_v5_test",
+      "doctoral_manuscript_tex"
+    ],
+    "holm_universes": {
+      "A": 3,
+      "B": 78,
+      "C": 1,
+      "D": 9,
+      "E": 1
+    },
+    "input_breakdown": {
+      "csv": 45,
+      "dvc": 4,
+      "json": 33,
+      "total": 83,
+      "yaml": 1
+    },
+    "latex_errors": 0,
+    "latex_overfull_boxes": 0,
+    "latex_undefined_citations": 0,
+    "latex_undefined_references": 0,
+    "manuscript_validator": {
+      "bytes": 45123,
+      "path": "src/reporting/validate_phase4_manuscript.py",
+      "sha256": "3d9851e4e42e647289dd60ef2eb0ed3a1b64ffc7e24909e4f1dbf834eba6b147"
+    },
+    "reference_counts": {
+      "bibliography_entries": 38,
+      "citations": 103,
+      "labels": 74,
+      "references": 20
+    },
+    "status": "validated",
+    "writes_performed": false
+  }
+}

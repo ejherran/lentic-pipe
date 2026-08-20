@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import builtins
 import hashlib
 import json
 import os
@@ -7013,6 +7014,12 @@ def test_closure_phase4_h_syn_selector_is_exact9a2m_on_phase3_source(
         )
         if path != "src/data/prepare_commit_artifacts.py"
     )
+    assert precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD == Path(
+        "tmp/closure_v1_phase4_editorial_precommit.guard"
+    )
+    assert not precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD.is_relative_to(
+        precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT
+    )
     monkeypatch.setattr(
         precommit_artifacts,
         "_git_output",
@@ -9183,3 +9190,1968 @@ def test_closure_phase4_r_native_manifest_passes_generic_reproducibility_exact24
 
     assert findings
     assert all(finding.level == "ok" for finding in findings), findings
+
+
+def _closure_phase4_editorial_short_status(*, staged: bool) -> str:
+    expected = precommit_artifacts._closure_phase4_editorial_expected_short_scope(
+        staged=staged
+    )
+    return "\n".join(
+        f"{status_code} {path}"
+        for path, status_code in sorted(expected.items())
+    )
+
+
+def _closure_phase4_editorial_name_status() -> str:
+    return "\n".join(
+        f"{status}\t{path}"
+        for path, status in sorted(
+            precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE.items()
+        )
+    )
+
+
+def _write_closure_phase4_editorial_build_namespace(root: Path) -> None:
+    for directory in precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS:
+        destination = root / directory
+        destination.mkdir(parents=True, exist_ok=True)
+        for filename in sorted(
+            precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES
+        ):
+            (destination / filename).write_text(
+                f"{directory.name}:{filename}\n",
+                encoding="utf-8",
+            )
+
+
+def test_closure_phase4_editorial_contract_is_exact12_8m4a() -> None:
+    scope = precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    precommit_artifacts._require_closure_phase4_editorial_contract()
+    assert len(scope) == 12
+    assert sum(status == "M" for status in scope.values()) == 8
+    assert sum(status == "A" for status in scope.values()) == 4
+    assert scope[
+        "reports/thesis/phase4_manuscript_build_receipt_manifest.json"
+    ] == "A"
+    assert precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_GIT_MODES[
+        "src/data/prepare_commit_artifacts.py"
+    ] == "100755"
+    assert all(
+        mode == "100644"
+        for path, mode in precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_GIT_MODES.items()
+        if path != "src/data/prepare_commit_artifacts.py"
+    )
+
+
+def test_closure_phase4_editorial_selector_requires_exact_unstaged_scope(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            precommit_artifacts.CLOSURE_PHASE4_R_SYN_COMMIT + "\n"
+            if args == ("rev-parse", "HEAD^{commit}")
+            else (_ for _ in ()).throw(AssertionError(args))
+        ),
+    )
+    base_calls: list[Path] = []
+    index_calls: list[Path] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda *, repo_root: base_calls.append(repo_root),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_pre_index_bindings",
+        lambda *, repo_root: index_calls.append(repo_root),
+    )
+    exact = _closure_phase4_editorial_short_status(staged=False)
+    assert precommit_artifacts.closure_phase4_editorial_pre_stage_scope(
+        exact,
+        "",
+    )
+    assert base_calls == [Path(".")]
+    assert index_calls == [Path(".")]
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="exact12",
+    ):
+        precommit_artifacts.closure_phase4_editorial_pre_stage_scope(
+            "\n".join(exact.splitlines()[:-1]),
+            "",
+        )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="empty Git index",
+    ):
+        precommit_artifacts.closure_phase4_editorial_pre_stage_scope(
+            exact,
+            "M\tforeign-index-entry",
+        )
+
+
+def test_closure_phase4_editorial_selector_rejects_unique_marker_on_wrong_parent(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            "0" * 40 + "\n"
+            if args == ("rev-parse", "HEAD^{commit}")
+            else (_ for _ in ()).throw(AssertionError(args))
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="R-SYN",
+    ):
+        precommit_artifacts.closure_phase4_editorial_pre_stage_scope(
+            "?? reports/thesis/phase4_manuscript_build_receipt.json",
+            "",
+        )
+
+
+@pytest.mark.parametrize(
+    "path",
+    [
+        "/etc/passwd",
+        "../escape.json",
+        "private/FULL.md",
+        "private/mifal_ed_t2/manuscript.tex",
+        "data/targets/targets.parquet",
+        "data/closure_v1/locked_evaluation/outcomes.json",
+        "reports/closure_v1/input.parquet",
+        "reports//thesis/x.json",
+        "reports/./thesis/x.json",
+        "tmp/hidden.json",
+    ],
+)
+def test_closure_phase4_editorial_public_record_path_boundary(path: str) -> None:
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="boundary|normalized",
+    ):
+        precommit_artifacts._phase4_editorial_safe_public_path(
+            path,
+            context="adversarial test",
+        )
+
+
+def test_closure_phase4_editorial_canonical_json_rejects_reordered_bytes(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "record.json"
+    path.write_text('{"z": 1, "a": 2}\n', encoding="utf-8")
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="byte-canonical",
+    ):
+        precommit_artifacts._phase4_editorial_read_canonical_json(
+            Path("record.json"),
+            repo_root=tmp_path,
+            context="test record",
+        )
+
+
+def test_closure_phase4_editorial_matrix_rejects_wrong_cardinality_before_reads(
+    monkeypatch,
+) -> None:
+    payload = {
+        "schema_version": "thesis_evidence_matrix_v1",
+        "status": "completed",
+        "closure_source_commit": precommit_artifacts.CLOSURE_PHASE4_SOURCE_COMMIT,
+        "synthesis_publication_commit": precommit_artifacts.CLOSURE_PHASE4_R_SYN_COMMIT,
+        "row_counts": {"columns": 10, "evidence_rows": 31},
+        "inputs": [],
+        "outputs": [],
+    }
+    identity = precommit_artifacts.RegistrationFileIdentity(
+        "reports/thesis/chapter_iv_evidence_matrix_manifest.json",
+        1,
+        2,
+        0o644,
+        1,
+        2,
+        "a" * 64,
+        3,
+        4,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_read_canonical_json",
+        lambda *_args, **_kwargs: (payload, identity, b"{}\n"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_validate_file_record",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("records must not be read after cardinality failure")
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="32 rows/10 columns/52 inputs/2 outputs",
+    ):
+        precommit_artifacts._phase4_editorial_matrix_payloads(
+            repo_root=Path(".")
+        )
+
+
+def test_closure_phase4_editorial_payload_returns_comprehensive_bound_snapshot(
+    monkeypatch,
+) -> None:
+    staged_paths = set(
+        precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    )
+    private_paths = {
+        path.as_posix()
+        for path in precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS.values()
+    }
+    figure_paths = {
+        path.as_posix()
+        for binding in precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_FIGURE_BINDINGS.values()
+        for path in binding
+    }
+    build_paths = {
+        (directory / filename).as_posix()
+        for directory in precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS
+        for filename in precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_FILENAMES
+    }
+    all_paths = staged_paths | private_paths | figure_paths | build_paths
+
+    def identity(raw_path: str) -> Any:
+        return precommit_artifacts.RegistrationFileIdentity(
+            raw_path,
+            1,
+            len(raw_path),
+            (
+                0o755
+                if raw_path == "src/data/prepare_commit_artifacts.py"
+                else 0o644
+            ),
+            1,
+            len(raw_path),
+            hashlib.sha256(raw_path.encode()).hexdigest(),
+            20,
+            30,
+        )
+
+    staged = tuple(identity(path) for path in sorted(staged_paths))
+    semantic = tuple(identity(path) for path in sorted(all_paths - staged_paths))
+    recaptured: list[tuple[Any, ...]] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: staged,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_matrix_payloads",
+        lambda **_kwargs: ({}, semantic),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_reconstruct_closure_phase4_editorial_matrix",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_receipt",
+        lambda **_kwargs: tuple(),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_receipt_manifest",
+        lambda **_kwargs: tuple(),
+    )
+
+    def recapture(expected: tuple[Any, ...], **_kwargs: Any) -> tuple[Any, ...]:
+        recaptured.append(expected)
+        return expected
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        recapture,
+    )
+    observed = precommit_artifacts._validate_closure_phase4_editorial_payload(
+        repo_root=Path(".")
+    )
+    assert {record.path for record in observed} == all_paths
+    assert observed == recaptured[0]
+    assert len(observed) == len(all_paths)
+
+
+def test_closure_phase4_editorial_receipt_rejects_serialized_private_path(
+    monkeypatch,
+) -> None:
+    payload = {
+        "authorities": {},
+        "declared_build_parameters": {},
+        "figure_bindings": [],
+        "private_bindings": [],
+        "schema_version": "phase4_manuscript_build_receipt_v1",
+        "status": "completed",
+        "validated_build_evidence": {},
+        "validation": {},
+    }
+    identity = precommit_artifacts.RegistrationFileIdentity(
+        "reports/thesis/phase4_manuscript_build_receipt.json",
+        1,
+        2,
+        0o644,
+        1,
+        2,
+        "a" * 64,
+        3,
+        4,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_read_canonical_json",
+        lambda *_args, **_kwargs: (
+            payload,
+            identity,
+            b'{"leak":"private/mifal_ed_t2/manuscript.tex"}\n',
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="path-redaction",
+    ):
+        precommit_artifacts._validate_closure_phase4_editorial_receipt(
+            repo_root=Path(".")
+        )
+
+
+def test_closure_phase4_editorial_companion_rejects_generator_overclaim(
+    monkeypatch,
+) -> None:
+    payload = {
+        "generated_at_utc": "2026-08-20T13:54:59+00:00",
+        "inputs": [{}, {}, {}],
+        "manifest_version": "phase4_manuscript_build_receipt_manifest_v1",
+        "outputs": [{}],
+        "script": {},
+        "script_role": "receipt_generator",
+        "status": "completed",
+    }
+    identity = precommit_artifacts.RegistrationFileIdentity(
+        "reports/thesis/phase4_manuscript_build_receipt_manifest.json",
+        1,
+        2,
+        0o644,
+        1,
+        2,
+        "a" * 64,
+        3,
+        4,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_read_canonical_json",
+        lambda *_args, **_kwargs: (payload, identity, b"{}\n"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_validate_file_record",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("records must not be read after role failure")
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="structure",
+    ):
+        precommit_artifacts._validate_closure_phase4_editorial_receipt_manifest(
+            repo_root=Path(".")
+        )
+
+
+@pytest.mark.parametrize(
+    "noncanonical_path",
+    ["reports//thesis/x.json", "reports/./thesis/x.json"],
+)
+def test_closure_phase4_editorial_companion_rejects_lexically_noncanonical_path(
+    noncanonical_path: str,
+    monkeypatch,
+) -> None:
+    record = {
+        "bytes": 1,
+        "path": noncanonical_path,
+        "role": "published_r_syn_manifest",
+        "sha256": "a" * 64,
+    }
+    payload = {
+        "generated_at_utc": "2026-08-20T13:54:59+00:00",
+        "inputs": [record, record, record],
+        "manifest_version": "phase4_manuscript_build_receipt_manifest_v1",
+        "outputs": [record],
+        "script": {
+            "bytes": 1,
+            "path": "src/reporting/validate_phase4_manuscript.py",
+            "sha256": "a" * 64,
+        },
+        "script_role": "receipt_validator",
+        "status": "completed",
+    }
+    identity = precommit_artifacts.RegistrationFileIdentity(
+        "reports/thesis/phase4_manuscript_build_receipt_manifest.json",
+        1,
+        2,
+        0o644,
+        1,
+        2,
+        "a" * 64,
+        3,
+        4,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_read_canonical_json",
+        lambda *_args, **_kwargs: (payload, identity, b"{}\n"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_registration_file_identity",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("noncanonical path must fail before filesystem access")
+        ),
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="boundary",
+    ):
+        precommit_artifacts._validate_closure_phase4_editorial_receipt_manifest(
+            repo_root=Path(".")
+        )
+
+
+def test_closure_phase4_editorial_build_namespace_rejects_extra_and_symlink(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    build_root = tmp_path / "tmp/closure_v1_phase4_editorial"
+    _write_closure_phase4_editorial_build_namespace(tmp_path)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_require_ignored_untracked",
+        lambda *_args, **_kwargs: None,
+    )
+    assert len(
+        precommit_artifacts._snapshot_closure_phase4_editorial_build_evidence(
+            repo_root=tmp_path
+        )
+    ) == 12
+
+    extra = build_root / "build_a/extra.tmp"
+    extra.write_text("extra\n", encoding="utf-8")
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="exact six",
+    ):
+        precommit_artifacts._snapshot_closure_phase4_editorial_build_evidence(
+            repo_root=tmp_path
+        )
+    extra.unlink()
+    target = build_root / "build_a/mifal_ed_modelo_tesis_v5.aux"
+    target.unlink()
+    target.symlink_to(build_root / "build_b/mifal_ed_modelo_tesis_v5.aux")
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="identity|file",
+    ):
+        precommit_artifacts._snapshot_closure_phase4_editorial_build_evidence(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase4_editorial_light_recapture_brackets_build_namespace(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _write_closure_phase4_editorial_build_namespace(tmp_path)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_require_ignored_untracked",
+        lambda *_args, **_kwargs: None,
+    )
+    target = (
+        tmp_path
+        / precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS[0]
+        / "mifal_ed_modelo_tesis_v5.aux"
+    )
+    expected = (
+        precommit_artifacts._registration_file_identity(
+            target,
+            repo_root=tmp_path,
+            mode=0o644,
+        ),
+    )
+    snapshot_build = (
+        precommit_artifacts._snapshot_closure_phase4_editorial_build_evidence
+    )
+    calls = 0
+
+    def mutate_before_second_snapshot(**kwargs: Any) -> tuple[Any, ...]:
+        nonlocal calls
+        calls += 1
+        if calls == 2:
+            target.write_text("build drift\n", encoding="utf-8")
+        return snapshot_build(**kwargs)
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_build_evidence",
+        mutate_before_second_snapshot,
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="build namespace changed during recapture",
+    ):
+        precommit_artifacts._recapture_closure_phase4_editorial_snapshot(
+            expected,
+            repo_root=tmp_path,
+            context="build race regression",
+        )
+    assert calls == 2
+
+
+def test_closure_phase4_editorial_builder_reconstructs_public_outputs() -> None:
+    precommit_artifacts._reconstruct_closure_phase4_editorial_matrix(
+        repo_root=precommit_artifacts.PROJECT_ROOT
+    )
+
+
+def test_closure_phase4_editorial_main_precedes_h_and_generic(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(precommit_artifacts, "parse_args", _closure_phase3_h_args)
+    monkeypatch.setattr(precommit_artifacts, "ensure_repo_root", lambda: None)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", lambda *_args: "")
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase4_r_syn_pre_stage_scope",
+        lambda *_args, **_kwargs: False,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase4_p_syn_pre_stage_scope",
+        lambda *_args, **_kwargs: False,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase4_editorial_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase4_editorial_precommit",
+        lambda *_args, **_kwargs: 139,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase4_h_syn_h2_pre_stage_scope",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("H2 selector must not run after editorial match")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "versionable_changes",
+        lambda: (_ for _ in ()).throw(
+            AssertionError("generic flow must not run after editorial match")
+        ),
+    )
+    assert precommit_artifacts.main() == 139
+
+
+def test_closure_phase4_editorial_guard_is_exclusive_and_cleanup_is_owned(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    guard_path = (
+        tmp_path
+        / precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+    )
+    assert not guard_path.is_relative_to(
+        tmp_path / precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_ROOT
+    )
+    guard_fd, ownership = (
+        precommit_artifacts._acquire_closure_phase4_editorial_precommit_guard(
+            repo_root=tmp_path
+        )
+    )
+    metadata = guard_path.lstat()
+    assert metadata.st_mode & 0o777 == 0o600
+    assert metadata.st_nlink == 1
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="concurrent|stale|symlink|hardlink",
+    ):
+        precommit_artifacts._acquire_closure_phase4_editorial_precommit_guard(
+            repo_root=tmp_path
+        )
+    assert (
+        precommit_artifacts._release_closure_phase4_editorial_precommit_guard(
+            guard_fd,
+            ownership,
+            repo_root=tmp_path,
+        )
+        is None
+    )
+    assert not os.path.lexists(guard_path)
+
+
+@pytest.mark.parametrize("foreign_kind", ["stale", "symlink", "hardlink"])
+def test_closure_phase4_editorial_guard_rejects_and_preserves_foreign_nodes(
+    foreign_kind: str,
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    guard_path = (
+        tmp_path
+        / precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+    )
+    foreign = tmp_path / "foreign-guard-node"
+    foreign.write_text("foreign\n", encoding="utf-8")
+    foreign.chmod(0o600)
+    if foreign_kind == "stale":
+        guard_path.write_text("stale\n", encoding="utf-8")
+        guard_path.chmod(0o600)
+    elif foreign_kind == "symlink":
+        guard_path.symlink_to(foreign)
+    else:
+        os.link(foreign, guard_path)
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="already exists",
+    ):
+        precommit_artifacts._acquire_closure_phase4_editorial_precommit_guard(
+            repo_root=tmp_path
+        )
+    assert os.path.lexists(guard_path)
+    if foreign_kind == "stale":
+        assert guard_path.read_text(encoding="utf-8") == "stale\n"
+    else:
+        assert foreign.read_text(encoding="utf-8") == "foreign\n"
+
+
+def test_closure_phase4_editorial_guard_cleanup_preserves_foreign_swap(
+    tmp_path: Path,
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    guard_path = (
+        tmp_path
+        / precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+    )
+    guard_fd, ownership = (
+        precommit_artifacts._acquire_closure_phase4_editorial_precommit_guard(
+            repo_root=tmp_path
+        )
+    )
+    guard_path.unlink()
+    guard_path.write_text("foreign replacement\n", encoding="utf-8")
+    guard_path.chmod(0o600)
+
+    error = (
+        precommit_artifacts._release_closure_phase4_editorial_precommit_guard(
+            guard_fd,
+            ownership,
+            repo_root=tmp_path,
+        )
+    )
+    assert error is not None
+    assert "failed closed" in error
+    assert guard_path.read_text(encoding="utf-8") == "foreign replacement\n"
+
+
+def test_closure_phase4_editorial_runner_rejects_present_guard_before_commands(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    guard_path = (
+        tmp_path
+        / precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD
+    )
+    guard_path.write_text("stale foreign guard\n", encoding="utf-8")
+    guard_path.chmod(0o600)
+    calls: list[str] = []
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda *_args, **_kwargs: calls.append("command"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_invocation",
+        lambda *_args, **_kwargs: calls.append("invocation"),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase4_editorial_precommit(
+            _closure_phase3_h_args(),
+            initial_status="",
+            repo_root=Path("."),
+        )
+        == 2
+    )
+    assert calls == []
+    assert guard_path.read_text(encoding="utf-8") == "stale foreign guard\n"
+
+
+def _install_closure_phase4_editorial_runner_harness(
+    monkeypatch,
+) -> dict[str, Any]:
+    args = _closure_phase3_h_args()
+    scope = precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    physical = tuple(
+        precommit_artifacts.RegistrationFileIdentity(
+            path,
+            1,
+            index + 1,
+            (
+                0o755
+                if path == "src/data/prepare_commit_artifacts.py"
+                else 0o644
+            ),
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        )
+        for index, path in enumerate(sorted(scope))
+    )
+    state = {"staged": False}
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    dvc_calls: list[int] = []
+    final_local_calls: list[str] = []
+    guard = precommit_artifacts.RegistrationOwnedNode(
+        precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD.as_posix(),
+        1,
+        2,
+        0o600,
+        1,
+    )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_acquire_closure_phase4_editorial_precommit_guard",
+        lambda **_kwargs: (91, guard),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_release_closure_phase4_editorial_precommit_guard",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase4_editorial_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_payload",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        lambda *_args, **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+
+    def dvc_status(_bin: str) -> dict[str, Any]:
+        dvc_calls.append(len(dvc_calls) + 1)
+        return {}
+
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", dvc_status)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase4-editorial-runner-test.md"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase4_h_syn_publication_check",
+        lambda **_kwargs: precommit_artifacts.CommandResult(
+            ["scripts/check_repo_publication_ready.sh"],
+            1,
+            "exact U1/U2/U3",
+            "",
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+
+    def final_local(**_kwargs: Any) -> tuple[Any, ...]:
+        final_local_calls.append("local")
+        return physical
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_local_staged_state",
+        final_local,
+    )
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return (
+                _closure_phase4_editorial_name_status()
+                if state["staged"]
+                else ""
+            )
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase4_editorial_short_status(
+                staged=state["staged"]
+            )
+        raise AssertionError(args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        if command[:6] == ["git", "-C", ".", "add", "-A", "--"]:
+            state["staged"] = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        if command[:5] == ["git", "-C", ".", "restore", (
+            "--source=" + precommit_artifacts.CLOSURE_PHASE4_R_SYN_COMMIT
+        )]:
+            state["staged"] = False
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "reproducibility_checks",
+        lambda **_kwargs: [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "passed"
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+    return {
+        "args": args,
+        "commands": commands,
+        "dvc_calls": dvc_calls,
+        "final_local_calls": final_local_calls,
+        "initial_status": _closure_phase4_editorial_short_status(staged=False),
+        "physical": physical,
+        "reports": reports,
+        "state": state,
+    }
+
+
+def test_closure_phase4_editorial_transaction_stages_exact12_without_dvc(
+    monkeypatch,
+) -> None:
+    args = _closure_phase3_h_args()
+    scope = precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    initial_status = _closure_phase4_editorial_short_status(staged=False)
+    physical = tuple(
+        precommit_artifacts.RegistrationFileIdentity(
+            path,
+            1,
+            index + 1,
+            (
+                0o755
+                if path == "src/data/prepare_commit_artifacts.py"
+                else 0o644
+            ),
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        )
+        for index, path in enumerate(sorted(scope))
+    )
+    state = {"staged": False}
+    commands: list[list[str]] = []
+    reports: list[dict[str, Any]] = []
+    guard = precommit_artifacts.RegistrationOwnedNode(
+        precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRECOMMIT_GUARD.as_posix(),
+        1,
+        2,
+        0o600,
+        1,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_acquire_closure_phase4_editorial_precommit_guard",
+        lambda **_kwargs: (91, guard),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_release_closure_phase4_editorial_precommit_guard",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_invocation",
+        lambda _args: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "closure_phase4_editorial_pre_stage_scope",
+        lambda *_args, **_kwargs: True,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: physical,
+    )
+    semantic_calls: list[Path] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_payload",
+        lambda *, repo_root: semantic_calls.append(repo_root) or physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "load_configured_dvc_artifacts",
+        lambda _path: [],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (
+            precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            {},
+        ),
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "default_report_path",
+        lambda: Path("tmp/phase4-editorial-test.md"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_run_closure_phase4_h_syn_publication_check",
+        lambda **_kwargs: precommit_artifacts.CommandResult(
+            ["scripts/check_repo_publication_ready.sh"],
+            1,
+            "exact U1/U2/U3",
+            "",
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_staged_transaction",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_local_staged_state",
+        lambda **_kwargs: physical,
+    )
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase4_editorial_name_status() if state["staged"] else ""
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase4_editorial_short_status(staged=state["staged"])
+        raise AssertionError(args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        if command[:6] == ["git", "-C", ".", "add", "-A", "--"]:
+            state["staged"] = True
+            return precommit_artifacts.CommandResult(command, 0, "", "")
+        raise AssertionError(command)
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "reproducibility_checks",
+        lambda **_kwargs: [
+            precommit_artifacts.ReproducibilityFinding(
+                "ok", "generic", "-", "passed"
+            )
+        ],
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda _path, **kwargs: reports.append(kwargs),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase4_editorial_precommit(
+            args,
+            initial_status=initial_status,
+        )
+        == 0
+    )
+    assert commands == [
+        ["git", "-C", ".", "add", "-A", "--", *sorted(scope)]
+    ]
+    assert semantic_calls == [Path("."), Path(".")]
+    assert reports[0]["selected_dvc_paths"] == []
+    assert reports[0]["dvc_add_results"] == []
+    assert reports[0]["dvc_push_result"] is None
+    assert "U1/U2/U3" in reports[0]["publication_check_result"].stdout
+
+
+def test_closure_phase4_editorial_runner_rechecks_local_state_after_final_dvc(
+    monkeypatch,
+) -> None:
+    harness = _install_closure_phase4_editorial_runner_harness(monkeypatch)
+    events: list[str] = []
+    state = cast(dict[str, bool], harness["state"])
+    dvc_count = 0
+    staged_count = 0
+
+    def dvc_status(_bin: str) -> dict[str, Any]:
+        nonlocal dvc_count
+        dvc_count += 1
+        events.append(f"dvc-{dvc_count}")
+        if dvc_count == 4:
+            state["late_local_drift"] = True
+        return {}
+
+    def staged_validation(**_kwargs: Any) -> tuple[Any, ...]:
+        nonlocal staged_count
+        staged_count += 1
+        events.append(f"full-{staged_count}")
+        return cast(tuple[Any, ...], harness["physical"])
+
+    def write_report(_path: Path, **_kwargs: Any) -> None:
+        events.append("report")
+
+    def final_local(**_kwargs: Any) -> tuple[Any, ...]:
+        events.append("local-final")
+        if state.get("late_local_drift"):
+            raise precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError(
+                "local evidence drift during final DVC observation"
+            )
+        return cast(tuple[Any, ...], harness["physical"])
+
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", dvc_status)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_staged_transaction",
+        staged_validation,
+    )
+    monkeypatch.setattr(precommit_artifacts, "write_report", write_report)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_local_staged_state",
+        final_local,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_release_closure_phase4_editorial_precommit_guard",
+        lambda *_args, **_kwargs: events.append("guard-release")
+        or (
+            None
+            if state["staged"] is False
+            else (_ for _ in ()).throw(
+                AssertionError("guard released before rollback completed")
+            )
+        ),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase4_editorial_precommit(
+            harness["args"],
+            initial_status=cast(str, harness["initial_status"]),
+        )
+        == 2
+    )
+    report_index = events.index("report")
+    assert events[report_index : report_index + 5] == [
+        "report",
+        "dvc-3",
+        "full-2",
+        "dvc-4",
+        "local-final",
+    ]
+    assert events[-2:] == ["dvc-5", "guard-release"]
+    assert state["staged"] is False
+    commands = cast(list[list[str]], harness["commands"])
+    assert commands[0][:6] == ["git", "-C", ".", "add", "-A", "--"]
+    assert commands[1][:4] == ["git", "-C", ".", "restore"]
+
+
+def test_closure_phase4_editorial_runner_rejects_divergent_repo_root_before_command(
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    calls: list[str] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda *_args, **_kwargs: calls.append("command"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "validate_closure_phase4_editorial_invocation",
+        lambda *_args, **_kwargs: calls.append("invocation"),
+    )
+
+    assert (
+        precommit_artifacts._run_closure_phase4_editorial_precommit(
+            _closure_phase3_h_args(),
+            initial_status="",
+            repo_root=tmp_path,
+        )
+        == 2
+    )
+    assert calls == []
+
+
+def test_closure_phase4_editorial_success_print_failure_triggers_rollback(
+    monkeypatch,
+) -> None:
+    harness = _install_closure_phase4_editorial_runner_harness(monkeypatch)
+    real_print = builtins.print
+    raised = False
+
+    def print_with_one_broken_pipe(*args: Any, **kwargs: Any) -> None:
+        nonlocal raised
+        if not raised and not args:
+            raised = True
+            raise BrokenPipeError("closed success output")
+        real_print(*args, **kwargs)
+
+    monkeypatch.setattr(builtins, "print", print_with_one_broken_pipe)
+    assert (
+        precommit_artifacts._run_closure_phase4_editorial_precommit(
+            harness["args"],
+            initial_status=cast(str, harness["initial_status"]),
+        )
+        == 2
+    )
+    assert raised
+    assert cast(dict[str, bool], harness["state"])["staged"] is False
+    commands = cast(list[list[str]], harness["commands"])
+    assert commands[-1][:4] == ["git", "-C", ".", "restore"]
+
+
+def test_closure_phase4_editorial_guard_cleanup_failure_rolls_back_staging(
+    monkeypatch,
+) -> None:
+    harness = _install_closure_phase4_editorial_runner_harness(monkeypatch)
+    cleanup_calls = 0
+
+    def fail_cleanup(*_args: Any, **_kwargs: Any) -> str:
+        nonlocal cleanup_calls
+        cleanup_calls += 1
+        return "guard foreign-swap cleanup failed closed"
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_release_closure_phase4_editorial_precommit_guard",
+        fail_cleanup,
+    )
+    assert (
+        precommit_artifacts._run_closure_phase4_editorial_precommit(
+            harness["args"],
+            initial_status=cast(str, harness["initial_status"]),
+        )
+        == 2
+    )
+    assert cleanup_calls == 1
+    assert cast(dict[str, bool], harness["state"])["staged"] is False
+    commands = cast(list[list[str]], harness["commands"])
+    assert commands[-1][:4] == ["git", "-C", ".", "restore"]
+
+
+def test_closure_phase4_editorial_rollback_is_directed_and_preserves_foreign(
+    monkeypatch,
+) -> None:
+    scope = precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    commands: list[list[str]] = []
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        commands.append(command)
+        assert "foreign-path" not in command
+        return precommit_artifacts.CommandResult(command, 0, "", "")
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            "M\tforeign-path\n"
+            if args
+            == (
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            )
+            else (_ for _ in ()).throw(AssertionError(args))
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: tuple(),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        lambda *_args, **_kwargs: tuple(),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    assert (
+        precommit_artifacts._rollback_closure_phase4_editorial_staging(
+            physical_before=tuple(),
+            comprehensive_before=tuple(),
+            dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            dvc_status_before={},
+            repo_root=Path("."),
+        )
+        is None
+    )
+    assert commands == [
+        [
+            "git",
+            "-C",
+            ".",
+            "restore",
+            (
+                "--source="
+                + precommit_artifacts.CLOSURE_PHASE4_R_SYN_COMMIT
+            ),
+            "--staged",
+            "--",
+            *sorted(scope),
+        ]
+    ]
+
+
+def test_closure_phase4_editorial_rollback_reports_base_drift_before_local_recaptures(
+    monkeypatch,
+) -> None:
+    events: list[str] = []
+
+    def run(command: list[str], **_kwargs: Any) -> Any:
+        events.append("restore")
+        assert (
+            f"--source={precommit_artifacts.CLOSURE_PHASE4_R_SYN_COMMIT}"
+            in command
+        )
+        return precommit_artifacts.CommandResult(command, 0, "", "")
+
+    def require_base(**_kwargs: Any) -> None:
+        events.append("base")
+        raise precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError(
+            "remote authority drift"
+        )
+
+    def dvc_status(_bin: str) -> dict[str, Any]:
+        events.append("dvc")
+        return {}
+
+    def git_output(_root: Path, *args: str) -> str:
+        events.append("local-index")
+        assert args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        return ""
+
+    monkeypatch.setattr(precommit_artifacts, "run_command", run)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        require_base,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", dvc_status)
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: events.append("local-exact12") or tuple(),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        lambda *_args, **_kwargs: events.append("local-comprehensive")
+        or tuple(),
+    )
+
+    error = precommit_artifacts._rollback_closure_phase4_editorial_staging(
+        physical_before=tuple(),
+        comprehensive_before=tuple(),
+        dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+        dvc_status_before={},
+        repo_root=Path("."),
+    )
+    assert error is not None
+    assert "base/remote validation failed" in error
+    assert events == [
+        "restore",
+        "base",
+        "dvc",
+        "local-index",
+        "local-exact12",
+        "local-comprehensive",
+        "local-index",
+        "local-exact12",
+    ]
+
+
+def test_closure_phase4_editorial_abort_reports_failed_closed_on_private_build_drift(
+    monkeypatch,
+    capsys,
+) -> None:
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda command, **_kwargs: precommit_artifacts.CommandResult(
+            command, 0, "", ""
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            ""
+            if args
+            == (
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+            )
+            else (_ for _ in ()).throw(AssertionError(args))
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: tuple(),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError(
+                "private/build evidence drift"
+            )
+        ),
+    )
+
+    assert (
+        precommit_artifacts._abort_closure_phase4_editorial_post_add(
+            RuntimeError("primary failure"),
+            physical_before=tuple(),
+            comprehensive_before=tuple(),
+            dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+            dvc_status_before={},
+            repo_root=Path("."),
+        )
+        == 2
+    )
+    assert "ROLLBACK FAILED CLOSED" in capsys.readouterr().err
+
+
+def test_closure_phase4_editorial_rollback_rejects_index_mutation_during_comprehensive_recapture(
+    monkeypatch,
+) -> None:
+    state = {"index_drift": False}
+    owned_path = sorted(
+        precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_STAGED_SCOPE
+    )[0]
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda command, **_kwargs: precommit_artifacts.CommandResult(
+            command, 0, "", ""
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(precommit_artifacts, "dvc_status_json", lambda _bin: {})
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            f"M\t{owned_path}\n" if state["index_drift"] else ""
+        )
+        if args
+        == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        )
+        else (_ for _ in ()).throw(AssertionError(args)),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: tuple(),
+    )
+
+    def mutate_index(*_args: Any, **_kwargs: Any) -> tuple[Any, ...]:
+        state["index_drift"] = True
+        return tuple()
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        mutate_index,
+    )
+
+    error = precommit_artifacts._rollback_closure_phase4_editorial_staging(
+        physical_before=tuple(),
+        comprehensive_before=tuple(),
+        dvc_bin=precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
+        dvc_status_before={},
+        repo_root=Path("."),
+    )
+    assert error is not None
+    assert "final directed rollback left owned staged paths" in error
+
+
+def test_closure_phase4_editorial_staged_validation_rejects_payload_worktree_mutation(
+    monkeypatch,
+) -> None:
+    before = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        ),
+    )
+    after = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            11,
+            "b" * 64,
+            21,
+            31,
+        ),
+    )
+    snapshots = iter((before, after))
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase4_editorial_name_status()
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase4_editorial_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: next(snapshots),
+    )
+    binding_calls: list[tuple[Any, ...]] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_index_bindings",
+        lambda physical, **_kwargs: binding_calls.append(physical),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_payload",
+        lambda **_kwargs: before,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        lambda *_args, **_kwargs: before,
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="worktree changed",
+    ):
+        precommit_artifacts.validate_closure_phase4_editorial_staged_transaction()
+    assert binding_calls == [before]
+
+
+def test_closure_phase4_editorial_staged_validation_rejects_payload_index_mutation(
+    monkeypatch,
+) -> None:
+    physical = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        ),
+    )
+    state = {"payload_validated": False}
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            exact = _closure_phase4_editorial_name_status()
+            return (
+                exact + "\nM\tforeign-index-entry"
+                if state["payload_validated"]
+                else exact
+            )
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase4_editorial_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        raise AssertionError(args)
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_index_bindings",
+        lambda *_args, **_kwargs: None,
+    )
+
+    def mutate_index(**_kwargs: Any) -> Any:
+        state["payload_validated"] = True
+        return physical
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_payload",
+        mutate_index,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        lambda *_args, **_kwargs: physical,
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="Git state changed",
+    ):
+        precommit_artifacts.validate_closure_phase4_editorial_staged_transaction()
+
+
+def test_closure_phase4_editorial_staged_validation_rechecks_late_authority(
+    monkeypatch,
+) -> None:
+    physical = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        ),
+    )
+    events: list[str] = []
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            events.append("cached")
+            return _closure_phase4_editorial_name_status()
+        if args == ("status", "--short", "--untracked-files=all"):
+            events.append("short")
+            return _closure_phase4_editorial_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            events.append("unstaged")
+            return ""
+        raise AssertionError(args)
+
+    authority_calls: list[Path] = []
+
+    def require_authority(*, repo_root: Path) -> None:
+        authority_calls.append(repo_root)
+        events.append(f"authority-{len(authority_calls)}")
+        if len(authority_calls) == 2:
+            raise precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError(
+                "late authority drift"
+            )
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        require_authority,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: events.append("snapshot") or physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_index_bindings",
+        lambda *_args, **_kwargs: events.append("index"),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_payload",
+        lambda **_kwargs: events.append("payload") or physical,
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="late authority drift",
+    ):
+        precommit_artifacts.validate_closure_phase4_editorial_staged_transaction()
+    assert authority_calls == [Path("."), Path(".")]
+    assert events == [
+        "cached",
+        "short",
+        "unstaged",
+        "authority-1",
+        "snapshot",
+        "index",
+        "payload",
+        "authority-2",
+    ]
+
+
+@pytest.mark.parametrize("evidence_kind", ["private", "build"])
+def test_closure_phase4_editorial_staged_validation_rejects_evidence_drift_during_second_base(
+    evidence_kind: str,
+    tmp_path: Path,
+    monkeypatch,
+) -> None:
+    _write_closure_phase4_editorial_build_namespace(tmp_path)
+    if evidence_kind == "private":
+        relative = precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_PRIVATE_BINDINGS[
+            "doctoral_manuscript_tex"
+        ]
+        evidence = tmp_path / relative
+        evidence.parent.mkdir(parents=True, exist_ok=True)
+        evidence.write_text("private evidence\n", encoding="utf-8")
+    else:
+        relative = (
+            precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_BUILD_DIRS[0]
+            / "mifal_ed_modelo_tesis_v5.aux"
+        )
+        evidence = tmp_path / relative
+    expected_evidence = precommit_artifacts._registration_file_identity(
+        evidence,
+        repo_root=tmp_path,
+        mode=0o644,
+    )
+    physical = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        ),
+    )
+
+    def git_output(_root: Path, *args: str) -> str:
+        if args == (
+            "diff",
+            "--cached",
+            "--name-status",
+            "--no-renames",
+        ):
+            return _closure_phase4_editorial_name_status()
+        if args == ("status", "--short", "--untracked-files=all"):
+            return _closure_phase4_editorial_short_status(staged=True)
+        if args == ("diff", "--name-status", "--no-renames"):
+            return ""
+        raise AssertionError(args)
+
+    authority_calls = 0
+
+    def require_base(**_kwargs: Any) -> None:
+        nonlocal authority_calls
+        authority_calls += 1
+        if authority_calls == 2:
+            evidence.write_text(
+                f"{evidence_kind} evidence drifted\n",
+                encoding="utf-8",
+            )
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_base",
+        require_base,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_index_bindings",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_payload",
+        lambda **_kwargs: (expected_evidence,),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_phase4_editorial_require_ignored_untracked",
+        lambda *_args, **_kwargs: None,
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="comprehensive evidence snapshot drifted",
+    ):
+        precommit_artifacts.validate_closure_phase4_editorial_staged_transaction(
+            repo_root=tmp_path
+        )
+    assert authority_calls == 2
+
+
+def test_closure_phase4_editorial_local_recheck_rejects_private_drift_during_git_checks(
+    monkeypatch,
+) -> None:
+    physical = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        ),
+    )
+    state = {"private_drift": False, "recaptures": 0}
+
+    def recapture(*_args: Any, **_kwargs: Any) -> Any:
+        state["recaptures"] += 1
+        if state["private_drift"]:
+            raise precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError(
+                "private evidence drift"
+            )
+        return physical
+
+    def git_state(**_kwargs: Any) -> None:
+        state["private_drift"] = True
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        recapture,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_exact_staged_git_state",
+        git_state,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_index_bindings",
+        lambda *_args, **_kwargs: None,
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="private evidence drift",
+    ):
+        precommit_artifacts._recapture_closure_phase4_editorial_local_staged_state(
+            physical_before=physical,
+            comprehensive_before=physical,
+            repo_root=Path("."),
+            context="race regression",
+        )
+    assert state["recaptures"] == 2
+
+
+@pytest.mark.parametrize("mutation_recapture", [1, 2])
+def test_closure_phase4_editorial_local_recheck_rejects_index_drift_during_comprehensive_recapture(
+    mutation_recapture: int,
+    monkeypatch,
+) -> None:
+    physical = (
+        precommit_artifacts.RegistrationFileIdentity(
+            "reports/thesis/phase4_manuscript_build_receipt.json",
+            1,
+            2,
+            0o644,
+            1,
+            10,
+            "a" * 64,
+            20,
+            30,
+        ),
+    )
+    state = {"index_drift": False, "recaptures": 0, "git_checks": 0}
+
+    def recapture(*_args: Any, **_kwargs: Any) -> Any:
+        state["recaptures"] += 1
+        if state["recaptures"] == mutation_recapture:
+            state["index_drift"] = True
+        return physical
+
+    def git_state(**_kwargs: Any) -> None:
+        state["git_checks"] += 1
+        if state["index_drift"]:
+            raise precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError(
+                "index drift during comprehensive recapture"
+            )
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_recapture_closure_phase4_editorial_snapshot",
+        recapture,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_editorial_exact_staged_git_state",
+        git_state,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_snapshot_closure_phase4_editorial_files",
+        lambda **_kwargs: physical,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_validate_closure_phase4_editorial_index_bindings",
+        lambda *_args, **_kwargs: None,
+    )
+
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4EditorialPrecommitAdapterError,
+        match="index drift during comprehensive recapture",
+    ):
+        precommit_artifacts._recapture_closure_phase4_editorial_local_staged_state(
+            physical_before=physical,
+            comprehensive_before=physical,
+            repo_root=Path("."),
+            context="race regression",
+        )
+    assert state["recaptures"] == mutation_recapture
+    assert state["git_checks"] == mutation_recapture

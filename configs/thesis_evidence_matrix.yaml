@@ -2,6 +2,23 @@
 # The script extracts dates and hashes from manifests, but allowed conclusions
 # remain explicit so historical evidence is not upgraded into a final claim by
 # automation.
+schema_version: thesis_evidence_matrix_v1
+report_version: chapter_iv_evidence_matrix_v1
+generated_at_utc: "2026-08-20T14:40:05+00:00"
+closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+synthesis_publication_commit: 528dcb74a7c08b65f262901e4562a67b784db8c9
+default_evidence_tier: historical_or_infrastructure
+default_authority_commit: row-specific historical provenance; see commit/hash
+manifest_inputs:
+  - path: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    role: published_closure_v1_synthesis_manifest
+  - path: reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv
+    role: approved_final_closure_matrix
+  - path: reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv
+    role: approved_thesis_claim_map
+  - path: reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md
+    role: approved_final_closure_report
+
 entries:
   - component: Data freeze v0 with NLA
     dataset_freeze_used: Current data freeze v0 generated after EPA NLA integration.
@@ -155,3 +172,158 @@ entries:
     includes_nla: not applicable to API runtime; reference artifacts inherit their own scope
     allowed_conclusion: Software reproducibility and workflow-interface evidence; do not present as new model performance or universal external-domain validation.
 
+  - component: Closure V1 final adjudication matrix
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 locked internal pseudoprospective WQP evaluation; final adjudication of E1-E10.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv
+    split: 353 development locations and 88 held-out WQP monitoring locations; evaluation from 2022-01
+    includes_nla: semantic provenance and enrichment only; no direct monthly WQP target transfer
+    allowed_conclusion: Final Closure V1 authority for 130 adjudication rows; no conclusive predictive corroboration, with explicit unavailability and a reproducible methodological and engineering contribution.
+
+  - component: Closure V1 approved thesis claim map
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 final synthesis; 20 approved manuscript claims.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv
+    split: internal pseudoprospective WQP evaluation; destination-specific manuscript wording
+    includes_nla: semantic provenance and enrichment only; external validation is forbidden
+    allowed_conclusion: Final wording boundary for Chapters III-V, Summary, Abstract and Conclusion; descriptive evidence may be reported only with its denominators and limitations.
+
+  - component: Closure V1 cohort and intent-to-predict accounting
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 locked evaluation surface and retained terminal-status rows.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T02_intent_to_predict_funnel.csv
+    split: 88 held-out WQP locations; 4,488 origins; horizons h1-h3
+    includes_nla: provenance only; operational surface is WQP
+    allowed_conclusion: Final descriptive accounting of 13,464 origin-horizon attempts; failures and unavailable predictions remain in the intent-to-predict denominator.
+
+  - component: Closure V1 E1 dual benchmark
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 estimable auxiliary branches with five algorithmic slots.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T03_dual_benchmark.csv
+    split: internal WQP holdout; observation-weighted and site-weighted estimands kept separate
+    includes_nla: provenance only; no direct NLA target learning
+    allowed_conclusion: Descriptive horizon-specific rankings with exact attempted, successful and metric-evaluable denominators; no universal winner and no substitution of P0, P1 or A2.
+
+  - component: Closure V1 E2 internal site transfer
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 registered legacy-to-locked internal WQP transfer surface.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T05_site_transfer.csv
+    split: held-out WQP locations; 1,050 registered cells
+    includes_nla: no external NLA target transfer
+    allowed_conclusion: None of the 1,050 E2 cells was estimable because the legacy evaluation surface was not frozen before outcome access; this is not evidence of zero gap or external validation.
+
+  - component: Closure V1 E3 threshold sensitivity
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 sealed threshold analysis.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T06_threshold_sensitivity.csv
+    split: internal WQP holdout; horizons h1-h3
+    includes_nla: provenance only
+    allowed_conclusion: Descriptive sensitivity at 25, 30, 33 and 50 micrograms per litre; project thresholds, not official ecological standards, with sparse support at 50.
+
+  - component: Closure V1 E4 trophic references
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 internal WQP proxy and declared Carlson-reference summaries.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T07_trophic_performance.csv
+    split: internal WQP holdout; proxy/reference-by-horizon cells
+    includes_nla: semantic provenance only; no direct monthly WQP target validation
+    allowed_conclusion: B2 improved on B1 across all four ordinal metrics in 15 of 15 descriptive reference-horizon summaries; this is not external NLA validation.
+
+  - component: Closure V1 E5 multiplicity ledger
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 complete preregistered Holm universes.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T08_multiplicity_ledger.csv
+    split: registered estimands across E1-E9
+    includes_nla: not applicable to multiplicity accounting
+    allowed_conclusion: Holm families A=3, B=78, C=1, D=9 and E=1 are retained without reduction; non-estimability is not a zero effect or equivalence.
+
+  - component: Closure V1 E6 degradation and E9 planning availability
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 registered degradation and planning estimands.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T11_e6_e9_unavailability.csv
+    split: internal WQP holdout; 78 degradation cells and 9 planning actions
+    includes_nla: provenance only
+    allowed_conclusion: E6 has 0 of 78 estimable cells and E9 has 0 of 9 estimable actions because required models were unavailable; no robustness, causality, net-benefit, optimality or official recommendation claim is authorized.
+
+  - component: Closure V1 E7 ANFIS ablation and diagnostics
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 A1-versus-A0 exact-common-row ablation and sentinel diagnostics.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T09_anfis_ablation.csv
+    split: internal WQP holdout; five algorithmic slots; horizons h1-h3
+    includes_nla: provenance only
+    allowed_conclusion: A1-A0 directions are descriptive on exact common rows; 0 of 4 prespecified learning-curve and membership-stability diagnostics were available, so no saturation or stability claim is permitted.
+
+  - component: Closure V1 E8 uncertainty diagnostics
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 sealed raw-Gaussian versus locked-conformal diagnostics.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T10_uncertainty.csv
+    split: internal WQP holdout; 30 paired primary A0/A1 model-slot-horizon groups
+    includes_nla: provenance only
+    allowed_conclusion: Raw Gaussian was within the 0.05 margin in 30 of 30 groups versus 26 of 30 for locked conformal; locked was closer in 5 of 30 and wider in 30 of 30. This is descriptive, not global calibration, and no recalibration was performed.
+
+  - component: Closure V1 E10 software evidence
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 recovery-2 software evidence and sealed runtime environment.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/THESIS_TABLES/T12_software_evidence.csv
+    split: software verification; not a predictive estimand
+    includes_nla: not applicable to software certification
+    allowed_conclusion: E10 verifies 338 passing public tests, 9 justified skips, 3 passing E2E tests, 69 OpenAPI paths, 83 operations and the sealed environment; software verification does not establish scientific efficacy.
+
+  - component: Closure V1 final report and hypothesis verdicts
+    evidence_tier: closure_v1_final
+    authority_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
+    commit_hash: "closure-source:ea8ddce7f8edb9a61db97e29178e52603fa371b1; synthesis-publication:528dcb74a7c08b65f262901e4562a67b784db8c9"
+    dataset_freeze_used: Closure V1 approved synthesis of E1-E10 and H1-H5b.
+    execution_date: 2026-08-20 R-SYN publication
+    manifest: reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json
+    artifact: reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md
+    split: internal pseudoprospective WQP evaluation and separate software evidence
+    includes_nla: semantic provenance and enrichment only; no external validation
+    allowed_conclusion: H1 has limited descriptive support; H2 and H4 are not estimable; H3 is partial descriptive evidence; H5a is not scientifically confirmed; H5b is not estimable; the global predictive verdict is non-conclusive.
