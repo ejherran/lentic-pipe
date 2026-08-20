@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1480" height="680" viewBox="0 0 1480 680" data-artifact-id="F07" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F07. H1-H5b verdicts for the internal WQP holdout; weighting defined by each estimand; horizons of 1, 2, and 3 months; registered denominators and Holm universes without substitution; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: for H1, direct ANFIS evidence is separated from auxiliary B1/B2 context, descriptive support is not elevated to confirmation, and not_estimable remains explicit.</title>
+<desc id="figure-description">Sources: reports/closure_v1/00_protocol/hypothesis_registry.csv;reports/closure_v1/05_inference/multiplicity_report.csv;reports/closure_v1/06_degradation/failure_registry.csv;reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv;reports/closure_v1/08_uncertainty/uncertainty_ledger.csv;reports/closure_v1/09_planning/planning_bootstrap.csv. Filters: FINAL_CLOSURE_MATRIX rows grouped by hypothesis_id prefix; each hypothesis must have one consistent verdict; state vocabulary is non-binary and Holm cells use exact model/metric/population/estimand keys; H1 partitions 15 direct-ANFIS rows from 13 auxiliary B1/B2 context rows</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1480" height="680" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F07 - H1-H5b verdict matrix</text>
+<text class="subtitle" x="40" y="72">Explicit interpretive states; unavailability is not converted into a binary result.</text>
+<g class="hypothesis-state" data-auxiliary-b1-b2-row-count="13" data-direct-anfis-available-count="9" data-direct-anfis-row-count="15" data-direct-anfis-unavailable-count="6" data-estimable-row-count="9" data-hypothesis="H1" data-row-count="28" data-state="limited_descriptive_support" data-total-descriptive-row-count="22" data-verdict="limited_descriptive_support">
+<rect fill="#dbeafe" height="210" rx="12" stroke="#4b5563" stroke-width="1" width="445" x="45" y="115"/>
+<text class="heading" x="67" y="153">H1</text>
+<text class="label" font-weight="700" x="67" y="189">limited descriptive support</text>
+<text class="small" x="67" y="220">Interpretable and usable ANFIS</text>
+<text class="value" x="67" y="248">Direct ANFIS: 9/15; unavailable: 6</text>
+<text class="small" x="67" y="271">auxiliary B1/B2 context: 13; does not validate ANFIS</text>
+<text class="small" x="67" y="296">Holm families: A, C</text>
+</g>
+<g class="hypothesis-state" data-estimable-row-count="0" data-hypothesis="H2" data-row-count="3" data-state="not_estimable" data-verdict="not_estimable_primary_architecture">
+<rect fill="#e5e7eb" height="210" rx="12" stroke="#4b5563" stroke-width="1" width="445" x="525" y="115"/>
+<text class="heading" x="547" y="153">H2</text>
+<text class="label" font-weight="700" x="547" y="189">not estimable</text>
+<text class="small" x="547" y="220">PIPE temporal signal</text>
+<text class="value" x="547" y="254">available estimands: 0/3</text>
+<text class="small" x="547" y="296">Holm families: A</text>
+</g>
+<g class="hypothesis-state" data-estimable-row-count="1" data-hypothesis="H3" data-row-count="3" data-state="partial_descriptive_only" data-verdict="partial_descriptive_only">
+<rect fill="#ede9fe" height="210" rx="12" stroke="#4b5563" stroke-width="1" width="445" x="1005" y="115"/>
+<text class="heading" x="1027" y="153">H3</text>
+<text class="label" font-weight="700" x="1027" y="189">partial descriptive only</text>
+<text class="small" x="1027" y="220">Uncertainty and degradation</text>
+<text class="value" x="1027" y="254">available estimands: 1/3</text>
+<text class="small" x="1027" y="296">Holm families: E</text>
+</g>
+<g class="hypothesis-state" data-estimable-row-count="0" data-hypothesis="H4" data-row-count="78" data-state="not_estimable" data-verdict="not_estimable">
+<rect fill="#e5e7eb" height="210" rx="12" stroke="#4b5563" stroke-width="1" width="445" x="45" y="365"/>
+<text class="heading" x="67" y="403">H4</text>
+<text class="label" font-weight="700" x="67" y="439">not estimable</text>
+<text class="small" x="67" y="470">MIFAL as a robustness contrast</text>
+<text class="value" x="67" y="504">available estimands: 0/78</text>
+<text class="small" x="67" y="546">Holm families: B</text>
+</g>
+<g class="hypothesis-state" data-estimable-row-count="0" data-hypothesis="H5a" data-row-count="9" data-state="not_scientifically_confirmed" data-verdict="not_confirmed_scientifically">
+<rect fill="#fef3c7" height="210" rx="12" stroke="#4b5563" stroke-width="1" width="445" x="525" y="365"/>
+<text class="heading" x="547" y="403">H5a</text>
+<text class="label" font-weight="700" x="547" y="439">not scientifically confirmed</text>
+<text class="small" x="547" y="470">Planning capability</text>
+<text class="value" x="547" y="504">available estimands: 0/9</text>
+<text class="small" x="547" y="546">Holm families: D</text>
+</g>
+<g class="hypothesis-state" data-estimable-row-count="0" data-hypothesis="H5b" data-row-count="9" data-state="not_estimable" data-verdict="not_estimable">
+<rect fill="#e5e7eb" height="210" rx="12" stroke="#4b5563" stroke-width="1" width="445" x="1005" y="365"/>
+<text class="heading" x="1027" y="403">H5b</text>
+<text class="label" font-weight="700" x="1027" y="439">not estimable</text>
+<text class="small" x="1027" y="470">Net planning benefit</text>
+<text class="value" x="1027" y="504">available estimands: 0/9</text>
+<text class="small" x="1027" y="546">Holm families: N/A</text>
+</g>
+<text class="label" x="45" y="645">Preserved Holm universes: A=3; B=78; C=1; D=9; E=1</text>
+</svg>

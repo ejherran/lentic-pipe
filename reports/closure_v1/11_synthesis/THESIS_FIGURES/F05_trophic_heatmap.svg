@@ -1,0 +1,388 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1330" viewBox="0 0 1500 1330" data-artifact-id="F05" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F05. Semantic and proxy-based trophic evidence for WQP and the declared references; E4 weighting preserved; horizons of 1, 2, and 3 months when applicable; denominator published by reference; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: NLA does not directly validate monthly WQP targets.</title>
+<desc id="figure-description">Sources: reports/closure_v1/04_trophic/trophic_proxy_metrics.csv;reports/closure_v1/04_trophic/carlson_reference_metrics.csv. Filters: evaluation_cohort=location_holdout; status=available; model_id in B1,B2; references=future_chla_operational_proxy plus Carlson tsi_tp_h,tsi_sd_h,tsi_non_chla_h,tsi_all_h; cells are means over five published seed slots and intensity is scaled within each metric</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1500" height="1330" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F05 - B1/B2 ordinal heatmap: Chl-a proxy and Carlson</text>
+<text class="subtitle" x="40" y="72">Values are five-slot means; color is relative within each metric column, not an inferential signal.</text>
+<text class="label" font-weight="700" text-anchor="middle" x="755" y="120">macro-F1</text>
+<line class="axis" x1="660" x2="660" y1="128" y2="1285"/>
+<text class="label" font-weight="700" text-anchor="middle" x="945" y="120">quadratic kappa</text>
+<line class="axis" x1="850" x2="850" y1="128" y2="1285"/>
+<text class="label" font-weight="700" text-anchor="middle" x="1135" y="120">ordinal MAE</text>
+<line class="axis" x1="1040" x2="1040" y1="128" y2="1285"/>
+<text class="label" font-weight="700" text-anchor="middle" x="1325" y="120">severe error</text>
+<line class="axis" x1="1230" x2="1230" y1="128" y2="1285"/>
+<g class="heatmap-series" data-denominator="827" data-horizon="1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1">
+<rect fill="#f9fafb" height="114" width="1390" x="45" y="128"/>
+<text class="label" x="55" y="153">Chl-a proxy - B1 - h1</text>
+<text class="value" x="510" y="153">n=827</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.3503" fill="#98bee2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="129"/>
+<text class="value" text-anchor="middle" x="755" y="150">0.3503</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2646" fill="#c3d9f0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="129"/>
+<text class="value" text-anchor="middle" x="945" y="150">0.2646</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.8774" fill="#abcae8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="129"/>
+<text class="value" text-anchor="middle" x="1135" y="150">0.8774</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2259" fill="#aac9e8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="129"/>
+<text class="value" text-anchor="middle" x="1325" y="150">0.2259</text>
+</g>
+<g class="heatmap-series" data-denominator="858" data-horizon="2" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="191">Chl-a proxy - B1 - h2</text>
+<text class="value" x="510" y="191">n=858</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2804" fill="#b5d0eb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="167"/>
+<text class="value" text-anchor="middle" x="755" y="188">0.2804</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2152" fill="#cfe1f4" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="167"/>
+<text class="value" text-anchor="middle" x="945" y="188">0.2152</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.9841" fill="#9abfe2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="167"/>
+<text class="value" text-anchor="middle" x="1135" y="188">0.9841</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2513" fill="#a1c4e5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="167"/>
+<text class="value" text-anchor="middle" x="1325" y="188">0.2513</text>
+</g>
+<g class="heatmap-series" data-denominator="819" data-horizon="3" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="229">Chl-a proxy - B1 - h3</text>
+<text class="value" x="510" y="229">n=819</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2856" fill="#b3cfeb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="205"/>
+<text class="value" text-anchor="middle" x="755" y="226">0.2856</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.1816" fill="#d8e7f7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="205"/>
+<text class="value" text-anchor="middle" x="945" y="226">0.1816</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.9915" fill="#99bee2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="205"/>
+<text class="value" text-anchor="middle" x="1135" y="226">0.9915</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B1" data-value="0.2681" fill="#9bc0e3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="205"/>
+<text class="value" text-anchor="middle" x="1325" y="226">0.2681</text>
+</g>
+<g class="heatmap-series" data-denominator="827" data-horizon="1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2">
+<rect fill="#f3f4f6" height="114" width="1390" x="45" y="242"/>
+<text class="label" x="55" y="267">Chl-a proxy - B2 - h1</text>
+<text class="value" x="510" y="267">n=827</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.4021" fill="#83b0da" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="243"/>
+<text class="value" text-anchor="middle" x="755" y="264">0.4021</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.6047" fill="#6da2d3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="243"/>
+<text class="value" text-anchor="middle" x="945" y="264">0.6047</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.6385" fill="#d1e3f5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="243"/>
+<text class="value" text-anchor="middle" x="1135" y="264">0.6385</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.0665" fill="#e0ecfa" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="243"/>
+<text class="value" text-anchor="middle" x="1325" y="264">0.0665</text>
+</g>
+<g class="heatmap-series" data-denominator="858" data-horizon="2" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="305">Chl-a proxy - B2 - h2</text>
+<text class="value" x="510" y="305">n=858</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.4300" fill="#77a8d7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="281"/>
+<text class="value" text-anchor="middle" x="755" y="302">0.4300</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.5665" fill="#77a8d6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="281"/>
+<text class="value" text-anchor="middle" x="945" y="302">0.5665</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.5664" fill="#ddeaf9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="281"/>
+<text class="value" text-anchor="middle" x="1135" y="302">0.5664</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.0594" fill="#e2eefb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="281"/>
+<text class="value" text-anchor="middle" x="1325" y="302">0.0594</text>
+</g>
+<g class="heatmap-series" data-denominator="819" data-horizon="3" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="343">Chl-a proxy - B2 - h3</text>
+<text class="value" x="510" y="343">n=819</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.4316" fill="#77a8d6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="319"/>
+<text class="value" text-anchor="middle" x="755" y="340">0.4316</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.5995" fill="#6ea3d3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="319"/>
+<text class="value" text-anchor="middle" x="945" y="340">0.5995</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.5324" fill="#e2eefb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="319"/>
+<text class="value" text-anchor="middle" x="1135" y="340">0.5324</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="future_chla_operational_proxy" data-seed-count="5" data-series="B2" data-value="0.0574" fill="#e3eefb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="319"/>
+<text class="value" text-anchor="middle" x="1325" y="340">0.0574</text>
+</g>
+<g class="heatmap-series" data-denominator="775" data-horizon="1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1">
+<rect fill="#f9fafb" height="114" width="1390" x="45" y="356"/>
+<text class="label" x="55" y="381">Carlson TP - B1 - h1</text>
+<text class="value" x="510" y="381">n=775</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.3452" fill="#9abfe2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="357"/>
+<text class="value" text-anchor="middle" x="755" y="378">0.3452</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2929" fill="#bcd5ee" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="357"/>
+<text class="value" text-anchor="middle" x="945" y="378">0.2929</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.9030" fill="#a7c8e7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="357"/>
+<text class="value" text-anchor="middle" x="1135" y="378">0.9030</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2377" fill="#a6c6e6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="357"/>
+<text class="value" text-anchor="middle" x="1325" y="378">0.2377</text>
+</g>
+<g class="heatmap-series" data-denominator="805" data-horizon="2" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="419">Carlson TP - B1 - h2</text>
+<text class="value" x="510" y="419">n=805</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2695" fill="#b9d3ed" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="395"/>
+<text class="value" text-anchor="middle" x="755" y="416">0.2695</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2262" fill="#cce0f3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="395"/>
+<text class="value" text-anchor="middle" x="945" y="416">0.2262</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="1.0360" fill="#92bae0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="395"/>
+<text class="value" text-anchor="middle" x="1135" y="416">1.0360</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2713" fill="#9abfe2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="395"/>
+<text class="value" text-anchor="middle" x="1325" y="416">0.2713</text>
+</g>
+<g class="heatmap-series" data-denominator="767" data-horizon="3" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="457">Carlson TP - B1 - h3</text>
+<text class="value" x="510" y="457">n=767</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.3120" fill="#a8c8e7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="433"/>
+<text class="value" text-anchor="middle" x="755" y="454">0.3120</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2606" fill="#c4daf0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="433"/>
+<text class="value" text-anchor="middle" x="945" y="454">0.2606</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.9979" fill="#98bee2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="433"/>
+<text class="value" text-anchor="middle" x="1135" y="454">0.9979</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_tp_h" data-seed-count="5" data-series="B1" data-value="0.2795" fill="#98bde1" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="433"/>
+<text class="value" text-anchor="middle" x="1325" y="454">0.2795</text>
+</g>
+<g class="heatmap-series" data-denominator="775" data-horizon="1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2">
+<rect fill="#f3f4f6" height="114" width="1390" x="45" y="470"/>
+<text class="label" x="55" y="495">Carlson TP - B2 - h1</text>
+<text class="value" x="510" y="495">n=775</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.4178" fill="#7cacd8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="471"/>
+<text class="value" text-anchor="middle" x="755" y="492">0.4178</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.5663" fill="#77a8d6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="471"/>
+<text class="value" text-anchor="middle" x="945" y="492">0.5663</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.6697" fill="#ccdff3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="471"/>
+<text class="value" text-anchor="middle" x="1135" y="492">0.6697</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.0877" fill="#d8e7f7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="471"/>
+<text class="value" text-anchor="middle" x="1325" y="492">0.0877</text>
+</g>
+<g class="heatmap-series" data-denominator="805" data-horizon="2" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="533">Carlson TP - B2 - h2</text>
+<text class="value" x="510" y="533">n=805</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.4781" fill="#639cd0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="509"/>
+<text class="value" text-anchor="middle" x="755" y="530">0.4781</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.6061" fill="#6da1d3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="509"/>
+<text class="value" text-anchor="middle" x="945" y="530">0.6061</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.5267" fill="#e3eefb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="509"/>
+<text class="value" text-anchor="middle" x="1135" y="530">0.5267</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.0323" fill="#ebf4fe" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="509"/>
+<text class="value" text-anchor="middle" x="1325" y="530">0.0323</text>
+</g>
+<g class="heatmap-series" data-denominator="767" data-horizon="3" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="571">Carlson TP - B2 - h3</text>
+<text class="value" x="510" y="571">n=767</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.4784" fill="#639cd0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="547"/>
+<text class="value" text-anchor="middle" x="755" y="568">0.4784</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.6518" fill="#619acf" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="547"/>
+<text class="value" text-anchor="middle" x="945" y="568">0.6518</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.5007" fill="#e7f1fc" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="547"/>
+<text class="value" text-anchor="middle" x="1135" y="568">0.5007</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_tp_h" data-seed-count="5" data-series="B2" data-value="0.0417" fill="#e8f1fd" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="547"/>
+<text class="value" text-anchor="middle" x="1325" y="568">0.0417</text>
+</g>
+<g class="heatmap-series" data-denominator="690" data-horizon="1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1">
+<rect fill="#f9fafb" height="114" width="1390" x="45" y="584"/>
+<text class="label" x="55" y="609">Carlson Secchi - B1 - h1</text>
+<text class="value" x="510" y="609">n=690</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.1845" fill="#dceaf9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="585"/>
+<text class="value" text-anchor="middle" x="755" y="606">0.1845</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.1104" fill="#eaf3fd" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="585"/>
+<text class="value" text-anchor="middle" x="945" y="606">0.1104</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="1.1693" fill="#7dacd8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="585"/>
+<text class="value" text-anchor="middle" x="1135" y="606">1.1693</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.3788" fill="#76a8d6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="585"/>
+<text class="value" text-anchor="middle" x="1325" y="606">0.3788</text>
+</g>
+<g class="heatmap-series" data-denominator="724" data-horizon="2" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="647">Carlson Secchi - B1 - h2</text>
+<text class="value" x="510" y="647">n=724</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.1384" fill="#eff6ff" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="623"/>
+<text class="value" text-anchor="middle" x="755" y="644">0.1384</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.0896" fill="#eff6ff" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="623"/>
+<text class="value" text-anchor="middle" x="945" y="644">0.0896</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="1.3467" fill="#619acf" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="623"/>
+<text class="value" text-anchor="middle" x="1135" y="644">1.3467</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.4406" fill="#619acf" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="623"/>
+<text class="value" text-anchor="middle" x="1325" y="644">0.4406</text>
+</g>
+<g class="heatmap-series" data-denominator="694" data-horizon="3" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="685">Carlson Secchi - B1 - h3</text>
+<text class="value" x="510" y="685">n=694</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.1999" fill="#d6e6f6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="661"/>
+<text class="value" text-anchor="middle" x="755" y="682">0.1999</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.1400" fill="#e2eefb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="661"/>
+<text class="value" text-anchor="middle" x="945" y="682">0.1400</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="1.2156" fill="#76a7d6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="661"/>
+<text class="value" text-anchor="middle" x="1135" y="682">1.2156</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_sd_h" data-seed-count="5" data-series="B1" data-value="0.3925" fill="#71a5d5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="661"/>
+<text class="value" text-anchor="middle" x="1325" y="682">0.3925</text>
+</g>
+<g class="heatmap-series" data-denominator="690" data-horizon="1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2">
+<rect fill="#f3f4f6" height="114" width="1390" x="45" y="698"/>
+<text class="label" x="55" y="723">Carlson Secchi - B2 - h1</text>
+<text class="value" x="510" y="723">n=690</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.2717" fill="#b8d3ec" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="699"/>
+<text class="value" text-anchor="middle" x="755" y="720">0.2717</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.2856" fill="#bdd6ee" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="699"/>
+<text class="value" text-anchor="middle" x="945" y="720">0.2856</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.8507" fill="#b0cdea" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="699"/>
+<text class="value" text-anchor="middle" x="1135" y="720">0.8507</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.2217" fill="#abcae8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="699"/>
+<text class="value" text-anchor="middle" x="1325" y="720">0.2217</text>
+</g>
+<g class="heatmap-series" data-denominator="724" data-horizon="2" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="761">Carlson Secchi - B2 - h2</text>
+<text class="value" x="510" y="761">n=724</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.2840" fill="#b3cfeb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="737"/>
+<text class="value" text-anchor="middle" x="755" y="758">0.2840</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.3457" fill="#aecce9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="737"/>
+<text class="value" text-anchor="middle" x="945" y="758">0.3457</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.6188" fill="#d4e5f6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="737"/>
+<text class="value" text-anchor="middle" x="1135" y="758">0.6188</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.1008" fill="#d4e4f6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="737"/>
+<text class="value" text-anchor="middle" x="1325" y="758">0.1008</text>
+</g>
+<g class="heatmap-series" data-denominator="694" data-horizon="3" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="799">Carlson Secchi - B2 - h3</text>
+<text class="value" x="510" y="799">n=694</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.3201" fill="#a4c6e6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="775"/>
+<text class="value" text-anchor="middle" x="755" y="796">0.3201</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.3611" fill="#aacae8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="775"/>
+<text class="value" text-anchor="middle" x="945" y="796">0.3611</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.7046" fill="#c7dcf1" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="775"/>
+<text class="value" text-anchor="middle" x="1135" y="796">0.7046</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_sd_h" data-seed-count="5" data-series="B2" data-value="0.1599" fill="#c0d8ef" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="775"/>
+<text class="value" text-anchor="middle" x="1325" y="796">0.1599</text>
+</g>
+<g class="heatmap-series" data-denominator="652" data-horizon="1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1">
+<rect fill="#f9fafb" height="114" width="1390" x="45" y="812"/>
+<text class="label" x="55" y="837">Carlson non-Chl-a - B1 - h1</text>
+<text class="value" x="510" y="837">n=652</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.2468" fill="#c2d9f0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="813"/>
+<text class="value" text-anchor="middle" x="755" y="834">0.2468</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.2166" fill="#cfe1f4" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="813"/>
+<text class="value" text-anchor="middle" x="945" y="834">0.2166</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="1.0049" fill="#97bde1" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="813"/>
+<text class="value" text-anchor="middle" x="1135" y="834">1.0049</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.2736" fill="#9abfe2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="813"/>
+<text class="value" text-anchor="middle" x="1325" y="834">0.2736</text>
+</g>
+<g class="heatmap-series" data-denominator="685" data-horizon="2" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="875">Carlson non-Chl-a - B1 - h2</text>
+<text class="value" x="510" y="875">n=685</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.1922" fill="#d9e8f8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="851"/>
+<text class="value" text-anchor="middle" x="755" y="872">0.1922</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.1631" fill="#dceaf9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="851"/>
+<text class="value" text-anchor="middle" x="945" y="872">0.1631</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="1.1550" fill="#7faed9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="851"/>
+<text class="value" text-anchor="middle" x="1135" y="872">1.1550</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.3238" fill="#89b4dc" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="851"/>
+<text class="value" text-anchor="middle" x="1325" y="872">0.3238</text>
+</g>
+<g class="heatmap-series" data-denominator="657" data-horizon="3" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="913">Carlson non-Chl-a - B1 - h3</text>
+<text class="value" x="510" y="913">n=657</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.2521" fill="#c0d8ef" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="889"/>
+<text class="value" text-anchor="middle" x="755" y="910">0.2521</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.2195" fill="#cee1f4" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="889"/>
+<text class="value" text-anchor="middle" x="945" y="910">0.2195</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="1.0667" fill="#8db7de" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="889"/>
+<text class="value" text-anchor="middle" x="1135" y="910">1.0667</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B1" data-value="0.2995" fill="#91b9df" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="889"/>
+<text class="value" text-anchor="middle" x="1325" y="910">0.2995</text>
+</g>
+<g class="heatmap-series" data-denominator="652" data-horizon="1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2">
+<rect fill="#f3f4f6" height="114" width="1390" x="45" y="926"/>
+<text class="label" x="55" y="951">Carlson non-Chl-a - B2 - h1</text>
+<text class="value" x="510" y="951">n=652</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.2818" fill="#b4d0eb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="927"/>
+<text class="value" text-anchor="middle" x="755" y="948">0.2818</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.4151" fill="#9dc1e3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="927"/>
+<text class="value" text-anchor="middle" x="945" y="948">0.4151</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.7822" fill="#bad4ed" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="927"/>
+<text class="value" text-anchor="middle" x="1135" y="948">0.7822</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.1334" fill="#c9ddf2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="927"/>
+<text class="value" text-anchor="middle" x="1325" y="948">0.1334</text>
+</g>
+<g class="heatmap-series" data-denominator="685" data-horizon="2" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="989">Carlson non-Chl-a - B2 - h2</text>
+<text class="value" x="510" y="989">n=685</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.4294" fill="#77a9d7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="965"/>
+<text class="value" text-anchor="middle" x="755" y="986">0.4294</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.5371" fill="#7eadd9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="965"/>
+<text class="value" text-anchor="middle" x="945" y="986">0.5371</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.4934" fill="#e8f2fd" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="965"/>
+<text class="value" text-anchor="middle" x="1135" y="986">0.4934</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.0321" fill="#ebf4fe" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="965"/>
+<text class="value" text-anchor="middle" x="1325" y="986">0.0321</text>
+</g>
+<g class="heatmap-series" data-denominator="657" data-horizon="3" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="1027">Carlson non-Chl-a - B2 - h3</text>
+<text class="value" x="510" y="1027">n=657</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.4156" fill="#7dacd9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1003"/>
+<text class="value" text-anchor="middle" x="755" y="1024">0.4156</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.5327" fill="#7fadd9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1003"/>
+<text class="value" text-anchor="middle" x="945" y="1024">0.5327</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.5601" fill="#deebf9" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1003"/>
+<text class="value" text-anchor="middle" x="1135" y="1024">0.5601</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_non_chla_h" data-seed-count="5" data-series="B2" data-value="0.0791" fill="#dbe9f8" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1003"/>
+<text class="value" text-anchor="middle" x="1325" y="1024">0.0791</text>
+</g>
+<g class="heatmap-series" data-denominator="827" data-horizon="1" data-reference="tsi_all_h" data-seed-count="5" data-series="B1">
+<rect fill="#f9fafb" height="114" width="1390" x="45" y="1040"/>
+<text class="label" x="55" y="1065">Carlson combined - B1 - h1</text>
+<text class="value" x="510" y="1065">n=827</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.3081" fill="#a9c9e7" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1041"/>
+<text class="value" text-anchor="middle" x="755" y="1062">0.3081</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2564" fill="#c5dbf1" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1041"/>
+<text class="value" text-anchor="middle" x="945" y="1062">0.2564</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.9161" fill="#a5c6e6" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1041"/>
+<text class="value" text-anchor="middle" x="1135" y="1062">0.9161</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2491" fill="#a2c4e5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1041"/>
+<text class="value" text-anchor="middle" x="1325" y="1062">0.2491</text>
+</g>
+<g class="heatmap-series" data-denominator="858" data-horizon="2" data-reference="tsi_all_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="1103">Carlson combined - B1 - h2</text>
+<text class="value" x="510" y="1103">n=858</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2257" fill="#cbdff3" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1079"/>
+<text class="value" text-anchor="middle" x="755" y="1100">0.2257</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2061" fill="#d2e3f5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1079"/>
+<text class="value" text-anchor="middle" x="945" y="1100">0.2061</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="1.0648" fill="#8eb7de" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1079"/>
+<text class="value" text-anchor="middle" x="1135" y="1100">1.0648</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2762" fill="#99bee2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1079"/>
+<text class="value" text-anchor="middle" x="1325" y="1100">0.2762</text>
+</g>
+<g class="heatmap-series" data-denominator="819" data-horizon="3" data-reference="tsi_all_h" data-seed-count="5" data-series="B1">
+<text class="label" x="55" y="1141">Carlson combined - B1 - h3</text>
+<text class="value" x="510" y="1141">n=819</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2667" fill="#bad4ed" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1117"/>
+<text class="value" text-anchor="middle" x="755" y="1138">0.2667</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2372" fill="#cadef2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1117"/>
+<text class="value" text-anchor="middle" x="945" y="1138">0.2372</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="1.0103" fill="#96bde1" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1117"/>
+<text class="value" text-anchor="middle" x="1135" y="1138">1.0103</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_all_h" data-seed-count="5" data-series="B1" data-value="0.2796" fill="#97bde1" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1117"/>
+<text class="value" text-anchor="middle" x="1325" y="1138">0.2796</text>
+</g>
+<g class="heatmap-series" data-denominator="827" data-horizon="1" data-reference="tsi_all_h" data-seed-count="5" data-series="B2">
+<rect fill="#f3f4f6" height="114" width="1390" x="45" y="1154"/>
+<text class="label" x="55" y="1179">Carlson combined - B2 - h1</text>
+<text class="value" x="510" y="1179">n=827</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="macro_f1" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.3700" fill="#90b8df" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1155"/>
+<text class="value" text-anchor="middle" x="755" y="1176">0.3700</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="quadratic_weighted_kappa" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.5797" fill="#73a6d5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1155"/>
+<text class="value" text-anchor="middle" x="945" y="1176">0.5797</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="ordinal_mae" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.6433" fill="#d0e2f5" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1155"/>
+<text class="value" text-anchor="middle" x="1135" y="1176">0.6433</text>
+<rect class="heatmap-value" data-horizon="1" data-metric="severe_error_rate" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.0593" fill="#e2eefb" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1155"/>
+<text class="value" text-anchor="middle" x="1325" y="1176">0.0593</text>
+</g>
+<g class="heatmap-series" data-denominator="858" data-horizon="2" data-reference="tsi_all_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="1217">Carlson combined - B2 - h2</text>
+<text class="value" x="510" y="1217">n=858</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="macro_f1" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.4841" fill="#619acf" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1193"/>
+<text class="value" text-anchor="middle" x="755" y="1214">0.4841</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="quadratic_weighted_kappa" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.6346" fill="#659dd0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1193"/>
+<text class="value" text-anchor="middle" x="945" y="1214">0.6346</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="ordinal_mae" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.4499" fill="#eff6ff" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1193"/>
+<text class="value" text-anchor="middle" x="1135" y="1214">0.4499</text>
+<rect class="heatmap-value" data-horizon="2" data-metric="severe_error_rate" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.0210" fill="#eff6ff" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1193"/>
+<text class="value" text-anchor="middle" x="1325" y="1214">0.0210</text>
+</g>
+<g class="heatmap-series" data-denominator="819" data-horizon="3" data-reference="tsi_all_h" data-seed-count="5" data-series="B2">
+<text class="label" x="55" y="1255">Carlson combined - B2 - h3</text>
+<text class="value" x="510" y="1255">n=819</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="macro_f1" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.4596" fill="#6ba1d2" height="32" stroke="#ffffff" stroke-width="1" width="182" x="664" y="1231"/>
+<text class="value" text-anchor="middle" x="755" y="1252">0.4596</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="quadratic_weighted_kappa" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.6456" fill="#639bd0" height="32" stroke="#ffffff" stroke-width="1" width="182" x="854" y="1231"/>
+<text class="value" text-anchor="middle" x="945" y="1252">0.6456</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="ordinal_mae" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.4628" fill="#edf5fe" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1044" y="1231"/>
+<text class="value" text-anchor="middle" x="1135" y="1252">0.4628</text>
+<rect class="heatmap-value" data-horizon="3" data-metric="severe_error_rate" data-reference="tsi_all_h" data-seed-count="5" data-series="B2" data-value="0.0366" fill="#eaf3fd" height="32" stroke="#ffffff" stroke-width="1" width="182" x="1234" y="1231"/>
+<text class="value" text-anchor="middle" x="1325" y="1252">0.0366</text>
+</g>
+<text class="small" x="55" y="1310">NLA is retained only as a semantic/provenance sentinel; it does not validate monthly WQP targets.</text>
+</svg>

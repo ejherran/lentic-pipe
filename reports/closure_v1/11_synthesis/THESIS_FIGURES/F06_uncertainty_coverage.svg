@@ -1,0 +1,204 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1580" height="1080" viewBox="0 0 1580 1080" data-artifact-id="F06" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F06. Raw and locked uncertainty coverage in the internal WQP holdout; published weights and the equal_weight_endpoints_and_horizons contrast; horizons of 1, 2, and 3 months; denominator by group and exact_shared_rows when applicable; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: no recalibration is performed and the contrast requiring P1 remains N/A.</title>
+<desc id="figure-description">Sources: reports/closure_v1/08_uncertainty/uncertainty_ledger.csv;reports/closure_v1/03_calibration/model_availability.csv. Filters: uncertainty_ledger: model_id in A0,A1, nominal_coverage=0.90, interval_version in raw_gaussian,locked_conformal, status=available; points are means over five seed slots; h3 receives an outer marker; P1 confirmatory state comes from model_availability</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1580" height="1080" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F06 - Raw versus locked coverage, width, and Winkler score</text>
+<text class="subtitle" x="40" y="72">Nominal=0.90; h3 is marked with a ring; confirmatory P1 remains N/A.</text>
+<rect class="na" data-model="P1" data-state="model_unavailable" height="34" width="325" x="1190" y="48"/>
+<text class="small" text-anchor="middle" x="1352" y="70">Confirmatory P1: N/A (model_unavailable)</text>
+<text class="label" font-weight="700" x="50" y="118">A0</text>
+<rect class="panel" height="255" width="710" x="50" y="140"/>
+<text class="label" font-weight="700" x="62" y="163">coverage</text>
+<line class="grid" x1="125" x2="695" y1="336" y2="336"/>
+<text class="small" text-anchor="end" x="117" y="340">0.75</text>
+<line class="grid" x1="125" x2="695" y1="259" y2="259"/>
+<text class="small" text-anchor="end" x="117" y="263">0.88</text>
+<line class="grid" x1="125" x2="695" y1="182" y2="182"/>
+<text class="small" text-anchor="end" x="117" y="186">1.00</text>
+<line class="axis" x1="125" x2="695" y1="336" y2="336"/>
+<line class="nominal-line" data-value="0.9000" stroke="#111827" stroke-dasharray="5 4" stroke-width="2" x1="125" x2="695" y1="244" y2="244"/>
+<circle class="uncertainty-value" cx="125" cy="257" data-denominator="635" data-horizon="1" data-metric="empirical_coverage" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="0.8791" fill="#c2410c" r="6"><title>A0, raw_gaussian, h1, coverage: 0.8791; n=635</title></circle>
+<text class="value" text-anchor="middle" x="125" y="246">0.879</text>
+<text class="small" text-anchor="middle" x="125" y="357">raw h1</text>
+<circle class="uncertainty-value" cx="239" cy="255" data-denominator="625" data-horizon="2" data-metric="empirical_coverage" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="0.8813" fill="#c2410c" r="6"><title>A0, raw_gaussian, h2, coverage: 0.8813; n=625</title></circle>
+<text class="value" text-anchor="middle" x="239" y="244">0.881</text>
+<text class="small" text-anchor="middle" x="239" y="357">raw h2</text>
+<circle class="uncertainty-value" cx="353" cy="254" data-denominator="609" data-horizon="3" data-metric="empirical_coverage" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="0.8834" fill="#c2410c" r="6"><title>A0, raw_gaussian, h3, coverage: 0.8834; n=609</title></circle>
+<circle class="h3-marker" cx="353" cy="254" data-model="A0" data-series="raw_gaussian" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="353" y="243">0.883</text>
+<text class="small" text-anchor="middle" x="353" y="357">raw h3</text>
+<polyline class="uncertainty-series" data-metric="empirical_coverage" data-model="A0" data-series="raw_gaussian" fill="none" points="125,257 239,255 353,254" stroke="#c2410c" stroke-width="2"/>
+<circle class="uncertainty-value" cx="467" cy="229" data-denominator="635" data-horizon="1" data-metric="empirical_coverage" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="0.9231" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h1, coverage: 0.9231; n=635</title></circle>
+<text class="value" text-anchor="middle" x="467" y="218">0.923</text>
+<text class="small" text-anchor="middle" x="467" y="357">locked h1</text>
+<circle class="uncertainty-value" cx="581" cy="228" data-denominator="625" data-horizon="2" data-metric="empirical_coverage" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="0.9261" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h2, coverage: 0.9261; n=625</title></circle>
+<text class="value" text-anchor="middle" x="581" y="217">0.926</text>
+<text class="small" text-anchor="middle" x="581" y="357">locked h2</text>
+<circle class="uncertainty-value" cx="695" cy="221" data-denominator="609" data-horizon="3" data-metric="empirical_coverage" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="0.9366" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h3, coverage: 0.9366; n=609</title></circle>
+<circle class="h3-marker" cx="695" cy="221" data-model="A0" data-series="locked_conformal" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="695" y="210">0.937</text>
+<text class="small" text-anchor="middle" x="695" y="357">locked h3</text>
+<polyline class="uncertainty-series" data-metric="empirical_coverage" data-model="A0" data-series="locked_conformal" fill="none" points="467,229 581,228 695,221" stroke="#1d4ed8" stroke-width="2"/>
+<rect class="panel" height="255" width="710" x="50" y="435"/>
+<text class="label" font-weight="700" x="62" y="458">mean width</text>
+<line class="grid" x1="125" x2="695" y1="631" y2="631"/>
+<text class="small" text-anchor="end" x="117" y="635">0.00</text>
+<line class="grid" x1="125" x2="695" y1="554" y2="554"/>
+<text class="small" text-anchor="end" x="117" y="558">0.71</text>
+<line class="grid" x1="125" x2="695" y1="477" y2="477"/>
+<text class="small" text-anchor="end" x="117" y="481">1.43</text>
+<line class="axis" x1="125" x2="695" y1="631" y2="631"/>
+<circle class="uncertainty-value" cx="125" cy="519" data-denominator="635" data-horizon="1" data-metric="mean_interval_width" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="1.0358" fill="#c2410c" r="6"><title>A0, raw_gaussian, h1, mean width: 1.0358; n=635</title></circle>
+<text class="value" text-anchor="middle" x="125" y="508">1.036</text>
+<text class="small" text-anchor="middle" x="125" y="652">raw h1</text>
+<circle class="uncertainty-value" cx="239" cy="518" data-denominator="625" data-horizon="2" data-metric="mean_interval_width" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="1.0440" fill="#c2410c" r="6"><title>A0, raw_gaussian, h2, mean width: 1.0440; n=625</title></circle>
+<text class="value" text-anchor="middle" x="239" y="507">1.044</text>
+<text class="small" text-anchor="middle" x="239" y="652">raw h2</text>
+<circle class="uncertainty-value" cx="353" cy="515" data-denominator="609" data-horizon="3" data-metric="mean_interval_width" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="1.0731" fill="#c2410c" r="6"><title>A0, raw_gaussian, h3, mean width: 1.0731; n=609</title></circle>
+<circle class="h3-marker" cx="353" cy="515" data-model="A0" data-series="raw_gaussian" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="353" y="504">1.073</text>
+<text class="small" text-anchor="middle" x="353" y="652">raw h3</text>
+<polyline class="uncertainty-series" data-metric="mean_interval_width" data-model="A0" data-series="raw_gaussian" fill="none" points="125,519 239,518 353,515" stroke="#c2410c" stroke-width="2"/>
+<circle class="uncertainty-value" cx="467" cy="501" data-denominator="635" data-horizon="1" data-metric="mean_interval_width" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="1.2003" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h1, mean width: 1.2003; n=635</title></circle>
+<text class="value" text-anchor="middle" x="467" y="490">1.200</text>
+<text class="small" text-anchor="middle" x="467" y="652">locked h1</text>
+<circle class="uncertainty-value" cx="581" cy="500" data-denominator="625" data-horizon="2" data-metric="mean_interval_width" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="1.2178" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h2, mean width: 1.2178; n=625</title></circle>
+<text class="value" text-anchor="middle" x="581" y="489">1.218</text>
+<text class="small" text-anchor="middle" x="581" y="652">locked h2</text>
+<circle class="uncertainty-value" cx="695" cy="494" data-denominator="609" data-horizon="3" data-metric="mean_interval_width" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="1.2703" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h3, mean width: 1.2703; n=609</title></circle>
+<circle class="h3-marker" cx="695" cy="494" data-model="A0" data-series="locked_conformal" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="695" y="483">1.270</text>
+<text class="small" text-anchor="middle" x="695" y="652">locked h3</text>
+<polyline class="uncertainty-series" data-metric="mean_interval_width" data-model="A0" data-series="locked_conformal" fill="none" points="467,501 581,500 695,494" stroke="#1d4ed8" stroke-width="2"/>
+<rect class="panel" height="255" width="710" x="50" y="730"/>
+<text class="label" font-weight="700" x="62" y="753">Winkler</text>
+<line class="grid" x1="125" x2="695" y1="926" y2="926"/>
+<text class="small" text-anchor="end" x="117" y="930">0.00</text>
+<line class="grid" x1="125" x2="695" y1="849" y2="849"/>
+<text class="small" text-anchor="end" x="117" y="853">0.76</text>
+<line class="grid" x1="125" x2="695" y1="772" y2="772"/>
+<text class="small" text-anchor="end" x="117" y="776">1.53</text>
+<line class="axis" x1="125" x2="695" y1="926" y2="926"/>
+<circle class="uncertainty-value" cx="125" cy="792" data-denominator="635" data-horizon="1" data-metric="winkler_interval_score" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="1.3283" fill="#c2410c" r="6"><title>A0, raw_gaussian, h1, Winkler: 1.3283; n=635</title></circle>
+<text class="value" text-anchor="middle" x="125" y="781">1.328</text>
+<text class="small" text-anchor="middle" x="125" y="947">raw h1</text>
+<circle class="uncertainty-value" cx="239" cy="793" data-denominator="625" data-horizon="2" data-metric="winkler_interval_score" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="1.3161" fill="#c2410c" r="6"><title>A0, raw_gaussian, h2, Winkler: 1.3161; n=625</title></circle>
+<text class="value" text-anchor="middle" x="239" y="782">1.316</text>
+<text class="small" text-anchor="middle" x="239" y="947">raw h2</text>
+<circle class="uncertainty-value" cx="353" cy="793" data-denominator="609" data-horizon="3" data-metric="winkler_interval_score" data-model="A0" data-seed-count="5" data-series="raw_gaussian" data-value="1.3216" fill="#c2410c" r="6"><title>A0, raw_gaussian, h3, Winkler: 1.3216; n=609</title></circle>
+<circle class="h3-marker" cx="353" cy="793" data-model="A0" data-series="raw_gaussian" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="353" y="782">1.322</text>
+<text class="small" text-anchor="middle" x="353" y="947">raw h3</text>
+<polyline class="uncertainty-series" data-metric="winkler_interval_score" data-model="A0" data-series="raw_gaussian" fill="none" points="125,792 239,793 353,793" stroke="#c2410c" stroke-width="2"/>
+<circle class="uncertainty-value" cx="467" cy="791" data-denominator="635" data-horizon="1" data-metric="winkler_interval_score" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="1.3379" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h1, Winkler: 1.3379; n=635</title></circle>
+<text class="value" text-anchor="middle" x="467" y="780">1.338</text>
+<text class="small" text-anchor="middle" x="467" y="947">locked h1</text>
+<circle class="uncertainty-value" cx="581" cy="792" data-denominator="625" data-horizon="2" data-metric="winkler_interval_score" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="1.3294" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h2, Winkler: 1.3294; n=625</title></circle>
+<text class="value" text-anchor="middle" x="581" y="781">1.329</text>
+<text class="small" text-anchor="middle" x="581" y="947">locked h2</text>
+<circle class="uncertainty-value" cx="695" cy="790" data-denominator="609" data-horizon="3" data-metric="winkler_interval_score" data-model="A0" data-seed-count="5" data-series="locked_conformal" data-value="1.3454" fill="#1d4ed8" r="6"><title>A0, locked_conformal, h3, Winkler: 1.3454; n=609</title></circle>
+<circle class="h3-marker" cx="695" cy="790" data-model="A0" data-series="locked_conformal" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="695" y="779">1.345</text>
+<text class="small" text-anchor="middle" x="695" y="947">locked h3</text>
+<polyline class="uncertainty-series" data-metric="winkler_interval_score" data-model="A0" data-series="locked_conformal" fill="none" points="467,791 581,792 695,790" stroke="#1d4ed8" stroke-width="2"/>
+<text class="label" font-weight="700" x="820" y="118">A1</text>
+<rect class="panel" height="255" width="710" x="820" y="140"/>
+<text class="label" font-weight="700" x="832" y="163">coverage</text>
+<line class="grid" x1="895" x2="1465" y1="336" y2="336"/>
+<text class="small" text-anchor="end" x="887" y="340">0.75</text>
+<line class="grid" x1="895" x2="1465" y1="259" y2="259"/>
+<text class="small" text-anchor="end" x="887" y="263">0.88</text>
+<line class="grid" x1="895" x2="1465" y1="182" y2="182"/>
+<text class="small" text-anchor="end" x="887" y="186">1.00</text>
+<line class="axis" x1="895" x2="1465" y1="336" y2="336"/>
+<line class="nominal-line" data-value="0.9000" stroke="#111827" stroke-dasharray="5 4" stroke-width="2" x1="895" x2="1465" y1="244" y2="244"/>
+<circle class="uncertainty-value" cx="895" cy="249" data-denominator="635" data-horizon="1" data-metric="empirical_coverage" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="0.8913" fill="#c2410c" r="6"><title>A1, raw_gaussian, h1, coverage: 0.8913; n=635</title></circle>
+<text class="value" text-anchor="middle" x="895" y="238">0.891</text>
+<text class="small" text-anchor="middle" x="895" y="357">raw h1</text>
+<circle class="uncertainty-value" cx="1009" cy="251" data-denominator="625" data-horizon="2" data-metric="empirical_coverage" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="0.8886" fill="#c2410c" r="6"><title>A1, raw_gaussian, h2, coverage: 0.8886; n=625</title></circle>
+<text class="value" text-anchor="middle" x="1009" y="240">0.889</text>
+<text class="small" text-anchor="middle" x="1009" y="357">raw h2</text>
+<circle class="uncertainty-value" cx="1123" cy="246" data-denominator="609" data-horizon="3" data-metric="empirical_coverage" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="0.8962" fill="#c2410c" r="6"><title>A1, raw_gaussian, h3, coverage: 0.8962; n=609</title></circle>
+<circle class="h3-marker" cx="1123" cy="246" data-model="A1" data-series="raw_gaussian" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="1123" y="235">0.896</text>
+<text class="small" text-anchor="middle" x="1123" y="357">raw h3</text>
+<polyline class="uncertainty-series" data-metric="empirical_coverage" data-model="A1" data-series="raw_gaussian" fill="none" points="895,249 1009,251 1123,246" stroke="#c2410c" stroke-width="2"/>
+<circle class="uncertainty-value" cx="1237" cy="222" data-denominator="635" data-horizon="1" data-metric="empirical_coverage" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="0.9351" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h1, coverage: 0.9351; n=635</title></circle>
+<text class="value" text-anchor="middle" x="1237" y="211">0.935</text>
+<text class="small" text-anchor="middle" x="1237" y="357">locked h1</text>
+<circle class="uncertainty-value" cx="1351" cy="222" data-denominator="625" data-horizon="2" data-metric="empirical_coverage" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="0.9344" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h2, coverage: 0.9344; n=625</title></circle>
+<text class="value" text-anchor="middle" x="1351" y="211">0.934</text>
+<text class="small" text-anchor="middle" x="1351" y="357">locked h2</text>
+<circle class="uncertainty-value" cx="1465" cy="220" data-denominator="609" data-horizon="3" data-metric="empirical_coverage" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="0.9383" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h3, coverage: 0.9383; n=609</title></circle>
+<circle class="h3-marker" cx="1465" cy="220" data-model="A1" data-series="locked_conformal" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="1465" y="209">0.938</text>
+<text class="small" text-anchor="middle" x="1465" y="357">locked h3</text>
+<polyline class="uncertainty-series" data-metric="empirical_coverage" data-model="A1" data-series="locked_conformal" fill="none" points="1237,222 1351,222 1465,220" stroke="#1d4ed8" stroke-width="2"/>
+<rect class="panel" height="255" width="710" x="820" y="435"/>
+<text class="label" font-weight="700" x="832" y="458">mean width</text>
+<line class="grid" x1="895" x2="1465" y1="631" y2="631"/>
+<text class="small" text-anchor="end" x="887" y="635">0.00</text>
+<line class="grid" x1="895" x2="1465" y1="554" y2="554"/>
+<text class="small" text-anchor="end" x="887" y="558">0.71</text>
+<line class="grid" x1="895" x2="1465" y1="477" y2="477"/>
+<text class="small" text-anchor="end" x="887" y="481">1.43</text>
+<line class="axis" x1="895" x2="1465" y1="631" y2="631"/>
+<circle class="uncertainty-value" cx="895" cy="516" data-denominator="635" data-horizon="1" data-metric="mean_interval_width" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="1.0676" fill="#c2410c" r="6"><title>A1, raw_gaussian, h1, mean width: 1.0676; n=635</title></circle>
+<text class="value" text-anchor="middle" x="895" y="505">1.068</text>
+<text class="small" text-anchor="middle" x="895" y="652">raw h1</text>
+<circle class="uncertainty-value" cx="1009" cy="515" data-denominator="625" data-horizon="2" data-metric="mean_interval_width" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="1.0735" fill="#c2410c" r="6"><title>A1, raw_gaussian, h2, mean width: 1.0735; n=625</title></circle>
+<text class="value" text-anchor="middle" x="1009" y="504">1.073</text>
+<text class="small" text-anchor="middle" x="1009" y="652">raw h2</text>
+<circle class="uncertainty-value" cx="1123" cy="512" data-denominator="609" data-horizon="3" data-metric="mean_interval_width" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="1.1001" fill="#c2410c" r="6"><title>A1, raw_gaussian, h3, mean width: 1.1001; n=609</title></circle>
+<circle class="h3-marker" cx="1123" cy="512" data-model="A1" data-series="raw_gaussian" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="1123" y="501">1.100</text>
+<text class="small" text-anchor="middle" x="1123" y="652">raw h3</text>
+<polyline class="uncertainty-series" data-metric="mean_interval_width" data-model="A1" data-series="raw_gaussian" fill="none" points="895,516 1009,515 1123,512" stroke="#c2410c" stroke-width="2"/>
+<circle class="uncertainty-value" cx="1237" cy="497" data-denominator="635" data-horizon="1" data-metric="mean_interval_width" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="1.2404" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h1, mean width: 1.2404; n=635</title></circle>
+<text class="value" text-anchor="middle" x="1237" y="486">1.240</text>
+<text class="small" text-anchor="middle" x="1237" y="652">locked h1</text>
+<circle class="uncertainty-value" cx="1351" cy="496" data-denominator="625" data-horizon="2" data-metric="mean_interval_width" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="1.2525" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h2, mean width: 1.2525; n=625</title></circle>
+<text class="value" text-anchor="middle" x="1351" y="485">1.253</text>
+<text class="small" text-anchor="middle" x="1351" y="652">locked h2</text>
+<circle class="uncertainty-value" cx="1465" cy="493" data-denominator="609" data-horizon="3" data-metric="mean_interval_width" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="1.2741" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h3, mean width: 1.2741; n=609</title></circle>
+<circle class="h3-marker" cx="1465" cy="493" data-model="A1" data-series="locked_conformal" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="1465" y="482">1.274</text>
+<text class="small" text-anchor="middle" x="1465" y="652">locked h3</text>
+<polyline class="uncertainty-series" data-metric="mean_interval_width" data-model="A1" data-series="locked_conformal" fill="none" points="1237,497 1351,496 1465,493" stroke="#1d4ed8" stroke-width="2"/>
+<rect class="panel" height="255" width="710" x="820" y="730"/>
+<text class="label" font-weight="700" x="832" y="753">Winkler</text>
+<line class="grid" x1="895" x2="1465" y1="926" y2="926"/>
+<text class="small" text-anchor="end" x="887" y="930">0.00</text>
+<line class="grid" x1="895" x2="1465" y1="849" y2="849"/>
+<text class="small" text-anchor="end" x="887" y="853">0.76</text>
+<line class="grid" x1="895" x2="1465" y1="772" y2="772"/>
+<text class="small" text-anchor="end" x="887" y="776">1.53</text>
+<line class="axis" x1="895" x2="1465" y1="926" y2="926"/>
+<circle class="uncertainty-value" cx="895" cy="793" data-denominator="635" data-horizon="1" data-metric="winkler_interval_score" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="1.3170" fill="#c2410c" r="6"><title>A1, raw_gaussian, h1, Winkler: 1.3170; n=635</title></circle>
+<text class="value" text-anchor="middle" x="895" y="782">1.317</text>
+<text class="small" text-anchor="middle" x="895" y="947">raw h1</text>
+<circle class="uncertainty-value" cx="1009" cy="792" data-denominator="625" data-horizon="2" data-metric="winkler_interval_score" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="1.3239" fill="#c2410c" r="6"><title>A1, raw_gaussian, h2, Winkler: 1.3239; n=625</title></circle>
+<text class="value" text-anchor="middle" x="1009" y="781">1.324</text>
+<text class="small" text-anchor="middle" x="1009" y="947">raw h2</text>
+<circle class="uncertainty-value" cx="1123" cy="792" data-denominator="609" data-horizon="3" data-metric="winkler_interval_score" data-model="A1" data-seed-count="5" data-series="raw_gaussian" data-value="1.3314" fill="#c2410c" r="6"><title>A1, raw_gaussian, h3, Winkler: 1.3314; n=609</title></circle>
+<circle class="h3-marker" cx="1123" cy="792" data-model="A1" data-series="raw_gaussian" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="1123" y="781">1.331</text>
+<text class="small" text-anchor="middle" x="1123" y="947">raw h3</text>
+<polyline class="uncertainty-series" data-metric="winkler_interval_score" data-model="A1" data-series="raw_gaussian" fill="none" points="895,793 1009,792 1123,792" stroke="#c2410c" stroke-width="2"/>
+<circle class="uncertainty-value" cx="1237" cy="790" data-denominator="635" data-horizon="1" data-metric="winkler_interval_score" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="1.3450" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h1, Winkler: 1.3450; n=635</title></circle>
+<text class="value" text-anchor="middle" x="1237" y="779">1.345</text>
+<text class="small" text-anchor="middle" x="1237" y="947">locked h1</text>
+<circle class="uncertainty-value" cx="1351" cy="790" data-denominator="625" data-horizon="2" data-metric="winkler_interval_score" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="1.3512" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h2, Winkler: 1.3512; n=625</title></circle>
+<text class="value" text-anchor="middle" x="1351" y="779">1.351</text>
+<text class="small" text-anchor="middle" x="1351" y="947">locked h2</text>
+<circle class="uncertainty-value" cx="1465" cy="788" data-denominator="609" data-horizon="3" data-metric="winkler_interval_score" data-model="A1" data-seed-count="5" data-series="locked_conformal" data-value="1.3633" fill="#1d4ed8" r="6"><title>A1, locked_conformal, h3, Winkler: 1.3633; n=609</title></circle>
+<circle class="h3-marker" cx="1465" cy="788" data-model="A1" data-series="locked_conformal" fill="none" r="10" stroke="#111827" stroke-width="2"/>
+<text class="value" text-anchor="middle" x="1465" y="777">1.363</text>
+<text class="small" text-anchor="middle" x="1465" y="947">locked h3</text>
+<polyline class="uncertainty-series" data-metric="winkler_interval_score" data-model="A1" data-series="locked_conformal" fill="none" points="1237,790 1351,790 1465,788" stroke="#1d4ed8" stroke-width="2"/>
+<text class="small" fill="#c2410c" x="610" y="1040">raw_gaussian</text>
+<text class="small" fill="#1d4ed8" x="760" y="1040">locked_conformal</text>
+<text class="small" x="940" y="1040">ring = h3</text>
+</svg>

@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="1282" viewBox="0 0 1500 1282" data-artifact-id="F01" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F01. Cohort flow and availability for the locked internal WQP holdout; weighting not applicable; horizons of 1, 2, and 3 months; registered cohort and availability denominators; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: P0, P1, and A2 are shown as unavailable, never as zero.</title>
+<desc id="figure-description">Sources: reports/closure_v1/01_benchmark/model_metrics_long.csv;reports/closure_v1/03_calibration/model_availability.csv;reports/closure_v1/03_thresholds/threshold_prevalence.csv. Filters: model_metrics: evaluation_cohort=location_holdout, metric=mae, estimand=observation_weighted; threshold_prevalence: threshold_ug_l=30; input-eligible intersection equals target available minus input_ineligible_origin_count; ranges preserve all registered seed slots</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1500" height="1282" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F01 - Intent-to-predict funnel by horizon and model</text>
+<text class="subtitle" x="40" y="72">Total origin-horizon attempts: 13,464</text>
+<text class="small" x="40" y="98">Layers: attempts -&gt; target available (cutoff 30) -&gt; input eligible -&gt; success; N/A is never drawn as zero.</text>
+<line class="grid" x1="330" x2="330" y1="120" y2="1240"/>
+<text class="small" text-anchor="middle" x="330" y="116">0</text>
+<line class="grid" x1="780" x2="780" y1="120" y2="1240"/>
+<text class="small" text-anchor="middle" x="780" y="116">2244</text>
+<line class="grid" x1="1230" x2="1230" y1="120" y2="1240"/>
+<text class="small" text-anchor="middle" x="1230" y="116">4488</text>
+<line class="axis" x1="330" x2="1230" y1="124" y2="124"/>
+<text class="small" text-anchor="middle" x="780" y="112">origins</text>
+<text class="label" font-weight="700" x="40" y="158">Horizon h1</text>
+<text class="small" x="145" y="158">attempted=4488; target=827</text>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="B0" data-success-max="0" data-success-min="0" data-target-available="827" data-value="0">
+<text class="label" x="64" y="199">B0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="187"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="187"/>
+<rect fill="#3b82f6" height="15" width="165" x="330" y="187"/>
+<rect fill="#1e3a8a" height="9" width="0" x="330" y="190"/>
+<text class="value" x="1250" y="199">4488 → 827 → 827 → 0</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="B1" data-success-max="827" data-success-min="827" data-target-available="827" data-value="827">
+<text class="label" x="64" y="228">B1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="216"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="216"/>
+<rect fill="#3b82f6" height="15" width="165" x="330" y="216"/>
+<rect fill="#1e3a8a" height="9" width="165" x="330" y="219"/>
+<text class="value" x="1250" y="228">4488 → 827 → 827 → 827</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="B2" data-success-max="0" data-success-min="0" data-target-available="827" data-value="0">
+<text class="label" x="64" y="257">B2</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="245"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="245"/>
+<rect fill="#3b82f6" height="15" width="165" x="330" y="245"/>
+<rect fill="#1e3a8a" height="9" width="0" x="330" y="248"/>
+<text class="value" x="1250" y="257">4488 → 827 → 827 → 0</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="F0" data-success-max="827" data-success-min="827" data-target-available="827" data-value="827">
+<text class="label" x="64" y="286">F0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="274"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="274"/>
+<rect fill="#3b82f6" height="15" width="165" x="330" y="274"/>
+<rect fill="#1e3a8a" height="9" width="165" x="330" y="277"/>
+<text class="value" x="1250" y="286">4488 → 827 → 827 → 827</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="F1" data-success-max="827" data-success-min="827" data-target-available="827" data-value="827">
+<text class="label" x="64" y="315">F1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="303"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="303"/>
+<rect fill="#3b82f6" height="15" width="165" x="330" y="303"/>
+<rect fill="#1e3a8a" height="9" width="165" x="330" y="306"/>
+<text class="value" x="1250" y="315">4488 → 827 → 827 → 827</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="P0" data-success-max="0" data-success-min="0" data-target-available="827" data-value="N/A">
+<text class="label" x="64" y="344">P0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="332"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="332"/>
+<rect class="na" height="17" width="62" x="1168" y="331"/>
+<text class="value" text-anchor="middle" x="1199" y="344">N/A</text>
+<text class="value" x="1250" y="344">4488 → 827 → N/A → N/A</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="1" data-input-eligible-max="827" data-input-eligible-min="827" data-seed-count="5" data-series="P1" data-success-max="0" data-success-min="0" data-target-available="827" data-value="N/A">
+<text class="label" x="64" y="373">P1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="361"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="361"/>
+<rect class="na" height="17" width="62" x="1168" y="360"/>
+<text class="value" text-anchor="middle" x="1199" y="373">N/A</text>
+<text class="value" x="1250" y="373">4488 → 827 → N/A → N/A</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="826" data-input-eligible-min="826" data-seed-count="5" data-series="M0" data-success-max="826" data-success-min="826" data-target-available="827" data-value="826">
+<text class="label" x="64" y="402">M0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="390"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="390"/>
+<rect fill="#3b82f6" height="15" width="165" x="330" y="390"/>
+<rect fill="#1e3a8a" height="9" width="165" x="330" y="393"/>
+<text class="value" x="1250" y="402">4488 → 827 → 826 → 826</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="635" data-input-eligible-min="635" data-seed-count="5" data-series="A0" data-success-max="635" data-success-min="635" data-target-available="827" data-value="635">
+<text class="label" x="64" y="431">A0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="419"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="419"/>
+<rect fill="#3b82f6" height="15" width="127" x="330" y="419"/>
+<rect fill="#1e3a8a" height="9" width="127" x="330" y="422"/>
+<text class="value" x="1250" y="431">4488 → 827 → 635 → 635</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="1" data-input-eligible-max="635" data-input-eligible-min="635" data-seed-count="5" data-series="A1" data-success-max="635" data-success-min="635" data-target-available="827" data-value="635">
+<text class="label" x="64" y="460">A1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="448"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="448"/>
+<rect fill="#3b82f6" height="15" width="127" x="330" y="448"/>
+<rect fill="#1e3a8a" height="9" width="127" x="330" y="451"/>
+<text class="value" x="1250" y="460">4488 → 827 → 635 → 635</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="1" data-input-eligible-max="N/A" data-input-eligible-min="N/A" data-seed-count="0" data-series="A2" data-success-max="N/A" data-success-min="N/A" data-target-available="827" data-value="N/A">
+<text class="label" x="64" y="489">A2</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="477"/>
+<rect fill="#93c5fd" height="15" width="165" x="330" y="477"/>
+<rect class="na" height="17" width="62" x="1168" y="476"/>
+<text class="value" text-anchor="middle" x="1199" y="489">N/A</text>
+<text class="value" x="1250" y="489">4488 → 827 → N/A → N/A</text>
+</g>
+<text class="label" font-weight="700" x="40" y="535">Horizon h2</text>
+<text class="small" x="145" y="535">attempted=4488; target=858</text>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="B0" data-success-max="0" data-success-min="0" data-target-available="858" data-value="0">
+<text class="label" x="64" y="576">B0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="564"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="564"/>
+<rect fill="#3b82f6" height="15" width="172" x="330" y="564"/>
+<rect fill="#1e3a8a" height="9" width="0" x="330" y="567"/>
+<text class="value" x="1250" y="576">4488 → 858 → 858 → 0</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="B1" data-success-max="858" data-success-min="858" data-target-available="858" data-value="858">
+<text class="label" x="64" y="605">B1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="593"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="593"/>
+<rect fill="#3b82f6" height="15" width="172" x="330" y="593"/>
+<rect fill="#1e3a8a" height="9" width="172" x="330" y="596"/>
+<text class="value" x="1250" y="605">4488 → 858 → 858 → 858</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="B2" data-success-max="0" data-success-min="0" data-target-available="858" data-value="0">
+<text class="label" x="64" y="634">B2</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="622"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="622"/>
+<rect fill="#3b82f6" height="15" width="172" x="330" y="622"/>
+<rect fill="#1e3a8a" height="9" width="0" x="330" y="625"/>
+<text class="value" x="1250" y="634">4488 → 858 → 858 → 0</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="F0" data-success-max="858" data-success-min="858" data-target-available="858" data-value="858">
+<text class="label" x="64" y="663">F0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="651"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="651"/>
+<rect fill="#3b82f6" height="15" width="172" x="330" y="651"/>
+<rect fill="#1e3a8a" height="9" width="172" x="330" y="654"/>
+<text class="value" x="1250" y="663">4488 → 858 → 858 → 858</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="F1" data-success-max="858" data-success-min="858" data-target-available="858" data-value="858">
+<text class="label" x="64" y="692">F1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="680"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="680"/>
+<rect fill="#3b82f6" height="15" width="172" x="330" y="680"/>
+<rect fill="#1e3a8a" height="9" width="172" x="330" y="683"/>
+<text class="value" x="1250" y="692">4488 → 858 → 858 → 858</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="P0" data-success-max="0" data-success-min="0" data-target-available="858" data-value="N/A">
+<text class="label" x="64" y="721">P0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="709"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="709"/>
+<rect class="na" height="17" width="62" x="1168" y="708"/>
+<text class="value" text-anchor="middle" x="1199" y="721">N/A</text>
+<text class="value" x="1250" y="721">4488 → 858 → N/A → N/A</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="2" data-input-eligible-max="858" data-input-eligible-min="858" data-seed-count="5" data-series="P1" data-success-max="0" data-success-min="0" data-target-available="858" data-value="N/A">
+<text class="label" x="64" y="750">P1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="738"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="738"/>
+<rect class="na" height="17" width="62" x="1168" y="737"/>
+<text class="value" text-anchor="middle" x="1199" y="750">N/A</text>
+<text class="value" x="1250" y="750">4488 → 858 → N/A → N/A</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="857" data-input-eligible-min="857" data-seed-count="5" data-series="M0" data-success-max="857" data-success-min="857" data-target-available="858" data-value="857">
+<text class="label" x="64" y="779">M0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="767"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="767"/>
+<rect fill="#3b82f6" height="15" width="171" x="330" y="767"/>
+<rect fill="#1e3a8a" height="9" width="171" x="330" y="770"/>
+<text class="value" x="1250" y="779">4488 → 858 → 857 → 857</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="625" data-input-eligible-min="625" data-seed-count="5" data-series="A0" data-success-max="625" data-success-min="625" data-target-available="858" data-value="625">
+<text class="label" x="64" y="808">A0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="796"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="796"/>
+<rect fill="#3b82f6" height="15" width="125" x="330" y="796"/>
+<rect fill="#1e3a8a" height="9" width="125" x="330" y="799"/>
+<text class="value" x="1250" y="808">4488 → 858 → 625 → 625</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="2" data-input-eligible-max="625" data-input-eligible-min="625" data-seed-count="5" data-series="A1" data-success-max="625" data-success-min="625" data-target-available="858" data-value="625">
+<text class="label" x="64" y="837">A1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="825"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="825"/>
+<rect fill="#3b82f6" height="15" width="125" x="330" y="825"/>
+<rect fill="#1e3a8a" height="9" width="125" x="330" y="828"/>
+<text class="value" x="1250" y="837">4488 → 858 → 625 → 625</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="2" data-input-eligible-max="N/A" data-input-eligible-min="N/A" data-seed-count="0" data-series="A2" data-success-max="N/A" data-success-min="N/A" data-target-available="858" data-value="N/A">
+<text class="label" x="64" y="866">A2</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="854"/>
+<rect fill="#93c5fd" height="15" width="172" x="330" y="854"/>
+<rect class="na" height="17" width="62" x="1168" y="853"/>
+<text class="value" text-anchor="middle" x="1199" y="866">N/A</text>
+<text class="value" x="1250" y="866">4488 → 858 → N/A → N/A</text>
+</g>
+<text class="label" font-weight="700" x="40" y="912">Horizon h3</text>
+<text class="small" x="145" y="912">attempted=4488; target=819</text>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="B0" data-success-max="0" data-success-min="0" data-target-available="819" data-value="0">
+<text class="label" x="64" y="953">B0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="941"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="941"/>
+<rect fill="#3b82f6" height="15" width="164" x="330" y="941"/>
+<rect fill="#1e3a8a" height="9" width="0" x="330" y="944"/>
+<text class="value" x="1250" y="953">4488 → 819 → 819 → 0</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="B1" data-success-max="819" data-success-min="819" data-target-available="819" data-value="819">
+<text class="label" x="64" y="982">B1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="970"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="970"/>
+<rect fill="#3b82f6" height="15" width="164" x="330" y="970"/>
+<rect fill="#1e3a8a" height="9" width="164" x="330" y="973"/>
+<text class="value" x="1250" y="982">4488 → 819 → 819 → 819</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="B2" data-success-max="0" data-success-min="0" data-target-available="819" data-value="0">
+<text class="label" x="64" y="1011">B2</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="999"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="999"/>
+<rect fill="#3b82f6" height="15" width="164" x="330" y="999"/>
+<rect fill="#1e3a8a" height="9" width="0" x="330" y="1002"/>
+<text class="value" x="1250" y="1011">4488 → 819 → 819 → 0</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="F0" data-success-max="819" data-success-min="819" data-target-available="819" data-value="819">
+<text class="label" x="64" y="1040">F0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1028"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1028"/>
+<rect fill="#3b82f6" height="15" width="164" x="330" y="1028"/>
+<rect fill="#1e3a8a" height="9" width="164" x="330" y="1031"/>
+<text class="value" x="1250" y="1040">4488 → 819 → 819 → 819</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="F1" data-success-max="819" data-success-min="819" data-target-available="819" data-value="819">
+<text class="label" x="64" y="1069">F1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1057"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1057"/>
+<rect fill="#3b82f6" height="15" width="164" x="330" y="1057"/>
+<rect fill="#1e3a8a" height="9" width="164" x="330" y="1060"/>
+<text class="value" x="1250" y="1069">4488 → 819 → 819 → 819</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="P0" data-success-max="0" data-success-min="0" data-target-available="819" data-value="N/A">
+<text class="label" x="64" y="1098">P0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1086"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1086"/>
+<rect class="na" height="17" width="62" x="1168" y="1085"/>
+<text class="value" text-anchor="middle" x="1199" y="1098">N/A</text>
+<text class="value" x="1250" y="1098">4488 → 819 → N/A → N/A</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="3" data-input-eligible-max="819" data-input-eligible-min="819" data-seed-count="5" data-series="P1" data-success-max="0" data-success-min="0" data-target-available="819" data-value="N/A">
+<text class="label" x="64" y="1127">P1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1115"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1115"/>
+<rect class="na" height="17" width="62" x="1168" y="1114"/>
+<text class="value" text-anchor="middle" x="1199" y="1127">N/A</text>
+<text class="value" x="1250" y="1127">4488 → 819 → N/A → N/A</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="818" data-input-eligible-min="818" data-seed-count="5" data-series="M0" data-success-max="818" data-success-min="818" data-target-available="819" data-value="818">
+<text class="label" x="64" y="1156">M0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1144"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1144"/>
+<rect fill="#3b82f6" height="15" width="164" x="330" y="1144"/>
+<rect fill="#1e3a8a" height="9" width="164" x="330" y="1147"/>
+<text class="value" x="1250" y="1156">4488 → 819 → 818 → 818</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="609" data-input-eligible-min="609" data-seed-count="5" data-series="A0" data-success-max="609" data-success-min="609" data-target-available="819" data-value="609">
+<text class="label" x="64" y="1185">A0</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1173"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1173"/>
+<rect fill="#3b82f6" height="15" width="122" x="330" y="1173"/>
+<rect fill="#1e3a8a" height="9" width="122" x="330" y="1176"/>
+<text class="value" x="1250" y="1185">4488 → 819 → 609 → 609</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="available" data-horizon="3" data-input-eligible-max="609" data-input-eligible-min="609" data-seed-count="5" data-series="A1" data-success-max="609" data-success-min="609" data-target-available="819" data-value="609">
+<text class="label" x="64" y="1214">A1</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1202"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1202"/>
+<rect fill="#3b82f6" height="15" width="122" x="330" y="1202"/>
+<rect fill="#1e3a8a" height="9" width="122" x="330" y="1205"/>
+<text class="value" x="1250" y="1214">4488 → 819 → 609 → 609</text>
+</g>
+<g class="funnel-series" data-attempted="4488" data-availability="unavailable" data-horizon="3" data-input-eligible-max="N/A" data-input-eligible-min="N/A" data-seed-count="0" data-series="A2" data-success-max="N/A" data-success-min="N/A" data-target-available="819" data-value="N/A">
+<text class="label" x="64" y="1243">A2</text>
+<rect fill="#dbeafe" height="15" width="900" x="330" y="1231"/>
+<rect fill="#93c5fd" height="15" width="164" x="330" y="1231"/>
+<rect class="na" height="17" width="62" x="1168" y="1230"/>
+<text class="value" text-anchor="middle" x="1199" y="1243">N/A</text>
+<text class="value" x="1250" y="1243">4488 → 819 → N/A → N/A</text>
+</g>
+<rect fill="#dbeafe" height="11" width="20" x="330" y="1246"/>
+<text class="small" x="357" y="1257">attempted</text>
+<rect fill="#93c5fd" height="11" width="20" x="520" y="1246"/>
+<text class="small" x="547" y="1257">target available</text>
+<rect fill="#3b82f6" height="11" width="20" x="710" y="1246"/>
+<text class="small" x="737" y="1257">input eligible</text>
+<rect fill="#1e3a8a" height="11" width="20" x="900" y="1246"/>
+<text class="small" x="927" y="1257">success</text>
+</svg>

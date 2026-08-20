@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1540" height="760" viewBox="0 0 1540 760" data-artifact-id="F03" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F03. Paired descriptive deltas in the internal WQP holdout; weighting preserved by contrast; horizons of 1, 2, and 3 months; common denominators published by E1/E7; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: descriptive points without invented intervals or a universal conclusion.</title>
+<desc id="figure-description">Sources: reports/closure_v1/01_benchmark/model_comparison_paired.csv;reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv. Filters: model_comparison: comparison_id=F1_vs_F0, metric=absolute_error, terminal_status=estimated; ablation_pairwise: challenger=A1, reference=A0, status=available; every published seed point and common-row denominator is retained; no confidence interval is inferred</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1540" height="760" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F03 - Paired descriptive deltas</text>
+<text class="subtitle" x="40" y="72">Points are published values; the vertical line is zero; no intervals are drawn.</text>
+<rect class="panel" height="610" width="720" x="50" y="105"/>
+<text class="label" font-weight="700" x="68" y="135">F1-F0 - delta MAE</text>
+<g class="delta-panel" data-series="fuzzy">
+</g>
+<rect class="panel" height="610" width="700" x="790" y="105"/>
+<text class="label" font-weight="700" x="808" y="135">A1-A0 - three metrics</text>
+<g class="delta-panel" data-series="anfis">
+</g>
+<line class="axis" x1="463" x2="463" y1="165" y2="650"/>
+<text class="label" x="75" y="244">h1</text>
+<line class="grid" x1="205" x2="720" y1="240" y2="240"/>
+<circle class="delta-value" cx="656" cy="228" data-denominator="827" data-horizon="1" data-metric="delta_mae" data-seed="1729" data-series="F1-F0" data-value="0.0147" fill="#7c3aed" r="5"><title>F1-F0 h1, seed 1729: 0.0147; n=827</title></circle>
+<circle class="delta-value" cx="655" cy="234" data-denominator="827" data-horizon="1" data-metric="delta_mae" data-seed="314159" data-series="F1-F0" data-value="0.0146" fill="#7c3aed" r="5"><title>F1-F0 h1, seed 314159: 0.0146; n=827</title></circle>
+<circle class="delta-value" cx="657" cy="240" data-denominator="827" data-horizon="1" data-metric="delta_mae" data-seed="20260612" data-series="F1-F0" data-value="0.0148" fill="#7c3aed" r="5"><title>F1-F0 h1, seed 20260612: 0.0148; n=827</title></circle>
+<circle class="delta-value" cx="665" cy="246" data-denominator="827" data-horizon="1" data-metric="delta_mae" data-seed="20260613" data-series="F1-F0" data-value="0.0154" fill="#7c3aed" r="5"><title>F1-F0 h1, seed 20260613: 0.0154; n=827</title></circle>
+<circle class="delta-value" cx="661" cy="252" data-denominator="827" data-horizon="1" data-metric="delta_mae" data-seed="20260614" data-series="F1-F0" data-value="0.0150" fill="#7c3aed" r="5"><title>F1-F0 h1, seed 20260614: 0.0150; n=827</title></circle>
+<text class="value" text-anchor="end" x="720" y="282">mean=0.0149; seeds=5; n=827</text>
+<text class="label" x="75" y="394">h2</text>
+<line class="grid" x1="205" x2="720" y1="390" y2="390"/>
+<circle class="delta-value" cx="667" cy="378" data-denominator="858" data-horizon="2" data-metric="delta_mae" data-seed="1729" data-series="F1-F0" data-value="0.0156" fill="#7c3aed" r="5"><title>F1-F0 h2, seed 1729: 0.0156; n=858</title></circle>
+<circle class="delta-value" cx="665" cy="384" data-denominator="858" data-horizon="2" data-metric="delta_mae" data-seed="314159" data-series="F1-F0" data-value="0.0154" fill="#7c3aed" r="5"><title>F1-F0 h2, seed 314159: 0.0154; n=858</title></circle>
+<circle class="delta-value" cx="668" cy="390" data-denominator="858" data-horizon="2" data-metric="delta_mae" data-seed="20260612" data-series="F1-F0" data-value="0.0156" fill="#7c3aed" r="5"><title>F1-F0 h2, seed 20260612: 0.0156; n=858</title></circle>
+<circle class="delta-value" cx="677" cy="396" data-denominator="858" data-horizon="2" data-metric="delta_mae" data-seed="20260613" data-series="F1-F0" data-value="0.0163" fill="#7c3aed" r="5"><title>F1-F0 h2, seed 20260613: 0.0163; n=858</title></circle>
+<circle class="delta-value" cx="672" cy="402" data-denominator="858" data-horizon="2" data-metric="delta_mae" data-seed="20260614" data-series="F1-F0" data-value="0.0159" fill="#7c3aed" r="5"><title>F1-F0 h2, seed 20260614: 0.0159; n=858</title></circle>
+<text class="value" text-anchor="end" x="720" y="432">mean=0.0157; seeds=5; n=858</text>
+<text class="label" x="75" y="544">h3</text>
+<line class="grid" x1="205" x2="720" y1="540" y2="540"/>
+<circle class="delta-value" cx="629" cy="528" data-denominator="819" data-horizon="3" data-metric="delta_mae" data-seed="1729" data-series="F1-F0" data-value="0.0126" fill="#7c3aed" r="5"><title>F1-F0 h3, seed 1729: 0.0126; n=819</title></circle>
+<circle class="delta-value" cx="626" cy="534" data-denominator="819" data-horizon="3" data-metric="delta_mae" data-seed="314159" data-series="F1-F0" data-value="0.0124" fill="#7c3aed" r="5"><title>F1-F0 h3, seed 314159: 0.0124; n=819</title></circle>
+<circle class="delta-value" cx="629" cy="540" data-denominator="819" data-horizon="3" data-metric="delta_mae" data-seed="20260612" data-series="F1-F0" data-value="0.0126" fill="#7c3aed" r="5"><title>F1-F0 h3, seed 20260612: 0.0126; n=819</title></circle>
+<circle class="delta-value" cx="638" cy="546" data-denominator="819" data-horizon="3" data-metric="delta_mae" data-seed="20260613" data-series="F1-F0" data-value="0.0133" fill="#7c3aed" r="5"><title>F1-F0 h3, seed 20260613: 0.0133; n=819</title></circle>
+<circle class="delta-value" cx="632" cy="552" data-denominator="819" data-horizon="3" data-metric="delta_mae" data-seed="20260614" data-series="F1-F0" data-value="0.0129" fill="#7c3aed" r="5"><title>F1-F0 h3, seed 20260614: 0.0129; n=819</title></circle>
+<text class="value" text-anchor="end" x="720" y="582">mean=0.0128; seeds=5; n=819</text>
+<text class="small" text-anchor="middle" x="205" y="680">-0.0196</text>
+<text class="small" text-anchor="middle" x="463" y="680">0</text>
+<text class="small" text-anchor="middle" x="720" y="680">0.0196</text>
+<line class="axis" x1="1210" x2="1210" y1="165" y2="650"/>
+<text class="small" x="815" y="194">delta PR-AUC - h1</text>
+<line class="grid" x1="980" x2="1440" y1="190" y2="190"/>
+<circle class="delta-value" cx="1278" cy="190" data-denominator="3175" data-horizon="1" data-metric="delta_pr_auc" data-series="A1-A0" data-value="0.0074" fill="#1d4ed8" r="6"><title>A1-A0 delta PR-AUC h1: 0.0074; n=3175</title></circle>
+<text class="value" text-anchor="start" x="1288" y="182">0.0074</text>
+<text class="small" x="815" y="244">delta PR-AUC - h2</text>
+<line class="grid" x1="980" x2="1440" y1="240" y2="240"/>
+<circle class="delta-value" cx="1275" cy="240" data-denominator="3125" data-horizon="2" data-metric="delta_pr_auc" data-series="A1-A0" data-value="0.0072" fill="#1d4ed8" r="6"><title>A1-A0 delta PR-AUC h2: 0.0072; n=3125</title></circle>
+<text class="value" text-anchor="start" x="1285" y="232">0.0072</text>
+<text class="small" x="815" y="294">delta PR-AUC - h3</text>
+<line class="grid" x1="980" x2="1440" y1="290" y2="290"/>
+<circle class="delta-value" cx="1394" cy="290" data-denominator="3045" data-horizon="3" data-metric="delta_pr_auc" data-series="A1-A0" data-value="0.0202" fill="#1d4ed8" r="6"><title>A1-A0 delta PR-AUC h3: 0.0202; n=3045</title></circle>
+<text class="value" text-anchor="start" x="1404" y="282">0.0202</text>
+<text class="small" x="815" y="344">delta Brier - h1</text>
+<line class="grid" x1="980" x2="1440" y1="340" y2="340"/>
+<circle class="delta-value" cx="1159" cy="340" data-denominator="3175" data-horizon="1" data-metric="delta_brier" data-series="A1-A0" data-value="-0.0056" fill="#c2410c" r="6"><title>A1-A0 delta Brier h1: -0.0056; n=3175</title></circle>
+<text class="value" text-anchor="end" x="1149" y="332">-0.0056</text>
+<text class="small" x="815" y="394">delta Brier - h2</text>
+<line class="grid" x1="980" x2="1440" y1="390" y2="390"/>
+<circle class="delta-value" cx="1207" cy="390" data-denominator="3125" data-horizon="2" data-metric="delta_brier" data-series="A1-A0" data-value="-0.0003" fill="#c2410c" r="6"><title>A1-A0 delta Brier h2: -0.0003; n=3125</title></circle>
+<text class="value" text-anchor="end" x="1197" y="382">-0.0003</text>
+<text class="small" x="815" y="444">delta Brier - h3</text>
+<line class="grid" x1="980" x2="1440" y1="440" y2="440"/>
+<circle class="delta-value" cx="1109" cy="440" data-denominator="3045" data-horizon="3" data-metric="delta_brier" data-series="A1-A0" data-value="-0.0111" fill="#c2410c" r="6"><title>A1-A0 delta Brier h3: -0.0111; n=3045</title></circle>
+<text class="value" text-anchor="end" x="1099" y="432">-0.0111</text>
+<text class="small" x="815" y="494">delta MAE - h1</text>
+<line class="grid" x1="980" x2="1440" y1="490" y2="490"/>
+<circle class="delta-value" cx="1170" cy="490" data-denominator="3175" data-horizon="1" data-metric="delta_mae" data-series="A1-A0" data-value="-0.0044" fill="#0f766e" r="6"><title>A1-A0 delta MAE h1: -0.0044; n=3175</title></circle>
+<text class="value" text-anchor="end" x="1160" y="482">-0.0044</text>
+<text class="small" x="815" y="544">delta MAE - h2</text>
+<line class="grid" x1="980" x2="1440" y1="540" y2="540"/>
+<circle class="delta-value" cx="1212" cy="540" data-denominator="3125" data-horizon="2" data-metric="delta_mae" data-series="A1-A0" data-value="0.0002" fill="#0f766e" r="6"><title>A1-A0 delta MAE h2: 0.0002; n=3125</title></circle>
+<text class="value" text-anchor="start" x="1222" y="532">0.0002</text>
+<text class="small" x="815" y="594">delta MAE - h3</text>
+<line class="grid" x1="980" x2="1440" y1="590" y2="590"/>
+<circle class="delta-value" cx="1192" cy="590" data-denominator="3045" data-horizon="3" data-metric="delta_mae" data-series="A1-A0" data-value="-0.0020" fill="#0f766e" r="6"><title>A1-A0 delta MAE h3: -0.0020; n=3045</title></circle>
+<text class="value" text-anchor="end" x="1182" y="582">-0.0020</text>
+<text class="small" text-anchor="middle" x="980" y="680">-0.0253</text>
+<text class="small" text-anchor="middle" x="1210" y="680">0</text>
+<text class="small" text-anchor="middle" x="1440" y="680">0.0253</text>
+</svg>

@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1940" height="500" viewBox="0 0 1940 500" data-artifact-id="F08" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F08. Closure V1 provenance R-H1/P1/U1-H2/P2/U2-H3/P3/U3-H4-F; weighting and horizon not applicable; component and artifact denominators declared by each freeze; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: reproducible traceability does not demonstrate scientific effectiveness or field causality.</title>
+<desc id="figure-description">Sources: reports/closure_v1/00_protocol/closure_e0_u_activation.json;reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json;reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json;reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json;reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json;reports/closure_v1/01_benchmark/benchmark_manifest.json;reports/closure_v1/00_protocol/software_evidence_source_recovery_2/software_evidence_source_manifest.json. Filters: top-level base_r_commit/h_commit/p_commit plus historical_chain, recovery_chain and recovery_2_chain commit records; attempt_ordinal 1/2/3; benchmark execution_id and manifest_last; software repository_commit; U3/H4 identities are the exact published Git commits sealed by H-SYN; H4/F are topology/freeze nodes and are not predictive results</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1940" height="500" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F08 - Activation, recovery, and freeze provenance</text>
+<text class="subtitle" x="40" y="72">R -&gt; H1/P1/U1 -&gt; H2/P2/U2 -&gt; H3/P3/U3 -&gt; H4 -&gt; F; traceability, not performance.</text>
+<defs><marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#6b7280"/></marker></defs>
+<rect fill="#fef3c7" height="288" rx="14" stroke="#d1d5db" stroke-width="1" width="466" x="189" y="112"/>
+<text class="small" font-weight="700" text-anchor="middle" x="422" y="137">attempt 1 - recorded failure</text>
+<rect fill="#ffedd5" height="288" rx="14" stroke="#d1d5db" stroke-width="1" width="466" x="660" y="112"/>
+<text class="small" font-weight="700" text-anchor="middle" x="893" y="137">attempt 2 - recorded failure</text>
+<rect fill="#dbeafe" height="288" rx="14" stroke="#d1d5db" stroke-width="1" width="466" x="1131" y="112"/>
+<text class="small" font-weight="700" text-anchor="middle" x="1364" y="137">attempt 3 - only success</text>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="174" x2="195" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="331" x2="352" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="488" x2="509" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="645" x2="666" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="802" x2="823" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="959" x2="980" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="1116" x2="1137" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="1273" x2="1294" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="1430" x2="1451" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="1587" x2="1608" y1="255" y2="255"/>
+<line class="provenance-edge" marker-end="url(#arrow)" stroke="#6b7280" stroke-width="2" x1="1744" x2="1765" y1="255" y2="255"/>
+<g class="provenance-node" data-identity="4c92ed7249a91b7dd541fd22dde68b61574556b2" data-stage="R" data-state="base">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="42" y="175"/>
+<text class="heading" text-anchor="middle" x="108" y="215">R</text>
+<text class="value" text-anchor="middle" x="108" y="252">4c92ed72</text>
+<text class="small" text-anchor="middle" x="108" y="285">base</text>
+</g>
+<g class="provenance-node" data-identity="9e66478d7c071067a750e7dd9a6a318fa93a2c88" data-stage="H1" data-state="hardening">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="199" y="175"/>
+<text class="heading" text-anchor="middle" x="265" y="215">H1</text>
+<text class="value" text-anchor="middle" x="265" y="252">9e66478d</text>
+<text class="small" text-anchor="middle" x="265" y="285">hardening</text>
+</g>
+<g class="provenance-node" data-identity="caaf2d6d0a00a31febeed89b54ea078b60d7f92a" data-stage="P1" data-state="authority">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="356" y="175"/>
+<text class="heading" text-anchor="middle" x="422" y="215">P1</text>
+<text class="value" text-anchor="middle" x="422" y="252">caaf2d6d</text>
+<text class="small" text-anchor="middle" x="422" y="285">authority</text>
+</g>
+<g class="provenance-node" data-identity="4aecf19cd913b82a6a3d26669f09684e67efda8a" data-stage="U1" data-state="recorded failure">
+<rect fill="#fde68a" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="513" y="175"/>
+<text class="heading" text-anchor="middle" x="579" y="215">U1</text>
+<text class="value" text-anchor="middle" x="579" y="252">4aecf19c</text>
+<text class="small" text-anchor="middle" x="579" y="285">recorded failure</text>
+</g>
+<g class="provenance-node" data-identity="b768c5b1251bde50b01f0c066be07fb931924537" data-stage="H2" data-state="recovery hardening">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="670" y="175"/>
+<text class="heading" text-anchor="middle" x="736" y="215">H2</text>
+<text class="value" text-anchor="middle" x="736" y="252">b768c5b1</text>
+<text class="small" text-anchor="middle" x="736" y="285">recovery hardening</text>
+</g>
+<g class="provenance-node" data-identity="f0d203c75ba6943b6817339d651ece5cbccec492" data-stage="P2" data-state="recovery authority">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="827" y="175"/>
+<text class="heading" text-anchor="middle" x="893" y="215">P2</text>
+<text class="value" text-anchor="middle" x="893" y="252">f0d203c7</text>
+<text class="small" text-anchor="middle" x="893" y="285">recovery authority</text>
+</g>
+<g class="provenance-node" data-identity="a4f39173ec14aa7cd80d0fd38fb720f98cf88159" data-stage="U2" data-state="recorded failure">
+<rect fill="#fde68a" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="984" y="175"/>
+<text class="heading" text-anchor="middle" x="1050" y="215">U2</text>
+<text class="value" text-anchor="middle" x="1050" y="252">a4f39173</text>
+<text class="small" text-anchor="middle" x="1050" y="285">recorded failure</text>
+</g>
+<g class="provenance-node" data-identity="a676a12b92c668f1540f3e09b00b91c23610dc6b" data-stage="H3" data-state="recovery-2 hardening">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="1141" y="175"/>
+<text class="heading" text-anchor="middle" x="1207" y="215">H3</text>
+<text class="value" text-anchor="middle" x="1207" y="252">a676a12b</text>
+<text class="small" text-anchor="middle" x="1207" y="285">recovery-2 hardening</text>
+</g>
+<g class="provenance-node" data-identity="e3e48a397b0c8119672164928d35fb816da8fcc5" data-stage="P3" data-state="recovery-2 authority">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="1298" y="175"/>
+<text class="heading" text-anchor="middle" x="1364" y="215">P3</text>
+<text class="value" text-anchor="middle" x="1364" y="252">e3e48a39</text>
+<text class="small" text-anchor="middle" x="1364" y="285">recovery-2 authority</text>
+</g>
+<g class="provenance-node" data-identity="d72bb727f7d524bb423cb7cbaf425104291b7f31" data-stage="U3" data-state="only successful attempt">
+<rect fill="#bfdbfe" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="1455" y="175"/>
+<text class="heading" text-anchor="middle" x="1521" y="215">U3</text>
+<text class="value" text-anchor="middle" x="1521" y="252">d72bb727</text>
+<text class="small" text-anchor="middle" x="1521" y="285">only successful</text>
+<text class="small" text-anchor="middle" x="1521" y="303">attempt</text>
+</g>
+<g class="provenance-node" data-identity="d53eaef9eb5aaf90fe02c8e337346879f6403c4d" data-stage="H4" data-state="hardening outcome-free">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="1612" y="175"/>
+<text class="heading" text-anchor="middle" x="1678" y="215">H4</text>
+<text class="value" text-anchor="middle" x="1678" y="252">d53eaef9</text>
+<text class="small" text-anchor="middle" x="1678" y="285">hardening outcome-free</text>
+</g>
+<g class="provenance-node" data-identity="ea8ddce7f8edb9a61db97e29178e52603fa371b1" data-stage="F" data-state="final freeze">
+<rect fill="#f3f4f6" height="160" rx="10" stroke="#4b5563" stroke-width="1" width="132" x="1769" y="175"/>
+<text class="heading" text-anchor="middle" x="1835" y="215">F</text>
+<text class="value" text-anchor="middle" x="1835" y="252">ea8ddce7</text>
+<text class="small" text-anchor="middle" x="1835" y="285">final freeze</text>
+</g>
+<text class="label" x="42" y="445">U1/U2: preserved failures - U3: only materialized scientific result - H4/F: subsequent reproducible closure.</text>
+</svg>

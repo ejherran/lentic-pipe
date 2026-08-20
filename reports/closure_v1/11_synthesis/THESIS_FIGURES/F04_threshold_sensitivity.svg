@@ -1,0 +1,163 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1580" height="930" viewBox="0 0 1580 930" data-artifact-id="F04" role="img" aria-labelledby="figure-title figure-description">
+<title id="figure-title">F04. Metric sensitivity to thresholds in the internal WQP holdout; E3 weighting preserved; horizons of 1, 2, and 3 months; metric_evaluable_origins denominator by threshold; authority ea8ddce7f8edb9a61db97e29178e52603fa371b1; limitation: project thresholds, not official ecological standards.</title>
+<desc id="figure-description">Sources: reports/closure_v1/03_thresholds/threshold_prevalence.csv;reports/closure_v1/03_thresholds/rank_stability.csv. Filters: threshold_prevalence: evaluation_cohort=location_holdout and cutoff in 25,30,33,50; rank_stability: estimable=True, reference cutoff=30, metric in pr_auc,brier,f2; series are kept separate by horizon</desc>
+<style>.heading{font:700 25px sans-serif;fill:#111827}.subtitle{font:14px sans-serif;fill:#374151}.label{font:13px sans-serif;fill:#111827}.small{font:11px sans-serif;fill:#374151}.value{font:11px monospace;fill:#111827}.axis{stroke:#4b5563;stroke-width:1;fill:none}.grid{stroke:#d1d5db;stroke-width:1;fill:none}.panel{fill:#f9fafb;stroke:#d1d5db;stroke-width:1}.na{fill:#e5e7eb;stroke:#6b7280;stroke-width:1}</style>
+<rect width="1580" height="930" fill="#ffffff"/>
+<text class="heading" x="40" y="42">F04 - Prevalence and ranking stability by cutoff</text>
+<text class="subtitle" x="40" y="72">Cutoff 50 is retained and marked as a sparse endpoint; Kendall tau uses 30 as the reference.</text>
+<rect class="panel" height="730" width="700" x="45" y="105"/>
+<text class="label" font-weight="700" x="65" y="135">Positive prevalence</text>
+<line class="grid" x1="80" x2="690" y1="770" y2="770"/>
+<text class="small" text-anchor="end" x="72" y="774">0.0</text>
+<line class="grid" x1="80" x2="690" y1="646" y2="646"/>
+<text class="small" text-anchor="end" x="72" y="650">0.1</text>
+<line class="grid" x1="80" x2="690" y1="522" y2="522"/>
+<text class="small" text-anchor="end" x="72" y="526">0.2</text>
+<line class="grid" x1="80" x2="690" y1="398" y2="398"/>
+<text class="small" text-anchor="end" x="72" y="402">0.3</text>
+<line class="grid" x1="80" x2="690" y1="274" y2="274"/>
+<text class="small" text-anchor="end" x="72" y="278">0.4</text>
+<line class="grid" x1="80" x2="690" y1="150" y2="150"/>
+<text class="small" text-anchor="end" x="72" y="154">0.5</text>
+<circle class="threshold-value" cx="80" cy="337" data-cutoff="25" data-denominator="827" data-horizon="1" data-positive-count="289" data-series="prevalence_h1" data-value="0.3495" fill="#1d4ed8" r="6" stroke="#1d4ed8" stroke-width="1"><title>h1, cutoff 25: 0.3495 (289/827)</title></circle>
+<text class="value" text-anchor="middle" x="80" y="327">0.349</text>
+<circle class="threshold-value" cx="283" cy="416" data-cutoff="30" data-denominator="827" data-horizon="1" data-positive-count="236" data-series="prevalence_h1" data-value="0.2854" fill="#1d4ed8" r="6" stroke="#1d4ed8" stroke-width="1"><title>h1, cutoff 30: 0.2854 (236/827)</title></circle>
+<text class="value" text-anchor="middle" x="283" y="406">0.285</text>
+<circle class="threshold-value" cx="486" cy="466" data-cutoff="33" data-denominator="827" data-horizon="1" data-positive-count="203" data-series="prevalence_h1" data-value="0.2455" fill="#1d4ed8" r="6" stroke="#1d4ed8" stroke-width="1"><title>h1, cutoff 33: 0.2455 (203/827)</title></circle>
+<text class="value" text-anchor="middle" x="486" y="456">0.245</text>
+<circle class="threshold-value" cx="690" cy="659" data-cutoff="50" data-denominator="827" data-horizon="1" data-positive-count="74" data-series="prevalence_h1" data-value="0.0895" fill="#1d4ed8" r="8" stroke="#111827" stroke-width="2"><title>h1, cutoff 50: 0.0895 (74/827)</title></circle>
+<text class="value" text-anchor="middle" x="690" y="649">0.089</text>
+<polyline class="threshold-series" data-series="prevalence_h1" fill="none" points="80,337 283,416 486,466 690,659" stroke="#1d4ed8" stroke-width="2"/>
+<circle class="threshold-value" cx="80" cy="322" data-cutoff="25" data-denominator="858" data-horizon="2" data-positive-count="310" data-series="prevalence_h2" data-value="0.3613" fill="#7c3aed" r="6" stroke="#7c3aed" stroke-width="1"><title>h2, cutoff 25: 0.3613 (310/858)</title></circle>
+<text class="value" text-anchor="middle" x="80" y="312">0.361</text>
+<circle class="threshold-value" cx="283" cy="393" data-cutoff="30" data-denominator="858" data-horizon="2" data-positive-count="261" data-series="prevalence_h2" data-value="0.3042" fill="#7c3aed" r="6" stroke="#7c3aed" stroke-width="1"><title>h2, cutoff 30: 0.3042 (261/858)</title></circle>
+<text class="value" text-anchor="middle" x="283" y="383">0.304</text>
+<circle class="threshold-value" cx="486" cy="440" data-cutoff="33" data-denominator="858" data-horizon="2" data-positive-count="228" data-series="prevalence_h2" data-value="0.2657" fill="#7c3aed" r="6" stroke="#7c3aed" stroke-width="1"><title>h2, cutoff 33: 0.2657 (228/858)</title></circle>
+<text class="value" text-anchor="middle" x="486" y="430">0.266</text>
+<circle class="threshold-value" cx="690" cy="628" data-cutoff="50" data-denominator="858" data-horizon="2" data-positive-count="98" data-series="prevalence_h2" data-value="0.1142" fill="#7c3aed" r="8" stroke="#111827" stroke-width="2"><title>h2, cutoff 50: 0.1142 (98/858)</title></circle>
+<text class="value" text-anchor="middle" x="690" y="618">0.114</text>
+<polyline class="threshold-series" data-series="prevalence_h2" fill="none" points="80,322 283,393 486,440 690,628" stroke="#7c3aed" stroke-width="2"/>
+<circle class="threshold-value" cx="80" cy="349" data-cutoff="25" data-denominator="819" data-horizon="3" data-positive-count="278" data-series="prevalence_h3" data-value="0.3394" fill="#c2410c" r="6" stroke="#c2410c" stroke-width="1"><title>h3, cutoff 25: 0.3394 (278/819)</title></circle>
+<text class="value" text-anchor="middle" x="80" y="339">0.339</text>
+<circle class="threshold-value" cx="283" cy="419" data-cutoff="30" data-denominator="819" data-horizon="3" data-positive-count="232" data-series="prevalence_h3" data-value="0.2833" fill="#c2410c" r="6" stroke="#c2410c" stroke-width="1"><title>h3, cutoff 30: 0.2833 (232/819)</title></circle>
+<text class="value" text-anchor="middle" x="283" y="409">0.283</text>
+<circle class="threshold-value" cx="486" cy="472" data-cutoff="33" data-denominator="819" data-horizon="3" data-positive-count="197" data-series="prevalence_h3" data-value="0.2405" fill="#c2410c" r="6" stroke="#c2410c" stroke-width="1"><title>h3, cutoff 33: 0.2405 (197/819)</title></circle>
+<text class="value" text-anchor="middle" x="486" y="462">0.241</text>
+<circle class="threshold-value" cx="690" cy="661" data-cutoff="50" data-denominator="819" data-horizon="3" data-positive-count="72" data-series="prevalence_h3" data-value="0.0879" fill="#c2410c" r="8" stroke="#111827" stroke-width="2"><title>h3, cutoff 50: 0.0879 (72/819)</title></circle>
+<text class="value" text-anchor="middle" x="690" y="651">0.088</text>
+<polyline class="threshold-series" data-series="prevalence_h3" fill="none" points="80,349 283,419 486,472 690,661" stroke="#c2410c" stroke-width="2"/>
+<text class="label" text-anchor="middle" x="80" y="798">25</text>
+<text class="label" text-anchor="middle" x="283" y="798">30</text>
+<text class="label" text-anchor="middle" x="486" y="798">33</text>
+<text class="label" text-anchor="middle" x="690" y="798">50</text>
+<text class="small" text-anchor="middle" x="385" y="822">cutoff (micrograms/L)</text>
+<rect class="panel" height="730" width="745" x="790" y="105"/>
+<text class="label" font-weight="700" x="810" y="135">Ranking Kendall tau</text>
+<text class="small" font-weight="700" x="812" y="177">pr_auc</text>
+<line class="axis" x1="865" x2="1475" y1="240" y2="240"/>
+<circle class="rank-value" cx="865" cy="169" data-cutoff="25" data-horizon="1" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h1" data-value="0.9506" fill="#0f766e" fill-opacity="0.575" r="5"><title>pr_auc, h1, cutoff 25: τ=0.9506; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="161">0.95</text>
+<circle class="rank-value" cx="1068" cy="165" data-cutoff="30" data-horizon="1" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h1" data-value="1.0000" fill="#0f766e" fill-opacity="0.575" r="5"><title>pr_auc, h1, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="157">1.00</text>
+<circle class="rank-value" cx="1271" cy="167" data-cutoff="33" data-horizon="1" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h1" data-value="0.9753" fill="#0f766e" fill-opacity="0.575" r="5"><title>pr_auc, h1, cutoff 33: τ=0.9753; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="159">0.98</text>
+<circle class="rank-value" cx="1475" cy="196" data-cutoff="50" data-horizon="1" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h1" data-value="0.5802" fill="#0f766e" fill-opacity="0.575" r="5"><title>pr_auc, h1, cutoff 50: τ=0.5802; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="188">0.58</text>
+<polyline class="rank-series" data-series="pr_auc_h1" fill="none" points="865,169 1068,165 1271,167 1475,196" stroke="#1d4ed8" stroke-width="1"/>
+<circle class="rank-value" cx="865" cy="173" data-cutoff="25" data-horizon="2" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h2" data-value="0.8914" fill="#0f766e" fill-opacity="0.70" r="6"><title>pr_auc, h2, cutoff 25: τ=0.8914; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="165">0.89</text>
+<circle class="rank-value" cx="1068" cy="165" data-cutoff="30" data-horizon="2" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h2" data-value="1.0000" fill="#0f766e" fill-opacity="0.70" r="6"><title>pr_auc, h2, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="157">1.00</text>
+<circle class="rank-value" cx="1271" cy="168" data-cutoff="33" data-horizon="2" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h2" data-value="0.9654" fill="#0f766e" fill-opacity="0.70" r="6"><title>pr_auc, h2, cutoff 33: τ=0.9654; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="160">0.97</text>
+<circle class="rank-value" cx="1475" cy="186" data-cutoff="50" data-horizon="2" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h2" data-value="0.7185" fill="#0f766e" fill-opacity="0.70" r="6"><title>pr_auc, h2, cutoff 50: τ=0.7185; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="178">0.72</text>
+<polyline class="rank-series" data-series="pr_auc_h2" fill="none" points="865,173 1068,165 1271,168 1475,186" stroke="#7c3aed" stroke-width="1"/>
+<circle class="rank-value" cx="865" cy="169" data-cutoff="25" data-horizon="3" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h3" data-value="0.9457" fill="#0f766e" fill-opacity="0.825" r="7"><title>pr_auc, h3, cutoff 25: τ=0.9457; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="161">0.95</text>
+<circle class="rank-value" cx="1068" cy="165" data-cutoff="30" data-horizon="3" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h3" data-value="1.0000" fill="#0f766e" fill-opacity="0.825" r="7"><title>pr_auc, h3, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="157">1.00</text>
+<circle class="rank-value" cx="1271" cy="166" data-cutoff="33" data-horizon="3" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h3" data-value="0.9901" fill="#0f766e" fill-opacity="0.825" r="7"><title>pr_auc, h3, cutoff 33: τ=0.9901; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="158">0.99</text>
+<circle class="rank-value" cx="1475" cy="188" data-cutoff="50" data-horizon="3" data-metric="pr_auc" data-model-count="30" data-series="pr_auc_h3" data-value="0.6889" fill="#0f766e" fill-opacity="0.825" r="7"><title>pr_auc, h3, cutoff 50: τ=0.6889; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="180">0.69</text>
+<polyline class="rank-series" data-series="pr_auc_h3" fill="none" points="865,169 1068,165 1271,166 1475,188" stroke="#c2410c" stroke-width="1"/>
+<text class="small" text-anchor="end" x="857" y="169">1</text>
+<text class="small" text-anchor="end" x="857" y="244">0</text>
+<text class="small" text-anchor="end" x="857" y="319">-1</text>
+<text class="small" font-weight="700" x="812" y="387">brier</text>
+<line class="axis" x1="865" x2="1475" y1="450" y2="450"/>
+<circle class="rank-value" cx="865" cy="387" data-cutoff="25" data-horizon="1" data-metric="brier" data-model-count="30" data-series="brier_h1" data-value="0.8420" fill="#7c3aed" fill-opacity="0.575" r="5"><title>brier, h1, cutoff 25: τ=0.8420; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="379">0.84</text>
+<circle class="rank-value" cx="1068" cy="375" data-cutoff="30" data-horizon="1" data-metric="brier" data-model-count="30" data-series="brier_h1" data-value="1.0000" fill="#7c3aed" fill-opacity="0.575" r="5"><title>brier, h1, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="367">1.00</text>
+<circle class="rank-value" cx="1271" cy="386" data-cutoff="33" data-horizon="1" data-metric="brier" data-model-count="30" data-series="brier_h1" data-value="0.8519" fill="#7c3aed" fill-opacity="0.575" r="5"><title>brier, h1, cutoff 33: τ=0.8519; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="378">0.85</text>
+<circle class="rank-value" cx="1475" cy="491" data-cutoff="50" data-horizon="1" data-metric="brier" data-model-count="30" data-series="brier_h1" data-value="-0.5457" fill="#7c3aed" fill-opacity="0.575" r="5"><title>brier, h1, cutoff 50: τ=-0.5457; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="483">-0.55</text>
+<polyline class="rank-series" data-series="brier_h1" fill="none" points="865,387 1068,375 1271,386 1475,491" stroke="#1d4ed8" stroke-width="1"/>
+<circle class="rank-value" cx="865" cy="377" data-cutoff="25" data-horizon="2" data-metric="brier" data-model-count="30" data-series="brier_h2" data-value="0.9753" fill="#7c3aed" fill-opacity="0.70" r="6"><title>brier, h2, cutoff 25: τ=0.9753; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="369">0.98</text>
+<circle class="rank-value" cx="1068" cy="375" data-cutoff="30" data-horizon="2" data-metric="brier" data-model-count="30" data-series="brier_h2" data-value="1.0000" fill="#7c3aed" fill-opacity="0.70" r="6"><title>brier, h2, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="367">1.00</text>
+<circle class="rank-value" cx="1271" cy="385" data-cutoff="33" data-horizon="2" data-metric="brier" data-model-count="30" data-series="brier_h2" data-value="0.8667" fill="#7c3aed" fill-opacity="0.70" r="6"><title>brier, h2, cutoff 33: τ=0.8667; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="377">0.87</text>
+<circle class="rank-value" cx="1475" cy="492" data-cutoff="50" data-horizon="2" data-metric="brier" data-model-count="30" data-series="brier_h2" data-value="-0.5556" fill="#7c3aed" fill-opacity="0.70" r="6"><title>brier, h2, cutoff 50: τ=-0.5556; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="484">-0.56</text>
+<polyline class="rank-series" data-series="brier_h2" fill="none" points="865,377 1068,375 1271,385 1475,492" stroke="#7c3aed" stroke-width="1"/>
+<circle class="rank-value" cx="865" cy="375" data-cutoff="25" data-horizon="3" data-metric="brier" data-model-count="30" data-series="brier_h3" data-value="0.9951" fill="#7c3aed" fill-opacity="0.825" r="7"><title>brier, h3, cutoff 25: τ=0.9951; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="367">1.00</text>
+<circle class="rank-value" cx="1068" cy="375" data-cutoff="30" data-horizon="3" data-metric="brier" data-model-count="30" data-series="brier_h3" data-value="1.0000" fill="#7c3aed" fill-opacity="0.825" r="7"><title>brier, h3, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="367">1.00</text>
+<circle class="rank-value" cx="1271" cy="392" data-cutoff="33" data-horizon="3" data-metric="brier" data-model-count="30" data-series="brier_h3" data-value="0.7778" fill="#7c3aed" fill-opacity="0.825" r="7"><title>brier, h3, cutoff 33: τ=0.7778; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="384">0.78</text>
+<circle class="rank-value" cx="1475" cy="482" data-cutoff="50" data-horizon="3" data-metric="brier" data-model-count="30" data-series="brier_h3" data-value="-0.4321" fill="#7c3aed" fill-opacity="0.825" r="7"><title>brier, h3, cutoff 50: τ=-0.4321; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="474">-0.43</text>
+<polyline class="rank-series" data-series="brier_h3" fill="none" points="865,375 1068,375 1271,392 1475,482" stroke="#c2410c" stroke-width="1"/>
+<text class="small" text-anchor="end" x="857" y="379">1</text>
+<text class="small" text-anchor="end" x="857" y="454">0</text>
+<text class="small" text-anchor="end" x="857" y="529">-1</text>
+<text class="small" font-weight="700" x="812" y="597">f2</text>
+<line class="axis" x1="865" x2="1475" y1="660" y2="660"/>
+<circle class="rank-value" cx="865" cy="588" data-cutoff="25" data-horizon="1" data-metric="f2" data-model-count="30" data-series="f2_h1" data-value="0.9601" fill="#c2410c" fill-opacity="0.575" r="5"><title>f2, h1, cutoff 25: τ=0.9601; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="580">0.96</text>
+<circle class="rank-value" cx="1068" cy="585" data-cutoff="30" data-horizon="1" data-metric="f2" data-model-count="30" data-series="f2_h1" data-value="1.0000" fill="#c2410c" fill-opacity="0.575" r="5"><title>f2, h1, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="577">1.00</text>
+<circle class="rank-value" cx="1271" cy="590" data-cutoff="33" data-horizon="1" data-metric="f2" data-model-count="30" data-series="f2_h1" data-value="0.9302" fill="#c2410c" fill-opacity="0.575" r="5"><title>f2, h1, cutoff 33: τ=0.9302; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="582">0.93</text>
+<circle class="rank-value" cx="1475" cy="647" data-cutoff="50" data-horizon="1" data-metric="f2" data-model-count="30" data-series="f2_h1" data-value="0.1771" fill="#c2410c" fill-opacity="0.575" r="5"><title>f2, h1, cutoff 50: τ=0.1771; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="639">0.18</text>
+<polyline class="rank-series" data-series="f2_h1" fill="none" points="865,588 1068,585 1271,590 1475,647" stroke="#1d4ed8" stroke-width="1"/>
+<circle class="rank-value" cx="865" cy="587" data-cutoff="25" data-horizon="2" data-metric="f2" data-model-count="30" data-series="f2_h2" data-value="0.9702" fill="#c2410c" fill-opacity="0.70" r="6"><title>f2, h2, cutoff 25: τ=0.9702; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="579">0.97</text>
+<circle class="rank-value" cx="1068" cy="585" data-cutoff="30" data-horizon="2" data-metric="f2" data-model-count="30" data-series="f2_h2" data-value="1.0000" fill="#c2410c" fill-opacity="0.70" r="6"><title>f2, h2, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="577">1.00</text>
+<circle class="rank-value" cx="1271" cy="602" data-cutoff="33" data-horizon="2" data-metric="f2" data-model-count="30" data-series="f2_h2" data-value="0.7767" fill="#c2410c" fill-opacity="0.70" r="6"><title>f2, h2, cutoff 33: τ=0.7767; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="594">0.78</text>
+<circle class="rank-value" cx="1475" cy="670" data-cutoff="50" data-horizon="2" data-metric="f2" data-model-count="30" data-series="f2_h2" data-value="-0.1292" fill="#c2410c" fill-opacity="0.70" r="6"><title>f2, h2, cutoff 50: τ=-0.1292; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="662">-0.13</text>
+<polyline class="rank-series" data-series="f2_h2" fill="none" points="865,587 1068,585 1271,602 1475,670" stroke="#7c3aed" stroke-width="1"/>
+<circle class="rank-value" cx="865" cy="588" data-cutoff="25" data-horizon="3" data-metric="f2" data-model-count="30" data-series="f2_h3" data-value="0.9553" fill="#c2410c" fill-opacity="0.825" r="7"><title>f2, h3, cutoff 25: τ=0.9553; models=30</title></circle>
+<text class="value" text-anchor="middle" x="865" y="580">0.96</text>
+<circle class="rank-value" cx="1068" cy="585" data-cutoff="30" data-horizon="3" data-metric="f2" data-model-count="30" data-series="f2_h3" data-value="1.0000" fill="#c2410c" fill-opacity="0.825" r="7"><title>f2, h3, cutoff 30: τ=1.0000; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1068" y="577">1.00</text>
+<circle class="rank-value" cx="1271" cy="598" data-cutoff="33" data-horizon="3" data-metric="f2" data-model-count="30" data-series="f2_h3" data-value="0.8263" fill="#c2410c" fill-opacity="0.825" r="7"><title>f2, h3, cutoff 33: τ=0.8263; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1271" y="590">0.83</text>
+<circle class="rank-value" cx="1475" cy="635" data-cutoff="50" data-horizon="3" data-metric="f2" data-model-count="30" data-series="f2_h3" data-value="0.3350" fill="#c2410c" fill-opacity="0.825" r="7"><title>f2, h3, cutoff 50: τ=0.3350; models=30</title></circle>
+<text class="value" text-anchor="middle" x="1475" y="627">0.33</text>
+<polyline class="rank-series" data-series="f2_h3" fill="none" points="865,588 1068,585 1271,598 1475,635" stroke="#c2410c" stroke-width="1"/>
+<text class="small" text-anchor="end" x="857" y="589">1</text>
+<text class="small" text-anchor="end" x="857" y="664">0</text>
+<text class="small" text-anchor="end" x="857" y="739">-1</text>
+<text class="label" text-anchor="middle" x="865" y="765">25</text>
+<text class="label" text-anchor="middle" x="1068" y="765">30</text>
+<text class="label" text-anchor="middle" x="1271" y="765">33</text>
+<text class="label" text-anchor="middle" x="1475" y="765">50</text>
+<circle cx="540" cy="885" fill="#1d4ed8" r="5"/>
+<text class="small" x="550" y="889">h1</text>
+<circle cx="615" cy="885" fill="#7c3aed" r="5"/>
+<text class="small" x="625" y="889">h2</text>
+<circle cx="690" cy="885" fill="#c2410c" r="5"/>
+<text class="small" x="700" y="889">h3</text>
+</svg>

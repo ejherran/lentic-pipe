@@ -1,0 +1,8 @@
+record_type,model_or_pair,horizon_months,training_rows_per_module,module,feature,availability_state,status,denominator,delta_pr_auc,delta_brier,delta_mae,saturation_claim_authorized,membership_stability_claim_authorized,limitation,evidence_path
+A1_vs_A0,A1_vs_A0,1,,,,descriptive_available,available,3175,0.0074,-0.0056,-0.0044,,,descriptive_no_interval,reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv
+A1_vs_A0,A1_vs_A0,2,,,,descriptive_available,available,3125,0.0072,-0.0003,0.0002,,,descriptive_no_interval,reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv
+A1_vs_A0,A1_vs_A0,3,,,,descriptive_available,available,3045,0.0202,-0.0111,-0.0020,,,descriptive_no_interval,reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv
+learning_curve_sentinel,A1,,4096,,,insufficient_support,not_available,,,,,false,,training_size_not_completed,reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv
+learning_curve_sentinel,A1,,16384,,,insufficient_support,not_available,,,,,false,,training_size_not_completed,reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv
+learning_curve_sentinel,A1,,65536,,,insufficient_support,not_available,,,,,false,,training_size_not_completed,reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv
+membership_stability_sentinel,,,,,,insufficient_support,not_available,,,,,,false,membership_stability_not_available,reports/closure_v1/07_anfis_ablation_evaluation/membership_stability.csv
