@@ -11197,16 +11197,28 @@ def _phase4_cert_identity(path: str = "cert.txt") -> Any:
 def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
     monkeypatch,
 ) -> None:
-    assert list(
+    assert len(precommit_artifacts.CLOSURE_PHASE4_H_CERT_STAGED_SCOPE) == 11
+    assert set(
         precommit_artifacts.CLOSURE_PHASE4_H_CERT_STAGED_SCOPE.values()
+    ) == {"M"}
+    assert list(
+        precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE.values()
     ).count("A") == 9
     assert list(
-        precommit_artifacts.CLOSURE_PHASE4_H_CERT_STAGED_SCOPE.values()
+        precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE.values()
     ).count("M") == 2
     assert len(precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE) == 2
     assert set(
         precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE.values()
     ) == {"A"}
+    assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE) == {
+        "configs/closure_v1/phase4_final_certification_authority_v2.json",
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v2.json",
+    }
+    assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_STAGED_SCOPE) == {
+        "configs/closure_v1/phase4_final_certification_authority.json",
+        "configs/closure_v1/phase4_final_certification_authority_manifest.json",
+    }
     assert len(precommit_artifacts.CLOSURE_PHASE4_R_CERT_STAGED_SCOPE) == 8
     assert list(precommit_artifacts.CLOSURE_PHASE4_R_CERT_STAGED_SCOPE)[-1].endswith(
         "final_certification_manifest.json"
@@ -11338,14 +11350,14 @@ def test_closure_phase4_h_cert_selector_is_exact_and_rejects_guard_extra_pending
         precommit_artifacts,
         "_git_output",
         lambda _root, *args: (
-            precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_COMMIT
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT
             if args[:2] == ("rev-parse", "HEAD^{commit}")
             else ""
         ),
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_editorial_history",
+        "_require_closure_phase4_cert_v1_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -11424,7 +11436,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
 ) -> None:
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_editorial_history",
+        "_require_closure_phase4_cert_v1_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -11445,7 +11457,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
         precommit_artifacts,
         "_closure_phase4_commit_parents",
         lambda *_args, **_kwargs: (
-            precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
         ),
     )
     monkeypatch.setattr(
@@ -11459,6 +11471,146 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
     ):
         precommit_artifacts._require_closure_phase4_published_h_cert(
             "a" * 40,
+            repo_root=Path("."),
+        )
+
+
+def test_closure_phase4_h_cert2_selector_rejects_superseded_base(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    status = _phase4_cert_short_status("H-CERT", staged=False)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_COMMIT,
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
+        match="H-CERT2.*P-CERT1",
+    ):
+        precommit_artifacts.closure_phase4_h_cert_pre_stage_scope(
+            status,
+            "",
+            repo_root=tmp_path,
+        )
+
+
+def test_closure_phase4_p_cert2_selector_accepts_git_lexical_status_order(
+    tmp_path: Path, monkeypatch
+) -> None:
+    (tmp_path / "tmp").mkdir()
+    lines = _phase4_cert_short_status("P-CERT", staged=False).splitlines()
+    assert lines[0].endswith("authority_manifest_v2.json")
+    assert lines[1].endswith("authority_v2.json")
+    reversed_status = "\n".join(reversed(lines)) + "\n"
+    h2_commit = "a" * 40
+    observed: list[str] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda _root, *args: (
+            h2_commit if args[:2] == ("rev-parse", "HEAD^{commit}") else ""
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_published_h_cert",
+        lambda commit, **_kwargs: observed.append(commit),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_refs",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_runtime_namespaces",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_contract",
+        lambda **_kwargs: SimpleNamespace(test_suite=SimpleNamespace(status="locked")),
+    )
+    assert precommit_artifacts.closure_phase4_p_cert_pre_stage_scope(
+        "\n".join(lines) + "\n",
+        "",
+        repo_root=tmp_path,
+    )
+    assert precommit_artifacts.closure_phase4_p_cert_pre_stage_scope(
+        reversed_status,
+        "",
+        repo_root=tmp_path,
+    )
+    assert observed == [h2_commit, h2_commit]
+
+
+def test_closure_phase4_cert_p1_authority_files_are_byte_intact(
+    tmp_path: Path, monkeypatch
+) -> None:
+    payloads = {
+        path: f"historical:{path}\n".encode()
+        for path in precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_STAGED_SCOPE
+    }
+    expected_oids = {
+        path: hashlib.sha1(
+            f"blob {len(payload)}\0".encode("ascii") + payload,
+            usedforsecurity=False,
+        ).hexdigest()
+        for path, payload in payloads.items()
+    }
+    for path, payload in payloads.items():
+        target = tmp_path / path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(payload)
+
+    def git_output(_root: Path, *args: str) -> str:
+        assert args[:2] == ("ls-tree", precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT)
+        path = args[-1]
+        return f"100644 blob {expected_oids[path]}\t{path}\n"
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    precommit_artifacts._require_closure_phase4_p1_files_intact(
+        repo_root=tmp_path
+    )
+
+    mutated = next(iter(payloads))
+    (tmp_path / mutated).write_bytes(b"tampered\n")
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
+        match="P-CERT1 authority bytes drifted",
+    ):
+        precommit_artifacts._require_closure_phase4_p1_files_intact(
+            repo_root=tmp_path
+        )
+
+
+def test_closure_phase4_cert_p1_cannot_authorize_r_cert(monkeypatch) -> None:
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_v1_history",
+        lambda **_kwargs: None,
+    )
+
+    def parents(commit: str, **_kwargs: Any) -> tuple[str, ...]:
+        if commit == precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT:
+            return (precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_COMMIT,)
+        if commit == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_COMMIT:
+            return (precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_COMMIT,)
+        raise AssertionError(f"unexpected commit: {commit}")
+
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_closure_phase4_commit_parents",
+        parents,
+    )
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
+        match="H-CERT2.*P-CERT1",
+    ):
+        precommit_artifacts._require_closure_phase4_published_p_cert(
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
             repo_root=Path("."),
         )
 
@@ -11625,6 +11777,12 @@ def test_closure_phase4_cert_rejects_runtime_authority_and_cleanup_namespaces(
             "H-CERT", repo_root=tmp_path
         )
     runtime.rmdir()
+
+    for raw_path in precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_STAGED_SCOPE:
+        (tmp_path / raw_path).write_text("historical P1\n", encoding="utf-8")
+    precommit_artifacts._require_closure_phase4_cert_runtime_namespaces(
+        "H-CERT", repo_root=tmp_path
+    )
 
     authority = (
         tmp_path
@@ -12068,11 +12226,11 @@ def test_closure_phase4_cert_staged_double_recapture_rejects_semantic_drift(
     monkeypatch.setattr(
         precommit_artifacts,
         "_git_output",
-        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_EDITORIAL_COMMIT,
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_editorial_history",
+        "_require_closure_phase4_cert_v1_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -12171,6 +12329,70 @@ def test_closure_phase4_p_cert_semantic_digest_requires_exact_reconstruction(
     ):
         precommit_artifacts._closure_phase4_cert_semantic_digest(
             "P-CERT", repo_root=Path(".")
+        )
+
+
+def test_closure_phase4_h_cert_semantic_digest_requires_read_only_h2_preflight(
+    monkeypatch,
+) -> None:
+    from src.experiments import lock_phase4_final_certification as locker
+    from src.reporting import phase4_final_certification_contract as contract_module
+
+    suite = SimpleNamespace(
+        status="locked",
+        selector_count=39,
+        collected_test_count=900,
+        nodeids_sha256="a" * 64,
+        allowed_skip_count=7,
+    )
+    contract = SimpleNamespace(test_suite=suite, output_paths=("one", "two"))
+    result = {
+        "status": "ready_to_publish_h",
+        "h1_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_COMMIT,
+        "p1_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
+        "h_cert_commit": None,
+        "writes_performed": False,
+        "dvc_status_checked": False,
+        "dvc_pull_commands_run": False,
+        "test_commands_run": False,
+        "parquet_payloads_opened": False,
+        "raw_targets_accessed": False,
+        "raw_outcomes_accessed": False,
+        "git_publication_commands_run": False,
+    }
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_contract",
+        lambda **_kwargs: contract,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_git_output",
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
+    )
+    monkeypatch.setattr(locker, "check_only", lambda **_kwargs: result)
+    monkeypatch.setattr(
+        contract_module,
+        "collect_anchor_input_records",
+        lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        contract_module,
+        "collect_dvc_pointer_records",
+        lambda *_args, **_kwargs: [],
+    )
+    digest = precommit_artifacts._closure_phase4_cert_semantic_digest(
+        "H-CERT", repo_root=Path(".")
+    )
+    assert re.fullmatch(r"[0-9a-f]{64}", digest)
+
+    result["dvc_status_checked"] = True
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
+        match="not publication-ready",
+    ):
+        precommit_artifacts._closure_phase4_cert_semantic_digest(
+            "H-CERT", repo_root=Path(".")
         )
 
 
@@ -13024,7 +13246,18 @@ def test_closure_phase4_r_cert_delegates_mutated_report_to_custom_validator(
     monkeypatch.setattr(
         contract_module,
         "load_effective_authority",
-        lambda *_args, **_kwargs: {"p_cert_commit": head},
+        lambda *_args, **_kwargs: {
+            "p_cert_commit": head,
+            "p2_cert_commit": head,
+            "h_cert_commit": "b" * 40,
+            "h2_cert_commit": "b" * 40,
+            "p1_cert_commit": (
+                precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT
+            ),
+            "h1_cert_commit": (
+                precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_COMMIT
+            ),
+        },
     )
 
     mutated_path = "reports/closure_v1/12_certification/test_report.md"
@@ -13099,6 +13332,10 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
     effective = {
         "p_cert_commit": head,
         "h_cert_commit": "b" * 40,
+        "p2_cert_commit": head,
+        "h2_cert_commit": "b" * 40,
+        "p1_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
+        "h1_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_COMMIT,
         "authority_bytes": b"authority\n",
         "authority_sha256": hashlib.sha256(b"authority\n").hexdigest(),
         "manifest_bytes": b"companion\n",
@@ -13147,6 +13384,10 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
             "sha256": effective["authority_sha256"],
             "p_cert_commit": head,
             "h_cert_commit": effective["h_cert_commit"],
+            "p2_cert_commit": head,
+            "h2_cert_commit": effective["h2_cert_commit"],
+            "p1_cert_commit": effective["p1_cert_commit"],
+            "h1_cert_commit": effective["h1_cert_commit"],
         },
         "p_cert_companion_manifest": {
             "path": contract_module.AUTHORITY_MANIFEST_PATH.as_posix(),
@@ -13154,6 +13395,10 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
             "sha256": effective["manifest_sha256"],
             "p_cert_commit": head,
             "h_cert_commit": effective["h_cert_commit"],
+            "p2_cert_commit": head,
+            "h2_cert_commit": effective["h2_cert_commit"],
+            "p1_cert_commit": effective["p1_cert_commit"],
+            "h1_cert_commit": effective["h1_cert_commit"],
         },
         "published_anchors": anchors,
         "published_anchor_records_sha256": contract_module.digest_records(anchors),
@@ -13215,6 +13460,18 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
         ),
         (
             lambda value: value.pop("p_cert_companion_manifest"),
+            "authority/anchor/pointer",
+        ),
+        (
+            lambda value: value["p_cert_authority"].__setitem__(
+                "p1_cert_commit", "0" * 40
+            ),
+            "authority/anchor/pointer",
+        ),
+        (
+            lambda value: value["p_cert_companion_manifest"].__setitem__(
+                "p2_cert_commit", "0" * 40
+            ),
             "authority/anchor/pointer",
         ),
         (

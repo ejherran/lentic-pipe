@@ -1,8 +1,8 @@
 #!/usr/bin/env python
-"""Validate H-CERT and publish the immutable P-CERT authority bundle.
+"""Validate H-CERT2 and publish the immutable P-CERT2 authority bundle.
 
 The check-only path is non-writing.  It accepts either the exact local H-CERT
-overlay over the published editorial commit or the clean, published H-CERT
+overlay over the superseded published P-CERT1 commit or the clean, published H-CERT
 commit.  Generation is narrower: it requires the latter, aligned local and
 live-remote refs, an empty DVC status, a locked public-test suite, and empty
 P-CERT/R-CERT namespaces.  It never pulls DVC data, runs tests, opens Parquet,
@@ -36,15 +36,17 @@ from src.reporting import phase4_final_certification_contract as certification  
 
 PROJECT_ROOT = Path(__file__).resolve().parents[2]
 GATE = "P-CERT"
-AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v1"
-MANIFEST_VERSION = (
-    "closure_v1_phase4_final_certification_authority_manifest_v1"
-)
+AUTHORITY_VERSION = certification.AUTHORITY_VERSION
+MANIFEST_VERSION = certification.AUTHORITY_MANIFEST_VERSION
 CLOSURE_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
 R_SYN_COMMIT = "528dcb74a7c08b65f262901e4562a67b784db8c9"
 EDITORIAL_COMMIT = "d1daa3059462854d6ddf5199fbc05515cec76982"
+H1_CERT_COMMIT = certification.H1_CERT_COMMIT
+P1_CERT_COMMIT = certification.P1_CERT_COMMIT
 AUTHORITY_PATH = certification.AUTHORITY_PATH
 MANIFEST_PATH = certification.AUTHORITY_MANIFEST_PATH
+H1_AUTHORITY_PATH = certification.H1_AUTHORITY_PATH
+H1_MANIFEST_PATH = certification.H1_AUTHORITY_MANIFEST_PATH
 GUARD_PATH = certification.GUARD_PATH
 TEMP_PREFIX = ".phase4_final_certification_authority."
 CLEANUP_TOMBSTONE_PREFIX = ".phase4_final_certification_cleanup_"
@@ -54,7 +56,7 @@ GIT_OID_RE = re.compile(r"^[0-9a-f]{40,64}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
 MD5_RE = re.compile(r"^[0-9a-f]{32}$")
 
-H_SCOPE: Mapping[str, str] = {
+H1_SCOPE: Mapping[str, str] = {
     "configs/closure_v1/phase4_final_certification.schema.json": "A",
     "configs/closure_v1/phase4_final_certification.yaml": "A",
     "docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md": "A",
@@ -69,7 +71,12 @@ H_SCOPE: Mapping[str, str] = {
 }
 H_GIT_MODES: Mapping[str, str] = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
-    for path in H_SCOPE
+    for path in H1_SCOPE
+}
+H_SCOPE: Mapping[str, str] = {path: "M" for path in H1_SCOPE}
+P1_SCOPE: Mapping[str, str] = {
+    H1_AUTHORITY_PATH.as_posix(): "A",
+    H1_MANIFEST_PATH.as_posix(): "A",
 }
 P_SCOPE: Mapping[str, str] = {
     AUTHORITY_PATH.as_posix(): "A",
@@ -327,18 +334,33 @@ def _validate_editorial_topology(root: Path) -> None:
         R_SYN_COMMIT,
         context="Published editorial commit",
     )
+    _validate_parent(
+        root,
+        H1_CERT_COMMIT,
+        EDITORIAL_COMMIT,
+        context="Published historical H-CERT1 commit",
+    )
+    if _commit_scope(root, H1_CERT_COMMIT) != dict(H1_SCOPE):
+        raise _error("Published historical H-CERT1 scope is not exact 9A+2M")
+    _validate_parent(
+        root,
+        P1_CERT_COMMIT,
+        H1_CERT_COMMIT,
+        context="Published superseded P-CERT1 commit",
+    )
+    if _commit_scope(root, P1_CERT_COMMIT) != dict(P1_SCOPE):
+        raise _error("Published superseded P-CERT1 scope is not exact 2A")
 
 
 def _validate_local_h(root: Path) -> None:
     _validate_editorial_topology(root)
     status = _parse_status(root)
     if set(status) != set(H_SCOPE):
-        raise _error("Local H-CERT scope is not the exact frozen 9A+2M path set")
-    for path_text, kind in H_SCOPE.items():
+        raise _error("Local H-CERT2 scope is not the exact frozen 11M path set")
+    for path_text in H_SCOPE:
         code = status[path_text]
-        accepted = {"A ", "??"} if kind == "A" else {"M ", " M"}
-        if code not in accepted:
-            raise _error(f"Local H-CERT status drifted for {path_text}: {code!r}")
+        if code not in {"M ", " M"}:
+            raise _error(f"Local H-CERT2 status drifted for {path_text}: {code!r}")
         mode = H_GIT_MODES[path_text]
         anchored = _regular_file(
             root,
@@ -348,7 +370,7 @@ def _validate_local_h(root: Path) -> None:
         )
         try:
             parent_entry = cast(
-                str, _git(root, "ls-tree", EDITORIAL_COMMIT, "--", path_text)
+                str, _git(root, "ls-tree", P1_CERT_COMMIT, "--", path_text)
             ).strip()
             payload = _read_regular(
                 anchored,
@@ -359,33 +381,29 @@ def _validate_local_h(root: Path) -> None:
                 raise _error(
                     f"Local H-CERT component must be non-empty: {path_text}"
                 )
-            if kind == "A":
-                if parent_entry:
-                    raise _error(
-                        f"H-CERT addition already exists at editorial: {path_text}"
-                    )
-                continue
+            if not parent_entry:
+                raise _error(f"H-CERT2 parent component is absent at P-CERT1: {path_text}")
             _, parent_payload = _tree_blob(
                 root,
-                EDITORIAL_COMMIT,
+                P1_CERT_COMMIT,
                 path_text,
                 expected_mode=mode,
-                context="Editorial parent component",
+                context="P-CERT1 parent component",
             )
             certification._revalidate_anchored_file(anchored)
             if payload == parent_payload:
-                raise _error(f"H-CERT modification has unchanged bytes: {path_text}")
+                raise _error(f"H-CERT2 modification has unchanged bytes: {path_text}")
         finally:
             certification._close_anchored_file(anchored)
 
 
 def _validate_published_h(root: Path, head: str) -> list[dict[str, Any]]:
     _validate_editorial_topology(root)
-    _validate_parent(root, head, EDITORIAL_COMMIT, context="Published H-CERT commit")
+    _validate_parent(root, head, P1_CERT_COMMIT, context="Published H-CERT2 commit")
     if _commit_scope(root, head) != dict(H_SCOPE):
-        raise _error("Published H-CERT scope is not the exact frozen 9A+2M set")
+        raise _error("Published H-CERT2 scope is not the exact frozen 11M set")
     records: list[dict[str, Any]] = []
-    for path_text, kind in H_SCOPE.items():
+    for path_text in H_SCOPE:
         mode = H_GIT_MODES[path_text]
         oid, _payload = _tree_blob(
             root,
@@ -395,21 +413,19 @@ def _validate_published_h(root: Path, head: str) -> list[dict[str, Any]]:
             context="Published H-CERT component",
         )
         parent_entry = cast(
-            str, _git(root, "ls-tree", EDITORIAL_COMMIT, "--", path_text)
+            str, _git(root, "ls-tree", P1_CERT_COMMIT, "--", path_text)
         ).strip()
-        if kind == "A":
-            if parent_entry:
-                raise _error(f"H-CERT addition already exists at editorial: {path_text}")
-        else:
-            parent_oid, _ = _tree_blob(
-                root,
-                EDITORIAL_COMMIT,
-                path_text,
-                expected_mode=mode,
-                context="Editorial parent component",
-            )
-            if oid == parent_oid:
-                raise _error(f"Published H-CERT modification is unchanged: {path_text}")
+        if not parent_entry:
+            raise _error(f"Published H-CERT2 parent is absent at P-CERT1: {path_text}")
+        parent_oid, _ = _tree_blob(
+            root,
+            P1_CERT_COMMIT,
+            path_text,
+            expected_mode=mode,
+            context="P-CERT1 parent component",
+        )
+        if oid == parent_oid:
+            raise _error(f"Published H-CERT2 modification is unchanged: {path_text}")
         records.append(_component_record(root, head, path_text))
     return records
 
@@ -551,6 +567,8 @@ def _assert_contract_identity(contract: Any) -> None:
         "closure_source_commit": CLOSURE_SOURCE_COMMIT,
         "r_syn_commit": R_SYN_COMMIT,
         "editorial_commit": EDITORIAL_COMMIT,
+        "h1_cert_commit": H1_CERT_COMMIT,
+        "p1_cert_commit": P1_CERT_COMMIT,
     }
     for name, value in expected.items():
         observed = _contract_value(contract, name)
@@ -558,6 +576,10 @@ def _assert_contract_identity(contract: Any) -> None:
             raise _error(f"Final certification contract {name} drifted")
     if dict(certification.expected_h_scope()) != dict(H_SCOPE):
         raise _error("Final certification contract H-CERT scope drifted")
+    if dict(certification.expected_h1_scope()) != dict(H1_SCOPE):
+        raise _error("Final certification contract H-CERT1 scope drifted")
+    if dict(certification.expected_p1_scope()) != dict(P1_SCOPE):
+        raise _error("Final certification contract P-CERT1 scope drifted")
     if dict(certification.expected_p_scope()) != dict(P_SCOPE):
         raise _error("Final certification contract P-CERT scope drifted")
     if dict(certification.expected_r_scope()) != dict(R_SCOPE):
@@ -575,6 +597,10 @@ def _assert_contract_identity(contract: Any) -> None:
 
 
 def _collect_contract_state(contract: Any, root: Path) -> dict[str, Any]:
+    h1_records, p1_records = certification._historical_h1_p1_records(
+        contract,
+        root=root,
+    )
     anchors = certification.collect_anchor_input_records(contract, root=root)
     pointer_records = certification.collect_dvc_pointer_records(contract, root=root)
     anchor_paths = [record["path"] for record in anchors]
@@ -587,6 +613,8 @@ def _collect_contract_state(contract: Any, root: Path) -> dict[str, Any]:
     if contract_outputs != output_paths:
         raise _error("P-CERT ordered R-CERT outputs drifted")
     return {
+        "h1_component_records": h1_records,
+        "p1_component_records": p1_records,
         "anchor_input_records": anchors,
         "dvc_pointer_records": pointer_records,
         "suite": _suite_snapshot(contract),
@@ -626,8 +654,8 @@ def _collect_published_state(
     if publication_phase not in {None, "flock_prelink", "flock_postlink"}:
         raise _error("P-CERT publication phase is invalid")
     head = _one_oid(root, "HEAD")
-    if head in {R_SYN_COMMIT, EDITORIAL_COMMIT}:
-        raise _error("P-CERT requires a separately published H-CERT commit")
+    if head in {R_SYN_COMMIT, EDITORIAL_COMMIT, H1_CERT_COMMIT, P1_CERT_COMMIT}:
+        raise _error("P-CERT2 requires a separately published H-CERT2 commit")
     expected_status = (
         {
             AUTHORITY_PATH.as_posix(): "??",
@@ -659,7 +687,11 @@ def _collect_published_state(
         "closure_source_commit": CLOSURE_SOURCE_COMMIT,
         "r_syn_commit": R_SYN_COMMIT,
         "editorial_commit": EDITORIAL_COMMIT,
+        "h1_cert_commit": H1_CERT_COMMIT,
+        "p1_cert_commit": P1_CERT_COMMIT,
         "h_cert_commit": head,
+        "h1_scope": dict(H1_SCOPE),
+        "p1_scope": dict(P1_SCOPE),
         "h_scope": dict(H_SCOPE),
         "h_component_records": components,
         **contract_state,
@@ -674,14 +706,15 @@ def check_only(
 
     root = root.resolve()
     head = _one_oid(root, "HEAD")
-    if head == EDITORIAL_COMMIT:
-        refs = _validate_refs(root, EDITORIAL_COMMIT, verify_remote=verify_remote)
+    if head == P1_CERT_COMMIT:
+        refs = _validate_refs(root, P1_CERT_COMMIT, verify_remote=verify_remote)
         _validate_local_h(root)
         contract = certification.load_contract(
             root=root,
             verify_inputs=True,
         )
         _assert_contract_identity(contract)
+        certification._historical_h1_p1_records(contract, root=root)
         if dict(certification.expected_h_scope()) != dict(H_SCOPE):
             raise _error("Local H-CERT scope differs from its contract")
         _validate_empty_namespaces(root)
@@ -704,6 +737,8 @@ def check_only(
         "closure_source_commit": CLOSURE_SOURCE_COMMIT,
         "r_syn_commit": R_SYN_COMMIT,
         "editorial_commit": EDITORIAL_COMMIT,
+        "h1_cert_commit": H1_CERT_COMMIT,
+        "p1_cert_commit": P1_CERT_COMMIT,
         "h_cert_commit": implementation_commit,
         "repository": refs,
         "h_component_count": len(H_SCOPE),
@@ -722,6 +757,8 @@ def check_only(
 
 
 def _build_authority(state: Mapping[str, Any]) -> dict[str, Any]:
+    h1_components = cast(list[dict[str, Any]], state["h1_component_records"])
+    p1_components = cast(list[dict[str, Any]], state["p1_component_records"])
     components = cast(list[dict[str, Any]], state["h_component_records"])
     anchors = cast(list[dict[str, Any]], state["anchor_input_records"])
     pointers = cast(list[dict[str, Any]], state["dvc_pointer_records"])
@@ -735,10 +772,25 @@ def _build_authority(state: Mapping[str, Any]) -> dict[str, Any]:
             "closure_source_commit": CLOSURE_SOURCE_COMMIT,
             "r_syn_commit": R_SYN_COMMIT,
             "editorial_commit": EDITORIAL_COMMIT,
+            "h1_cert_commit": H1_CERT_COMMIT,
+            "p1_cert_commit": P1_CERT_COMMIT,
             "h_cert_commit": state["h_cert_commit"],
             "p_cert_commit": None,
             "r_cert_executable_tree_must_equal_p_cert": True,
         },
+        "p1_failure": {
+            "status": "superseded_failed",
+            "failure_stage": "after_git_clone_namespace_validation",
+            "dvc_pull_count": 0,
+            "r_cert_output_count": 0,
+            "retry_authorized": False,
+        },
+        "h1_scope": dict(H1_SCOPE),
+        "h1_component_records": h1_components,
+        "h1_component_records_digest": certification.digest_records(h1_components),
+        "p1_scope": dict(P1_SCOPE),
+        "p1_component_records": p1_components,
+        "p1_component_records_digest": certification.digest_records(p1_components),
         "h_scope": dict(H_SCOPE),
         "h_component_records": components,
         "h_component_records_digest": certification.digest_records(components),
@@ -754,16 +806,7 @@ def _build_authority(state: Mapping[str, Any]) -> dict[str, Any]:
         "r_cert_output_paths_digest": certification.digest_strings(outputs),
         "isolation": dict(certification._expected_isolation()),
         "authorizations": dict(certification.AUTHORIZATION_POLICY),
-        "prohibitions": {
-            "main_worktree_mutation": True,
-            "raw_or_outcome_access": True,
-            "parquet_open_or_decode": True,
-            "dvc_add_or_push": True,
-            "model_fit_reconstruction_rescore_or_recalibration": True,
-            "rerun_e0_u_or_e1_e10": True,
-            "git_commit_push_or_tag_by_orchestrator": True,
-            "post_phase4_work": True,
-        },
+        "prohibitions": dict(certification.PROHIBITIONS),
     }
     validate_authority(authority)
     return authority
@@ -775,6 +818,13 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
         "gate",
         "status",
         "topology",
+        "p1_failure",
+        "h1_scope",
+        "h1_component_records",
+        "h1_component_records_digest",
+        "p1_scope",
+        "p1_component_records",
+        "p1_component_records_digest",
         "h_scope",
         "h_component_records",
         "h_component_records_digest",
@@ -803,6 +853,8 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
         "closure_source_commit",
         "r_syn_commit",
         "editorial_commit",
+        "h1_cert_commit",
+        "p1_cert_commit",
         "h_cert_commit",
         "p_cert_commit",
         "r_cert_executable_tree_must_equal_p_cert",
@@ -812,6 +864,8 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
         topology["closure_source_commit"] != CLOSURE_SOURCE_COMMIT
         or topology["r_syn_commit"] != R_SYN_COMMIT
         or topology["editorial_commit"] != EDITORIAL_COMMIT
+        or topology["h1_cert_commit"] != H1_CERT_COMMIT
+        or topology["p1_cert_commit"] != P1_CERT_COMMIT
         or topology["p_cert_commit"] is not None
         or topology["r_cert_executable_tree_must_equal_p_cert"] is not True
     ):
@@ -819,11 +873,31 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
     h_commit = topology["h_cert_commit"]
     if not isinstance(h_commit, str) or GIT_OID_RE.fullmatch(h_commit) is None:
         raise _error("P-CERT H-CERT commit is invalid")
-    if h_commit in {CLOSURE_SOURCE_COMMIT, R_SYN_COMMIT, EDITORIAL_COMMIT}:
-        raise _error("P-CERT H-CERT commit predates H-CERT")
+    if h_commit in {
+        CLOSURE_SOURCE_COMMIT,
+        R_SYN_COMMIT,
+        EDITORIAL_COMMIT,
+        H1_CERT_COMMIT,
+        P1_CERT_COMMIT,
+    }:
+        raise _error("P-CERT2 H-CERT2 commit predates H-CERT2")
+    if payload["p1_failure"] != {
+        "status": "superseded_failed",
+        "failure_stage": "after_git_clone_namespace_validation",
+        "dvc_pull_count": 0,
+        "r_cert_output_count": 0,
+        "retry_authorized": False,
+    }:
+        raise _error("P-CERT1 failure record drifted")
+    if payload["h1_scope"] != dict(H1_SCOPE):
+        raise _error("P-CERT historical H-CERT1 scope drifted")
+    if payload["p1_scope"] != dict(P1_SCOPE):
+        raise _error("P-CERT historical P-CERT1 scope drifted")
     if payload["h_scope"] != dict(H_SCOPE):
         raise _error("P-CERT H scope drifted")
     collections = (
+        "h1_component_records",
+        "p1_component_records",
         "h_component_records",
         "anchor_input_records",
         "dvc_pointer_records",
@@ -831,10 +905,16 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
     )
     if not all(isinstance(payload[name], list) for name in collections):
         raise _error("P-CERT record collections must be lists")
+    h1_components = cast(list[dict[str, Any]], payload["h1_component_records"])
+    p1_components = cast(list[dict[str, Any]], payload["p1_component_records"])
     components = cast(list[dict[str, Any]], payload["h_component_records"])
     anchors = cast(list[dict[str, Any]], payload["anchor_input_records"])
     pointers = cast(list[dict[str, Any]], payload["dvc_pointer_records"])
     outputs = cast(list[str], payload["ordered_r_cert_output_paths"])
+    if [record.get("path") for record in h1_components] != list(H1_SCOPE):
+        raise _error("P-CERT historical H-CERT1 component order drifted")
+    if [record.get("path") for record in p1_components] != list(P1_SCOPE):
+        raise _error("P-CERT historical P-CERT1 component order drifted")
     if [record.get("path") for record in components] != list(H_SCOPE):
         raise _error("P-CERT H component order drifted")
     if [record.get("path") for record in anchors] != list(ANCHOR_PATHS):
@@ -843,6 +923,30 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
         raise _error("P-CERT DVC pointer records are not exact8")
     if outputs != list(R_SCOPE):
         raise _error("P-CERT R-CERT output order drifted")
+    for records, modes, label in (
+        (h1_components, H_GIT_MODES, "historical H-CERT1"),
+        (p1_components, {path: "100644" for path in P1_SCOPE}, "historical P-CERT1"),
+    ):
+        for record, path_text in zip(records, modes, strict=True):
+            if set(record) != {
+                "path",
+                "bytes",
+                "sha256",
+                "git_mode",
+                "git_blob_oid",
+            }:
+                raise _error(f"P-CERT {label} component keys drifted: {path_text}")
+            if (
+                record["path"] != path_text
+                or type(record["bytes"]) is not int
+                or record["bytes"] <= 0
+                or not isinstance(record["sha256"], str)
+                or SHA256_RE.fullmatch(record["sha256"]) is None
+                or record["git_mode"] != modes[path_text]
+                or not isinstance(record["git_blob_oid"], str)
+                or GIT_OID_RE.fullmatch(record["git_blob_oid"]) is None
+            ):
+                raise _error(f"P-CERT {label} component identity drifted: {path_text}")
     for record, path_text in zip(components, H_SCOPE, strict=True):
         if set(record) != {
             "path",
@@ -926,6 +1030,14 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
         ):
             raise _error(f"P-CERT DVC pointer identity drifted: {spec.path}")
     digest_pairs = (
+        (
+            "h1_component_records_digest",
+            certification.digest_records(h1_components),
+        ),
+        (
+            "p1_component_records_digest",
+            certification.digest_records(p1_components),
+        ),
         ("h_component_records_digest", certification.digest_records(components)),
         ("anchor_input_records_digest", certification.digest_records(anchors)),
         ("dvc_pointer_records_digest", certification.digest_records(pointers)),
@@ -999,16 +1111,7 @@ def validate_authority(payload: Mapping[str, Any]) -> None:
         raise _error("P-CERT isolation boundary drifted")
     if payload["authorizations"] != dict(certification.AUTHORIZATION_POLICY):
         raise _error("P-CERT authorization policy drifted")
-    if payload["prohibitions"] != {
-        "main_worktree_mutation": True,
-        "raw_or_outcome_access": True,
-        "parquet_open_or_decode": True,
-        "dvc_add_or_push": True,
-        "model_fit_reconstruction_rescore_or_recalibration": True,
-        "rerun_e0_u_or_e1_e10": True,
-        "git_commit_push_or_tag_by_orchestrator": True,
-        "post_phase4_work": True,
-    }:
+    if payload["prohibitions"] != dict(certification.PROHIBITIONS):
         raise _error("P-CERT prohibitions drifted")
 
 
@@ -1022,7 +1125,10 @@ def _build_manifest(authority_bytes: bytes, h_cert_commit: str) -> dict[str, Any
         "manifest_version": MANIFEST_VERSION,
         "gate": GATE,
         "status": "locked_unpublished",
+        "h1_cert_commit": H1_CERT_COMMIT,
+        "p1_cert_commit": P1_CERT_COMMIT,
         "h_cert_commit": h_cert_commit,
+        "supersedes_p1": True,
         "manifest_last": True,
         "ordered_paths": [AUTHORITY_PATH.as_posix(), MANIFEST_PATH.as_posix()],
         "outputs": [authority_record],
@@ -2169,7 +2275,10 @@ def generate(
     return {
         "status": "authority_bundle_written_unpublished",
         "gate": GATE,
+        "h1_cert_commit": H1_CERT_COMMIT,
+        "p1_cert_commit": P1_CERT_COMMIT,
         "h_cert_commit": before["h_cert_commit"],
+        "h2_cert_commit": before["h_cert_commit"],
         "authority": authority_record,
         "manifest": manifest_record,
         "dvc_status_checked": True,

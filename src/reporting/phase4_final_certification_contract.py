@@ -7,11 +7,11 @@ pointers, the closed public-test inventory and the exact eight-file result
 namespace.  It never resolves a DVC pointer and never opens a Parquet payload,
 raw target, outcome namespace, private manuscript, or outcome-access log.
 
-The public test suite is sealed to the exact selector count, collected node
+The public test suite is sealed to the exact selector count, collected-node
 count and ordered-node digest reproduced by two independent outcome-free
-collections.  The explicit ``pending_integration`` state and
-``allow_pending_suite=True`` remain only for historical integration fixtures;
-production callers use the locked default contract and fail closed on drift.
+collections.  The explicit ``pending_integration`` state remains available
+only to integration fixtures; production authority and execution callers
+reject it.
 """
 
 from __future__ import annotations
@@ -37,11 +37,17 @@ DEFAULT_CONTRACT_PATH = Path(
 DEFAULT_SCHEMA_PATH = Path(
     "configs/closure_v1/phase4_final_certification.schema.json"
 )
-AUTHORITY_PATH = Path(
+H1_AUTHORITY_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority.json"
 )
-AUTHORITY_MANIFEST_PATH = Path(
+H1_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest.json"
+)
+AUTHORITY_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_v2.json"
+)
+AUTHORITY_MANIFEST_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v2.json"
 )
 CERTIFICATION_ROOT = Path("reports/closure_v1/12_certification")
 GUARD_PATH = Path(
@@ -49,13 +55,19 @@ GUARD_PATH = Path(
 )
 LOCAL_DVC_CONFIG_PATH = Path(".dvc/config.local")
 
-CONTRACT_VERSION = "closure_v1_phase4_final_certification_v1"
+CONTRACT_VERSION = "closure_v1_phase4_final_certification_v2"
 CLOSURE_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
 R_SYN_COMMIT = "528dcb74a7c08b65f262901e4562a67b784db8c9"
 EDITORIAL_COMMIT = "d1daa3059462854d6ddf5199fbc05515cec76982"
+H1_CERT_COMMIT = "003ca2282af5d7156b5814b59d8f1ddfb7fc681e"
+P1_CERT_COMMIT = "67983d8ea823a59eb4af55b59da04fb4ae298dcb"
 FINAL_TAG = "thesis-closure-v1"
-AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v1"
+AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v2"
 AUTHORITY_MANIFEST_VERSION = (
+    "closure_v1_phase4_final_certification_authority_manifest_v2"
+)
+H1_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v1"
+H1_AUTHORITY_MANIFEST_VERSION = (
     "closure_v1_phase4_final_certification_authority_manifest_v1"
 )
 HASH_CHUNK_SIZE = 1024 * 1024
@@ -85,9 +97,9 @@ EXPECTED_RUNTIME_VERSIONS: Mapping[str, str] = {
 }
 LOCKED_SUITE_STATUS = "locked"
 LOCKED_SUITE_SELECTOR_COUNT = 39
-LOCKED_SUITE_COLLECTED_TEST_COUNT = 892
+LOCKED_SUITE_COLLECTED_TEST_COUNT = 905
 LOCKED_SUITE_NODEIDS_SHA256 = (
-    "583e39e0f1093c51be2421f88df250b2fc84ecd88e52087134a80cc91b8ec5a2"
+    "679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03"
 )
 LOCKED_SUITE_ALLOWED_SKIP_COUNT = 7
 
@@ -158,7 +170,11 @@ class FinalCertificationContract:
     closure_source_commit: str
     r_syn_commit: str
     editorial_commit: str
+    h1_cert_commit: str
+    p1_cert_commit: str
     final_tag: str
+    h1_scope: tuple[PublicationPathSpec, ...]
+    p1_scope: tuple[PublicationPathSpec, ...]
     h_scope: tuple[PublicationPathSpec, ...]
     p_scope: tuple[PublicationPathSpec, ...]
     r_scope: tuple[PublicationPathSpec, ...]
@@ -206,7 +222,7 @@ class FinalCertificationContract:
         return self.test_suite.selectors
 
 
-H_SCOPE = (
+H1_SCOPE = (
     PublicationPathSpec(
         "configs/closure_v1/phase4_final_certification.schema.json",
         "A",
@@ -244,6 +260,13 @@ H_SCOPE = (
     PublicationPathSpec(
         "tests/test_prepare_commit_artifacts.py", "M", "100644"
     ),
+)
+P1_SCOPE = (
+    PublicationPathSpec(H1_AUTHORITY_PATH.as_posix(), "A", "100644"),
+    PublicationPathSpec(H1_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
+)
+H_SCOPE = tuple(
+    PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
 )
 P_SCOPE = (
     PublicationPathSpec(AUTHORITY_PATH.as_posix(), "A", "100644"),
@@ -428,6 +451,9 @@ STOP_RULES = (
     "refs_or_live_remote_drift",
     "topology_scope_mode_or_blob_drift",
     "pending_or_changed_test_suite_lock",
+    "attempt_to_execute_from_superseded_p1",
+    "unexpected_clone_directory_nlink_delta",
+    "primary_error_loss_after_safe_cleanup_or_unowned_cleanup",
     "non_pristine_clone_or_cache",
     "forbidden_path_or_parquet_open",
     "dvc_pull_scope_or_pointer_drift",
@@ -504,15 +530,27 @@ def digest_records(records: Sequence[Mapping[str, Any]]) -> str:
 
 
 def expected_h_scope() -> dict[str, str]:
+    """Return the operational H-CERT2 scope (legacy adapter alias)."""
+
     return {item.path: item.status for item in H_SCOPE}
 
 
 def expected_p_scope() -> dict[str, str]:
+    """Return the operational P-CERT2 scope (legacy adapter alias)."""
+
     return {item.path: item.status for item in P_SCOPE}
 
 
 def expected_r_scope() -> dict[str, str]:
     return {item.path: item.status for item in R_SCOPE}
+
+
+def expected_h1_scope() -> dict[str, str]:
+    return {item.path: item.status for item in H1_SCOPE}
+
+
+def expected_p1_scope() -> dict[str, str]:
+    return {item.path: item.status for item in P1_SCOPE}
 
 
 def expected_h_modes() -> dict[str, str]:
@@ -525,6 +563,14 @@ def expected_p_modes() -> dict[str, str]:
 
 def expected_r_modes() -> dict[str, str]:
     return {item.path: item.git_mode for item in R_SCOPE}
+
+
+def expected_h1_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in H1_SCOPE}
+
+
+def expected_p1_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in P1_SCOPE}
 
 
 def _require_mapping(value: Any, *, context: str) -> Mapping[str, Any]:
@@ -827,15 +873,38 @@ def _parse_test_suite(
 
 def _expected_topology() -> Mapping[str, Any]:
     return {
-        "ordered_stages": ["H-CERT", "P-CERT", "R-CERT"],
-        "H-CERT": {
-            "role": "implementation_schema_tests_and_freeze",
+        "ordered_stages": ["H-CERT1", "P-CERT1", "H-CERT", "P-CERT", "R-CERT"],
+        "H-CERT1": {
+            "role": "historical_initial_implementation_schema_tests_and_freeze",
+            "commit": "h1_cert_commit",
             "direct_parent": "editorial_commit",
             "certification_execution_authorized": False,
         },
+        "P-CERT1": {
+            "role": "superseded_failed_final_certification_authority",
+            "commit": "p1_cert_commit",
+            "requires_published_H_CERT1": True,
+            "certification_execution_authorized": False,
+            "failure_stage": "after_git_clone_namespace_validation",
+            "dvc_pull_count": 0,
+            "r_cert_output_count": 0,
+            "retry_authorized": False,
+            "manifest_written_last": True,
+        },
+        "H-CERT": {
+            "role": "corrective_runtime_contract_tests_and_freeze",
+            "direct_parent": "p1_cert_commit",
+            "certification_execution_authorized": False,
+            "corrections": [
+                "post_clone_nlink_delta_exact_one",
+                "clone_registered_for_early_cleanup",
+                "primary_error_preserved_when_safe_cleanup_passes",
+            ],
+        },
         "P-CERT": {
-            "role": "data_only_final_certification_authority",
+            "role": "data_only_final_certification_authority_v2",
             "requires_published_H_CERT": True,
+            "supersedes_P_CERT1": True,
             "certification_execution_authorized_while_unpublished": False,
             "manifest_written_last": True,
         },
@@ -905,6 +974,12 @@ def _expected_isolation() -> Mapping[str, Any]:
         "conditional_unlink_by_inode_claimed": False,
         "no_clobber": True,
         "cleanup_before_precommit": True,
+        "post_clone_directory_nlink_delta": 1,
+        "post_clone_nlink_delta_stage": "after_git_clone",
+        "clone_registered_after_exact_transition_check_before_subsequent_validation": True,
+        "early_cleanup_inventory_claim_required": True,
+        "primary_error_preserved_when_safe_cleanup_passes": True,
+        "superseded_p1_retry_authorized": False,
     }
 
 
@@ -957,15 +1032,23 @@ def validate_contract_payload(
         "closure_source_commit": CLOSURE_SOURCE_COMMIT,
         "r_syn_commit": R_SYN_COMMIT,
         "editorial_commit": EDITORIAL_COMMIT,
+        "h1_cert_commit": H1_CERT_COMMIT,
+        "p1_cert_commit": P1_CERT_COMMIT,
         "final_tag": FINAL_TAG,
-        "certification_target": "published_P_CERT_commit",
+        "certification_target": "published_P_CERT_v2_commit",
         "r_cert_executable_tree_must_equal_p_cert": True,
     }
     if dict(authorities) != expected_authorities:
         raise _error("Final-certification authority identities drifted")
     if not all(
         COMMIT_RE.fullmatch(str(authorities[key]))
-        for key in ("closure_source_commit", "r_syn_commit", "editorial_commit")
+        for key in (
+            "closure_source_commit",
+            "r_syn_commit",
+            "editorial_commit",
+            "h1_cert_commit",
+            "p1_cert_commit",
+        )
     ):
         raise _error("Final-certification commit syntax drifted")
 
@@ -977,7 +1060,15 @@ def validate_contract_payload(
         mapping["publication_scopes"], context="publication_scopes"
     )
     _require_exact_keys(
-        scopes, {"H-CERT", "P-CERT", "R-CERT"}, context="publication_scopes"
+        scopes,
+        {"H-CERT1", "P-CERT1", "H-CERT", "P-CERT", "R-CERT"},
+        context="publication_scopes",
+    )
+    h1_scope = _parse_scope(
+        scopes["H-CERT1"], stage="H-CERT1", expected=H1_SCOPE
+    )
+    p1_scope = _parse_scope(
+        scopes["P-CERT1"], stage="P-CERT1", expected=P1_SCOPE
     )
     h_scope = _parse_scope(scopes["H-CERT"], stage="H-CERT", expected=H_SCOPE)
     p_scope = _parse_scope(scopes["P-CERT"], stage="P-CERT", expected=P_SCOPE)
@@ -1034,7 +1125,11 @@ def validate_contract_payload(
         closure_source_commit=CLOSURE_SOURCE_COMMIT,
         r_syn_commit=R_SYN_COMMIT,
         editorial_commit=EDITORIAL_COMMIT,
+        h1_cert_commit=H1_CERT_COMMIT,
+        p1_cert_commit=P1_CERT_COMMIT,
         final_tag=FINAL_TAG,
+        h1_scope=h1_scope,
+        p1_scope=p1_scope,
         h_scope=h_scope,
         p_scope=p_scope,
         r_scope=r_scope,
@@ -1581,6 +1676,61 @@ def _publication_file_record(
     )[0]
 
 
+def _git_publication_file_record_and_payload(
+    root: Path,
+    *,
+    commit: str,
+    spec: PublicationPathSpec,
+    context: str,
+) -> tuple[dict[str, Any], bytes]:
+    """Reconstruct a historical component from Git without using live bytes."""
+
+    output = cast(
+        str, _run_git(root, "ls-tree", commit, "--", spec.path, text=True)
+    ).strip()
+    fields = output.split(None, 3)
+    if (
+        len(fields) != 4
+        or fields[0] != spec.git_mode
+        or fields[1] != "blob"
+        or not re.fullmatch(r"[0-9a-f]{40,64}", fields[2])
+        or fields[3] != spec.path
+    ):
+        raise _error(f"{context} is not one exact Git blob: {spec.path}")
+    payload = cast(
+        bytes, _run_git(root, "cat-file", "blob", fields[2], text=False)
+    )
+    if not payload:
+        raise _error(f"{context} is empty: {spec.path}")
+    return (
+        {
+            "path": spec.path,
+            "bytes": len(payload),
+            "sha256": sha256_bytes(payload),
+            "git_mode": spec.git_mode,
+            "git_blob_oid": fields[2],
+        },
+        payload,
+    )
+
+
+def collect_git_component_records(
+    scope: Sequence[PublicationPathSpec],
+    *,
+    commit: str,
+    root: Path = PROJECT_ROOT,
+    context: str = "Historical certification component",
+) -> list[dict[str, Any]]:
+    if COMMIT_RE.fullmatch(commit) is None:
+        raise _error(f"{context} commit syntax drifted")
+    return [
+        _git_publication_file_record_and_payload(
+            root, commit=commit, spec=spec, context=context
+        )[0]
+        for spec in scope
+    ]
+
+
 def collect_h_component_records(
     contract: FinalCertificationContract,
     *,
@@ -1716,6 +1866,93 @@ def _require_clean_git_state(root: Path) -> None:
         raise _error("Effective P-CERT loader requires a clean worktree and index")
 
 
+def _historical_h1_p1_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reconstruct the superseded H1/P1 chain without treating it as effective."""
+
+    if (
+        _commit_parents(root, contract.h1_cert_commit)
+        != (contract.editorial_commit,)
+        or _commit_scope(root, contract.h1_cert_commit) != expected_h1_scope()
+        or _commit_parents(root, contract.p1_cert_commit)
+        != (contract.h1_cert_commit,)
+        or _commit_scope(root, contract.p1_cert_commit) != expected_p1_scope()
+        or _commit_parents(root, contract.editorial_commit)
+        != (contract.r_syn_commit,)
+    ):
+        raise _error("Historical H1/P1/editorial topology or scope drifted")
+    h1_records = collect_git_component_records(
+        contract.h1_scope,
+        commit=contract.h1_cert_commit,
+        root=root,
+        context="Historical H-CERT1 component",
+    )
+    physical_p1_payloads = [
+        _publication_file_record_and_payload(
+            root,
+            commit=contract.p1_cert_commit,
+            spec=spec,
+        )[1]
+        for spec in contract.p1_scope
+    ]
+    authority, authority_bytes = _decode_canonical_public_json(
+        root, H1_AUTHORITY_PATH, commit=contract.p1_cert_commit
+    )
+    manifest, manifest_bytes = _decode_canonical_public_json(
+        root, H1_AUTHORITY_MANIFEST_PATH, commit=contract.p1_cert_commit
+    )
+    if physical_p1_payloads != [authority_bytes, manifest_bytes]:
+        raise _error("Historical P-CERT1 physical/Git bytes drifted")
+    topology = authority.get("topology")
+    if (
+        authority.get("authority_version") != H1_AUTHORITY_VERSION
+        or authority.get("gate") != "P-CERT"
+        or authority.get("status") != "locked_unpublished"
+        or not isinstance(topology, Mapping)
+        or topology.get("h_cert_commit") != contract.h1_cert_commit
+        or topology.get("p_cert_commit") is not None
+        or authority.get("h_scope") != expected_h1_scope()
+    ):
+        raise _error("Historical P-CERT1 authority identity drifted")
+    authority_record = {
+        "path": H1_AUTHORITY_PATH.as_posix(),
+        "bytes": len(authority_bytes),
+        "sha256": sha256_bytes(authority_bytes),
+    }
+    if manifest != {
+        "manifest_version": H1_AUTHORITY_MANIFEST_VERSION,
+        "gate": "P-CERT",
+        "status": "locked_unpublished",
+        "h_cert_commit": contract.h1_cert_commit,
+        "manifest_last": True,
+        "ordered_paths": [
+            H1_AUTHORITY_PATH.as_posix(),
+            H1_AUTHORITY_MANIFEST_PATH.as_posix(),
+        ],
+        "outputs": [authority_record],
+        "authority": authority_record,
+        "authorizations": dict(AUTHORIZATION_POLICY),
+    }:
+        raise _error("Historical P-CERT1 companion identity drifted")
+    p1_records: list[dict[str, Any]] = []
+    for spec, payload in zip(
+        contract.p1_scope, (authority_bytes, manifest_bytes), strict=True
+    ):
+        record, git_payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.p1_cert_commit,
+            spec=spec,
+            context="Historical P-CERT1 component",
+        )
+        if git_payload != payload:
+            raise _error("Historical P-CERT1 physical/Git bytes drifted")
+        p1_records.append(record)
+    return h1_records, p1_records
+
+
 def _expected_effective_authority(
     contract: FinalCertificationContract,
     *,
@@ -1725,6 +1962,7 @@ def _expected_effective_authority(
     components = collect_h_component_records(
         contract, h_cert_commit=h_cert_commit, root=root
     )
+    h1_records, p1_records = _historical_h1_p1_records(contract, root=root)
     anchors = collect_anchor_input_records(contract, root=root)
     pointers = collect_dvc_pointer_records(contract, root=root)
     suite = test_suite_record(contract)
@@ -1737,10 +1975,25 @@ def _expected_effective_authority(
             "closure_source_commit": contract.closure_source_commit,
             "r_syn_commit": contract.r_syn_commit,
             "editorial_commit": contract.editorial_commit,
+            "h1_cert_commit": contract.h1_cert_commit,
+            "p1_cert_commit": contract.p1_cert_commit,
             "h_cert_commit": h_cert_commit,
             "p_cert_commit": None,
             "r_cert_executable_tree_must_equal_p_cert": True,
         },
+        "p1_failure": {
+            "status": "superseded_failed",
+            "failure_stage": "after_git_clone_namespace_validation",
+            "dvc_pull_count": 0,
+            "r_cert_output_count": 0,
+            "retry_authorized": False,
+        },
+        "h1_scope": expected_h1_scope(),
+        "h1_component_records": h1_records,
+        "h1_component_records_digest": digest_records(h1_records),
+        "p1_scope": expected_p1_scope(),
+        "p1_component_records": p1_records,
+        "p1_component_records_digest": digest_records(p1_records),
         "h_scope": expected_h_scope(),
         "h_component_records": components,
         "h_component_records_digest": digest_records(components),
@@ -1765,7 +2018,7 @@ def load_effective_authority(
     verify_remote: bool = True,
     require_clean: bool = True,
 ) -> dict[str, Any]:
-    """Load and independently reconstruct one published effective P-CERT.
+    """Load and independently reconstruct one published effective P-CERT2.
 
     The stored authority deliberately has ``p_cert_commit=null`` because it is
     generated before its publication commit exists.  Effectiveness is derived
@@ -1781,16 +2034,15 @@ def load_effective_authority(
     p_cert_commit = _one_commit(root, "HEAD")
     parents = _commit_parents(root, p_cert_commit)
     if len(parents) != 1:
-        raise _error("P-CERT must have exactly one H-CERT parent")
+        raise _error("P-CERT2 must have exactly one H-CERT2 parent")
     h_cert_commit = parents[0]
     if (
-        _commit_parents(root, h_cert_commit) != (active_contract.editorial_commit,)
+        _commit_parents(root, h_cert_commit) != (active_contract.p1_cert_commit,)
         or _commit_scope(root, h_cert_commit) != expected_h_scope()
         or _commit_scope(root, p_cert_commit) != expected_p_scope()
-        or _commit_parents(root, active_contract.editorial_commit)
-        != (active_contract.r_syn_commit,)
     ):
-        raise _error("Effective P-CERT H/P/editorial topology or scope drifted")
+        raise _error("Effective P-CERT2 H2/P2 topology or scope drifted")
+    _historical_h1_p1_records(active_contract, root=root)
     ancestor = subprocess.run(
         [
             "git",
@@ -1829,7 +2081,10 @@ def load_effective_authority(
         "manifest_version": AUTHORITY_MANIFEST_VERSION,
         "gate": "P-CERT",
         "status": "locked_unpublished",
+        "h1_cert_commit": active_contract.h1_cert_commit,
+        "p1_cert_commit": active_contract.p1_cert_commit,
         "h_cert_commit": h_cert_commit,
+        "supersedes_p1": True,
         "manifest_last": True,
         "ordered_paths": [AUTHORITY_PATH.as_posix(), AUTHORITY_MANIFEST_PATH.as_posix()],
         "outputs": [authority_record],
@@ -1845,6 +2100,10 @@ def load_effective_authority(
         "gate": "P-CERT",
         "p_cert_commit": p_cert_commit,
         "h_cert_commit": h_cert_commit,
+        "p2_cert_commit": p_cert_commit,
+        "h2_cert_commit": h_cert_commit,
+        "p1_cert_commit": active_contract.p1_cert_commit,
+        "h1_cert_commit": active_contract.h1_cert_commit,
         "repository": refs,
         "authority": authority,
         "authority_bytes": authority_bytes,

@@ -52,12 +52,14 @@ def _pending_payload() -> dict[str, Any]:
     return payload
 
 
-def test_real_locked_contract_loads_by_default_without_opening_payloads() -> None:
+def test_real_locked_contract_loads_without_opening_payloads() -> None:
     contract = certification.load_contract(root=ROOT, verify_inputs=True)
 
     assert contract.closure_source_commit == certification.CLOSURE_SOURCE_COMMIT
     assert contract.r_syn_commit == certification.R_SYN_COMMIT
     assert contract.editorial_commit == certification.EDITORIAL_COMMIT
+    assert contract.h1_cert_commit == certification.H1_CERT_COMMIT
+    assert contract.p1_cert_commit == certification.P1_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
@@ -88,6 +90,18 @@ def test_real_locked_contract_loads_by_default_without_opening_payloads() -> Non
     assert contract.conditional_unlink_by_inode_claimed is False
     assert contract.no_clobber is True
     assert contract.cleanup_before_precommit is True
+    assert contract.raw["isolation"]["post_clone_directory_nlink_delta"] == 1
+    assert (
+        contract.raw["isolation"]["post_clone_nlink_delta_stage"]
+        == "after_git_clone"
+    )
+    assert contract.raw["isolation"][
+        "clone_registered_after_exact_transition_check_before_subsequent_validation"
+    ] is True
+    assert contract.raw["isolation"][
+        "primary_error_preserved_when_safe_cleanup_passes"
+    ] is True
+    assert contract.raw["isolation"]["superseded_p1_retry_authorized"] is False
     assert "guard_path" not in contract.raw["isolation"]
     assert "rollback_owned_inodes_only" not in contract.raw["isolation"]
     assert contract.test_suite.status == certification.LOCKED_SUITE_STATUS
@@ -98,14 +112,12 @@ def test_real_locked_contract_loads_by_default_without_opening_payloads() -> Non
     assert (
         contract.test_suite.collected_test_count
         == certification.LOCKED_SUITE_COLLECTED_TEST_COUNT
+        == 905
     )
     assert (
         contract.test_suite.nodeids_sha256
         == certification.LOCKED_SUITE_NODEIDS_SHA256
-    )
-    assert (
-        certification.LOCKED_SUITE_NODEIDS_SHA256
-        == "583e39e0f1093c51be2421f88df250b2fc84ecd88e52087134a80cc91b8ec5a2"
+        == "679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03"
     )
     assert (
         contract.test_suite.allowed_skip_count
@@ -375,12 +387,15 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     pending, locked = suite["suite_lock"]["oneOf"]
 
     assert schema["$schema"].endswith("2020-12/schema")
-    assert scopes["H-CERT"]["allOf"][1]["properties"]["additions"][
+    assert scopes["H-CERT1"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 9
-    assert scopes["H-CERT"]["allOf"][1]["properties"]["modifications"][
+    assert scopes["H-CERT1"]["allOf"][1]["properties"]["modifications"][
         "const"
     ] == 2
+    assert scopes["H-CERT"]["allOf"][1]["properties"]["additions"]["const"] == 0
+    assert scopes["H-CERT"]["allOf"][1]["properties"]["modifications"]["const"] == 11
+    assert scopes["P-CERT1"]["allOf"][1]["properties"]["additions"]["const"] == 2
     assert scopes["P-CERT"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 2
@@ -445,6 +460,18 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
         "const": True
     }
     assert boundary["conditional_unlink_by_inode_claimed"] == {"const": False}
+    assert boundary["post_clone_directory_nlink_delta"] == {"const": 1}
+    assert boundary["post_clone_nlink_delta_stage"] == {"const": "after_git_clone"}
+    assert boundary[
+        "clone_registered_after_exact_transition_check_before_subsequent_validation"
+    ] == {
+        "const": True
+    }
+    assert boundary["early_cleanup_inventory_claim_required"] == {"const": True}
+    assert boundary["primary_error_preserved_when_safe_cleanup_passes"] == {
+        "const": True
+    }
+    assert boundary["superseded_p1_retry_authorized"] == {"const": False}
     assert boundary["no_clobber"] == {"const": True}
     assert boundary["cleanup_before_precommit"] == {"const": True}
     assert "guard_path" not in boundary
@@ -732,7 +759,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "manifest_version": certification.AUTHORITY_MANIFEST_VERSION,
         "gate": "P-CERT",
         "status": "locked_unpublished",
+        "h1_cert_commit": contract.h1_cert_commit,
+        "p1_cert_commit": contract.p1_cert_commit,
         "h_cert_commit": h_commit,
+        "supersedes_p1": True,
         "manifest_last": True,
         "ordered_paths": [
             certification.AUTHORITY_PATH.as_posix(),
@@ -747,7 +777,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.editorial_commit,),
+            h_commit: (contract.p1_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -783,6 +813,11 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "_expected_effective_authority",
         lambda *_args, **_kwargs: expected_authority,
     )
+    monkeypatch.setattr(
+        certification,
+        "_historical_h1_p1_records",
+        lambda *_args, **_kwargs: ([], []),
+    )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
         certification.subprocess,
@@ -805,8 +840,51 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
+    assert result["p2_cert_commit"] == p_commit
+    assert result["h2_cert_commit"] == h_commit
+    assert result["p1_cert_commit"] == contract.p1_cert_commit
+    assert result["h1_cert_commit"] == contract.h1_cert_commit
     assert result["authority"] == expected_authority
     assert result["manifest"] == expected_manifest
+
+
+def test_historical_p1_reconstruction_rejects_physical_byte_drift(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = certification.validate_contract_payload(
+        _locked_payload(),
+        root=ROOT,
+        verify_inputs=False,
+    )
+    original = certification._publication_file_record_and_payload  # noqa: SLF001
+    authority_reads = 0
+
+    def drifted_physical(
+        root: Path,
+        *,
+        commit: str,
+        spec: certification.PublicationPathSpec,
+    ) -> tuple[dict[str, Any], bytes]:
+        nonlocal authority_reads
+        record, payload = original(root, commit=commit, spec=spec)
+        if spec.path == certification.H1_AUTHORITY_PATH.as_posix():
+            authority_reads += 1
+            if authority_reads == 1:
+                decoded = json.loads(payload)
+                decoded["fixture_physical_drift"] = True
+                payload = certification.canonical_json_bytes(decoded)
+        return record, payload
+
+    monkeypatch.setattr(
+        certification,
+        "_publication_file_record_and_payload",
+        drifted_physical,
+    )
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="P-CERT1 physical/Git bytes drifted",
+    ):
+        certification._historical_h1_p1_records(contract, root=ROOT)  # noqa: SLF001
 
 
 def test_effective_authority_reconstruction_binds_exact_isolation(
@@ -821,6 +899,11 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
         certification,
         "collect_h_component_records",
         lambda *_args, **_kwargs: [],
+    )
+    monkeypatch.setattr(
+        certification,
+        "_historical_h1_p1_records",
+        lambda *_args, **_kwargs: ([], []),
     )
     monkeypatch.setattr(
         certification,

@@ -82,6 +82,10 @@ def _authority() -> dict[str, Any]:
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
+        "p2_cert_commit": P_COMMIT,
+        "h2_cert_commit": H_COMMIT,
+        "p1_cert_commit": contract_module.P1_CERT_COMMIT,
+        "h1_cert_commit": contract_module.H1_CERT_COMMIT,
         "repository": {"HEAD": P_COMMIT},
         "authority": {"authority_version": "synthetic"},
         "authority_bytes": 123,
@@ -171,6 +175,7 @@ def _products(
     contract: contract_module.FinalCertificationContract,
     *,
     runtime_versions: Mapping[str, str] | None = None,
+    authority: Mapping[str, Any] | None = None,
 ) -> builder.ExecutionProducts:
     from src.api.main import create_app
 
@@ -278,7 +283,7 @@ def _products(
     return builder.build_final_certification_payloads(
         contract=contract,
         execution_commit=P_COMMIT,
-        authority=_authority(),
+        authority=_authority() if authority is None else authority,
         anchor_records=anchors,
         pointer_records=pointers,
         restore_records=restores,
@@ -653,6 +658,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
+        "p2_cert_commit": P_COMMIT,
+        "h2_cert_commit": H_COMMIT,
+        "p1_cert_commit": contract_module.P1_CERT_COMMIT,
+        "h1_cert_commit": contract_module.H1_CERT_COMMIT,
     }
     assert products.manifest["p_cert_companion_manifest"] == {
         "path": contract_module.AUTHORITY_MANIFEST_PATH.as_posix(),
@@ -660,6 +669,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
+        "p2_cert_commit": P_COMMIT,
+        "h2_cert_commit": H_COMMIT,
+        "p1_cert_commit": contract_module.P1_CERT_COMMIT,
+        "h1_cert_commit": contract_module.H1_CERT_COMMIT,
     }
     assert "authority" not in products.manifest
     _validate_payloads(
@@ -668,6 +681,71 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         manifest=products.manifest,
         execution_commit=P_COMMIT,
     )
+
+
+def test_payload_builder_requires_complete_exact_cert2_commit_lineage() -> None:
+    contract = _locked_contract()
+    for field in (
+        "p_cert_commit",
+        "h_cert_commit",
+        "p2_cert_commit",
+        "h2_cert_commit",
+        "p1_cert_commit",
+        "h1_cert_commit",
+    ):
+        missing = _authority()
+        missing.pop(field)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="authority commit binding",
+        ):
+            _products(contract, authority=missing)
+
+        drifted = _authority()
+        drifted[field] = "9" * 40
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="authority commit binding",
+        ):
+            _products(contract, authority=drifted)
+
+
+def test_reconstructive_validator_rejects_cert2_lineage_omission_and_drift() -> None:
+    contract = _locked_contract()
+    products = _products(contract)
+    fields = (
+        "p_cert_commit",
+        "h_cert_commit",
+        "p2_cert_commit",
+        "h2_cert_commit",
+        "p1_cert_commit",
+        "h1_cert_commit",
+    )
+    for binding in ("p_cert_authority", "p_cert_companion_manifest"):
+        for field in fields:
+            missing = copy.deepcopy(dict(products.manifest))
+            missing[binding].pop(field)
+            with pytest.raises(
+                builder.FinalCertificationBuildError,
+                match="effective binding",
+            ):
+                _validate_payloads(
+                    contract=contract,
+                    artifacts=products.artifacts,
+                    manifest=missing,
+                )
+
+            drifted = copy.deepcopy(dict(products.manifest))
+            drifted[binding][field] = "8" * 40
+            with pytest.raises(
+                builder.FinalCertificationBuildError,
+                match="effective binding",
+            ):
+                _validate_payloads(
+                    contract=contract,
+                    artifacts=products.artifacts,
+                    manifest=drifted,
+                )
 
 
 @pytest.mark.parametrize(
@@ -2153,6 +2231,161 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     assert source.index("runtime_versions=runtime_before") > after
 
 
+def test_clone_work_transition_requires_exact_single_directory_link_delta() -> None:
+    before = (
+        11,
+        22,
+        100,
+        101,
+        6,
+        0o700,
+        ("dvc-cache", "masks", "postgres-socket", "sandbox-tmp"),
+    )
+    expected = (
+        11,
+        22,
+        200,
+        201,
+        7,
+        0o700,
+        ("clone", "dvc-cache", "masks", "postgres-socket", "sandbox-tmp"),
+    )
+    builder._require_exact_clone_work_transition(before, expected)
+
+    for drifted in (
+        (*expected[:4], 6, *expected[5:]),
+        (*expected[:4], 8, *expected[5:]),
+        (*expected[:4], 7, 0o755, expected[-1]),
+        (*expected[:6], (*expected[-1], "foreign")),
+    ):
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="clone transition drifted",
+        ):
+            builder._require_exact_clone_work_transition(before, drifted)
+
+
+def _patch_build_through_clone(
+    *,
+    root: Path,
+    contract: contract_module.FinalCertificationContract,
+    monkeypatch: pytest.MonkeyPatch,
+    inject_foreign_after_registration: bool,
+) -> None:
+    clean = {
+        "head": P_COMMIT,
+        "main": P_COMMIT,
+        "origin_main": P_COMMIT,
+        "origin_head": P_COMMIT,
+        "status": "",
+        "cached_diff": "",
+        "unstaged_diff": "",
+    }
+    authority = _authority()
+    preflight = {
+        "status": "ready_to_certify",
+        "writes": False,
+        "commands_executed": False,
+        "execution_commit": P_COMMIT,
+        "authority": authority,
+        "anchor_inputs": _anchor_records(contract),
+        "dvc_pointers": _pointer_records(contract),
+        "output_paths": list(contract.output_paths),
+        "main_dvc_status": {},
+        "local_dvc_remote_configuration": {"present": True},
+    }
+    later_effects: list[str] = []
+
+    monkeypatch.setattr(builder, "load_contract", lambda **kwargs: contract)
+    monkeypatch.setattr(
+        builder,
+        "check_phase4_final_certification",
+        lambda **kwargs: preflight,
+    )
+    monkeypatch.setattr(builder, "_capture_main_state", lambda path: dict(clean))
+    monkeypatch.setattr(builder, "_authority_loader", lambda *args: authority)
+    monkeypatch.setattr(
+        builder,
+        "_sealed_runtime_versions",
+        lambda *args, **kwargs: dict(contract.expected_runtime_versions),
+    )
+
+    def clone_then_fail(
+        *,
+        source_root: Path,
+        clone_root: Path,
+        execution_commit: str,
+        namespace_validator: Any,
+    ) -> Mapping[str, Any]:
+        del source_root, execution_commit
+        namespace_validator("before_git_clone")
+        clone_root.mkdir()
+        (clone_root / ".git").mkdir()
+        (clone_root / "tracked.txt").write_text("owned", encoding="utf-8")
+        namespace_validator("after_git_clone")
+        if inject_foreign_after_registration:
+            (clone_root / "foreign.txt").write_text("foreign", encoding="utf-8")
+        raise builder.FinalCertificationBuildError("primary post-clone failure")
+
+    monkeypatch.setattr(builder, "_clone_exact_p", clone_then_fail)
+    monkeypatch.setattr(
+        builder,
+        "_install_local_dvc_remote_configuration",
+        lambda **kwargs: later_effects.append("config"),
+    )
+    monkeypatch.setattr(
+        builder,
+        "_restore_dvc_objects",
+        lambda **kwargs: later_effects.append("pull"),
+    )
+
+    if inject_foreign_after_registration:
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="temporary cleanup failed closed",
+        ):
+            builder.build_phase4_final_certification(repo_root=root)
+    else:
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="primary post-clone failure",
+        ):
+            builder.build_phase4_final_certification(repo_root=root)
+    assert later_effects == []
+
+
+def test_post_clone_primary_failure_cleans_registered_clone_exactly(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _publication_root(tmp_path)
+    _patch_build_through_clone(
+        root=root,
+        contract=_locked_contract(),
+        monkeypatch=monkeypatch,
+        inject_foreign_after_registration=False,
+    )
+    assert not (root / "tmp").exists()
+
+
+def test_post_clone_cleanup_preserves_unregistered_foreign_entry(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    root = _publication_root(tmp_path)
+    _patch_build_through_clone(
+        root=root,
+        contract=_locked_contract(),
+        monkeypatch=monkeypatch,
+        inject_foreign_after_registration=True,
+    )
+    foreign = list(
+        (root / "tmp/closure_v1_phase4_final_certification").glob(
+            "run-*/clone/foreign.txt"
+        )
+    )
+    assert len(foreign) == 1
+    assert foreign[0].read_text(encoding="utf-8") == "foreign"
+
+
 def test_git_queries_ignore_path_and_clone_records_portable_git(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2419,7 +2652,49 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     result = builder._authority_loader(ROOT, contract)
     assert result["authority_bytes"] == len(b"authority")
     assert result["manifest_bytes"] == len(b"manifest")
+    assert {
+        field: result[field]
+        for field in (
+            "p_cert_commit",
+            "h_cert_commit",
+            "p2_cert_commit",
+            "h2_cert_commit",
+            "p1_cert_commit",
+            "h1_cert_commit",
+        )
+    } == {
+        field: fake[field]
+        for field in (
+            "p_cert_commit",
+            "h_cert_commit",
+            "p2_cert_commit",
+            "h2_cert_commit",
+            "p1_cert_commit",
+            "h1_cert_commit",
+        )
+    }
     assert not any(isinstance(value, bytes) for value in result.values())
+
+    for field in (
+        "p_cert_commit",
+        "h_cert_commit",
+        "p2_cert_commit",
+        "h2_cert_commit",
+        "p1_cert_commit",
+        "h1_cert_commit",
+    ):
+        incomplete = dict(fake)
+        incomplete.pop(field)
+        monkeypatch.setattr(
+            builder,
+            "load_effective_authority",
+            lambda *args, payload=incomplete, **kwargs: payload,
+        )
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="authority commit binding",
+        ):
+            builder._authority_loader(ROOT, contract)
 
 
 def test_check_only_is_non_writing_and_requires_effective_p_cert(

@@ -1,14 +1,16 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT integration candidate`
+Status: `H-CERT2 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v1`
+Contract: `closure_v1_phase4_final_certification_v2`
 
 Authorities:
 
 - Closure source: `ea8ddce7f8edb9a61db97e29178e52603fa371b1`;
 - R-SYN: `528dcb74a7c08b65f262901e4562a67b784db8c9`;
-- editorial manuscript receipt: `d1daa3059462854d6ddf5199fbc05515cec76982`.
+- editorial manuscript receipt: `d1daa3059462854d6ddf5199fbc05515cec76982`;
+- historical H-CERT1: `003ca2282af5d7156b5814b59d8f1ddfb7fc681e`;
+- superseded P-CERT1: `67983d8ea823a59eb4af55b59da04fb4ae298dcb`.
 
 ## Purpose and boundary
 
@@ -30,27 +32,40 @@ not authorize work after Phase 4.
 
 ## Publication topology
 
-The chain is single-parent and exact:
+The chain is single-parent and exact. H-CERT1/P-CERT1 remain immutable
+historical evidence; H-CERT2/P-CERT2 are the only future effective authority:
 
 ```text
-ea8ddce ... -> 528dcb7 R-SYN -> d1daa30 editorial
-                                     |
-                                     v
-                         H-CERT -> P-CERT -> R-CERT -> thesis-closure-v1
+ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
+                                  |
+                                  v
+                      003ca22 H-CERT1 -> 67983d8 P-CERT1 (superseded failure)
+                                                 |
+                                                 v
+                                    H-CERT2 -> P-CERT2 -> R-CERT
+                                                              |
+                                                              v
+                                                     thesis-closure-v1
 ```
 
 The gates have distinct roles:
 
-1. **H-CERT** publishes implementation, schema, freeze, and tests. It cannot
+1. **H-CERT1** and **P-CERT1** preserve the first implementation and authority.
+   The consumed R-CERT launch failed immediately after `git clone`, before any
+   DVC pull or R output, and P-CERT1 never authorizes another launch.
+2. **H-CERT2** publishes the minimal correction, schema, freeze, and tests. It cannot
    execute the certification.
-2. **P-CERT** publishes a two-file, data-only authority. An unpublished P is
+3. **P-CERT2** publishes a new two-file, data-only authority. It explicitly
+   supersedes P-CERT1. An unpublished P-CERT2 is
    ineffective.
-3. **R-CERT** executes only from a clean, published P and publishes eight
+4. **R-CERT** executes only from a clean, published P-CERT2 and publishes eight
    evidence files, manifest last.
-4. The repository owner manually publishes the final R commit and the
+5. The repository owner manually publishes the final R commit and the
    `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT commit. This avoids a circular
+The executable target is the published P-CERT2 commit. Executing from
+P-CERT1, adopting its failed temporary namespace, or treating it as effective
+after H-CERT2 exists is forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
 R-CERT may add only the exact eight regular evidence files, so its executable
 tree must equal P-CERT's executable tree. The final tag points to published R.
@@ -65,7 +80,7 @@ unpublished parent fail closed.
 
 ## Exact publication scopes
 
-H-CERT is exactly `9A+2M`:
+Historical H-CERT1 was exactly `9A+2M` and remains byte-intact:
 
 ```text
 A configs/closure_v1/phase4_final_certification.schema.json
@@ -83,11 +98,23 @@ M tests/test_prepare_commit_artifacts.py
 
 All other H paths have Git mode `100644`.
 
-P-CERT is exactly two additions, authority first and companion last:
+Historical P-CERT1 was exactly two additions and remains byte-intact:
 
 ```text
 configs/closure_v1/phase4_final_certification_authority.json
 configs/closure_v1/phase4_final_certification_authority_manifest.json
+```
+
+H-CERT2 is exactly `11M` over P-CERT1, with the same eleven paths shown in the
+H-CERT1 list. Every path is modified, none is added or deleted, and
+`src/data/prepare_commit_artifacts.py` remains mode `100755`; the other ten
+paths remain `100644`.
+
+P-CERT2 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v2.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v2.json
 ```
 
 R-CERT is exactly eight additions below a new namespace:
@@ -103,7 +130,7 @@ reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
 reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
-All P/R files are single-link regular `100644` files. The final manifest is
+All P1/P2/R files are single-link regular `100644` files. The final manifest is
 created and linked last. An existing path is never adopted, replaced, or
 truncated.
 
@@ -129,7 +156,7 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT creates a fresh clone of live `origin/main` at the exact published P
+R-CERT creates a fresh clone of live `origin/main` at the exact published P-CERT2
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets. The builder runs exactly eight commands, one pointer
 per command, in the YAML order:
@@ -187,25 +214,24 @@ not repeated as a CLI selector. Consequently the exact non-duplicating command
 selector count is 39: 33 file selectors plus six supplemental node selectors.
 The skip ledger count is seven. Any other skip is critical and fails closed.
 
-The public suite lock is final:
+The H-CERT2 public suite lock is final:
 
 ```yaml
 suite_lock:
   status: locked
   selector_count: 39
-  collected_test_count: 892
-  nodeids_sha256: 583e39e0f1093c51be2421f88df250b2fc84ecd88e52087134a80cc91b8ec5a2
+  collected_test_count: 905
+  nodeids_sha256: 679cfd4e62e6eb9f7eb14e9ba1739f7b427fe56a65dab92ac3b39c0ddff42c03
   allowed_skip_count: 7
 ```
 
-Two independent collections over the exact 39-selector command produced the
-same 892 unique node IDs and the same ordered-node digest shown above. Both
-collections ran with the outcome-free guard active: Closure outcomes, raw
-targets and restored Parquet payloads remained forbidden. The
-`pending_integration` schema branch and `allow_pending_suite=True` remain only
-for historical/integration fixtures; the real YAML is locked and the default
-loader requires the exact values above. P-CERT and R-CERT never use the
-pending escape hatch.
+Two independent collections over the unchanged 39 selectors and frozen test
+bytes produced the same 905 unique node IDs and the same ordered-node digest
+shown above, with the outcome-free guard active. Closure outcomes, raw targets
+and restored Parquet payloads remained forbidden. The schema's
+`pending_integration` branch and `allow_pending_suite=True` remain limited to
+integration fixtures; the public YAML is locked, and P-CERT2 generation and
+R-CERT reject pending state.
 
 The public suite requires zero failures/errors, exactly the seven registered
 skips, a full `ty check`, and `poetry check --lock`. E2E is exactly the three
@@ -220,7 +246,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P clone with its tracked tree read-only, the
+Verification runs from the exact P-CERT2 clone with its tracked tree read-only, the
 host virtual environment read-only, and an owned writable temporary namespace.
 OS masks plus the Python audit hook deny:
 
@@ -242,11 +268,14 @@ those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P authority is canonical JSON. It reconstructs every H component, all ten
+The P-CERT2 authority is canonical JSON. It reconstructs every historical
+H-CERT1 and P-CERT1 component from Git, every H-CERT2 component, all ten
 anchors, all eight pointer records, the exact suite lock, output order,
-isolation policy and authorization policy. Its companion is written last.
-Execution becomes effective only after the exact two-file P commit is observed
-as the single-parent child of H in local refs and live origin.
+isolation policy and authorization policy. It records P-CERT1 as a superseded
+failed launch with zero DVC pulls, zero R outputs and no retry authorization.
+Its companion is written last. Execution becomes effective only after the
+exact two-file P-CERT2 commit is observed as the single-parent child of
+H-CERT2 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -268,8 +297,20 @@ Non-cooperating mutation of the same namespace by another process running as
 the same UID is out of scope; cooperating processes must honor the retained
 `.git` flock.
 
-The final manifest binds the seven preceding outputs, P authority and
-companion, H components, public anchors, eight pointer/restoration records,
+The H-CERT2 correction admits exactly one directory-link increment only at the
+`after_git_clone` transition: creating the owned `clone/` subdirectory changes
+the owned work directory's `st_nlink` by exactly `+1`. Identity, mode and all
+other transitions remain exact; any other link-count delta fails closed. The
+clone is registered in the owned cleanup inventory after the exact transition
+check and before any subsequent post-clone validation, so an early later
+failure can be cleaned without adopting foreign names.
+If safe owned cleanup succeeds, the primary exception is preserved. If cleanup
+cannot be established as safe or itself fails, the cleanup/composite failure
+prevails fail-closed; the contract does not claim preservation of the primary
+error in that case.
+
+The final manifest binds the seven preceding outputs, P-CERT2 authority and
+companion, historical H1/P1 and active H2 components, public anchors, eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
 human report must retain this claim boundary:
 
@@ -278,7 +319,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT, P-CERT, H-CERT, then earlier Phase 4
+The precommit selector order is R-CERT, P-CERT2, H-CERT2, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -292,11 +333,11 @@ real generic manifests, exact paths/modes/blobs, aligned refs, clean DVC,
 targeted staging and rollback that preserves foreign index entries. The legacy
 guard path remains absent.
 
-H and P precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT2 and P-CERT2 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P parent,
+After the owner publishes R, the final audit must prove direct P-CERT2 parent,
 exact8 scope, local/remote refs, clean Git/DVC, effective manifest, and no
 owned temporary state. The owner then creates and publishes
 `thesis-closure-v1` at exact R. Once the local and remote peeled tag both equal
@@ -307,6 +348,13 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
+- any attempt to execute R-CERT from superseded P-CERT1 or reuse/adopt its
+  retained failed-run namespace;
+- a post-clone directory-link delta other than exactly `+1` at
+  `after_git_clone`, or failure to register the clone after that exact
+  transition check and before subsequent validation;
+- loss of the primary error after safe owned cleanup, or any unsafe/unowned
+  cleanup attempt; cleanup failure itself remains a fail-closed error;
 - a non-pristine clone/cache, pointer mismatch, non-exact pull, missing
   restored object, or main-worktree DVC change;
 - any forbidden/private/raw/Parquet read or unexpected network access;

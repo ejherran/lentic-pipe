@@ -694,6 +694,7 @@ class PreparedWorkspace:
     work_binding: tuple[Any, ...]
     repository_root_binding: tuple[Any, ...]
     mask_inventory: Mapping[str, WorkInventoryEntry]
+    cache_inventory: Mapping[str, WorkInventoryEntry]
 
 
 _ACCESS_GUARD_INSTALLED = False
@@ -1344,6 +1345,32 @@ def _directory_binding(handle: DirectoryHandle) -> tuple[Any, ...]:
         stat.S_IMODE(metadata.st_mode),
         tuple(sorted(os.listdir(handle.fd))),
     )
+
+
+def _require_exact_clone_work_transition(
+    before: tuple[Any, ...], after: tuple[Any, ...]
+) -> None:
+    """Accept only the directory-link transition made by one new clone.
+
+    Creating ``clone/`` adds one child-directory link to the retained work
+    directory. Its timestamps are expected to change and are intentionally
+    not used as identity, but device, inode, mode, link-count delta, and the
+    complete top-level name inventory are all exact.
+    """
+
+    if len(before) != 7 or len(after) != 7:
+        raise _error("owned work namespace clone transition drifted")
+    previous_entries = before[-1]
+    if not isinstance(previous_entries, tuple) or "clone" in previous_entries:
+        raise _error("owned work namespace clone transition drifted")
+    expected_entries = tuple(sorted((*previous_entries, "clone")))
+    if (
+        after[:2] != before[:2]
+        or after[4] != before[4] + 1
+        or after[5] != before[5]
+        or after[-1] != expected_entries
+    ):
+        raise _error("owned work namespace clone transition drifted")
 
 
 def _open_repository_root_lease(root: Path) -> RepositoryRootLease:
@@ -2861,14 +2888,18 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
+    commit_binding = _require_effective_authority_commit_binding(
+        result,
+        contract=contract,
+        execution_commit=result.get("p_cert_commit"),
+    )
     # The loader returns raw bytes for its internal equality proof.  Public
     # certification records bind their digests and decoded canonical objects,
     # never duplicate raw bytes or operational paths.
     return {
         "status": result["status"],
         "gate": result["gate"],
-        "p_cert_commit": result["p_cert_commit"],
-        "h_cert_commit": result["h_cert_commit"],
+        **commit_binding,
         "repository": result["repository"],
         "authority": result["authority"],
         "authority_bytes": len(result["authority_bytes"]),
@@ -2877,6 +2908,40 @@ def _authority_loader(
         "manifest_bytes": len(result["manifest_bytes"]),
         "manifest_sha256": result["manifest_sha256"],
     }
+
+
+def _require_effective_authority_commit_binding(
+    value: Mapping[str, Any],
+    *,
+    contract: FinalCertificationContract,
+    execution_commit: Any,
+) -> dict[str, str]:
+    """Validate the complete P2/H2/P1/H1 authority lineage projection."""
+
+    fields = (
+        "p_cert_commit",
+        "h_cert_commit",
+        "p2_cert_commit",
+        "h2_cert_commit",
+        "p1_cert_commit",
+        "h1_cert_commit",
+    )
+    commits: dict[str, str] = {}
+    for field in fields:
+        candidate = value.get(field)
+        if not isinstance(candidate, str) or COMMIT_RE.fullmatch(candidate) is None:
+            raise _error("effective authority commit binding is incomplete or malformed")
+        commits[field] = candidate
+    if (
+        not isinstance(execution_commit, str)
+        or commits["p_cert_commit"] != execution_commit
+        or commits["p2_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h2_cert_commit"]
+        or commits["p1_cert_commit"] != contract.p1_cert_commit
+        or commits["h1_cert_commit"] != contract.h1_cert_commit
+    ):
+        raise _error("effective authority commit binding drifted")
+    return commits
 
 
 def check_phase4_final_certification(
@@ -4823,6 +4888,11 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
+    authority_commits = _require_effective_authority_commit_binding(
+        authority,
+        contract=contract,
+        execution_commit=commit,
+    )
     if dict(runtime_versions) != dict(contract.expected_runtime_versions):
         raise _error("runtime version probes differ from the sealed contract")
     if set(verification_artifacts) != {
@@ -4864,15 +4934,13 @@ def build_final_certification_payloads(
         "r_cert_additions_only": [spec.path for spec in contract.r_scope],
         "p_cert_authority": {
             "path": AUTHORITY_PATH.as_posix(),
-            "p_cert_commit": authority["p_cert_commit"],
-            "h_cert_commit": authority["h_cert_commit"],
+            **authority_commits,
             "bytes": authority["authority_bytes"],
             "sha256": authority["authority_sha256"],
         },
         "p_cert_companion_manifest": {
             "path": AUTHORITY_MANIFEST_PATH.as_posix(),
-            "p_cert_commit": authority["p_cert_commit"],
-            "h_cert_commit": authority["h_cert_commit"],
+            **authority_commits,
             "bytes": authority["manifest_bytes"],
             "sha256": authority["manifest_sha256"],
         },
@@ -5403,30 +5471,36 @@ def validate_final_certification_payloads(
             raise _error(f"final certification {records_key} binding drifted")
     effective_root = repo_root.resolve(strict=True)
     effective = _authority_loader(effective_root, contract, require_clean=False)
-    if effective.get("p_cert_commit") != execution_commit:
-        raise _error("effective P-CERT authority execution commit drifted")
+    effective_commits = _require_effective_authority_commit_binding(
+        effective,
+        contract=contract,
+        execution_commit=execution_commit,
+    )
     expected_authority_bindings = {
         "p_cert_authority": {
             "path": AUTHORITY_PATH.as_posix(),
             "bytes": effective["authority_bytes"],
             "sha256": effective["authority_sha256"],
-            "p_cert_commit": effective["p_cert_commit"],
-            "h_cert_commit": effective["h_cert_commit"],
+            **effective_commits,
         },
         "p_cert_companion_manifest": {
             "path": AUTHORITY_MANIFEST_PATH.as_posix(),
             "bytes": effective["manifest_bytes"],
             "sha256": effective["manifest_sha256"],
-            "p_cert_commit": effective["p_cert_commit"],
-            "h_cert_commit": effective["h_cert_commit"],
+            **effective_commits,
         },
+    }
+    expected_binding_keys = {
+        "path",
+        "bytes",
+        "sha256",
+        *effective_commits,
     }
     for key, expected_binding in expected_authority_bindings.items():
         binding = manifest.get(key)
         if (
             not isinstance(binding, Mapping)
-            or set(binding)
-            != {"path", "bytes", "sha256", "p_cert_commit", "h_cert_commit"}
+            or set(binding) != expected_binding_keys
             or dict(binding) != expected_binding
         ):
             raise _error(f"final certification {key} effective binding drifted")
@@ -6122,6 +6196,9 @@ def _prepare_owned_workspace(
         mask_inventory = _scan_work_inventory(mask_handle)
         if _scan_work_inventory(mask_handle) != mask_inventory:
             raise _error("sandbox mask inventory changed while freezing")
+        cache_inventory = _scan_work_inventory(cache_handle)
+        if cache_inventory or _scan_work_inventory(cache_handle):
+            raise _error("owned DVC cache was not empty after workspace preparation")
         return PreparedWorkspace(
             owned_tmp=owned_tmp,
             owned_tmp_identity=owned_tmp_identity,
@@ -6136,6 +6213,7 @@ def _prepare_owned_workspace(
             work_binding=_directory_binding(work_handle),
             repository_root_binding=_directory_binding(repository_lease.root),
             mask_inventory=mask_inventory,
+            cache_inventory=cache_inventory,
         )
     except BaseException as primary:
         cleanup_error: BaseException | None = None
@@ -6233,6 +6311,12 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     ] = {
         "sandbox masks": (mask_handle, prepared.mask_inventory),
     }
+    cleanup_execution_inventories: dict[
+        str, tuple[DirectoryHandle, Mapping[str, WorkInventoryEntry]]
+    ] = {
+        "sandbox masks": (mask_handle, prepared.mask_inventory),
+        "DVC cache": (cache_handle, prepared.cache_inventory),
+    }
 
     def validate_execution_namespace(stage: str) -> None:
         nonlocal work_binding
@@ -6244,13 +6328,18 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             raise _error(f"repository-root namespace drifted at checkpoint: {stage}")
         current_work_binding = _directory_binding(work_handle)
         if stage == "after_git_clone":
-            expected_entries = tuple(sorted((*work_binding[-1], "clone")))
-            if (
-                current_work_binding[:2] != work_binding[:2]
-                or current_work_binding[4:6] != work_binding[4:6]
-                or current_work_binding[-1] != expected_entries
-            ):
-                raise _error("owned work namespace clone transition drifted")
+            _require_exact_clone_work_transition(work_binding, current_work_binding)
+            clone_handle = lease.open_work_subdirectory("clone")
+            repeated_work_binding = _directory_binding(work_handle)
+            if repeated_work_binding != current_work_binding:
+                raise _error("owned work namespace drifted while registering clone")
+            first_clone_inventory = _scan_work_inventory(clone_handle)
+            if _scan_work_inventory(clone_handle) != first_clone_inventory:
+                raise _error("owned clone inventory changed while registering")
+            cleanup_execution_inventories["clone"] = (
+                clone_handle,
+                first_clone_inventory,
+            )
             work_binding = current_work_binding
         elif current_work_binding != work_binding:
             raise _error(f"owned work namespace drifted at checkpoint: {stage}")
@@ -6276,7 +6365,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         if set(os.listdir(lease.work.fd)) != set(lease.work_subdirectories):
             return False
         for frozen_name in ("sandbox masks", "clone", "DVC cache"):
-            frozen = frozen_execution_inventories.get(frozen_name)
+            frozen = cleanup_execution_inventories.get(frozen_name)
             if frozen is None or _scan_work_inventory(frozen[0]) != dict(frozen[1]):
                 return False
         if _scan_work_inventory(socket_handle):
@@ -6321,8 +6410,10 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             execution_commit=execution_commit,
             namespace_validator=validate_execution_namespace,
         )
-        lease.open_work_subdirectory("clone")
+        if "clone" not in lease.work_subdirectories:
+            raise _error("isolated clone was not identity-bound during creation")
         validate_execution_namespace("after isolated clone registration")
+        clone_handle = lease.work_subdirectories["clone"]
         clone_record = {
             **clone_record,
             "local_dvc_remote_configuration": bracket(
@@ -6332,6 +6423,13 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 ),
             ),
         }
+        configured_clone_inventory = _scan_work_inventory(clone_handle)
+        if _scan_work_inventory(clone_handle) != configured_clone_inventory:
+            raise _error("clone inventory changed after private configuration")
+        cleanup_execution_inventories["clone"] = (
+            clone_handle,
+            configured_clone_inventory,
+        )
         validate_execution_namespace("after private DVC configuration copy")
         restores = _restore_dvc_objects(
             source_root=root,
@@ -6340,7 +6438,6 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             contract=contract,
             namespace_validator=validate_execution_namespace,
         )
-        clone_handle = lease.work_subdirectories["clone"]
         first_clone_inventory = _scan_work_inventory(clone_handle)
         first_cache_inventory = _scan_work_inventory(cache_handle)
         if (
@@ -6349,6 +6446,12 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         ):
             raise _error("clone/cache inventory changed while freezing verification")
         frozen_execution_inventories.update(
+            {
+                "clone": (clone_handle, first_clone_inventory),
+                "DVC cache": (cache_handle, first_cache_inventory),
+            }
+        )
+        cleanup_execution_inventories.update(
             {
                 "clone": (clone_handle, first_clone_inventory),
                 "DVC cache": (cache_handle, first_cache_inventory),
