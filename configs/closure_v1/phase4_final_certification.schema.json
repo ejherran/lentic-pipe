@@ -64,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v5"
+      "const": "closure_v1_phase4_final_certification_v6"
     },
     "authorities": {
       "type": "object",
@@ -81,6 +81,8 @@
         "p3_cert_commit",
         "h4_cert_commit",
         "p4_cert_commit",
+        "h5_cert_commit",
+        "p5_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -119,8 +121,14 @@
         "p4_cert_commit": {
           "const": "21551c7e53b776b693f4f76b88682180093a0f31"
         },
+        "h5_cert_commit": {
+          "const": "d18201462be9f6cc057d0187dec2b8b731b62e48"
+        },
+        "p5_cert_commit": {
+          "const": "da7b673aa8a7cbdc428ca829e5b9f0a5ac79a3ef"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v5_commit"},
+        "certification_target": {"const": "published_P_CERT_v6_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -139,7 +147,9 @@
         "P-CERT4",
         "H-CERT5",
         "P-CERT5",
-        "R-CERT5",
+        "H-CERT6",
+        "P-CERT6",
+        "R-CERT6",
         "single_parent_commits_required",
         "closure_source_commit_must_remain_ancestor",
         "aligned_refs_and_live_remote_required",
@@ -150,7 +160,7 @@
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "R-CERT5"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "R-CERT6"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -286,9 +296,10 @@
         "H-CERT5": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_private_dvc_cache_equivalence_and_capability_contract_tests_and_freeze"},
+            "commit": {"const": "h5_cert_commit"},
             "direct_parent": {"const": "p4_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["normalize_owned_cache_dir_and_type_before_section_set_equivalence", "reject_every_non_operational_private_section_or_setting_drift", "withhold_credential_fds_until_first_directed_pull", "record_r_cert4_failure_and_forbid_p_cert4_retry"]}
@@ -297,10 +308,47 @@
         "P-CERT5": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_H_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "required": ["role", "commit", "requires_published_H_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized", "failure_stage", "successful_directed_dvc_pulls", "restored_checkout_count", "directed_dvc_status_checks_confirmed_minimum", "directed_dvc_status_checks_confirmed_maximum", "exact_directed_dvc_status_count_claimed", "r_cert_output_count", "retry_authorized", "cleanup_status", "manifest_written_last"],
           "properties": {
             "role": {"const": "data_only_final_certification_authority_v5"},
+            "commit": {"const": "p5_cert_commit"},
             "requires_published_H_CERT5": {"const": true},
+            "supersedes_P_CERT4": {"const": true},
+            "supersedes_P_CERT3": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "post_exact_eight_restore_status_boundary"},
+            "successful_directed_dvc_pulls": {"const": 8},
+            "restored_checkout_count": {"const": 8},
+            "directed_dvc_status_checks_confirmed_minimum": {"const": 7},
+            "directed_dvc_status_checks_confirmed_maximum": {"const": 8},
+            "exact_directed_dvc_status_count_claimed": {"const": false},
+            "r_cert_output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "cleanup_status": {"const": "failed_closed_namespace_preserved"},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "H-CERT6": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_partial_clone_dvc_status_scope_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p5_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["scope_post_restore_status_to_exact_ordered_eight_pointer_paths", "scope_post_verification_status_to_exact_ordered_eight_pointer_paths", "forbid_global_dvc_status_in_partial_clone", "record_r_cert5_failure_and_forbid_p_cert5_retry"]}
+          }
+        },
+        "P-CERT6": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v6"},
+            "requires_published_H_CERT6": {"const": true},
+            "supersedes_P_CERT5": {"const": true},
             "supersedes_P_CERT4": {"const": true},
             "supersedes_P_CERT3": {"const": true},
             "supersedes_P_CERT2": {"const": true},
@@ -309,13 +357,13 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "R-CERT5": {
+        "R-CERT6": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_P_CERT5", "output_count", "manifest_written_last"],
+          "required": ["role", "requires_published_P_CERT6", "output_count", "manifest_written_last"],
           "properties": {
             "role": {"const": "final_doctoral_software_and_restorability_evidence"},
-            "requires_published_P_CERT5": {"const": true},
+            "requires_published_P_CERT6": {"const": true},
             "output_count": {"const": 8},
             "manifest_written_last": {"const": true}
           }
@@ -333,7 +381,7 @@
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "R-CERT5"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "R-CERT6"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -455,7 +503,31 @@
             }
           ]
         },
-        "R-CERT5": {
+        "H-CERT6": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT6": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "R-CERT6": {
           "allOf": [
             {"$ref": "#/$defs/stageScope"},
             {
@@ -508,6 +580,9 @@
         "only_owned_cache_dir_and_type_may_differ",
         "credential_fds_passed_to_dvc_config_commands",
         "first_credential_fd_subprocess_exposure",
+        "post_restore_status_pointer_paths",
+        "post_verification_status_pointer_paths",
+        "partial_clone_global_status_authorized",
         "used_by_all_isolated_dvc_commands",
         "copied_core_site_cache_dir_used",
         "main_dvc_site_cache_metadata_inode_inventory_unchanged",
@@ -553,6 +628,31 @@
         "only_owned_cache_dir_and_type_may_differ": {"const": true},
         "credential_fds_passed_to_dvc_config_commands": {"const": false},
         "first_credential_fd_subprocess_exposure": {"const": "first_directed_dvc_pull"},
+        "post_restore_status_pointer_paths": {
+          "const": [
+            "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+            "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+            "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+            "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+            "data/closure_v1/degradation_masks.parquet.dvc",
+            "data/closure_v1/predictions_long.parquet.dvc",
+            "reports/closure_v1/05_inference/bootstrap_distributions.parquet.dvc",
+            "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc"
+          ]
+        },
+        "post_verification_status_pointer_paths": {
+          "const": [
+            "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+            "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+            "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+            "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+            "data/closure_v1/degradation_masks.parquet.dvc",
+            "data/closure_v1/predictions_long.parquet.dvc",
+            "reports/closure_v1/05_inference/bootstrap_distributions.parquet.dvc",
+            "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc"
+          ]
+        },
+        "partial_clone_global_status_authorized": {"const": false},
         "used_by_all_isolated_dvc_commands": {"const": true},
         "copied_core_site_cache_dir_used": {"const": false},
         "main_dvc_site_cache_metadata_inode_inventory_unchanged": {"const": true},
@@ -766,6 +866,10 @@
         "real_dvc_execution_scope",
         "superseded_p3_retry_authorized",
         "superseded_p4_retry_authorized",
+        "superseded_p5_retry_authorized",
+        "post_restore_status_pointer_paths",
+        "post_verification_status_pointer_paths",
+        "partial_clone_global_status_authorized",
         "no_clobber",
         "cleanup_before_precommit"
       ],
@@ -874,6 +978,32 @@
         "real_dvc_execution_scope": {"const": "isolated_r_cert_clone_only"},
         "superseded_p3_retry_authorized": {"const": false},
         "superseded_p4_retry_authorized": {"const": false},
+        "superseded_p5_retry_authorized": {"const": false},
+        "post_restore_status_pointer_paths": {
+          "const": [
+            "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+            "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+            "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+            "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+            "data/closure_v1/degradation_masks.parquet.dvc",
+            "data/closure_v1/predictions_long.parquet.dvc",
+            "reports/closure_v1/05_inference/bootstrap_distributions.parquet.dvc",
+            "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc"
+          ]
+        },
+        "post_verification_status_pointer_paths": {
+          "const": [
+            "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+            "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc",
+            "data/closure_v1/locked_evaluation/origin_features.parquet.dvc",
+            "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc",
+            "data/closure_v1/degradation_masks.parquet.dvc",
+            "data/closure_v1/predictions_long.parquet.dvc",
+            "reports/closure_v1/05_inference/bootstrap_distributions.parquet.dvc",
+            "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc"
+          ]
+        },
+        "partial_clone_global_status_authorized": {"const": false},
         "no_clobber": {"const": true},
         "cleanup_before_precommit": {"const": true}
       }
@@ -939,8 +1069,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 24,
-      "maxItems": 24,
+      "minItems": 26,
+      "maxItems": 26,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }

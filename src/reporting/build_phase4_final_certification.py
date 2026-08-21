@@ -58,6 +58,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     collect_dvc_pointer_records,
     digest_records,
     digest_strings,
+    expected_dvc_status_policy,
     expected_environment_dvc_record,
     expected_manifest_clone_dvc_site_caches_record,
     load_contract,
@@ -1314,10 +1315,12 @@ def _require_isolated_dvc_command_root(
 def _dvc_status(
     root: Path,
     *,
+    targets: Sequence[str],
     executable_root: Path | None = None,
     environment: Mapping[str, str] | None = None,
     private_pass_fds: Sequence[int] = (),
 ) -> str:
+    explicit_targets = _explicit_dvc_status_targets(targets)
     if executable_root is None:
         raise _error("DVC status is restricted to the isolated clone")
     _require_isolated_dvc_command_root(
@@ -1335,6 +1338,7 @@ def _dvc_status(
             root,
             runtime,
             source_root=executable_root,
+            targets=explicit_targets,
             environment=environment,
             private_pass_fds=private_pass_fds,
         )
@@ -1390,9 +1394,11 @@ def _dvc_status_with_executable(
     executable: AnchoredPythonScriptRuntime,
     *,
     source_root: Path,
+    targets: Sequence[str],
     environment: Mapping[str, str] | None = None,
     private_pass_fds: Sequence[int] = (),
 ) -> str:
+    explicit_targets = _explicit_dvc_status_targets(targets)
     _require_isolated_dvc_command_root(
         source_root=source_root,
         command_root=root,
@@ -1400,9 +1406,14 @@ def _dvc_status_with_executable(
     )
     result = _run_python_script_runtime(
         executable,
-        ("status", "--json"),
+        ("status", "--json", *explicit_targets),
         cwd=root,
-        portable_argv=(".venv/bin/dvc", "status", "--json"),
+        portable_argv=(
+            ".venv/bin/dvc",
+            "status",
+            "--json",
+            *explicit_targets,
+        ),
         environment={
             "DVC_NO_ANALYTICS": "1",
             **({} if environment is None else environment),
@@ -1418,6 +1429,58 @@ def _dvc_status_with_executable(
     if parsed != {}:
         raise _error("DVC status must equal the empty object")
     return "{}"
+
+
+def _explicit_dvc_status_targets(targets: Sequence[str]) -> tuple[str, ...]:
+    """Return one explicit, normalized and duplicate-free status target set."""
+
+    if isinstance(targets, (str, bytes)):
+        raise _error("DVC status targets must be an explicit non-empty sequence")
+    raw_targets = tuple(targets)
+    if not raw_targets:
+        raise _error("DVC status targets must be an explicit non-empty sequence")
+    normalized: list[str] = []
+    for raw_target in raw_targets:
+        if not isinstance(raw_target, str):
+            raise _error("DVC status target is malformed")
+        segments = raw_target.split("/")
+        if (
+            raw_target.startswith("-")
+            or "\x00" in raw_target
+            or "\\" in raw_target
+            or any(token in raw_target for token in "?*[]{}")
+            or any(segment in {"", ".", ".."} for segment in segments)
+        ):
+            raise _error("DVC status target is malformed")
+        normalized_target = _require_relative(
+            raw_target,
+            context="DVC status target",
+        ).as_posix()
+        if PurePosixPath(normalized_target).suffix != ".dvc":
+            raise _error("DVC status target must be one canonical .dvc path")
+        normalized.append(normalized_target)
+    if len(set(normalized)) != len(normalized):
+        raise _error("DVC status targets must be unique")
+    return tuple(normalized)
+
+
+def _contract_dvc_status_targets(
+    contract: FinalCertificationContract,
+    configured_targets: Sequence[str],
+    *,
+    context: str,
+) -> tuple[str, ...]:
+    """Bind one status checkpoint to all and only the eight sealed pointers."""
+
+    expected = tuple(spec.path for spec in contract.dvc_pointers)
+    explicit = _explicit_dvc_status_targets(configured_targets)
+    if (
+        contract.partial_clone_global_status_authorized
+        or len(expected) != 8
+        or explicit != expected
+    ):
+        raise _error(f"{context} DVC status scope is not exact ordered eight")
+    return explicit
 
 
 def _read_regular(path: Path, *, context: str, single_link: bool = True) -> bytes:
@@ -3412,7 +3475,11 @@ def _authority_loader(
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p_cert_commit"),
+        execution_commit=result.get("p6_cert_commit"),
+    )
+    dvc_status_policy = _require_effective_authority_dvc_status_policy(
+        result,
+        contract=contract,
     )
     # The loader returns raw bytes for its internal equality proof.  Public
     # certification records bind their digests and decoded canonical objects,
@@ -3421,6 +3488,7 @@ def _authority_loader(
         "status": result["status"],
         "gate": result["gate"],
         **commit_binding,
+        "dvc_status_policy": dvc_status_policy,
         "repository": result["repository"],
         "authority": result["authority"],
         "authority_bytes": len(result["authority_bytes"]),
@@ -3437,11 +3505,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate the complete P5/H5/P4/H4/P3/H3/P2/H2/P1/H1 lineage."""
+    """Validate active P6/H6 aliases and the complete historical lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p6_cert_commit",
+        "h6_cert_commit",
         "p5_cert_commit",
         "h5_cert_commit",
         "p4_cert_commit",
@@ -3462,8 +3532,12 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p5_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h5_cert_commit"]
+        or commits["p6_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h6_cert_commit"]
+        or commits["p5_cert_commit"] != contract.p5_cert_commit
+        or commits["h5_cert_commit"] != contract.h5_cert_commit
+        or commits["p6_cert_commit"] == commits["p5_cert_commit"]
+        or commits["h6_cert_commit"] == commits["h5_cert_commit"]
         or commits["p4_cert_commit"] != contract.p4_cert_commit
         or commits["h4_cert_commit"] != contract.h4_cert_commit
         or commits["p3_cert_commit"] != contract.p3_cert_commit
@@ -3475,6 +3549,45 @@ def _require_effective_authority_commit_binding(
     ):
         raise _error("effective authority commit binding drifted")
     return commits
+
+
+def _require_effective_authority_dvc_status_policy(
+    value: Mapping[str, Any],
+    *,
+    contract: FinalCertificationContract,
+) -> dict[str, Any]:
+    """Require the effective P6 authority's exact partial-clone status policy."""
+
+    expected = expected_dvc_status_policy(contract)
+    observed = value.get("dvc_status_policy")
+    if not isinstance(observed, Mapping) or dict(observed) != expected:
+        raise _error("effective authority DVC status policy drifted")
+    return expected
+
+
+def _require_dvc_status_policy_projection(
+    value: Mapping[str, Any],
+    *,
+    contract: FinalCertificationContract,
+    context: str,
+) -> None:
+    """Bind one serialized DVC projection to the effective exact-eight policy."""
+
+    expected = expected_dvc_status_policy(contract)
+    if (
+        expected.get("scope") != "exact_eight_published_pointer_paths"
+        or expected.get("target_count") != 8
+        or expected.get("ordered_targets")
+        != [spec.path for spec in contract.dvc_pointers]
+        or expected.get("final_status_empty_result_required") is not True
+        or value.get("post_restore_status_pointer_paths")
+        != expected.get("post_restore_status_pointer_paths")
+        or value.get("post_verification_status_pointer_paths")
+        != expected.get("post_verification_status_pointer_paths")
+        or value.get("partial_clone_global_status_authorized")
+        != expected.get("global_status_authorized")
+    ):
+        raise _error(f"{context} DVC status policy projection drifted")
 
 
 def check_phase4_final_certification(
@@ -3494,9 +3607,13 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    effective_commit = authority.get("p_cert_commit") or authority.get(
-        "execution_commit"
-    ) or authority.get("repository_commit")
+    authority_commits = _require_effective_authority_commit_binding(
+        authority,
+        contract=contract,
+        execution_commit=authority.get("p6_cert_commit"),
+    )
+    _require_effective_authority_dvc_status_policy(authority, contract=contract)
+    effective_commit = authority_commits["p6_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -4518,6 +4635,11 @@ def _restore_dvc_objects_with_anchored_executable(
         clone_root,
         executable,
         source_root=source_root,
+        targets=_contract_dvc_status_targets(
+            contract,
+            contract.post_restore_status_pointer_paths,
+            context="post-restore",
+        ),
         environment={"DVC_SITE_CACHE_DIR": os.fspath(site_cache_root)},
         private_pass_fds=installed_configuration.pass_fds,
     )
@@ -6088,6 +6210,7 @@ def _artifact_record(path_text: str, payload: bytes) -> dict[str, Any]:
 
 def _environment_object(
     *,
+    contract: FinalCertificationContract,
     execution_commit: str,
     anchor_records: Sequence[Mapping[str, Any]],
     restore_records: Sequence[Mapping[str, Any]],
@@ -6095,6 +6218,12 @@ def _environment_object(
     database: Mapping[str, Any],
     runtime_versions: Mapping[str, str],
 ) -> dict[str, Any]:
+    dvc_record = expected_environment_dvc_record()
+    _require_dvc_status_policy_projection(
+        dvc_record,
+        contract=contract,
+        context="environment",
+    )
     return {
         "schema_version": "closure_v1_phase4_final_environment_v1",
         "execution_commit": execution_commit,
@@ -6115,7 +6244,7 @@ def _environment_object(
             "url_path_or_credentials_serialized": False,
         },
         "isolation": verification["sandbox"],
-        "dvc": expected_environment_dvc_record(),
+        "dvc": dvc_record,
         "timestamps_hostnames_absolute_paths_remote_urls_credentials": "omitted",
     }
 
@@ -6166,6 +6295,7 @@ def build_final_certification_payloads(
         contract=contract,
         execution_commit=commit,
     )
+    _require_effective_authority_dvc_status_policy(authority, contract=contract)
     if dict(runtime_versions) != dict(contract.expected_runtime_versions):
         raise _error("runtime version probes differ from the sealed contract")
     if set(verification_artifacts) != {
@@ -6177,6 +6307,7 @@ def build_final_certification_payloads(
     }:
         raise _error("verification artifact scope is not exact five")
     environment = _environment_object(
+        contract=contract,
         execution_commit=commit,
         anchor_records=anchor_records,
         restore_records=restore_records,
@@ -6464,10 +6595,16 @@ def _validate_clone_record(
         "content_path_remote_url_and_credentials_serialized": False,
     }:
         raise _error("private clone-local DVC configuration record drifted")
+    expected_site_cache = expected_manifest_clone_dvc_site_caches_record()
+    _require_dvc_status_policy_projection(
+        expected_site_cache,
+        contract=contract,
+        context="manifest clone",
+    )
     site_cache = value.get("dvc_site_caches")
     if (
         not isinstance(site_cache, Mapping)
-        or dict(site_cache) != expected_manifest_clone_dvc_site_caches_record()
+        or dict(site_cache) != expected_site_cache
     ):
         raise _error("isolated DVC site-cache record drifted")
     cache = value.get("dvc_cache")
@@ -6964,6 +7101,12 @@ def validate_final_certification_payloads(
         "timestamps_hostnames_absolute_paths_remote_urls_credentials",
     }
     runtime_versions = environment.get("runtime_versions")
+    expected_environment_dvc = expected_environment_dvc_record()
+    _require_dvc_status_policy_projection(
+        expected_environment_dvc,
+        contract=contract,
+        context="environment",
+    )
     if (
         not isinstance(runtime_versions, Mapping)
         or dict(runtime_versions) != dict(contract.expected_runtime_versions)
@@ -6997,7 +7140,7 @@ def validate_final_certification_payloads(
             "url_path_or_credentials_serialized": False,
         }
         or environment.get("isolation") != verification["sandbox"]
-        or environment.get("dvc") != expected_environment_dvc_record()
+        or environment.get("dvc") != expected_environment_dvc
         or environment.get(
             "timestamps_hostnames_absolute_paths_remote_urls_credentials"
         )
@@ -8016,6 +8159,11 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 clone_root,
                 retained_dvc_runtime,
                 source_root=root,
+                targets=_contract_dvc_status_targets(
+                    contract,
+                    contract.post_verification_status_pointer_paths,
+                    context="post-verification",
+                ),
                 environment={"DVC_SITE_CACHE_DIR": os.fspath(site_cache_root)},
                 private_pass_fds=active_configuration.pass_fds,
             ),

@@ -76,14 +76,19 @@ def _junit(
     ).encode()
 
 
-def _authority() -> dict[str, Any]:
+def _authority(
+    contract: contract_module.FinalCertificationContract | None = None,
+) -> dict[str, Any]:
+    active_contract = contract or _locked_contract()
     return {
         "status": "effective",
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p5_cert_commit": P_COMMIT,
-        "h5_cert_commit": H_COMMIT,
+        "p6_cert_commit": P_COMMIT,
+        "h6_cert_commit": H_COMMIT,
+        "p5_cert_commit": active_contract.p5_cert_commit,
+        "h5_cert_commit": active_contract.h5_cert_commit,
         "p4_cert_commit": contract_module.P4_CERT_COMMIT,
         "h4_cert_commit": contract_module.H4_CERT_COMMIT,
         "p3_cert_commit": contract_module.P3_CERT_COMMIT,
@@ -92,6 +97,9 @@ def _authority() -> dict[str, Any]:
         "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
         "h1_cert_commit": contract_module.H1_CERT_COMMIT,
+        "dvc_status_policy": contract_module.expected_dvc_status_policy(
+            active_contract
+        ),
         "repository": {"HEAD": P_COMMIT},
         "authority": {"authority_version": "synthetic"},
         "authority_bytes": 123,
@@ -170,7 +178,7 @@ def _validate_payloads(
         monkeypatch.setattr(
             builder,
             "_authority_loader",
-            lambda *args, **kwargs: _authority(),
+            lambda *args, **kwargs: _authority(contract),
         )
         monkeypatch.setattr(
             builder,
@@ -303,7 +311,7 @@ def _products(
     return builder.build_final_certification_payloads(
         contract=contract,
         execution_commit=P_COMMIT,
-        authority=_authority() if authority is None else authority,
+        authority=_authority(contract) if authority is None else authority,
         anchor_records=anchors,
         pointer_records=pointers,
         restore_records=restores,
@@ -685,8 +693,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p5_cert_commit": P_COMMIT,
-        "h5_cert_commit": H_COMMIT,
+        "p6_cert_commit": P_COMMIT,
+        "h6_cert_commit": H_COMMIT,
+        "p5_cert_commit": contract.p5_cert_commit,
+        "h5_cert_commit": contract.h5_cert_commit,
         "p4_cert_commit": contract_module.P4_CERT_COMMIT,
         "h4_cert_commit": contract_module.H4_CERT_COMMIT,
         "p3_cert_commit": contract_module.P3_CERT_COMMIT,
@@ -702,8 +712,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p5_cert_commit": P_COMMIT,
-        "h5_cert_commit": H_COMMIT,
+        "p6_cert_commit": P_COMMIT,
+        "h6_cert_commit": H_COMMIT,
+        "p5_cert_commit": contract.p5_cert_commit,
+        "h5_cert_commit": contract.h5_cert_commit,
         "p4_cert_commit": contract_module.P4_CERT_COMMIT,
         "h4_cert_commit": contract_module.H4_CERT_COMMIT,
         "p3_cert_commit": contract_module.P3_CERT_COMMIT,
@@ -739,6 +751,26 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "single_dvc_runtime_retained_through_final_status_and_version_probe"
     ] is True
     assert environment["dvc"]["dvc_runtime_cross_call_identity_revalidated"] is True
+    assert environment["dvc"]["post_restore_status_pointer_paths"] == list(
+        contract.post_restore_status_pointer_paths
+    )
+    assert environment["dvc"]["post_verification_status_pointer_paths"] == list(
+        contract.post_verification_status_pointer_paths
+    )
+    assert environment["dvc"]["partial_clone_global_status_authorized"] is False
+    assert products.manifest["clone"]["dvc_site_caches"][
+        "post_restore_status_pointer_paths"
+    ] == contract_module.expected_dvc_status_policy(contract)[
+        "post_restore_status_pointer_paths"
+    ]
+    assert products.manifest["clone"]["dvc_site_caches"][
+        "post_verification_status_pointer_paths"
+    ] == contract_module.expected_dvc_status_policy(contract)[
+        "post_verification_status_pointer_paths"
+    ]
+    assert products.manifest["clone"]["dvc_site_caches"][
+        "partial_clone_global_status_authorized"
+    ] is False
     assert "main_dvc_status" not in environment["dvc"]
     assert b"no DVC command, including version/status/pull, ran there" in products.artifacts[
         "FINAL_DOCTORAL_CERTIFICATION_REPORT.md"
@@ -756,6 +788,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p6_cert_commit",
+        "h6_cert_commit",
         "p5_cert_commit",
         "h5_cert_commit",
         "p4_cert_commit",
@@ -767,7 +801,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
         "p1_cert_commit",
         "h1_cert_commit",
     ):
-        missing = _authority()
+        missing = _authority(contract)
         missing.pop(field)
         with pytest.raises(
             builder.FinalCertificationBuildError,
@@ -775,13 +809,31 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
         ):
             _products(contract, authority=missing)
 
-        drifted = _authority()
+        drifted = _authority(contract)
         drifted[field] = "9" * 40
         with pytest.raises(
             builder.FinalCertificationBuildError,
             match="authority commit binding",
         ):
             _products(contract, authority=drifted)
+
+    missing_policy = _authority(contract)
+    missing_policy.pop("dvc_status_policy")
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="DVC status policy",
+    ):
+        _products(contract, authority=missing_policy)
+    drifted_policy = _authority(contract)
+    drifted_policy["dvc_status_policy"] = {
+        **drifted_policy["dvc_status_policy"],
+        "global_status_authorized": True,
+    }
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="DVC status policy",
+    ):
+        _products(contract, authority=drifted_policy)
 
 
 def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> None:
@@ -790,6 +842,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p6_cert_commit",
+        "h6_cert_commit",
         "p5_cert_commit",
         "h5_cert_commit",
         "p4_cert_commit",
@@ -960,6 +1014,29 @@ def test_reconstructive_validator_rejects_rehashed_valid_runtime_version_drift()
             manifest=manifest,
         )
 
+    status_artifacts = dict(products.artifacts)
+    status_manifest = copy.deepcopy(dict(products.manifest))
+    status_environment = json.loads(status_artifacts["environment.json"])
+    status_environment["dvc"]["partial_clone_global_status_authorized"] = True
+    status_artifacts["environment.json"] = contract_module.canonical_json_bytes(
+        status_environment
+    )
+    _rebind_artifact(
+        status_manifest,
+        contract,
+        "environment.json",
+        status_artifacts["environment.json"],
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="environment record",
+    ):
+        _validate_payloads(
+            contract=contract,
+            artifacts=status_artifacts,
+            manifest=status_manifest,
+        )
+
 
 def test_payload_builder_rejects_runtime_probe_drift_before_outputs() -> None:
     contract = _locked_contract()
@@ -1087,6 +1164,20 @@ def test_reconstructive_validator_rejects_verification_clone_and_isolation_tampe
             contract=contract,
             artifacts=products.artifacts,
             manifest=manifest,
+            execution_commit=P_COMMIT,
+        )
+    status_manifest = copy.deepcopy(dict(products.manifest))
+    status_manifest["clone"]["dvc_site_caches"][
+        "partial_clone_global_status_authorized"
+    ] = True
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="site-cache",
+    ):
+        _validate_payloads(
+            contract=contract,
+            artifacts=products.artifacts,
+            manifest=status_manifest,
             execution_commit=P_COMMIT,
         )
 
@@ -1768,7 +1859,17 @@ def _dvc_contract(
         )
         for index in range(8)
     )
-    return replace(base, dvc_pointers=specs), payloads
+    pointer_paths = tuple(spec.path for spec in specs)
+    return (
+        replace(
+            base,
+            dvc_pointers=specs,
+            post_restore_status_pointer_paths=pointer_paths,
+            post_verification_status_pointer_paths=pointer_paths,
+            partial_clone_global_status_authorized=False,
+        ),
+        payloads,
+    )
 
 
 def _prepare_pointers(
@@ -2195,7 +2296,7 @@ def test_main_dvc_static_boundary_proves_private_site_cache_metadata_unchanged(
         assert sorted(path.name for path in site_cache.iterdir()) == before_inventory
         assert dvc_calls == []
 
-        authority = _authority()
+        authority = _authority(contract)
         clean = {
             "head": P_COMMIT,
             "main": P_COMMIT,
@@ -2628,6 +2729,10 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
     (clone / ".dvc").mkdir()
     (clone / ".dvc/config.local").write_text("[remote \"private\"]\n")
     (clone / ".dvc/config.local").chmod(0o600)
+    unselected_pointer = "data/unselected_historical.parquet.dvc"
+    unselected_path = clone / unselected_pointer
+    unselected_path.parent.mkdir(parents=True, exist_ok=True)
+    unselected_path.write_text("outs: []\n", encoding="utf-8")
     commands: list[tuple[str, ...]] = []
     portable_commands: list[tuple[str, ...]] = []
     command_environments: list[Mapping[str, str]] = []
@@ -2652,6 +2757,12 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
             cache_object.parent.mkdir(parents=True, exist_ok=True)
             cache_object.write_bytes(payload)
             return builder.CommandResult({"argv": list(portable), "returncode": 0}, "", "")
+        if portable[1:3] == ("status", "--json") and not portable[3:]:
+            return builder.CommandResult(
+                {"argv": list(portable), "returncode": 0},
+                json.dumps({unselected_pointer: [{"not in cache": "historical"}]}),
+                "",
+            )
         return builder.CommandResult({"argv": list(portable), "returncode": 0}, "{}", "")
 
     monkeypatch.setattr(builder, "_run", run)
@@ -2715,6 +2826,30 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
         [".venv/bin/dvc", "status", "--json", spec.path]
         for spec in contract.dvc_pointers
     ]
+    assert portable_commands[-1] == (
+        ".venv/bin/dvc",
+        "status",
+        "--json",
+        *contract.post_restore_status_pointer_paths,
+    )
+    expected_status_targets = tuple(spec.path for spec in contract.dvc_pointers)
+    assert contract.post_restore_status_pointer_paths == expected_status_targets
+    assert contract.post_verification_status_pointer_paths == expected_status_targets
+    assert contract.partial_clone_global_status_authorized is False
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="scope is not exact ordered eight",
+    ):
+        builder._contract_dvc_status_targets(
+            replace(contract, partial_clone_global_status_authorized=True),
+            contract.post_restore_status_pointer_paths,
+            context="post-restore",
+        )
+    assert all(
+        unselected_pointer not in command[3:]
+        for command in portable_commands
+        if command[1:3] == ("status", "--json")
+    )
     assert all(record["payload_opened_by_python"] is False for record in records)
     assert all(record["payload_decoded"] is False for record in records)
     assert builder._validate_exact_dvc_cache(cache_root=cache, contract=contract) == {
@@ -2742,7 +2877,21 @@ def test_global_dvc_status_always_disables_analytics(
 
     monkeypatch.setattr(builder, "_run", run)
     _write_fake_dvc(tmp_path)
-    assert builder._dvc_status(clone, executable_root=tmp_path) == "{}"
+    targets = (
+        "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
+        "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc",
+    )
+    assert builder._dvc_status(
+        clone,
+        executable_root=tmp_path,
+        targets=targets,
+    ) == "{}"
+    assert captured["portable_argv"] == (
+        ".venv/bin/dvc",
+        "status",
+        "--json",
+        *targets,
+    )
     assert captured["environment"]["DVC_NO_ANALYTICS"] == "1"
     assert captured["environment"]["__PYVENV_LAUNCHER__"].startswith(
         "/proc/self/fd/"
@@ -2759,9 +2908,53 @@ def test_global_dvc_status_always_disables_analytics(
     monkeypatch.setattr(builder, "_run", attempted)
     with pytest.raises(
         builder.FinalCertificationBuildError,
+        match="explicit non-empty sequence",
+    ):
+        builder._dvc_status(
+            clone,
+            executable_root=tmp_path,
+            targets=(),
+        )
+    assert calls == []
+    for invalid_targets in (
+        (".",),
+        ("data",),
+        (".dvc",),
+        ("data/./wide.dvc",),
+        ("data//wide.dvc",),
+        ("data/../wide.dvc",),
+        ("-q.dvc",),
+        ("data/*.dvc",),
+        ("data\\wide.dvc",),
+        ("data/example.dvc", "data/example.dvc"),
+    ):
+        with pytest.raises(builder.FinalCertificationBuildError):
+            builder._dvc_status(
+                clone,
+                executable_root=tmp_path,
+                targets=invalid_targets,
+            )
+    assert calls == []
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="explicit non-empty sequence",
+    ):
+        builder._dvc_status_with_executable(
+            clone,
+            cast(builder.AnchoredPythonScriptRuntime, SimpleNamespace()),
+            source_root=tmp_path,
+            targets=(),
+        )
+    assert calls == []
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
         match="restricted to the isolated clone",
     ):
-        builder._dvc_status(tmp_path, executable_root=tmp_path)
+        builder._dvc_status(
+            tmp_path,
+            executable_root=tmp_path,
+            targets=targets,
+        )
     assert calls == []
 
 
@@ -2872,7 +3065,11 @@ def test_dvc_executable_swap_is_detected_after_fd_anchored_invocation(
     expected = original.stat()
     monkeypatch.setattr(builder, "_run", run)
     with pytest.raises(builder.FinalCertificationBuildError, match="binding"):
-        builder._dvc_status(clone, executable_root=tmp_path)
+        builder._dvc_status(
+            clone,
+            executable_root=tmp_path,
+            targets=("data/example.parquet.dvc",),
+        )
     assert invoked_inode == (expected.st_dev, expected.st_ino)
     assert "foreign" in original.read_text()
     assert "owned" in saved.read_text()
@@ -2914,7 +3111,11 @@ def test_dvc_launcher_swap_never_executes_foreign_launcher(
 
     monkeypatch.setattr(builder.subprocess, "run", swap_then_run)
     with pytest.raises(builder.FinalCertificationBuildError, match="launcher/interpreter"):
-        builder._dvc_status(clone, executable_root=tmp_path)
+        builder._dvc_status(
+            clone,
+            executable_root=tmp_path,
+            targets=("data/example.parquet.dvc",),
+        )
     assert owned_marker.read_text() == "owned"
     assert not foreign_marker.exists()
 
@@ -3094,6 +3295,13 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     assert source.count("dvc_runtime=retained_dvc_runtime") == 2
     assert "executable=retained_dvc_runtime" in source
     assert "_dvc_status_with_executable(" in source
+    assert "contract.post_restore_status_pointer_paths" in inspect.getsource(
+        builder._restore_dvc_objects_with_anchored_executable
+    )
+    assert "contract.post_verification_status_pointer_paths" in source
+    assert "contract.partial_clone_global_status_authorized" in inspect.getsource(
+        builder._contract_dvc_status_targets
+    )
     assert source.count("dvc_clone_handle=clone_handle") == 2
     assert source.count(
         "dvc_site_cache_handle=version_site_cache_handle"
@@ -3278,7 +3486,7 @@ def _patch_build_through_clone(
         "cached_diff": "",
         "unstaged_diff": "",
     }
-    authority = _authority()
+    authority = _authority(contract)
     preflight = {
         "status": "ready_to_certify",
         "writes": False,
@@ -3405,7 +3613,7 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
         "cached_diff": "",
         "unstaged_diff": "",
     }
-    authority = _authority()
+    authority = _authority(contract)
     preflight = {
         "status": "ready_to_certify",
         "writes": False,
@@ -3882,7 +4090,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
 ) -> None:
     contract = _locked_contract()
     fake = {
-        **_authority(),
+        **_authority(contract),
         "authority_bytes": b"authority",
         "manifest_bytes": b"manifest",
     }
@@ -3890,11 +4098,16 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     result = builder._authority_loader(ROOT, contract)
     assert result["authority_bytes"] == len(b"authority")
     assert result["manifest_bytes"] == len(b"manifest")
+    assert result["dvc_status_policy"] == (
+        contract_module.expected_dvc_status_policy(contract)
+    )
     assert {
         field: result[field]
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p6_cert_commit",
+            "h6_cert_commit",
             "p5_cert_commit",
             "h5_cert_commit",
             "p4_cert_commit",
@@ -3911,6 +4124,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p6_cert_commit",
+            "h6_cert_commit",
             "p5_cert_commit",
             "h5_cert_commit",
             "p4_cert_commit",
@@ -3928,6 +4143,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p6_cert_commit",
+        "h6_cert_commit",
         "p5_cert_commit",
         "h5_cert_commit",
         "p4_cert_commit",
@@ -3951,6 +4168,24 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
             match="authority commit binding",
         ):
             builder._authority_loader(ROOT, contract)
+
+    drifted_policy = {
+        **fake,
+        "dvc_status_policy": {
+            **cast(Mapping[str, Any], fake["dvc_status_policy"]),
+            "global_status_authorized": True,
+        },
+    }
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_policy,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="DVC status policy",
+    ):
+        builder._authority_loader(ROOT, contract)
 
 
 def test_check_only_is_non_writing_and_requires_effective_p_cert(
@@ -4009,7 +4244,7 @@ def test_check_only_is_non_writing_and_requires_effective_p_cert(
     before = list(root.iterdir())
     result = builder.check_phase4_final_certification(
         repo_root=root,
-        authority_validator=lambda path, sealed: _authority(),
+        authority_validator=lambda path, sealed: _authority(contract),
     )
     assert result["status"] == "ready_to_certify"
     assert result["writes"] is False
