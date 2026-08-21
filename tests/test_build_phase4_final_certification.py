@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p7_cert_commit": P_COMMIT,
-        "h7_cert_commit": H_COMMIT,
+        "p8_cert_commit": P_COMMIT,
+        "h8_cert_commit": H_COMMIT,
+        "p7_cert_commit": active_contract.p7_cert_commit,
+        "h7_cert_commit": active_contract.h7_cert_commit,
         "p6_cert_commit": active_contract.p6_cert_commit,
         "h6_cert_commit": active_contract.h6_cert_commit,
         "p5_cert_commit": active_contract.p5_cert_commit,
@@ -283,7 +285,7 @@ def _products(
         "effect_sources_retained_by_fd": True,
         "python_console_scripts_interpreter_retained_by_fd": True,
         "private_dvc_configuration_masked": True,
-        "forbidden_prefixes_masked": list(contract.forbidden_read_prefixes),
+        "forbidden_prefixes_absent": list(contract.forbidden_read_prefixes),
         "forbidden_paths_masked": list(contract.forbidden_read_paths),
         "restored_payloads_masked": [
             spec.output_path for spec in contract.dvc_pointers
@@ -741,8 +743,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p7_cert_commit": P_COMMIT,
-        "h7_cert_commit": H_COMMIT,
+        "p8_cert_commit": P_COMMIT,
+        "h8_cert_commit": H_COMMIT,
+        "p7_cert_commit": contract.p7_cert_commit,
+        "h7_cert_commit": contract.h7_cert_commit,
         "p6_cert_commit": contract.p6_cert_commit,
         "h6_cert_commit": contract.h6_cert_commit,
         "p5_cert_commit": contract.p5_cert_commit,
@@ -762,8 +766,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p7_cert_commit": P_COMMIT,
-        "h7_cert_commit": H_COMMIT,
+        "p8_cert_commit": P_COMMIT,
+        "h8_cert_commit": H_COMMIT,
+        "p7_cert_commit": contract.p7_cert_commit,
+        "h7_cert_commit": contract.h7_cert_commit,
         "p6_cert_commit": contract.p6_cert_commit,
         "h6_cert_commit": contract.h6_cert_commit,
         "p5_cert_commit": contract.p5_cert_commit,
@@ -840,6 +846,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p8_cert_commit",
+        "h8_cert_commit",
         "p7_cert_commit",
         "h7_cert_commit",
         "p6_cert_commit",
@@ -896,6 +904,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p8_cert_commit",
+        "h8_cert_commit",
         "p7_cert_commit",
         "h7_cert_commit",
         "p6_cert_commit",
@@ -2577,6 +2587,23 @@ def test_main_dvc_site_cache_requires_exact_nofollow_owned_path_before_scan(
     assert os.fspath(tmp_path) not in str(raised.value)
 
 
+def _test_directory_handle(path: Path) -> builder.DirectoryHandle:
+    descriptor = os.open(
+        path,
+        os.O_RDONLY
+        | os.O_DIRECTORY
+        | getattr(os, "O_NOFOLLOW", 0)
+        | getattr(os, "O_CLOEXEC", 0),
+    )
+    metadata = os.fstat(descriptor)
+    return builder.DirectoryHandle(
+        path=path,
+        fd=descriptor,
+        device=metadata.st_dev,
+        inode=metadata.st_ino,
+    )
+
+
 def test_postgres_startup_failure_attempts_owned_container_cleanup(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -2598,22 +2625,36 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
             return builder.CommandResult(
                 {"argv": portable, "returncode": 0 if active else 1},
                 container_id if active else "",
-                "",
+                "" if active else f"Error: No such object: {actual[-1]}",
             )
         if portable[:2] == ["docker", "exec"]:
             raise builder.FinalCertificationBuildError("synthetic readiness failure")
-        if actual[1] == "rm":
+        if actual[1] == "stop":
             active = False
         return builder.CommandResult({"argv": portable, "returncode": 0}, "", "")
 
     monkeypatch.setattr(builder, "_run", run)
-    with pytest.raises(builder.FinalCertificationBuildError, match="readiness"):
-        builder._start_owned_postgres(tmp_path)
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(builder.FinalCertificationBuildError, match="readiness"):
+            builder._start_owned_postgres(socket_handle)
+    finally:
+        socket_handle.close()
     prefixes = [call[:3] for call in portable_calls]
     assert ["docker", "run", "--detach"] in prefixes
     assert ["docker", "exec", "<OWNED_CONTAINER>"] in prefixes
-    assert ["docker", "rm", "--force"] in prefixes
+    assert ["docker", "stop", "--time"] in prefixes
     run_call = next(call for call in portable_calls if call[:2] == ["docker", "run"])
+    stop_call = next(
+        call for call in portable_calls if call[:2] == ["docker", "stop"]
+    )
+    assert stop_call == [
+        "docker",
+        "stop",
+        "--time",
+        str(builder.POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS),
+        "<OWNED_CONTAINER>",
+    ]
     portable_path_policy = contract_module.expected_postgres_portable_path_policy()
     assert portable_path_policy == {
         "volume": "<OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>",
@@ -2659,6 +2700,28 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
             "/tmp",
         )
     )
+    assert contract_module.expected_postgres_cleanup_policy() == {
+        "graceful_stop_required": True,
+        "graceful_stop_timeout_seconds": 30,
+        "stop_targets_exact_owned_container_id": True,
+        "residual_entries": [
+            {"name": ".s.PGSQL.5432", "kind": "socket"},
+            {"name": ".s.PGSQL.5432.lock", "kind": "regular_file"},
+        ],
+        "residual_cleanup_requires_container_absent": True,
+        "residual_cleanup_requires_retained_directory_fd": True,
+        "residual_claim_fields": [
+            "name",
+            "kind",
+            "device",
+            "inode",
+            "link_count",
+        ],
+        "arbitrary_residual_adoption_authorized": False,
+        "socket_directory_empty_after_cleanup_required": True,
+        "safe_internal_diagnostics_authorized": True,
+        "raw_internal_diagnostics_serialized": False,
+    }
     assert active is False
 
 
@@ -2682,9 +2745,9 @@ def test_postgres_callback_failure_after_run_cleans_exact_container_id(
             return builder.CommandResult(
                 {"argv": portable, "returncode": 0 if active else 1},
                 container_id if active else "",
-                "",
+                "" if active else f"Error: No such object: {actual[-1]}",
             )
-        if actual[1] == "rm":
+        if actual[1] == "stop":
             removed_targets.append(actual[-1])
             active = False
         return builder.CommandResult({"argv": portable, "returncode": 0}, "", "")
@@ -2695,11 +2758,18 @@ def test_postgres_callback_failure_after_run_cleans_exact_container_id(
         if stage == "after_postgres_start":
             raise builder.FinalCertificationBuildError("callback failure")
 
-    with pytest.raises(builder.FinalCertificationBuildError, match="callback failure"):
-        builder._start_owned_postgres(
-            tmp_path,
-            namespace_validator=callback,
-        )
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="callback failure",
+        ):
+            builder._start_owned_postgres(
+                socket_handle,
+                namespace_validator=callback,
+            )
+    finally:
+        socket_handle.close()
     assert removed_targets == [container_id]
     assert active is False
 
@@ -2722,17 +2792,21 @@ def test_postgres_run_timeout_recovers_and_removes_only_bound_id(
             return builder.CommandResult(
                 {"argv": portable, "returncode": 0 if active else 1},
                 container_id if active else "",
-                "",
+                "" if active else f"Error: No such object: {actual[-1]}",
             )
-        if actual[1] == "rm":
+        if actual[1] == "stop":
             assert actual[-1] == container_id
             removed_targets.append(actual[-1])
             active = False
         return builder.CommandResult({"argv": portable, "returncode": 0}, "", "")
 
     monkeypatch.setattr(builder, "_run", run)
-    with pytest.raises(builder.FinalCertificationBuildError, match="Docker timeout"):
-        builder._start_owned_postgres(tmp_path)
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(builder.FinalCertificationBuildError, match="Docker timeout"):
+            builder._start_owned_postgres(socket_handle)
+    finally:
+        socket_handle.close()
     assert removed_targets == [container_id]
     assert active is False
 
@@ -2756,25 +2830,32 @@ def test_postgres_run_timeout_preserves_ambiguous_name_reuse(
         if actual[1] == "inspect":
             if not active:
                 return builder.CommandResult(
-                    {"argv": portable, "returncode": 1}, "", ""
+                    {"argv": portable, "returncode": 1},
+                    "",
+                    f"Error: No such object: {actual[-1]}",
                 )
             inspect_after_run += 1
             identity = first_id if inspect_after_run == 1 else foreign_id
             return builder.CommandResult(
                 {"argv": portable, "returncode": 0}, identity, ""
             )
-        if actual[1] == "rm":
+        if actual[1] == "stop":
             removed_targets.append(actual[-1])
         return builder.CommandResult({"argv": portable, "returncode": 0}, "", "")
 
     monkeypatch.setattr(builder, "_run", run)
-    with pytest.raises(builder.FinalCertificationBuildError, match="cleanup failed"):
-        builder._start_owned_postgres(tmp_path)
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(builder.FinalCertificationBuildError, match="cleanup failed"):
+            builder._start_owned_postgres(socket_handle)
+    finally:
+        socket_handle.close()
     assert removed_targets == []
     assert active is True
 
 
 def test_postgres_cleanup_preserves_reused_foreign_name(
+    tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     owned_id = "e" * 64
@@ -2801,18 +2882,188 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
                     {"argv": portable, "returncode": 0}, foreign_id, ""
                 )
             return builder.CommandResult(
-                {"argv": portable, "returncode": 1}, "", ""
+                {"argv": portable, "returncode": 1},
+                "",
+                f"Error: No such object: {target}",
             )
-        if actual[1] == "rm":
+        if actual[1] == "stop":
             removed_targets.append(actual[-1])
             state = "foreign"
         return builder.CommandResult({"argv": portable, "returncode": 0}, "", "")
 
     monkeypatch.setattr(builder, "_run", run)
-    with pytest.raises(builder.FinalCertificationBuildError, match="foreign"):
-        builder._stop_owned_postgres(owner)
-    assert removed_targets == [owned_id]
-    assert foreign_id not in removed_targets
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(builder.FinalCertificationBuildError, match="foreign"):
+            builder._stop_owned_postgres(owner, socket_handle=socket_handle)
+        assert removed_targets == [owned_id]
+        assert foreign_id not in removed_targets
+
+        socket_path = tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[0][0]
+        socket_path.write_text("synthetic socket inode\n", encoding="utf-8")
+        lock_path = tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[1][0]
+        lock_path.write_text("safe synthetic lock\n", encoding="utf-8")
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="identity drifted",
+        ):
+            builder._capture_owned_postgres_socket_inventory(socket_handle)
+
+        socket_inodes = {socket_path.stat().st_ino}
+        original_kind = builder._postgres_socket_entry_kind
+
+        def synthetic_socket_kind(metadata: os.stat_result) -> str:
+            if metadata.st_ino in socket_inodes:
+                return "socket"
+            return original_kind(metadata)
+
+        monkeypatch.setattr(
+            builder,
+            "_postgres_socket_entry_kind",
+            synthetic_socket_kind,
+        )
+        claims = builder._capture_owned_postgres_socket_inventory(socket_handle)
+        assert [(claim.name, claim.kind) for claim in claims] == list(
+            builder.POSTGRES_SOCKET_ENTRY_SPECS
+        )
+
+        original_rename = builder._rename_noreplace_at
+        replacement_injected = False
+
+        def replace_at_first_detach(
+            source_parent_fd: int,
+            source_name: str,
+            target_parent_fd: int,
+            target_name: str,
+        ) -> None:
+            nonlocal replacement_injected
+            if not replacement_injected and source_name == socket_path.name:
+                replacement_injected = True
+                socket_path.unlink()
+                socket_path.write_text(
+                    "foreign concurrent replacement\n",
+                    encoding="utf-8",
+                )
+            original_rename(
+                source_parent_fd,
+                source_name,
+                target_parent_fd,
+                target_name,
+            )
+
+        monkeypatch.setattr(
+            builder,
+            "_rename_noreplace_at",
+            replace_at_first_detach,
+        )
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="foreign replacement",
+        ):
+            builder._cleanup_owned_postgres_socket_inventory(socket_handle, claims)
+        assert replacement_injected is True
+        assert socket_path.read_text(encoding="utf-8") == (
+            "foreign concurrent replacement\n"
+        )
+        assert lock_path.exists()
+        monkeypatch.setattr(builder, "_rename_noreplace_at", original_rename)
+        socket_path.unlink()
+        socket_path.write_text("replacement owned socket\n", encoding="utf-8")
+        socket_inodes.add(socket_path.stat().st_ino)
+        claims = builder._capture_owned_postgres_socket_inventory(socket_handle)
+
+        arbitrary_path = tmp_path / ".s.PGSQL.6543"
+        arbitrary_path.write_text("arbitrary inode\n", encoding="utf-8")
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="unclaimed",
+        ):
+            builder._cleanup_owned_postgres_socket_inventory(socket_handle, claims)
+        assert socket_path.exists() and lock_path.exists() and arbitrary_path.exists()
+        arbitrary_path.unlink()
+
+        lock_path.unlink()
+        lock_path.write_text("replacement lock\n", encoding="utf-8")
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="identity drifted",
+        ):
+            builder._cleanup_owned_postgres_socket_inventory(socket_handle, claims)
+        assert socket_path.exists() and lock_path.exists()
+
+        replacement_claims = builder._capture_owned_postgres_socket_inventory(
+            socket_handle
+        )
+        assert (
+            builder._cleanup_owned_postgres_socket_inventory(
+                socket_handle,
+                replacement_claims,
+            )
+            == 2
+        )
+        assert os.listdir(socket_handle.fd) == []
+
+        ambiguous_state = "owned"
+
+        def ambiguous_absence_run(
+            argv: Any,
+            **kwargs: Any,
+        ) -> builder.CommandResult:
+            nonlocal ambiguous_state
+            actual = list(argv)
+            portable = builder._portable_argv(kwargs["portable_argv"])
+            if actual[1] == "inspect":
+                if ambiguous_state == "owned":
+                    return builder.CommandResult(
+                        {"argv": portable, "returncode": 0},
+                        owned_id,
+                        "",
+                    )
+                return builder.CommandResult(
+                    {"argv": portable, "returncode": 1},
+                    "",
+                    "Cannot connect to the Docker daemon",
+                )
+            if actual[1] == "stop":
+                ambiguous_state = "indeterminate"
+            return builder.CommandResult(
+                {"argv": portable, "returncode": 0},
+                "",
+                "",
+            )
+
+        monkeypatch.setattr(builder, "_run", ambiguous_absence_run)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="did not prove exact container absence",
+        ):
+            builder._stop_owned_postgres(owner, socket_handle=socket_handle)
+        assert ambiguous_state == "indeterminate"
+        assert os.listdir(socket_handle.fd) == []
+
+        for exact_absence in (
+            "Error: No such object: {target}",
+            "Error: No such container: {target}",
+            "error: no such object: {target}",
+            "error: no such container: {target}",
+        ):
+            def exact_absence_run(
+                argv: Any,
+                **kwargs: Any,
+            ) -> builder.CommandResult:
+                actual = list(argv)
+                portable = builder._portable_argv(kwargs["portable_argv"])
+                target = actual[-1]
+                return builder.CommandResult(
+                    {"argv": portable, "returncode": 1},
+                    "\n",
+                    exact_absence.format(target=target) + "\n",
+                )
+
+            monkeypatch.setattr(builder, "_run", exact_absence_run)
+            assert builder._inspect_container_identity(owner.name) == (1, "")
+    finally:
+        socket_handle.close()
 
 
 def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
@@ -3416,6 +3667,19 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
         '"payload_validation"'
     )
     assert source.index("runtime_versions=runtime_before") > after
+    verification = source.index(
+        "verification_artifacts, verification = _run_verification("
+    )
+    first_postgres_cleanup = source.index(
+        "cleanup = _stop_owned_postgres(", verification
+    )
+    assert "finally:" not in source[verification:first_postgres_cleanup]
+    fallback_cleanup = source.index(
+        "_stop_owned_postgres(",
+        first_postgres_cleanup + len("cleanup = _stop_owned_postgres("),
+    )
+    outer_capture = source.index("active_error = exc", first_postgres_cleanup)
+    assert first_postgres_cleanup < outer_capture < fallback_cleanup
 
 
 def test_transaction_retains_original_main_site_cache_lease_through_publication() -> None:
@@ -3521,6 +3785,41 @@ def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
         "active_error_was_masked": False,
     }
     assert composite.command_failure is active.command_failure
+
+    internal = builder._internal_error(
+        "sandbox projection failed closed",
+        stage="sandbox_projection",
+        category="forbidden_path_kind_mismatch",
+    )
+    internal_composite = builder._execution_cleanup_composite_error(
+        internal,
+        namespace_preserved=True,
+    )
+    internal_diagnostic = json.loads(
+        str(internal_composite).split(": ", 1)[1]
+    )
+    assert internal_diagnostic["active_error"] == {
+        "stage": "sandbox_projection",
+        "safe_error": "forbidden_path_kind_mismatch",
+        "failure_kind": "in_process_sandbox_projection",
+        "sanitized_command": [],
+        "returncode": None,
+        "safe_stderr_category": "unavailable_not_persisted",
+        "raw_stdout_preserved": False,
+        "raw_stderr_preserved": False,
+        "credentials_preserved": False,
+        "absolute_paths_preserved": False,
+    }
+    assert internal_composite.command_failure is None
+    assert internal_composite.internal_failure is internal.internal_failure
+    for forbidden in ("private/", "/home/", "RAW_INTERNAL"):
+        assert forbidden not in str(internal_composite)
+    with pytest.raises(ValueError, match="allowlisted"):
+        builder.InternalFailureEvidence(
+            stage="private/path",
+            safe_error="raw exception",
+            failure_kind="raw failure kind",
+        )
 
 
 def test_clone_work_transition_requires_exact_single_directory_link_delta() -> None:
@@ -3975,16 +4274,35 @@ def test_git_queries_ignore_path_and_clone_records_portable_git(
 
 def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
+    builder._require_h8_runtime_policy(contract)
+    first_prefix_text = contract.forbidden_read_prefixes[0]
+    drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
+    drifted_dispositions[first_prefix_text] = "require_directory_mask"
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H8 runtime isolation policy drifted",
+    ):
+        builder._require_h8_runtime_policy(
+            replace(
+                contract,
+                forbidden_read_prefix_dispositions=drifted_dispositions,
+            )
+        )
     clone_path = tmp_path / "clone"
     sandbox_path = tmp_path / "sandbox"
     socket_path = tmp_path / "socket"
     mask_path = tmp_path / "masks"
     for path in (clone_path, sandbox_path, socket_path, mask_path):
         path.mkdir()
-    for prefix in builder.SANDBOX_MASKED_FORBIDDEN_PREFIXES:
-        (clone_path / prefix).mkdir(parents=True, exist_ok=True)
+    for prefix in contract.forbidden_read_prefixes:
+        assert not (clone_path / prefix).exists()
+    for path_text in contract.forbidden_read_paths:
+        masked = clone_path / path_text
+        masked.parent.mkdir(parents=True, exist_ok=True)
+        masked.write_bytes(b"tracked-but-forbidden\n")
     for spec in contract.dvc_pointers:
         output = clone_path / spec.output_path
         output.parent.mkdir(parents=True, exist_ok=True)
@@ -4043,6 +4361,68 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
         )
         assert "<OWNED_CLONE>" in template
         assert "<RETAINED_SYSTEM_PYTHON>" in template
+        assert "<EMPTY_MASK>" not in template
+        for prefix in contract.forbidden_read_prefixes:
+            assert "/workspace/" + prefix.rstrip("/") not in bind_sources
+        for path_text in contract.forbidden_read_paths:
+            destination = "/workspace/" + path_text
+            assert (
+                bind_sources[destination] == runtime.empty_file.proc_path
+            )
+            assert any(
+                template[index : index + 3]
+                == ["--ro-bind", "<EMPTY_FILE_MASK>", destination]
+                for index in range(len(template) - 2)
+            )
+
+        first_prefix = clone_path / contract.forbidden_read_prefixes[0]
+        first_prefix.mkdir(parents=True)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="expected absent",
+        ):
+            builder._make_bwrap_prefix(runtime=runtime, contract=contract)
+        first_prefix.rmdir()
+
+        first_forbidden_path = clone_path / contract.forbidden_read_paths[0]
+        first_forbidden_path.unlink()
+        first_forbidden_path.mkdir()
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="regular masked file",
+        ):
+            builder._make_bwrap_prefix(runtime=runtime, contract=contract)
+        first_forbidden_path.rmdir()
+        first_forbidden_path.write_bytes(b"tracked-but-forbidden\n")
+
+        original_make_bwrap = builder._make_bwrap_prefix
+
+        def fail_make_bwrap(**kwargs: Any) -> tuple[list[str], list[str]]:
+            del kwargs
+            raise builder._error("RAW_INTERNAL private/ /home/operator")
+
+        monkeypatch.setattr(
+            builder,
+            "_make_bwrap_prefix",
+            fail_make_bwrap,
+        )
+        with pytest.raises(builder.FinalCertificationBuildError) as raised:
+            builder._run_verification_with_runtime(
+                source_root=ROOT,
+                clone_root=clone_path,
+                sandbox_tmp=sandbox_path,
+                contract=contract,
+                execution_commit=P_COMMIT,
+                runtime=runtime,
+            )
+        assert raised.value.internal_failure == builder.InternalFailureEvidence(
+            stage="sandbox_projection",
+            safe_error="forbidden_path_kind_mismatch",
+            failure_kind="in_process_sandbox_projection",
+        )
+        assert "RAW_INTERNAL" not in str(raised.value)
+        assert "private/" not in str(raised.value)
+        monkeypatch.setattr(builder, "_make_bwrap_prefix", original_make_bwrap)
         inherited = set(runtime.pass_fds)
         for destination in retained_destinations:
             inherited_fd = int(Path(bind_sources[destination]).name)
@@ -4208,6 +4588,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p8_cert_commit",
+            "h8_cert_commit",
             "p7_cert_commit",
             "h7_cert_commit",
             "p6_cert_commit",
@@ -4228,6 +4610,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p8_cert_commit",
+            "h8_cert_commit",
             "p7_cert_commit",
             "h7_cert_commit",
             "p6_cert_commit",
@@ -4249,6 +4633,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p8_cert_commit",
+        "h8_cert_commit",
         "p7_cert_commit",
         "h7_cert_commit",
         "p6_cert_commit",

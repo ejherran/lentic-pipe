@@ -51,6 +51,8 @@ def _contract(
     p5_cert_commit: str | None = None,
     h6_cert_commit: str | None = None,
     p6_cert_commit: str | None = None,
+    h7_cert_commit: str | None = None,
+    p7_cert_commit: str | None = None,
     suite_status: str = "locked",
 ) -> SimpleNamespace:
     positive = certification.POSITIVE_TEST_PATHS
@@ -104,6 +106,8 @@ def _contract(
         p5_cert_commit=p5_cert_commit or locker.P5_CERT_COMMIT,
         h6_cert_commit=h6_cert_commit or locker.H6_CERT_COMMIT,
         p6_cert_commit=p6_cert_commit or locker.P6_CERT_COMMIT,
+        h7_cert_commit=h7_cert_commit or locker.H7_CERT_COMMIT,
+        p7_cert_commit=p7_cert_commit or locker.P7_CERT_COMMIT,
         final_tag="thesis-closure-v1",
         h1_scope=tuple(),
         p1_scope=tuple(),
@@ -117,6 +121,8 @@ def _contract(
         p5_scope=tuple(),
         h6_scope=tuple(),
         p6_scope=tuple(),
+        h7_scope=tuple(),
+        p7_scope=tuple(),
         h_scope=tuple(),
         p_scope=tuple(),
         r_scope=tuple(),
@@ -183,6 +189,8 @@ def _historical_records() -> tuple[
     list[dict[str, Any]],
     list[dict[str, Any]],
     list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
 ]:
     def records(
         paths: Mapping[str, str], offset: int, *, physical_mode: bool = False
@@ -219,6 +227,14 @@ def _historical_records() -> tuple[
         else:
             record["bytes"] = locker.H6_MANIFEST_BYTES
             record["sha256"] = locker.H6_MANIFEST_SHA256
+    p7_records = records(locker.P7_SCOPE, 1801)
+    for record in p7_records:
+        if record["path"] == locker.H7_AUTHORITY_PATH.as_posix():
+            record["bytes"] = locker.H7_AUTHORITY_BYTES
+            record["sha256"] = locker.H7_AUTHORITY_SHA256
+        else:
+            record["bytes"] = locker.H7_MANIFEST_BYTES
+            record["sha256"] = locker.H7_MANIFEST_SHA256
     return (
         records(locker.H1_SCOPE, 501),
         records(locker.P1_SCOPE, 601),
@@ -232,6 +248,8 @@ def _historical_records() -> tuple[
         p5_records,
         records(locker.H6_SCOPE, 1501, physical_mode=True),
         p6_records,
+        records(locker.H7_SCOPE, 1701, physical_mode=True),
+        p7_records,
     )
 
 
@@ -317,6 +335,16 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
+        "expected_h7_scope",
+        lambda: dict(locker.H7_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p7_scope",
+        lambda: dict(locker.P7_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
         "expected_p_scope",
         lambda: dict(locker.P_SCOPE),
     )
@@ -381,6 +409,18 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
+        "expected_h7_modes",
+        lambda: dict(locker.H_GIT_MODES),
+        raising=False,
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p7_modes",
+        lambda: {path: "100644" for path in locker.P7_SCOPE},
+        raising=False,
+    )
+    monkeypatch.setattr(
+        certification,
         "expected_r_modes",
         lambda: {path: "100644" for path in locker.R_SCOPE},
     )
@@ -396,7 +436,7 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records",
+        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_h7_p7_records",
         lambda _contract, **_kwargs: _historical_records(),
     )
 
@@ -406,6 +446,8 @@ def _make_repository(
 ) -> tuple[
     Path,
     Path,
+    str,
+    str,
     str,
     str,
     str,
@@ -561,6 +603,26 @@ def _make_repository(
     _run(root, "git", "commit", "-m", "P-CERT6")
     p6_cert_commit = _run(root, "git", "rev-parse", "HEAD")
 
+    for path_text in locker.H7_SCOPE:
+        path = root / path_text
+        path.write_text(
+            path.read_text(encoding="utf-8") + "H-CERT7\n",
+            encoding="utf-8",
+        )
+        path.chmod(int(locker.H_GIT_MODES[path_text][-3:], 8))
+    _run(root, "git", "add", *locker.H7_SCOPE)
+    _run(root, "git", "commit", "-m", "H-CERT7")
+    h7_cert_commit = _run(root, "git", "rev-parse", "HEAD")
+
+    for relative in (locker.H7_AUTHORITY_PATH, locker.H7_MANIFEST_PATH):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((locker.PROJECT_ROOT / relative).read_bytes())
+        target.chmod(0o644)
+    _run(root, "git", "add", *locker.P7_SCOPE)
+    _run(root, "git", "commit", "-m", "P-CERT7")
+    p7_cert_commit = _run(root, "git", "rev-parse", "HEAD")
+
     _run(tmp_path, "git", "init", "--bare", "--initial-branch=main", str(remote))
     _run(root, "git", "remote", "add", "origin", str(remote))
     _run(root, "git", "push", "-u", "origin", "main")
@@ -583,6 +645,8 @@ def _make_repository(
         p5_cert_commit,
         h6_cert_commit,
         p6_cert_commit,
+        h7_cert_commit,
+        p7_cert_commit,
     )
 
 
@@ -604,6 +668,8 @@ def _patch_topology(
     p5_cert_commit: str,
     h6_cert_commit: str,
     p6_cert_commit: str,
+    h7_cert_commit: str,
+    p7_cert_commit: str,
 ) -> SimpleNamespace:
     monkeypatch.setattr(locker, "CLOSURE_SOURCE_COMMIT", closure_source)
     monkeypatch.setattr(locker, "R_SYN_COMMIT", r_syn)
@@ -620,6 +686,8 @@ def _patch_topology(
     monkeypatch.setattr(locker, "P5_CERT_COMMIT", p5_cert_commit)
     monkeypatch.setattr(locker, "H6_CERT_COMMIT", h6_cert_commit)
     monkeypatch.setattr(locker, "P6_CERT_COMMIT", p6_cert_commit)
+    monkeypatch.setattr(locker, "H7_CERT_COMMIT", h7_cert_commit)
+    monkeypatch.setattr(locker, "P7_CERT_COMMIT", p7_cert_commit)
     contract = _contract(
         closure_source=closure_source,
         r_syn=r_syn,
@@ -636,6 +704,8 @@ def _patch_topology(
         p5_cert_commit=p5_cert_commit,
         h6_cert_commit=h6_cert_commit,
         p6_cert_commit=p6_cert_commit,
+        h7_cert_commit=h7_cert_commit,
+        p7_cert_commit=p7_cert_commit,
     )
     _install_contract_stubs(monkeypatch, contract)
     return contract
@@ -677,6 +747,8 @@ def _fake_state() -> dict[str, Any]:
         p5_components,
         h6_components,
         p6_components,
+        h7_components,
+        p7_components,
     ) = _historical_records()
     components = [
         {
@@ -718,6 +790,8 @@ def _fake_state() -> dict[str, Any]:
         "p5_component_records": p5_components,
         "h6_component_records": h6_components,
         "p6_component_records": p6_components,
+        "h7_component_records": h7_components,
+        "p7_component_records": p7_components,
         "h_component_records": components,
         "anchor_input_records": anchors,
         "dvc_pointer_records": pointers,
@@ -754,6 +828,10 @@ def test_scopes_modes_and_stop_boundary_are_exact() -> None:
         if path != "src/data/prepare_commit_artifacts.py"
     } == {"100644"}
     assert locker.P_SCOPE == {
+        "configs/closure_v1/phase4_final_certification_authority_v8.json": "A",
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v8.json": "A",
+    }
+    assert locker.P7_SCOPE == {
         "configs/closure_v1/phase4_final_certification_authority_v7.json": "A",
         "configs/closure_v1/phase4_final_certification_authority_manifest_v7.json": "A",
     }
@@ -896,8 +974,10 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         "p5_cert_commit": locker.P5_CERT_COMMIT,
         "h6_cert_commit": locker.H6_CERT_COMMIT,
         "p6_cert_commit": locker.P6_CERT_COMMIT,
-        "h7_cert_commit": "a" * 40,
-        "p7_cert_commit": None,
+        "h7_cert_commit": locker.H7_CERT_COMMIT,
+        "p7_cert_commit": locker.P7_CERT_COMMIT,
+        "h8_cert_commit": "a" * 40,
+        "p8_cert_commit": None,
         "h_cert_commit": "a" * 40,
         "p_cert_commit": None,
         "r_cert_executable_tree_must_equal_p_cert": True,
@@ -932,6 +1012,23 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         "active_error_was_masked": False,
     }
     assert authority["p6_failure"]["retry_authorized"] is False
+    assert authority["p7_failure"] == certification.expected_p7_failure_record()
+    assert authority["p7_failure"]["status"] == (
+        "execution_and_cleanup_failed_closed"
+    )
+    assert authority["p7_failure"]["active_error"] == {
+        "stage": "sandbox_projection",
+        "safe_error": "forbidden_path_kind_mismatch",
+        "failure_kind": "in_process_sandbox_projection",
+        "sanitized_command": [],
+        "returncode": None,
+        "safe_stderr_category": "unavailable_not_persisted",
+        "raw_stdout_preserved": False,
+        "raw_stderr_preserved": False,
+        "credentials_preserved": False,
+        "absolute_paths_preserved": False,
+    }
+    assert authority["p7_failure"]["retry_authorized"] is False
     assert [record["path"] for record in authority["h1_component_records"]] == list(
         locker.H1_SCOPE
     )
@@ -968,7 +1065,13 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     assert [record["path"] for record in authority["p6_component_records"]] == list(
         locker.P6_SCOPE
     )
-    assert authority["h7_component_records"] == authority["h_component_records"]
+    assert [record["path"] for record in authority["h7_component_records"]] == list(
+        locker.H7_SCOPE
+    )
+    assert [record["path"] for record in authority["p7_component_records"]] == list(
+        locker.P7_SCOPE
+    )
+    assert authority["h8_component_records"] == authority["h_component_records"]
     assert authority["dvc_status_policy"] == certification.expected_dvc_status_policy(
         certification.load_contract(
             root=locker.PROJECT_ROOT,
@@ -985,6 +1088,17 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     assert authority["isolation"]["postgres_portable_path_policy"] == (
         certification.expected_postgres_portable_path_policy()
     )
+    assert authority["isolation"]["postgres_cleanup_policy"] == (
+        certification.expected_postgres_cleanup_policy()
+    )
+    assert authority["isolation"]["forbidden_read_prefix_dispositions"] == {
+        prefix: "require_absent" for prefix in certification.FORBIDDEN_READ_PREFIXES
+    }
+    assert authority["isolation"]["forbidden_read_path_dispositions"] == {
+        certification.FORBIDDEN_READ_PATHS[0]: (
+            "require_regular_then_empty_file_mask"
+        )
+    }
     assert authority["isolation"]["expected_runtime_versions"] == dict(
         certification.EXPECTED_RUNTIME_VERSIONS
     )
@@ -1039,6 +1153,7 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         ("p4_failure", {**authority["p4_failure"], "retry_authorized": True}),
         ("p5_failure", {**authority["p5_failure"], "retry_authorized": True}),
         ("p6_failure", {**authority["p6_failure"], "retry_authorized": True}),
+        ("p7_failure", {**authority["p7_failure"], "retry_authorized": True}),
         ("h1_component_records_digest", "0" * 64),
         ("p1_component_records_digest", "0" * 64),
         ("h2_component_records_digest", "0" * 64),
@@ -1051,9 +1166,11 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         ("p5_component_records_digest", "0" * 64),
         ("h6_component_records_digest", "0" * 64),
         ("p6_component_records_digest", "0" * 64),
+        ("h7_component_records_digest", "0" * 64),
+        ("p7_component_records_digest", "0" * 64),
         ("h_scope", {}),
         ("h_component_records_digest", "0" * 64),
-        ("h7_component_records_digest", "0" * 64),
+        ("h8_component_records_digest", "0" * 64),
         ("anchor_input_records_digest", "0" * 64),
         ("dvc_pointer_records", authority["dvc_pointer_records"][:-1]),
         (
@@ -1063,6 +1180,30 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         (
             "main_dvc_static_boundary",
             {**authority["main_dvc_static_boundary"], "status_executed": True},
+        ),
+        (
+            "isolation",
+            {
+                **authority["isolation"],
+                "forbidden_read_prefix_dispositions": {
+                    **authority["isolation"][
+                        "forbidden_read_prefix_dispositions"
+                    ],
+                    certification.FORBIDDEN_READ_PREFIXES[0]: (
+                        "require_regular_then_empty_file_mask"
+                    ),
+                },
+            },
+        ),
+        (
+            "isolation",
+            {
+                **authority["isolation"],
+                "postgres_cleanup_policy": {
+                    **authority["isolation"]["postgres_cleanup_policy"],
+                    "arbitrary_residual_adoption_authorized": True,
+                },
+            },
         ),
         ("test_suite_digest", "0" * 64),
         ("ordered_r_cert_output_paths", list(reversed(list(locker.R_SCOPE)))),
@@ -1145,8 +1286,11 @@ def test_manifest_is_canonical_and_binds_only_the_authority_output() -> None:
     assert manifest["p5_cert_commit"] == locker.P5_CERT_COMMIT
     assert manifest["h6_cert_commit"] == locker.H6_CERT_COMMIT
     assert manifest["p6_cert_commit"] == locker.P6_CERT_COMMIT
-    assert manifest["h7_cert_commit"] == "a" * 40
-    assert manifest["p7_cert_commit"] is None
+    assert manifest["h7_cert_commit"] == locker.H7_CERT_COMMIT
+    assert manifest["p7_cert_commit"] == locker.P7_CERT_COMMIT
+    assert manifest["h8_cert_commit"] == "a" * 40
+    assert manifest["p8_cert_commit"] is None
+    assert manifest["supersedes_p7"] is True
     assert manifest["supersedes_p6"] is True
     assert manifest["supersedes_p5"] is True
     assert manifest["supersedes_p4"] is True
@@ -1170,7 +1314,7 @@ def test_check_only_accepts_exact_local_h_without_writing(
 ) -> None:
     (
         root, _remote, closure_source, r_syn, editorial,
-        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6,
+        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
@@ -1190,6 +1334,8 @@ def test_check_only_accepts_exact_local_h_without_writing(
         p5_cert_commit=p5,
         h6_cert_commit=h6,
         p6_cert_commit=p6,
+        h7_cert_commit=h7,
+        p7_cert_commit=p7,
     )
     before = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
     result = locker.check_only(root=root)
@@ -1212,7 +1358,7 @@ def test_check_only_accepts_pending_suite_only_for_local_h4(
 ) -> None:
     (
         root, _remote, closure_source, r_syn, editorial,
-        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6,
+        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     contract = _patch_topology(
@@ -1232,6 +1378,8 @@ def test_check_only_accepts_pending_suite_only_for_local_h4(
         p5_cert_commit=p5,
         h6_cert_commit=h6,
         p6_cert_commit=p6,
+        h7_cert_commit=h7,
+        p7_cert_commit=p7,
     )
     contract.test_suite.status = "pending_integration"
     contract.test_suite.selector_count = None
@@ -1247,7 +1395,9 @@ def test_check_only_accepts_pending_suite_only_for_local_h4(
     assert result["p5_cert_commit"] == p5
     assert result["h6_cert_commit"] == h6
     assert result["p6_cert_commit"] == p6
-    assert result["h7_cert_commit"] is None
+    assert result["h7_cert_commit"] == h7
+    assert result["p7_cert_commit"] == p7
+    assert result["h8_cert_commit"] is None
     assert result["h2_cert_commit"] == h2
     assert result["p2_cert_commit"] == p2
 
@@ -1263,7 +1413,7 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
 ) -> None:
     (
         root, _remote, closure_source, r_syn, editorial,
-        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6,
+        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
@@ -1283,6 +1433,8 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
         p5_cert_commit=p5,
         h6_cert_commit=h6,
         p6_cert_commit=p6,
+        h7_cert_commit=h7,
+        p7_cert_commit=p7,
     )
     if drift == "extra":
         _write(root, "foreign.txt", "foreign\n")
@@ -1293,7 +1445,7 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
                 root,
                 "git",
                 "show",
-                f"{p6}:tests/test_prepare_commit_artifacts.py",
+                f"{p7}:tests/test_prepare_commit_artifacts.py",
             )
             + "\n",
             encoding="utf-8",
@@ -1315,7 +1467,7 @@ def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
 ) -> None:
     (
         root, _remote, closure_source, r_syn, editorial,
-        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6,
+        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     contract = _patch_topology(
@@ -1335,6 +1487,8 @@ def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
         p5_cert_commit=p5,
         h6_cert_commit=h6,
         p6_cert_commit=p6,
+        h7_cert_commit=h7,
+        p7_cert_commit=p7,
     )
     head = _publish_h(root)
     original_run = locker.subprocess.run
@@ -1383,7 +1537,7 @@ def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
 ) -> None:
     (
         root, _remote, closure_source, r_syn, editorial,
-        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6,
+        h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
@@ -1403,6 +1557,8 @@ def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
         p5_cert_commit=p5,
         h6_cert_commit=h6,
         p6_cert_commit=p6,
+        h7_cert_commit=h7,
+        p7_cert_commit=p7,
     )
     head = _publish_h(root)
     original_run = locker.subprocess.run
@@ -2303,7 +2459,7 @@ def test_dvc_status_executes_retained_fd_not_foreign_path_replacement(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Historical nodeid retained: no DVC descriptor is executed at all now.
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6 = (
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7 = (
         _make_repository(tmp_path)
     )
     _materialize_h(root)
@@ -2324,6 +2480,8 @@ def test_dvc_status_executes_retained_fd_not_foreign_path_replacement(
         p5_cert_commit=p5,
         h6_cert_commit=h6,
         p6_cert_commit=p6,
+        h7_cert_commit=h7,
+        p7_cert_commit=p7,
     )
     original_run = locker.subprocess.run
     observed: list[list[str]] = []

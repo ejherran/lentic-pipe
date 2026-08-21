@@ -61,6 +61,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_dvc_status_policy,
     expected_environment_dvc_record,
     expected_manifest_clone_dvc_site_caches_record,
+    expected_postgres_cleanup_policy,
     expected_postgres_portable_path_policy,
     load_contract,
     load_effective_authority,
@@ -81,6 +82,11 @@ DB_NAME = "closure_phase4_cert"
 POSTGRES_IMAGE = (
     "postgres:16-alpine@sha256:"
     "16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229"
+)
+POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS = 30
+POSTGRES_SOCKET_ENTRY_SPECS = (
+    (".s.PGSQL.5432", "socket"),
+    (".s.PGSQL.5432.lock", "regular_file"),
 )
 HTTP_METHODS = frozenset(
     {"get", "put", "post", "delete", "options", "head", "patch", "trace"}
@@ -108,15 +114,13 @@ FORBIDDEN_COMMAND_TOKENS = (
     "outcome_access_log",
     "private/",
 )
-SANDBOX_MASKED_FORBIDDEN_PREFIXES = (
+SANDBOX_ABSENT_FORBIDDEN_PREFIXES = (
     "private/",
     "data/targets/",
-)
-SANDBOX_ABSENT_FORBIDDEN_PREFIXES = (
     "data/closure_v1/unblinded/",
     "data/closure_v1/evaluation_outcomes/",
 )
-SANDBOX_ABSENT_FORBIDDEN_PATHS = (
+SANDBOX_MASKED_FORBIDDEN_PATHS = (
     "reports/closure_v1/00_protocol/outcome_access_log.jsonl",
 )
 JUNIT_SKIP_TYPE = "pytest.skip"
@@ -124,6 +128,20 @@ JUNIT_SKIP_TYPE = "pytest.skip"
 SAFE_COMMAND_FAILURE_CATEGORIES = frozenset(
     {"authn", "authz", "network", "remote_object_missing", "nonzero_exit"}
 )
+SAFE_INTERNAL_FAILURE_POLICIES: Mapping[str, tuple[str, str]] = {
+    "namespace_validation": (
+        "namespace_invariant_mismatch",
+        "in_process_namespace_validation",
+    ),
+    "sandbox_projection": (
+        "forbidden_path_kind_mismatch",
+        "in_process_sandbox_projection",
+    ),
+    "verification_runtime_acquisition": (
+        "runtime_binding_failure",
+        "in_process_verification_runtime_acquisition",
+    ),
+}
 
 
 @dataclass(frozen=True)
@@ -148,6 +166,36 @@ class CommandFailureEvidence:
         }
 
 
+@dataclass(frozen=True)
+class InternalFailureEvidence:
+    """Allowlisted in-process failure facts safe after cleanup failure."""
+
+    stage: str
+    safe_error: str
+    failure_kind: str
+
+    def __post_init__(self) -> None:
+        if SAFE_INTERNAL_FAILURE_POLICIES.get(self.stage) != (
+            self.safe_error,
+            self.failure_kind,
+        ):
+            raise ValueError("internal failure evidence is not allowlisted")
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "stage": self.stage,
+            "safe_error": self.safe_error,
+            "failure_kind": self.failure_kind,
+            "sanitized_command": [],
+            "returncode": None,
+            "safe_stderr_category": "unavailable_not_persisted",
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        }
+
+
 class FinalCertificationBuildError(FinalCertificationContractError):
     """Raised when certification cannot proceed without weakening P-CERT."""
 
@@ -156,19 +204,46 @@ class FinalCertificationBuildError(FinalCertificationContractError):
         message: str,
         *,
         command_failure: CommandFailureEvidence | None = None,
+        internal_failure: InternalFailureEvidence | None = None,
     ) -> None:
         super().__init__(message)
+        if command_failure is not None and internal_failure is not None:
+            raise ValueError("failure evidence kinds are mutually exclusive")
         self.command_failure = command_failure
+        self.internal_failure = internal_failure
 
 
 def _error(
     message: str,
     *,
     command_failure: CommandFailureEvidence | None = None,
+    internal_failure: InternalFailureEvidence | None = None,
 ) -> FinalCertificationBuildError:
     return FinalCertificationBuildError(
         message,
         command_failure=command_failure,
+        internal_failure=internal_failure,
+    )
+
+
+def _internal_error(
+    message: str,
+    *,
+    stage: str,
+    category: str,
+) -> FinalCertificationBuildError:
+    """Build one path-free, raw-free in-process diagnostic."""
+
+    policy = SAFE_INTERNAL_FAILURE_POLICIES.get(stage)
+    if policy is None or policy[0] != category:
+        raise ValueError("internal failure stage/category is not allowlisted")
+    return _error(
+        message,
+        internal_failure=InternalFailureEvidence(
+            stage=stage,
+            safe_error=category,
+            failure_kind=policy[1],
+        ),
     )
 
 
@@ -406,11 +481,23 @@ class WorkInventoryEntry:
 
 
 @dataclass(frozen=True)
+class OwnedPostgresSocketEntry:
+    """One exact PostgreSQL socket artifact claimed under a retained dirfd."""
+
+    name: str
+    device: int
+    inode: int
+    kind: str
+    link_count: int
+
+
+@dataclass(frozen=True)
 class OwnedPostgres:
     """Private Docker identity; neither field may enter public evidence."""
 
     name: str
     container_id: str
+    socket_inventory: tuple[OwnedPostgresSocketEntry, ...] = ()
 
 
 @dataclass
@@ -1151,14 +1238,21 @@ def _execution_cleanup_composite_error(
 ) -> FinalCertificationBuildError:
     """Retain safe primary facts and the observed cleanup disposition."""
 
-    evidence = (
+    command_evidence = (
         active_error.command_failure
         if isinstance(active_error, FinalCertificationBuildError)
         else None
     )
+    internal_evidence = (
+        active_error.internal_failure
+        if isinstance(active_error, FinalCertificationBuildError)
+        else None
+    )
     primary = (
-        evidence.as_record()
-        if evidence is not None
+        command_evidence.as_record()
+        if command_evidence is not None
+        else internal_evidence.as_record()
+        if internal_evidence is not None
         else {
             "stage": "execution",
             "sanitized_command": [],
@@ -1187,7 +1281,8 @@ def _execution_cleanup_composite_error(
     return _error(
         "final certification execution failed and temporary cleanup failed closed: "
         f"{diagnostic}",
-        command_failure=evidence,
+        command_failure=command_evidence,
+        internal_failure=internal_evidence,
     )
 
 
@@ -2375,6 +2470,7 @@ def _detach_owned_name_at(
     require_directory: bool,
     context: str,
     owned_fd: int | None = None,
+    expected_nondirectory_kind: str | None = None,
 ) -> str:
     """Capture an owned name twice before deletion can target it.
 
@@ -2386,6 +2482,10 @@ def _detach_owned_name_at(
 
     if not name or "/" in name or name in {".", ".."}:
         raise _error(f"{context} has an unsafe cleanup name")
+    if expected_nondirectory_kind not in {None, "regular_file", "socket"} or (
+        require_directory and expected_nondirectory_kind is not None
+    ):
+        raise _error(f"{context} has an invalid cleanup inode kind")
     flags = getattr(os, "O_PATH", os.O_RDONLY) | getattr(os, "O_NOFOLLOW", 0)
     if require_directory:
         flags = (
@@ -2414,11 +2514,16 @@ def _detach_owned_name_at(
         raise _error(f"{context} could not allocate an exclusive cleanup name")
 
     def type_matches(metadata: os.stat_result) -> bool:
-        return (
-            stat.S_ISDIR(metadata.st_mode)
-            if require_directory
-            else stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode)
-        )
+        if require_directory:
+            return stat.S_ISDIR(metadata.st_mode)
+        if expected_nondirectory_kind == "regular_file":
+            return stat.S_ISREG(metadata.st_mode)
+        if expected_nondirectory_kind == "socket":
+            try:
+                return _postgres_socket_entry_kind(metadata) == "socket"
+            except FinalCertificationBuildError:
+                return False
+        return stat.S_ISREG(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode)
 
     def restore_foreign(captured_name: str) -> None:
         try:
@@ -3476,7 +3581,7 @@ def _authority_loader(
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p7_cert_commit"),
+        execution_commit=result.get("p8_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3506,11 +3611,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P7/H7 aliases and the complete historical lineage."""
+    """Validate active P8/H8 aliases and the complete historical lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p8_cert_commit",
+        "h8_cert_commit",
         "p7_cert_commit",
         "h7_cert_commit",
         "p6_cert_commit",
@@ -3535,8 +3642,12 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p7_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h7_cert_commit"]
+        or commits["p8_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h8_cert_commit"]
+        or commits["p7_cert_commit"] != contract.p7_cert_commit
+        or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p8_cert_commit"] == commits["p7_cert_commit"]
+        or commits["h8_cert_commit"] == commits["h7_cert_commit"]
         or commits["p6_cert_commit"] != contract.p6_cert_commit
         or commits["h6_cert_commit"] != contract.h6_cert_commit
         or commits["p7_cert_commit"] == commits["p6_cert_commit"]
@@ -3561,7 +3672,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P7 authority's exact partial-clone status policy."""
+    """Require the effective P8 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -3595,6 +3706,43 @@ def _require_dvc_status_policy_projection(
         raise _error(f"{context} DVC status policy projection drifted")
 
 
+def _require_h8_runtime_policy(contract: FinalCertificationContract) -> None:
+    prefix_dispositions = {
+        path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
+    }
+    path_dispositions = {
+        path: "require_regular_then_empty_file_mask"
+        for path in SANDBOX_MASKED_FORBIDDEN_PATHS
+    }
+    cleanup = expected_postgres_cleanup_policy()
+    if (
+        contract.forbidden_read_prefixes != SANDBOX_ABSENT_FORBIDDEN_PREFIXES
+        or contract.forbidden_read_paths != SANDBOX_MASKED_FORBIDDEN_PATHS
+        or dict(contract.forbidden_read_prefix_dispositions)
+        != prefix_dispositions
+        or dict(contract.forbidden_read_path_dispositions) != path_dispositions
+        or dict(contract.postgres_cleanup_policy) != cleanup
+        or cleanup.get("graceful_stop_required") is not True
+        or cleanup.get("graceful_stop_timeout_seconds")
+        != POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS
+        or cleanup.get("stop_targets_exact_owned_container_id") is not True
+        or cleanup.get("residual_entries")
+        != [
+            {"name": name, "kind": kind}
+            for name, kind in POSTGRES_SOCKET_ENTRY_SPECS
+        ]
+        or cleanup.get("residual_cleanup_requires_container_absent") is not True
+        or cleanup.get("residual_cleanup_requires_retained_directory_fd") is not True
+        or cleanup.get("residual_claim_fields")
+        != ["name", "kind", "device", "inode", "link_count"]
+        or cleanup.get("arbitrary_residual_adoption_authorized") is not False
+        or cleanup.get("socket_directory_empty_after_cleanup_required") is not True
+        or cleanup.get("safe_internal_diagnostics_authorized") is not True
+        or cleanup.get("raw_internal_diagnostics_serialized") is not False
+    ):
+        raise _error("H8 runtime isolation policy drifted")
+
+
 def check_phase4_final_certification(
     *,
     repo_root: Path = PROJECT_ROOT,
@@ -3604,6 +3752,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
+    _require_h8_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -3615,10 +3764,10 @@ def check_phase4_final_certification(
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p7_cert_commit"),
+        execution_commit=authority.get("p8_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p7_cert_commit"]
+    effective_commit = authority_commits["p8_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -5032,10 +5181,19 @@ def _expected_bwrap_template(
 ) -> list[str]:
     """Return the one portable bubblewrap prefix sealed by the contract."""
 
-    if contract.forbidden_read_prefixes != (
-        *SANDBOX_MASKED_FORBIDDEN_PREFIXES,
-        *SANDBOX_ABSENT_FORBIDDEN_PREFIXES,
-    ) or contract.forbidden_read_paths != SANDBOX_ABSENT_FORBIDDEN_PATHS:
+    if (
+        contract.forbidden_read_prefixes != SANDBOX_ABSENT_FORBIDDEN_PREFIXES
+        or contract.forbidden_read_paths != SANDBOX_MASKED_FORBIDDEN_PATHS
+        or dict(contract.forbidden_read_prefix_dispositions)
+        != {
+            path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
+        }
+        or dict(contract.forbidden_read_path_dispositions)
+        != {
+            path: "require_regular_then_empty_file_mask"
+            for path in SANDBOX_MASKED_FORBIDDEN_PATHS
+        }
+    ):
         raise _error("bubblewrap forbidden-path topology drifted")
     template = [
         "/usr/bin/bwrap",
@@ -5060,9 +5218,9 @@ def _expected_bwrap_template(
     )
     template.extend(["--bind", "<OWNED_SANDBOX_TMP>", "/workspace/tmp"])
     template.extend(["--bind", "<OWNED_DB_SOCKET>", DB_SOCKET_ROOT])
-    for prefix in SANDBOX_MASKED_FORBIDDEN_PREFIXES:
+    for path_text in SANDBOX_MASKED_FORBIDDEN_PATHS:
         template.extend(
-            ["--ro-bind", "<EMPTY_MASK>", "/workspace/" + prefix.rstrip("/")]
+            ["--ro-bind", "<EMPTY_FILE_MASK>", "/workspace/" + path_text]
         )
     for spec in contract.dvc_pointers:
         template.extend(
@@ -5148,30 +5306,32 @@ def _make_bwrap_prefix(
     real.extend(["--bind", f"/proc/self/fd/{runtime.socket.fd}", DB_SOCKET_ROOT])
     template.extend(["--bind", "<OWNED_DB_SOCKET>", DB_SOCKET_ROOT])
     for prefix in contract.forbidden_read_prefixes:
-        destination = "/workspace/" + str(prefix).rstrip("/")
         kind = _retained_relative_kind(
             runtime.clone.fd,
             str(prefix),
             context=f"forbidden prefix {prefix}",
         )
-        if prefix in SANDBOX_ABSENT_FORBIDDEN_PREFIXES:
-            if kind is not None:
-                raise _error(f"forbidden prefix expected absent in P-CERT: {prefix}")
-            continue
-        if kind != "directory":
-            raise _error(f"forbidden prefix is not a directory: {prefix}")
-        real.extend(
-            ["--ro-bind", f"/proc/self/fd/{runtime.empty_directory.fd}", destination]
-        )
-        template.extend(["--ro-bind", "<EMPTY_MASK>", destination])
+        if (
+            contract.forbidden_read_prefix_dispositions.get(prefix)
+            != "require_absent"
+            or kind is not None
+        ):
+            raise _error(f"forbidden prefix expected absent in P-CERT: {prefix}")
     for path_text in contract.forbidden_read_paths:
         kind = _retained_relative_kind(
             runtime.clone.fd,
             str(path_text),
             context=f"forbidden path {path_text}",
         )
-        if path_text not in SANDBOX_ABSENT_FORBIDDEN_PATHS or kind is not None:
-            raise _error(f"forbidden path expected absent in P-CERT: {path_text}")
+        if (
+            contract.forbidden_read_path_dispositions.get(path_text)
+            != "require_regular_then_empty_file_mask"
+            or kind != "regular"
+        ):
+            raise _error(f"forbidden path is not a regular masked file: {path_text}")
+        destination = "/workspace/" + path_text
+        real.extend(["--ro-bind", runtime.empty_file.proc_path, destination])
+        template.extend(["--ro-bind", "<EMPTY_FILE_MASK>", destination])
     for spec in contract.dvc_pointers:
         destination = "/workspace/" + spec.output_path
         if _retained_relative_kind(
@@ -5257,11 +5417,234 @@ def _prepare_masks(mask_root: DirectoryHandle) -> None:
             empty.close()
 
 
+def _require_postgres_socket_directory(
+    socket_handle: DirectoryHandle,
+    *,
+    context: str,
+) -> None:
+    metadata = os.fstat(socket_handle.fd)
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or (metadata.st_dev, metadata.st_ino)
+        != (socket_handle.device, socket_handle.inode)
+    ):
+        raise _error(f"{context} retained socket directory binding drifted")
+
+
+def _postgres_socket_entry_kind(metadata: os.stat_result) -> str:
+    if stat.S_ISSOCK(metadata.st_mode):
+        return "socket"
+    if stat.S_ISREG(metadata.st_mode):
+        return "regular_file"
+    raise _error("PostgreSQL socket inventory contains an unsupported inode type")
+
+
+def _capture_owned_postgres_socket_inventory(
+    socket_handle: DirectoryHandle,
+) -> tuple[OwnedPostgresSocketEntry, ...]:
+    """Claim only the exact server socket and lock by retained-dirfd identity."""
+
+    _require_postgres_socket_directory(
+        socket_handle,
+        context="PostgreSQL socket inventory capture",
+    )
+    expected = dict(POSTGRES_SOCKET_ENTRY_SPECS)
+    if set(os.listdir(socket_handle.fd)) != set(expected):
+        raise _error("PostgreSQL socket inventory is not exact two")
+    claims: list[OwnedPostgresSocketEntry] = []
+    for name, expected_kind in POSTGRES_SOCKET_ENTRY_SPECS:
+        first = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+        second = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+        first_kind = _postgres_socket_entry_kind(first)
+        second_kind = _postgres_socket_entry_kind(second)
+        if (
+            first_kind != expected_kind
+            or second_kind != expected_kind
+            or first.st_nlink != 1
+            or second.st_nlink != 1
+            or (first.st_dev, first.st_ino) != (second.st_dev, second.st_ino)
+        ):
+            raise _error("PostgreSQL socket inventory identity drifted")
+        claims.append(
+            OwnedPostgresSocketEntry(
+                name=name,
+                device=first.st_dev,
+                inode=first.st_ino,
+                kind=first_kind,
+                link_count=first.st_nlink,
+            )
+        )
+    if set(os.listdir(socket_handle.fd)) != set(expected):
+        raise _error("PostgreSQL socket inventory changed while being claimed")
+    return tuple(claims)
+
+
+def _unlink_owned_postgres_socket_entry(
+    socket_handle: DirectoryHandle,
+    claim: OwnedPostgresSocketEntry,
+) -> None:
+    """Detach one claimed residual twice before unlinking its retained inode."""
+
+    tombstone = _detach_owned_name_at(
+        socket_handle,
+        claim.name,
+        device=claim.device,
+        inode=claim.inode,
+        require_directory=False,
+        context=f"owned PostgreSQL residual {claim.kind}",
+        expected_nondirectory_kind=claim.kind,
+    )
+    descriptor: int | None = None
+    try:
+        descriptor = os.open(
+            tombstone,
+            getattr(os, "O_PATH", os.O_RDONLY)
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
+            dir_fd=socket_handle.fd,
+        )
+        opened = os.fstat(descriptor)
+        named = os.stat(
+            tombstone,
+            dir_fd=socket_handle.fd,
+            follow_symlinks=False,
+        )
+        if (
+            (opened.st_dev, opened.st_ino) != (claim.device, claim.inode)
+            or (named.st_dev, named.st_ino) != (claim.device, claim.inode)
+            or _postgres_socket_entry_kind(opened) != claim.kind
+            or _postgres_socket_entry_kind(named) != claim.kind
+            or opened.st_nlink != claim.link_count
+            or named.st_nlink != claim.link_count
+        ):
+            raise _error("PostgreSQL residual cleanup capture drifted")
+        tombstone = _detach_owned_name_at(
+            socket_handle,
+            tombstone,
+            device=claim.device,
+            inode=claim.inode,
+            require_directory=False,
+            context=f"owned PostgreSQL residual {claim.kind} final capture",
+            owned_fd=descriptor,
+            expected_nondirectory_kind=claim.kind,
+        )
+        final_named = os.stat(
+            tombstone,
+            dir_fd=socket_handle.fd,
+            follow_symlinks=False,
+        )
+        if (
+            (final_named.st_dev, final_named.st_ino)
+            != (claim.device, claim.inode)
+            or _postgres_socket_entry_kind(final_named) != claim.kind
+            or final_named.st_nlink != claim.link_count
+        ):
+            raise _error("PostgreSQL residual final cleanup capture drifted")
+        os.unlink(tombstone, dir_fd=socket_handle.fd)
+        os.fsync(socket_handle.fd)
+        retained = os.fstat(descriptor)
+        if (
+            (retained.st_dev, retained.st_ino) != (claim.device, claim.inode)
+            or retained.st_nlink != claim.link_count - 1
+        ):
+            raise _error("PostgreSQL residual retained inode was not unlinked")
+    except BaseException:
+        try:
+            _rename_noreplace_at(
+                socket_handle.fd,
+                tombstone,
+                socket_handle.fd,
+                claim.name,
+            )
+            os.fsync(socket_handle.fd)
+        except OSError:
+            pass
+        raise
+    finally:
+        if descriptor is not None:
+            os.close(descriptor)
+
+
+def _cleanup_owned_postgres_socket_inventory(
+    socket_handle: DirectoryHandle,
+    claims: Sequence[OwnedPostgresSocketEntry],
+) -> int:
+    """Remove only unchanged, previously claimed socket artifacts by dirfd."""
+
+    _require_postgres_socket_directory(
+        socket_handle,
+        context="PostgreSQL socket cleanup",
+    )
+    expected_specs = dict(POSTGRES_SOCKET_ENTRY_SPECS)
+    claim_by_name = {claim.name: claim for claim in claims}
+    if (
+        len(claim_by_name) != len(claims)
+        or set(claim_by_name) not in (set(), set(expected_specs))
+        or any(
+            claim.kind != expected_specs.get(claim.name)
+            or claim.link_count != 1
+            for claim in claims
+        )
+    ):
+        raise _error("PostgreSQL socket cleanup claim set is invalid")
+    current_names = set(os.listdir(socket_handle.fd))
+    if not current_names.issubset(claim_by_name):
+        raise _error("PostgreSQL socket cleanup refuses an unclaimed entry")
+    observed: dict[str, tuple[int, int, str, int]] = {}
+    for name in current_names:
+        metadata = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+        observed[name] = (
+            metadata.st_dev,
+            metadata.st_ino,
+            _postgres_socket_entry_kind(metadata),
+            metadata.st_nlink,
+        )
+        claim = claim_by_name[name]
+        if observed[name] != (
+            claim.device,
+            claim.inode,
+            claim.kind,
+            claim.link_count,
+        ):
+            raise _error("PostgreSQL socket cleanup identity drifted")
+    if set(os.listdir(socket_handle.fd)) != current_names:
+        raise _error("PostgreSQL socket cleanup inventory changed before unlink")
+    removed = 0
+    for name, _kind in POSTGRES_SOCKET_ENTRY_SPECS:
+        if name not in current_names:
+            continue
+        claim = claim_by_name[name]
+        if observed[name] != (
+            claim.device,
+            claim.inode,
+            claim.kind,
+            claim.link_count,
+        ):
+            raise _error("PostgreSQL socket cleanup identity changed before detach")
+        _unlink_owned_postgres_socket_entry(socket_handle, claim)
+        removed += 1
+    os.fsync(socket_handle.fd)
+    if os.listdir(socket_handle.fd):
+        raise _error("PostgreSQL socket directory is not empty after cleanup")
+    _require_postgres_socket_directory(
+        socket_handle,
+        context="PostgreSQL socket cleanup completion",
+    )
+    return removed
+
+
 def _start_owned_postgres(
-    socket_root: Path,
+    socket_handle: DirectoryHandle,
     *,
     namespace_validator: Callable[[str], None] | None = None,
 ) -> tuple[OwnedPostgres, Mapping[str, Any]]:
+    _require_postgres_socket_directory(
+        socket_handle,
+        context="PostgreSQL startup",
+    )
+    if os.listdir(socket_handle.fd):
+        raise _error("PostgreSQL socket directory is not initially empty")
+    socket_root = socket_handle.path
     container_name = f"closure-phase4-cert-{secrets.token_hex(12)}"
     portable_paths = expected_postgres_portable_path_policy()
     if namespace_validator is not None:
@@ -5348,7 +5731,7 @@ def _start_owned_postgres(
                 recovered,
                 context="PostgreSQL failed-run recovery",
             )
-            _stop_owned_postgres(recovered)
+            _stop_owned_postgres(recovered, socket_handle=socket_handle)
         except BaseException as cleanup_exc:
             if cleanup_exc is primary:
                 raise
@@ -5412,6 +5795,14 @@ def _start_owned_postgres(
                 context=f"PostgreSQL readiness result {attempt}",
             )
             if probe.record["returncode"] == 0:
+                socket_inventory = _capture_owned_postgres_socket_inventory(
+                    socket_handle
+                )
+                owner = OwnedPostgres(
+                    name=owner.name,
+                    container_id=owner.container_id,
+                    socket_inventory=socket_inventory,
+                )
                 return owner, {
                     "image": POSTGRES_IMAGE,
                     "network": "none",
@@ -5425,7 +5816,7 @@ def _start_owned_postgres(
         raise _error("owned PostgreSQL container did not become ready")
     except BaseException:
         try:
-            _stop_owned_postgres(owner)
+            _stop_owned_postgres(owner, socket_handle=socket_handle)
         except BaseException as cleanup_exc:
             raise _error("owned PostgreSQL startup cleanup failed closed") from cleanup_exc
         raise
@@ -5453,11 +5844,21 @@ def _inspect_container_identity(target: str) -> tuple[int, str]:
         failure_stage="postgres identity inspection",
     )
     value = result.stdout.strip()
-    if result.record["returncode"] == 0 and not SHA256_RE.fullmatch(value):
-        raise _error("Docker inspect returned a malformed container identity")
-    if result.record["returncode"] != 0 and value:
-        raise _error("Docker inspect failure returned ambiguous output")
-    return cast(int, result.record["returncode"]), value
+    returncode = cast(int, result.record["returncode"])
+    stderr = result.stderr.strip()
+    if returncode == 0:
+        if not SHA256_RE.fullmatch(value) or stderr:
+            raise _error("Docker inspect returned an ambiguous container identity")
+        return returncode, value
+    exact_absence_errors = {
+        f"Error: No such object: {target}",
+        f"Error: No such container: {target}",
+        f"error: no such object: {target}",
+        f"error: no such container: {target}",
+    }
+    if returncode != 1 or value or stderr not in exact_absence_errors:
+        raise _error("Docker inspect did not prove exact container absence")
+    return returncode, ""
 
 
 def _require_owned_postgres_binding(owner: OwnedPostgres, *, context: str) -> None:
@@ -5477,12 +5878,28 @@ def _require_owned_postgres_binding(owner: OwnedPostgres, *, context: str) -> No
         raise _error(f"{context} container name/ID binding drifted")
 
 
-def _stop_owned_postgres(owner: OwnedPostgres) -> Mapping[str, Any]:
+def _stop_owned_postgres(
+    owner: OwnedPostgres,
+    *,
+    socket_handle: DirectoryHandle,
+) -> Mapping[str, Any]:
     _require_owned_postgres_binding(owner, context="PostgreSQL cleanup")
     result = _run(
-        ("/usr/bin/docker", "rm", "--force", owner.container_id),
+        (
+            "/usr/bin/docker",
+            "stop",
+            "--time",
+            str(POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS),
+            owner.container_id,
+        ),
         cwd=PROJECT_ROOT,
-        portable_argv=("docker", "rm", "--force", "<OWNED_CONTAINER>"),
+        portable_argv=(
+            "docker",
+            "stop",
+            "--time",
+            str(POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS),
+            "<OWNED_CONTAINER>",
+        ),
         timeout_seconds=120,
         failure_stage="postgres cleanup",
     )
@@ -5492,11 +5909,32 @@ def _stop_owned_postgres(owner: OwnedPostgres) -> Mapping[str, Any]:
         # Never adopt/delete a replacement that reused the random name.
         if name_identity != owner.container_id or id_identity != owner.container_id:
             raise _error("foreign PostgreSQL container appeared during cleanup")
-        raise _error("owned PostgreSQL container survived forced cleanup")
+        raise _error("owned PostgreSQL container survived graceful cleanup")
+    removed_socket_entries = _cleanup_owned_postgres_socket_inventory(
+        socket_handle,
+        owner.socket_inventory,
+    )
     return {
         "command": dict(result.record),
         "removed": True,
         "owned_container_only": True,
+        "graceful_stop": True,
+        "stop_timeout_seconds": POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS,
+        "identity_verified_before_stop": True,
+        "container_absent_after_stop": True,
+        "stop_target_exact_owned_container_id": True,
+        "socket_inventory_claimed": len(owner.socket_inventory),
+        "socket_entries_removed_after_stop": removed_socket_entries,
+        "socket_cleanup_by_retained_directory_fd": True,
+        "socket_cleanup_identity_fields": [
+            "name",
+            "kind",
+            "device",
+            "inode",
+            "link_count",
+        ],
+        "arbitrary_residual_adoption": False,
+        "socket_directory_empty": True,
     }
 
 
@@ -5570,13 +6008,28 @@ def _run_verification(
     if namespace_validator is not None:
         namespace_validator("before_verification_runtime_acquisition")
     try:
-        runtime = _open_verification_runtime(
-            source_root=source_root,
-            clone=clone_handle,
-            sandbox=sandbox_handle,
-            socket_handle=socket_handle,
-            mask_root=mask_handle,
-        )
+        try:
+            runtime = _open_verification_runtime(
+                source_root=source_root,
+                clone=clone_handle,
+                sandbox=sandbox_handle,
+                socket_handle=socket_handle,
+                mask_root=mask_handle,
+            )
+        except FinalCertificationBuildError as exc:
+            if exc.command_failure is not None or exc.internal_failure is not None:
+                raise
+            raise _internal_error(
+                "verification runtime acquisition failed closed",
+                stage="verification_runtime_acquisition",
+                category="runtime_binding_failure",
+            ) from None
+        except BaseException:
+            raise _internal_error(
+                "verification runtime acquisition failed closed",
+                stage="verification_runtime_acquisition",
+                category="runtime_binding_failure",
+            ) from None
         if namespace_validator is not None:
             namespace_validator("after_verification_runtime_acquisition")
         return _run_verification_with_runtime(
@@ -5603,10 +6056,25 @@ def _run_verification_with_runtime(
     runtime: VerificationRuntimeLease,
     namespace_validator: Callable[[str], None] | None = None,
 ) -> tuple[Mapping[str, bytes], Mapping[str, Any]]:
-    bwrap, bwrap_template = _make_bwrap_prefix(
-        runtime=runtime,
-        contract=contract,
-    )
+    try:
+        bwrap, bwrap_template = _make_bwrap_prefix(
+            runtime=runtime,
+            contract=contract,
+        )
+    except FinalCertificationBuildError as exc:
+        if exc.command_failure is not None or exc.internal_failure is not None:
+            raise
+        raise _internal_error(
+            "sandbox projection failed closed",
+            stage="sandbox_projection",
+            category="forbidden_path_kind_mismatch",
+        ) from None
+    except BaseException:
+        raise _internal_error(
+            "sandbox projection failed closed",
+            stage="sandbox_projection",
+            category="forbidden_path_kind_mismatch",
+        ) from None
     public_command = _public_command(contract)
     if namespace_validator is not None:
         namespace_validator("before_public_tests")
@@ -5814,7 +6282,7 @@ def _run_verification_with_runtime(
             "effect_sources_retained_by_fd": True,
             "python_console_scripts_interpreter_retained_by_fd": True,
             "private_dvc_configuration_masked": True,
-            "forbidden_prefixes_masked": list(contract.forbidden_read_prefixes),
+            "forbidden_prefixes_absent": list(contract.forbidden_read_prefixes),
             "forbidden_paths_masked": list(contract.forbidden_read_paths),
             "restored_payloads_masked": [
                 spec.output_path for spec in contract.dvc_pointers
@@ -6800,7 +7268,7 @@ def _validate_verification_record(
         "effect_sources_retained_by_fd",
         "python_console_scripts_interpreter_retained_by_fd",
         "private_dvc_configuration_masked",
-        "forbidden_prefixes_masked",
+        "forbidden_prefixes_absent",
         "forbidden_paths_masked",
         "restored_payloads_masked",
     }:
@@ -6815,7 +7283,7 @@ def _validate_verification_record(
         or sandbox.get("effect_sources_retained_by_fd") is not True
         or sandbox.get("python_console_scripts_interpreter_retained_by_fd") is not True
         or sandbox.get("private_dvc_configuration_masked") is not True
-        or sandbox.get("forbidden_prefixes_masked")
+        or sandbox.get("forbidden_prefixes_absent")
         != list(contract.forbidden_read_prefixes)
         or sandbox.get("forbidden_paths_masked")
         != list(contract.forbidden_read_paths)
@@ -7777,7 +8245,6 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     cache_root = cache_handle.path
     site_cache_root = site_cache_handle.path
     sandbox_tmp = sandbox_handle.path
-    socket_root = socket_handle.path
     mask_root = mask_handle.path
     source_before = prepared.source_before
     work_handle = prepared.work_handle
@@ -7809,7 +8276,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     }
     main_site_cache_lease: MainDvcSiteCacheLease | None = None
 
-    def validate_execution_namespace(stage: str) -> None:
+    def _validate_execution_namespace(stage: str) -> None:
         nonlocal work_binding, site_cache_root_identity
         nonlocal version_site_cache_root_identity
         repository_lease.revalidate(context=f"before execution checkpoint {stage}")
@@ -7872,6 +8339,24 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         repository_lease.revalidate(context=f"after execution checkpoint {stage}")
         if current_source != source_before:
             raise _error(f"main source tree drifted at execution checkpoint: {stage}")
+
+    def validate_execution_namespace(stage: str) -> None:
+        try:
+            _validate_execution_namespace(stage)
+        except FinalCertificationBuildError as exc:
+            if exc.command_failure is not None or exc.internal_failure is not None:
+                raise
+            raise _internal_error(
+                "owned execution namespace validation failed closed",
+                stage="namespace_validation",
+                category="namespace_invariant_mismatch",
+            ) from None
+        except BaseException:
+            raise _internal_error(
+                "owned execution namespace validation failed closed",
+                stage="namespace_validation",
+                category="namespace_invariant_mismatch",
+            ) from None
 
     def bracket(stage: str, operation: Callable[[], Any]) -> Any:
         validate_execution_namespace(f"before_{stage}")
@@ -8113,26 +8598,30 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             ),
         }
         database_owner, database_record = _start_owned_postgres(
-            socket_root,
+            socket_handle,
             namespace_validator=validate_execution_namespace,
         )
-        try:
-            verification_artifacts, verification = _run_verification(
-                source_root=root,
-                clone_handle=clone_handle,
-                sandbox_handle=sandbox_handle,
-                socket_handle=socket_handle,
-                mask_handle=mask_handle,
-                contract=contract,
-                execution_commit=execution_commit,
-                namespace_validator=validate_execution_namespace,
-            )
-        finally:
-            if database_owner is not None:
-                cleanup = _stop_owned_postgres(database_owner)
-                database_owner = None
-                database_record = {**database_record, **cleanup, "cleaned_after_execution": True}
-                validate_execution_namespace("after PostgreSQL cleanup")
+        verification_artifacts, verification = _run_verification(
+            source_root=root,
+            clone_handle=clone_handle,
+            sandbox_handle=sandbox_handle,
+            socket_handle=socket_handle,
+            mask_handle=mask_handle,
+            contract=contract,
+            execution_commit=execution_commit,
+            namespace_validator=validate_execution_namespace,
+        )
+        cleanup = _stop_owned_postgres(
+            database_owner,
+            socket_handle=socket_handle,
+        )
+        database_owner = None
+        database_record = {
+            **database_record,
+            **cleanup,
+            "cleaned_after_execution": True,
+        }
+        validate_execution_namespace("after PostgreSQL cleanup")
         clone_status = bracket(
             "clone_git_status_after_verification",
             lambda: _git(
@@ -8331,7 +8820,10 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         main_site_cache_lease = None
     if database_owner is not None:
         try:
-            _stop_owned_postgres(database_owner)
+            _stop_owned_postgres(
+                database_owner,
+                socket_handle=socket_handle,
+            )
             database_owner = None
         except BaseException as exc:
             cleanup_error = exc

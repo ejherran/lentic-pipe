@@ -1,8 +1,8 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT7 publication candidate; suite locked`
+Status: `H-CERT8 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v7`
+Contract: `closure_v1_phase4_final_certification_v8`
 
 Authorities:
 
@@ -20,7 +20,9 @@ Authorities:
 - historical H-CERT5: `d18201462be9f6cc057d0187dec2b8b731b62e48`;
 - superseded P-CERT5: `da7b673aa8a7cbdc428ca829e5b9f0a5ac79a3ef`;
 - historical H-CERT6: `a67d58458c1eeb6b38e752dea4eb3bf91ec44ca9`;
-- superseded P-CERT6: `6aea7e7d7908ea0b23dcee41b316759f299114f5`.
+- superseded P-CERT6: `6aea7e7d7908ea0b23dcee41b316759f299114f5`;
+- historical H-CERT7: `67b156d4f5d65ac471597349d20098346e17a736`;
+- superseded P-CERT7: `66505102124082e7926aac58215a0bd35a07ff4b`.
 
 ## Purpose and boundary
 
@@ -44,9 +46,9 @@ not authorize work after Phase 4.
 
 The chain is single-parent and exact. H-CERT1/P-CERT1 and H-CERT2/P-CERT2
 and H-CERT3/P-CERT3, H-CERT4/P-CERT4 and H-CERT5/P-CERT5 remain immutable
-historical evidence; H-CERT6/P-CERT6 now join that immutable history.
-H-CERT7/P-CERT7 are the only future effective authority. The compatibility
-names `H-CERT` and `P-CERT` refer to H-CERT7 and P-CERT7:
+historical evidence; H-CERT6/P-CERT6 and H-CERT7/P-CERT7 now join that
+immutable history. H-CERT8/P-CERT8 are the only future effective authority.
+The compatibility names `H-CERT` and `P-CERT` refer to H-CERT8 and P-CERT8:
 
 ```text
 ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
@@ -70,7 +72,10 @@ ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
                                                                     H-CERT6 -> P-CERT6 (superseded failure)
                                                                                  |
                                                                                  v
-                                                                    H-CERT7 -> P-CERT7 -> R-CERT7
+                                                                    H-CERT7 -> P-CERT7 (superseded failure)
+                                                                                 |
+                                                                                 v
+                                                                    H-CERT8 -> P-CERT8 -> R-CERT8
                                                                                               |
                                                                                               v
                                                                                      thesis-closure-v1
@@ -115,17 +120,25 @@ The gates have distinct roles:
    portable in-process PostgreSQL start command. Cleanup succeeded exactly,
    removed the namespace, produced no certification output and authorizes no
    retry.
-10. **H-CERT7** publishes only the PostgreSQL portable-path projection
+10. **H-CERT7** published only the PostgreSQL portable-path projection
     correction, the factual R-CERT6 record, schema, freeze and tests.
-11. **P-CERT7** publishes a new two-file, data-only authority. It explicitly
-    supersedes P-CERT6 through P-CERT1. An unpublished P-CERT7 is ineffective.
-12. **R-CERT7** executes only from a clean, published P-CERT7 and publishes
+11. **P-CERT7** preserved its two-file, data-only authority. Its consumed
+    R-CERT7 launch restored all eight exact targets, started PostgreSQL, then
+    failed closed before tests because the sandbox projected an absent
+    forbidden prefix as a masked path. Cleanup preserved and later archived
+    the namespace; P-CERT7 authorizes no retry.
+12. **H-CERT8** publishes only the exact forbidden-path dispositions,
+    PostgreSQL cleanup ownership policy, factual R-CERT7 record, schema,
+    freeze and tests.
+13. **P-CERT8** publishes a new two-file, data-only authority. It explicitly
+    supersedes P-CERT7 through P-CERT1. An unpublished P-CERT8 is ineffective.
+14. **R-CERT8** executes only from a clean, published P-CERT8 and publishes
     eight evidence files, manifest last.
-13. The repository owner manually publishes the final R commit and the
+15. The repository owner manually publishes the final R commit and the
    `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT7 commit. Executing from
-P-CERT1, P-CERT2, P-CERT3, P-CERT4, P-CERT5 or P-CERT6, adopting any failed
+The executable target is the published P-CERT8 commit. Executing from
+P-CERT1, P-CERT2, P-CERT3, P-CERT4, P-CERT5, P-CERT6 or P-CERT7, adopting any failed
 temporary namespace, or treating a superseded authority as effective is
 forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
@@ -136,7 +149,7 @@ itself.
 
 At every gate, `HEAD`, `main`, `origin/main`, `origin/HEAD`, live remote HEAD
 and live remote main must agree. The worktree and index must have only the
-gate's exact unstaged or staged scope. H-CERT7, P-CERT7 and R-CERT7 must never
+gate's exact unstaged or staged scope. H-CERT8, P-CERT8 and R-CERT8 must never
 execute `dvc status` or any other DVC command in the main worktree. Main DVC
 state is reconstructed only from the exact Git tree, the Git-bound tracked
 `.dvc/config`, and the eight versioned pointer blobs; the authority records
@@ -243,7 +256,22 @@ configs/closure_v1/phase4_final_certification_authority_v7.json
 configs/closure_v1/phase4_final_certification_authority_manifest_v7.json
 ```
 
-R-CERT7 is exactly eight additions below a new namespace:
+Its immutable canonical identities are authority `61984` bytes / SHA-256
+`a82ebb157fea898ecf7606a3493577a2a508b6f936590410419f1bc8ea33d53d`
+and companion `2396` bytes / SHA-256
+`b98a97ed7a021f5a26b2cb11ab7eb8a772526dfef54bb8876b3f849488332297`.
+
+H-CERT8 is exactly `11M` over P-CERT7, with the same eleven paths and modes.
+Every path is modified; none is added or deleted.
+
+P-CERT8 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v8.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v8.json
+```
+
+R-CERT8 is exactly eight additions below a new namespace:
 
 ```text
 reports/closure_v1/12_certification/public_tests.xml
@@ -256,7 +284,7 @@ reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
 reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
-All P1/P2/P3/P4/P5/P6/P7/R files are single-link regular `100644` files. The
+All P1/P2/P3/P4/P5/P6/P7/P8/R files are single-link regular `100644` files. The
 final manifest is created and linked last. An existing path is never adopted,
 replaced, or truncated.
 
@@ -282,10 +310,10 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT7 creates a fresh clone of live `origin/main` at the exact published P-CERT7
+R-CERT8 creates a fresh clone of live `origin/main` at the exact published P-CERT8
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets, and no DVC executable is invoked there. Real DVC
-execution is confined to the owned isolated R-CERT7 clone. The builder runs
+execution is confined to the owned isolated R-CERT8 clone. The builder runs
 exactly eight directed pull commands, one pointer per directed pull command,
 in the YAML order:
 
@@ -433,14 +461,15 @@ suite_lock:
 
 The 39 selectors, 944 collected nodes, ordered-node digest and seven allowed
 skips matched in both runs with the outcome-free guard active. The schema's
-pending branch remains available only for integration fixtures; P-CERT7
-generation and R-CERT7 reject it. Closure outcomes, raw targets and restored
+pending branch remains available only for integration fixtures; P-CERT8
+generation and R-CERT8 reject it. Closure outcomes, raw targets and restored
 Parquet payloads remained forbidden during both collections.
 
 P-CERT3 remains byte-reconstructed with its historical 920-node suite lock;
 H-CERT4/P-CERT4, H-CERT5/P-CERT5 and H-CERT6/P-CERT6 remain
-byte-reconstructed with their 944-node suite lock; H-CERT7/P-CERT7 supersede
-only the operational authority without rewriting history.
+byte-reconstructed with their 944-node suite lock; H-CERT7/P-CERT7 remain
+byte-reconstructed with that same lock, and H-CERT8/P-CERT8 supersede only the
+operational authority without rewriting history.
 
 The public suite requires zero failures/errors, exactly the seven registered
 skips, a full `ty check`, and `poetry check --lock`. E2E is exactly the three
@@ -455,7 +484,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P-CERT7 clone with its tracked tree read-only, the
+Verification runs from the exact P-CERT8 clone with its tracked tree read-only, the
 host virtual environment read-only, and an owned writable temporary namespace.
 OS masks plus the Python audit hook deny:
 
@@ -472,22 +501,40 @@ serialize credentials, remote URLs, database URLs, absolute local paths, home
 paths, bucket names, or raw command output that may contain them. Portable
 command templates and stdout/stderr hashes are sufficient.
 
+The sandbox projection distinguishes path kind before invoking bubblewrap.
+The four forbidden prefixes (`private/`, `data/targets/`,
+`data/closure_v1/unblinded/`, and
+`data/closure_v1/evaluation_outcomes/`) must be absent in the exact clone and
+are never synthesized merely to mask them. The tracked outcome-access log must
+first be an exact regular file and is then projected as an empty regular-file
+mask. Any other kind, presence state, symlink, substitution, or disposition
+fails closed before public tests.
+
+PostgreSQL shutdown targets only the exact owned container ID and first uses a
+graceful stop with a 30-second timeout. Once that container is proved absent,
+the retained socket-directory descriptor may remove only the exact two claims
+`.s.PGSQL.5432` (socket) and `.s.PGSQL.5432.lock` (regular file), after
+revalidating name, kind, device, inode and link count. Arbitrary residual
+adoption is forbidden and the directory must end empty. Internal cleanup
+diagnostics retain only safe categories; raw internal stdout/stderr is never
+serialized.
+
 Git commits created by unit-test fixtures are allowed only inside fixture-owned
 temporary repositories. The orchestrator may not run Git commit, push, or tag;
 those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P-CERT7 authority is canonical JSON. It reconstructs every historical
+The P-CERT8 authority is canonical JSON. It reconstructs every historical
 H-CERT1/P-CERT1/H-CERT2/P-CERT2/H-CERT3/P-CERT3/H-CERT4/P-CERT4 and
-H-CERT5/P-CERT5/H-CERT6/P-CERT6 component from Git, every active H-CERT7
+H-CERT5/P-CERT5/H-CERT6/P-CERT6/H-CERT7/P-CERT7 component from Git, every active H-CERT8
 component, all ten anchors, all eight pointer records, the exact suite lock,
 output order, isolation, diagnostic and authorization policies. It records
-P-CERT1 through P-CERT6 as superseded failed launches with no retry
+P-CERT1 through P-CERT7 as superseded failed launches with no retry
 authorization.
 Its companion is written last. Execution becomes effective only after the
-exact two-file P-CERT7 commit is observed as the single-parent child of
-H-CERT7 in local refs and live origin.
+exact two-file P-CERT8 commit is observed as the single-parent child of
+H-CERT8 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -584,6 +631,21 @@ or decodes. Exact owned cleanup succeeded, removed the namespace and did not
 mask the active error. No failed namespace was archived as authority.
 P-CERT6 is immutable and `retry_authorized=false`.
 
+P-CERT8 additionally seals the conservative factual record of the consumed
+R-CERT7 launch. Its sanitized in-process diagnostic is
+`sandbox_projection` / `forbidden_path_kind_mismatch`, with command `[]`,
+return code `null`, safe stderr category `unavailable_not_persisted`, and no
+raw stdout/stderr, credential or absolute path. Read-only evidence establishes
+one isolated clone; eight successful directed pulls, cache objects, restored
+checkouts and unit status checks; one completed post-restore exact-eight sweep;
+one PostgreSQL fixture start and one Docker container run. The failure preceded
+public tests, OpenAPI, synthetic E2E, payload construction and all eight R
+outputs. Cleanup failed closed, preserved the namespace and did not mask the
+active error; the exact owned container was absent while two residual
+PostgreSQL socket entries remained. The namespace was later archived under
+ignored `tmp/` without serializing its path or run ID. That archive is not
+authority, P-CERT7 remains immutable, and `retry_authorized=false`.
+
 The builder retains its owned isolated-clone cleanup snapshot while auxiliary
 configuration, the eight directed pulls and directed status verification run
 there. A partial tree left by a failed DVC command is never adopted into
@@ -594,8 +656,8 @@ must identify both the sanitized active verification error and the cleanup
 failure; the cleanup failure cannot mask the active stage. No raw stream,
 secret or absolute path may appear in that composite.
 
-The final manifest binds the seven preceding outputs, P-CERT7 authority and
-companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6 and active H7
+The final manifest binds the seven preceding outputs, P-CERT8 authority and
+companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7 and active H8
 components, public anchors, eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
 human report must retain this claim boundary:
@@ -605,7 +667,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT7, P-CERT7, H-CERT7, then earlier Phase 4
+The precommit selector order is R-CERT8, P-CERT8, H-CERT8, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -621,11 +683,11 @@ pointer blobs, the recorded isolated-clone DVC evidence, targeted staging and
 rollback that preserves foreign index entries. It does not infer or claim a
 clean main-worktree DVC status. The legacy guard path remains absent.
 
-H-CERT7 and P-CERT7 precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT8 and P-CERT8 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P-CERT7 parent,
+After the owner publishes R, the final audit must prove direct P-CERT8 parent,
 exact8 scope, local/remote refs, clean Git, the static main-worktree DVC
 boundary from Git plus the eight versioned pointer blobs, the isolated-clone
 DVC evidence, effective manifest, and no owned temporary state. It must not
@@ -639,8 +701,8 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
-- any attempt to execute R-CERT7 from superseded P-CERT1, P-CERT2, P-CERT3,
-  P-CERT4, P-CERT5 or P-CERT6,
+- any attempt to execute R-CERT8 from superseded P-CERT1, P-CERT2, P-CERT3,
+  P-CERT4, P-CERT5, P-CERT6 or P-CERT7,
   or reuse/adopt any retained failed-run namespace;
 - a post-clone directory-link delta other than exactly `+1` at
   `after_git_clone`, or failure to register the clone after that exact
@@ -658,6 +720,9 @@ Stop without widening scope or automatic retry on any of the following:
 - any drift in the four exact PostgreSQL portable-path placeholders, any
   serialization of their real absolute paths, or any mutation of the real
   Docker execution command by the evidence projection;
+- any forbidden-prefix presence/disposition drift, any non-regular outcome
+  log mask source, arbitrary PostgreSQL residual adoption, residual
+  name/kind/device/inode/link-count drift, or unsafe internal diagnostics;
 - any forbidden/private/raw/Parquet read or unexpected network access;
 - a test failure/error, unregistered skip, OpenAPI mismatch, or E2E mismatch;
 - an existing, partial, symlinked, hardlinked, or extra result path;
