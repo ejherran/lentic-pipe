@@ -82,8 +82,10 @@ def _authority() -> dict[str, Any]:
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p3_cert_commit": P_COMMIT,
-        "h3_cert_commit": H_COMMIT,
+        "p4_cert_commit": P_COMMIT,
+        "h4_cert_commit": H_COMMIT,
+        "p3_cert_commit": contract_module.P3_CERT_COMMIT,
+        "h3_cert_commit": contract_module.H3_CERT_COMMIT,
         "p2_cert_commit": contract_module.P2_CERT_COMMIT,
         "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
@@ -137,6 +139,20 @@ def _pointer_records(
         }
         for index, spec in enumerate(contract.dvc_pointers)
     ]
+
+
+def _static_boundary_records(
+    contract: contract_module.FinalCertificationContract,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    anchors = _anchor_records(contract)
+    for record in anchors:
+        record["repository_commit"] = contract.editorial_commit
+    anchors[0]["git_blob_oid"] = "e" * 40
+    pointers = _pointer_records(contract)
+    for record in pointers:
+        record["repository_commit"] = contract.editorial_commit
+        record["parquet_payload_opened"] = False
+    return anchors, pointers
 
 
 def _validate_payloads(
@@ -317,9 +333,16 @@ def _products(
                 "source_mode_accepted": "0600_or_0644",
                 "clone_mode": "0600",
                 "copied_only_into_owned_clone": True,
-                "content_read_only_for_private_copy": True,
+                "content_read_only_for_private_rebase": True,
+                "credential_path_rebased_to_retained_fd": True,
+                "credential_target_regular_single_link": True,
+                "credential_target_group_or_other_writable": False,
+                "effective_configuration_equivalent_except_owned_cache": True,
                 "content_path_remote_url_and_credentials_serialized": False,
             },
+            "dvc_site_caches": (
+                contract_module.expected_manifest_clone_dvc_site_caches_record()
+            ),
             "dvc_cache": {
                 "object_count": 8,
                 "declared_payload_bytes": sum(
@@ -660,8 +683,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p3_cert_commit": P_COMMIT,
-        "h3_cert_commit": H_COMMIT,
+        "p4_cert_commit": P_COMMIT,
+        "h4_cert_commit": H_COMMIT,
+        "p3_cert_commit": contract_module.P3_CERT_COMMIT,
+        "h3_cert_commit": contract_module.H3_CERT_COMMIT,
         "p2_cert_commit": contract_module.P2_CERT_COMMIT,
         "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
@@ -673,14 +698,45 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p3_cert_commit": P_COMMIT,
-        "h3_cert_commit": H_COMMIT,
+        "p4_cert_commit": P_COMMIT,
+        "h4_cert_commit": H_COMMIT,
+        "p3_cert_commit": contract_module.P3_CERT_COMMIT,
+        "h3_cert_commit": contract_module.H3_CERT_COMMIT,
         "p2_cert_commit": contract_module.P2_CERT_COMMIT,
         "h2_cert_commit": contract_module.H2_CERT_COMMIT,
         "p1_cert_commit": contract_module.P1_CERT_COMMIT,
         "h1_cert_commit": contract_module.H1_CERT_COMMIT,
     }
     assert "authority" not in products.manifest
+    environment = json.loads(products.artifacts["environment.json"])
+    assert environment["dvc"]["main_dvc_command_run"] is False
+    assert environment["dvc"]["main_dvc_status_command_run"] is False
+    assert (
+        environment["dvc"][
+            "main_dvc_static_reconstruction_from_git_and_published_pointers"
+        ]
+        is True
+    )
+    assert environment["dvc"][
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged"
+    ] is True
+    assert environment["dvc"]["owned_site_cache_count"] == 2
+    assert environment["dvc"]["owned_site_cache_roles"] == [
+        "runtime_version",
+        "restore_status",
+    ]
+    assert environment["dvc"]["owned_site_cache_filesystem_mode"] == "0700"
+    assert environment["dvc"]["owned_site_caches_separated"] is True
+    assert environment["dvc"]["owned_site_cache_paths_serialized"] is False
+    assert environment["dvc"]["version_seal_before_private_config_or_pull"] is True
+    assert environment["dvc"][
+        "single_dvc_runtime_retained_through_final_status_and_version_probe"
+    ] is True
+    assert environment["dvc"]["dvc_runtime_cross_call_identity_revalidated"] is True
+    assert "main_dvc_status" not in environment["dvc"]
+    assert b"no DVC command, including version/status/pull, ran there" in products.artifacts[
+        "FINAL_DOCTORAL_CERTIFICATION_REPORT.md"
+    ]
     _validate_payloads(
         contract=contract,
         artifacts=products.artifacts,
@@ -689,11 +745,13 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     )
 
 
-def test_payload_builder_requires_complete_exact_cert3_commit_lineage() -> None:
+def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     contract = _locked_contract()
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p4_cert_commit",
+        "h4_cert_commit",
         "p3_cert_commit",
         "h3_cert_commit",
         "p2_cert_commit",
@@ -718,12 +776,14 @@ def test_payload_builder_requires_complete_exact_cert3_commit_lineage() -> None:
             _products(contract, authority=drifted)
 
 
-def test_reconstructive_validator_rejects_cert3_lineage_omission_and_drift() -> None:
+def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> None:
     contract = _locked_contract()
     products = _products(contract)
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p4_cert_commit",
+        "h4_cert_commit",
         "p3_cert_commit",
         "h3_cert_commit",
         "p2_cert_commit",
@@ -998,7 +1058,10 @@ def test_reconstructive_validator_rejects_each_rehashed_artifact_tamper(
         ),
         lambda value: value["clone"].__setitem__("source", "local_worktree"),
         lambda value: value["clone"]["local_dvc_remote_configuration"].__setitem__(
-            "content_read_only_for_private_copy", False
+            "credential_path_rebased_to_retained_fd", False
+        ),
+        lambda value: value["clone"]["dvc_site_caches"].__setitem__(
+            "used_by_all_isolated_dvc_commands", False
         ),
     ],
 )
@@ -1094,6 +1157,7 @@ def test_publication_is_exact_manifest_last_single_link_and_cleans_namespace(
         "after_all_links",
         "after_run_namespace_cleanup",
         "before_success_return",
+        "after_final_readback",
     ]
     output = root / contract_module.CERTIFICATION_ROOT
     assert {path.name for path in output.iterdir()} == {
@@ -1713,6 +1777,14 @@ def _prepare_pointers(
         )
 
 
+def _fake_installed_dvc_configuration() -> SimpleNamespace:
+    return SimpleNamespace(
+        pass_fds=(),
+        bind_owned_cache=lambda _path: None,
+        revalidate=lambda **kwargs: None,
+    )
+
+
 def test_private_dvc_config_is_read_for_copy_but_never_serialized(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
@@ -1720,7 +1792,17 @@ def test_private_dvc_config_is_read_for_copy_but_never_serialized(
     clone = tmp_path / "clone"
     (source / ".dvc").mkdir(parents=True)
     (clone / ".dvc").mkdir(parents=True)
-    private_bytes = b'[remote "private"]\n    url = opaque-private-remote\n'
+    credential = source / "private/credential.json"
+    credential.parent.mkdir()
+    credential.write_bytes(b"opaque-private-credential")
+    credential.chmod(0o755)
+    private_bytes = (
+        b"[core]\n"
+        b"    remote = private\n"
+        b"['remote \"private\"']\n"
+        b"    url = opaque-private-remote\n"
+        b"    credentialpath = ../private/credential.json\n"
+    )
     source_config = source / contract_module.LOCAL_DVC_CONFIG_PATH
     source_config.write_bytes(private_bytes)
     source_config.chmod(0o644)
@@ -1745,13 +1827,19 @@ def test_private_dvc_config_is_read_for_copy_but_never_serialized(
         return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
 
     monkeypatch.setattr(builder.subprocess, "run", ignored)
-    record = builder._install_local_dvc_remote_configuration(
+    installed = builder._install_local_dvc_remote_configuration(
         source_root=source, clone_root=clone
     )
-    clone_config = clone / contract_module.LOCAL_DVC_CONFIG_PATH
-    assert clone_config.read_bytes() == private_bytes
-    assert stat.S_IMODE(clone_config.lstat().st_mode) == 0o600
-    assert record == {
+    try:
+        clone_config = clone / contract_module.LOCAL_DVC_CONFIG_PATH
+        clone_parser = builder._parse_private_dvc_config(clone_config.read_bytes())
+        clone_section = builder._credential_sections(clone_parser)[0]
+        bridge = clone_parser.get(clone_section, "credentialpath", raw=True)
+        assert bridge == installed.credentials[0].proc_path
+        assert os.fstat(installed.credentials[0].fd).st_ino == credential.stat().st_ino
+        assert stat.S_IMODE(clone_config.lstat().st_mode) == 0o600
+        record = dict(installed.public_record)
+        assert record == {
         "present": True,
         "regular_file": True,
         "single_link": True,
@@ -1759,12 +1847,20 @@ def test_private_dvc_config_is_read_for_copy_but_never_serialized(
         "source_mode_accepted": "0600_or_0644",
         "clone_mode": "0600",
         "copied_only_into_owned_clone": True,
-        "content_read_only_for_private_copy": True,
+        "content_read_only_for_private_rebase": True,
+        "credential_path_rebased_to_retained_fd": True,
+        "credential_target_regular_single_link": True,
+        "credential_target_group_or_other_writable": False,
+        "effective_configuration_equivalent_except_owned_cache": True,
         "content_path_remote_url_and_credentials_serialized": False,
-    }
-    serialized = contract_module.canonical_json_bytes(record)
-    assert private_bytes not in serialized
-    assert b"opaque-private-remote" not in serialized
+        }
+        serialized = contract_module.canonical_json_bytes(record)
+        assert private_bytes not in serialized
+        assert b"opaque-private-remote" not in serialized
+        assert b"credential.json" not in serialized
+        assert b"/proc/self/fd" not in serialized
+    finally:
+        installed.close()
     assert git_calls == [
         [
             builder.GIT_EXECUTABLE,
@@ -1784,7 +1880,13 @@ def test_private_dvc_config_copy_detects_ancestor_or_name_swap(
     clone = tmp_path / "clone"
     (source / ".dvc").mkdir(parents=True)
     (clone / ".dvc").mkdir(parents=True)
-    (source / ".dvc/config.local").write_text("sealed\n")
+    credential = source / "private/credential.json"
+    credential.parent.mkdir()
+    credential.write_text("sealed credential\n")
+    credential.chmod(0o600)
+    (source / ".dvc/config.local").write_text(
+        '[remote "private"]\ncredentialpath = ../private/credential.json\n'
+    )
     (source / ".dvc/config.local").chmod(0o600)
     monkeypatch.setattr(
         builder,
@@ -1823,6 +1925,384 @@ def test_private_dvc_config_copy_detects_ancestor_or_name_swap(
         assert (source / ".dvc/config.local").read_text() == "foreign\n"
     else:
         assert (clone / ".dvc/config.local").read_text() == "foreign\n"
+
+
+@pytest.mark.parametrize(
+    "unsafe_kind",
+    ["group_writable", "hardlink", "symlink", "ancestor_symlink", "escape"],
+)
+def test_private_credential_fd_bridge_rejects_unsafe_path_or_inode(
+    tmp_path: Path,
+    unsafe_kind: str,
+) -> None:
+    source = tmp_path / "source"
+    source.mkdir()
+    private = source / "private"
+    private.mkdir()
+    credential = private / "credential.json"
+    credential.write_text("private credential\n", encoding="utf-8")
+    credential.chmod(0o600)
+    configured = "../private/credential.json"
+    if unsafe_kind == "group_writable":
+        credential.chmod(0o620)
+    elif unsafe_kind == "hardlink":
+        os.link(credential, private / "credential-copy.json")
+    elif unsafe_kind == "symlink":
+        credential.rename(private / "credential-owned.json")
+        credential.symlink_to(private / "credential-owned.json")
+    elif unsafe_kind == "ancestor_symlink":
+        private.rename(source / "private-owned")
+        private.symlink_to(source / "private-owned", target_is_directory=True)
+    elif unsafe_kind == "escape":
+        configured = "../../outside.json"
+
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="credential|private/|repository root",
+    ) as raised:
+        builder._open_retained_private_credential(source, configured)
+    assert os.fspath(tmp_path) not in str(raised.value)
+
+
+def test_private_dvc_effective_equivalence_allows_only_owned_cache_overrides() -> None:
+    source = (
+        b"[core]\nremote = private\nsite_cache_dir = /opaque/main-site-cache\n"
+        b"[cache]\nshared = group\ndir = /opaque/source-cache\ntype = reflink\n"
+        b"['remote \"private\"']\nurl = opaque-remote\n"
+        b"credentialpath = ../private/credential.json\n"
+    )
+    clone = (
+        b"[core]\nremote = private\nsite_cache_dir = /opaque/main-site-cache\n"
+        b"[cache]\nshared = group\ndir = /owned/cache\ntype = copy\n"
+        b"['remote \"private\"']\nurl = opaque-remote\n"
+        b"credentialpath = /proc/self/fd/41\n"
+    )
+    builder._require_private_dvc_config_equivalence(
+        source,
+        clone,
+        credential_sections=('\'remote "private"\'',),
+        credential_proc_paths=("/proc/self/fd/41",),
+        allow_operational_cache=True,
+        owned_cache_dir="/owned/cache",
+    )
+    drifted = clone.replace(b"url = opaque-remote", b"url = different-remote")
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="effective configuration drifted",
+    ) as raised:
+        builder._require_private_dvc_config_equivalence(
+            source,
+            drifted,
+            credential_sections=('\'remote "private"\'',),
+            credential_proc_paths=("/proc/self/fd/41",),
+            allow_operational_cache=True,
+            owned_cache_dir="/owned/cache",
+        )
+    assert "opaque" not in str(raised.value)
+    assert "/owned" not in str(raised.value)
+
+    wrong_cache = clone.replace(b"dir = /owned/cache", b"dir = /foreign/cache")
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="owned cache settings drifted",
+    ) as raised:
+        builder._require_private_dvc_config_equivalence(
+            source,
+            wrong_cache,
+            credential_sections=('\'remote "private"\'',),
+            credential_proc_paths=("/proc/self/fd/41",),
+            allow_operational_cache=True,
+            owned_cache_dir="/owned/cache",
+        )
+    assert "/owned" not in str(raised.value)
+    assert "/foreign" not in str(raised.value)
+
+
+def test_main_dvc_static_boundary_proves_private_site_cache_metadata_unchanged(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    contract = _locked_contract()
+    anchors, pointers = _static_boundary_records(contract)
+    root = tmp_path / "repo"
+    site_cache = root / ".dvc/tmp/site-cache"
+    site_cache.mkdir(parents=True)
+    site_cache.chmod(0o700)
+    (site_cache / "sentinel").write_text("unchanged\n", encoding="utf-8")
+    (root / ".dvc/config.local").write_text(
+        "[core]\n" f"site_cache_dir = {site_cache}\n",
+        encoding="utf-8",
+    )
+    (root / ".dvc/config.local").chmod(0o600)
+    monkeypatch.setattr(
+        builder,
+        "collect_anchor_input_records",
+        lambda *args, **kwargs: copy.deepcopy(anchors),
+    )
+    monkeypatch.setattr(
+        builder,
+        "collect_dvc_pointer_records",
+        lambda *args, **kwargs: copy.deepcopy(pointers),
+    )
+    dvc_calls: list[str] = []
+
+    def reject_dvc(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        dvc_calls.append("attempted")
+        raise AssertionError("main DVC subprocess must not run")
+
+    monkeypatch.setattr(builder, "_dvc_status", reject_dvc)
+    monkeypatch.setattr(builder, "_run", reject_dvc)
+    before_root = site_cache.stat()
+    before_inventory = sorted(path.name for path in site_cache.iterdir())
+    lease = builder._open_main_dvc_site_cache_lease(root)
+    try:
+        observed_anchors, observed_pointers, boundary = (
+            builder._reconstruct_main_dvc_static_boundary(
+                root=root,
+                contract=contract,
+                context="adversarial no-main-DVC probe",
+                main_site_cache_lease=lease,
+            )
+        )
+        assert observed_anchors == anchors
+        assert observed_pointers == pointers
+        assert boundary["main_dvc_status_command_run"] is False
+        assert (
+            boundary[
+                "main_dvc_static_reconstruction_from_git_and_published_pointers"
+            ]
+            is True
+        )
+        assert boundary["published_dvc_pointer_count"] == 8
+        after_root = site_cache.stat()
+        assert builder._stat_identity(after_root) == builder._stat_identity(before_root)
+        assert sorted(path.name for path in site_cache.iterdir()) == before_inventory
+        assert dvc_calls == []
+
+        authority = _authority()
+        clean = {
+            "head": P_COMMIT,
+            "main": P_COMMIT,
+            "origin_main": P_COMMIT,
+            "origin_head": P_COMMIT,
+            "status": "",
+            "cached_diff": "",
+            "unstaged_diff": "",
+        }
+        monkeypatch.setattr(
+            builder, "_capture_main_state", lambda path: dict(clean)
+        )
+        monkeypatch.setattr(
+            builder,
+            "_authority_loader",
+            lambda *args, **kwargs: authority,
+        )
+        monkeypatch.setattr(
+            builder,
+            "validate_local_dvc_remote_configuration",
+            lambda **kwargs: {"present": True},
+        )
+        builder._revalidate_publication_gate(
+            root=root,
+            contract=contract,
+            execution_commit=P_COMMIT,
+            expected_authority=authority,
+            expected_anchors=anchors,
+            expected_pointers=pointers,
+            expected_local_remote={"present": True},
+            stage="before_first_link",
+            main_site_cache_lease=lease,
+        )
+        lease.revalidate(context="after static publication gate")
+        assert builder._stat_identity(site_cache.stat()) == builder._stat_identity(
+            before_root
+        )
+        assert dvc_calls == []
+
+        def mutate_during_reconstruction(*args: Any, **kwargs: Any) -> Any:
+            del args, kwargs
+            transient = site_cache / "transient"
+            transient.write_text("drift\n", encoding="utf-8")
+            transient.unlink()
+            return copy.deepcopy(pointers)
+
+        monkeypatch.setattr(
+            builder,
+            "collect_dvc_pointer_records",
+            mutate_during_reconstruction,
+        )
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="site cache root changed",
+        ):
+            builder._reconstruct_main_dvc_static_boundary(
+                root=root,
+                contract=contract,
+                context="transient main site-cache drift",
+                main_site_cache_lease=lease,
+            )
+        assert dvc_calls == []
+    finally:
+        lease.close()
+
+
+@pytest.mark.parametrize("drift_kind", ["root_mode", "transient_root_entry"])
+def test_main_dvc_site_cache_snapshot_includes_root_metadata(
+    tmp_path: Path,
+    drift_kind: str,
+) -> None:
+    root = tmp_path / "repo"
+    site_cache = root / ".dvc/tmp/site-cache"
+    site_cache.mkdir(parents=True)
+    site_cache.chmod(0o700)
+    config = root / ".dvc/config.local"
+    config.write_text(
+        "[core]\n" f"site_cache_dir = {site_cache}\n",
+        encoding="utf-8",
+    )
+    config.chmod(0o600)
+    lease = builder._open_main_dvc_site_cache_lease(root)
+    try:
+        if drift_kind == "root_mode":
+            site_cache.chmod(0o755)
+        else:
+            transient = site_cache / "transient"
+            transient.write_text("drift\n", encoding="utf-8")
+            transient.unlink()
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="site cache root changed",
+        ) as raised:
+            lease.revalidate(context="adversarial root metadata probe")
+        assert os.fspath(site_cache) not in str(raised.value)
+    finally:
+        lease.close()
+
+
+@pytest.mark.parametrize("drift_kind", ["root_mode", "transient_root_entry"])
+def test_owned_dvc_site_cache_checkpoint_rejects_unapproved_root_drift(
+    tmp_path: Path,
+    drift_kind: str,
+) -> None:
+    site_cache = tmp_path / "site-cache"
+    site_cache.mkdir(mode=0o700)
+    chain, _ = builder._open_directory_chain(
+        Path("/"), site_cache.relative_to(Path("/")), create_missing=False
+    )
+    handle = chain[-1]
+    try:
+        expected = builder._site_cache_root_identity(
+            handle,
+            expected_mode=0o700,
+            context="owned site-cache baseline",
+        )
+        if drift_kind == "root_mode":
+            site_cache.chmod(0o755)
+        else:
+            transient = site_cache / "transient"
+            transient.write_text("drift\n", encoding="utf-8")
+            transient.unlink()
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="root (identity or mode|metadata) drifted",
+        ):
+            builder._revalidate_owned_site_cache_root(
+                handle,
+                expected,
+                allow_successful_dvc_transition=False,
+                context="owned site-cache checkpoint",
+            )
+    finally:
+        for item in reversed(chain):
+            item.close()
+
+
+def test_publication_final_readback_catches_late_main_site_cache_drift_and_rolls_back(
+    tmp_path: Path,
+) -> None:
+    contract = _locked_contract()
+    root = _publication_root(tmp_path)
+    site_cache = root / ".dvc/tmp/site-cache"
+    site_cache.mkdir(parents=True)
+    site_cache.chmod(0o700)
+    config = root / ".dvc/config.local"
+    config.write_text(
+        "[core]\n" f"site_cache_dir = {site_cache}\n",
+        encoding="utf-8",
+    )
+    config.chmod(0o600)
+    lease = builder._open_main_dvc_site_cache_lease(root)
+    stages: list[str] = []
+
+    def validate(stage: str) -> None:
+        stages.append(stage)
+        lease.revalidate(context=f"publication {stage}")
+        if stage == "before_success_return":
+            transient = site_cache / "late-transient"
+            transient.write_text("drift\n", encoding="utf-8")
+            transient.unlink()
+
+    try:
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="site cache root changed",
+        ):
+            builder.publish_final_certification_bundle(
+                repo_root=root,
+                contract=contract,
+                products=_products(contract),
+                publication_validator=validate,
+            )
+    finally:
+        lease.close()
+    assert stages[-1] == "after_final_readback"
+    assert not (root / contract_module.CERTIFICATION_ROOT).exists()
+    assert not (root / "tmp/closure_v1_phase4_final_certification").exists()
+
+
+@pytest.mark.parametrize("hostile_kind", ["filesystem_root", "external", "symlink"])
+def test_main_dvc_site_cache_requires_exact_nofollow_owned_path_before_scan(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    hostile_kind: str,
+) -> None:
+    root = tmp_path / "repo"
+    config = root / ".dvc/config.local"
+    config.parent.mkdir(parents=True)
+    expected = root / ".dvc/tmp/site-cache"
+    scanned = False
+
+    def scan(_handle: builder.DirectoryHandle) -> dict[str, tuple[int, ...]]:
+        nonlocal scanned
+        scanned = True
+        return {}
+
+    monkeypatch.setattr(builder, "_scan_private_metadata_tree", scan)
+    if hostile_kind == "filesystem_root":
+        configured = Path("/")
+    elif hostile_kind == "external":
+        configured = tmp_path / "external-site-cache"
+        configured.mkdir()
+    else:
+        external = tmp_path / "external-site-cache"
+        external.mkdir()
+        expected.parent.mkdir(parents=True)
+        expected.symlink_to(external, target_is_directory=True)
+        configured = expected
+    config.write_text(
+        "[core]\n" f"site_cache_dir = {configured}\n",
+        encoding="utf-8",
+    )
+    config.chmod(0o600)
+
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="site-cache path",
+    ) as raised:
+        builder._open_main_dvc_site_cache_lease(root)
+    assert scanned is False
+    assert os.fspath(tmp_path) not in str(raised.value)
 
 
 def test_postgres_startup_failure_attempts_owned_container_cleanup(
@@ -2024,19 +2504,26 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
     source = tmp_path / "source"
     clone = tmp_path / "clone"
     cache = tmp_path / "cache"
+    site_cache = tmp_path / "site-cache"
     _write_fake_dvc(source)
     clone.mkdir()
     cache.mkdir()
+    site_cache.mkdir(mode=0o700)
     _prepare_pointers(clone, contract)
     (clone / ".dvc").mkdir()
     (clone / ".dvc/config.local").write_text("[remote \"private\"]\n")
     (clone / ".dvc/config.local").chmod(0o600)
     commands: list[tuple[str, ...]] = []
     command_environments: list[Mapping[str, str]] = []
+    command_pass_fds: list[tuple[int, ...]] = []
+    credential = tmp_path / "credential.json"
+    credential.write_text("private\n", encoding="utf-8")
+    credential_fd = os.open(credential, os.O_RDONLY)
 
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         portable = tuple(kwargs.get("portable_argv", argv))
         command_environments.append(kwargs["environment"])
+        command_pass_fds.append(tuple(kwargs["pass_fds"]))
         if "pull" in portable:
             commands.append(portable)
             spec = next(item for item in contract.dvc_pointers if item.path == portable[-1])
@@ -2051,19 +2538,37 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
         return builder.CommandResult({"argv": list(portable), "returncode": 0}, "{}", "")
 
     monkeypatch.setattr(builder, "_run", run)
-    records = builder._restore_dvc_objects(
-        source_root=source,
-        clone_root=clone,
-        cache_root=cache,
-        contract=contract,
-    )
+    try:
+        records = builder._restore_dvc_objects(
+            source_root=source,
+            clone_root=clone,
+            cache_root=cache,
+            site_cache_root=site_cache,
+            installed_configuration=cast(
+                builder.InstalledDvcConfiguration,
+                SimpleNamespace(
+                    pass_fds=(credential_fd,),
+                    bind_owned_cache=lambda _path: None,
+                    revalidate=lambda **kwargs: None,
+                ),
+            ),
+            contract=contract,
+        )
+    finally:
+        os.close(credential_fd)
     assert len(records) == len(commands) == 8
     assert len(command_environments) == 19
     assert all(env["DVC_NO_ANALYTICS"] == "1" for env in command_environments)
     assert all(
+        env["DVC_SITE_CACHE_DIR"] == os.fspath(site_cache)
+        for env in command_environments
+    )
+    assert all(
         env["__PYVENV_LAUNCHER__"].startswith("/proc/self/fd/")
         for env in command_environments
     )
+    assert all(credential_fd in descriptors for descriptors in command_pass_fds)
+    assert all(len(descriptors) == 4 for descriptors in command_pass_fds)
     assert all(record["pull_command"]["argv"][0] == ".venv/bin/dvc" for record in records)
     assert [command[1:6] for command in commands] == [
         ("pull", "--no-run-cache", "-j", "1", spec.path)
@@ -2089,6 +2594,8 @@ def test_global_dvc_status_always_disables_analytics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     captured: dict[str, Any] = {}
+    clone = tmp_path / "clone"
+    clone.mkdir()
 
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         captured.update(kwargs)
@@ -2098,17 +2605,67 @@ def test_global_dvc_status_always_disables_analytics(
 
     monkeypatch.setattr(builder, "_run", run)
     _write_fake_dvc(tmp_path)
-    assert builder._dvc_status(tmp_path) == "{}"
+    assert builder._dvc_status(clone, executable_root=tmp_path) == "{}"
     assert captured["environment"]["DVC_NO_ANALYTICS"] == "1"
     assert captured["environment"]["__PYVENV_LAUNCHER__"].startswith(
         "/proc/self/fd/"
     )
     assert len(captured["pass_fds"]) == 3
+    calls: list[str] = []
+
+    def attempted(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        calls.append("attempted")
+        raise AssertionError("main DVC runtime/subprocess must not be opened")
+
+    monkeypatch.setattr(builder, "_open_python_script_runtime", attempted)
+    monkeypatch.setattr(builder, "_run", attempted)
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="restricted to the isolated clone",
+    ):
+        builder._dvc_status(tmp_path, executable_root=tmp_path)
+    assert calls == []
+
+
+def test_isolated_dvc_site_cache_requires_empty_private_0700_directory(
+    tmp_path: Path,
+) -> None:
+    contract, _ = _dvc_contract(tmp_path)
+    source = tmp_path / "source"
+    clone = tmp_path / "clone"
+    cache = tmp_path / "cache"
+    site_cache = tmp_path / "site-cache"
+    for path in (source, clone, cache, site_cache):
+        path.mkdir()
+    site_cache.chmod(0o755)
+    runtime = cast(
+        builder.AnchoredPythonScriptRuntime,
+        SimpleNamespace(),
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="site cache mode drifted",
+    ):
+        builder._restore_dvc_objects_with_anchored_executable(
+            source_root=source,
+            clone_root=clone,
+            cache_root=cache,
+            site_cache_root=site_cache,
+            installed_configuration=cast(
+                builder.InstalledDvcConfiguration,
+                _fake_installed_dvc_configuration(),
+            ),
+            contract=contract,
+            executable=runtime,
+        )
 
 
 def test_dvc_executable_swap_is_detected_after_fd_anchored_invocation(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    clone = tmp_path / "clone"
+    clone.mkdir()
     original = _write_fake_dvc(tmp_path)
     original.write_text("#!/bin/sh\n# owned\nexit 0\n", encoding="utf-8")
     saved = original.with_name("dvc-owned")
@@ -2130,7 +2687,7 @@ def test_dvc_executable_swap_is_detected_after_fd_anchored_invocation(
     expected = original.stat()
     monkeypatch.setattr(builder, "_run", run)
     with pytest.raises(builder.FinalCertificationBuildError, match="binding"):
-        builder._dvc_status(tmp_path)
+        builder._dvc_status(clone, executable_root=tmp_path)
     assert invoked_inode == (expected.st_dev, expected.st_ino)
     assert "foreign" in original.read_text()
     assert "owned" in saved.read_text()
@@ -2139,6 +2696,8 @@ def test_dvc_executable_swap_is_detected_after_fd_anchored_invocation(
 def test_dvc_launcher_swap_never_executes_foreign_launcher(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
+    clone = tmp_path / "clone"
+    clone.mkdir()
     script = _write_fake_dvc(tmp_path)
     owned_marker = tmp_path / "owned-ran"
     foreign_marker = tmp_path / "foreign-ran"
@@ -2170,7 +2729,7 @@ def test_dvc_launcher_swap_never_executes_foreign_launcher(
 
     monkeypatch.setattr(builder.subprocess, "run", swap_then_run)
     with pytest.raises(builder.FinalCertificationBuildError, match="launcher/interpreter"):
-        builder._dvc_status(tmp_path)
+        builder._dvc_status(clone, executable_root=tmp_path)
     assert owned_marker.read_text() == "owned"
     assert not foreign_marker.exists()
 
@@ -2178,22 +2737,102 @@ def test_dvc_launcher_swap_never_executes_foreign_launcher(
 def test_runtime_dvc_version_probe_disables_analytics(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    calls: list[tuple[list[str], list[str], Mapping[str, str] | None]] = []
+    root = tmp_path / "repo"
+    run_root = (
+        root
+        / "tmp/closure_v1_phase4_final_certification"
+        / f"run-{'a' * 32}"
+    )
+    clone = run_root / "clone"
+    site_cache = run_root / "dvc-version-site-cache"
+    clone.mkdir(parents=True)
+    site_cache.mkdir(mode=0o700)
+    calls: list[
+        tuple[list[str], list[str], Path, Mapping[str, str] | None]
+    ] = []
 
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         actual = list(argv)
         portable = list(kwargs["portable_argv"])
-        calls.append((actual, portable, kwargs.get("environment")))
+        cwd = Path(kwargs["cwd"])
+        if portable[:2] == [".venv/bin/dvc", "--version"] and cwd == root:
+            raise AssertionError("DVC version must never use the main cwd")
+        calls.append((actual, portable, cwd, kwargs.get("environment")))
         return builder.CommandResult(
             {"argv": portable, "returncode": 0}, f"{Path(portable[0]).name} 1.0", ""
         )
 
     monkeypatch.setattr(builder, "_run", run)
-    _write_fake_dvc(tmp_path)
-    ty = tmp_path / ".venv/bin/ty"
+    _write_fake_dvc(root)
+    ty = root / ".venv/bin/ty"
     ty.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
     ty.chmod(0o755)
-    versions = builder._runtime_versions(tmp_path)
+    clone_chain, _ = builder._open_directory_chain(
+        Path("/"), clone.relative_to(Path("/")), create_missing=False
+    )
+    site_cache_chain, _ = builder._open_directory_chain(
+        Path("/"), site_cache.relative_to(Path("/")), create_missing=False
+    )
+    dvc_runtime = builder._open_python_script_runtime(
+        root,
+        Path(".venv/bin/dvc"),
+        context="test retained DVC runtime",
+    )
+    before_site_cache = builder._stat_identity(site_cache.stat())
+    try:
+        versions = builder._runtime_versions(
+            root,
+            dvc_runtime=dvc_runtime,
+            dvc_clone_handle=clone_chain[-1],
+            dvc_site_cache_handle=site_cache_chain[-1],
+        )
+        repeated_versions = builder._runtime_versions(
+            root,
+            dvc_runtime=dvc_runtime,
+            dvc_clone_handle=clone_chain[-1],
+            dvc_site_cache_handle=site_cache_chain[-1],
+        )
+        assert repeated_versions == versions
+        assert builder._stat_identity(site_cache.stat()) == before_site_cache
+        assert not list(site_cache.iterdir())
+        successful_call_count = len(calls)
+        site_cache.chmod(0o755)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="owned site cache binding drifted",
+        ):
+            builder._runtime_versions(
+                root,
+                dvc_runtime=dvc_runtime,
+                dvc_clone_handle=clone_chain[-1],
+                dvc_site_cache_handle=site_cache_chain[-1],
+            )
+        assert len(calls) == successful_call_count
+        site_cache.chmod(0o700)
+
+        dvc_script = root / ".venv/bin/dvc"
+        retained_script = dvc_script.with_name("dvc-retained")
+        dvc_script.rename(retained_script)
+        dvc_script.write_text("#!/bin/sh\n# foreign\nexit 0\n", encoding="utf-8")
+        dvc_script.chmod(0o755)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="binding drifted",
+        ):
+            builder._runtime_versions(
+                root,
+                dvc_runtime=dvc_runtime,
+                dvc_clone_handle=clone_chain[-1],
+                dvc_site_cache_handle=site_cache_chain[-1],
+            )
+        assert len(calls) == successful_call_count
+        dvc_script.unlink()
+        retained_script.rename(dvc_script)
+    finally:
+        dvc_runtime.close()
+        for chain in (site_cache_chain, clone_chain):
+            for handle in reversed(chain):
+                handle.close()
     assert set(versions) == {
         "python",
         "dvc",
@@ -2204,15 +2843,26 @@ def test_runtime_dvc_version_probe_disables_analytics(
         "docker_client",
         "docker_server",
     }
-    dvc_call = next(call for call in calls if call[1][0] == ".venv/bin/dvc")
-    assert dvc_call[2] is not None
-    assert dvc_call[2]["DVC_NO_ANALYTICS"] == "1"
-    assert dvc_call[2]["__PYVENV_LAUNCHER__"].startswith("/proc/self/fd/")
+    dvc_calls = [call for call in calls if call[1][0] == ".venv/bin/dvc"]
+    assert len(dvc_calls) == 2
+    assert dvc_calls[0][0][:2] == dvc_calls[1][0][:2]
+    dvc_call = dvc_calls[0]
+    assert dvc_call[2] == clone
+    assert dvc_call[3] is not None
+    assert dvc_call[3]["DVC_NO_ANALYTICS"] == "1"
+    assert dvc_call[3]["DVC_SITE_CACHE_DIR"] == os.fspath(site_cache)
+    assert dvc_call[3]["__PYVENV_LAUNCHER__"].startswith("/proc/self/fd/")
+    assert all(
+        cwd != root
+        for _, portable, cwd, _ in calls
+        if portable[:1] == [".venv/bin/dvc"]
+    )
     git_call = next(call for call in calls if call[1] == ["git", "--version"])
     assert git_call[0] == [builder.GIT_EXECUTABLE, "--version"]
+    assert git_call[2] == root
 
 
-def test_sealed_runtime_drift_stops_before_effect_markers(
+def test_sealed_runtime_drift_stops_before_private_config_pull_and_verification(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
@@ -2221,24 +2871,64 @@ def test_sealed_runtime_drift_stops_before_effect_markers(
     effects: list[str] = []
     monkeypatch.setattr(builder, "_runtime_versions", lambda *args, **kwargs: drifted)
     with pytest.raises(builder.FinalCertificationBuildError, match="runtime version"):
-        builder._sealed_runtime_versions(ROOT, contract=contract)
-        effects.extend(["clone", "pull", "docker", "tests"])
+        placeholder = cast(builder.DirectoryHandle, SimpleNamespace())
+        builder._sealed_runtime_versions(
+            ROOT,
+            contract=contract,
+            dvc_runtime=cast(
+                builder.AnchoredPythonScriptRuntime, SimpleNamespace()
+            ),
+            dvc_clone_handle=placeholder,
+            dvc_site_cache_handle=placeholder,
+        )
+        effects.extend(["private_config", "pull", "docker", "tests"])
     assert effects == []
 
 
 def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> None:
     source = inspect.getsource(builder.build_phase4_final_certification)
-    before = source.index('"runtime_versions_before_effects"')
-    after = source.index('"runtime_versions_after_effects"')
+    clone = source.index("_clone_exact_p(")
+    runtime_open = source.index('"retained_dvc_runtime_open"')
+    before = source.index('"runtime_versions_before_private_config_or_pull"')
+    private_config = source.index('"private_dvc_configuration_rebase"')
+    version_cache_freeze = source.index(
+        'frozen_execution_inventories["DVC version site cache"]'
+    )
+    restore = source.index("_restore_dvc_objects_with_anchored_executable(")
+    after = source.index('"runtime_versions_after_verification"')
+    assert clone < runtime_open < before < version_cache_freeze < private_config
+    assert private_config < restore < after
     for operation in (
-        "_clone_exact_p(",
-        "_restore_dvc_objects(",
+        "_restore_dvc_objects_with_anchored_executable(",
         "_start_owned_postgres(",
         "_run_verification(",
+        '"clone_dvc_status_after_verification"',
     ):
         position = source.index(operation)
         assert before < position < after
+    assert source.count("dvc_runtime=retained_dvc_runtime") == 2
+    assert "executable=retained_dvc_runtime" in source
+    assert "_dvc_status_with_executable(" in source
+    assert source.count("dvc_clone_handle=clone_handle") == 2
+    assert source.count(
+        "dvc_site_cache_handle=version_site_cache_handle"
+    ) == 2
+    assert source.index("dvc_private_pass_fds=()") < private_config
+    assert source.index(
+        "dvc_private_pass_fds=active_configuration.pass_fds"
+    ) > source.index('"clone_dvc_status_after_verification"')
+    assert source.index("retained_dvc_runtime.close()") > source.index(
+        '"payload_validation"'
+    )
     assert source.index("runtime_versions=runtime_before") > after
+
+
+def test_transaction_retains_original_main_site_cache_lease_through_publication() -> None:
+    source = inspect.getsource(builder.build_phase4_final_certification)
+    publication = source.index("result = publish_final_certification_bundle(")
+    close = source.index("active_main_site_cache_lease.close()")
+    assert publication < close
+    assert "main_site_cache_lease=active_main_site_cache_lease" in source
 
 
 @pytest.mark.parametrize(
@@ -2318,31 +3008,66 @@ def test_nonzero_command_failure_retains_only_closed_safe_diagnostics(
         assert forbidden not in rendered
 
 
+def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
+    active = builder._command_failure_error(
+        stage="directed DVC pull 1",
+        command=(".venv/bin/dvc", "pull", "pointer.dvc"),
+        returncode=1,
+        stderr="opaque failure",
+    )
+    composite = builder._execution_cleanup_composite_error(
+        active,
+        namespace_preserved=False,
+    )
+    diagnostic = json.loads(str(composite).split(": ", 1)[1])
+    assert diagnostic["cleanup"] == {
+        "status": "failed_closed",
+        "namespace_preserved": False,
+        "active_error_was_masked": False,
+    }
+    assert composite.command_failure is active.command_failure
+
+
 def test_clone_work_transition_requires_exact_single_directory_link_delta() -> None:
     before = (
         11,
         22,
         100,
         101,
-        6,
+        8,
         0o700,
-        ("dvc-cache", "masks", "postgres-socket", "sandbox-tmp"),
+        (
+            "dvc-cache",
+            "dvc-site-cache",
+            "dvc-version-site-cache",
+            "masks",
+            "postgres-socket",
+            "sandbox-tmp",
+        ),
     )
     expected = (
         11,
         22,
         200,
         201,
-        7,
+        9,
         0o700,
-        ("clone", "dvc-cache", "masks", "postgres-socket", "sandbox-tmp"),
+        (
+            "clone",
+            "dvc-cache",
+            "dvc-site-cache",
+            "dvc-version-site-cache",
+            "masks",
+            "postgres-socket",
+            "sandbox-tmp",
+        ),
     )
     builder._require_exact_clone_work_transition(before, expected)
 
     for drifted in (
-        (*expected[:4], 6, *expected[5:]),
         (*expected[:4], 8, *expected[5:]),
-        (*expected[:4], 7, 0o755, expected[-1]),
+        (*expected[:4], 10, *expected[5:]),
+        (*expected[:4], 8, 0o755, expected[-1]),
         (*expected[:6], (*expected[-1], "foreign")),
     ):
         with pytest.raises(
@@ -2378,7 +3103,10 @@ def _patch_build_through_clone(
         "anchor_inputs": _anchor_records(contract),
         "dvc_pointers": _pointer_records(contract),
         "output_paths": list(contract.output_paths),
-        "main_dvc_status": {},
+        "main_dvc_static_boundary": {
+            "main_dvc_status_command_run": False,
+            "main_dvc_static_reconstruction_from_git_and_published_pointers": True,
+        },
         "local_dvc_remote_configuration": {"present": True},
     }
     later_effects: list[str] = []
@@ -2395,6 +3123,11 @@ def _patch_build_through_clone(
         builder,
         "_sealed_runtime_versions",
         lambda *args, **kwargs: dict(contract.expected_runtime_versions),
+    )
+    monkeypatch.setattr(
+        builder,
+        "_open_main_dvc_site_cache_lease",
+        lambda root: SimpleNamespace(revalidate=lambda **kwargs: None, close=lambda: None),
     )
 
     def clone_then_fail(
@@ -2497,7 +3230,10 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
         "anchor_inputs": _anchor_records(contract),
         "dvc_pointers": _pointer_records(contract),
         "output_paths": list(contract.output_paths),
-        "main_dvc_status": {},
+        "main_dvc_static_boundary": {
+            "main_dvc_status_command_run": False,
+            "main_dvc_static_reconstruction_from_git_and_published_pointers": True,
+        },
         "local_dvc_remote_configuration": {"present": True},
     }
     subprocess_calls: list[tuple[str, ...]] = []
@@ -2534,13 +3270,19 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
 
     def install_private_config(
         *, source_root: Path, clone_root: Path
-    ) -> Mapping[str, Any]:
+    ) -> SimpleNamespace:
         del source_root
         private_config = clone_root / contract_module.LOCAL_DVC_CONFIG_PATH
         private_config.parent.mkdir(parents=True)
         private_config.write_text("[remote]\n", encoding="utf-8")
         private_config.chmod(0o600)
-        return {"present": True}
+        return SimpleNamespace(
+            public_record={"present": True},
+            pass_fds=(),
+            bind_owned_cache=lambda _path: None,
+            revalidate=lambda **kwargs: None,
+            close=lambda: None,
+        )
 
     portable = (
         ".venv/bin/dvc",
@@ -2560,24 +3302,8 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
         ),
         script=SimpleNamespace(proc_path="retained-dvc", fd=0),
         revalidate=lambda **kwargs: None,
+        close=lambda: None,
     )
-
-    def fail_first_pull(
-        *,
-        source_root: Path,
-        clone_root: Path,
-        cache_root: Path,
-        contract: contract_module.FinalCertificationContract,
-        namespace_validator: Any,
-    ) -> list[dict[str, Any]]:
-        return builder._restore_dvc_objects_with_anchored_executable(
-            source_root=source_root,
-            clone_root=clone_root,
-            cache_root=cache_root,
-            contract=contract,
-            executable=cast(Any, retained_runtime),
-            namespace_validator=namespace_validator,
-        )
 
     def failed_subprocess(argv: Any, **kwargs: Any) -> Any:
         actual = tuple(argv)
@@ -2597,6 +3323,11 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
         dvc_tmp = Path(kwargs["cwd"]) / ".dvc/tmp"
         dvc_tmp.mkdir()
         (dvc_tmp / "lock").write_text("DVC_PREFREEZE_RESIDUAL", encoding="utf-8")
+        site_cache = Path(kwargs["env"]["DVC_SITE_CACHE_DIR"])
+        (site_cache / "repo").mkdir()
+        (site_cache / "repo/index").write_text(
+            "DVC_SITE_CACHE_RESIDUAL", encoding="utf-8"
+        )
         return SimpleNamespace(
             returncode=17,
             stdout="RAW_STDOUT_WITH_/home/operator/private",
@@ -2612,7 +3343,21 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
         "_install_local_dvc_remote_configuration",
         install_private_config,
     )
-    monkeypatch.setattr(builder, "_restore_dvc_objects", fail_first_pull)
+    monkeypatch.setattr(
+        builder,
+        "_open_python_script_runtime",
+        lambda *args, **kwargs: retained_runtime,
+    )
+    monkeypatch.setattr(
+        builder,
+        "_revalidate_retained_dvc_runtime",
+        lambda *args, **kwargs: None,
+    )
+    monkeypatch.setattr(
+        builder,
+        "_open_main_dvc_site_cache_lease",
+        lambda root: SimpleNamespace(revalidate=lambda **kwargs: None, close=lambda: None),
+    )
     monkeypatch.setattr(builder.subprocess, "run", failed_subprocess)
 
     with pytest.raises(builder.FinalCertificationBuildError) as raised:
@@ -2666,6 +3411,23 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
     assert (
         residuals[0].parent.parent / "config.local"
     ).read_text(encoding="utf-8").count("DVC_CONFIG_MUTATION") == 2
+    site_cache_residuals = list(
+        (root / "tmp/closure_v1_phase4_final_certification").glob(
+            "run-*/dvc-site-cache/repo/index"
+        )
+    )
+    assert len(site_cache_residuals) == 1
+    assert site_cache_residuals[0].read_text(encoding="utf-8") == (
+        "DVC_SITE_CACHE_RESIDUAL"
+    )
+    version_site_caches = list(
+        (root / "tmp/closure_v1_phase4_final_certification").glob(
+            "run-*/dvc-version-site-cache"
+        )
+    )
+    assert len(version_site_caches) == 1
+    assert stat.S_IMODE(version_site_caches[0].stat().st_mode) == 0o700
+    assert not list(version_site_caches[0].iterdir())
     for output in contract.output_paths:
         assert not os.path.lexists(root / output)
 
@@ -2822,9 +3584,11 @@ def test_dvc_restore_never_opens_or_reads_parquet_or_cache_payloads_in_python(
     source = tmp_path / "source"
     clone = tmp_path / "clone"
     cache = tmp_path / "cache"
+    site_cache = tmp_path / "site-cache"
     _write_fake_dvc(source)
     clone.mkdir()
     cache.mkdir()
+    site_cache.mkdir(mode=0o700)
     _prepare_pointers(clone, contract)
     (clone / ".dvc").mkdir()
     (clone / ".dvc/config.local").write_text("[remote \"private\"]\n")
@@ -2896,6 +3660,11 @@ def test_dvc_restore_never_opens_or_reads_parquet_or_cache_payloads_in_python(
         source_root=source,
         clone_root=clone,
         cache_root=cache,
+        site_cache_root=site_cache,
+        installed_configuration=cast(
+            builder.InstalledDvcConfiguration,
+            _fake_installed_dvc_configuration(),
+        ),
         contract=contract,
     )
     assert len(records) == 8
@@ -2941,6 +3710,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p4_cert_commit",
+            "h4_cert_commit",
             "p3_cert_commit",
             "h3_cert_commit",
             "p2_cert_commit",
@@ -2953,6 +3724,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p4_cert_commit",
+            "h4_cert_commit",
             "p3_cert_commit",
             "h3_cert_commit",
             "p2_cert_commit",
@@ -2966,6 +3739,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p4_cert_commit",
+        "h4_cert_commit",
         "p3_cert_commit",
         "h3_cert_commit",
         "p2_cert_commit",
@@ -2993,6 +3768,7 @@ def test_check_only_is_non_writing_and_requires_effective_p_cert(
     root = tmp_path / "repo"
     root.mkdir()
     contract = _locked_contract()
+    anchors, pointers = _static_boundary_records(contract)
     clean = {
         "head": P_COMMIT,
         "main": P_COMMIT,
@@ -3009,14 +3785,36 @@ def test_check_only_is_non_writing_and_requires_effective_p_cert(
         "_git",
         lambda *args: f"{P_COMMIT}\trefs/heads/main",
     )
-    monkeypatch.setattr(builder, "_dvc_status", lambda path: "{}")
+    dvc_calls: list[str] = []
+
+    def reject_dvc(*args: Any, **kwargs: Any) -> Any:
+        del args, kwargs
+        dvc_calls.append("attempted")
+        raise AssertionError("check-only must not invoke DVC")
+
+    monkeypatch.setattr(builder, "_dvc_status", reject_dvc)
+    monkeypatch.setattr(builder, "_run", reject_dvc)
+    monkeypatch.setattr(builder.subprocess, "run", reject_dvc)
+    monkeypatch.setattr(
+        builder,
+        "_open_main_dvc_site_cache_lease",
+        lambda root: SimpleNamespace(revalidate=lambda **kwargs: None, close=lambda: None),
+    )
     monkeypatch.setattr(
         builder,
         "validate_local_dvc_remote_configuration",
         lambda **kwargs: {"present": True},
     )
-    monkeypatch.setattr(builder, "collect_anchor_input_records", lambda *args, **kwargs: _records("a", 10))
-    monkeypatch.setattr(builder, "collect_dvc_pointer_records", lambda *args, **kwargs: _records("p", 8))
+    monkeypatch.setattr(
+        builder,
+        "collect_anchor_input_records",
+        lambda *args, **kwargs: copy.deepcopy(anchors),
+    )
+    monkeypatch.setattr(
+        builder,
+        "collect_dvc_pointer_records",
+        lambda *args, **kwargs: copy.deepcopy(pointers),
+    )
     before = list(root.iterdir())
     result = builder.check_phase4_final_certification(
         repo_root=root,
@@ -3024,6 +3822,15 @@ def test_check_only_is_non_writing_and_requires_effective_p_cert(
     )
     assert result["status"] == "ready_to_certify"
     assert result["writes"] is False
+    assert result["main_dvc_static_boundary"]["main_dvc_status_command_run"] is False
+    assert (
+        result["main_dvc_static_boundary"][
+            "main_dvc_static_reconstruction_from_git_and_published_pointers"
+        ]
+        is True
+    )
+    assert "main_dvc_status" not in result
+    assert dvc_calls == []
     assert list(root.iterdir()) == before
 
 

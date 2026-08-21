@@ -43,6 +43,8 @@ def _contract(
     p1_cert_commit: str | None = None,
     h2_cert_commit: str | None = None,
     p2_cert_commit: str | None = None,
+    h3_cert_commit: str | None = None,
+    p3_cert_commit: str | None = None,
     suite_status: str = "locked",
 ) -> SimpleNamespace:
     positive = certification.POSITIVE_TEST_PATHS
@@ -88,16 +90,22 @@ def _contract(
         p1_cert_commit=p1_cert_commit or locker.P1_CERT_COMMIT,
         h2_cert_commit=h2_cert_commit or locker.H2_CERT_COMMIT,
         p2_cert_commit=p2_cert_commit or locker.P2_CERT_COMMIT,
+        h3_cert_commit=h3_cert_commit or locker.H3_CERT_COMMIT,
+        p3_cert_commit=p3_cert_commit or locker.P3_CERT_COMMIT,
         final_tag="thesis-closure-v1",
         h1_scope=tuple(),
         p1_scope=tuple(),
         h2_scope=tuple(),
         p2_scope=tuple(),
+        h3_scope=tuple(),
+        p3_scope=tuple(),
         h_scope=tuple(),
         p_scope=tuple(),
         r_scope=tuple(),
-        anchor_inputs=tuple(),
-        dvc_pointers=tuple(),
+        anchor_inputs=certification.ANCHOR_INPUTS,
+        anchor_input_paths=tuple(spec.path for spec in certification.ANCHOR_INPUTS),
+        dvc_pointers=certification.DVC_POINTERS,
+        dvc_pointer_paths=tuple(spec.path for spec in certification.DVC_POINTERS),
         test_suite=suite,
         output_paths=tuple(locker.R_SCOPE),
     )
@@ -142,6 +150,8 @@ def _historical_records() -> tuple[
     list[dict[str, Any]],
     list[dict[str, Any]],
     list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
 ]:
     def records(
         paths: Mapping[str, str], offset: int, *, physical_mode: bool = False
@@ -167,6 +177,8 @@ def _historical_records() -> tuple[
         records(locker.P1_SCOPE, 601),
         records(locker.H2_SCOPE, 701, physical_mode=True),
         records(locker.P2_SCOPE, 801),
+        records(locker.H3_SCOPE, 901, physical_mode=True),
+        records(locker.P3_SCOPE, 1001),
     )
 
 
@@ -209,6 +221,16 @@ def _install_contract_stubs(
         certification,
         "expected_p2_scope",
         lambda: dict(locker.P2_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_h3_scope",
+        lambda: dict(locker.H3_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p3_scope",
+        lambda: dict(locker.P3_SCOPE),
     )
     monkeypatch.setattr(
         certification,
@@ -257,14 +279,14 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_records",
+        "_historical_h1_p1_h2_p2_h3_p3_records",
         lambda _contract, **_kwargs: _historical_records(),
     )
 
 
 def _make_repository(
     tmp_path: Path,
-) -> tuple[Path, Path, str, str, str, str, str, str, str]:
+) -> tuple[Path, Path, str, str, str, str, str, str, str, str, str]:
     root = tmp_path / "work"
     remote = tmp_path / "origin.git"
     root.mkdir()
@@ -330,6 +352,23 @@ def _make_repository(
     _run(root, "git", "commit", "-m", "P-CERT2")
     p2_cert_commit = _run(root, "git", "rev-parse", "HEAD")
 
+    for path_text in locker.H3_SCOPE:
+        path = root / path_text
+        path.write_text(
+            path.read_text(encoding="utf-8") + "H-CERT3\n",
+            encoding="utf-8",
+        )
+        path.chmod(int(locker.H_GIT_MODES[path_text][-3:], 8))
+    _run(root, "git", "add", *locker.H3_SCOPE)
+    _run(root, "git", "commit", "-m", "H-CERT3")
+    h3_cert_commit = _run(root, "git", "rev-parse", "HEAD")
+
+    _write(root, locker.H3_AUTHORITY_PATH.as_posix(), "{}\n")
+    _write(root, locker.H3_MANIFEST_PATH.as_posix(), "{}\n")
+    _run(root, "git", "add", *locker.P3_SCOPE)
+    _run(root, "git", "commit", "-m", "P-CERT3")
+    p3_cert_commit = _run(root, "git", "rev-parse", "HEAD")
+
     _run(tmp_path, "git", "init", "--bare", "--initial-branch=main", str(remote))
     _run(root, "git", "remote", "add", "origin", str(remote))
     _run(root, "git", "push", "-u", "origin", "main")
@@ -344,6 +383,8 @@ def _make_repository(
         p1_cert_commit,
         h2_cert_commit,
         p2_cert_commit,
+        h3_cert_commit,
+        p3_cert_commit,
     )
 
 
@@ -357,6 +398,8 @@ def _patch_topology(
     p1_cert_commit: str,
     h2_cert_commit: str,
     p2_cert_commit: str,
+    h3_cert_commit: str,
+    p3_cert_commit: str,
 ) -> SimpleNamespace:
     monkeypatch.setattr(locker, "CLOSURE_SOURCE_COMMIT", closure_source)
     monkeypatch.setattr(locker, "R_SYN_COMMIT", r_syn)
@@ -365,6 +408,8 @@ def _patch_topology(
     monkeypatch.setattr(locker, "P1_CERT_COMMIT", p1_cert_commit)
     monkeypatch.setattr(locker, "H2_CERT_COMMIT", h2_cert_commit)
     monkeypatch.setattr(locker, "P2_CERT_COMMIT", p2_cert_commit)
+    monkeypatch.setattr(locker, "H3_CERT_COMMIT", h3_cert_commit)
+    monkeypatch.setattr(locker, "P3_CERT_COMMIT", p3_cert_commit)
     contract = _contract(
         closure_source=closure_source,
         r_syn=r_syn,
@@ -373,6 +418,8 @@ def _patch_topology(
         p1_cert_commit=p1_cert_commit,
         h2_cert_commit=h2_cert_commit,
         p2_cert_commit=p2_cert_commit,
+        h3_cert_commit=h3_cert_commit,
+        p3_cert_commit=p3_cert_commit,
     )
     _install_contract_stubs(monkeypatch, contract)
     return contract
@@ -401,7 +448,7 @@ def _publish_h(root: Path) -> str:
 
 
 def _fake_state() -> dict[str, Any]:
-    h1_components, p1_components, h2_components, p2_components = (
+    h1_components, p1_components, h2_components, p2_components, h3_components, p3_components = (
         _historical_records()
     )
     components = [
@@ -415,12 +462,20 @@ def _fake_state() -> dict[str, Any]:
         }
         for index, path in enumerate(locker.H_SCOPE)
     ]
+    contract = _contract(
+        closure_source=locker.CLOSURE_SOURCE_COMMIT,
+        r_syn=locker.R_SYN_COMMIT,
+        editorial=locker.EDITORIAL_COMMIT,
+    )
     suite = locker._suite_snapshot(  # noqa: SLF001 - direct authority unit test
-        _contract(
-            closure_source=locker.CLOSURE_SOURCE_COMMIT,
-            r_syn=locker.R_SYN_COMMIT,
-            editorial=locker.EDITORIAL_COMMIT,
-        )
+        contract
+    )
+    anchors = _anchor_records()
+    pointers = _pointer_records()
+    static_contract = certification.load_contract(
+        root=locker.PROJECT_ROOT,
+        verify_inputs=False,
+        allow_pending_suite=True,
     )
     return {
         "h_cert_commit": "a" * 40,
@@ -428,9 +483,16 @@ def _fake_state() -> dict[str, Any]:
         "p1_component_records": p1_components,
         "h2_component_records": h2_components,
         "p2_component_records": p2_components,
+        "h3_component_records": h3_components,
+        "p3_component_records": p3_components,
         "h_component_records": components,
-        "anchor_input_records": _anchor_records(),
-        "dvc_pointer_records": _pointer_records(),
+        "anchor_input_records": anchors,
+        "dvc_pointer_records": pointers,
+        "main_dvc_static_boundary": certification.main_dvc_static_boundary_record(
+            static_contract,
+            anchor_records=anchors,
+            pointer_records=pointers,
+        ),
         "suite": suite,
         "ordered_output_paths": list(locker.R_SCOPE),
     }
@@ -456,6 +518,10 @@ def test_scopes_modes_and_stop_boundary_are_exact() -> None:
         if path != "src/data/prepare_commit_artifacts.py"
     } == {"100644"}
     assert locker.P_SCOPE == {
+        "configs/closure_v1/phase4_final_certification_authority_v4.json": "A",
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v4.json": "A",
+    }
+    assert locker.P3_SCOPE == {
         "configs/closure_v1/phase4_final_certification_authority_v3.json": "A",
         "configs/closure_v1/phase4_final_certification_authority_manifest_v3.json": "A",
     }
@@ -534,7 +600,7 @@ def test_suite_snapshot_fails_closed_until_suite_is_locked() -> None:
     }
     assert (
         snapshot["suite_lock"]["nodeids_sha256"]
-        == "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"
+        == "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
     )
     assert snapshot["selectors"] == list(locked.test_suite.selectors)
 
@@ -574,8 +640,10 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         "p1_cert_commit": locker.P1_CERT_COMMIT,
         "h2_cert_commit": locker.H2_CERT_COMMIT,
         "p2_cert_commit": locker.P2_CERT_COMMIT,
-        "h3_cert_commit": "a" * 40,
-        "p3_cert_commit": None,
+        "h3_cert_commit": locker.H3_CERT_COMMIT,
+        "p3_cert_commit": locker.P3_CERT_COMMIT,
+        "h4_cert_commit": "a" * 40,
+        "p4_cert_commit": None,
         "h_cert_commit": "a" * 40,
         "p_cert_commit": None,
         "r_cert_executable_tree_must_equal_p_cert": True,
@@ -584,9 +652,17 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         locker.ANCHOR_PATHS
     )
     assert len(authority["dvc_pointer_records"]) == 8
+    assert authority["main_dvc_static_boundary"]["status_executed"] is False
+    assert authority["main_dvc_static_boundary"][
+        "static_boundary_verified"
+    ] is True
+    assert authority["main_dvc_static_boundary"]["real_dvc_execution_scope"] == (
+        "isolated_r_cert_clone_only"
+    )
     assert authority["ordered_r_cert_output_paths"] == list(locker.R_SCOPE)
     assert authority["p1_failure"]["retry_authorized"] is False
     assert authority["p2_failure"] == certification.expected_p2_failure_record()
+    assert authority["p3_failure"] == certification.expected_p3_failure_record()
     assert [record["path"] for record in authority["h1_component_records"]] == list(
         locker.H1_SCOPE
     )
@@ -599,7 +675,13 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     assert [record["path"] for record in authority["p2_component_records"]] == list(
         locker.P2_SCOPE
     )
-    assert authority["h3_component_records"] == authority["h_component_records"]
+    assert [record["path"] for record in authority["h3_component_records"]] == list(
+        locker.H3_SCOPE
+    )
+    assert [record["path"] for record in authority["p3_component_records"]] == list(
+        locker.P3_SCOPE
+    )
+    assert authority["h4_component_records"] == authority["h_component_records"]
     assert authority["failure_diagnostics"] == dict(
         certification.FAILURE_DIAGNOSTICS_POLICY
     )
@@ -610,23 +692,61 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     assert authority["isolation"][
         "failed_dvc_partial_tree_not_adopted_for_cleanup"
     ] is True
+    assert authority["isolation"]["owned_site_cache_count"] == 2
+    assert authority["isolation"]["owned_site_cache_roles"] == [
+        "runtime_version",
+        "restore_status",
+    ]
+    assert authority["isolation"]["owned_site_cache_filesystem_mode"] == "0700"
+    assert authority["isolation"]["owned_site_caches_separated"] is True
+    assert authority["isolation"]["owned_site_cache_paths_serialized"] is False
+    assert authority["isolation"][
+        "version_seal_before_private_config_or_pull"
+    ] is True
+    assert authority["isolation"][
+        "single_dvc_runtime_retained_through_final_status_and_version_probe"
+    ] is True
+    assert authority["isolation"][
+        "dvc_runtime_cross_call_identity_revalidated"
+    ] is True
+    assert authority["isolation"]["used_by_all_isolated_dvc_commands"] is True
+    assert authority["isolation"]["copied_core_site_cache_dir_used"] is False
+    assert authority["isolation"][
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged"
+    ] is True
+    assert authority["isolation"]["main_dvc_command_run"] is False
+    assert "main_dvc_site_cache_must_remain_unchanged" not in authority["isolation"]
     assert "guard_path" not in authority["isolation"]
     assert "rollback_owned_inodes_only" not in authority["isolation"]
     assert authority["authorizations"] == dict(certification.AUTHORIZATION_POLICY)
     assert all(authority["prohibitions"].values())
+    assert authority["prohibitions"]["owned_site_cache_paths_serialization"] is True
+    assert authority["prohibitions"][
+        "main_dvc_site_cache_payload_open_or_hash"
+    ] is True
+    assert authority["prohibitions"][
+        "dvc_runtime_cross_call_identity_or_lifetime_drift"
+    ] is True
 
     mutations: list[tuple[str, Any]] = [
         ("topology", {**authority["topology"], "p_cert_commit": "b" * 40}),
         ("p1_failure", {**authority["p1_failure"], "retry_authorized": True}),
         ("p2_failure", {**authority["p2_failure"], "retry_authorized": True}),
+        ("p3_failure", {**authority["p3_failure"], "retry_authorized": True}),
         ("h1_component_records_digest", "0" * 64),
         ("p1_component_records_digest", "0" * 64),
         ("h2_component_records_digest", "0" * 64),
         ("p2_component_records_digest", "0" * 64),
+        ("h3_component_records_digest", "0" * 64),
+        ("p3_component_records_digest", "0" * 64),
         ("h_scope", {}),
         ("h_component_records_digest", "0" * 64),
         ("anchor_input_records_digest", "0" * 64),
         ("dvc_pointer_records", authority["dvc_pointer_records"][:-1]),
+        (
+            "main_dvc_static_boundary",
+            {**authority["main_dvc_static_boundary"], "status_executed": True},
+        ),
         ("test_suite_digest", "0" * 64),
         ("ordered_r_cert_output_paths", list(reversed(list(locker.R_SCOPE)))),
         ("isolation", {}),
@@ -700,8 +820,11 @@ def test_manifest_is_canonical_and_binds_only_the_authority_output() -> None:
     assert manifest["p1_cert_commit"] == locker.P1_CERT_COMMIT
     assert manifest["h2_cert_commit"] == locker.H2_CERT_COMMIT
     assert manifest["p2_cert_commit"] == locker.P2_CERT_COMMIT
-    assert manifest["h3_cert_commit"] == "a" * 40
-    assert manifest["p3_cert_commit"] is None
+    assert manifest["h3_cert_commit"] == locker.H3_CERT_COMMIT
+    assert manifest["p3_cert_commit"] == locker.P3_CERT_COMMIT
+    assert manifest["h4_cert_commit"] == "a" * 40
+    assert manifest["p4_cert_commit"] is None
+    assert manifest["supersedes_p3"] is True
     assert manifest["supersedes_p2"] is True
     assert manifest["supersedes_p1"] is True
     assert manifest["ordered_paths"] == list(locker.P_SCOPE)
@@ -719,7 +842,7 @@ def test_manifest_is_canonical_and_binds_only_the_authority_output() -> None:
 def test_check_only_accepts_exact_local_h_without_writing(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2 = _make_repository(tmp_path)
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3 = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
         monkeypatch,
@@ -730,6 +853,8 @@ def test_check_only_accepts_exact_local_h_without_writing(
         p1_cert_commit=p1,
         h2_cert_commit=h2,
         p2_cert_commit=p2,
+        h3_cert_commit=h3,
+        p3_cert_commit=p3,
     )
     before = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
     result = locker.check_only(root=root)
@@ -737,6 +862,8 @@ def test_check_only_accepts_exact_local_h_without_writing(
     assert result["status"] == "ready_to_publish_h"
     assert result["writes_performed"] is False
     assert result["dvc_status_checked"] is False
+    assert result["dvc_status_executed"] is False
+    assert result["main_dvc_static_boundary_verified"] is True
     assert result["dvc_pull_commands_run"] is False
     assert result["test_commands_run"] is False
     assert result["parquet_payloads_opened"] is False
@@ -745,10 +872,10 @@ def test_check_only_accepts_exact_local_h_without_writing(
     assert not (root / locker.MANIFEST_PATH).exists()
 
 
-def test_check_only_accepts_pending_suite_only_for_local_h3(
+def test_check_only_accepts_pending_suite_only_for_local_h4(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2 = _make_repository(tmp_path)
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3 = _make_repository(tmp_path)
     _materialize_h(root)
     contract = _patch_topology(
         monkeypatch,
@@ -759,6 +886,8 @@ def test_check_only_accepts_pending_suite_only_for_local_h3(
         p1_cert_commit=p1,
         h2_cert_commit=h2,
         p2_cert_commit=p2,
+        h3_cert_commit=h3,
+        p3_cert_commit=p3,
     )
     contract.test_suite.status = "pending_integration"
     contract.test_suite.selector_count = None
@@ -766,7 +895,9 @@ def test_check_only_accepts_pending_suite_only_for_local_h3(
     contract.test_suite.nodeids_sha256 = None
     result = locker.check_only(root=root)
     assert result["status"] == "ready_to_publish_h"
-    assert result["h3_cert_commit"] is None
+    assert result["h3_cert_commit"] == h3
+    assert result["p3_cert_commit"] == p3
+    assert result["h4_cert_commit"] is None
     assert result["h2_cert_commit"] == h2
     assert result["p2_cert_commit"] == p2
 
@@ -780,7 +911,7 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
     monkeypatch: pytest.MonkeyPatch,
     drift: str,
 ) -> None:
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2 = _make_repository(tmp_path)
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3 = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
         monkeypatch,
@@ -791,13 +922,15 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
         p1_cert_commit=p1,
         h2_cert_commit=h2,
         p2_cert_commit=p2,
+        h3_cert_commit=h3,
+        p3_cert_commit=p3,
     )
     if drift == "extra":
         _write(root, "foreign.txt", "foreign\n")
     elif drift == "unchanged":
         target = root / "tests/test_prepare_commit_artifacts.py"
         target.write_text(
-            "base:tests/test_prepare_commit_artifacts.py\nH-CERT1\nH-CERT2\n",
+            "base:tests/test_prepare_commit_artifacts.py\nH-CERT1\nH-CERT2\nH-CERT3\n",
             encoding="utf-8",
         )
     elif drift == "mode":
@@ -815,7 +948,7 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
 def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2 = _make_repository(tmp_path)
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3 = _make_repository(tmp_path)
     _materialize_h(root)
     contract = _patch_topology(
         monkeypatch,
@@ -826,15 +959,28 @@ def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
         p1_cert_commit=p1,
         h2_cert_commit=h2,
         p2_cert_commit=p2,
+        h3_cert_commit=h3,
+        p3_cert_commit=p3,
     )
     head = _publish_h(root)
-    calls: list[Path] = []
-    monkeypatch.setattr(locker, "_dvc_status", lambda value: calls.append(value) or {})
+    original_run = locker.subprocess.run
+
+    def reject_dvc(command: list[str], *args: Any, **kwargs: Any) -> Any:
+        executable = os.fspath(command[0])
+        if executable.endswith("/dvc") or executable.startswith("/proc/self/fd/"):
+            raise AssertionError("main-worktree DVC execution is forbidden")
+        return original_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(locker.subprocess, "run", reject_dvc)
     result = locker.check_only(root=root)
     assert result["status"] == "ready_to_generate"
     assert result["h_cert_commit"] == head
-    assert result["dvc_status_checked"] is True
-    assert calls == [root.resolve()]
+    assert result["dvc_status_checked"] is False
+    assert result["dvc_status_executed"] is False
+    assert result["main_dvc_static_boundary_verified"] is True
+    assert result["main_dvc_static_boundary"]["state_source"] == (
+        "git_and_versioned_dvc_pointers"
+    )
 
     _write(root, "foreign.txt", "drift\n")
     with pytest.raises(
@@ -852,7 +998,7 @@ def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
 def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2 = _make_repository(tmp_path)
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3 = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
         monkeypatch,
@@ -863,9 +1009,19 @@ def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
         p1_cert_commit=p1,
         h2_cert_commit=h2,
         p2_cert_commit=p2,
+        h3_cert_commit=h3,
+        p3_cert_commit=p3,
     )
     head = _publish_h(root)
-    monkeypatch.setattr(locker, "_dvc_status", lambda _root: {})
+    original_run = locker.subprocess.run
+
+    def reject_dvc(command: list[str], *args: Any, **kwargs: Any) -> Any:
+        executable = os.fspath(command[0])
+        if executable.endswith("/dvc") or executable.startswith("/proc/self/fd/"):
+            raise AssertionError("main-worktree DVC execution is forbidden")
+        return original_run(command, *args, **kwargs)
+
+    monkeypatch.setattr(locker.subprocess, "run", reject_dvc)
     link_order: list[str] = []
     original_link = locker._link_no_clobber  # noqa: SLF001
 
@@ -881,6 +1037,9 @@ def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
     result = locker.generate(root=root)
     assert result["status"] == "authority_bundle_written_unpublished"
     assert result["h_cert_commit"] == head
+    assert result["dvc_status_checked"] is False
+    assert result["dvc_status_executed"] is False
+    assert result["main_dvc_static_boundary_verified"] is True
     assert result["dvc_pull_commands_run"] is False
     assert result["test_commands_run"] is False
     assert result["parquet_payloads_opened"] is False
@@ -1664,8 +1823,11 @@ def test_regular_reader_restats_canonical_name_after_fd_read(
 
 def test_generation_does_not_contain_forbidden_execution_commands() -> None:
     source = Path(locker.__file__).read_text(encoding="utf-8")
-    # The locker may inspect Git and DVC status only.  Effective certification
-    # work belongs exclusively to the separately published P-CERT consumer.
+    # The locker may inspect Git only. Real DVC belongs to the isolated R-CERT
+    # clone and is never invoked by H-CERT4/P-CERT4.
+    assert "def _dvc_status" not in source
+    assert '"status", "--json"' not in source
+    assert "DVC_NO_ANALYTICS" not in source
     assert '"pull"' not in source
     assert '"pytest"' not in source
     assert '"dvc", "add"' not in source
@@ -1689,6 +1851,8 @@ def test_contract_collection_rejects_wrong_anchor_pointer_and_output_cardinality
     state = locker._collect_contract_state(contract, Path("."))  # noqa: SLF001
     assert len(state["anchor_input_records"]) == 10
     assert len(state["dvc_pointer_records"]) == 8
+    assert state["main_dvc_static_boundary"]["status_executed"] is False
+    assert state["main_dvc_static_boundary"]["static_boundary_verified"] is True
 
     monkeypatch.setattr(
         certification,
@@ -1719,77 +1883,62 @@ def test_contract_collection_rejects_wrong_anchor_pointer_and_output_cardinality
 def test_dvc_status_accepts_only_exact_empty_json(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    root = tmp_path / "root"
-    _write(root, ".venv/bin/dvc", "#!/bin/sh\n", mode=0o755)
-
-    def completed(stdout: str, returncode: int = 0) -> SimpleNamespace:
-        return SimpleNamespace(stdout=stdout, stderr="failure", returncode=returncode)
-
-    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: completed("{}\n"))
-    assert locker._dvc_status(root) == {}  # noqa: SLF001
-
-    monkeypatch.setattr(
-        subprocess,
-        "run",
-        lambda *_args, **_kwargs: completed('{"changed": ["models"]}\n'),
+    # Historical nodeid retained: H-CERT4 supersedes the old dynamic-status
+    # assertion with an entirely static Git-and-pointer reconstruction.
+    del tmp_path
+    contract = _contract(
+        closure_source=locker.CLOSURE_SOURCE_COMMIT,
+        r_syn=locker.R_SYN_COMMIT,
+        editorial=locker.EDITORIAL_COMMIT,
     )
-    with pytest.raises(
-        certification.FinalCertificationContractError, match="exact empty"
-    ):
-        locker._dvc_status(root)  # noqa: SLF001
-
-    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: completed("[]\n"))
-    with pytest.raises(
-        certification.FinalCertificationContractError, match="one JSON object"
-    ):
-        locker._dvc_status(root)  # noqa: SLF001
-
-    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: completed("", 2))
-    with pytest.raises(certification.FinalCertificationContractError, match="failed"):
-        locker._dvc_status(root)  # noqa: SLF001
+    _install_contract_stubs(monkeypatch, contract)
+    monkeypatch.setattr(
+        locker.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("static boundary must not invoke subprocess")
+        ),
+    )
+    state = locker._collect_contract_state(contract, Path("."))  # noqa: SLF001
+    assert not hasattr(locker, "_dvc_status")
+    assert state["main_dvc_static_boundary"]["status_executed"] is False
+    assert state["main_dvc_static_boundary"]["static_boundary_verified"] is True
+    assert state["main_dvc_static_boundary"]["versioned_pointer_count"] == 8
 
 
 def test_dvc_status_executes_retained_fd_not_foreign_path_replacement(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    root = tmp_path / "root"
-    owned = root / ".venv/bin/dvc"
-    _write(
-        root,
-        ".venv/bin/dvc",
-        "#!/bin/sh\nprintf 'owned\\n' > owned-executed\nprintf '{}\\n'\n",
-        mode=0o755,
+    # Historical nodeid retained: no DVC descriptor is executed at all now.
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3 = (
+        _make_repository(tmp_path)
     )
-    retained = root / ".venv/bin/dvc.retained"
+    _materialize_h(root)
+    _patch_topology(
+        monkeypatch,
+        closure_source=closure_source,
+        r_syn=r_syn,
+        editorial=editorial,
+        h1_cert_commit=h1,
+        p1_cert_commit=p1,
+        h2_cert_commit=h2,
+        p2_cert_commit=p2,
+        h3_cert_commit=h3,
+        p3_cert_commit=p3,
+    )
     original_run = locker.subprocess.run
-    injected = False
+    observed: list[list[str]] = []
 
-    def swap_path_before_exec(*args: Any, **kwargs: Any) -> Any:
-        nonlocal injected
-        command = args[0]
-        if not injected:
-            assert command[0].startswith("/proc/self/fd/")
-            descriptor = int(command[0].rsplit("/", 1)[1])
-            assert kwargs["pass_fds"] == (descriptor,)
-            os.rename(owned, retained)
-            owned.write_text(
-                "#!/bin/sh\nprintf 'foreign\\n' > foreign-executed\nprintf '{}\\n'\n",
-                encoding="utf-8",
-            )
-            owned.chmod(0o755)
-            injected = True
-        return original_run(*args, **kwargs)
+    def reject_dvc(command: list[str], *args: Any, **kwargs: Any) -> Any:
+        observed.append(command)
+        executable = os.fspath(command[0])
+        if executable.endswith("/dvc") or executable.startswith("/proc/self/fd/"):
+            raise AssertionError("main-worktree DVC execution is forbidden")
+        return original_run(command, *args, **kwargs)
 
-    monkeypatch.setattr(locker.subprocess, "run", swap_path_before_exec)
-    with pytest.raises(
-        certification.FinalCertificationContractError,
-        match="name or identity drifted",
-    ):
-        locker._dvc_status(root)  # noqa: SLF001
-
-    assert injected is True
-    assert (root / "owned-executed").read_text(encoding="utf-8") == "owned\n"
-    assert not (root / "foreign-executed").exists()
-    assert retained.read_text(encoding="utf-8").startswith("#!/bin/sh\n")
-    assert owned.read_text(encoding="utf-8").startswith("#!/bin/sh\n")
+    monkeypatch.setattr(locker.subprocess, "run", reject_dvc)
+    result = locker.check_only(root=root)
+    assert result["dvc_status_executed"] is False
+    assert observed
+    assert {command[0] for command in observed} == {"git"}

@@ -1535,6 +1535,12 @@ CLOSURE_PHASE4_H_CERT_V2_COMMIT = (
 CLOSURE_PHASE4_P_CERT_V2_COMMIT = (
     "72273b52d47df83acc7618fe98a887b74d690a13"
 )
+CLOSURE_PHASE4_H_CERT_V3_COMMIT = (
+    "2372d0f9cc36aa916b79f34641b2b01134057890"
+)
+CLOSURE_PHASE4_P_CERT_V3_COMMIT = (
+    "bcd306a9e8dd5162466124d8854b9d1d99a8517c"
+)
 CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE = {
     "configs/closure_v1/phase4_final_certification.schema.json": "A",
     "configs/closure_v1/phase4_final_certification.yaml": "A",
@@ -1573,8 +1579,22 @@ CLOSURE_PHASE4_P_CERT_V2_STAGED_SCOPE = {
 CLOSURE_PHASE4_P_CERT_V2_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_P_CERT_V2_STAGED_SCOPE
 }
-CLOSURE_PHASE4_H_CERT_STAGED_SCOPE = {
+CLOSURE_PHASE4_H_CERT_V3_STAGED_SCOPE = {
     path: "M" for path in CLOSURE_PHASE4_H_CERT_V2_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_V3_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE4_H_CERT_V3_STAGED_SCOPE
+}
+CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE = {
+    "configs/closure_v1/phase4_final_certification_authority_v3.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v3.json": "A",
+}
+CLOSURE_PHASE4_P_CERT_V3_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_STAGED_SCOPE = {
+    path: "M" for path in CLOSURE_PHASE4_H_CERT_V3_STAGED_SCOPE
 }
 CLOSURE_PHASE4_H_CERT_GIT_MODES = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
@@ -1584,8 +1604,8 @@ CLOSURE_PHASE4_H_CERT_MARKER_PATHS = frozenset(
     CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
 )
 CLOSURE_PHASE4_P_CERT_STAGED_SCOPE = {
-    "configs/closure_v1/phase4_final_certification_authority_v3.json": "A",
-    "configs/closure_v1/phase4_final_certification_authority_manifest_v3.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_v4.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v4.json": "A",
 }
 CLOSURE_PHASE4_P_CERT_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_P_CERT_STAGED_SCOPE
@@ -12217,7 +12237,7 @@ def write_report(
     deferred_snapshot_after: tuple[DeferredDvcFinalSnapshot, ...] | None,
     rejected_unmanaged_paths: list[Path],
     git_status_before: str,
-    dvc_status_before: dict[str, Any],
+    dvc_status_before: dict[str, Any] | None,
     dvc_status_after: dict[str, Any] | None,
     cloud_status_before: CommandResult | None,
     dvc_add_results: list[CommandResult],
@@ -12298,16 +12318,17 @@ def write_report(
         lines.append("- none")
 
     lines.extend(["", "## Git Status Before", "", "```text", git_status_before.rstrip() or "clean", "```"])
-    lines.extend(
-        [
-            "",
-            "## DVC Status Before",
-            "",
-            "```json",
-            json.dumps(dvc_status_before, indent=2, sort_keys=True),
-            "```",
-        ]
-    )
+    lines.extend(["", "## DVC Status Before", ""])
+    if dvc_status_before is None:
+        lines.append("Not run.")
+    else:
+        lines.extend(
+            [
+                "```json",
+                json.dumps(dvc_status_before, indent=2, sort_keys=True),
+                "```",
+            ]
+        )
     lines.extend(["", "## DVC Status After Staging", ""])
     if dvc_status_after is None:
         lines.append("Not run.")
@@ -20408,27 +20429,6 @@ class ClosurePhase4FinalCertificationExecutableLease:
     metadata: tuple[int, ...]
 
 
-@dataclass(frozen=True)
-class ClosurePhase4FinalCertificationPythonLease:
-    """Retained venv launcher symlink and its trusted system interpreter FD."""
-
-    path: str
-    parent_fd: int
-    name: str
-    target: str
-    fd: int
-    link_metadata: tuple[int, ...]
-    target_metadata: tuple[int, ...]
-
-
-@dataclass(frozen=True)
-class ClosurePhase4FinalCertificationDvcRuntimeLease:
-    """Both executable layers needed by the DVC console-script runtime."""
-
-    script: ClosurePhase4FinalCertificationExecutableLease
-    interpreter: ClosurePhase4FinalCertificationPythonLease
-
-
 def _closure_phase4_cert_safe_relative_path(
     raw_path: str,
     *,
@@ -20663,9 +20663,6 @@ def _closure_phase4_cert_parent_directories(
 
 
 def _closure_phase4_cert_transaction_directories(gate: str) -> tuple[str, ...]:
-    venv_python_root = (
-        f".venv/lib/python{sys.version_info.major}.{sys.version_info.minor}"
-    )
     bound_inputs = (
         ".dvc/config",
         "docs/API_DATASET_CONTRACT.md",
@@ -20692,11 +20689,6 @@ def _closure_phase4_cert_transaction_directories(gate: str) -> tuple[str, ...]:
     directories = {
         ".git",
         ".dvc",
-        ".venv",
-        ".venv/bin",
-        ".venv/lib",
-        venv_python_root,
-        f"{venv_python_root}/site-packages",
         "configs",
         "configs/closure_v1",
         "reports",
@@ -20863,139 +20855,12 @@ def _close_closure_phase4_cert_executable(
     os.close(executable.fd)
 
 
-def _open_closure_phase4_cert_python_interpreter(
-    *,
-    tree_lease: ClosurePhase4FinalCertificationTreeLease,
-) -> ClosurePhase4FinalCertificationPythonLease:
-    parent_fd = _closure_phase4_cert_tree_directory_fd(
-        tree_lease,
-        ".venv/bin",
-    )
-    name = "python"
-    descriptor = -1
-    try:
-        _require_closure_phase4_cert_tree_binding(
-            tree_lease,
-            context="Closure Phase 4 certification Python pre-open ancestry",
-        )
-        link_before = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
-        target_before = os.readlink(name, dir_fd=parent_fd)
-        followed_before = os.stat(name, dir_fd=parent_fd, follow_symlinks=True)
-        descriptor = os.open(name, os.O_RDONLY, dir_fd=parent_fd)
-        opened = os.fstat(descriptor)
-        link_after = os.stat(name, dir_fd=parent_fd, follow_symlinks=False)
-        target_after = os.readlink(name, dir_fd=parent_fd)
-        followed_after = os.stat(name, dir_fd=parent_fd, follow_symlinks=True)
-        base_executable = Path(
-            cast(str, getattr(sys, "_base_executable", sys.executable))
-        )
-        trusted_base = os.stat(base_executable, follow_symlinks=True)
-        link_identity = _closure_phase4_cert_stat_identity(link_before)
-        target_identity = _closure_phase4_cert_stat_identity(opened)
-        if (
-            not stat.S_ISLNK(link_before.st_mode)
-            or link_before.st_nlink != 1
-            or link_identity != _closure_phase4_cert_stat_identity(link_after)
-            or target_before != target_after
-            or not Path(target_before).is_absolute()
-            or not stat.S_ISREG(opened.st_mode)
-            or stat.S_IMODE(opened.st_mode) != 0o755
-            or target_identity
-            != _closure_phase4_cert_stat_identity(followed_before)
-            or target_identity
-            != _closure_phase4_cert_stat_identity(followed_after)
-            or (opened.st_dev, opened.st_ino)
-            != (trusted_base.st_dev, trusted_base.st_ino)
-            or not base_executable.resolve(strict=True).is_relative_to(Path("/usr"))
-        ):
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Closure Phase 4 certification Python launcher/interpreter "
-                "binding is unsafe"
-            )
-        lease = ClosurePhase4FinalCertificationPythonLease(
-            path=".venv/bin/python",
-            parent_fd=parent_fd,
-            name=name,
-            target=target_before,
-            fd=descriptor,
-            link_metadata=link_identity,
-            target_metadata=target_identity,
-        )
-        _require_closure_phase4_cert_python_binding(
-            lease,
-            tree_lease=tree_lease,
-            context="Closure Phase 4 certification Python closing open rebind",
-        )
-        return lease
-    except BaseException:
-        if descriptor >= 0:
-            os.close(descriptor)
-        raise
-
-
-def _require_closure_phase4_cert_python_binding(
-    interpreter: ClosurePhase4FinalCertificationPythonLease,
-    *,
-    tree_lease: ClosurePhase4FinalCertificationTreeLease,
-    context: str,
-) -> None:
-    try:
-        _require_closure_phase4_cert_tree_binding(
-            tree_lease,
-            context=f"{context} ancestry",
-        )
-        link = os.stat(
-            interpreter.name,
-            dir_fd=interpreter.parent_fd,
-            follow_symlinks=False,
-        )
-        target = os.readlink(
-            interpreter.name,
-            dir_fd=interpreter.parent_fd,
-        )
-        followed = os.stat(
-            interpreter.name,
-            dir_fd=interpreter.parent_fd,
-            follow_symlinks=True,
-        )
-        opened = os.fstat(interpreter.fd)
-        if (
-            not stat.S_ISLNK(link.st_mode)
-            or _closure_phase4_cert_stat_identity(link)
-            != interpreter.link_metadata
-            or target != interpreter.target
-            or _closure_phase4_cert_stat_identity(followed)
-            != interpreter.target_metadata
-            or _closure_phase4_cert_stat_identity(opened)
-            != interpreter.target_metadata
-        ):
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                f"{context} Python launcher/interpreter binding drifted"
-            )
-    except ClosurePhase4FinalCertificationPrecommitAdapterError:
-        raise
-    except OSError as exc:
-        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            f"{context} Python launcher/interpreter binding disappeared"
-        ) from exc
-
-
-def _close_closure_phase4_cert_python_interpreter(
-    interpreter: ClosurePhase4FinalCertificationPythonLease,
-) -> None:
-    os.close(interpreter.fd)
-
-
 def _run_closure_phase4_cert_executable(
     executable: ClosurePhase4FinalCertificationExecutableLease,
     arguments: Sequence[str],
     *,
     tree_lease: ClosurePhase4FinalCertificationTreeLease,
-    env: dict[str, str] | None = None,
     interpreter: str | None = None,
-    python_interpreter: (
-        ClosurePhase4FinalCertificationPythonLease | None
-    ) = None,
     context: str,
 ) -> CommandResult:
     """Execute retained bytes, never a workspace pathname resolved by the child."""
@@ -21006,48 +20871,16 @@ def _run_closure_phase4_cert_executable(
         context=f"{context} pre-execution rebind",
     )
     descriptor_path = f"/proc/self/fd/{executable.fd}"
-    inherited = [executable.fd]
-    command_environment = env
-    if python_interpreter is not None:
-        if interpreter is not None:
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                f"{context} cannot select two interpreters"
-            )
-        _require_closure_phase4_cert_python_binding(
-            python_interpreter,
-            tree_lease=tree_lease,
-            context=f"{context} pre-execution",
-        )
-        venv_fd = _closure_phase4_cert_tree_directory_fd(tree_lease, ".venv")
-        inherited.extend((python_interpreter.fd, venv_fd))
-        command = [
-            f"/proc/self/fd/{python_interpreter.fd}",
-            descriptor_path,
-            *arguments,
-        ]
-        command_environment = {
-            **({} if env is None else env),
-            "__PYVENV_LAUNCHER__": f"/proc/self/fd/{venv_fd}/bin/python",
-            "PYTHONDONTWRITEBYTECODE": "1",
-        }
-    else:
-        command = [
-            *(() if interpreter is None else (interpreter,)),
-            descriptor_path,
-            *arguments,
-        ]
+    command = [
+        *(() if interpreter is None else (interpreter,)),
+        descriptor_path,
+        *arguments,
+    ]
     result = run_command(
         command,
         check=False,
-        env=command_environment,
-        pass_fds=tuple(inherited),
+        pass_fds=(executable.fd,),
     )
-    if python_interpreter is not None:
-        _require_closure_phase4_cert_python_binding(
-            python_interpreter,
-            tree_lease=tree_lease,
-            context=f"{context} post-execution",
-        )
     _require_closure_phase4_cert_executable_binding(
         executable,
         tree_lease=tree_lease,
@@ -21061,80 +20894,153 @@ def _run_closure_phase4_cert_executable(
     )
 
 
-def _closure_phase4_cert_dvc_status(
-    runtime: ClosurePhase4FinalCertificationDvcRuntimeLease,
+def _closure_phase4_cert_static_git_pointer_boundary(
     *,
+    repo_root: Path,
     tree_lease: ClosurePhase4FinalCertificationTreeLease,
-) -> dict[str, Any]:
-    result = _run_closure_phase4_cert_executable(
-        runtime.script,
-        ("status", "--json"),
-        tree_lease=tree_lease,
-        env=dvc_environment(),
-        python_interpreter=runtime.interpreter,
-        context="Closure Phase 4 certification DVC status",
-    )
-    if result.returncode != 0:
-        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Closure Phase 4 certification anchored DVC status failed: "
-            f"exit={result.returncode}; stderr={result.stderr.strip()}"
-        )
-    if not result.stdout.strip():
-        return {}
-    try:
-        payload = json.loads(result.stdout)
-    except json.JSONDecodeError as exc:
-        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Closure Phase 4 certification anchored DVC status is not JSON"
-        ) from exc
-    if not isinstance(payload, dict):
-        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Closure Phase 4 certification anchored DVC status is not an object"
-        )
-    return payload
+) -> str:
+    """Bind Git and all eight pointer files without launching DVC.
 
+    Even ``dvc status`` writes repository-state databases under DVC's site
+    cache.  H/P/R-CERT precommit therefore treats the published Git binding
+    plus the canonical eight-pointer projection as the complete non-mutating
+    DVC boundary.  The Git projection is recaptured around the pointer read so
+    an index or worktree race cannot be hidden inside one observation.
+    """
 
-def _initialize_closure_phase4_cert_dvc_observation(
-    explicit_path: str | None,
-    *,
-    tree_lease: ClosurePhase4FinalCertificationTreeLease,
-) -> tuple[ClosurePhase4FinalCertificationDvcRuntimeLease, dict[str, Any]]:
-    if explicit_path not in {None, DEFAULT_DVC_BIN.as_posix()}:
-        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Closure Phase 4 certification requires exact .venv/bin/dvc"
-        )
-    script: ClosurePhase4FinalCertificationExecutableLease | None = None
-    interpreter: ClosurePhase4FinalCertificationPythonLease | None = None
     try:
-        script = _open_closure_phase4_cert_executable(
-            DEFAULT_DVC_BIN.as_posix(),
-            tree_lease=tree_lease,
-            context="Closure Phase 4 certification DVC executable",
+        from src.reporting import (
+            phase4_final_certification_contract as contract_module,
         )
-        interpreter = _open_closure_phase4_cert_python_interpreter(
-            tree_lease=tree_lease,
+
+        _require_closure_phase4_cert_tree_binding(
+            tree_lease,
+            context="Closure Phase 4 static Git/pointer boundary initial rebind",
         )
-        runtime = ClosurePhase4FinalCertificationDvcRuntimeLease(
-            script=script,
-            interpreter=interpreter,
+        contract = _require_closure_phase4_cert_contract(repo_root=repo_root)
+        pointer_paths = tuple(spec.path for spec in contract.dvc_pointers)
+        if len(pointer_paths) != 8 or len(set(pointer_paths)) != 8:
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 static boundary requires exact eight DVC pointers"
+            )
+
+        def capture_git_projection() -> dict[str, Any]:
+            head = _git_output(
+                repo_root,
+                "rev-parse",
+                "HEAD^{commit}",
+            ).strip()
+            if re.fullmatch(r"[0-9a-f]{40}", head) is None:
+                raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                    "Closure Phase 4 static boundary HEAD binding is invalid"
+                )
+            index_lines = _git_output(
+                repo_root,
+                "ls-files",
+                "-s",
+                "--",
+                *pointer_paths,
+            ).splitlines()
+            index_by_path: dict[str, tuple[str, str]] = {}
+            for line in index_lines:
+                fields = line.split(maxsplit=3)
+                if (
+                    len(fields) != 4
+                    or fields[0] != "100644"
+                    or re.fullmatch(r"[0-9a-f]{40,64}", fields[1]) is None
+                    or fields[2] != "0"
+                    or fields[3] in index_by_path
+                ):
+                    raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                        "Closure Phase 4 pointer index binding drifted"
+                    )
+                index_by_path[fields[3]] = (fields[0], fields[1])
+            if set(index_by_path) != set(pointer_paths):
+                raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                    "Closure Phase 4 pointer index inventory is not exact eight"
+                )
+            staged = _git_output(
+                repo_root,
+                "diff",
+                "--cached",
+                "--name-status",
+                "--no-renames",
+                "--",
+                *pointer_paths,
+            )
+            unstaged = _git_output(
+                repo_root,
+                "diff",
+                "--name-status",
+                "--no-renames",
+                "--",
+                *pointer_paths,
+            )
+            status = _git_output(
+                repo_root,
+                "status",
+                "--short",
+                "--untracked-files=all",
+                "--",
+                *pointer_paths,
+            )
+            if staged.strip() or unstaged.strip() or status.strip():
+                raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                    "Closure Phase 4 DVC pointer Git state is not pristine"
+                )
+            return {
+                "head": head,
+                "index": [
+                    {
+                        "path": path,
+                        "mode": index_by_path[path][0],
+                        "oid": index_by_path[path][1],
+                    }
+                    for path in pointer_paths
+                ],
+                "staged_pointer_diff": "",
+                "unstaged_pointer_diff": "",
+                "pointer_status": "",
+            }
+
+        git_before = capture_git_projection()
+        pointer_records = contract_module.collect_dvc_pointer_records(
+            contract,
+            root=repo_root,
         )
-        return runtime, _closure_phase4_cert_dvc_status(
-            runtime,
-            tree_lease=tree_lease,
+        if (
+            len(pointer_records) != 8
+            or tuple(record.get("path") for record in pointer_records)
+            != pointer_paths
+        ):
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 static pointer projection is not exact eight"
+            )
+        git_after = capture_git_projection()
+        _require_closure_phase4_cert_tree_binding(
+            tree_lease,
+            context="Closure Phase 4 static Git/pointer boundary closing rebind",
         )
-    except BaseException:
-        if interpreter is not None:
-            _close_closure_phase4_cert_python_interpreter(interpreter)
-        if script is not None:
-            _close_closure_phase4_cert_executable(script)
+        if git_after != git_before:
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 Git/pointer boundary changed during capture"
+            )
+        return hashlib.sha256(
+            contract_module.canonical_json_bytes(
+                {
+                    "git": git_before,
+                    "dvc_pointer_records": pointer_records,
+                    "dvc_command_executed": False,
+                    "parquet_payload_opened": False,
+                }
+            )
+        ).hexdigest()
+    except ClosurePhase4FinalCertificationPrecommitAdapterError:
         raise
-
-
-def _close_closure_phase4_cert_dvc_runtime(
-    runtime: ClosurePhase4FinalCertificationDvcRuntimeLease,
-) -> None:
-    _close_closure_phase4_cert_python_interpreter(runtime.interpreter)
-    _close_closure_phase4_cert_executable(runtime.script)
+    except BaseException as exc:
+        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+            f"Closure Phase 4 static Git/pointer boundary failed: {exc}"
+        ) from exc
 
 
 def _run_closure_phase4_cert_publication_check(
@@ -21234,6 +21140,8 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             or contract.p1_cert_commit != CLOSURE_PHASE4_P_CERT_V1_COMMIT
             or contract.h2_cert_commit != CLOSURE_PHASE4_H_CERT_V2_COMMIT
             or contract.p2_cert_commit != CLOSURE_PHASE4_P_CERT_V2_COMMIT
+            or contract.h3_cert_commit != CLOSURE_PHASE4_H_CERT_V3_COMMIT
+            or contract.p3_cert_commit != CLOSURE_PHASE4_P_CERT_V3_COMMIT
             or contract.test_suite.status != "locked"
             or contract_module.expected_h1_scope()
             != CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE
@@ -21243,6 +21151,10 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             != CLOSURE_PHASE4_H_CERT_V2_STAGED_SCOPE
             or contract_module.expected_p2_scope()
             != CLOSURE_PHASE4_P_CERT_V2_STAGED_SCOPE
+            or contract_module.expected_h3_scope()
+            != CLOSURE_PHASE4_H_CERT_V3_STAGED_SCOPE
+            or contract_module.expected_p3_scope()
+            != CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE
             or contract_module.expected_h_scope()
             != CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
             or contract_module.expected_p_scope()
@@ -21675,6 +21587,16 @@ def _require_closure_phase4_p2_files_intact(*, repo_root: Path) -> None:
     )
 
 
+def _require_closure_phase4_p3_files_intact(*, repo_root: Path) -> None:
+    _require_closure_phase4_historical_authority_files_intact(
+        CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+        expected_scope=CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_P_CERT_V3_GIT_MODES,
+        label="P-CERT3",
+        repo_root=repo_root,
+    )
+
+
 def _require_closure_phase4_cert_v1_history(*, repo_root: Path) -> None:
     """Bind the immutable editorial -> H1 -> P1 certification prefix."""
 
@@ -21749,16 +21671,53 @@ def _require_closure_phase4_cert_v2_history(*, repo_root: Path) -> None:
     _require_closure_phase4_p2_files_intact(repo_root=repo_root)
 
 
+def _require_closure_phase4_cert_v3_history(*, repo_root: Path) -> None:
+    """Bind immutable H1/P1/H2/P2/H3/P3 history for H-CERT4."""
+
+    _require_closure_phase4_cert_v2_history(repo_root=repo_root)
+    if (
+        _closure_phase4_commit_parents(
+            CLOSURE_PHASE4_H_CERT_V3_COMMIT,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_P_CERT_V2_COMMIT,)
+        or _closure_phase4_commit_parents(
+            CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_H_CERT_V3_COMMIT,)
+    ):
+        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+            "Closure Phase 4 certification requires exact H2 -> P2 -> H3 -> "
+            "P3 single-parent history"
+        )
+    _require_closure_phase4_cert_historical_commit(
+        CLOSURE_PHASE4_H_CERT_V3_COMMIT,
+        expected_scope=CLOSURE_PHASE4_H_CERT_V3_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_H_CERT_V3_GIT_MODES,
+        label="H-CERT3",
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_cert_historical_commit(
+        CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+        expected_scope=CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_P_CERT_V3_GIT_MODES,
+        label="P-CERT3",
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_p3_files_intact(repo_root=repo_root)
+
+
 def _require_closure_phase4_published_h_cert(
     commit: str, *, repo_root: Path
 ) -> None:
-    _require_closure_phase4_cert_v2_history(repo_root=repo_root)
+    _require_closure_phase4_cert_v3_history(repo_root=repo_root)
     if (
         _closure_phase4_commit_parents(commit, repo_root=repo_root)
-        != (CLOSURE_PHASE4_P_CERT_V2_COMMIT,)
+        != (CLOSURE_PHASE4_P_CERT_V3_COMMIT,)
     ):
         raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Published H-CERT3 must be the direct single-parent child of P-CERT2"
+            "Published H-CERT4 must be the direct single-parent child of P-CERT3"
         )
     _require_closure_phase4_cert_committed_bindings(
         commit,
@@ -21773,7 +21732,7 @@ def _require_closure_phase4_published_p_cert(
     parents = _closure_phase4_commit_parents(commit, repo_root=repo_root)
     if len(parents) != 1:
         raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Published P-CERT3 must have exactly one H-CERT3 parent"
+            "Published P-CERT4 must have exactly one H-CERT4 parent"
         )
     h_commit = parents[0]
     _require_closure_phase4_published_h_cert(h_commit, repo_root=repo_root)
@@ -21960,8 +21919,12 @@ def _closure_phase4_cert_semantic_digest(
                 != CLOSURE_PHASE4_H_CERT_V2_COMMIT
                 or result.get("p2_cert_commit")
                 != CLOSURE_PHASE4_P_CERT_V2_COMMIT
+                or result.get("h3_cert_commit")
+                != CLOSURE_PHASE4_H_CERT_V3_COMMIT
+                or result.get("p3_cert_commit")
+                != CLOSURE_PHASE4_P_CERT_V3_COMMIT
                 or result.get("h_cert_commit") is not None
-                or result.get("h3_cert_commit") is not None
+                or result.get("h4_cert_commit") is not None
                 or result.get("writes_performed") is not False
                 or result.get("dvc_status_checked") is not False
                 or result.get("dvc_pull_commands_run") is not False
@@ -21980,7 +21943,9 @@ def _closure_phase4_cert_semantic_digest(
                 "p1_cert_commit": CLOSURE_PHASE4_P_CERT_V1_COMMIT,
                 "h2_cert_commit": CLOSURE_PHASE4_H_CERT_V2_COMMIT,
                 "p2_cert_commit": CLOSURE_PHASE4_P_CERT_V2_COMMIT,
-                "h3_base_commit": head,
+                "h3_cert_commit": CLOSURE_PHASE4_H_CERT_V3_COMMIT,
+                "p3_cert_commit": CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+                "h4_base_commit": head,
                 "suite": {
                     "status": contract.test_suite.status,
                     "selector_count": contract.test_suite.selector_count,
@@ -22043,7 +22008,9 @@ def _closure_phase4_cert_semantic_digest(
                 "authority_sha256": hashlib.sha256(authority_bytes).hexdigest(),
                 "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
                 "h_cert_commit": head,
-                "h3_cert_commit": head,
+                "h4_cert_commit": head,
+                "h3_cert_commit": CLOSURE_PHASE4_H_CERT_V3_COMMIT,
+                "p3_cert_commit": CLOSURE_PHASE4_P_CERT_V3_COMMIT,
                 "h2_cert_commit": CLOSURE_PHASE4_H_CERT_V2_COMMIT,
                 "p2_cert_commit": CLOSURE_PHASE4_P_CERT_V2_COMMIT,
                 "h1_cert_commit": CLOSURE_PHASE4_H_CERT_V1_COMMIT,
@@ -22052,7 +22019,7 @@ def _closure_phase4_cert_semantic_digest(
         elif gate == "R-CERT":
             from src.reporting import build_phase4_final_certification as builder
 
-            h3_commit = _require_closure_phase4_published_p_cert(
+            h4_commit = _require_closure_phase4_published_p_cert(
                 head,
                 repo_root=repo_root,
             )
@@ -22064,9 +22031,13 @@ def _closure_phase4_cert_semantic_digest(
             )
             if (
                 effective.get("p_cert_commit") != head
-                or effective.get("p3_cert_commit") != head
-                or effective.get("h_cert_commit") != h3_commit
-                or effective.get("h3_cert_commit") != h3_commit
+                or effective.get("p4_cert_commit") != head
+                or effective.get("h_cert_commit") != h4_commit
+                or effective.get("h4_cert_commit") != h4_commit
+                or effective.get("p3_cert_commit")
+                != CLOSURE_PHASE4_P_CERT_V3_COMMIT
+                or effective.get("h3_cert_commit")
+                != CLOSURE_PHASE4_H_CERT_V3_COMMIT
                 or effective.get("p2_cert_commit")
                 != CLOSURE_PHASE4_P_CERT_V2_COMMIT
                 or effective.get("h2_cert_commit")
@@ -22078,7 +22049,7 @@ def _closure_phase4_cert_semantic_digest(
             ):
                 raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                     "R-CERT is not based on the effective published "
-                    "H1/P1/H2/P2/H3/P3 authority chain"
+                    "H1/P1/H2/P2/H3/P3/H4/P4 authority chain"
                 )
             _require_closure_phase4_r_cert_namespace_exact(repo_root=repo_root)
             artifacts = {
@@ -22124,6 +22095,8 @@ def _closure_phase4_cert_semantic_digest(
                 "sha256": effective.get("authority_sha256"),
                 "p_cert_commit": effective.get("p_cert_commit"),
                 "h_cert_commit": effective.get("h_cert_commit"),
+                "p4_cert_commit": effective.get("p4_cert_commit"),
+                "h4_cert_commit": effective.get("h4_cert_commit"),
                 "p3_cert_commit": effective.get("p3_cert_commit"),
                 "h3_cert_commit": effective.get("h3_cert_commit"),
                 "p2_cert_commit": effective.get("p2_cert_commit"),
@@ -22137,6 +22110,8 @@ def _closure_phase4_cert_semantic_digest(
                 "sha256": effective.get("manifest_sha256"),
                 "p_cert_commit": effective.get("p_cert_commit"),
                 "h_cert_commit": effective.get("h_cert_commit"),
+                "p4_cert_commit": effective.get("p4_cert_commit"),
+                "h4_cert_commit": effective.get("h4_cert_commit"),
                 "p3_cert_commit": effective.get("p3_cert_commit"),
                 "h3_cert_commit": effective.get("h3_cert_commit"),
                 "p2_cert_commit": effective.get("p2_cert_commit"),
@@ -22247,9 +22222,16 @@ def _closure_phase4_cert_semantic_digest(
                     "source_mode_accepted": "0600_or_0644",
                     "clone_mode": "0600",
                     "copied_only_into_owned_clone": True,
-                    "content_read_only_for_private_copy": True,
+                    "content_read_only_for_private_rebase": True,
+                    "credential_path_rebased_to_retained_fd": True,
+                    "credential_target_regular_single_link": True,
+                    "credential_target_group_or_other_writable": False,
+                    "effective_configuration_equivalent_except_owned_cache": True,
                     "content_path_remote_url_and_credentials_serialized": False,
                 },
+                "dvc_site_caches": (
+                    contract_module.expected_manifest_clone_dvc_site_caches_record()
+                ),
                 "dvc_cache": {
                     "object_count": 8,
                     "declared_payload_bytes": sum(
@@ -22271,9 +22253,11 @@ def _closure_phase4_cert_semantic_digest(
             semantic = {
                 "gate": gate,
                 "p_cert_commit": head,
-                "p3_cert_commit": head,
-                "h_cert_commit": h3_commit,
-                "h3_cert_commit": h3_commit,
+                "p4_cert_commit": head,
+                "h_cert_commit": h4_commit,
+                "h4_cert_commit": h4_commit,
+                "p3_cert_commit": CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+                "h3_cert_commit": CLOSURE_PHASE4_H_CERT_V3_COMMIT,
                 "p2_cert_commit": CLOSURE_PHASE4_P_CERT_V2_COMMIT,
                 "h2_cert_commit": CLOSURE_PHASE4_H_CERT_V2_COMMIT,
                 "p1_cert_commit": CLOSURE_PHASE4_P_CERT_V1_COMMIT,
@@ -22348,11 +22332,11 @@ def closure_phase4_cert_pre_stage_scope(
         )
     head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
     if gate == "H-CERT":
-        if head != CLOSURE_PHASE4_P_CERT_V2_COMMIT:
+        if head != CLOSURE_PHASE4_P_CERT_V3_COMMIT:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "H-CERT3 must be based on exact published P-CERT2 72273b5"
+                "H-CERT4 must be based on exact published P-CERT3 bcd306a"
             )
-        _require_closure_phase4_cert_v2_history(repo_root=repo_root)
+        _require_closure_phase4_cert_v3_history(repo_root=repo_root)
     elif gate == "P-CERT":
         _require_closure_phase4_published_h_cert(head, repo_root=repo_root)
     else:
@@ -22483,11 +22467,11 @@ def validate_closure_phase4_cert_staged_transaction(
     )
     head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
     if gate == "H-CERT":
-        if head != CLOSURE_PHASE4_P_CERT_V2_COMMIT:
+        if head != CLOSURE_PHASE4_P_CERT_V3_COMMIT:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Staged H-CERT3 base drifted"
+                "Staged H-CERT4 base drifted"
             )
-        _require_closure_phase4_cert_v2_history(repo_root=repo_root)
+        _require_closure_phase4_cert_v3_history(repo_root=repo_root)
     elif gate == "P-CERT":
         _require_closure_phase4_published_h_cert(head, repo_root=repo_root)
     elif gate == "R-CERT":
@@ -22724,8 +22708,7 @@ def _rollback_closure_phase4_cert_staging(
     parent_commit: str,
     physical_before: tuple[RegistrationFileIdentity, ...],
     semantic_before: str,
-    dvc_runtime: ClosurePhase4FinalCertificationDvcRuntimeLease,
-    dvc_status_before: Any,
+    static_boundary_before: str,
     repo_root: Path,
     tree_lease: ClosurePhase4FinalCertificationTreeLease | None = None,
 ) -> str | None:
@@ -22839,25 +22822,25 @@ def _rollback_closure_phase4_cert_staging(
     try:
         if tree_lease is None:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "rollback DVC validation requires the retained repository tree"
+                "rollback static boundary requires the retained repository tree"
             )
         if (
-            _closure_phase4_cert_dvc_status(
-                dvc_runtime,
+            _closure_phase4_cert_static_git_pointer_boundary(
+                repo_root=repo_root,
                 tree_lease=tree_lease,
             )
-            != dvc_status_before
+            != static_boundary_before
         ):
-            errors.append("post-rollback DVC status drifted")
+            errors.append("post-rollback static Git/pointer boundary drifted")
     except BaseException as exc:
-        errors.append(f"post-rollback DVC validation failed: {exc}")
+        errors.append(f"post-rollback static boundary validation failed: {exc}")
     try:
         _require_closure_phase4_cert_transaction_tree(
             tree_lease,
             context=f"Closure Phase 4 {gate} rollback closing rebind",
         )
     except BaseException as exc:
-        errors.append(f"repository tree drifted during DVC validation: {exc}")
+        errors.append(f"repository tree drifted during static validation: {exc}")
     return "; ".join(errors) or None
 
 
@@ -22873,7 +22856,6 @@ def _run_closure_phase4_cert_precommit(
     guard_fd: int | None = None
     guard_lease: ClosurePhase4FinalCertificationPrecommitGuardLease | None = None
     tree_lease: ClosurePhase4FinalCertificationTreeLease | None = None
-    dvc_runtime: ClosurePhase4FinalCertificationDvcRuntimeLease | None = None
     flock_released = False
 
     def current_tree() -> ClosurePhase4FinalCertificationTreeLease:
@@ -22890,14 +22872,6 @@ def _run_closure_phase4_cert_precommit(
         owned_tree = tree_lease
         tree_lease = None
         _close_closure_phase4_cert_tree_lease(owned_tree)
-
-    def release_dvc_runtime() -> None:
-        nonlocal dvc_runtime
-        if dvc_runtime is None:
-            return
-        owned_runtime = dvc_runtime
-        dvc_runtime = None
-        _close_closure_phase4_cert_dvc_runtime(owned_runtime)
 
     def require_tree(context: str) -> None:
         _require_closure_phase4_cert_tree_binding(
@@ -22931,7 +22905,6 @@ def _run_closure_phase4_cert_precommit(
         )
 
     def fail_before_staging(primary: BaseException) -> int:
-        release_dvc_runtime()
         guard_error = release_guard()
         release_tree()
         message = str(primary)
@@ -22994,17 +22967,13 @@ def _run_closure_phase4_cert_precommit(
         require_tree("post-semantic-validator rebind")
         artifacts = load_configured_dvc_artifacts(args.manifest)
         require_tree("post-manifest-config rebind")
-        dvc_runtime, dvc_status_before = (
-            _initialize_closure_phase4_cert_dvc_observation(
-                args.dvc_bin,
+        static_boundary_before = (
+            _closure_phase4_cert_static_git_pointer_boundary(
+                repo_root=repo_root,
                 tree_lease=current_tree(),
             )
         )
-        require_tree("post-initial-DVC-status rebind")
-        if dvc_status_before:
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                f"Closure Phase 4 {gate} requires exact empty DVC status"
-            )
+        require_tree("post-static-Git-pointer-boundary rebind")
         require_guard_binding()
     except BaseException as exc:
         return fail_before_staging(exc)
@@ -23067,21 +23036,18 @@ def _run_closure_phase4_cert_precommit(
                 f"Closure Phase 4 {gate} changed before staging"
             )
         require_tree("post-payload recapture rebind")
-        if dvc_runtime is None:
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Closure Phase 4 certification DVC runtime lease is inactive"
-            )
         if (
-            _closure_phase4_cert_dvc_status(
-                dvc_runtime,
+            _closure_phase4_cert_static_git_pointer_boundary(
+                repo_root=repo_root,
                 tree_lease=current_tree(),
             )
-            != dvc_status_before
+            != static_boundary_before
         ):
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                f"Closure Phase 4 {gate} DVC state changed before staging"
+                f"Closure Phase 4 {gate} static Git/pointer boundary changed "
+                "before staging"
             )
-        require_tree("post-DVC recapture rebind")
+        require_tree("post-static-boundary recapture rebind")
         require_guard_binding()
     except BaseException as exc:
         return fail_before_staging(exc)
@@ -23120,21 +23086,18 @@ def _run_closure_phase4_cert_precommit(
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                 f"Closure Phase 4 {gate} changed across staging"
             )
-        if dvc_runtime is None:
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Closure Phase 4 certification DVC runtime lease is inactive"
-            )
         if (
-            _closure_phase4_cert_dvc_status(
-                dvc_runtime,
+            _closure_phase4_cert_static_git_pointer_boundary(
+                repo_root=repo_root,
                 tree_lease=current_tree(),
             )
-            != dvc_status_before
+            != static_boundary_before
         ):
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                f"Closure Phase 4 {gate} DVC state changed across staging"
+                f"Closure Phase 4 {gate} static Git/pointer boundary changed "
+                "across staging"
             )
-        require_tree("post-staging-DVC rebind")
+        require_tree("post-staging-static-boundary rebind")
         require_guard_binding()
         require_tree("pre-post-add-publication rebind")
         post_add_publication = _run_closure_phase4_cert_publication_check(
@@ -23184,14 +23147,15 @@ def _run_closure_phase4_cert_precommit(
                     "ok",
                     f"phase4_{gate.lower().replace('-', '_')}_boundary",
                     "-",
-                    "No certification, test, DVC pull/add/push, model, raw, "
+                    "No certification, test, DVC command, model, raw, "
                     "outcome, Parquet decode, or Git publication ran.",
                 ),
                 ReproducibilityFinding(
                     "ok",
                     f"phase4_{gate.lower().replace('-', '_')}_dvc",
                     "-",
-                    "Main DVC status stayed empty.",
+                    "DVC status was not executed; the exact static Git and "
+                    "eight-pointer boundary stayed unchanged.",
                 ),
             )
         )
@@ -23204,8 +23168,8 @@ def _run_closure_phase4_cert_precommit(
             deferred_snapshot_after=None,
             rejected_unmanaged_paths=[],
             git_status_before=initial_status,
-            dvc_status_before=dvc_status_before,
-            dvc_status_after=dvc_status_before,
+            dvc_status_before=None,
+            dvc_status_after=None,
             cloud_status_before=None,
             dvc_add_results=[],
             dvc_push_result=None,
@@ -23232,40 +23196,35 @@ def _run_closure_phase4_cert_precommit(
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                 f"Closure Phase 4 {gate} changed while writing its report"
             )
-        if dvc_runtime is None:
-            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Closure Phase 4 certification DVC runtime lease is inactive"
-            )
         if (
-            _closure_phase4_cert_dvc_status(
-                dvc_runtime,
+            _closure_phase4_cert_static_git_pointer_boundary(
+                repo_root=repo_root,
                 tree_lease=current_tree(),
             )
-            != dvc_status_before
+            != static_boundary_before
         ):
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                f"Closure Phase 4 {gate} DVC state changed while reporting"
+                f"Closure Phase 4 {gate} static Git/pointer boundary changed "
+                "while reporting"
             )
-        require_tree("post-final-DVC rebind")
+        require_tree("post-final-static-boundary rebind")
         require_guard_binding()
         require_tree("final repository rebind")
         print()
         print(f"Report written: {report_path}")
         print(
             f"Exact Closure Phase 4 {gate} is staged; no certification or "
-            "DVC mutation ran."
+            "DVC command ran."
         )
         sys.stdout.flush()
         guard_error = release_guard()
         flock_released = True
-        release_dvc_runtime()
         release_tree()
         if guard_error is not None:
             print(guard_error, file=sys.stderr)
             return 2
     except BaseException as exc:
         if flock_released:
-            release_dvc_runtime()
             release_tree()
             print(
                 "Closure Phase 4 certification failed after releasing its "
@@ -23278,12 +23237,10 @@ def _run_closure_phase4_cert_precommit(
             parent_commit=parent_commit,
             physical_before=physical_before,
             semantic_before=semantic_before,
-            dvc_runtime=dvc_runtime,
-            dvc_status_before=dvc_status_before,
+            static_boundary_before=static_boundary_before,
             repo_root=repo_root,
             tree_lease=tree_lease,
         )
-        release_dvc_runtime()
         guard_error = release_guard()
         release_tree()
         details = str(exc)

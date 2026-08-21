@@ -11203,7 +11203,7 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
     ) == {"M"}
     assert (
         precommit_artifacts.CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
-        == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V2_STAGED_SCOPE
+        == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V3_STAGED_SCOPE
     )
     assert list(
         precommit_artifacts.CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE.values()
@@ -11216,6 +11216,10 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
         precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE.values()
     ) == {"A"}
     assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE) == {
+        "configs/closure_v1/phase4_final_certification_authority_v4.json",
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v4.json",
+    }
+    assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE) == {
         "configs/closure_v1/phase4_final_certification_authority_v3.json",
         "configs/closure_v1/phase4_final_certification_authority_manifest_v3.json",
     }
@@ -11373,14 +11377,14 @@ def test_closure_phase4_h_cert_selector_is_exact_and_rejects_guard_extra_pending
         precommit_artifacts,
         "_git_output",
         lambda _root, *args: (
-            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT
             if args[:2] == ("rev-parse", "HEAD^{commit}")
             else ""
         ),
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v2_history",
+        "_require_closure_phase4_cert_v3_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -11459,7 +11463,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
 ) -> None:
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v2_history",
+        "_require_closure_phase4_cert_v3_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -11480,7 +11484,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
         precommit_artifacts,
         "_closure_phase4_commit_parents",
         lambda *_args, **_kwargs: (
-            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
         ),
     )
     monkeypatch.setattr(
@@ -11498,7 +11502,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
         )
 
 
-def test_closure_phase4_h_cert3_selector_rejects_superseded_base(
+def test_closure_phase4_h_cert4_selector_rejects_superseded_base(
     tmp_path: Path, monkeypatch
 ) -> None:
     (tmp_path / "tmp").mkdir()
@@ -11510,7 +11514,7 @@ def test_closure_phase4_h_cert3_selector_rejects_superseded_base(
     )
     with pytest.raises(
         precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
-        match="H-CERT3.*P-CERT2",
+        match="H-CERT4.*P-CERT3",
     ):
         precommit_artifacts.closure_phase4_h_cert_pre_stage_scope(
             status,
@@ -11519,13 +11523,13 @@ def test_closure_phase4_h_cert3_selector_rejects_superseded_base(
         )
 
 
-def test_closure_phase4_p_cert3_selector_accepts_git_lexical_status_order(
+def test_closure_phase4_p_cert4_selector_accepts_git_lexical_status_order(
     tmp_path: Path, monkeypatch
 ) -> None:
     (tmp_path / "tmp").mkdir()
     lines = _phase4_cert_short_status("P-CERT", staged=False).splitlines()
-    assert lines[0].endswith("authority_manifest_v3.json")
-    assert lines[1].endswith("authority_v3.json")
+    assert lines[0].endswith("authority_manifest_v4.json")
+    assert lines[1].endswith("authority_v4.json")
     reversed_status = "\n".join(reversed(lines)) + "\n"
     h3_commit = "a" * 40
     observed: list[str] = []
@@ -11585,6 +11589,13 @@ def test_closure_phase4_p_cert3_selector_accepts_git_lexical_status_order(
             precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_GIT_MODES,
             "P-CERT2",
             "_require_closure_phase4_p2_files_intact",
+        ),
+        (
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_STAGED_SCOPE,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_GIT_MODES,
+            "P-CERT3",
+            "_require_closure_phase4_p3_files_intact",
         ),
     ],
 )
@@ -11707,6 +11718,7 @@ def test_closure_phase4_cert_v2_history_binds_exact_topology_and_scopes(
     [
         precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
         precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,
+        precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
     ],
 )
 def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
@@ -11714,7 +11726,7 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
 ) -> None:
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v2_history",
+        "_require_closure_phase4_cert_v3_history",
         lambda **_kwargs: None,
     )
 
@@ -11727,6 +11739,10 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
             return (precommit_artifacts.CLOSURE_PHASE4_H_CERT_V2_COMMIT,)
         if commit == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V2_COMMIT:
             return (precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,)
+        if commit == precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT:
+            return (precommit_artifacts.CLOSURE_PHASE4_H_CERT_V3_COMMIT,)
+        if commit == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V3_COMMIT:
+            return (precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,)
         raise AssertionError(f"unexpected commit: {commit}")
 
     monkeypatch.setattr(
@@ -11736,7 +11752,7 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
     )
     with pytest.raises(
         precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
-        match="H-CERT3.*P-CERT2",
+        match="H-CERT4.*P-CERT3",
     ):
         precommit_artifacts._require_closure_phase4_published_p_cert(
             p_commit,
@@ -12361,11 +12377,11 @@ def test_closure_phase4_cert_staged_double_recapture_rejects_semantic_drift(
     monkeypatch.setattr(
         precommit_artifacts,
         "_git_output",
-        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v2_history",
+        "_require_closure_phase4_cert_v3_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -12476,8 +12492,10 @@ def test_closure_phase4_h_cert_semantic_digest_requires_read_only_h3_preflight(
     suite = SimpleNamespace(
         status="locked",
         selector_count=39,
-        collected_test_count=905,
-        nodeids_sha256="a" * 64,
+        collected_test_count=944,
+        nodeids_sha256=(
+            "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
+        ),
         allowed_skip_count=7,
     )
     contract = SimpleNamespace(test_suite=suite, output_paths=("one", "two"))
@@ -12487,8 +12505,10 @@ def test_closure_phase4_h_cert_semantic_digest_requires_read_only_h3_preflight(
         "p1_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
         "h2_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V2_COMMIT,
         "p2_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,
+        "h3_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V3_COMMIT,
+        "p3_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
         "h_cert_commit": None,
-        "h3_cert_commit": None,
+        "h4_cert_commit": None,
         "writes_performed": False,
         "dvc_status_checked": False,
         "dvc_pull_commands_run": False,
@@ -12506,7 +12526,7 @@ def test_closure_phase4_h_cert_semantic_digest_requires_read_only_h3_preflight(
     monkeypatch.setattr(
         precommit_artifacts,
         "_git_output",
-        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
     )
     monkeypatch.setattr(locker, "check_only", lambda **_kwargs: result)
     monkeypatch.setattr(
@@ -12581,8 +12601,8 @@ def test_closure_phase4_cert_rollback_is_parent_directed_and_preserves_foreign(
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_closure_phase4_cert_dvc_status",
-        lambda *_args, **_kwargs: {},
+        "_closure_phase4_cert_static_git_pointer_boundary",
+        lambda *_args, **_kwargs: "static-boundary",
     )
     assert (
         precommit_artifacts._rollback_closure_phase4_cert_staging(
@@ -12590,8 +12610,7 @@ def test_closure_phase4_cert_rollback_is_parent_directed_and_preserves_foreign(
             parent_commit="b" * 40,
             physical_before=physical,
             semantic_before="semantic",
-            dvc_runtime=cast(Any, SimpleNamespace()),
-            dvc_status_before={},
+            static_boundary_before="static-boundary",
             repo_root=Path("."),
             tree_lease=cast(Any, SimpleNamespace()),
         )
@@ -12680,18 +12699,8 @@ def _install_phase4_cert_runner_harness(
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_initialize_closure_phase4_cert_dvc_observation",
-        lambda *_args, **_kwargs: (SimpleNamespace(), {}),
-    )
-    monkeypatch.setattr(
-        precommit_artifacts,
-        "_closure_phase4_cert_dvc_status",
-        lambda *_args, **_kwargs: {},
-    )
-    monkeypatch.setattr(
-        precommit_artifacts,
-        "_close_closure_phase4_cert_dvc_runtime",
-        lambda *_args, **_kwargs: None,
+        "_closure_phase4_cert_static_git_pointer_boundary",
+        lambda *_args, **_kwargs: "static-boundary",
     )
     monkeypatch.setattr(
         precommit_artifacts,
@@ -12760,7 +12769,7 @@ def _make_phase4_cert_transaction_directories(
 
 @pytest.mark.parametrize(
     "boundary",
-    ("semantic", "index", "status", "remote", "dvc"),
+    ("semantic", "index", "status", "remote", "pointers"),
 )
 @pytest.mark.parametrize("gate", ("H-CERT", "P-CERT", "R-CERT"))
 def test_closure_phase4_cert_runner_rejects_parent_swap_at_external_boundaries(
@@ -12825,10 +12834,8 @@ def test_closure_phase4_cert_runner_rejects_parent_swap_at_external_boundaries(
     else:
         monkeypatch.setattr(
             precommit_artifacts,
-            "_initialize_closure_phase4_cert_dvc_observation",
-            lambda *_args, **_kwargs: (
-                swap_parent() or (SimpleNamespace(), {})
-            ),
+            "_closure_phase4_cert_static_git_pointer_boundary",
+            lambda *_args, **_kwargs: (swap_parent() or "static-boundary"),
         )
 
     result = precommit_artifacts._run_closure_phase4_cert_precommit(
@@ -12873,8 +12880,7 @@ def test_closure_phase4_cert_rollback_refuses_replaced_parent_without_mutation(
             parent_commit="c" * 40,
             physical_before=(_phase4_cert_identity(),),
             semantic_before="semantic",
-            dvc_runtime=cast(Any, SimpleNamespace()),
-            dvc_status_before={},
+            static_boundary_before="static-boundary",
             repo_root=tmp_path,
             tree_lease=lease,
         )
@@ -12920,109 +12926,138 @@ def test_closure_phase4_cert_runner_rejects_cwd_switch_during_semantics(
     assert state["released"] == 1
 
 
-@pytest.mark.parametrize("swap_target", ("dvc", "python"))
-def test_closure_phase4_cert_dvc_runtime_executes_owned_fds_not_foreign(
-    swap_target: str, tmp_path: Path, monkeypatch
+def test_closure_phase4_cert_static_pointer_boundary_never_launches_dvc(
+    monkeypatch,
 ) -> None:
-    _make_phase4_cert_transaction_directories(tmp_path)
-    base_python = Path(
-        cast(
-            str,
-            getattr(
-                precommit_artifacts.sys,
-                "_base_executable",
-                precommit_artifacts.sys.executable,
-            ),
-        )
-    )
-    python_path = tmp_path / ".venv/bin/python"
-    python_path.symlink_to(base_python)
-    (tmp_path / ".venv/pyvenv.cfg").write_text(
-        f"home = {base_python.parent.as_posix()}\n"
-        "include-system-site-packages = false\n"
-        f"version = {precommit_artifacts.sys.version_info.major}."
-        f"{precommit_artifacts.sys.version_info.minor}\n",
-        encoding="utf-8",
-    )
-    dvc_path = tmp_path / precommit_artifacts.DEFAULT_DVC_BIN
-    dvc_path.write_text("#!/usr/bin/env python\nprint('{}')\n", encoding="utf-8")
-    dvc_path.chmod(0o755)
-    foreign = dvc_path.with_name("dvc.foreign")
-    marker = tmp_path / "foreign-runtime-ran"
-    foreign.write_text(
-        f"#!/usr/bin/env python\nfrom pathlib import Path\n"
-        f"Path({marker.as_posix()!r}).touch()\nprint('{{}}')\n",
-        encoding="utf-8",
-    )
-    foreign.chmod(0o755)
-    retained_dvc = dvc_path.with_name("dvc.retained")
-    foreign_python = tmp_path / "foreign-python"
-    foreign_python.write_text(
-        f"#!/bin/sh\ntouch {marker.as_posix()}\nexit 97\n",
-        encoding="utf-8",
-    )
-    foreign_python.chmod(0o755)
-    foreign_launcher = python_path.with_name("python.foreign")
-    foreign_launcher.symlink_to(foreign_python)
-    retained_python = python_path.with_name("python.retained")
-    tree = precommit_artifacts._open_closure_phase4_cert_transaction_tree(
-        "P-CERT",
-        repo_root=tmp_path,
-        require_cwd=False,
-    )
-    script = precommit_artifacts._open_closure_phase4_cert_executable(
-        precommit_artifacts.DEFAULT_DVC_BIN.as_posix(),
-        tree_lease=tree,
-        context="test DVC",
-    )
-    interpreter = (
-        precommit_artifacts._open_closure_phase4_cert_python_interpreter(
-            tree_lease=tree,
-        )
-    )
-    runtime = precommit_artifacts.ClosurePhase4FinalCertificationDvcRuntimeLease(
-        script=script,
-        interpreter=interpreter,
-    )
-    venv_fd = precommit_artifacts._closure_phase4_cert_tree_directory_fd(
-        tree,
-        ".venv",
-    )
-    original_run = precommit_artifacts.run_command
-    observed: dict[str, Any] = {}
+    from src.reporting import phase4_final_certification_contract as contract_module
 
-    def racing_run(command: list[str], **kwargs: Any) -> CommandResult:
-        observed["command"] = command
-        observed["pass_fds"] = kwargs.get("pass_fds")
-        if swap_target == "dvc":
-            dvc_path.rename(retained_dvc)
-            foreign.rename(dvc_path)
-        else:
-            python_path.rename(retained_python)
-            foreign_launcher.rename(python_path)
-        return original_run(command, **kwargs)
+    pointer_paths = tuple(f"data/pointer-{index}.parquet.dvc" for index in range(8))
+    contract = SimpleNamespace(
+        dvc_pointers=tuple(SimpleNamespace(path=path) for path in pointer_paths)
+    )
+    pointer_records = [
+        {"path": path, "sha256": f"{index:064x}"}
+        for index, path in enumerate(pointer_paths)
+    ]
+    dirty = False
 
-    monkeypatch.setattr(precommit_artifacts, "run_command", racing_run)
-    try:
-        with pytest.raises(
-            precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
-            match="binding drifted",
-        ):
-            precommit_artifacts._closure_phase4_cert_dvc_status(
-                runtime,
-                tree_lease=tree,
+    def git_output(_root: Path, *args: str) -> str:
+        if args[:2] == ("rev-parse", "HEAD^{commit}"):
+            return "a" * 40
+        if args[:2] == ("ls-files", "-s"):
+            return "\n".join(
+                f"100644 {index + 1:040x} 0\t{path}"
+                for index, path in enumerate(pointer_paths)
             )
-    finally:
-        precommit_artifacts._close_closure_phase4_cert_dvc_runtime(runtime)
-        precommit_artifacts._close_closure_phase4_cert_tree_lease(tree)
-    assert observed["command"][0].startswith("/proc/self/fd/")
-    assert observed["command"][1].startswith("/proc/self/fd/")
-    assert set(observed["pass_fds"]) == {
-        script.fd,
-        interpreter.fd,
-        venv_fd,
-    }
-    assert not marker.exists()
+        if args[:2] == ("status", "--short"):
+            return f" M {pointer_paths[0]}\n" if dirty else ""
+        if args and args[0] == "diff":
+            return ""
+        raise AssertionError(f"unexpected Git query: {args}")
+
+    monkeypatch.setattr(precommit_artifacts, "_git_output", git_output)
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_contract",
+        lambda **_kwargs: contract,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_tree_binding",
+        lambda *_args, **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        contract_module,
+        "collect_dvc_pointer_records",
+        lambda *_args, **_kwargs: pointer_records,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "run_command",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("no subprocess command is allowed in the static boundary")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("no subprocess DVC command is allowed")
+        ),
+    )
+
+    digest = precommit_artifacts._closure_phase4_cert_static_git_pointer_boundary(
+        repo_root=Path("."),
+        tree_lease=cast(Any, SimpleNamespace()),
+    )
+    assert re.fullmatch(r"[0-9a-f]{64}", digest)
+    assert not hasattr(precommit_artifacts, "_closure_phase4_cert_dvc_status")
+    assert not hasattr(
+        precommit_artifacts,
+        "_initialize_closure_phase4_cert_dvc_observation",
+    )
+    assert not hasattr(
+        precommit_artifacts,
+        "ClosurePhase4FinalCertificationDvcRuntimeLease",
+    )
+    assert not hasattr(
+        precommit_artifacts,
+        "ClosurePhase4FinalCertificationPythonLease",
+    )
+
+    dirty = True
+    with pytest.raises(
+        precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
+        match="pointer Git state is not pristine",
+    ):
+        precommit_artifacts._closure_phase4_cert_static_git_pointer_boundary(
+            repo_root=Path("."),
+            tree_lease=cast(Any, SimpleNamespace()),
+        )
+
+
+def test_closure_phase4_cert_report_states_dvc_status_was_not_run(
+    tmp_path: Path,
+) -> None:
+    report_path = tmp_path / "phase4-cert-precommit.md"
+    precommit_artifacts.write_report(
+        report_path,
+        dry_run=False,
+        selected_dvc_paths=[],
+        deferred_dvc_paths=[],
+        deferred_snapshot_before=None,
+        deferred_snapshot_after=None,
+        rejected_unmanaged_paths=[],
+        git_status_before="M  phase4-cert-file\n",
+        dvc_status_before=None,
+        dvc_status_after=None,
+        cloud_status_before=None,
+        dvc_add_results=[],
+        dvc_push_result=None,
+        git_add_result=None,
+        publication_check_result=None,
+        reproducibility_findings=[
+            precommit_artifacts.ReproducibilityFinding(
+                "ok",
+                "phase4_p_cert_dvc",
+                "-",
+                "DVC status was not executed.",
+            )
+        ],
+        staged_status="A  phase4-cert-file\n",
+    )
+
+    report = report_path.read_text(encoding="utf-8")
+    before_section = report.split("## DVC Status Before", 1)[1].split(
+        "## DVC Status After Staging", 1
+    )[0]
+    after_section = report.split("## DVC Status After Staging", 1)[1].split(
+        "## DVC Cloud Status Before Push", 1
+    )[0]
+    assert before_section.strip() == "Not run."
+    assert after_section.strip() == "Not run."
+    assert "DVC status was not executed." in report
+    assert "```json\n{}\n```" not in report
 
 
 def test_closure_phase4_cert_checker_executes_owned_fd_not_foreign_replacement(
@@ -13078,15 +13113,44 @@ def test_closure_phase4_cert_checker_executes_owned_fd_not_foreign_replacement(
     assert not marker.exists()
 
 
+@pytest.mark.parametrize("gate", ("H-CERT", "P-CERT", "R-CERT"))
 def test_closure_phase4_cert_runner_stages_only_exact_scope_without_execution(
-    monkeypatch, capsys
+    gate: str, monkeypatch, capsys
 ) -> None:
-    state = _install_phase4_cert_runner_harness(monkeypatch)
+    state = _install_phase4_cert_runner_harness(monkeypatch, gate=gate)
+    report: dict[str, Any] = {}
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "write_report",
+        lambda *_args, **kwargs: report.update(kwargs),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "dvc_status_json",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("Phase 4 certification precommit must not invoke DVC")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_initialize_precommit_dvc_observation",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("Phase 4 certification precommit must not initialize DVC")
+        ),
+    )
+    monkeypatch.setattr(
+        precommit_artifacts.subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(
+            AssertionError("Phase 4 certification precommit launched a subprocess")
+        ),
+    )
     args = _closure_phase3_h_args()
-    initial = _phase4_cert_short_status("P-CERT", staged=False)
+    initial = _phase4_cert_short_status(gate, staged=False)
     assert (
-        precommit_artifacts._run_closure_phase4_p_cert_precommit(
+        precommit_artifacts._run_closure_phase4_cert_precommit(
             args,
+            gate=gate,
             initial_status=initial,
             repo_root=Path("."),
         )
@@ -13099,10 +13163,16 @@ def test_closure_phase4_cert_runner_stages_only_exact_scope_without_execution(
             "add",
             "-A",
             "--",
-            *sorted(precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE),
+            *sorted(precommit_artifacts._closure_phase4_cert_scope(gate)),
         ]
     ]
-    assert "no certification or DVC mutation ran" in capsys.readouterr().out
+    assert report["dvc_status_before"] is None
+    assert report["dvc_status_after"] is None
+    assert any(
+        "DVC status was not executed" in finding.message
+        for finding in report["reproducibility_findings"]
+    )
+    assert "no certification or DVC command ran" in capsys.readouterr().out
 
 
 def test_closure_phase4_cert_runner_never_rolls_back_after_flock_release(
@@ -13135,21 +13205,21 @@ def test_closure_phase4_cert_runner_never_rolls_back_after_flock_release(
     assert rollback_calls == []
 
 
-def test_closure_phase4_cert_runner_rolls_back_on_post_add_dvc_drift(
+def test_closure_phase4_cert_runner_rolls_back_on_post_add_pointer_drift(
     monkeypatch,
 ) -> None:
     state = _install_phase4_cert_runner_harness(monkeypatch)
     calls = 0
 
-    def dvc(*_args: Any, **_kwargs: Any) -> dict[str, Any]:
+    def boundary(*_args: Any, **_kwargs: Any) -> str:
         nonlocal calls
         calls += 1
-        return {} if calls == 1 else {"changed": ["models"]}
+        return "static-boundary" if calls <= 2 else "changed-boundary"
 
     monkeypatch.setattr(
         precommit_artifacts,
-        "_closure_phase4_cert_dvc_status",
-        dvc,
+        "_closure_phase4_cert_static_git_pointer_boundary",
+        boundary,
     )
     rolled_back: list[str] = []
     monkeypatch.setattr(
@@ -13386,9 +13456,15 @@ def test_closure_phase4_r_cert_delegates_mutated_report_to_custom_validator(
         "load_effective_authority",
         lambda *_args, **_kwargs: {
             "p_cert_commit": head,
-            "p3_cert_commit": head,
+            "p4_cert_commit": head,
             "h_cert_commit": "b" * 40,
-            "h3_cert_commit": "b" * 40,
+            "h4_cert_commit": "b" * 40,
+            "p3_cert_commit": (
+                precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT
+            ),
+            "h3_cert_commit": (
+                precommit_artifacts.CLOSURE_PHASE4_H_CERT_V3_COMMIT
+            ),
             "p2_cert_commit": (
                 precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT
             ),
@@ -13475,9 +13551,11 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
     ]
     effective = {
         "p_cert_commit": head,
-        "p3_cert_commit": head,
+        "p4_cert_commit": head,
         "h_cert_commit": "b" * 40,
-        "h3_cert_commit": "b" * 40,
+        "h4_cert_commit": "b" * 40,
+        "p3_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V3_COMMIT,
+        "h3_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V3_COMMIT,
         "p2_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V2_COMMIT,
         "h2_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V2_COMMIT,
         "p1_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V1_COMMIT,
@@ -13530,7 +13608,9 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
             "sha256": effective["authority_sha256"],
             "p_cert_commit": head,
             "h_cert_commit": effective["h_cert_commit"],
-            "p3_cert_commit": head,
+            "p4_cert_commit": head,
+            "h4_cert_commit": effective["h4_cert_commit"],
+            "p3_cert_commit": effective["p3_cert_commit"],
             "h3_cert_commit": effective["h3_cert_commit"],
             "p2_cert_commit": effective["p2_cert_commit"],
             "h2_cert_commit": effective["h2_cert_commit"],
@@ -13543,7 +13623,9 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
             "sha256": effective["manifest_sha256"],
             "p_cert_commit": head,
             "h_cert_commit": effective["h_cert_commit"],
-            "p3_cert_commit": head,
+            "p4_cert_commit": head,
+            "h4_cert_commit": effective["h4_cert_commit"],
+            "p3_cert_commit": effective["p3_cert_commit"],
             "h3_cert_commit": effective["h3_cert_commit"],
             "p2_cert_commit": effective["p2_cert_commit"],
             "h2_cert_commit": effective["h2_cert_commit"],
@@ -13583,9 +13665,16 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
                 "source_mode_accepted": "0600_or_0644",
                 "clone_mode": "0600",
                 "copied_only_into_owned_clone": True,
-                "content_read_only_for_private_copy": True,
+                "content_read_only_for_private_rebase": True,
+                "credential_path_rebased_to_retained_fd": True,
+                "credential_target_regular_single_link": True,
+                "credential_target_group_or_other_writable": False,
+                "effective_configuration_equivalent_except_owned_cache": True,
                 "content_path_remote_url_and_credentials_serialized": False,
             },
+            "dvc_site_caches": (
+                contract_module.expected_manifest_clone_dvc_site_caches_record()
+            ),
             "dvc_cache": {
                 "object_count": 8,
                 "declared_payload_bytes": sum(spec.size for spec in specs),
@@ -13743,6 +13832,9 @@ def test_closure_phase4_cert_adapter_source_has_no_execution_or_mutation_calls()
     semantic = inspect.getsource(
         precommit_artifacts._closure_phase4_cert_semantic_digest
     )
+    rollback = inspect.getsource(
+        precommit_artifacts._rollback_closure_phase4_cert_staging
+    )
     forbidden = (
         "build_phase4_final_certification(",
         "check_phase4_final_certification(",
@@ -13759,6 +13851,17 @@ def test_closure_phase4_cert_adapter_source_has_no_execution_or_mutation_calls()
     # R-CERT validates the serialized argv of the eight historical pulls, but
     # the precommit runner itself never executes a pull.
     assert '"pull"' not in source
+    assert "dvc_status_json" not in source
+    assert "_initialize_precommit_dvc_observation" not in source
+    assert "_closure_phase4_cert_dvc_status" not in source
+    assert "DEFAULT_DVC_BIN" not in source
+    assert "_closure_phase4_cert_static_git_pointer_boundary(" in source
+    assert "_closure_phase4_cert_static_git_pointer_boundary(" in rollback
     assert "subprocess.run" not in semantic
     assert "config.local" not in semantic
     assert "builder.validate_final_certification_payloads(" in semantic
+    assert not hasattr(precommit_artifacts, "_closure_phase4_cert_dvc_status")
+    assert not hasattr(
+        precommit_artifacts,
+        "_initialize_closure_phase4_cert_dvc_observation",
+    )

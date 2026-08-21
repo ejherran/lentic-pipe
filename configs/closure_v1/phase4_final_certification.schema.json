@@ -64,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v3"
+      "const": "closure_v1_phase4_final_certification_v4"
     },
     "authorities": {
       "type": "object",
@@ -77,6 +77,8 @@
         "p1_cert_commit",
         "h2_cert_commit",
         "p2_cert_commit",
+        "h3_cert_commit",
+        "p3_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -103,8 +105,14 @@
         "p2_cert_commit": {
           "const": "72273b52d47df83acc7618fe98a887b74d690a13"
         },
+        "h3_cert_commit": {
+          "const": "2372d0f9cc36aa916b79f34641b2b01134057890"
+        },
+        "p3_cert_commit": {
+          "const": "bcd306a9e8dd5162466124d8854b9d1d99a8517c"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v3_commit"},
+        "certification_target": {"const": "published_P_CERT_v4_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -117,18 +125,22 @@
         "P-CERT1",
         "H-CERT2",
         "P-CERT2",
-        "H-CERT",
-        "P-CERT",
+        "H-CERT3",
+        "P-CERT3",
+        "H-CERT4",
+        "P-CERT4",
         "R-CERT",
         "single_parent_commits_required",
         "closure_source_commit_must_remain_ancestor",
         "aligned_refs_and_live_remote_required",
         "clean_worktree_and_index_required_at_each_gate",
-        "main_dvc_status_must_equal_empty_object",
+        "main_worktree_dvc_status_executed",
+        "main_worktree_dvc_static_boundary_verified",
+        "main_worktree_dvc_state_source",
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT", "P-CERT", "R-CERT"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "R-CERT"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -198,24 +210,56 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "H-CERT": {
+        "H-CERT3": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_failure_diagnostics_contract_tests_and_freeze"},
+            "commit": {"const": "h3_cert_commit"},
             "direct_parent": {"const": "p2_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["do_not_adopt_failed_dvc_partial_tree_for_cleanup", "sanitize_active_verification_error", "preserve_namespace_and_emit_composite_on_nonexact_cleanup"]}
           }
         },
-        "P-CERT": {
+        "P-CERT3": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_H_CERT", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "required": ["role", "commit", "requires_published_H_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized", "failure_stage", "dvc_pull_success_count", "r_cert_output_count", "retry_authorized", "cleanup_status", "manifest_written_last"],
           "properties": {
             "role": {"const": "data_only_final_certification_authority_v3"},
-            "requires_published_H_CERT": {"const": true},
+            "commit": {"const": "p3_cert_commit"},
+            "requires_published_H_CERT3": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "first_directed_dvc_pull"},
+            "dvc_pull_success_count": {"const": 0},
+            "r_cert_output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "cleanup_status": {"const": "failed_closed_namespace_preserved"},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "H-CERT4": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_credential_fd_and_dvc_site_cache_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p3_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["credential_path_rebased_to_retained_fd", "two_separated_owned_dvc_site_caches_for_all_isolated_dvc_commands", "main_dvc_site_cache_metadata_inode_inventory_unchanged", "forbid_main_worktree_dvc_status_and_verify_static_git_pointer_boundary"]}
+          }
+        },
+        "P-CERT4": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v4"},
+            "requires_published_H_CERT4": {"const": true},
+            "supersedes_P_CERT3": {"const": true},
             "supersedes_P_CERT2": {"const": true},
             "supersedes_P_CERT1": {"const": true},
             "certification_execution_authorized_while_unpublished": {"const": false},
@@ -237,14 +281,16 @@
         "closure_source_commit_must_remain_ancestor": {"const": true},
         "aligned_refs_and_live_remote_required": {"const": true},
         "clean_worktree_and_index_required_at_each_gate": {"const": true},
-        "main_dvc_status_must_equal_empty_object": {"const": true},
+        "main_worktree_dvc_status_executed": {"const": false},
+        "main_worktree_dvc_static_boundary_verified": {"const": true},
+        "main_worktree_dvc_state_source": {"const": "git_and_versioned_dvc_pointers"},
         "git_commit_push_and_tag_are_manual_user_actions": {"const": true}
       }
     },
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT", "P-CERT", "R-CERT"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "R-CERT"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -294,7 +340,7 @@
             }
           ]
         },
-        "H-CERT": {
+        "H-CERT3": {
           "allOf": [
             {"$ref": "#/$defs/stageScope"},
             {
@@ -306,7 +352,31 @@
             }
           ]
         },
-        "P-CERT": {
+        "P-CERT3": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "H-CERT4": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT4": {
           "allOf": [
             {"$ref": "#/$defs/stageScope"},
             {
@@ -358,6 +428,23 @@
         "tracked_config_contains_remote",
         "ignored_local_remote_configuration_required",
         "ignored_local_remote_configuration_serialized",
+        "credential_path_values_serialized",
+        "owned_site_cache_count",
+        "owned_site_cache_roles",
+        "owned_site_cache_filesystem_mode",
+        "owned_site_caches_separated",
+        "owned_site_cache_paths_serialized",
+        "version_seal_before_private_config_or_pull",
+        "single_dvc_runtime_retained_through_final_status_and_version_probe",
+        "dvc_runtime_cross_call_identity_revalidated",
+        "used_by_all_isolated_dvc_commands",
+        "copied_core_site_cache_dir_used",
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged",
+        "main_dvc_command_run",
+        "main_worktree_dvc_status_executed",
+        "main_worktree_dvc_static_boundary_verified",
+        "main_worktree_dvc_state_source",
+        "real_dvc_execution_scope",
         "cache_initially_empty",
         "main_worktree_written",
         "dvc_add_authorized",
@@ -382,6 +469,23 @@
         "tracked_config_contains_remote": {"const": false},
         "ignored_local_remote_configuration_required": {"const": true},
         "ignored_local_remote_configuration_serialized": {"const": false},
+        "credential_path_values_serialized": {"const": false},
+        "owned_site_cache_count": {"const": 2},
+        "owned_site_cache_roles": {"const": ["runtime_version", "restore_status"]},
+        "owned_site_cache_filesystem_mode": {"const": "0700"},
+        "owned_site_caches_separated": {"const": true},
+        "owned_site_cache_paths_serialized": {"const": false},
+        "version_seal_before_private_config_or_pull": {"const": true},
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": {"const": true},
+        "dvc_runtime_cross_call_identity_revalidated": {"const": true},
+        "used_by_all_isolated_dvc_commands": {"const": true},
+        "copied_core_site_cache_dir_used": {"const": false},
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged": {"const": true},
+        "main_dvc_command_run": {"const": false},
+        "main_worktree_dvc_status_executed": {"const": false},
+        "main_worktree_dvc_static_boundary_verified": {"const": true},
+        "main_worktree_dvc_state_source": {"const": "git_and_versioned_dvc_pointers"},
+        "real_dvc_execution_scope": {"const": "isolated_r_cert_clone_only"},
         "cache_initially_empty": {"const": true},
         "main_worktree_written": {"const": false},
         "dvc_add_authorized": {"const": false},
@@ -491,8 +595,8 @@
               "properties": {
                 "status": {"const": "locked"},
                 "selector_count": {"const": 39},
-                  "collected_test_count": {"const": 920},
-                  "nodeids_sha256": {"const": "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"},
+                "collected_test_count": {"const": 944},
+                "nodeids_sha256": {"const": "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"},
                 "allowed_skip_count": {"const": 7}
               }
             }
@@ -561,6 +665,27 @@
         "nonexact_cleanup_preserves_namespace",
         "composite_error_identifies_sanitized_active_error_and_cleanup_failure",
         "superseded_p2_retry_authorized",
+        "credential_path_rebased_to_retained_fd",
+        "credential_target_regular_single_link",
+        "credential_target_group_or_other_writable",
+        "private_dvc_effective_configuration_equivalent_except_owned_cache",
+        "owned_site_cache_count",
+        "owned_site_cache_roles",
+        "owned_site_cache_filesystem_mode",
+        "owned_site_caches_separated",
+        "owned_site_cache_paths_serialized",
+        "version_seal_before_private_config_or_pull",
+        "single_dvc_runtime_retained_through_final_status_and_version_probe",
+        "dvc_runtime_cross_call_identity_revalidated",
+        "used_by_all_isolated_dvc_commands",
+        "copied_core_site_cache_dir_used",
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged",
+        "main_dvc_command_run",
+        "main_worktree_dvc_status_executed",
+        "main_worktree_dvc_static_boundary_verified",
+        "main_worktree_dvc_state_source",
+        "real_dvc_execution_scope",
+        "superseded_p3_retry_authorized",
         "no_clobber",
         "cleanup_before_precommit"
       ],
@@ -642,6 +767,27 @@
         "nonexact_cleanup_preserves_namespace": {"const": true},
         "composite_error_identifies_sanitized_active_error_and_cleanup_failure": {"const": true},
         "superseded_p2_retry_authorized": {"const": false},
+        "credential_path_rebased_to_retained_fd": {"const": true},
+        "credential_target_regular_single_link": {"const": true},
+        "credential_target_group_or_other_writable": {"const": false},
+        "private_dvc_effective_configuration_equivalent_except_owned_cache": {"const": true},
+        "owned_site_cache_count": {"const": 2},
+        "owned_site_cache_roles": {"const": ["runtime_version", "restore_status"]},
+        "owned_site_cache_filesystem_mode": {"const": "0700"},
+        "owned_site_caches_separated": {"const": true},
+        "owned_site_cache_paths_serialized": {"const": false},
+        "version_seal_before_private_config_or_pull": {"const": true},
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": {"const": true},
+        "dvc_runtime_cross_call_identity_revalidated": {"const": true},
+        "used_by_all_isolated_dvc_commands": {"const": true},
+        "copied_core_site_cache_dir_used": {"const": false},
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged": {"const": true},
+        "main_dvc_command_run": {"const": false},
+        "main_worktree_dvc_status_executed": {"const": false},
+        "main_worktree_dvc_static_boundary_verified": {"const": true},
+        "main_worktree_dvc_state_source": {"const": "git_and_versioned_dvc_pointers"},
+        "real_dvc_execution_scope": {"const": "isolated_r_cert_clone_only"},
+        "superseded_p3_retry_authorized": {"const": false},
         "no_clobber": {"const": true},
         "cleanup_before_precommit": {"const": true}
       }
@@ -707,8 +853,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 15,
-      "maxItems": 15,
+      "minItems": 21,
+      "maxItems": 21,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }

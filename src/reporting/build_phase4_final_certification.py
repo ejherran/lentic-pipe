@@ -18,10 +18,12 @@ outputs.  Git commit, push, and tag operations are never performed here.
 from __future__ import annotations
 
 import argparse
+import configparser
 import copy
 import ctypes
 import errno
 import fcntl
+import io
 import json
 import os
 import pwd
@@ -56,8 +58,11 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     collect_dvc_pointer_records,
     digest_records,
     digest_strings,
+    expected_environment_dvc_record,
+    expected_manifest_clone_dvc_site_caches_record,
     load_contract,
     load_effective_authority,
+    main_dvc_static_boundary_record,
     parse_dvc_pointer_bytes,
     sha256_bytes,
     validate_local_dvc_remote_configuration,
@@ -727,6 +732,8 @@ class PreparedWorkspace:
     owned_tmp_identity: tuple[int, int]
     clone_root: Path
     cache_handle: DirectoryHandle
+    site_cache_handle: DirectoryHandle
+    version_site_cache_handle: DirectoryHandle
     sandbox_handle: DirectoryHandle
     socket_handle: DirectoryHandle
     mask_handle: DirectoryHandle
@@ -737,6 +744,231 @@ class PreparedWorkspace:
     repository_root_binding: tuple[Any, ...]
     mask_inventory: Mapping[str, WorkInventoryEntry]
     cache_inventory: Mapping[str, WorkInventoryEntry]
+    site_cache_inventory: Mapping[str, WorkInventoryEntry]
+    version_site_cache_inventory: Mapping[str, WorkInventoryEntry]
+    site_cache_root_identity: tuple[int, ...]
+    version_site_cache_root_identity: tuple[int, ...]
+
+
+@dataclass
+class RetainedPrivateCredential:
+    """Private credential file retained by inode without exposing its path."""
+
+    root: Path
+    chain: list[DirectoryHandle]
+    name: str
+    fd: int
+    identity: tuple[int, ...]
+
+    @property
+    def proc_path(self) -> str:
+        return f"/proc/self/fd/{self.fd}"
+
+    def revalidate(self, *, context: str) -> None:
+        _rebind_directory_chain(self.root, self.chain, context=context)
+        opened = os.fstat(self.fd)
+        try:
+            named = os.stat(
+                self.name,
+                dir_fd=self.chain[-1].fd,
+                follow_symlinks=False,
+            )
+        except OSError as exc:
+            raise _error(f"{context} private credential vanished") from exc
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or not stat.S_ISREG(named.st_mode)
+            or opened.st_nlink != 1
+            or named.st_nlink != 1
+            or stat.S_IMODE(opened.st_mode) & 0o022
+            or stat.S_IMODE(named.st_mode) & 0o022
+            or _stat_identity(opened) != self.identity
+            or _stat_identity(named) != self.identity
+        ):
+            raise _error(f"{context} private credential binding drifted")
+
+    def close(self) -> None:
+        try:
+            os.close(self.fd)
+        finally:
+            for handle in reversed(self.chain):
+                handle.close()
+
+
+@dataclass
+class InstalledDvcConfiguration:
+    """Retained private config plus rebased credential descriptor bridges."""
+
+    source_root: Path
+    clone_root: Path
+    source_chain: list[DirectoryHandle]
+    clone_chain: list[DirectoryHandle]
+    source_fd: int
+    clone_fd: int
+    source_identity: tuple[int, ...]
+    credentials: tuple[RetainedPrivateCredential, ...]
+    credential_sections: tuple[str, ...]
+    public_record: Mapping[str, Any]
+    owned_cache_root: Path | None = None
+
+    @property
+    def pass_fds(self) -> tuple[int, ...]:
+        return tuple(item.fd for item in self.credentials)
+
+    def bind_owned_cache(self, cache_root: Path) -> None:
+        if self.owned_cache_root is not None or not cache_root.is_absolute():
+            raise _error("owned DVC cache binding is malformed or already set")
+        metadata = cache_root.lstat()
+        if not stat.S_ISDIR(metadata.st_mode) or stat.S_ISLNK(metadata.st_mode):
+            raise _error("owned DVC cache binding is not a real directory")
+        self.owned_cache_root = cache_root
+
+    def revalidate(self, *, allow_operational_cache: bool, context: str) -> None:
+        _rebind_directory_chain(
+            self.source_root,
+            self.source_chain,
+            context=f"{context} source configuration",
+        )
+        _rebind_directory_chain(
+            self.clone_root,
+            self.clone_chain,
+            context=f"{context} clone configuration",
+        )
+        source = _revalidate_open_file_name(
+            self.source_chain[-1],
+            LOCAL_DVC_CONFIG_PATH.name,
+            self.source_fd,
+            expected_modes=frozenset({0o600, 0o644}),
+            context=f"{context} source configuration",
+        )
+        clone = _revalidate_open_file_name(
+            self.clone_chain[-1],
+            LOCAL_DVC_CONFIG_PATH.name,
+            self.clone_fd,
+            expected_modes=frozenset({0o600}),
+            context=f"{context} clone configuration",
+        )
+        if _stat_identity(source) != self.source_identity:
+            raise _error(f"{context} source DVC configuration drifted")
+        for credential in self.credentials:
+            credential.revalidate(context=context)
+        source_payload = _read_open_regular_fd(
+            self.source_fd,
+            context=f"{context} source DVC configuration",
+        )
+        clone_payload = _read_open_regular_fd(
+            self.clone_fd,
+            context=f"{context} clone DVC configuration",
+        )
+        _require_private_dvc_config_equivalence(
+            source_payload,
+            clone_payload,
+            credential_sections=self.credential_sections,
+            credential_proc_paths=tuple(item.proc_path for item in self.credentials),
+            allow_operational_cache=allow_operational_cache,
+            owned_cache_dir=(
+                os.fspath(self.owned_cache_root)
+                if self.owned_cache_root is not None
+                else None
+            ),
+        )
+        if clone.st_size != len(clone_payload):
+            raise _error(f"{context} clone DVC configuration size drifted")
+
+    def close(self) -> None:
+        errors: list[OSError] = []
+        for credential in reversed(self.credentials):
+            try:
+                credential.close()
+            except OSError as exc:
+                errors.append(exc)
+        for descriptor in (self.clone_fd, self.source_fd):
+            try:
+                os.close(descriptor)
+            except OSError as exc:
+                errors.append(exc)
+        for chain in (self.clone_chain, self.source_chain):
+            for handle in reversed(chain):
+                try:
+                    handle.close()
+                except OSError as exc:
+                    errors.append(exc)
+        if errors:
+            raise errors[0]
+
+
+@dataclass
+class MainDvcSiteCacheLease:
+    """Private snapshot proving the configured main DVC site-cache is immutable."""
+
+    root: Path
+    config_chain: list[DirectoryHandle]
+    config_fd: int
+    config_identity: tuple[int, ...]
+    site_cache_chain: list[DirectoryHandle]
+    site_cache_identity: tuple[int, ...]
+    inventory: Mapping[str, tuple[int, ...]]
+
+    def revalidate(self, *, context: str) -> None:
+        _rebind_directory_chain(
+            self.root,
+            self.config_chain,
+            context=f"{context} source configuration",
+        )
+        config = _revalidate_open_file_name(
+            self.config_chain[-1],
+            LOCAL_DVC_CONFIG_PATH.name,
+            self.config_fd,
+            expected_modes=frozenset({0o600, 0o644}),
+            context=f"{context} source configuration",
+        )
+        if _stat_identity(config) != self.config_identity:
+            raise _error(f"{context} main DVC configuration changed")
+        _require_exact_main_dvc_site_cache_path(
+            _parse_private_dvc_config(
+                _read_open_regular_fd(
+                    self.config_fd,
+                    context=f"{context} source configuration",
+                )
+            ),
+            root=self.root,
+        )
+        _rebind_directory_chain(
+            Path("/"), self.site_cache_chain, context=context
+        )
+        root_before = _site_cache_root_identity(
+            self.site_cache_chain[-1],
+            expected_mode=None,
+            context=f"{context} main DVC site cache",
+        )
+        if root_before != self.site_cache_identity:
+            raise _error(f"{context} main DVC site cache root changed")
+        if _scan_private_metadata_tree(self.site_cache_chain[-1]) != dict(
+            self.inventory
+        ):
+            raise _error(f"{context} main DVC site cache changed")
+        root_after = _site_cache_root_identity(
+            self.site_cache_chain[-1],
+            expected_mode=None,
+            context=f"{context} main DVC site cache",
+        )
+        if root_after != self.site_cache_identity:
+            raise _error(f"{context} main DVC site cache root changed")
+
+    def close(self) -> None:
+        errors: list[OSError] = []
+        try:
+            os.close(self.config_fd)
+        except OSError as exc:
+            errors.append(exc)
+        for chain in (self.site_cache_chain, self.config_chain):
+            for handle in reversed(chain):
+                try:
+                    handle.close()
+                except OSError as exc:
+                    errors.append(exc)
+        if errors:
+            raise errors[0]
 
 
 _ACCESS_GUARD_INSTALLED = False
@@ -912,8 +1144,10 @@ def _command_failure_error(
 
 def _execution_cleanup_composite_error(
     active_error: BaseException,
+    *,
+    namespace_preserved: bool,
 ) -> FinalCertificationBuildError:
-    """Retain only safe primary facts when failed cleanup preserves a namespace."""
+    """Retain safe primary facts and the observed cleanup disposition."""
 
     evidence = (
         active_error.command_failure
@@ -940,7 +1174,7 @@ def _execution_cleanup_composite_error(
             "active_error": primary,
             "cleanup": {
                 "status": "failed_closed",
-                "namespace_preserved": True,
+                "namespace_preserved": namespace_preserved,
                 "active_error_was_masked": False,
             },
             "retry_authorized": False,
@@ -1056,14 +1290,54 @@ def _capture_main_state(root: Path) -> dict[str, Any]:
     }
 
 
-def _dvc_status(root: Path, *, executable_root: Path | None = None) -> str:
+def _require_isolated_dvc_command_root(
+    *, source_root: Path, command_root: Path, context: str
+) -> None:
+    """Reject every pull/status command whose cwd is the main worktree."""
+
+    try:
+        source = source_root.resolve(strict=True)
+        command = command_root.resolve(strict=True)
+        source_metadata = source.stat()
+        command_metadata = command.stat()
+    except OSError as exc:
+        raise _error(f"{context} root binding is unavailable") from exc
+    if (
+        not stat.S_ISDIR(source_metadata.st_mode)
+        or not stat.S_ISDIR(command_metadata.st_mode)
+        or (source_metadata.st_dev, source_metadata.st_ino)
+        == (command_metadata.st_dev, command_metadata.st_ino)
+    ):
+        raise _error(f"{context} is restricted to the isolated clone")
+
+
+def _dvc_status(
+    root: Path,
+    *,
+    executable_root: Path | None = None,
+    environment: Mapping[str, str] | None = None,
+    private_pass_fds: Sequence[int] = (),
+) -> str:
+    if executable_root is None:
+        raise _error("DVC status is restricted to the isolated clone")
+    _require_isolated_dvc_command_root(
+        source_root=executable_root,
+        command_root=root,
+        context="DVC status",
+    )
     runtime = _open_python_script_runtime(
-        executable_root or root,
+        executable_root,
         Path(".venv/bin/dvc"),
         context="DVC runtime",
     )
     try:
-        return _dvc_status_with_executable(root, runtime)
+        return _dvc_status_with_executable(
+            root,
+            runtime,
+            source_root=executable_root,
+            environment=environment,
+            private_pass_fds=private_pass_fds,
+        )
     finally:
         runtime.close()
 
@@ -1078,6 +1352,7 @@ def _run_python_script_runtime(
     timeout_seconds: int,
     require_success: bool = True,
     context: str,
+    private_pass_fds: Sequence[int] = (),
 ) -> CommandResult:
     """Execute exact retained script bytes with the exact retained interpreter."""
 
@@ -1086,6 +1361,16 @@ def _run_python_script_runtime(
         **({} if environment is None else environment),
         "__PYVENV_LAUNCHER__": f"{runtime.interpreter.venv_proc_path}/bin/python",
     }
+    inherited = tuple(
+        dict.fromkeys(
+            (
+                runtime.interpreter.fd,
+                runtime.interpreter.venv_fd,
+                runtime.script.fd,
+                *private_pass_fds,
+            )
+        )
+    )
     result = _run(
         (runtime.interpreter.proc_path, runtime.script.proc_path, *arguments),
         cwd=cwd,
@@ -1093,11 +1378,7 @@ def _run_python_script_runtime(
         environment=command_environment,
         timeout_seconds=timeout_seconds,
         require_success=require_success,
-        pass_fds=(
-            runtime.interpreter.fd,
-            runtime.interpreter.venv_fd,
-            runtime.script.fd,
-        ),
+        pass_fds=inherited,
         failure_stage=context,
     )
     runtime.revalidate(context=f"{context} after execution")
@@ -1107,15 +1388,28 @@ def _run_python_script_runtime(
 def _dvc_status_with_executable(
     root: Path,
     executable: AnchoredPythonScriptRuntime,
+    *,
+    source_root: Path,
+    environment: Mapping[str, str] | None = None,
+    private_pass_fds: Sequence[int] = (),
 ) -> str:
+    _require_isolated_dvc_command_root(
+        source_root=source_root,
+        command_root=root,
+        context="DVC status",
+    )
     result = _run_python_script_runtime(
         executable,
         ("status", "--json"),
         cwd=root,
         portable_argv=(".venv/bin/dvc", "status", "--json"),
-        environment={"DVC_NO_ANALYTICS": "1"},
+        environment={
+            "DVC_NO_ANALYTICS": "1",
+            **({} if environment is None else environment),
+        },
         timeout_seconds=300,
         context="DVC status",
+        private_pass_fds=private_pass_fds,
     )
     try:
         parsed = json.loads(result.stdout)
@@ -3143,11 +3437,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate the complete P3/H3/P2/H2/P1/H1 lineage projection."""
+    """Validate the complete P4/H4/P3/H3/P2/H2/P1/H1 lineage projection."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p4_cert_commit",
+        "h4_cert_commit",
         "p3_cert_commit",
         "h3_cert_commit",
         "p2_cert_commit",
@@ -3164,8 +3460,10 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p3_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h3_cert_commit"]
+        or commits["p4_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h4_cert_commit"]
+        or commits["p3_cert_commit"] != contract.p3_cert_commit
+        or commits["h3_cert_commit"] != contract.h3_cert_commit
         or commits["p2_cert_commit"] != contract.p2_cert_commit
         or commits["h2_cert_commit"] != contract.h2_cert_commit
         or commits["p1_cert_commit"] != contract.p1_cert_commit
@@ -3201,16 +3499,30 @@ def check_phase4_final_certification(
     live_commit = live_remote.split()[0] if live_remote else ""
     if live_commit != state["head"]:
         raise _error("live origin/main does not equal published P-CERT")
-    _dvc_status(root)
-    local_remote = validate_local_dvc_remote_configuration(root=root)
     output_root = root / CERTIFICATION_ROOT
     if os.path.lexists(output_root):
         raise _error("R-CERT output namespace already exists")
     legacy_guard = root / GUARD_PATH
     if os.path.lexists(legacy_guard):
         raise _error("legacy final-certification guard path must be absent")
-    anchor_records = collect_anchor_input_records(contract, root=root)
-    pointer_records = collect_dvc_pointer_records(contract, root=root)
+    main_site_cache_lease = _open_main_dvc_site_cache_lease(root)
+    try:
+        local_remote = validate_local_dvc_remote_configuration(root=root)
+        anchor_records, pointer_records, main_dvc_static_boundary = (
+            _reconstruct_main_dvc_static_boundary(
+                root=root,
+                contract=contract,
+                context="P-CERT check-only",
+                main_site_cache_lease=main_site_cache_lease,
+            )
+        )
+    finally:
+        try:
+            main_site_cache_lease.revalidate(
+                context="P-CERT check-only final main DVC site-cache invariant"
+            )
+        finally:
+            main_site_cache_lease.close()
     if len(pointer_records) != 8:
         raise _error("P-CERT does not bind exactly eight DVC pointers")
     return {
@@ -3222,7 +3534,7 @@ def check_phase4_final_certification(
         "anchor_inputs": anchor_records,
         "dvc_pointers": pointer_records,
         "output_paths": list(contract.output_paths),
-        "main_dvc_status": {},
+        "main_dvc_static_boundary": main_dvc_static_boundary,
         "local_dvc_remote_configuration": dict(local_remote),
     }
 
@@ -3284,10 +3596,492 @@ def _clone_exact_p(
     }
 
 
+def _read_open_regular_fd(descriptor: int, *, context: str) -> bytes:
+    """Read a retained regular file without changing its shared file offset."""
+
+    before = os.fstat(descriptor)
+    if not stat.S_ISREG(before.st_mode) or before.st_nlink != 1:
+        raise _error(f"{context} is not a single-link regular file")
+    chunks: list[bytes] = []
+    offset = 0
+    while offset < before.st_size:
+        chunk = os.pread(descriptor, min(64 * 1024, before.st_size - offset), offset)
+        if not chunk:
+            raise _error(f"{context} ended before its declared size")
+        chunks.append(chunk)
+        offset += len(chunk)
+    after = os.fstat(descriptor)
+    if _stat_identity(after) != _stat_identity(before):
+        raise _error(f"{context} changed while read")
+    return b"".join(chunks)
+
+
+def _parse_private_dvc_config(payload: bytes) -> configparser.RawConfigParser:
+    """Parse private DVC configuration without returning any private value."""
+
+    try:
+        text_payload = payload.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise _error("private DVC configuration is not UTF-8") from exc
+    if "\x00" in text_payload:
+        raise _error("private DVC configuration contains a NUL byte")
+    parser = configparser.RawConfigParser(
+        interpolation=None,
+        strict=True,
+        empty_lines_in_values=False,
+    )
+    try:
+        parser.read_string(text_payload)
+    except configparser.Error as exc:
+        raise _error("private DVC configuration syntax is invalid") from exc
+    if parser.defaults():
+        raise _error("private DVC configuration defaults are unsupported")
+    return parser
+
+
+def _private_dvc_config_mapping(
+    parser: configparser.RawConfigParser,
+) -> dict[str, dict[str, str]]:
+    return {
+        section: {key: value for key, value in parser.items(section, raw=True)}
+        for section in parser.sections()
+    }
+
+
+def _scan_private_metadata_tree(
+    root: DirectoryHandle,
+) -> dict[str, tuple[int, ...]]:
+    """Snapshot a private metadata tree without opening any file payload."""
+
+    records: dict[str, tuple[int, ...]] = {}
+
+    def scan(directory: DirectoryHandle, prefix: str) -> None:
+        for name in sorted(os.listdir(directory.fd)):
+            if not name or "/" in name or name in {".", ".."}:
+                raise _error("private metadata tree contains an unsafe name")
+            metadata = os.stat(name, dir_fd=directory.fd, follow_symlinks=False)
+            if stat.S_ISLNK(metadata.st_mode):
+                raise _error("private metadata tree contains a symlink")
+            if not (stat.S_ISDIR(metadata.st_mode) or stat.S_ISREG(metadata.st_mode)):
+                raise _error("private metadata tree contains an unsupported inode")
+            if stat.S_ISREG(metadata.st_mode) and metadata.st_nlink != 1:
+                raise _error("private metadata tree contains a hardlinked file")
+            relative = f"{prefix}/{name}" if prefix else name
+            records[relative] = _stat_identity(metadata)
+            if stat.S_ISDIR(metadata.st_mode):
+                descriptor = os.open(
+                    name,
+                    os.O_RDONLY
+                    | os.O_DIRECTORY
+                    | getattr(os, "O_NOFOLLOW", 0)
+                    | getattr(os, "O_CLOEXEC", 0),
+                    dir_fd=directory.fd,
+                )
+                opened = os.fstat(descriptor)
+                if _stat_identity(opened) != _stat_identity(metadata):
+                    os.close(descriptor)
+                    raise _error("private metadata directory changed while opened")
+                child = DirectoryHandle(
+                    directory.path / name,
+                    descriptor,
+                    opened.st_dev,
+                    opened.st_ino,
+                )
+                try:
+                    scan(child, relative)
+                finally:
+                    child.close()
+
+    scan(root, "")
+    return records
+
+
+def _site_cache_root_identity(
+    handle: DirectoryHandle,
+    *,
+    expected_mode: int | None,
+    context: str,
+) -> tuple[int, ...]:
+    """Return a complete retained root identity without following a name."""
+
+    metadata = os.fstat(handle.fd)
+    if (
+        not stat.S_ISDIR(metadata.st_mode)
+        or (metadata.st_dev, metadata.st_ino) != (handle.device, handle.inode)
+        or (
+            expected_mode is not None
+            and stat.S_IMODE(metadata.st_mode) != expected_mode
+        )
+    ):
+        raise _error(f"{context} root identity or mode drifted")
+    return _stat_identity(metadata)
+
+
+def _revalidate_owned_site_cache_root(
+    handle: DirectoryHandle,
+    expected_identity: tuple[int, ...],
+    *,
+    allow_successful_dvc_transition: bool,
+    context: str,
+) -> tuple[int, ...]:
+    """Reject root drift, except a completed pre-freeze DVC mutation."""
+
+    current = _site_cache_root_identity(
+        handle,
+        expected_mode=0o700,
+        context=context,
+    )
+    if current == expected_identity:
+        return expected_identity
+    if allow_successful_dvc_transition:
+        return current
+    raise _error(f"{context} root metadata drifted")
+
+
+def _require_exact_main_dvc_site_cache_path(
+    parser: configparser.RawConfigParser,
+    *,
+    root: Path,
+) -> Path:
+    """Return only the canonical repository-owned main site-cache path."""
+
+    if not parser.has_option("core", "site_cache_dir"):
+        raise _error("private DVC configuration lacks core.site_cache_dir")
+    raw_path = parser.get("core", "site_cache_dir", raw=True)
+    candidate = Path(raw_path)
+    expected = root / ".dvc/tmp/site-cache"
+    if (
+        not root.is_absolute()
+        or not candidate.is_absolute()
+        or raw_path != raw_path.strip()
+        or "\x00" in raw_path
+        or os.path.normpath(raw_path) != raw_path
+        or candidate != expected
+        or raw_path != os.fspath(expected)
+    ):
+        raise _error("private DVC site-cache path is not the exact owned main path")
+    return candidate
+
+
+def _open_main_dvc_site_cache_lease(root: Path) -> MainDvcSiteCacheLease:
+    """Retain the configured main site-cache without serializing its path."""
+
+    config_chain, _ = _open_directory_chain(
+        root, LOCAL_DVC_CONFIG_PATH.parent, create_missing=False
+    )
+    config_fd = -1
+    site_cache_chain: list[DirectoryHandle] = []
+    succeeded = False
+    try:
+        config_fd = os.open(
+            LOCAL_DVC_CONFIG_PATH.name,
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
+            dir_fd=config_chain[-1].fd,
+        )
+        config = _revalidate_open_file_name(
+            config_chain[-1],
+            LOCAL_DVC_CONFIG_PATH.name,
+            config_fd,
+            expected_modes=frozenset({0o600, 0o644}),
+            context="main DVC site-cache source configuration",
+        )
+        payload = _read_open_regular_fd(
+            config_fd,
+            context="main DVC site-cache source configuration",
+        )
+        parser = _parse_private_dvc_config(payload)
+        candidate = _require_exact_main_dvc_site_cache_path(parser, root=root)
+        relative = candidate.relative_to(Path("/"))
+        try:
+            site_cache_chain, _ = _open_directory_chain(
+                Path("/"), relative, create_missing=False
+            )
+        except (OSError, FinalCertificationBuildError):
+            raise _error(
+                "private DVC site-cache path could not be safely retained"
+            ) from None
+        site_cache_identity = _site_cache_root_identity(
+            site_cache_chain[-1],
+            expected_mode=None,
+            context="initial main DVC site cache",
+        )
+        inventory = _scan_private_metadata_tree(site_cache_chain[-1])
+        if (
+            _site_cache_root_identity(
+                site_cache_chain[-1],
+                expected_mode=None,
+                context="initial main DVC site cache",
+            )
+            != site_cache_identity
+        ):
+            raise _error("main DVC site cache root changed while snapshotting")
+        lease = MainDvcSiteCacheLease(
+            root=root,
+            config_chain=config_chain,
+            config_fd=config_fd,
+            config_identity=_stat_identity(config),
+            site_cache_chain=site_cache_chain,
+            site_cache_identity=site_cache_identity,
+            inventory=inventory,
+        )
+        lease.revalidate(context="initial main DVC site-cache snapshot")
+        succeeded = True
+        return lease
+    finally:
+        if not succeeded:
+            for handle in reversed(site_cache_chain):
+                handle.close()
+            if config_fd >= 0:
+                os.close(config_fd)
+            for handle in reversed(config_chain):
+                handle.close()
+
+
+def _reconstruct_main_dvc_static_boundary(
+    *,
+    root: Path,
+    contract: FinalCertificationContract,
+    context: str,
+    expected_anchors: Sequence[Mapping[str, Any]] | None = None,
+    expected_pointers: Sequence[Mapping[str, Any]] | None = None,
+    main_site_cache_lease: MainDvcSiteCacheLease | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]], dict[str, Any]]:
+    """Reconstruct main DVC state from Git-bound public bytes, without DVC."""
+
+    if main_site_cache_lease is not None:
+        main_site_cache_lease.revalidate(
+            context=f"before {context} static main DVC boundary"
+        )
+    try:
+        anchor_records = collect_anchor_input_records(contract, root=root)
+        pointer_records = collect_dvc_pointer_records(contract, root=root)
+        if expected_anchors is not None and anchor_records != list(expected_anchors):
+            raise _error(f"{context} public anchor inputs changed")
+        if expected_pointers is not None and pointer_records != list(
+            expected_pointers
+        ):
+            raise _error(f"{context} published DVC pointers changed")
+        sealed = main_dvc_static_boundary_record(
+            contract,
+            anchor_records=anchor_records,
+            pointer_records=pointer_records,
+        )
+        if (
+            set(sealed)
+            != {
+                "status_executed",
+                "state_source",
+                "static_boundary_verified",
+                "tracked_config_path",
+                "tracked_config_git_blob_oid",
+                "versioned_pointer_count",
+                "versioned_pointer_records_digest",
+                "real_dvc_execution_scope",
+            }
+            or sealed.get("status_executed") is not False
+            or sealed.get("state_source") != "git_and_versioned_dvc_pointers"
+            or sealed.get("static_boundary_verified") is not True
+            or sealed.get("versioned_pointer_count") != 8
+            or sealed.get("versioned_pointer_records_digest")
+            != digest_records(pointer_records)
+            or sealed.get("real_dvc_execution_scope")
+            != "isolated_r_cert_clone_only"
+        ):
+            raise _error(f"{context} static main DVC boundary drifted")
+        boundary = {
+            "main_dvc_status_command_run": False,
+            "main_dvc_static_reconstruction_from_git_and_published_pointers": True,
+            "main_dvc_state_source": sealed["state_source"],
+            "tracked_config_path": sealed["tracked_config_path"],
+            "tracked_config_git_blob_oid": sealed["tracked_config_git_blob_oid"],
+            "published_dvc_pointer_count": sealed["versioned_pointer_count"],
+            "published_dvc_pointer_records_sha256": sealed[
+                "versioned_pointer_records_digest"
+            ],
+            "real_dvc_execution_scope": sealed["real_dvc_execution_scope"],
+            "parquet_payload_opened_or_decoded": False,
+        }
+        return anchor_records, pointer_records, boundary
+    finally:
+        if main_site_cache_lease is not None:
+            main_site_cache_lease.revalidate(
+                context=f"after {context} static main DVC boundary"
+            )
+
+
+def _credential_sections(
+    parser: configparser.RawConfigParser,
+) -> tuple[str, ...]:
+    def is_remote_section(section: str) -> bool:
+        normalized = (
+            section[1:-1]
+            if len(section) >= 2 and section.startswith("'") and section.endswith("'")
+            else section
+        )
+        return normalized.startswith('remote "') and normalized.endswith('"')
+
+    sections = tuple(
+        section
+        for section in parser.sections()
+        if is_remote_section(section)
+        and parser.has_option(section, "credentialpath")
+    )
+    if not sections:
+        raise _error("private DVC configuration lacks a credential path")
+    return sections
+
+
+def _open_retained_private_credential(
+    source_root: Path,
+    raw_path: str,
+) -> RetainedPrivateCredential:
+    """Retain a source credential through a no-follow path below ``private``."""
+
+    if (
+        not raw_path
+        or raw_path != raw_path.strip()
+        or "\\" in raw_path
+        or "\x00" in raw_path
+    ):
+        raise _error("private DVC credential path is malformed")
+    configured = PurePosixPath(raw_path)
+    if configured.is_absolute() or not configured.parts:
+        raise _error("private DVC credential path must remain below private/")
+    normalized: list[str] = list(LOCAL_DVC_CONFIG_PATH.parent.parts)
+    for part in configured.parts:
+        if part in {"", "."}:
+            raise _error("private DVC credential path is not canonical")
+        if part == "..":
+            if not normalized:
+                raise _error("private DVC credential path escaped repository root")
+            normalized.pop()
+        else:
+            normalized.append(part)
+    if not normalized or normalized[0] != "private":
+        raise _error("private DVC credential path must resolve below private/")
+    local = Path(*normalized)
+    try:
+        chain, _ = _open_directory_chain(
+            source_root, local.parent, create_missing=False
+        )
+    except (OSError, FinalCertificationBuildError):
+        raise _error(
+            "private DVC credential parent could not be safely retained"
+        ) from None
+    descriptor = -1
+    try:
+        descriptor = os.open(
+            local.name,
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
+            dir_fd=chain[-1].fd,
+        )
+        opened = os.fstat(descriptor)
+        named = os.stat(local.name, dir_fd=chain[-1].fd, follow_symlinks=False)
+        if (
+            not stat.S_ISREG(opened.st_mode)
+            or not stat.S_ISREG(named.st_mode)
+            or opened.st_nlink != 1
+            or named.st_nlink != 1
+            or stat.S_IMODE(opened.st_mode) & 0o022
+            or stat.S_IMODE(named.st_mode) & 0o022
+            or _stat_identity(opened) != _stat_identity(named)
+            or opened.st_size <= 0
+        ):
+            raise _error("private DVC credential identity/mode/link is unsafe")
+        retained = RetainedPrivateCredential(
+            root=source_root,
+            chain=chain,
+            name=local.name,
+            fd=descriptor,
+            identity=_stat_identity(opened),
+        )
+        retained.revalidate(context="private DVC credential open")
+        return retained
+    except BaseException as exc:
+        if descriptor >= 0:
+            os.close(descriptor)
+        for handle in reversed(chain):
+            handle.close()
+        if isinstance(exc, FinalCertificationBuildError):
+            raise
+        raise _error("private DVC credential could not be safely retained") from None
+
+
+def _render_rebased_private_dvc_config(
+    parser: configparser.RawConfigParser,
+    *,
+    sections: Sequence[str],
+    credentials: Sequence[RetainedPrivateCredential],
+) -> bytes:
+    if len(sections) != len(credentials):
+        raise _error("private DVC credential bridge cardinality drifted")
+    for section, credential in zip(sections, credentials, strict=True):
+        parser.set(section, "credentialpath", credential.proc_path)
+    buffer = io.StringIO()
+    parser.write(buffer, space_around_delimiters=True)
+    return buffer.getvalue().encode("utf-8")
+
+
+def _require_private_dvc_config_equivalence(
+    source_payload: bytes,
+    clone_payload: bytes,
+    *,
+    credential_sections: Sequence[str],
+    credential_proc_paths: Sequence[str],
+    allow_operational_cache: bool,
+    owned_cache_dir: str | None = None,
+) -> None:
+    """Compare effective private settings without exposing any setting value."""
+
+    if len(credential_sections) != len(credential_proc_paths):
+        raise _error("private DVC equivalence bridge cardinality drifted")
+    source = _private_dvc_config_mapping(_parse_private_dvc_config(source_payload))
+    clone = _private_dvc_config_mapping(_parse_private_dvc_config(clone_payload))
+    if set(source) != set(clone):
+        raise _error("private DVC configuration section set drifted")
+    for index, (section, proc_path) in enumerate(
+        zip(credential_sections, credential_proc_paths, strict=True)
+    ):
+        if section not in source or section not in clone:
+            raise _error("private DVC credential section drifted")
+        if source[section].get("credentialpath") is None:
+            raise _error("source DVC credential path disappeared")
+        if clone[section].get("credentialpath") != proc_path:
+            raise _error("clone DVC credential descriptor bridge drifted")
+        marker = f"<retained-private-credential-{index}>"
+        source[section]["credentialpath"] = marker
+        clone[section]["credentialpath"] = marker
+    if allow_operational_cache:
+        if (
+            owned_cache_dir is None
+            or not Path(owned_cache_dir).is_absolute()
+            or clone.get("cache", {}).get("dir") != owned_cache_dir
+            or clone.get("cache", {}).get("type") != "copy"
+        ):
+            raise _error("private DVC owned cache settings drifted")
+        source_cache = source.setdefault("cache", {})
+        clone_cache = clone.setdefault("cache", {})
+        for key in ("dir", "type"):
+            source_cache.pop(key, None)
+            clone_cache.pop(key, None)
+        if not source_cache:
+            source.pop("cache", None)
+        if not clone_cache:
+            clone.pop("cache", None)
+    elif owned_cache_dir is not None:
+        raise _error("private DVC owned cache binding appeared before configuration")
+    if source != clone:
+        raise _error("private DVC effective configuration drifted after safe rebasing")
+
+
 def _install_local_dvc_remote_configuration(
     *, source_root: Path, clone_root: Path
-) -> Mapping[str, Any]:
-    """Copy the validated ignored remote config without exposing its bytes.
+) -> InstalledDvcConfiguration:
+    """Install the private remote config with retained credential FD bridges.
 
     The file is operational state, not a scientific/public authority input.
     Its path, content, remote name, URL, and credentials are intentionally
@@ -3303,6 +4097,8 @@ def _install_local_dvc_remote_configuration(
     )
     source_fd = -1
     destination_fd = -1
+    credentials: tuple[RetainedPrivateCredential, ...] = ()
+    succeeded = False
     try:
         _rebind_directory_chain(
             source_root, source_chain, context="source DVC configuration"
@@ -3312,15 +4108,18 @@ def _install_local_dvc_remote_configuration(
         )
         source_fd = os.open(
             LOCAL_DVC_CONFIG_PATH.name,
-            os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0),
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
             dir_fd=source_chain[-1].fd,
         )
         destination_fd = os.open(
             LOCAL_DVC_CONFIG_PATH.name,
-            os.O_WRONLY
+            os.O_RDWR
             | os.O_CREAT
             | os.O_EXCL
-            | getattr(os, "O_NOFOLLOW", 0),
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
             0o600,
             dir_fd=destination_chain[-1].fd,
         )
@@ -3332,12 +4131,34 @@ def _install_local_dvc_remote_configuration(
             expected_modes=frozenset({0o600, 0o644}),
             context="source DVC configuration",
         )
+        source_payload = _read_open_regular_fd(
+            source_fd,
+            context="source DVC configuration",
+        )
+        parser = _parse_private_dvc_config(source_payload)
+        sections = _credential_sections(parser)
+        opened_credentials: list[RetainedPrivateCredential] = []
+        try:
+            for section in sections:
+                opened_credentials.append(
+                    _open_retained_private_credential(
+                        source_root,
+                        parser.get(section, "credentialpath", raw=True),
+                    )
+                )
+        except BaseException:
+            for credential in reversed(opened_credentials):
+                credential.close()
+            raise
+        credentials = tuple(opened_credentials)
+        clone_payload = _render_rebased_private_dvc_config(
+            parser,
+            sections=sections,
+            credentials=credentials,
+        )
         total = 0
-        while True:
-            chunk = os.read(source_fd, 64 * 1024)
-            if not chunk:
-                break
-            view = memoryview(chunk)
+        for chunk_start in range(0, len(clone_payload), 64 * 1024):
+            view = memoryview(clone_payload[chunk_start : chunk_start + 64 * 1024])
             while view:
                 written = os.write(destination_fd, view)
                 if written <= 0:
@@ -3378,10 +4199,10 @@ def _install_local_dvc_remote_configuration(
                 after.st_nlink,
                 stat.S_IMODE(after.st_mode),
             )
-            or total != before.st_size
-            or copied.st_size != before.st_size
+            or total != len(clone_payload)
+            or copied.st_size != len(clone_payload)
         ):
-            raise _error("local DVC remote configuration changed during private copy")
+            raise _error("local DVC remote configuration changed during private rebase")
         _rebind_directory_chain(
             source_root, source_chain, context="source DVC configuration"
         )
@@ -3436,28 +4257,67 @@ def _install_local_dvc_remote_configuration(
         _rebind_directory_chain(
             clone_root, destination_chain, context="clone DVC configuration"
         )
+        _require_private_dvc_config_equivalence(
+            source_payload,
+            _read_open_regular_fd(
+                destination_fd,
+                context="clone DVC configuration",
+            ),
+            credential_sections=sections,
+            credential_proc_paths=tuple(item.proc_path for item in credentials),
+            allow_operational_cache=False,
+        )
+        public_validation = {
+            key: value
+            for key, value in validation.items()
+            if key
+            not in {
+                "content_opened",
+                "content_or_path_serialized",
+                "filesystem_mode",
+            }
+        }
+        installed = InstalledDvcConfiguration(
+            source_root=source_root,
+            clone_root=clone_root,
+            source_chain=source_chain,
+            clone_chain=destination_chain,
+            source_fd=source_fd,
+            clone_fd=destination_fd,
+            source_identity=_stat_identity(source_final),
+            credentials=credentials,
+            credential_sections=sections,
+            public_record={
+                **public_validation,
+                "source_mode_accepted": "0600_or_0644",
+                "clone_mode": "0600",
+                "copied_only_into_owned_clone": True,
+                "content_read_only_for_private_rebase": True,
+                "credential_path_rebased_to_retained_fd": True,
+                "credential_target_regular_single_link": True,
+                "credential_target_group_or_other_writable": False,
+                "effective_configuration_equivalent_except_owned_cache": True,
+                "content_path_remote_url_and_credentials_serialized": False,
+            },
+        )
+        installed.revalidate(
+            allow_operational_cache=False,
+            context="installed private DVC configuration",
+        )
+        succeeded = True
+        return installed
     finally:
-        if destination_fd >= 0:
-            os.close(destination_fd)
-        if source_fd >= 0:
-            os.close(source_fd)
-        for handle in reversed(destination_chain):
-            handle.close()
-        for handle in reversed(source_chain):
-            handle.close()
-    public_validation = {
-        key: value
-        for key, value in validation.items()
-        if key not in {"content_opened", "content_or_path_serialized", "filesystem_mode"}
-    }
-    return {
-        **public_validation,
-        "source_mode_accepted": "0600_or_0644",
-        "clone_mode": "0600",
-        "copied_only_into_owned_clone": True,
-        "content_read_only_for_private_copy": True,
-        "content_path_remote_url_and_credentials_serialized": False,
-    }
+        if not succeeded:
+            for credential in reversed(credentials):
+                credential.close()
+            if destination_fd >= 0:
+                os.close(destination_fd)
+            if source_fd >= 0:
+                os.close(source_fd)
+            for handle in reversed(destination_chain):
+                handle.close()
+            for handle in reversed(source_chain):
+                handle.close()
 
 
 def _restore_dvc_objects(
@@ -3465,6 +4325,8 @@ def _restore_dvc_objects(
     source_root: Path,
     clone_root: Path,
     cache_root: Path,
+    site_cache_root: Path,
+    installed_configuration: InstalledDvcConfiguration,
     contract: FinalCertificationContract,
     namespace_validator: Callable[[str], None] | None = None,
 ) -> list[dict[str, Any]]:
@@ -3478,6 +4340,8 @@ def _restore_dvc_objects(
             source_root=source_root,
             clone_root=clone_root,
             cache_root=cache_root,
+            site_cache_root=site_cache_root,
+            installed_configuration=installed_configuration,
             contract=contract,
             executable=anchored,
             namespace_validator=namespace_validator,
@@ -3491,12 +4355,27 @@ def _restore_dvc_objects_with_anchored_executable(
     source_root: Path,
     clone_root: Path,
     cache_root: Path,
+    site_cache_root: Path,
+    installed_configuration: InstalledDvcConfiguration,
     contract: FinalCertificationContract,
     executable: AnchoredPythonScriptRuntime,
     namespace_validator: Callable[[str], None] | None = None,
 ) -> list[dict[str, Any]]:
+    _require_isolated_dvc_command_root(
+        source_root=source_root,
+        command_root=clone_root,
+        context="DVC restore",
+    )
     if any(cache_root.iterdir()):
         raise _error("isolated DVC cache is not initially empty")
+    if any(site_cache_root.iterdir()):
+        raise _error("isolated DVC site cache is not initially empty")
+    if stat.S_IMODE(site_cache_root.lstat().st_mode) != 0o700:
+        raise _error("isolated DVC site cache mode drifted")
+    isolated_environment = {
+        "DVC_NO_ANALYTICS": "1",
+        "DVC_SITE_CACHE_DIR": os.fspath(site_cache_root),
+    }
     # DVC may update clone-local `.dvc/config.local` and create `.dvc/tmp` as soon
     # as configuration or the first pull starts.  Those writes necessarily
     # precede the post-restore inventory freeze.  A command failure in this
@@ -3517,12 +4396,18 @@ def _restore_dvc_objects_with_anchored_executable(
             ("config", "--local", key, value),
             cwd=clone_root,
             portable_argv=(".venv/bin/dvc", "config", "--local", key, "<PRIVATE>"),
-            environment={"DVC_NO_ANALYTICS": "1"},
+            environment=isolated_environment,
             timeout_seconds=120,
             context=f"DVC config {key}",
+            private_pass_fds=installed_configuration.pass_fds,
         )
         if namespace_validator is not None:
             namespace_validator(f"after_dvc_config_{key}")
+    installed_configuration.bind_owned_cache(cache_root)
+    installed_configuration.revalidate(
+        allow_operational_cache=True,
+        context="private DVC configuration after owned cache settings",
+    )
     private_config = clone_root / LOCAL_DVC_CONFIG_PATH
     private_config_identity = _private_regular_identity(private_config)
     records: list[dict[str, Any]] = []
@@ -3551,14 +4436,19 @@ def _restore_dvc_objects_with_anchored_executable(
             ("pull", "--no-run-cache", "-j", "1", spec.path),
             cwd=clone_root,
             portable_argv=portable,
-            environment={"DVC_NO_ANALYTICS": "1"},
+            environment=isolated_environment,
             timeout_seconds=1800,
             context=f"directed DVC pull {index}",
+            private_pass_fds=installed_configuration.pass_fds,
         )
         if namespace_validator is not None:
             namespace_validator(f"after_dvc_pull_{index}")
         if _private_regular_identity(private_config) != private_config_identity:
             raise _error("private DVC configuration changed during directed pulls")
+        installed_configuration.revalidate(
+            allow_operational_cache=True,
+            context=f"private DVC configuration after directed pull {index}",
+        )
         _restored_payload_identity(
             clone_root / output_path,
             expected_size=spec.size,
@@ -3582,9 +4472,10 @@ def _restore_dvc_objects_with_anchored_executable(
                 "--json",
                 spec.path,
             ),
-            environment={"DVC_NO_ANALYTICS": "1"},
+            environment=isolated_environment,
             timeout_seconds=300,
             context=f"directed DVC status {index}",
+            private_pass_fds=installed_configuration.pass_fds,
         )
         if namespace_validator is not None:
             namespace_validator(f"after_dvc_status_{index}")
@@ -3617,7 +4508,21 @@ def _restore_dvc_objects_with_anchored_executable(
     if observed_outputs != {spec.output_path for spec in contract.dvc_pointers}:
         raise _error("DVC restore output scope is not exact eight")
     _validate_exact_dvc_cache(cache_root=cache_root, contract=contract)
-    _dvc_status_with_executable(clone_root, executable)
+    if namespace_validator is not None:
+        namespace_validator("before_dvc_final_status")
+    _dvc_status_with_executable(
+        clone_root,
+        executable,
+        source_root=source_root,
+        environment={"DVC_SITE_CACHE_DIR": os.fspath(site_cache_root)},
+        private_pass_fds=installed_configuration.pass_fds,
+    )
+    if namespace_validator is not None:
+        namespace_validator("after_dvc_final_status")
+    installed_configuration.revalidate(
+        allow_operational_cache=True,
+        context="private DVC configuration after exact restore",
+    )
     return records
 
 
@@ -4892,22 +5797,106 @@ def _run_anchored_executable(
     return result
 
 
+def _revalidate_owned_dvc_version_boundary(
+    *,
+    source_root: Path,
+    clone_handle: DirectoryHandle,
+    site_cache_handle: DirectoryHandle,
+    context: str,
+) -> None:
+    """Bind the DVC version cwd/cache to the retained R-CERT workspace."""
+
+    source = source_root.resolve(strict=True)
+    expected_parent = source / "tmp/closure_v1_phase4_final_certification"
+    run_root = clone_handle.path.parent
+    if (
+        run_root.parent != expected_parent
+        or re.fullmatch(r"run-[0-9a-f]{32}", run_root.name) is None
+        or clone_handle.path != run_root / "clone"
+        or site_cache_handle.path != run_root / "dvc-version-site-cache"
+    ):
+        raise _error(f"{context} escaped the owned R-CERT workspace")
+    _require_isolated_dvc_command_root(
+        source_root=source,
+        command_root=clone_handle.path,
+        context=context,
+    )
+    for handle, expected_mode, label in (
+        (clone_handle, None, "clone"),
+        (site_cache_handle, 0o700, "site cache"),
+    ):
+        try:
+            named = handle.path.lstat()
+            opened = os.fstat(handle.fd)
+        except OSError as exc:
+            raise _error(f"{context} owned {label} binding vanished") from exc
+        if (
+            not stat.S_ISDIR(named.st_mode)
+            or stat.S_ISLNK(named.st_mode)
+            or not stat.S_ISDIR(opened.st_mode)
+            or (named.st_dev, named.st_ino)
+            != (handle.device, handle.inode)
+            or (opened.st_dev, opened.st_ino)
+            != (handle.device, handle.inode)
+            or (
+                expected_mode is not None
+                and (
+                    stat.S_IMODE(named.st_mode) != expected_mode
+                    or stat.S_IMODE(opened.st_mode) != expected_mode
+                )
+            )
+        ):
+            raise _error(f"{context} owned {label} binding drifted")
+
+
+def _revalidate_retained_dvc_runtime(
+    runtime: AnchoredPythonScriptRuntime,
+    *,
+    source_root: Path,
+    context: str,
+) -> None:
+    """Prove every DVC call still uses the one source-anchored runtime."""
+
+    source = source_root.resolve(strict=True)
+    if (
+        runtime.script.root != source
+        or runtime.interpreter.root != source
+        or runtime.script.name != "dvc"
+        or runtime.interpreter.name != "python"
+        or runtime.script.chain[-1].path != source / ".venv/bin"
+        or runtime.interpreter.chain[-1].path != source / ".venv/bin"
+    ):
+        raise _error(f"{context} retained DVC runtime provenance drifted")
+    runtime.revalidate(context=context)
+
+
 def _runtime_versions(
     root: Path,
     *,
+    dvc_runtime: AnchoredPythonScriptRuntime,
+    dvc_clone_handle: DirectoryHandle,
+    dvc_site_cache_handle: DirectoryHandle,
+    dvc_private_pass_fds: Sequence[int] = (),
     namespace_validator: Callable[[str], None] | None = None,
 ) -> Mapping[str, str]:
     python: AnchoredPythonInterpreter | None = None
-    dvc: AnchoredPythonScriptRuntime | None = None
     ty: AnchoredExecutable | None = None
     poetry: AnchoredPythonScriptRuntime | None = None
     bwrap: AnchoredExecutable | None = None
     try:
+        _revalidate_owned_dvc_version_boundary(
+            source_root=root,
+            clone_handle=dvc_clone_handle,
+            site_cache_handle=dvc_site_cache_handle,
+            context="DVC version",
+        )
+        _revalidate_retained_dvc_runtime(
+            dvc_runtime,
+            source_root=root,
+            context="retained DVC version runtime",
+        )
         python = _open_anchored_python_interpreter(
             root, Path(".venv/bin/python"), context="Python version runtime"
-        )
-        dvc = _open_python_script_runtime(
-            root, Path(".venv/bin/dvc"), context="DVC version runtime"
         )
         ty = _open_anchored_executable(
             root, Path(".venv/bin/ty"), context="ty version runtime"
@@ -4952,19 +5941,46 @@ def _runtime_versions(
             python.revalidate(context="Python version after execution")
             return result
 
-        capture("python", python_probe)
-        capture(
-            "dvc",
-            lambda: _run_python_script_runtime(
-                dvc,
+        def dvc_probe() -> CommandResult:
+            _revalidate_owned_dvc_version_boundary(
+                source_root=root,
+                clone_handle=dvc_clone_handle,
+                site_cache_handle=dvc_site_cache_handle,
+                context="DVC version before execution",
+            )
+            _revalidate_retained_dvc_runtime(
+                dvc_runtime,
+                source_root=root,
+                context="retained DVC runtime before version execution",
+            )
+            result = _run_python_script_runtime(
+                dvc_runtime,
                 ("--version",),
-                cwd=root,
+                cwd=dvc_clone_handle.path,
                 portable_argv=(".venv/bin/dvc", "--version"),
-                environment={"DVC_NO_ANALYTICS": "1"},
+                environment={
+                    "DVC_NO_ANALYTICS": "1",
+                    "DVC_SITE_CACHE_DIR": os.fspath(dvc_site_cache_handle.path),
+                },
                 timeout_seconds=120,
                 context="DVC version",
-            ),
-        )
+                private_pass_fds=dvc_private_pass_fds,
+            )
+            _revalidate_retained_dvc_runtime(
+                dvc_runtime,
+                source_root=root,
+                context="retained DVC runtime after version execution",
+            )
+            _revalidate_owned_dvc_version_boundary(
+                source_root=root,
+                clone_handle=dvc_clone_handle,
+                site_cache_handle=dvc_site_cache_handle,
+                context="DVC version after execution",
+            )
+            return result
+
+        capture("python", python_probe)
+        capture("dvc", dvc_probe)
         capture(
             "ty",
             lambda: _run_anchored_executable(
@@ -5030,7 +6046,7 @@ def _runtime_versions(
             )
         return versions
     finally:
-        for value in (bwrap, poetry, ty, dvc, python):
+        for value in (bwrap, poetry, ty, python):
             if value is not None:
                 value.close()
 
@@ -5039,12 +6055,23 @@ def _sealed_runtime_versions(
     root: Path,
     *,
     contract: FinalCertificationContract,
+    dvc_runtime: AnchoredPythonScriptRuntime,
+    dvc_clone_handle: DirectoryHandle,
+    dvc_site_cache_handle: DirectoryHandle,
+    dvc_private_pass_fds: Sequence[int] = (),
     namespace_validator: Callable[[str], None] | None = None,
 ) -> dict[str, str]:
     """Capture all eight runtime versions and require the sealed exact map."""
 
     observed = dict(
-        _runtime_versions(root, namespace_validator=namespace_validator)
+        _runtime_versions(
+            root,
+            dvc_runtime=dvc_runtime,
+            dvc_clone_handle=dvc_clone_handle,
+            dvc_site_cache_handle=dvc_site_cache_handle,
+            dvc_private_pass_fds=dvc_private_pass_fds,
+            namespace_validator=namespace_validator,
+        )
     )
     if observed != dict(contract.expected_runtime_versions):
         raise _error("runtime version probes differ from the sealed contract")
@@ -5084,15 +6111,7 @@ def _environment_object(
             "url_path_or_credentials_serialized": False,
         },
         "isolation": verification["sandbox"],
-        "dvc": {
-            "restored_pointer_count": len(restore_records),
-            "cache_initially_empty": True,
-            "one_pointer_per_pull": True,
-            "payloads_opened_by_python": False,
-            "payloads_decoded": False,
-            "dvc_add_or_push": False,
-            "main_worktree_written": False,
-        },
+        "dvc": expected_environment_dvc_record(),
         "timestamps_hostnames_absolute_paths_remote_urls_credentials": "omitted",
     }
 
@@ -5110,7 +6129,7 @@ def _final_report(execution_commit: str) -> bytes:
         "- Three synthetic end-to-end workflows: passed.\n"
         "- Full static type check and Poetry lock check: passed.\n"
         "- Eight directed DVC restores: DVC authenticated the sealed pointer MD5/size in an initially empty isolated cache; Python opened no restored/cache payload and decoded no Parquet.\n"
-        "- Main worktree/cache: not used for restoration or execution.\n"
+        "- Main worktree/cache: no DVC command, including version/status/pull, ran there. Two separate owned 0700 site-caches served runtime-version and restore/status roles; one retained DVC runtime was sealed before private configuration/pull and revalidated through final status/version. Main state was reconstructed statically from Git-bound configuration and the eight published DVC pointers under an immutable metadata/inode/inventory lease.\n"
         "- Concurrency: one cooperative flock is retained on the Git directory; the legacy guard path stays absent, and detected external namespace mutation is a stop condition. Non-cooperating same-UID namespace mutation is explicitly outside the guarantee.\n"
         "- E0-U and E1–E10 were not rerun; no model was fit, scored, recalibrated, or changed.\n\n"
         "## Claim boundary\n\n"
@@ -5391,6 +6410,7 @@ def _validate_clone_record(
         "source",
         "remote_url_serialized",
         "local_dvc_remote_configuration",
+        "dvc_site_caches",
         "dvc_cache",
     }:
         raise _error("isolated clone record is not exact")
@@ -5432,10 +6452,20 @@ def _validate_clone_record(
         "source_mode_accepted": "0600_or_0644",
         "clone_mode": "0600",
         "copied_only_into_owned_clone": True,
-        "content_read_only_for_private_copy": True,
+        "content_read_only_for_private_rebase": True,
+        "credential_path_rebased_to_retained_fd": True,
+        "credential_target_regular_single_link": True,
+        "credential_target_group_or_other_writable": False,
+        "effective_configuration_equivalent_except_owned_cache": True,
         "content_path_remote_url_and_credentials_serialized": False,
     }:
         raise _error("private clone-local DVC configuration record drifted")
+    site_cache = value.get("dvc_site_caches")
+    if (
+        not isinstance(site_cache, Mapping)
+        or dict(site_cache) != expected_manifest_clone_dvc_site_caches_record()
+    ):
+        raise _error("isolated DVC site-cache record drifted")
     cache = value.get("dvc_cache")
     if not isinstance(cache, Mapping) or dict(cache) != {
         "object_count": 8,
@@ -5963,16 +6993,7 @@ def validate_final_certification_payloads(
             "url_path_or_credentials_serialized": False,
         }
         or environment.get("isolation") != verification["sandbox"]
-        or environment.get("dvc")
-        != {
-            "restored_pointer_count": len(restore_records),
-            "cache_initially_empty": True,
-            "one_pointer_per_pull": True,
-            "payloads_opened_by_python": False,
-            "payloads_decoded": False,
-            "dvc_add_or_push": False,
-            "main_worktree_written": False,
-        }
+        or environment.get("dvc") != expected_environment_dvc_record()
         or environment.get(
             "timestamps_hostnames_absolute_paths_remote_urls_credentials"
         )
@@ -6325,6 +7346,8 @@ def publish_final_certification_bundle(
                 products=products,
                 expected_directory_identity=output_identity,
             )
+            if publication_validator is not None:
+                publication_validator("after_final_readback")
         except BaseException as exc:
             succeeded = False
             error = exc
@@ -6368,6 +7391,7 @@ def _revalidate_publication_gate(
     expected_local_remote: Mapping[str, Any],
     stage: str,
     repository_lease: RepositoryRootLease | None = None,
+    main_site_cache_lease: MainDvcSiteCacheLease | None = None,
 ) -> None:
     stage_counts = {
         "before_first_link": 0,
@@ -6375,11 +7399,16 @@ def _revalidate_publication_gate(
         "after_all_links": 8,
         "after_run_namespace_cleanup": 8,
         "before_success_return": 8,
+        "after_final_readback": 8,
     }
     if stage not in stage_counts:
         raise _error("unknown R-CERT publication validation stage")
     if repository_lease is not None:
         repository_lease.revalidate(context=f"before publication gate {stage}")
+    if main_site_cache_lease is not None:
+        main_site_cache_lease.revalidate(
+            context=f"before publication gate {stage}"
+        )
     if os.path.lexists(root / GUARD_PATH):
         raise _error("legacy final-certification guard path appeared during publication")
     state = _capture_main_state(root)
@@ -6404,15 +7433,22 @@ def _revalidate_publication_gate(
     current_authority = _authority_loader(root, contract, require_clean=False)
     if current_authority != expected_authority:
         raise _error("P-CERT authority changed during R-CERT publication")
-    if collect_anchor_input_records(contract, root=root) != list(expected_anchors):
-        raise _error("public anchor inputs changed during R-CERT publication")
-    if collect_dvc_pointer_records(contract, root=root) != list(expected_pointers):
-        raise _error("DVC pointers changed during R-CERT publication")
+    _reconstruct_main_dvc_static_boundary(
+        root=root,
+        contract=contract,
+        context=f"R-CERT publication gate {stage}",
+        expected_anchors=expected_anchors,
+        expected_pointers=expected_pointers,
+        main_site_cache_lease=main_site_cache_lease,
+    )
     if validate_local_dvc_remote_configuration(root=root) != dict(
         expected_local_remote
     ):
         raise _error("private local DVC remote metadata changed during publication")
-    _dvc_status(root)
+    if main_site_cache_lease is not None:
+        main_site_cache_lease.revalidate(
+            context=f"after publication gate {stage}"
+        )
     if repository_lease is not None:
         repository_lease.revalidate(context=f"after publication gate {stage}")
 
@@ -6431,6 +7467,12 @@ def _prepare_owned_workspace(
         owned_tmp, owned_tmp_identity = lease.create_work_directory()
         clone_root = owned_tmp / "clone"
         cache_handle = lease.create_work_subdirectory("dvc-cache", mode=0o700)
+        site_cache_handle = lease.create_work_subdirectory(
+            "dvc-site-cache", mode=0o700
+        )
+        version_site_cache_handle = lease.create_work_subdirectory(
+            "dvc-version-site-cache", mode=0o700
+        )
         sandbox_handle = lease.create_work_subdirectory("sandbox-tmp", mode=0o700)
         socket_handle = lease.create_work_subdirectory("postgres-socket", mode=0o700)
         mask_handle = lease.create_work_subdirectory("masks", mode=0o700)
@@ -6449,11 +7491,37 @@ def _prepare_owned_workspace(
         cache_inventory = _scan_work_inventory(cache_handle)
         if cache_inventory or _scan_work_inventory(cache_handle):
             raise _error("owned DVC cache was not empty after workspace preparation")
+        site_cache_inventory = _scan_work_inventory(site_cache_handle)
+        if site_cache_inventory or _scan_work_inventory(site_cache_handle):
+            raise _error(
+                "owned DVC site cache was not empty after workspace preparation"
+            )
+        version_site_cache_inventory = _scan_work_inventory(
+            version_site_cache_handle
+        )
+        if version_site_cache_inventory or _scan_work_inventory(
+            version_site_cache_handle
+        ):
+            raise _error(
+                "owned DVC version site cache was not empty after workspace preparation"
+            )
+        site_cache_root_identity = _site_cache_root_identity(
+            site_cache_handle,
+            expected_mode=0o700,
+            context="owned DVC site cache after workspace preparation",
+        )
+        version_site_cache_root_identity = _site_cache_root_identity(
+            version_site_cache_handle,
+            expected_mode=0o700,
+            context="owned DVC version site cache after workspace preparation",
+        )
         return PreparedWorkspace(
             owned_tmp=owned_tmp,
             owned_tmp_identity=owned_tmp_identity,
             clone_root=clone_root,
             cache_handle=cache_handle,
+            site_cache_handle=site_cache_handle,
+            version_site_cache_handle=version_site_cache_handle,
             sandbox_handle=sandbox_handle,
             socket_handle=socket_handle,
             mask_handle=mask_handle,
@@ -6464,6 +7532,10 @@ def _prepare_owned_workspace(
             repository_root_binding=_directory_binding(repository_lease.root),
             mask_inventory=mask_inventory,
             cache_inventory=cache_inventory,
+            site_cache_inventory=site_cache_inventory,
+            version_site_cache_inventory=version_site_cache_inventory,
+            site_cache_root_identity=site_cache_root_identity,
+            version_site_cache_root_identity=version_site_cache_root_identity,
         )
     except BaseException as primary:
         cleanup_error: BaseException | None = None
@@ -6544,10 +7616,13 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     owned_tmp_identity = prepared.owned_tmp_identity
     clone_root = prepared.clone_root
     cache_handle = prepared.cache_handle
+    site_cache_handle = prepared.site_cache_handle
+    version_site_cache_handle = prepared.version_site_cache_handle
     sandbox_handle = prepared.sandbox_handle
     socket_handle = prepared.socket_handle
     mask_handle = prepared.mask_handle
     cache_root = cache_handle.path
+    site_cache_root = site_cache_handle.path
     sandbox_tmp = sandbox_handle.path
     socket_root = socket_handle.path
     mask_root = mask_handle.path
@@ -6556,6 +7631,10 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     lease_parent_binding = prepared.lease_parent_binding
     work_binding = prepared.work_binding
     repository_root_binding = prepared.repository_root_binding
+    site_cache_root_identity = prepared.site_cache_root_identity
+    version_site_cache_root_identity = prepared.version_site_cache_root_identity
+    site_cache_root_frozen = False
+    version_site_cache_root_frozen = False
     frozen_execution_inventories: dict[
         str, tuple[DirectoryHandle, Mapping[str, WorkInventoryEntry]]
     ] = {
@@ -6566,10 +7645,20 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     ] = {
         "sandbox masks": (mask_handle, prepared.mask_inventory),
         "DVC cache": (cache_handle, prepared.cache_inventory),
+        "DVC site cache": (
+            site_cache_handle,
+            prepared.site_cache_inventory,
+        ),
+        "DVC version site cache": (
+            version_site_cache_handle,
+            prepared.version_site_cache_inventory,
+        ),
     }
+    main_site_cache_lease: MainDvcSiteCacheLease | None = None
 
     def validate_execution_namespace(stage: str) -> None:
-        nonlocal work_binding
+        nonlocal work_binding, site_cache_root_identity
+        nonlocal version_site_cache_root_identity
         repository_lease.revalidate(context=f"before execution checkpoint {stage}")
         lease.revalidate_work_namespace(context=stage)
         if _directory_binding(lease.parent) != lease_parent_binding:
@@ -6598,6 +7687,34 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 raise _error(
                     f"frozen owned {name} inventory drifted at checkpoint: {stage}"
                 )
+        successful_prefreeze_restore_transition = (
+            not site_cache_root_frozen
+            and stage.startswith("after_dvc_")
+            and stage != "after_dvc_version"
+        )
+        site_cache_root_identity = _revalidate_owned_site_cache_root(
+            site_cache_handle,
+            site_cache_root_identity,
+            allow_successful_dvc_transition=(
+                successful_prefreeze_restore_transition
+            ),
+            context=f"owned DVC site cache at checkpoint {stage}",
+        )
+        successful_prefreeze_version_transition = (
+            not version_site_cache_root_frozen and stage == "after_dvc_version"
+        )
+        version_site_cache_root_identity = _revalidate_owned_site_cache_root(
+            version_site_cache_handle,
+            version_site_cache_root_identity,
+            allow_successful_dvc_transition=(
+                successful_prefreeze_version_transition
+            ),
+            context=f"owned DVC version site cache at checkpoint {stage}",
+        )
+        if main_site_cache_lease is not None:
+            main_site_cache_lease.revalidate(
+                context=f"execution checkpoint {stage}"
+            )
         current_source = _capture_main_state(root)
         repository_lease.revalidate(context=f"after execution checkpoint {stage}")
         if current_source != source_before:
@@ -6614,11 +7731,35 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             return False
         if set(os.listdir(lease.work.fd)) != set(lease.work_subdirectories):
             return False
-        for frozen_name in ("sandbox masks", "clone", "DVC cache"):
+        for frozen_name in (
+            "sandbox masks",
+            "clone",
+            "DVC cache",
+            "DVC site cache",
+            "DVC version site cache",
+        ):
             frozen = cleanup_execution_inventories.get(frozen_name)
             if frozen is None or _scan_work_inventory(frozen[0]) != dict(frozen[1]):
                 return False
         if _scan_work_inventory(socket_handle):
+            return False
+        try:
+            _revalidate_owned_site_cache_root(
+                site_cache_handle,
+                site_cache_root_identity,
+                allow_successful_dvc_transition=False,
+                context="failed owned DVC site cache",
+            )
+        except FinalCertificationBuildError:
+            return False
+        try:
+            _revalidate_owned_site_cache_root(
+                version_site_cache_handle,
+                version_site_cache_root_identity,
+                allow_successful_dvc_transition=False,
+                context="failed owned DVC version site cache",
+            )
+        except FinalCertificationBuildError:
             return False
         allowed_sandbox = {
             "public-tests-raw.xml",
@@ -6636,24 +7777,19 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         )
 
     database_owner: OwnedPostgres | None = None
+    installed_configuration: InstalledDvcConfiguration | None = None
+    dvc_runtime: AnchoredPythonScriptRuntime | None = None
     active_error: BaseException | None = None
     result: dict[str, Any] | None = None
     work_removed = False
     publisher_consumed_lease = False
     try:
+        main_site_cache_lease = _open_main_dvc_site_cache_lease(root)
         # Close the preflight-to-flock race before any clone or egress.
         validate_execution_namespace("before P-CERT authority revalidation")
         if _authority_loader(root, contract) != authority:
             raise _error("P-CERT authority drifted while acquiring the run lease")
         validate_execution_namespace("after P-CERT authority revalidation")
-        runtime_before = bracket(
-            "runtime_versions_before_effects",
-            lambda: _sealed_runtime_versions(
-                root,
-                contract=contract,
-                namespace_validator=validate_execution_namespace,
-            ),
-        )
         clone_record = _clone_exact_p(
             source_root=root,
             clone_root=clone_root,
@@ -6664,14 +7800,70 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             raise _error("isolated clone was not identity-bound during creation")
         validate_execution_namespace("after isolated clone registration")
         clone_handle = lease.work_subdirectories["clone"]
+        dvc_runtime = bracket(
+            "retained_dvc_runtime_open",
+            lambda: _open_python_script_runtime(
+                root,
+                Path(".venv/bin/dvc"),
+                context="retained DVC certification runtime",
+            ),
+        )
+        if dvc_runtime is None:
+            raise _error("retained DVC runtime disappeared after opening")
+        retained_dvc_runtime = dvc_runtime
+        runtime_before = bracket(
+            "runtime_versions_before_private_config_or_pull",
+            lambda: _sealed_runtime_versions(
+                root,
+                contract=contract,
+                dvc_runtime=retained_dvc_runtime,
+                dvc_clone_handle=clone_handle,
+                dvc_site_cache_handle=version_site_cache_handle,
+                dvc_private_pass_fds=(),
+                namespace_validator=validate_execution_namespace,
+            ),
+        )
+        first_version_site_cache_inventory = _scan_work_inventory(
+            version_site_cache_handle
+        )
+        if (
+            _scan_work_inventory(version_site_cache_handle)
+            != first_version_site_cache_inventory
+        ):
+            raise _error("DVC version site-cache inventory changed while freezing")
+        frozen_execution_inventories["DVC version site cache"] = (
+            version_site_cache_handle,
+            first_version_site_cache_inventory,
+        )
+        cleanup_execution_inventories["DVC version site cache"] = (
+            version_site_cache_handle,
+            first_version_site_cache_inventory,
+        )
+        _revalidate_owned_site_cache_root(
+            version_site_cache_handle,
+            version_site_cache_root_identity,
+            allow_successful_dvc_transition=False,
+            context="owned DVC version site cache at initial version seal",
+        )
+        version_site_cache_root_frozen = True
+        _revalidate_retained_dvc_runtime(
+            retained_dvc_runtime,
+            source_root=root,
+            context="retained DVC runtime after initial version seal",
+        )
+        validate_execution_namespace("after frozen DVC version site cache")
+        installed_configuration = bracket(
+            "private_dvc_configuration_rebase",
+            lambda: _install_local_dvc_remote_configuration(
+                source_root=root, clone_root=clone_root
+            ),
+        )
         clone_record = {
             **clone_record,
-            "local_dvc_remote_configuration": bracket(
-                "private_dvc_configuration_copy",
-                lambda: _install_local_dvc_remote_configuration(
-                    source_root=root, clone_root=clone_root
-                ),
+            "local_dvc_remote_configuration": dict(
+                installed_configuration.public_record
             ),
+            "dvc_site_caches": expected_manifest_clone_dvc_site_caches_record(),
         }
         configured_clone_inventory = _scan_work_inventory(clone_handle)
         if _scan_work_inventory(clone_handle) != configured_clone_inventory:
@@ -6686,32 +7878,69 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         # frozen atomically below.  Refreshing it from a failing command's
         # partial tree would silently adopt `.dvc/config.local`, `.dvc/tmp`, or a
         # foreign concurrent entry and make destructive cleanup unsafe.
-        restores = _restore_dvc_objects(
+        _revalidate_retained_dvc_runtime(
+            retained_dvc_runtime,
+            source_root=root,
+            context="retained DVC runtime before exact restore",
+        )
+        restores = _restore_dvc_objects_with_anchored_executable(
             source_root=root,
             clone_root=clone_root,
             cache_root=cache_root,
+            site_cache_root=site_cache_root,
+            installed_configuration=installed_configuration,
             contract=contract,
+            executable=retained_dvc_runtime,
             namespace_validator=validate_execution_namespace,
+        )
+        _revalidate_retained_dvc_runtime(
+            retained_dvc_runtime,
+            source_root=root,
+            context="retained DVC runtime after exact restore",
+        )
+        installed_configuration.revalidate(
+            allow_operational_cache=True,
+            context="private DVC configuration after exact restore",
         )
         first_clone_inventory = _scan_work_inventory(clone_handle)
         first_cache_inventory = _scan_work_inventory(cache_handle)
+        first_site_cache_inventory = _scan_work_inventory(site_cache_handle)
         if (
             _scan_work_inventory(clone_handle) != first_clone_inventory
             or _scan_work_inventory(cache_handle) != first_cache_inventory
+            or _scan_work_inventory(site_cache_handle)
+            != first_site_cache_inventory
         ):
-            raise _error("clone/cache inventory changed while freezing verification")
+            raise _error(
+                "clone/cache/site-cache inventory changed while freezing verification"
+            )
         frozen_execution_inventories.update(
             {
                 "clone": (clone_handle, first_clone_inventory),
                 "DVC cache": (cache_handle, first_cache_inventory),
+                "DVC site cache": (
+                    site_cache_handle,
+                    first_site_cache_inventory,
+                ),
             }
         )
         cleanup_execution_inventories.update(
             {
                 "clone": (clone_handle, first_clone_inventory),
                 "DVC cache": (cache_handle, first_cache_inventory),
+                "DVC site cache": (
+                    site_cache_handle,
+                    first_site_cache_inventory,
+                ),
             }
         )
+        _revalidate_owned_site_cache_root(
+            site_cache_handle,
+            site_cache_root_identity,
+            allow_successful_dvc_transition=False,
+            context="owned DVC site cache at verification freeze",
+        )
+        site_cache_root_frozen = True
         validate_execution_namespace("after frozen clone/cache inventory")
         transport_metadata_before = bracket(
             "transport_metadata_before_verification",
@@ -6774,9 +8003,27 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 cache_root=cache_root, contract=contract
             ),
         )
+        if installed_configuration is None:
+            raise _error("private DVC configuration lease disappeared")
+        active_configuration = installed_configuration
         bracket(
             "clone_dvc_status_after_verification",
-            lambda: _dvc_status(clone_root, executable_root=root),
+            lambda: _dvc_status_with_executable(
+                clone_root,
+                retained_dvc_runtime,
+                source_root=root,
+                environment={"DVC_SITE_CACHE_DIR": os.fspath(site_cache_root)},
+                private_pass_fds=active_configuration.pass_fds,
+            ),
+        )
+        _revalidate_retained_dvc_runtime(
+            retained_dvc_runtime,
+            source_root=root,
+            context="retained DVC runtime after final clone status",
+        )
+        active_configuration.revalidate(
+            allow_operational_cache=True,
+            context="private DVC configuration after final clone status",
         )
         source_after = bracket(
             "main_state_after_verification",
@@ -6784,12 +8031,30 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         )
         if source_after != source_before:
             raise _error("main source worktree changed during isolated verification")
-        bracket("main_dvc_status_after_verification", lambda: _dvc_status(root))
+        bracket(
+            "main_dvc_static_boundary_after_verification",
+            lambda: _reconstruct_main_dvc_static_boundary(
+                root=root,
+                contract=contract,
+                context="post-verification",
+                expected_anchors=cast(
+                    Sequence[Mapping[str, Any]], preflight["anchor_inputs"]
+                ),
+                expected_pointers=cast(
+                    Sequence[Mapping[str, Any]], preflight["dvc_pointers"]
+                ),
+                main_site_cache_lease=main_site_cache_lease,
+            ),
+        )
         runtime_after = bracket(
-            "runtime_versions_after_effects",
+            "runtime_versions_after_verification",
             lambda: _sealed_runtime_versions(
                 root,
                 contract=contract,
+                dvc_runtime=retained_dvc_runtime,
+                dvc_clone_handle=clone_handle,
+                dvc_site_cache_handle=version_site_cache_handle,
+                dvc_private_pass_fds=active_configuration.pass_fds,
                 namespace_validator=validate_execution_namespace,
             ),
         )
@@ -6825,6 +8090,18 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 repo_root=root,
             ),
         )
+        _revalidate_retained_dvc_runtime(
+            retained_dvc_runtime,
+            source_root=root,
+            context="retained DVC runtime before successful close",
+        )
+        retained_dvc_runtime.close()
+        dvc_runtime = None
+        installed_configuration.close()
+        installed_configuration = None
+        if main_site_cache_lease is None:
+            raise _error("main DVC site-cache lease disappeared")
+        active_main_site_cache_lease = main_site_cache_lease
         # No ignored clone/cache/socket/mask namespace survives publication.
         validate_execution_namespace("before owned work cleanup")
         lease.seal_work_inventory()
@@ -6846,6 +8123,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             ),
             stage=stage,
             repository_lease=repository_lease,
+            main_site_cache_lease=active_main_site_cache_lease,
         )
         # The publisher owns and closes the lease on every success/failure path.
         publisher_consumed_lease = True
@@ -6856,9 +8134,43 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             run_guard=lease,
             publication_validator=publication_validator,
         )
+        active_main_site_cache_lease.close()
+        main_site_cache_lease = None
     except BaseException as exc:
         active_error = exc
     cleanup_error: BaseException | None = None
+    if dvc_runtime is not None:
+        try:
+            _revalidate_retained_dvc_runtime(
+                dvc_runtime,
+                source_root=root,
+                context="failed execution retained DVC runtime invariant",
+            )
+        except BaseException as exc:
+            cleanup_error = exc
+        try:
+            dvc_runtime.close()
+        except BaseException as exc:
+            cleanup_error = cleanup_error or exc
+        dvc_runtime = None
+    if installed_configuration is not None:
+        try:
+            installed_configuration.close()
+            installed_configuration = None
+        except BaseException as exc:
+            cleanup_error = exc
+    if main_site_cache_lease is not None:
+        try:
+            main_site_cache_lease.revalidate(
+                context="failed execution main DVC site-cache invariant"
+            )
+        except BaseException as exc:
+            cleanup_error = cleanup_error or exc
+        try:
+            main_site_cache_lease.close()
+        except BaseException as exc:
+            cleanup_error = cleanup_error or exc
+        main_site_cache_lease = None
     if database_owner is not None:
         try:
             _stop_owned_postgres(database_owner)
@@ -6891,7 +8203,10 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         cleanup_error = cleanup_error or exc
     if cleanup_error is not None:
         if active_error is not None:
-            raise _execution_cleanup_composite_error(active_error) from None
+            raise _execution_cleanup_composite_error(
+                active_error,
+                namespace_preserved=not work_removed,
+            ) from None
         raise _error(
             "final certification temporary cleanup failed closed; namespace preserved"
         ) from None

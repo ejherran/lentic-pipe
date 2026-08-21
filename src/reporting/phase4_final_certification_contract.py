@@ -49,11 +49,17 @@ H2_AUTHORITY_PATH = Path(
 H2_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v2.json"
 )
-AUTHORITY_PATH = Path(
+H3_AUTHORITY_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_v3.json"
 )
-AUTHORITY_MANIFEST_PATH = Path(
+H3_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v3.json"
+)
+AUTHORITY_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_v4.json"
+)
+AUTHORITY_MANIFEST_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v4.json"
 )
 CERTIFICATION_ROOT = Path("reports/closure_v1/12_certification")
 GUARD_PATH = Path(
@@ -61,7 +67,7 @@ GUARD_PATH = Path(
 )
 LOCAL_DVC_CONFIG_PATH = Path(".dvc/config.local")
 
-CONTRACT_VERSION = "closure_v1_phase4_final_certification_v3"
+CONTRACT_VERSION = "closure_v1_phase4_final_certification_v4"
 CLOSURE_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
 R_SYN_COMMIT = "528dcb74a7c08b65f262901e4562a67b784db8c9"
 EDITORIAL_COMMIT = "d1daa3059462854d6ddf5199fbc05515cec76982"
@@ -69,9 +75,15 @@ H1_CERT_COMMIT = "003ca2282af5d7156b5814b59d8f1ddfb7fc681e"
 P1_CERT_COMMIT = "67983d8ea823a59eb4af55b59da04fb4ae298dcb"
 H2_CERT_COMMIT = "8e01709c54330502aee318500ab9248e90fe17c5"
 P2_CERT_COMMIT = "72273b52d47df83acc7618fe98a887b74d690a13"
+H3_CERT_COMMIT = "2372d0f9cc36aa916b79f34641b2b01134057890"
+P3_CERT_COMMIT = "bcd306a9e8dd5162466124d8854b9d1d99a8517c"
 FINAL_TAG = "thesis-closure-v1"
-AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v3"
+AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v4"
 AUTHORITY_MANIFEST_VERSION = (
+    "closure_v1_phase4_final_certification_authority_manifest_v4"
+)
+H3_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v3"
+H3_AUTHORITY_MANIFEST_VERSION = (
     "closure_v1_phase4_final_certification_authority_manifest_v3"
 )
 H2_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v2"
@@ -89,6 +101,14 @@ H2_AUTHORITY_SHA256 = (
 H2_AUTHORITY_MANIFEST_BYTES = 1588
 H2_AUTHORITY_MANIFEST_SHA256 = (
     "d41fd5900c1423f32d6929ce40214e54c943f72e603a83796189e3fc29ff2810"
+)
+H3_AUTHORITY_BYTES = 34128
+H3_AUTHORITY_SHA256 = (
+    "47bbb1839b5d28e91b1c535cbc093400d61a40354ec633d3ac8f2c43d42be2f8"
+)
+H3_AUTHORITY_MANIFEST_BYTES = 1832
+H3_AUTHORITY_MANIFEST_SHA256 = (
+    "1e9344535153e516562628881e041cc3ed1a28b5978ff6839f90b760db6e0d51"
 )
 HASH_CHUNK_SIZE = 1024 * 1024
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -115,11 +135,13 @@ EXPECTED_RUNTIME_VERSIONS: Mapping[str, str] = {
     "docker_client": "29.7.2",
     "docker_server": "29.7.2",
 }
+OWNED_SITE_CACHE_ROLES = ("runtime_version", "restore_status")
+OWNED_SITE_CACHE_FILESYSTEM_MODE = "0700"
 LOCKED_SUITE_STATUS = "locked"
 LOCKED_SUITE_SELECTOR_COUNT = 39
-LOCKED_SUITE_COLLECTED_TEST_COUNT = 920
+LOCKED_SUITE_COLLECTED_TEST_COUNT = 944
 LOCKED_SUITE_NODEIDS_SHA256 = (
-    "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"
+    "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
 )
 LOCKED_SUITE_ALLOWED_SKIP_COUNT = 7
 
@@ -194,11 +216,15 @@ class FinalCertificationContract:
     p1_cert_commit: str
     h2_cert_commit: str
     p2_cert_commit: str
+    h3_cert_commit: str
+    p3_cert_commit: str
     final_tag: str
     h1_scope: tuple[PublicationPathSpec, ...]
     p1_scope: tuple[PublicationPathSpec, ...]
     h2_scope: tuple[PublicationPathSpec, ...]
     p2_scope: tuple[PublicationPathSpec, ...]
+    h3_scope: tuple[PublicationPathSpec, ...]
+    p3_scope: tuple[PublicationPathSpec, ...]
     h_scope: tuple[PublicationPathSpec, ...]
     p_scope: tuple[PublicationPathSpec, ...]
     r_scope: tuple[PublicationPathSpec, ...]
@@ -296,6 +322,13 @@ H2_SCOPE = tuple(
 P2_SCOPE = (
     PublicationPathSpec(H2_AUTHORITY_PATH.as_posix(), "A", "100644"),
     PublicationPathSpec(H2_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
+)
+H3_SCOPE = tuple(
+    PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
+)
+P3_SCOPE = (
+    PublicationPathSpec(H3_AUTHORITY_PATH.as_posix(), "A", "100644"),
+    PublicationPathSpec(H3_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
 )
 H_SCOPE = tuple(
     PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
@@ -485,6 +518,7 @@ STOP_RULES = (
     "pending_or_changed_test_suite_lock",
     "attempt_to_execute_from_superseded_p1",
     "attempt_to_execute_from_superseded_p2",
+    "attempt_to_execute_from_superseded_p3",
     "unexpected_clone_directory_nlink_delta",
     "primary_error_loss_after_safe_cleanup_or_unowned_cleanup",
     "unsanitized_active_error_or_cleanup_failure_masking",
@@ -495,6 +529,8 @@ STOP_RULES = (
     "openapi_or_e2e_contract_drift",
     "existing_partial_or_extra_output",
     "credential_remote_url_database_url_or_absolute_path_leak",
+    "credential_fd_bridge_or_owned_site_cache_drift",
+    "attempt_to_execute_dvc_in_main_worktree",
     "source_git_or_dvc_mutation",
     "attempt_to_run_e0_u_e1_e10_fit_score_or_calibration",
     "attempt_to_begin_post_phase4_work",
@@ -545,6 +581,51 @@ def expected_p2_failure_record() -> dict[str, Any]:
         "retry_authorized": False,
     }
 
+
+def expected_p3_failure_record() -> dict[str, Any]:
+    """Return the exact sanitized record of the superseded R-CERT3 run."""
+
+    return {
+        "status": "execution_and_cleanup_failed_closed",
+        "active_error": {
+            "stage": "first_directed_dvc_pull",
+            "sanitized_command": [
+                ".venv/bin/dvc",
+                "pull",
+                "--no-run-cache",
+                "-j",
+                "1",
+                DVC_POINTERS[0].path,
+            ],
+            "returncode": 1,
+            "safe_stderr_category": "nonzero_exit",
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        },
+        "cleanup": {
+            "status": "failed_closed",
+            "namespace_preserved": True,
+            "active_error_was_masked": False,
+        },
+        "evidence_counts": {
+            "successful_directed_dvc_pulls": 0,
+            "dvc_cache_objects": 0,
+            "restored_payloads": 0,
+            "directed_dvc_status_checks": 0,
+            "public_test_runs": 0,
+            "postgresql_fixture_starts": 0,
+            "docker_runs": 0,
+            "openapi_generations": 0,
+            "synthetic_e2e_runs": 0,
+            "r_cert_outputs": 0,
+        },
+        "archived_under_ignored_tmp": True,
+        "archive_is_authority": False,
+        "retry_authorized": False,
+    }
+
 AUTHORIZATION_POLICY: Mapping[str, bool] = {
     "certification_execution_authorized_after_publication": True,
     "isolated_clone_authorized": True,
@@ -567,6 +648,12 @@ AUTHORIZATION_POLICY: Mapping[str, bool] = {
 }
 PROHIBITIONS: Mapping[str, bool] = {
     "main_worktree_mutation": True,
+    "main_worktree_dvc_command_execution": True,
+    "owned_site_cache_paths_serialization": True,
+    "main_dvc_site_cache_payload_open_or_hash": True,
+    "owned_site_cache_role_or_separation_drift": True,
+    "private_dvc_configuration_or_pull_before_version_seal": True,
+    "dvc_runtime_cross_call_identity_or_lifetime_drift": True,
     "raw_or_outcome_access": True,
     "parquet_open_or_decode": True,
     "dvc_add_or_push": True,
@@ -609,13 +696,13 @@ def digest_records(records: Sequence[Mapping[str, Any]]) -> str:
 
 
 def expected_h_scope() -> dict[str, str]:
-    """Return the operational H-CERT3 scope (legacy adapter alias)."""
+    """Return the operational H-CERT4 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in H_SCOPE}
 
 
 def expected_p_scope() -> dict[str, str]:
-    """Return the operational P-CERT3 scope (legacy adapter alias)."""
+    """Return the operational P-CERT4 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in P_SCOPE}
 
@@ -638,6 +725,14 @@ def expected_h2_scope() -> dict[str, str]:
 
 def expected_p2_scope() -> dict[str, str]:
     return {item.path: item.status for item in P2_SCOPE}
+
+
+def expected_h3_scope() -> dict[str, str]:
+    return {item.path: item.status for item in H3_SCOPE}
+
+
+def expected_p3_scope() -> dict[str, str]:
+    return {item.path: item.status for item in P3_SCOPE}
 
 
 def expected_h_modes() -> dict[str, str]:
@@ -966,6 +1061,49 @@ def _parse_test_suite(
     )
 
 
+def expected_environment_dvc_record() -> dict[str, Any]:
+    """Return the exact public ``environment.json.dvc`` projection."""
+
+    return {
+        "restored_pointer_count": len(DVC_POINTERS),
+        "cache_initially_empty": True,
+        "one_pointer_per_pull": True,
+        "main_dvc_command_run": False,
+        "main_dvc_status_command_run": False,
+        "main_dvc_static_reconstruction_from_git_and_published_pointers": True,
+        "owned_site_cache_count": 2,
+        "owned_site_cache_roles": list(OWNED_SITE_CACHE_ROLES),
+        "owned_site_cache_filesystem_mode": OWNED_SITE_CACHE_FILESYSTEM_MODE,
+        "owned_site_caches_separated": True,
+        "owned_site_cache_paths_serialized": False,
+        "version_seal_before_private_config_or_pull": True,
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": True,
+        "dvc_runtime_cross_call_identity_revalidated": True,
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged": True,
+        "payloads_opened_by_python": False,
+        "payloads_decoded": False,
+        "dvc_add_or_push": False,
+        "main_worktree_written": False,
+    }
+
+
+def expected_manifest_clone_dvc_site_caches_record() -> dict[str, Any]:
+    """Return the exact public ``manifest.clone.dvc_site_caches`` projection."""
+
+    return {
+        "owned_site_cache_count": 2,
+        "owned_site_cache_roles": list(OWNED_SITE_CACHE_ROLES),
+        "owned_site_cache_filesystem_mode": OWNED_SITE_CACHE_FILESYSTEM_MODE,
+        "owned_site_caches_separated": True,
+        "used_by_all_isolated_dvc_commands": True,
+        "copied_core_site_cache_dir_used": False,
+        "owned_site_cache_paths_serialized": False,
+        "version_seal_before_private_config_or_pull": True,
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": True,
+        "dvc_runtime_cross_call_identity_revalidated": True,
+    }
+
+
 def _expected_topology() -> Mapping[str, Any]:
     return {
         "ordered_stages": [
@@ -973,8 +1111,10 @@ def _expected_topology() -> Mapping[str, Any]:
             "P-CERT1",
             "H-CERT2",
             "P-CERT2",
-            "H-CERT",
-            "P-CERT",
+            "H-CERT3",
+            "P-CERT3",
+            "H-CERT4",
+            "P-CERT4",
             "R-CERT",
         ],
         "H-CERT1": {
@@ -1018,8 +1158,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "cleanup_status": "failed_closed_namespace_preserved",
             "manifest_written_last": True,
         },
-        "H-CERT": {
+        "H-CERT3": {
             "role": "corrective_failure_diagnostics_contract_tests_and_freeze",
+            "commit": "h3_cert_commit",
             "direct_parent": "p2_cert_commit",
             "certification_execution_authorized": False,
             "corrections": [
@@ -1028,9 +1169,35 @@ def _expected_topology() -> Mapping[str, Any]:
                 "preserve_namespace_and_emit_composite_on_nonexact_cleanup",
             ],
         },
-        "P-CERT": {
+        "P-CERT3": {
             "role": "data_only_final_certification_authority_v3",
-            "requires_published_H_CERT": True,
+            "commit": "p3_cert_commit",
+            "requires_published_H_CERT3": True,
+            "supersedes_P_CERT2": True,
+            "supersedes_P_CERT1": True,
+            "certification_execution_authorized": False,
+            "failure_stage": "first_directed_dvc_pull",
+            "dvc_pull_success_count": 0,
+            "r_cert_output_count": 0,
+            "retry_authorized": False,
+            "cleanup_status": "failed_closed_namespace_preserved",
+            "manifest_written_last": True,
+        },
+        "H-CERT4": {
+            "role": "corrective_credential_fd_and_dvc_site_cache_contract_tests_and_freeze",
+            "direct_parent": "p3_cert_commit",
+            "certification_execution_authorized": False,
+            "corrections": [
+                "credential_path_rebased_to_retained_fd",
+                "two_separated_owned_dvc_site_caches_for_all_isolated_dvc_commands",
+                "main_dvc_site_cache_metadata_inode_inventory_unchanged",
+                "forbid_main_worktree_dvc_status_and_verify_static_git_pointer_boundary",
+            ],
+        },
+        "P-CERT4": {
+            "role": "data_only_final_certification_authority_v4",
+            "requires_published_H_CERT4": True,
+            "supersedes_P_CERT3": True,
             "supersedes_P_CERT2": True,
             "supersedes_P_CERT1": True,
             "certification_execution_authorized_while_unpublished": False,
@@ -1046,7 +1213,9 @@ def _expected_topology() -> Mapping[str, Any]:
         "closure_source_commit_must_remain_ancestor": True,
         "aligned_refs_and_live_remote_required": True,
         "clean_worktree_and_index_required_at_each_gate": True,
-        "main_dvc_status_must_equal_empty_object": True,
+        "main_worktree_dvc_status_executed": False,
+        "main_worktree_dvc_static_boundary_verified": True,
+        "main_worktree_dvc_state_source": "git_and_versioned_dvc_pointers",
         "git_commit_push_and_tag_are_manual_user_actions": True,
     }
 
@@ -1060,6 +1229,23 @@ def _expected_dvc_controls() -> Mapping[str, Any]:
         "tracked_config_contains_remote": False,
         "ignored_local_remote_configuration_required": True,
         "ignored_local_remote_configuration_serialized": False,
+        "credential_path_values_serialized": False,
+        "owned_site_cache_count": 2,
+        "owned_site_cache_roles": list(OWNED_SITE_CACHE_ROLES),
+        "owned_site_cache_filesystem_mode": OWNED_SITE_CACHE_FILESYSTEM_MODE,
+        "owned_site_caches_separated": True,
+        "owned_site_cache_paths_serialized": False,
+        "version_seal_before_private_config_or_pull": True,
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": True,
+        "dvc_runtime_cross_call_identity_revalidated": True,
+        "used_by_all_isolated_dvc_commands": True,
+        "copied_core_site_cache_dir_used": False,
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged": True,
+        "main_dvc_command_run": False,
+        "main_worktree_dvc_status_executed": False,
+        "main_worktree_dvc_static_boundary_verified": True,
+        "main_worktree_dvc_state_source": "git_and_versioned_dvc_pointers",
+        "real_dvc_execution_scope": "isolated_r_cert_clone_only",
         "cache_initially_empty": True,
         "main_worktree_written": False,
         "dvc_add_authorized": False,
@@ -1112,6 +1298,27 @@ def _expected_isolation() -> Mapping[str, Any]:
         "nonexact_cleanup_preserves_namespace": True,
         "composite_error_identifies_sanitized_active_error_and_cleanup_failure": True,
         "superseded_p2_retry_authorized": False,
+        "credential_path_rebased_to_retained_fd": True,
+        "credential_target_regular_single_link": True,
+        "credential_target_group_or_other_writable": False,
+        "private_dvc_effective_configuration_equivalent_except_owned_cache": True,
+        "owned_site_cache_count": 2,
+        "owned_site_cache_roles": list(OWNED_SITE_CACHE_ROLES),
+        "owned_site_cache_filesystem_mode": OWNED_SITE_CACHE_FILESYSTEM_MODE,
+        "owned_site_caches_separated": True,
+        "owned_site_cache_paths_serialized": False,
+        "version_seal_before_private_config_or_pull": True,
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": True,
+        "dvc_runtime_cross_call_identity_revalidated": True,
+        "used_by_all_isolated_dvc_commands": True,
+        "copied_core_site_cache_dir_used": False,
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged": True,
+        "main_dvc_command_run": False,
+        "main_worktree_dvc_status_executed": False,
+        "main_worktree_dvc_static_boundary_verified": True,
+        "main_worktree_dvc_state_source": "git_and_versioned_dvc_pointers",
+        "real_dvc_execution_scope": "isolated_r_cert_clone_only",
+        "superseded_p3_retry_authorized": False,
     }
 
 
@@ -1169,8 +1376,10 @@ def validate_contract_payload(
         "p1_cert_commit": P1_CERT_COMMIT,
         "h2_cert_commit": H2_CERT_COMMIT,
         "p2_cert_commit": P2_CERT_COMMIT,
+        "h3_cert_commit": H3_CERT_COMMIT,
+        "p3_cert_commit": P3_CERT_COMMIT,
         "final_tag": FINAL_TAG,
-        "certification_target": "published_P_CERT_v3_commit",
+        "certification_target": "published_P_CERT_v4_commit",
         "r_cert_executable_tree_must_equal_p_cert": True,
     }
     if dict(authorities) != expected_authorities:
@@ -1185,6 +1394,8 @@ def validate_contract_payload(
             "p1_cert_commit",
             "h2_cert_commit",
             "p2_cert_commit",
+            "h3_cert_commit",
+            "p3_cert_commit",
         )
     ):
         raise _error("Final-certification commit syntax drifted")
@@ -1203,8 +1414,10 @@ def validate_contract_payload(
             "P-CERT1",
             "H-CERT2",
             "P-CERT2",
-            "H-CERT",
-            "P-CERT",
+            "H-CERT3",
+            "P-CERT3",
+            "H-CERT4",
+            "P-CERT4",
             "R-CERT",
         },
         context="publication_scopes",
@@ -1221,8 +1434,14 @@ def validate_contract_payload(
     p2_scope = _parse_scope(
         scopes["P-CERT2"], stage="P-CERT2", expected=P2_SCOPE
     )
-    h_scope = _parse_scope(scopes["H-CERT"], stage="H-CERT", expected=H_SCOPE)
-    p_scope = _parse_scope(scopes["P-CERT"], stage="P-CERT", expected=P_SCOPE)
+    h3_scope = _parse_scope(
+        scopes["H-CERT3"], stage="H-CERT3", expected=H3_SCOPE
+    )
+    p3_scope = _parse_scope(
+        scopes["P-CERT3"], stage="P-CERT3", expected=P3_SCOPE
+    )
+    h_scope = _parse_scope(scopes["H-CERT4"], stage="H-CERT4", expected=H_SCOPE)
+    p_scope = _parse_scope(scopes["P-CERT4"], stage="P-CERT4", expected=P_SCOPE)
     r_scope = _parse_scope(scopes["R-CERT"], stage="R-CERT", expected=R_SCOPE)
 
     anchors = _parse_anchor_inputs(mapping["anchor_inputs"])
@@ -1286,11 +1505,15 @@ def validate_contract_payload(
         p1_cert_commit=P1_CERT_COMMIT,
         h2_cert_commit=H2_CERT_COMMIT,
         p2_cert_commit=P2_CERT_COMMIT,
+        h3_cert_commit=H3_CERT_COMMIT,
+        p3_cert_commit=P3_CERT_COMMIT,
         final_tag=FINAL_TAG,
         h1_scope=h1_scope,
         p1_scope=p1_scope,
         h2_scope=h2_scope,
         p2_scope=p2_scope,
+        h3_scope=h3_scope,
+        p3_scope=p3_scope,
         h_scope=h_scope,
         p_scope=p_scope,
         r_scope=r_scope,
@@ -1745,6 +1968,46 @@ def collect_dvc_pointer_records(
     return records
 
 
+def main_dvc_static_boundary_record(
+    contract: FinalCertificationContract,
+    *,
+    anchor_records: Sequence[Mapping[str, Any]],
+    pointer_records: Sequence[Mapping[str, Any]],
+) -> dict[str, Any]:
+    """Seal main-worktree DVC state from Git-bound public bytes only."""
+
+    if (
+        len(anchor_records) != len(contract.anchor_inputs)
+        or not anchor_records
+        or anchor_records[0].get("path") != ".dvc/config"
+        or anchor_records[0].get("repository_commit") != contract.editorial_commit
+        or not isinstance(anchor_records[0].get("git_blob_oid"), str)
+    ):
+        raise _error("Main DVC static boundary lacks its Git-bound config")
+    if (
+        len(pointer_records) != len(contract.dvc_pointers)
+        or len(pointer_records) != 8
+        or tuple(record.get("path") for record in pointer_records)
+        != contract.dvc_pointer_paths
+        or any(
+            record.get("repository_commit") != contract.editorial_commit
+            or record.get("parquet_payload_opened") is not False
+            for record in pointer_records
+        )
+    ):
+        raise _error("Main DVC static boundary pointer reconstruction drifted")
+    return {
+        "status_executed": False,
+        "state_source": "git_and_versioned_dvc_pointers",
+        "static_boundary_verified": True,
+        "tracked_config_path": ".dvc/config",
+        "tracked_config_git_blob_oid": anchor_records[0]["git_blob_oid"],
+        "versioned_pointer_count": 8,
+        "versioned_pointer_records_digest": digest_records(pointer_records),
+        "real_dvc_execution_scope": "isolated_r_cert_clone_only",
+    }
+
+
 def test_suite_record(contract: FinalCertificationContract) -> dict[str, Any]:
     """Return the exact canonical P-CERT projection of the locked suite."""
 
@@ -2118,7 +2381,7 @@ def _historical_h1_p1_records(
 def _historical_h2_isolation() -> Mapping[str, Any]:
     """Return the exact isolation projection sealed by superseded P-CERT2."""
 
-    current = dict(_expected_isolation())
+    current = dict(_historical_h3_isolation())
     for key in (
         "failed_dvc_partial_tree_not_adopted_for_cleanup",
         "nonexact_cleanup_preserves_namespace",
@@ -2127,6 +2390,53 @@ def _historical_h2_isolation() -> Mapping[str, Any]:
     ):
         current.pop(key)
     return current
+
+
+def _historical_h3_isolation() -> Mapping[str, Any]:
+    """Return the exact isolation projection sealed in immutable P-CERT3."""
+
+    current = dict(_expected_isolation())
+    for key in (
+        "credential_path_rebased_to_retained_fd",
+        "credential_target_regular_single_link",
+        "credential_target_group_or_other_writable",
+        "private_dvc_effective_configuration_equivalent_except_owned_cache",
+        "owned_site_cache_count",
+        "owned_site_cache_roles",
+        "owned_site_cache_filesystem_mode",
+        "owned_site_caches_separated",
+        "owned_site_cache_paths_serialized",
+        "version_seal_before_private_config_or_pull",
+        "single_dvc_runtime_retained_through_final_status_and_version_probe",
+        "dvc_runtime_cross_call_identity_revalidated",
+        "used_by_all_isolated_dvc_commands",
+        "copied_core_site_cache_dir_used",
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged",
+        "main_dvc_command_run",
+        "main_worktree_dvc_status_executed",
+        "main_worktree_dvc_static_boundary_verified",
+        "main_worktree_dvc_state_source",
+        "real_dvc_execution_scope",
+        "superseded_p3_retry_authorized",
+    ):
+        current.pop(key)
+    return current
+
+
+def _historical_prohibitions() -> Mapping[str, bool]:
+    """Return the prohibition projection sealed before H-CERT4."""
+
+    historical = dict(PROHIBITIONS)
+    for key in (
+        "main_worktree_dvc_command_execution",
+        "owned_site_cache_paths_serialization",
+        "main_dvc_site_cache_payload_open_or_hash",
+        "owned_site_cache_role_or_separation_drift",
+        "private_dvc_configuration_or_pull_before_version_seal",
+        "dvc_runtime_cross_call_identity_or_lifetime_drift",
+    ):
+        historical.pop(key)
+    return historical
 
 
 def _historical_h2_suite_record(
@@ -2154,6 +2464,24 @@ def _historical_h2_suite_record(
             "allowed_skip_count": 7,
         },
     }
+
+
+def _historical_h3_suite_record(
+    contract: FinalCertificationContract,
+) -> dict[str, Any]:
+    """Reconstruct the public-suite projection sealed in immutable P-CERT3."""
+
+    suite = test_suite_record(contract)
+    suite["suite_lock"] = {
+        "status": "locked",
+        "selector_count": 39,
+        "collected_test_count": 920,
+        "nodeids_sha256": (
+            "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"
+        ),
+        "allowed_skip_count": 7,
+    }
+    return suite
 
 
 def _historical_h2_p2_records(
@@ -2257,7 +2585,7 @@ def _historical_h2_p2_records(
         "r_cert_output_paths_digest": digest_strings(contract.output_paths),
         "isolation": dict(_historical_h2_isolation()),
         "authorizations": dict(AUTHORIZATION_POLICY),
-        "prohibitions": dict(PROHIBITIONS),
+        "prohibitions": dict(_historical_prohibitions()),
     }
     if authority != expected_authority or authority_bytes != canonical_json_bytes(
         expected_authority
@@ -2327,6 +2655,192 @@ def _historical_h1_p1_h2_p2_records(
     return h1_records, p1_records, h2_records, p2_records
 
 
+def _historical_h3_p3_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+    predecessor_records: tuple[
+        Sequence[Mapping[str, Any]],
+        Sequence[Mapping[str, Any]],
+        Sequence[Mapping[str, Any]],
+        Sequence[Mapping[str, Any]],
+    ] | None = None,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reconstruct and byte-bind immutable H-CERT3/P-CERT3."""
+
+    if (
+        _commit_parents(root, contract.h3_cert_commit)
+        != (contract.p2_cert_commit,)
+        or _commit_scope(root, contract.h3_cert_commit) != expected_h3_scope()
+        or _commit_parents(root, contract.p3_cert_commit)
+        != (contract.h3_cert_commit,)
+        or _commit_scope(root, contract.p3_cert_commit) != expected_p3_scope()
+    ):
+        raise _error("Historical H3/P3 topology or scope drifted")
+    if predecessor_records is None:
+        predecessor_records = _historical_h1_p1_h2_p2_records(
+            contract, root=root
+        )
+    h1_records, p1_records, h2_records, p2_records = predecessor_records
+    h3_records: list[dict[str, Any]] = []
+    for spec in contract.h3_scope:
+        record, _payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.h3_cert_commit,
+            spec=spec,
+            context="Historical H-CERT3 component",
+        )
+        h3_records.append(
+            {**record, "filesystem_mode": int(spec.git_mode[-3:], 8)}
+        )
+
+    authority, authority_bytes = _decode_canonical_public_json(
+        root, H3_AUTHORITY_PATH, commit=contract.p3_cert_commit
+    )
+    manifest, manifest_bytes = _decode_canonical_public_json(
+        root, H3_AUTHORITY_MANIFEST_PATH, commit=contract.p3_cert_commit
+    )
+    if (
+        len(authority_bytes) != H3_AUTHORITY_BYTES
+        or sha256_bytes(authority_bytes) != H3_AUTHORITY_SHA256
+        or len(manifest_bytes) != H3_AUTHORITY_MANIFEST_BYTES
+        or sha256_bytes(manifest_bytes) != H3_AUTHORITY_MANIFEST_SHA256
+    ):
+        raise _error("Historical P-CERT3 canonical byte identity drifted")
+    anchors = collect_anchor_input_records(contract, root=root)
+    pointers = collect_dvc_pointer_records(contract, root=root)
+    suite = _historical_h3_suite_record(contract)
+    outputs = list(contract.output_paths)
+    expected_authority = {
+        "authority_version": H3_AUTHORITY_VERSION,
+        "gate": "P-CERT",
+        "status": "locked_unpublished",
+        "topology": {
+            "closure_source_commit": contract.closure_source_commit,
+            "r_syn_commit": contract.r_syn_commit,
+            "editorial_commit": contract.editorial_commit,
+            "h1_cert_commit": contract.h1_cert_commit,
+            "p1_cert_commit": contract.p1_cert_commit,
+            "h2_cert_commit": contract.h2_cert_commit,
+            "p2_cert_commit": contract.p2_cert_commit,
+            "h3_cert_commit": contract.h3_cert_commit,
+            "p3_cert_commit": None,
+            "h_cert_commit": contract.h3_cert_commit,
+            "p_cert_commit": None,
+            "r_cert_executable_tree_must_equal_p_cert": True,
+        },
+        "p1_failure": {
+            "status": "superseded_failed",
+            "failure_stage": "after_git_clone_namespace_validation",
+            "dvc_pull_count": 0,
+            "r_cert_output_count": 0,
+            "retry_authorized": False,
+        },
+        "p2_failure": expected_p2_failure_record(),
+        "h1_scope": expected_h1_scope(),
+        "h1_component_records": list(h1_records),
+        "h1_component_records_digest": digest_records(h1_records),
+        "p1_scope": expected_p1_scope(),
+        "p1_component_records": list(p1_records),
+        "p1_component_records_digest": digest_records(p1_records),
+        "h2_scope": expected_h2_scope(),
+        "h2_component_records": list(h2_records),
+        "h2_component_records_digest": digest_records(h2_records),
+        "p2_scope": expected_p2_scope(),
+        "p2_component_records": list(p2_records),
+        "p2_component_records_digest": digest_records(p2_records),
+        "h_scope": expected_h3_scope(),
+        "h_component_records": h3_records,
+        "h_component_records_digest": digest_records(h3_records),
+        "h3_scope": expected_h3_scope(),
+        "h3_component_records": h3_records,
+        "h3_component_records_digest": digest_records(h3_records),
+        "p_scope": expected_p3_scope(),
+        "p3_scope": expected_p3_scope(),
+        "anchor_input_records": anchors,
+        "anchor_input_records_digest": digest_records(anchors),
+        "dvc_pointer_records": pointers,
+        "dvc_pointer_records_digest": digest_records(pointers),
+        "test_suite": suite,
+        "test_suite_digest": sha256_bytes(canonical_json_bytes(suite)),
+        "ordered_r_cert_output_paths": outputs,
+        "r_cert_output_paths_digest": digest_strings(outputs),
+        "isolation": dict(_historical_h3_isolation()),
+        "failure_diagnostics": dict(FAILURE_DIAGNOSTICS_POLICY),
+        "authorizations": dict(AUTHORIZATION_POLICY),
+        "prohibitions": dict(_historical_prohibitions()),
+    }
+    if authority != expected_authority or authority_bytes != canonical_json_bytes(
+        expected_authority
+    ):
+        raise _error("Historical P-CERT3 authority identity drifted")
+    authority_record = {
+        "path": H3_AUTHORITY_PATH.as_posix(),
+        "bytes": len(authority_bytes),
+        "sha256": sha256_bytes(authority_bytes),
+    }
+    expected_manifest = {
+        "manifest_version": H3_AUTHORITY_MANIFEST_VERSION,
+        "gate": "P-CERT",
+        "status": "locked_unpublished",
+        "h1_cert_commit": contract.h1_cert_commit,
+        "p1_cert_commit": contract.p1_cert_commit,
+        "h2_cert_commit": contract.h2_cert_commit,
+        "p2_cert_commit": contract.p2_cert_commit,
+        "h3_cert_commit": contract.h3_cert_commit,
+        "p3_cert_commit": None,
+        "h_cert_commit": contract.h3_cert_commit,
+        "p_cert_commit": None,
+        "supersedes_p2": True,
+        "supersedes_p1": True,
+        "manifest_last": True,
+        "ordered_paths": [
+            H3_AUTHORITY_PATH.as_posix(),
+            H3_AUTHORITY_MANIFEST_PATH.as_posix(),
+        ],
+        "outputs": [authority_record],
+        "authority": authority_record,
+        "authorizations": dict(AUTHORIZATION_POLICY),
+    }
+    if manifest != expected_manifest or manifest_bytes != canonical_json_bytes(
+        expected_manifest
+    ):
+        raise _error("Historical P-CERT3 companion identity drifted")
+    p3_records: list[dict[str, Any]] = []
+    for spec, payload in zip(
+        contract.p3_scope, (authority_bytes, manifest_bytes), strict=True
+    ):
+        record, git_payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.p3_cert_commit,
+            spec=spec,
+            context="Historical P-CERT3 component",
+        )
+        if git_payload != payload:
+            raise _error("Historical P-CERT3 physical/Git bytes drifted")
+        p3_records.append(record)
+    return h3_records, p3_records
+
+
+def _historical_h1_p1_h2_p2_h3_p3_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
+    predecessor = _historical_h1_p1_h2_p2_records(contract, root=root)
+    h3_records, p3_records = _historical_h3_p3_records(
+        contract, root=root, predecessor_records=predecessor
+    )
+    return (*predecessor, h3_records, p3_records)
+
+
 def _expected_effective_authority(
     contract: FinalCertificationContract,
     *,
@@ -2336,9 +2850,14 @@ def _expected_effective_authority(
     components = collect_h_component_records(
         contract, h_cert_commit=h_cert_commit, root=root
     )
-    h1_records, p1_records, h2_records, p2_records = (
-        _historical_h1_p1_h2_p2_records(contract, root=root)
-    )
+    (
+        h1_records,
+        p1_records,
+        h2_records,
+        p2_records,
+        h3_records,
+        p3_records,
+    ) = _historical_h1_p1_h2_p2_h3_p3_records(contract, root=root)
     anchors = collect_anchor_input_records(contract, root=root)
     pointers = collect_dvc_pointer_records(contract, root=root)
     suite = test_suite_record(contract)
@@ -2355,8 +2874,10 @@ def _expected_effective_authority(
             "p1_cert_commit": contract.p1_cert_commit,
             "h2_cert_commit": contract.h2_cert_commit,
             "p2_cert_commit": contract.p2_cert_commit,
-            "h3_cert_commit": h_cert_commit,
-            "p3_cert_commit": None,
+            "h3_cert_commit": contract.h3_cert_commit,
+            "p3_cert_commit": contract.p3_cert_commit,
+            "h4_cert_commit": h_cert_commit,
+            "p4_cert_commit": None,
             "h_cert_commit": h_cert_commit,
             "p_cert_commit": None,
             "r_cert_executable_tree_must_equal_p_cert": True,
@@ -2369,6 +2890,7 @@ def _expected_effective_authority(
             "retry_authorized": False,
         },
         "p2_failure": expected_p2_failure_record(),
+        "p3_failure": expected_p3_failure_record(),
         "h1_scope": expected_h1_scope(),
         "h1_component_records": h1_records,
         "h1_component_records_digest": digest_records(h1_records),
@@ -2381,18 +2903,29 @@ def _expected_effective_authority(
         "p2_scope": expected_p2_scope(),
         "p2_component_records": p2_records,
         "p2_component_records_digest": digest_records(p2_records),
+        "h3_scope": expected_h3_scope(),
+        "h3_component_records": h3_records,
+        "h3_component_records_digest": digest_records(h3_records),
+        "p3_scope": expected_p3_scope(),
+        "p3_component_records": p3_records,
+        "p3_component_records_digest": digest_records(p3_records),
         "h_scope": expected_h_scope(),
         "h_component_records": components,
         "h_component_records_digest": digest_records(components),
-        "h3_scope": expected_h_scope(),
-        "h3_component_records": components,
-        "h3_component_records_digest": digest_records(components),
+        "h4_scope": expected_h_scope(),
+        "h4_component_records": components,
+        "h4_component_records_digest": digest_records(components),
         "p_scope": expected_p_scope(),
-        "p3_scope": expected_p_scope(),
+        "p4_scope": expected_p_scope(),
         "anchor_input_records": anchors,
         "anchor_input_records_digest": digest_records(anchors),
         "dvc_pointer_records": pointers,
         "dvc_pointer_records_digest": digest_records(pointers),
+        "main_dvc_static_boundary": main_dvc_static_boundary_record(
+            contract,
+            anchor_records=anchors,
+            pointer_records=pointers,
+        ),
         "test_suite": suite,
         "test_suite_digest": sha256_bytes(canonical_json_bytes(suite)),
         "ordered_r_cert_output_paths": outputs,
@@ -2411,7 +2944,7 @@ def load_effective_authority(
     verify_remote: bool = True,
     require_clean: bool = True,
 ) -> dict[str, Any]:
-    """Load and independently reconstruct one published effective P-CERT3.
+    """Load and independently reconstruct one published effective P-CERT4.
 
     The stored authority deliberately has ``p_cert_commit=null`` because it is
     generated before its publication commit exists.  Effectiveness is derived
@@ -2427,15 +2960,15 @@ def load_effective_authority(
     p_cert_commit = _one_commit(root, "HEAD")
     parents = _commit_parents(root, p_cert_commit)
     if len(parents) != 1:
-        raise _error("P-CERT3 must have exactly one H-CERT3 parent")
+        raise _error("P-CERT4 must have exactly one H-CERT4 parent")
     h_cert_commit = parents[0]
     if (
-        _commit_parents(root, h_cert_commit) != (active_contract.p2_cert_commit,)
+        _commit_parents(root, h_cert_commit) != (active_contract.p3_cert_commit,)
         or _commit_scope(root, h_cert_commit) != expected_h_scope()
         or _commit_scope(root, p_cert_commit) != expected_p_scope()
     ):
-        raise _error("Effective P-CERT3 H3/P3 topology or scope drifted")
-    _historical_h1_p1_h2_p2_records(active_contract, root=root)
+        raise _error("Effective P-CERT4 H4/P4 topology or scope drifted")
+    _historical_h1_p1_h2_p2_h3_p3_records(active_contract, root=root)
     ancestor = subprocess.run(
         [
             "git",
@@ -2478,10 +3011,13 @@ def load_effective_authority(
         "p1_cert_commit": active_contract.p1_cert_commit,
         "h2_cert_commit": active_contract.h2_cert_commit,
         "p2_cert_commit": active_contract.p2_cert_commit,
-        "h3_cert_commit": h_cert_commit,
-        "p3_cert_commit": None,
+        "h3_cert_commit": active_contract.h3_cert_commit,
+        "p3_cert_commit": active_contract.p3_cert_commit,
+        "h4_cert_commit": h_cert_commit,
+        "p4_cert_commit": None,
         "h_cert_commit": h_cert_commit,
         "p_cert_commit": None,
+        "supersedes_p3": True,
         "supersedes_p2": True,
         "supersedes_p1": True,
         "manifest_last": True,
@@ -2499,8 +3035,10 @@ def load_effective_authority(
         "gate": "P-CERT",
         "p_cert_commit": p_cert_commit,
         "h_cert_commit": h_cert_commit,
-        "p3_cert_commit": p_cert_commit,
-        "h3_cert_commit": h_cert_commit,
+        "p4_cert_commit": p_cert_commit,
+        "h4_cert_commit": h_cert_commit,
+        "p3_cert_commit": active_contract.p3_cert_commit,
+        "h3_cert_commit": active_contract.h3_cert_commit,
         "p2_cert_commit": active_contract.p2_cert_commit,
         "h2_cert_commit": active_contract.h2_cert_commit,
         "p1_cert_commit": active_contract.p1_cert_commit,

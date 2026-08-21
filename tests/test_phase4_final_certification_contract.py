@@ -66,11 +66,15 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.p1_cert_commit == certification.P1_CERT_COMMIT
     assert contract.h2_cert_commit == certification.H2_CERT_COMMIT
     assert contract.p2_cert_commit == certification.P2_CERT_COMMIT
+    assert contract.h3_cert_commit == certification.H3_CERT_COMMIT
+    assert contract.p3_cert_commit == certification.P3_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
     assert len(contract.h2_scope) == 11
     assert len(contract.p2_scope) == 2
+    assert len(contract.h3_scope) == 11
+    assert len(contract.p3_scope) == 2
     assert len(contract.r_scope) == 8
     assert len(contract.anchor_inputs) == 10
     assert len(contract.dvc_pointers) == 8
@@ -111,6 +115,72 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     ] is True
     assert contract.raw["isolation"]["superseded_p1_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p2_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p3_retry_authorized"] is False
+    assert contract.raw["isolation"]["credential_path_rebased_to_retained_fd"] is True
+    site_cache = contract.raw["isolation"]
+    assert site_cache["owned_site_cache_count"] == 2
+    assert site_cache["owned_site_cache_roles"] == [
+        "runtime_version",
+        "restore_status",
+    ]
+    assert site_cache["owned_site_cache_filesystem_mode"] == "0700"
+    assert site_cache["owned_site_caches_separated"] is True
+    assert site_cache["owned_site_cache_paths_serialized"] is False
+    assert site_cache["version_seal_before_private_config_or_pull"] is True
+    assert site_cache[
+        "single_dvc_runtime_retained_through_final_status_and_version_probe"
+    ] is True
+    assert site_cache["dvc_runtime_cross_call_identity_revalidated"] is True
+    assert site_cache["used_by_all_isolated_dvc_commands"] is True
+    assert site_cache["copied_core_site_cache_dir_used"] is False
+    assert site_cache[
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged"
+    ] is True
+    assert site_cache["main_dvc_command_run"] is False
+    assert "main_dvc_site_cache_must_remain_unchanged" not in site_cache
+    assert certification.expected_environment_dvc_record() == {
+        "restored_pointer_count": 8,
+        "cache_initially_empty": True,
+        "one_pointer_per_pull": True,
+        "main_dvc_command_run": False,
+        "main_dvc_status_command_run": False,
+        "main_dvc_static_reconstruction_from_git_and_published_pointers": True,
+        "owned_site_cache_count": 2,
+        "owned_site_cache_roles": ["runtime_version", "restore_status"],
+        "owned_site_cache_filesystem_mode": "0700",
+        "owned_site_caches_separated": True,
+        "owned_site_cache_paths_serialized": False,
+        "version_seal_before_private_config_or_pull": True,
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": True,
+        "dvc_runtime_cross_call_identity_revalidated": True,
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged": True,
+        "payloads_opened_by_python": False,
+        "payloads_decoded": False,
+        "dvc_add_or_push": False,
+        "main_worktree_written": False,
+    }
+    assert certification.expected_manifest_clone_dvc_site_caches_record() == {
+        "owned_site_cache_count": 2,
+        "owned_site_cache_roles": ["runtime_version", "restore_status"],
+        "owned_site_cache_filesystem_mode": "0700",
+        "owned_site_caches_separated": True,
+        "used_by_all_isolated_dvc_commands": True,
+        "copied_core_site_cache_dir_used": False,
+        "owned_site_cache_paths_serialized": False,
+        "version_seal_before_private_config_or_pull": True,
+        "single_dvc_runtime_retained_through_final_status_and_version_probe": True,
+        "dvc_runtime_cross_call_identity_revalidated": True,
+    }
+    assert contract.raw["topology"]["main_worktree_dvc_status_executed"] is False
+    assert contract.raw["topology"][
+        "main_worktree_dvc_static_boundary_verified"
+    ] is True
+    assert contract.raw["dvc_restoration"][
+        "main_worktree_dvc_state_source"
+    ] == "git_and_versioned_dvc_pointers"
+    assert contract.raw["isolation"]["real_dvc_execution_scope"] == (
+        "isolated_r_cert_clone_only"
+    )
     assert contract.raw["isolation"][
         "failed_dvc_partial_tree_not_adopted_for_cleanup"
     ] is True
@@ -120,9 +190,9 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert "rollback_owned_inodes_only" not in contract.raw["isolation"]
     assert contract.test_suite.status == certification.LOCKED_SUITE_STATUS
     assert contract.test_suite.selector_count == 39
-    assert contract.test_suite.collected_test_count == 920
+    assert contract.test_suite.collected_test_count == 944
     assert contract.test_suite.nodeids_sha256 == (
-        "b6ebc960455574fb8b07c76467e1111c2b34f401ab6c83fcddc03f5857242367"
+        "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
     )
     assert (
         contract.test_suite.allowed_skip_count
@@ -200,7 +270,7 @@ def test_locked_suite_identity_has_exact_nonduplicating_selectors() -> None:
         lambda value: value["topology"].update(
             single_parent_commits_required=False
         ),
-        lambda value: value["publication_scopes"]["H-CERT"].update(
+        lambda value: value["publication_scopes"]["H-CERT4"].update(
             additions=8
         ),
         lambda value: value["publication_scopes"]["P-CERT2"].update(
@@ -355,6 +425,32 @@ def test_public_anchors_and_dvc_pointers_are_editorial_git_bound() -> None:
         row["repository_commit"] == certification.EDITORIAL_COMMIT
         for row in pointers
     )
+    boundary = certification.main_dvc_static_boundary_record(
+        contract,
+        anchor_records=anchors,
+        pointer_records=pointers,
+    )
+    assert boundary == {
+        "status_executed": False,
+        "state_source": "git_and_versioned_dvc_pointers",
+        "static_boundary_verified": True,
+        "tracked_config_path": ".dvc/config",
+        "tracked_config_git_blob_oid": anchors[0]["git_blob_oid"],
+        "versioned_pointer_count": 8,
+        "versioned_pointer_records_digest": certification.digest_records(pointers),
+        "real_dvc_execution_scope": "isolated_r_cert_clone_only",
+    }
+    drifted = [dict(record) for record in pointers]
+    drifted[0]["repository_commit"] = "0" * 40
+    with pytest.raises(
+        certification.FinalCertificationContractError,
+        match="static boundary pointer reconstruction drifted",
+    ):
+        certification.main_dvc_static_boundary_record(
+            contract,
+            anchor_records=anchors,
+            pointer_records=drifted,
+        )
 
 
 def test_dvc_pointer_parser_accepts_only_the_sealed_single_file_dialect() -> None:
@@ -411,10 +507,10 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert scopes["P-CERT2"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 2
-    assert scopes["H-CERT"]["allOf"][1]["properties"]["modifications"][
+    assert scopes["H-CERT4"]["allOf"][1]["properties"]["modifications"][
         "const"
     ] == 11
-    assert scopes["P-CERT"]["allOf"][1]["properties"]["additions"][
+    assert scopes["P-CERT4"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 2
     assert scopes["R-CERT"]["allOf"][1]["properties"]["additions"][
@@ -446,6 +542,34 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     }
     assert dvc["ignored_local_remote_configuration_serialized"] == {
         "const": False
+    }
+    assert dvc["credential_path_values_serialized"] == {"const": False}
+    assert dvc["owned_site_cache_count"] == {"const": 2}
+    assert dvc["owned_site_cache_roles"] == {
+        "const": ["runtime_version", "restore_status"]
+    }
+    assert dvc["owned_site_cache_filesystem_mode"] == {"const": "0700"}
+    assert dvc["owned_site_caches_separated"] == {"const": True}
+    assert dvc["owned_site_cache_paths_serialized"] == {"const": False}
+    assert dvc["version_seal_before_private_config_or_pull"] == {"const": True}
+    assert dvc[
+        "single_dvc_runtime_retained_through_final_status_and_version_probe"
+    ] == {"const": True}
+    assert dvc["dvc_runtime_cross_call_identity_revalidated"] == {"const": True}
+    assert dvc["used_by_all_isolated_dvc_commands"] == {"const": True}
+    assert dvc["copied_core_site_cache_dir_used"] == {"const": False}
+    assert dvc[
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged"
+    ] == {"const": True}
+    assert dvc["main_dvc_command_run"] == {"const": False}
+    assert "owned_site_cache_path_serialized" not in dvc
+    assert dvc["main_worktree_dvc_status_executed"] == {"const": False}
+    assert dvc["main_worktree_dvc_static_boundary_verified"] == {"const": True}
+    assert dvc["main_worktree_dvc_state_source"] == {
+        "const": "git_and_versioned_dvc_pointers"
+    }
+    assert dvc["real_dvc_execution_scope"] == {
+        "const": "isolated_r_cert_clone_only"
     }
     assert properties["outputs"]["properties"]["manifest_written_last"] == {
         "const": True
@@ -491,6 +615,33 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     }
     assert boundary["superseded_p1_retry_authorized"] == {"const": False}
     assert boundary["superseded_p2_retry_authorized"] == {"const": False}
+    assert boundary["owned_site_cache_count"] == {"const": 2}
+    assert boundary["owned_site_cache_roles"] == {
+        "const": ["runtime_version", "restore_status"]
+    }
+    assert boundary["owned_site_cache_filesystem_mode"] == {"const": "0700"}
+    assert boundary["owned_site_caches_separated"] == {"const": True}
+    assert boundary["owned_site_cache_paths_serialized"] == {"const": False}
+    assert boundary["version_seal_before_private_config_or_pull"] == {
+        "const": True
+    }
+    assert boundary[
+        "single_dvc_runtime_retained_through_final_status_and_version_probe"
+    ] == {"const": True}
+    assert boundary["dvc_runtime_cross_call_identity_revalidated"] == {
+        "const": True
+    }
+    assert boundary["used_by_all_isolated_dvc_commands"] == {"const": True}
+    assert boundary["copied_core_site_cache_dir_used"] == {"const": False}
+    assert boundary[
+        "main_dvc_site_cache_metadata_inode_inventory_unchanged"
+    ] == {"const": True}
+    assert boundary["main_dvc_command_run"] == {"const": False}
+    assert "main_dvc_site_cache_must_remain_unchanged" not in boundary
+    assert boundary["main_worktree_dvc_status_executed"] == {"const": False}
+    assert boundary["main_worktree_dvc_static_boundary_verified"] == {
+        "const": True
+    }
     assert boundary["failed_dvc_partial_tree_not_adopted_for_cleanup"] == {
         "const": True
     }
@@ -792,10 +943,13 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p1_cert_commit": contract.p1_cert_commit,
         "h2_cert_commit": contract.h2_cert_commit,
         "p2_cert_commit": contract.p2_cert_commit,
-        "h3_cert_commit": h_commit,
-        "p3_cert_commit": None,
+        "h3_cert_commit": contract.h3_cert_commit,
+        "p3_cert_commit": contract.p3_cert_commit,
+        "h4_cert_commit": h_commit,
+        "p4_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
+        "supersedes_p3": True,
         "supersedes_p2": True,
         "supersedes_p1": True,
         "manifest_last": True,
@@ -812,7 +966,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p2_cert_commit,),
+            h_commit: (contract.p3_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -850,8 +1004,8 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_records",
-        lambda *_args, **_kwargs: ([], [], [], []),
+        "_historical_h1_p1_h2_p2_h3_p3_records",
+        lambda *_args, **_kwargs: ([], [], [], [], [], []),
     )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
@@ -875,8 +1029,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p3_cert_commit"] == p_commit
-    assert result["h3_cert_commit"] == h_commit
+    assert result["p4_cert_commit"] == p_commit
+    assert result["h4_cert_commit"] == h_commit
+    assert result["p3_cert_commit"] == contract.p3_cert_commit
+    assert result["h3_cert_commit"] == contract.h3_cert_commit
     assert result["p2_cert_commit"] == contract.p2_cert_commit
     assert result["h2_cert_commit"] == contract.h2_cert_commit
     assert result["p1_cert_commit"] == contract.p1_cert_commit
@@ -939,8 +1095,8 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_records",
-        lambda *_args, **_kwargs: ([], [], [], []),
+        "_historical_h1_p1_h2_p2_h3_p3_records",
+        lambda *_args, **_kwargs: ([], [], [], [], [], []),
     )
     monkeypatch.setattr(
         certification,
@@ -951,6 +1107,21 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
         certification,
         "collect_dvc_pointer_records",
         lambda *_args, **_kwargs: [],
+    )
+    static_boundary = {
+        "status_executed": False,
+        "state_source": "git_and_versioned_dvc_pointers",
+        "static_boundary_verified": True,
+        "tracked_config_path": ".dvc/config",
+        "tracked_config_git_blob_oid": "a" * 40,
+        "versioned_pointer_count": 8,
+        "versioned_pointer_records_digest": certification.digest_records([]),
+        "real_dvc_execution_scope": "isolated_r_cert_clone_only",
+    }
+    monkeypatch.setattr(
+        certification,
+        "main_dvc_static_boundary_record",
+        lambda *_args, **_kwargs: static_boundary,
     )
     monkeypatch.setattr(
         certification,
@@ -972,9 +1143,11 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
         certification.FAILURE_DIAGNOSTICS_POLICY
     )
     assert authority["p2_failure"] == certification.expected_p2_failure_record()
-    assert authority["h3_component_records"] == authority["h_component_records"]
-    assert authority["h3_scope"] == authority["h_scope"]
-    assert authority["p3_scope"] == authority["p_scope"]
+    assert authority["p3_failure"] == certification.expected_p3_failure_record()
+    assert authority["main_dvc_static_boundary"] == static_boundary
+    assert authority["h4_component_records"] == authority["h_component_records"]
+    assert authority["h4_scope"] == authority["h_scope"]
+    assert authority["p4_scope"] == authority["p_scope"]
     assert "guard_path" not in authority["isolation"]
     assert "rollback_owned_inodes_only" not in authority["isolation"]
 
@@ -1006,4 +1179,30 @@ def test_historical_p2_is_byte_exact_and_diagnostics_are_sanitized() -> None:
         "namespace_preserved": True,
         "active_error_was_masked": True,
     }
+    assert failure["retry_authorized"] is False
+
+
+def test_historical_p3_is_byte_exact_and_failure_is_sanitized() -> None:
+    contract = certification.validate_contract_payload(
+        _locked_payload(), root=ROOT, verify_inputs=False
+    )
+    records = certification._historical_h1_p1_h2_p2_h3_p3_records(  # noqa: SLF001
+        contract, root=ROOT
+    )
+    assert [len(group) for group in records] == [11, 2, 11, 2, 11, 2]
+    assert [row["path"] for row in records[-1]] == [
+        certification.H3_AUTHORITY_PATH.as_posix(),
+        certification.H3_AUTHORITY_MANIFEST_PATH.as_posix(),
+    ]
+    failure = certification.expected_p3_failure_record()
+    assert failure["status"] == "execution_and_cleanup_failed_closed"
+    assert failure["active_error"]["returncode"] == 1
+    assert failure["active_error"]["safe_stderr_category"] == "nonzero_exit"
+    assert set(failure["evidence_counts"].values()) == {0}
+    assert failure["cleanup"] == {
+        "status": "failed_closed",
+        "namespace_preserved": True,
+        "active_error_was_masked": False,
+    }
+    assert failure["archive_is_authority"] is False
     assert failure["retry_authorized"] is False
