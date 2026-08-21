@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p8_cert_commit": P_COMMIT,
-        "h8_cert_commit": H_COMMIT,
+        "p9_cert_commit": P_COMMIT,
+        "h9_cert_commit": H_COMMIT,
+        "p8_cert_commit": active_contract.p8_cert_commit,
+        "h8_cert_commit": active_contract.h8_cert_commit,
         "p7_cert_commit": active_contract.p7_cert_commit,
         "h7_cert_commit": active_contract.h7_cert_commit,
         "p6_cert_commit": active_contract.p6_cert_commit,
@@ -105,7 +107,21 @@ def _authority(
             active_contract
         ),
         "repository": {"HEAD": P_COMMIT},
-        "authority": {"authority_version": "synthetic"},
+        "authority": {
+            "authority_version": "synthetic",
+            "p8_failure": contract_module.expected_p8_failure_record(),
+            "isolation": {
+                "sandbox_mountpoint_policy": (
+                    contract_module.expected_sandbox_mountpoint_policy()
+                ),
+                "sandbox_smoke_policy": (
+                    contract_module.expected_sandbox_smoke_policy()
+                ),
+                "cleanup_diagnostic_policy": (
+                    contract_module.expected_cleanup_diagnostic_policy()
+                ),
+            },
+        },
         "authority_bytes": 123,
         "authority_sha256": "c" * 64,
         "manifest": {"manifest_version": "synthetic"},
@@ -290,6 +306,13 @@ def _products(
         "restored_payloads_masked": [
             spec.output_path for spec in contract.dvc_pointers
         ],
+        "sandbox_mountpoint_policy": (
+            contract_module.expected_sandbox_mountpoint_policy()
+        ),
+        "sandbox_smoke_policy": contract_module.expected_sandbox_smoke_policy(),
+        "cleanup_diagnostic_policy": (
+            contract_module.expected_cleanup_diagnostic_policy()
+        ),
     }
     verification_artifacts = {
         "public_tests.xml": junit,
@@ -339,6 +362,9 @@ def _products(
             "single_parent": True,
             "source": "live_origin_main",
             "remote_url_serialized": False,
+            "sandbox_mountpoints": (
+                contract_module.expected_sandbox_mountpoint_policy()
+            ),
             "local_dvc_remote_configuration": {
                 "present": True,
                 "regular_file": True,
@@ -396,6 +422,10 @@ def _products(
                     "argv": ["poetry", "check", "--lock"],
                     "returncode": 0,
                 },
+            },
+            "sandbox_smoke": {
+                "status": "passed",
+                **contract_module.expected_sandbox_smoke_policy(),
             },
             "public_test_totals": totals,
             "public_skip_ledger": skips,
@@ -743,8 +773,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p8_cert_commit": P_COMMIT,
-        "h8_cert_commit": H_COMMIT,
+        "p9_cert_commit": P_COMMIT,
+        "h9_cert_commit": H_COMMIT,
+        "p8_cert_commit": contract.p8_cert_commit,
+        "h8_cert_commit": contract.h8_cert_commit,
         "p7_cert_commit": contract.p7_cert_commit,
         "h7_cert_commit": contract.h7_cert_commit,
         "p6_cert_commit": contract.p6_cert_commit,
@@ -766,8 +798,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p8_cert_commit": P_COMMIT,
-        "h8_cert_commit": H_COMMIT,
+        "p9_cert_commit": P_COMMIT,
+        "h9_cert_commit": H_COMMIT,
+        "p8_cert_commit": contract.p8_cert_commit,
+        "h8_cert_commit": contract.h8_cert_commit,
         "p7_cert_commit": contract.p7_cert_commit,
         "h7_cert_commit": contract.h7_cert_commit,
         "p6_cert_commit": contract.p6_cert_commit,
@@ -846,6 +880,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p9_cert_commit",
+        "h9_cert_commit",
         "p8_cert_commit",
         "h8_cert_commit",
         "p7_cert_commit",
@@ -904,6 +940,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p9_cert_commit",
+        "h9_cert_commit",
         "p8_cert_commit",
         "h8_cert_commit",
         "p7_cert_commit",
@@ -3627,6 +3665,8 @@ def test_sealed_runtime_drift_stops_before_private_config_pull_and_verification(
 def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> None:
     source = inspect.getsource(builder.build_phase4_final_certification)
     clone = source.index("_clone_exact_p(")
+    after_clone_registration = source.index('stage == "after_git_clone"')
+    mountpoints = source.index("_create_clone_mountpoints(")
     runtime_open = source.index('"retained_dvc_runtime_open"')
     before = source.index('"runtime_versions_before_private_config_or_pull"')
     private_config = source.index('"private_dvc_configuration_rebase"')
@@ -3635,12 +3675,20 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     )
     restore = source.index("_restore_dvc_objects_with_anchored_executable(")
     after = source.index('"runtime_versions_after_verification"')
-    assert clone < runtime_open < before < version_cache_freeze < private_config
+    assert after_clone_registration < mountpoints < clone < runtime_open
+    assert runtime_open < before < version_cache_freeze < private_config
+    clone_source = inspect.getsource(builder._clone_exact_p)
+    assert clone_source.index("_run(") < clone_source.index(
+        'namespace_validator("after_git_clone")'
+    )
     assert private_config < restore < after
+    smoke = source.index("_run_sandbox_smoke(")
+    postgres = source.index("_start_owned_postgres(")
+    assert restore < smoke < postgres
     for operation in (
         "_restore_dvc_objects_with_anchored_executable(",
         "_start_owned_postgres(",
-        "_run_verification(",
+        "_run_verification_with_runtime(",
         '"clone_dvc_status_after_verification"',
     ):
         position = source.index(operation)
@@ -3668,7 +3716,7 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     )
     assert source.index("runtime_versions=runtime_before") > after
     verification = source.index(
-        "verification_artifacts, verification = _run_verification("
+        "verification_artifacts, verification = _run_verification_with_runtime("
     )
     first_postgres_cleanup = source.index(
         "cleanup = _stop_owned_postgres(", verification
@@ -3777,12 +3825,13 @@ def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
     composite = builder._execution_cleanup_composite_error(
         active,
         namespace_preserved=False,
+        reason_codes=("work_tree_remove_failed",),
     )
     diagnostic = json.loads(str(composite).split(": ", 1)[1])
     assert diagnostic["cleanup"] == {
         "status": "failed_closed",
         "namespace_preserved": False,
-        "active_error_was_masked": False,
+        "reason_codes": ["work_tree_remove_failed"],
     }
     assert composite.command_failure is active.command_failure
 
@@ -3794,6 +3843,7 @@ def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
     internal_composite = builder._execution_cleanup_composite_error(
         internal,
         namespace_preserved=True,
+        reason_codes=("sandbox_inventory_drift",),
     )
     internal_diagnostic = json.loads(
         str(internal_composite).split(": ", 1)[1]
@@ -3812,6 +3862,11 @@ def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
     }
     assert internal_composite.command_failure is None
     assert internal_composite.internal_failure is internal.internal_failure
+    assert internal_diagnostic["cleanup"] == {
+        "status": "failed_closed",
+        "namespace_preserved": True,
+        "reason_codes": ["sandbox_inventory_drift"],
+    }
     for forbidden in ("private/", "/home/", "RAW_INTERNAL"):
         assert forbidden not in str(internal_composite)
     with pytest.raises(ValueError, match="allowlisted"):
@@ -3820,6 +3875,17 @@ def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
             safe_error="raw exception",
             failure_kind="raw failure kind",
         )
+    with pytest.raises(ValueError, match="allowlisted"):
+        builder.CleanupAssessment(
+            status="failed_closed",
+            namespace_preserved=True,
+            reason_codes=("private/path",),
+        )
+    assert set(
+        contract_module.expected_cleanup_diagnostic_policy()[
+            "allowed_reason_codes"
+        ]
+    ) == builder.CLEANUP_REASON_CODES
 
 
 def test_clone_work_transition_requires_exact_single_directory_link_delta() -> None:
@@ -3913,6 +3979,13 @@ def _patch_build_through_clone(
     )
     monkeypatch.setattr(builder, "_capture_main_state", lambda path: dict(clean))
     monkeypatch.setattr(builder, "_authority_loader", lambda *args: authority)
+    monkeypatch.setattr(
+        builder,
+        "_git",
+        lambda root, *args: ".venv\ntmp"
+        if args == ("check-ignore", "--", ".venv", "tmp")
+        else (_ for _ in ()).throw(AssertionError((root, args))),
+    )
     monkeypatch.setattr(
         builder,
         "_sealed_runtime_versions",
@@ -4040,6 +4113,13 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
     )
     monkeypatch.setattr(builder, "_capture_main_state", lambda path: dict(clean))
     monkeypatch.setattr(builder, "_authority_loader", lambda *args: authority)
+    monkeypatch.setattr(
+        builder,
+        "_git",
+        lambda root, *args: ".venv\ntmp"
+        if args == ("check-ignore", "--", ".venv", "tmp")
+        else (_ for _ in ()).throw(AssertionError((root, args))),
+    )
     monkeypatch.setattr(
         builder,
         "_sealed_runtime_versions",
@@ -4173,7 +4253,10 @@ def test_first_dvc_pull_failure_and_prefreeze_dvc_drift_preserve_composite(
         "cleanup": {
             "status": "failed_closed",
             "namespace_preserved": True,
-            "active_error_was_masked": False,
+            "reason_codes": [
+                "frozen_inventory_drift",
+                "owned_site_cache_drift",
+            ],
         },
         "retry_authorized": False,
     }
@@ -4283,7 +4366,7 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H8 runtime isolation policy drifted",
+        match="H9 runtime isolation policy drifted",
     ):
         builder._require_h8_runtime_policy(
             replace(
@@ -4312,6 +4395,7 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     private_config.write_text("private")
     handles: list[builder.DirectoryHandle] = []
     runtime: builder.VerificationRuntimeLease | None = None
+    mountpoints: builder.CloneMountpointLease | None = None
     try:
         for path in (clone_path, sandbox_path, socket_path, mask_path):
             chain, _ = builder._open_directory_chain(
@@ -4321,9 +4405,37 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
             handles.append(chain[0])
         clone, sandbox, socket_handle, masks = handles
         builder._prepare_masks(masks)
+        monkeypatch.setattr(
+            builder,
+            "_git",
+            lambda root, *args: ".venv\ntmp"
+            if args == ("check-ignore", "--", ".venv", "tmp")
+            else (_ for _ in ()).throw(AssertionError((root, args))),
+        )
+        assert not (clone_path / ".venv").exists()
+        assert not (clone_path / "tmp").exists()
+        (clone_path / ".venv").symlink_to("foreign")
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="already exists",
+        ):
+            builder._create_clone_mountpoints(clone)
+        assert (clone_path / ".venv").is_symlink()
+        assert not (clone_path / "tmp").exists()
+        (clone_path / ".venv").unlink()
+        inventory_before = builder._scan_work_inventory(clone)
+        mountpoints = builder._create_clone_mountpoints(clone)
+        inventory_after = builder._scan_work_inventory(clone)
+        assert set(inventory_after).difference(inventory_before) == {".venv", "tmp"}
+        assert all(
+            inventory_after[name].kind == "directory"
+            and inventory_after[name].mode == 0o700
+            for name in builder.SANDBOX_MOUNTPOINT_NAMES
+        )
         runtime = builder._open_verification_runtime(
             source_root=ROOT,
             clone=clone,
+            clone_mountpoints=mountpoints,
             sandbox=sandbox,
             socket_handle=socket_handle,
             mask_root=masks,
@@ -4414,6 +4526,10 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
                 contract=contract,
                 execution_commit=P_COMMIT,
                 runtime=runtime,
+                sandbox_smoke={
+                    "status": "passed",
+                    **contract_module.expected_sandbox_smoke_policy(),
+                },
             )
         assert raised.value.internal_failure == builder.InternalFailureEvidence(
             stage="sandbox_projection",
@@ -4423,10 +4539,113 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
         assert "RAW_INTERNAL" not in str(raised.value)
         assert "private/" not in str(raised.value)
         monkeypatch.setattr(builder, "_make_bwrap_prefix", original_make_bwrap)
+
+        smoke_calls: list[tuple[str, ...]] = []
+
+        def smoke_run(argv: Any, **kwargs: Any) -> builder.CommandResult:
+            smoke_calls.append(tuple(argv))
+            assert tuple(kwargs["portable_argv"]) == (
+                "<SANDBOX_SMOKE>",
+            )
+            marker = sandbox_path / builder.SANDBOX_SMOKE_MARKER_NAME
+            marker.touch(mode=0o644, exist_ok=False)
+            return builder.CommandResult(
+                {"argv": ["<SANDBOX_SMOKE>"], "returncode": 0}, "", ""
+            )
+
+        monkeypatch.setattr(builder, "_run", smoke_run)
+        smoke = builder._run_sandbox_smoke(
+            source_root=ROOT,
+            runtime=runtime,
+            contract=contract,
+        )
+        assert smoke == {
+            "status": "passed",
+            **contract_module.expected_sandbox_smoke_policy(),
+        }
+        assert smoke_calls == [("<SANDBOX_SMOKE>",)]
+        assert not (
+            sandbox_path / builder.SANDBOX_SMOKE_MARKER_NAME
+        ).exists()
+
+        monkeypatch.setattr(
+            builder,
+            "_run",
+            lambda *args, **kwargs: builder.CommandResult(
+                {"argv": ["<SANDBOX_SMOKE>"], "returncode": 1},
+                "RAW_STDOUT",
+                "RAW_STDERR /home/operator",
+            ),
+        )
+        with pytest.raises(builder.FinalCertificationBuildError) as launch:
+            builder._run_sandbox_smoke(
+                source_root=ROOT,
+                runtime=runtime,
+                contract=contract,
+            )
+        assert launch.value.command_failure == builder.CommandFailureEvidence(
+            stage="sandbox_smoke",
+            sanitized_command=("<SANDBOX_SMOKE>",),
+            returncode=1,
+            safe_stderr_category="sandbox_launch_failure",
+        )
+        assert "RAW_" not in str(launch.value)
+        assert "/home/" not in str(launch.value)
+
+        def smoke_spawn_failure(*args: Any, **kwargs: Any) -> builder.CommandResult:
+            del args, kwargs
+            raise OSError("RAW_SPAWN /home/operator")
+
+        monkeypatch.setattr(builder, "_run", smoke_spawn_failure)
+        with pytest.raises(builder.FinalCertificationBuildError) as spawn:
+            builder._run_sandbox_smoke(
+                source_root=ROOT,
+                runtime=runtime,
+                contract=contract,
+            )
+        assert spawn.value.command_failure == builder.CommandFailureEvidence(
+            stage="sandbox_smoke",
+            sanitized_command=("<SANDBOX_SMOKE>",),
+            returncode=None,
+            safe_stderr_category="sandbox_launch_failure",
+        )
+        assert "RAW_SPAWN" not in str(spawn.value)
+
+        monkeypatch.setattr(
+            builder,
+            "_run",
+            lambda *args, **kwargs: builder.CommandResult(
+                {"argv": ["<SANDBOX_SMOKE>"], "returncode": 0}, "", ""
+            ),
+        )
+        with pytest.raises(builder.FinalCertificationBuildError) as handshake:
+            builder._run_sandbox_smoke(
+                source_root=ROOT,
+                runtime=runtime,
+                contract=contract,
+            )
+        assert handshake.value.command_failure == builder.CommandFailureEvidence(
+            stage="sandbox_smoke",
+            sanitized_command=("<SANDBOX_SMOKE>",),
+            returncode=0,
+            safe_stderr_category="sandbox_handshake_failure",
+        )
         inherited = set(runtime.pass_fds)
         for destination in retained_destinations:
             inherited_fd = int(Path(bind_sources[destination]).name)
             assert inherited_fd in inherited
+
+        retained_tmp = clone_path / "tmp-owned"
+        (clone_path / "tmp").rename(retained_tmp)
+        (clone_path / "tmp").symlink_to("foreign")
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="mountpoint identity drifted",
+        ):
+            runtime.revalidate(context="adversarial clone mountpoint")
+        (clone_path / "tmp").unlink()
+        retained_tmp.rename(clone_path / "tmp")
+        runtime.revalidate(context="restored clone mountpoint")
 
         saved_clone = tmp_path / "clone-owned"
         clone_path.rename(saved_clone)
@@ -4440,6 +4659,8 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     finally:
         if runtime is not None:
             runtime.close()
+        if mountpoints is not None:
+            mountpoints.close()
         for handle in reversed(handles):
             handle.close()
 
@@ -4588,6 +4809,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p9_cert_commit",
+            "h9_cert_commit",
             "p8_cert_commit",
             "h8_cert_commit",
             "p7_cert_commit",
@@ -4610,6 +4833,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p9_cert_commit",
+            "h9_cert_commit",
             "p8_cert_commit",
             "h8_cert_commit",
             "p7_cert_commit",
@@ -4633,6 +4858,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p9_cert_commit",
+        "h9_cert_commit",
         "p8_cert_commit",
         "h8_cert_commit",
         "p7_cert_commit",

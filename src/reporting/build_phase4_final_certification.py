@@ -59,10 +59,14 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     digest_records,
     digest_strings,
     expected_dvc_status_policy,
+    expected_cleanup_diagnostic_policy,
     expected_environment_dvc_record,
     expected_manifest_clone_dvc_site_caches_record,
+    expected_p8_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_portable_path_policy,
+    expected_sandbox_mountpoint_policy,
+    expected_sandbox_smoke_policy,
     load_contract,
     load_effective_authority,
     main_dvc_static_boundary_record,
@@ -126,7 +130,31 @@ SANDBOX_MASKED_FORBIDDEN_PATHS = (
 JUNIT_SKIP_TYPE = "pytest.skip"
 
 SAFE_COMMAND_FAILURE_CATEGORIES = frozenset(
-    {"authn", "authz", "network", "remote_object_missing", "nonzero_exit"}
+    {
+        "authn",
+        "authz",
+        "network",
+        "remote_object_missing",
+        "nonzero_exit",
+        "sandbox_launch_failure",
+        "sandbox_handshake_failure",
+    }
+)
+
+SANDBOX_MOUNTPOINT_NAMES = (".venv", "tmp")
+SANDBOX_MOUNTPOINT_MODE = 0o700
+SANDBOX_SMOKE_MARKER_NAME = ".phase4-final-certification-sandbox-smoke"
+SANDBOX_SMOKE_PORTABLE_COMMAND = ("<SANDBOX_SMOKE>",)
+CLEANUP_REASON_CODES = frozenset(
+    {
+        "database_owner_retained",
+        "frozen_inventory_drift",
+        "socket_inventory_nonempty",
+        "owned_site_cache_drift",
+        "sandbox_inventory_drift",
+        "work_tree_remove_failed",
+        "unclassified_cleanup_failure",
+    }
 )
 SAFE_INTERNAL_FAILURE_POLICIES: Mapping[str, tuple[str, str]] = {
     "namespace_validation": (
@@ -478,6 +506,84 @@ class WorkInventoryEntry:
     kind: str
     link_count: int
     mode: int
+
+
+@dataclass
+class CloneMountpointLease:
+    """Exact empty clone directories retained as nested bwrap mount targets."""
+
+    clone: DirectoryHandle
+    handles: tuple[DirectoryHandle, DirectoryHandle]
+    inventory_after_creation: Mapping[str, WorkInventoryEntry]
+
+    def revalidate(self, *, context: str) -> None:
+        clone_metadata = os.fstat(self.clone.fd)
+        if (
+            not stat.S_ISDIR(clone_metadata.st_mode)
+            or (clone_metadata.st_dev, clone_metadata.st_ino)
+            != (self.clone.device, self.clone.inode)
+            or tuple(handle.path.name for handle in self.handles)
+            != SANDBOX_MOUNTPOINT_NAMES
+        ):
+            raise _error(f"{context} clone mountpoint lease drifted")
+        for expected_name, handle in zip(
+            SANDBOX_MOUNTPOINT_NAMES, self.handles, strict=True
+        ):
+            if handle.closed:
+                raise _error(f"{context} retained clone mountpoint FD closed")
+            try:
+                named = os.stat(
+                    expected_name,
+                    dir_fd=self.clone.fd,
+                    follow_symlinks=False,
+                )
+                opened = os.fstat(handle.fd)
+            except OSError as exc:
+                raise _error(f"{context} clone mountpoint vanished") from exc
+            if (
+                not stat.S_ISDIR(named.st_mode)
+                or not stat.S_ISDIR(opened.st_mode)
+                or (named.st_dev, named.st_ino)
+                != (handle.device, handle.inode)
+                or (opened.st_dev, opened.st_ino)
+                != (handle.device, handle.inode)
+                or stat.S_IMODE(named.st_mode) != SANDBOX_MOUNTPOINT_MODE
+                or stat.S_IMODE(opened.st_mode) != SANDBOX_MOUNTPOINT_MODE
+                or os.listdir(handle.fd)
+            ):
+                raise _error(f"{context} clone mountpoint identity drifted")
+
+    def close(self) -> None:
+        for handle in reversed(self.handles):
+            handle.close()
+
+
+@dataclass(frozen=True)
+class CleanupAssessment:
+    """Closed cleanup disposition containing only contract-allowlisted enums."""
+
+    status: str
+    namespace_preserved: bool
+    reason_codes: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        if self.status not in {"ready_for_owned_cleanup", "failed_closed"}:
+            raise ValueError("cleanup assessment status is not allowlisted")
+        if (
+            len(self.reason_codes) != len(set(self.reason_codes))
+            or any(reason not in CLEANUP_REASON_CODES for reason in self.reason_codes)
+            or self.reason_codes != tuple(sorted(self.reason_codes))
+            or (self.status == "ready_for_owned_cleanup")
+            != (not self.reason_codes and not self.namespace_preserved)
+        ):
+            raise ValueError("cleanup assessment reasons are not allowlisted")
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "namespace_preserved": self.namespace_preserved,
+            "reason_codes": list(self.reason_codes),
+        }
 
 
 @dataclass(frozen=True)
@@ -1235,6 +1341,7 @@ def _execution_cleanup_composite_error(
     active_error: BaseException,
     *,
     namespace_preserved: bool,
+    reason_codes: Sequence[str],
 ) -> FinalCertificationBuildError:
     """Retain safe primary facts and the observed cleanup disposition."""
 
@@ -1264,15 +1371,19 @@ def _execution_cleanup_composite_error(
             "absolute_paths_preserved": False,
         }
     )
+    normalized_reasons = tuple(sorted(set(reason_codes)))
+    if not normalized_reasons:
+        normalized_reasons = ("unclassified_cleanup_failure",)
+    cleanup = CleanupAssessment(
+        status="failed_closed",
+        namespace_preserved=namespace_preserved,
+        reason_codes=normalized_reasons,
+    )
     diagnostic = json.dumps(
         {
             "status": "execution_and_cleanup_failed_closed",
             "active_error": primary,
-            "cleanup": {
-                "status": "failed_closed",
-                "namespace_preserved": namespace_preserved,
-                "active_error_was_masked": False,
-            },
+            "cleanup": cleanup.as_record(),
             "retry_authorized": False,
         },
         sort_keys=True,
@@ -2170,6 +2281,72 @@ def _scan_work_inventory(root: DirectoryHandle) -> dict[str, WorkInventoryEntry]
 
     scan(root, "")
     return records
+
+
+def _create_clone_mountpoints(clone: DirectoryHandle) -> CloneMountpointLease:
+    """Create exact empty ``.venv``/``tmp`` mount targets without adoption."""
+
+    before = _scan_work_inventory(clone)
+    if _scan_work_inventory(clone) != before:
+        raise _error("clone inventory changed before mountpoint creation")
+    created: list[DirectoryHandle] = []
+    try:
+        for name in SANDBOX_MOUNTPOINT_NAMES:
+            created.append(
+                _mkdir_owned_at(
+                    clone,
+                    name,
+                    mode=SANDBOX_MOUNTPOINT_MODE,
+                    context=f"owned clone sandbox mountpoint {name}",
+                )
+            )
+        after = _scan_work_inventory(clone)
+        if _scan_work_inventory(clone) != after:
+            raise _error("clone inventory changed while freezing mountpoints")
+        if set(after) != {*before, *SANDBOX_MOUNTPOINT_NAMES} or any(
+            after[path] != entry for path, entry in before.items()
+        ):
+            raise _error("clone mountpoint inventory is not exact plus two")
+        for name, handle in zip(SANDBOX_MOUNTPOINT_NAMES, created, strict=True):
+            entry = after[name]
+            if (
+                entry.kind != "directory"
+                or entry.mode != SANDBOX_MOUNTPOINT_MODE
+                or (entry.device, entry.inode) != (handle.device, handle.inode)
+            ):
+                raise _error("clone mountpoint inventory binding drifted")
+        ignored = _git(clone.path, "check-ignore", "--", *SANDBOX_MOUNTPOINT_NAMES)
+        if tuple(ignored.splitlines()) != SANDBOX_MOUNTPOINT_NAMES:
+            raise _error("clone sandbox mountpoints are not exactly Git-ignored")
+        lease = CloneMountpointLease(
+            clone=clone,
+            handles=cast(
+                tuple[DirectoryHandle, DirectoryHandle], tuple(created)
+            ),
+            inventory_after_creation=after,
+        )
+        lease.revalidate(context="initial clone mountpoint lease")
+        return lease
+    except BaseException as primary:
+        cleanup_error: BaseException | None = None
+        for handle in reversed(created):
+            try:
+                _remove_owned_empty_directory_at(
+                    clone,
+                    handle.path.name,
+                    device=handle.device,
+                    inode=handle.inode,
+                    context="failed clone sandbox mountpoint",
+                )
+            except BaseException as exc:
+                cleanup_error = cleanup_error or exc
+            finally:
+                handle.close()
+        if cleanup_error is not None:
+            raise _error(
+                "clone mountpoint creation failed and rollback failed closed"
+            ) from cleanup_error
+        raise primary
 
 
 def _remove_sealed_work_tree(
@@ -3578,10 +3755,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
+    _require_h9_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p8_cert_commit"),
+        execution_commit=result.get("p9_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3611,11 +3789,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P8/H8 aliases and the complete historical lineage."""
+    """Validate active P9/H9 aliases and the complete historical lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p9_cert_commit",
+        "h9_cert_commit",
         "p8_cert_commit",
         "h8_cert_commit",
         "p7_cert_commit",
@@ -3642,10 +3822,14 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p8_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h8_cert_commit"]
+        or commits["p9_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h9_cert_commit"]
+        or commits["p8_cert_commit"] != contract.p8_cert_commit
+        or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p9_cert_commit"] == commits["p8_cert_commit"]
+        or commits["h9_cert_commit"] == commits["h8_cert_commit"]
         or commits["p8_cert_commit"] == commits["p7_cert_commit"]
         or commits["h8_cert_commit"] == commits["h7_cert_commit"]
         or commits["p6_cert_commit"] != contract.p6_cert_commit
@@ -3667,12 +3851,40 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
+def _require_h9_authority_boundary(
+    value: Mapping[str, Any], *, contract: FinalCertificationContract
+) -> None:
+    """Bind R9 to the factual R8 failure and all H9 isolation policies."""
+
+    authority = value.get("authority")
+    if not isinstance(authority, Mapping):
+        raise _error("effective H9 authority payload is absent")
+    isolation = authority.get("isolation")
+    if (
+        authority.get("p8_failure") != expected_p8_failure_record()
+        or not isinstance(isolation, Mapping)
+        or isolation.get("sandbox_mountpoint_policy")
+        != expected_sandbox_mountpoint_policy()
+        or isolation.get("sandbox_mountpoint_policy")
+        != dict(contract.sandbox_mountpoint_policy)
+        or isolation.get("sandbox_smoke_policy")
+        != expected_sandbox_smoke_policy()
+        or isolation.get("sandbox_smoke_policy")
+        != dict(contract.sandbox_smoke_policy)
+        or isolation.get("cleanup_diagnostic_policy")
+        != expected_cleanup_diagnostic_policy()
+        or isolation.get("cleanup_diagnostic_policy")
+        != dict(contract.cleanup_diagnostic_policy)
+    ):
+        raise _error("effective H9 failure/isolation authority drifted")
+
+
 def _require_effective_authority_dvc_status_policy(
     value: Mapping[str, Any],
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P8 authority's exact partial-clone status policy."""
+    """Require the effective P9 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -3739,8 +3951,13 @@ def _require_h8_runtime_policy(contract: FinalCertificationContract) -> None:
         or cleanup.get("socket_directory_empty_after_cleanup_required") is not True
         or cleanup.get("safe_internal_diagnostics_authorized") is not True
         or cleanup.get("raw_internal_diagnostics_serialized") is not False
+        or dict(contract.sandbox_mountpoint_policy)
+        != expected_sandbox_mountpoint_policy()
+        or dict(contract.sandbox_smoke_policy) != expected_sandbox_smoke_policy()
+        or dict(contract.cleanup_diagnostic_policy)
+        != expected_cleanup_diagnostic_policy()
     ):
-        raise _error("H8 runtime isolation policy drifted")
+        raise _error("H9 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -3761,13 +3978,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
+    _require_h9_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p8_cert_commit"),
+        execution_commit=authority.get("p9_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p8_cert_commit"]
+    effective_commit = authority_commits["p9_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -4941,6 +5159,7 @@ class VerificationRuntimeLease:
     ty: AnchoredExecutable
     poetry: AnchoredPythonScriptRuntime
     clone: DirectoryHandle
+    clone_mountpoints: CloneMountpointLease
     sandbox: DirectoryHandle
     socket: DirectoryHandle
     mask_root: DirectoryHandle
@@ -4962,6 +5181,9 @@ class VerificationRuntimeLease:
         self.python.revalidate(context=f"{context} workspace Python")
         self.ty.revalidate(context=f"{context} ty")
         self.poetry.revalidate(context=f"{context} Poetry")
+        self.clone_mountpoints.revalidate(
+            context=f"{context} clone mountpoints"
+        )
         for label, handle in (
             ("clone", self.clone),
             ("sandbox", self.sandbox),
@@ -4999,6 +5221,7 @@ class VerificationRuntimeLease:
             self.poetry.interpreter.fd,
             self.poetry.interpreter.venv_fd,
             self.clone.fd,
+            *(handle.fd for handle in self.clone_mountpoints.handles),
             self.sandbox.fd,
             self.socket.fd,
             self.mask_root.fd,
@@ -5031,6 +5254,7 @@ def _open_verification_runtime(
     *,
     source_root: Path,
     clone: DirectoryHandle,
+    clone_mountpoints: CloneMountpointLease,
     sandbox: DirectoryHandle,
     socket_handle: DirectoryHandle,
     mask_root: DirectoryHandle,
@@ -5094,6 +5318,7 @@ def _open_verification_runtime(
             ty=ty,
             poetry=poetry,
             clone=clone,
+            clone_mountpoints=clone_mountpoints,
             sandbox=sandbox,
             socket=socket_handle,
             mask_root=mask_root,
@@ -5379,6 +5604,153 @@ def _make_bwrap_prefix(
     if template != expected_template:
         raise _error("bubblewrap portable template construction drifted")
     return real, expected_template
+
+
+def _sandbox_smoke_error(
+    *, category: str, returncode: int | None
+) -> FinalCertificationBuildError:
+    if category not in {"sandbox_launch_failure", "sandbox_handshake_failure"}:
+        raise ValueError("sandbox smoke failure category is not allowlisted")
+    evidence = CommandFailureEvidence(
+        stage="sandbox_smoke",
+        sanitized_command=SANDBOX_SMOKE_PORTABLE_COMMAND,
+        returncode=returncode,
+        safe_stderr_category=category,
+    )
+    return _error(
+        "sandbox smoke failed closed: "
+        + json.dumps(evidence.as_record(), sort_keys=True, separators=(",", ":")),
+        command_failure=evidence,
+    )
+
+
+def _run_sandbox_smoke(
+    *,
+    source_root: Path,
+    runtime: VerificationRuntimeLease,
+    contract: FinalCertificationContract,
+    namespace_validator: Callable[[str], None] | None = None,
+) -> Mapping[str, Any]:
+    """Prove the real bwrap/mount topology with one removable empty marker."""
+
+    policy = dict(contract.sandbox_smoke_policy)
+    if policy != expected_sandbox_smoke_policy():
+        raise _error("sandbox smoke policy drifted")
+    try:
+        os.stat(
+            SANDBOX_SMOKE_MARKER_NAME,
+            dir_fd=runtime.sandbox.fd,
+            follow_symlinks=False,
+        )
+    except FileNotFoundError:
+        pass
+    except OSError as exc:
+        raise _sandbox_smoke_error(
+            category="sandbox_handshake_failure", returncode=None
+        ) from exc
+    else:
+        raise _sandbox_smoke_error(
+            category="sandbox_handshake_failure", returncode=None
+        )
+    if namespace_validator is not None:
+        namespace_validator("before_sandbox_smoke")
+    runtime.revalidate(context="before sandbox smoke")
+    try:
+        bwrap, _template = _make_bwrap_prefix(runtime=runtime, contract=contract)
+        result = _run(
+            SANDBOX_SMOKE_PORTABLE_COMMAND,
+            cwd=source_root,
+            execution_argv=(
+                *bwrap,
+                "/usr/bin/touch",
+                f"/workspace/tmp/{SANDBOX_SMOKE_MARKER_NAME}",
+            ),
+            inherit_environment=False,
+            timeout_seconds=120,
+            require_success=False,
+            portable_argv=SANDBOX_SMOKE_PORTABLE_COMMAND,
+            pass_fds=runtime.pass_fds,
+            failure_stage="sandbox smoke",
+        )
+    except BaseException as exc:
+        returncode = (
+            exc.command_failure.returncode
+            if isinstance(exc, FinalCertificationBuildError)
+            and exc.command_failure is not None
+            else None
+        )
+        raise _sandbox_smoke_error(
+            category="sandbox_launch_failure", returncode=returncode
+        ) from None
+    try:
+        runtime.revalidate(context="after sandbox smoke")
+    except BaseException:
+        raise _sandbox_smoke_error(
+            category="sandbox_handshake_failure",
+            returncode=cast(int | None, result.record.get("returncode")),
+        ) from None
+    marker: OwnedFileAt | None = None
+    marker_valid = False
+    try:
+        metadata = os.stat(
+            SANDBOX_SMOKE_MARKER_NAME,
+            dir_fd=runtime.sandbox.fd,
+            follow_symlinks=False,
+        )
+    except OSError:
+        metadata = None
+    if metadata is not None:
+        marker = OwnedFileAt(
+            runtime.sandbox,
+            SANDBOX_SMOKE_MARKER_NAME,
+            metadata.st_dev,
+            metadata.st_ino,
+        )
+        marker_valid = (
+            stat.S_ISREG(metadata.st_mode)
+            and metadata.st_nlink == 1
+            and metadata.st_size == 0
+            and stat.S_IMODE(metadata.st_mode) in {0o600, 0o644}
+        )
+    if marker_valid and marker is not None:
+        try:
+            _unlink_owned_at(marker, context="owned sandbox smoke marker")
+        except BaseException:
+            raise _sandbox_smoke_error(
+                category="sandbox_handshake_failure",
+                returncode=cast(int | None, result.record.get("returncode")),
+            ) from None
+    if (
+        result.record.get("returncode") != 0
+        or not marker_valid
+        or result.stdout
+        or result.stderr
+    ):
+        category = (
+            "sandbox_launch_failure"
+            if result.record.get("returncode") != 0 and metadata is None
+            else "sandbox_handshake_failure"
+        )
+        raise _sandbox_smoke_error(
+            category=category,
+            returncode=cast(int | None, result.record.get("returncode")),
+        )
+    try:
+        os.stat(
+            SANDBOX_SMOKE_MARKER_NAME,
+            dir_fd=runtime.sandbox.fd,
+            follow_symlinks=False,
+        )
+    except FileNotFoundError:
+        pass
+    else:
+        raise _sandbox_smoke_error(
+            category="sandbox_handshake_failure", returncode=0
+        )
+    runtime.revalidate(context="after sandbox smoke marker cleanup")
+    if namespace_validator is not None:
+        namespace_validator("after_sandbox_smoke")
+    return {"status": "passed", **policy}
 
 
 def _prepare_masks(mask_root: DirectoryHandle) -> None:
@@ -5993,10 +6365,45 @@ def _e2e_command(contract: FinalCertificationContract) -> tuple[str, ...]:
     )
 
 
+def _acquire_verification_runtime(
+    *,
+    source_root: Path,
+    clone_handle: DirectoryHandle,
+    clone_mountpoints: CloneMountpointLease,
+    sandbox_handle: DirectoryHandle,
+    socket_handle: DirectoryHandle,
+    mask_handle: DirectoryHandle,
+) -> VerificationRuntimeLease:
+    try:
+        return _open_verification_runtime(
+            source_root=source_root,
+            clone=clone_handle,
+            clone_mountpoints=clone_mountpoints,
+            sandbox=sandbox_handle,
+            socket_handle=socket_handle,
+            mask_root=mask_handle,
+        )
+    except FinalCertificationBuildError as exc:
+        if exc.command_failure is not None or exc.internal_failure is not None:
+            raise
+        raise _internal_error(
+            "verification runtime acquisition failed closed",
+            stage="verification_runtime_acquisition",
+            category="runtime_binding_failure",
+        ) from None
+    except BaseException:
+        raise _internal_error(
+            "verification runtime acquisition failed closed",
+            stage="verification_runtime_acquisition",
+            category="runtime_binding_failure",
+        ) from None
+
+
 def _run_verification(
     *,
     source_root: Path,
     clone_handle: DirectoryHandle,
+    clone_mountpoints: CloneMountpointLease,
     sandbox_handle: DirectoryHandle,
     socket_handle: DirectoryHandle,
     mask_handle: DirectoryHandle,
@@ -6008,30 +6415,22 @@ def _run_verification(
     if namespace_validator is not None:
         namespace_validator("before_verification_runtime_acquisition")
     try:
-        try:
-            runtime = _open_verification_runtime(
-                source_root=source_root,
-                clone=clone_handle,
-                sandbox=sandbox_handle,
-                socket_handle=socket_handle,
-                mask_root=mask_handle,
-            )
-        except FinalCertificationBuildError as exc:
-            if exc.command_failure is not None or exc.internal_failure is not None:
-                raise
-            raise _internal_error(
-                "verification runtime acquisition failed closed",
-                stage="verification_runtime_acquisition",
-                category="runtime_binding_failure",
-            ) from None
-        except BaseException:
-            raise _internal_error(
-                "verification runtime acquisition failed closed",
-                stage="verification_runtime_acquisition",
-                category="runtime_binding_failure",
-            ) from None
+        runtime = _acquire_verification_runtime(
+            source_root=source_root,
+            clone_handle=clone_handle,
+            clone_mountpoints=clone_mountpoints,
+            sandbox_handle=sandbox_handle,
+            socket_handle=socket_handle,
+            mask_handle=mask_handle,
+        )
         if namespace_validator is not None:
             namespace_validator("after_verification_runtime_acquisition")
+        sandbox_smoke = _run_sandbox_smoke(
+            source_root=source_root,
+            runtime=runtime,
+            contract=contract,
+            namespace_validator=namespace_validator,
+        )
         return _run_verification_with_runtime(
             source_root=source_root,
             clone_root=clone_handle.path,
@@ -6039,6 +6438,7 @@ def _run_verification(
             contract=contract,
             execution_commit=execution_commit,
             runtime=runtime,
+            sandbox_smoke=sandbox_smoke,
             namespace_validator=namespace_validator,
         )
     finally:
@@ -6054,6 +6454,7 @@ def _run_verification_with_runtime(
     contract: FinalCertificationContract,
     execution_commit: str,
     runtime: VerificationRuntimeLease,
+    sandbox_smoke: Mapping[str, Any],
     namespace_validator: Callable[[str], None] | None = None,
 ) -> tuple[Mapping[str, bytes], Mapping[str, Any]]:
     try:
@@ -6268,6 +6669,7 @@ def _run_verification_with_runtime(
     }
     evidence = {
         "commands": commands,
+        "sandbox_smoke": dict(sandbox_smoke),
         "public_test_totals": totals,
         "public_skip_ledger": skip_ledger,
         "e2e_totals": e2e_totals,
@@ -6287,6 +6689,13 @@ def _run_verification_with_runtime(
             "restored_payloads_masked": [
                 spec.output_path for spec in contract.dvc_pointers
             ],
+            "sandbox_mountpoint_policy": dict(
+                contract.sandbox_mountpoint_policy
+            ),
+            "sandbox_smoke_policy": dict(contract.sandbox_smoke_policy),
+            "cleanup_diagnostic_policy": dict(
+                contract.cleanup_diagnostic_policy
+            ),
         },
     }
     return artifacts, evidence
@@ -6764,6 +7173,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
+    _require_h9_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
@@ -7018,6 +7428,7 @@ def _validate_clone_record(
         "single_parent",
         "source",
         "remote_url_serialized",
+        "sandbox_mountpoints",
         "local_dvc_remote_configuration",
         "dvc_site_caches",
         "dvc_cache",
@@ -7052,6 +7463,10 @@ def _validate_clone_record(
         "remote_url_serialized": False,
     }:
         raise _error("isolated clone topology/source record drifted")
+    if value.get("sandbox_mountpoints") != expected_sandbox_mountpoint_policy() or value.get(
+        "sandbox_mountpoints"
+    ) != dict(contract.sandbox_mountpoint_policy):
+        raise _error("isolated clone sandbox mountpoint record drifted")
     local = value.get("local_dvc_remote_configuration")
     if not isinstance(local, Mapping) or dict(local) != {
         "present": True,
@@ -7195,6 +7610,7 @@ def _validate_verification_record(
 ) -> Mapping[str, Any]:
     if not isinstance(value, Mapping) or set(value) != {
         "commands",
+        "sandbox_smoke",
         "public_test_totals",
         "public_skip_ledger",
         "e2e_totals",
@@ -7217,6 +7633,11 @@ def _validate_verification_record(
         raise _error("verification synthetic E2E totals drifted")
     if value.get("openapi_validation") != dict(openapi_validation):
         raise _error("verification OpenAPI validation record drifted")
+    if value.get("sandbox_smoke") != {
+        "status": "passed",
+        **expected_sandbox_smoke_policy(),
+    }:
+        raise _error("verification sandbox smoke record drifted")
     commands = value.get("commands")
     if not isinstance(commands, Mapping) or set(commands) != {
         "public_tests",
@@ -7271,6 +7692,9 @@ def _validate_verification_record(
         "forbidden_prefixes_absent",
         "forbidden_paths_masked",
         "restored_payloads_masked",
+        "sandbox_mountpoint_policy",
+        "sandbox_smoke_policy",
+        "cleanup_diagnostic_policy",
     }:
         raise _error("verification sandbox record is not exact")
     template = sandbox.get("argv_template_prefix")
@@ -7289,6 +7713,18 @@ def _validate_verification_record(
         != list(contract.forbidden_read_paths)
         or sandbox.get("restored_payloads_masked")
         != [spec.output_path for spec in contract.dvc_pointers]
+        or sandbox.get("sandbox_mountpoint_policy")
+        != expected_sandbox_mountpoint_policy()
+        or sandbox.get("sandbox_mountpoint_policy")
+        != dict(contract.sandbox_mountpoint_policy)
+        or sandbox.get("sandbox_smoke_policy")
+        != expected_sandbox_smoke_policy()
+        or sandbox.get("sandbox_smoke_policy")
+        != dict(contract.sandbox_smoke_policy)
+        or sandbox.get("cleanup_diagnostic_policy")
+        != expected_cleanup_diagnostic_policy()
+        or sandbox.get("cleanup_diagnostic_policy")
+        != dict(contract.cleanup_diagnostic_policy)
         or template != _expected_bwrap_template(contract)
     ):
         raise _error("verification sandbox controls drifted")
@@ -8279,6 +8715,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     def _validate_execution_namespace(stage: str) -> None:
         nonlocal work_binding, site_cache_root_identity
         nonlocal version_site_cache_root_identity
+        nonlocal clone_mountpoints
         repository_lease.revalidate(context=f"before execution checkpoint {stage}")
         lease.revalidate_work_namespace(context=stage)
         if _directory_binding(lease.parent) != lease_parent_binding:
@@ -8289,6 +8726,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         if stage == "after_git_clone":
             _require_exact_clone_work_transition(work_binding, current_work_binding)
             clone_handle = lease.open_work_subdirectory("clone")
+            clone_mountpoints = _create_clone_mountpoints(clone_handle)
             repeated_work_binding = _directory_binding(work_handle)
             if repeated_work_binding != current_work_binding:
                 raise _error("owned work namespace drifted while registering clone")
@@ -8302,6 +8740,10 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             work_binding = current_work_binding
         elif current_work_binding != work_binding:
             raise _error(f"owned work namespace drifted at checkpoint: {stage}")
+        if clone_mountpoints is not None:
+            clone_mountpoints.revalidate(
+                context=f"execution checkpoint {stage} clone mountpoints"
+            )
         for name, (handle, expected_inventory) in frozen_execution_inventories.items():
             if _scan_work_inventory(handle) != dict(expected_inventory):
                 raise _error(
@@ -8364,11 +8806,23 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         validate_execution_namespace(f"after_{stage}")
         return value
 
-    def failed_tree_is_exactly_owned() -> bool:
-        if database_owner is not None or lease.work is None:
-            return False
-        if set(os.listdir(lease.work.fd)) != set(lease.work_subdirectories):
-            return False
+    def failed_tree_cleanup_assessment() -> CleanupAssessment:
+        reason_codes: set[str] = set()
+        if database_owner is not None:
+            reason_codes.add("database_owner_retained")
+        if lease.work is None:
+            reason_codes.add("frozen_inventory_drift")
+        elif set(os.listdir(lease.work.fd)) != set(lease.work_subdirectories):
+            reason_codes.add("frozen_inventory_drift")
+        if clone_mountpoints is None:
+            reason_codes.add("frozen_inventory_drift")
+        else:
+            try:
+                clone_mountpoints.revalidate(
+                    context="failed clone mountpoint cleanup assessment"
+                )
+            except FinalCertificationBuildError:
+                reason_codes.add("frozen_inventory_drift")
         for frozen_name in (
             "sandbox masks",
             "clone",
@@ -8377,10 +8831,18 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             "DVC version site cache",
         ):
             frozen = cleanup_execution_inventories.get(frozen_name)
-            if frozen is None or _scan_work_inventory(frozen[0]) != dict(frozen[1]):
-                return False
-        if _scan_work_inventory(socket_handle):
-            return False
+            try:
+                if frozen is None or _scan_work_inventory(frozen[0]) != dict(
+                    frozen[1]
+                ):
+                    reason_codes.add("frozen_inventory_drift")
+            except FinalCertificationBuildError:
+                reason_codes.add("frozen_inventory_drift")
+        try:
+            if _scan_work_inventory(socket_handle):
+                reason_codes.add("socket_inventory_nonempty")
+        except FinalCertificationBuildError:
+            reason_codes.add("socket_inventory_nonempty")
         try:
             _revalidate_owned_site_cache_root(
                 site_cache_handle,
@@ -8389,7 +8851,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 context="failed owned DVC site cache",
             )
         except FinalCertificationBuildError:
-            return False
+            reason_codes.add("owned_site_cache_drift")
         try:
             _revalidate_owned_site_cache_root(
                 version_site_cache_handle,
@@ -8398,23 +8860,38 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 context="failed owned DVC version site cache",
             )
         except FinalCertificationBuildError:
-            return False
+            reason_codes.add("owned_site_cache_drift")
         allowed_sandbox = {
             "public-tests-raw.xml",
             "openapi-raw.json",
             "e2e-raw.xml",
         }
-        sandbox_inventory = _scan_work_inventory(sandbox_handle)
-        if not set(sandbox_inventory).issubset(allowed_sandbox):
-            return False
-        return all(
-            entry.kind == "regular"
-            and entry.link_count == 1
-            and entry.mode in {0o600, 0o644}
-            for entry in sandbox_inventory.values()
+        try:
+            sandbox_inventory = _scan_work_inventory(sandbox_handle)
+            if not set(sandbox_inventory).issubset(allowed_sandbox) or not all(
+                entry.kind == "regular"
+                and entry.link_count == 1
+                and entry.mode in {0o600, 0o644}
+                for entry in sandbox_inventory.values()
+            ):
+                reason_codes.add("sandbox_inventory_drift")
+        except FinalCertificationBuildError:
+            reason_codes.add("sandbox_inventory_drift")
+        if reason_codes:
+            return CleanupAssessment(
+                status="failed_closed",
+                namespace_preserved=True,
+                reason_codes=tuple(sorted(reason_codes)),
+            )
+        return CleanupAssessment(
+            status="ready_for_owned_cleanup",
+            namespace_preserved=False,
+            reason_codes=(),
         )
 
     database_owner: OwnedPostgres | None = None
+    clone_mountpoints: CloneMountpointLease | None = None
+    verification_runtime: VerificationRuntimeLease | None = None
     installed_configuration: InstalledDvcConfiguration | None = None
     dvc_runtime: AnchoredPythonScriptRuntime | None = None
     active_error: BaseException | None = None
@@ -8436,6 +8913,12 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         )
         if "clone" not in lease.work_subdirectories:
             raise _error("isolated clone was not identity-bound during creation")
+        if clone_mountpoints is None:
+            raise _error("clone sandbox mountpoints were not identity-bound")
+        clone_record = {
+            **clone_record,
+            "sandbox_mountpoints": dict(contract.sandbox_mountpoint_policy),
+        }
         validate_execution_namespace("after isolated clone registration")
         clone_handle = lease.work_subdirectories["clone"]
         dvc_runtime = bracket(
@@ -8597,20 +9080,46 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
                 ),
             ),
         }
+        if clone_mountpoints is None:
+            raise _error("clone sandbox mountpoint lease disappeared")
+        verification_runtime = bracket(
+            "verification_runtime_acquisition",
+            lambda: _acquire_verification_runtime(
+                source_root=root,
+                clone_handle=clone_handle,
+                clone_mountpoints=clone_mountpoints,
+                sandbox_handle=sandbox_handle,
+                socket_handle=socket_handle,
+                mask_handle=mask_handle,
+            ),
+        )
+        active_verification_runtime = cast(
+            VerificationRuntimeLease, verification_runtime
+        )
+        sandbox_smoke = bracket(
+            "sandbox_smoke",
+            lambda: _run_sandbox_smoke(
+                source_root=root,
+                runtime=active_verification_runtime,
+                contract=contract,
+            ),
+        )
         database_owner, database_record = _start_owned_postgres(
             socket_handle,
             namespace_validator=validate_execution_namespace,
         )
-        verification_artifacts, verification = _run_verification(
+        verification_artifacts, verification = _run_verification_with_runtime(
             source_root=root,
-            clone_handle=clone_handle,
-            sandbox_handle=sandbox_handle,
-            socket_handle=socket_handle,
-            mask_handle=mask_handle,
+            clone_root=clone_root,
+            sandbox_tmp=sandbox_handle.path,
             contract=contract,
             execution_commit=execution_commit,
+            runtime=active_verification_runtime,
+            sandbox_smoke=sandbox_smoke,
             namespace_validator=validate_execution_namespace,
         )
+        active_verification_runtime.close()
+        verification_runtime = None
         cleanup = _stop_owned_postgres(
             database_owner,
             socket_handle=socket_handle,
@@ -8751,6 +9260,9 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         active_main_site_cache_lease = main_site_cache_lease
         # No ignored clone/cache/socket/mask namespace survives publication.
         validate_execution_namespace("before owned work cleanup")
+        if clone_mountpoints is None:
+            raise _error("clone mountpoint lease disappeared before cleanup")
+        clone_mountpoints.close()
         lease.seal_work_inventory()
         lease.remove_work_directory(owned_tmp, owned_tmp_identity)
         work_removed = True
@@ -8786,6 +9298,21 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     except BaseException as exc:
         active_error = exc
     cleanup_error: BaseException | None = None
+    cleanup_reason_codes: set[str] = set()
+    if verification_runtime is not None:
+        try:
+            verification_runtime.revalidate(
+                context="failed execution verification runtime invariant"
+            )
+        except BaseException as exc:
+            cleanup_error = exc
+            cleanup_reason_codes.add("frozen_inventory_drift")
+        try:
+            verification_runtime.close()
+        except BaseException as exc:
+            cleanup_error = cleanup_error or exc
+            cleanup_reason_codes.add("unclassified_cleanup_failure")
+        verification_runtime = None
     if dvc_runtime is not None:
         try:
             _revalidate_retained_dvc_runtime(
@@ -8795,10 +9322,12 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             )
         except BaseException as exc:
             cleanup_error = exc
+            cleanup_reason_codes.add("frozen_inventory_drift")
         try:
             dvc_runtime.close()
         except BaseException as exc:
             cleanup_error = cleanup_error or exc
+            cleanup_reason_codes.add("unclassified_cleanup_failure")
         dvc_runtime = None
     if installed_configuration is not None:
         try:
@@ -8806,6 +9335,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             installed_configuration = None
         except BaseException as exc:
             cleanup_error = exc
+            cleanup_reason_codes.add("unclassified_cleanup_failure")
     if main_site_cache_lease is not None:
         try:
             main_site_cache_lease.revalidate(
@@ -8813,10 +9343,12 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             )
         except BaseException as exc:
             cleanup_error = cleanup_error or exc
+            cleanup_reason_codes.add("owned_site_cache_drift")
         try:
             main_site_cache_lease.close()
         except BaseException as exc:
             cleanup_error = cleanup_error or exc
+            cleanup_reason_codes.add("unclassified_cleanup_failure")
         main_site_cache_lease = None
     if database_owner is not None:
         try:
@@ -8827,35 +9359,56 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
             database_owner = None
         except BaseException as exc:
             cleanup_error = exc
+            cleanup_reason_codes.add("database_owner_retained")
     if not work_removed:
         try:
+            assessment: CleanupAssessment | None = None
             if lease.work_inventory is None:
-                if not failed_tree_is_exactly_owned():
-                    raise _error(
-                        "failed execution tree ownership is not exact; preserved"
-                    )
+                assessment = failed_tree_cleanup_assessment()
+            if clone_mountpoints is not None:
+                clone_mountpoints.close()
+                clone_mountpoints = None
+            if (
+                assessment is not None
+                and assessment.status != "ready_for_owned_cleanup"
+            ):
+                cleanup_reason_codes.update(assessment.reason_codes)
+                raise _error(
+                    "failed execution tree ownership is not exact; preserved"
+                )
+            if lease.work_inventory is None:
                 lease.seal_work_inventory()
             lease.remove_work_directory(owned_tmp, owned_tmp_identity)
             work_removed = True
         except BaseException as exc:
             cleanup_error = cleanup_error or exc
+            if not cleanup_reason_codes:
+                cleanup_reason_codes.add("work_tree_remove_failed")
+            elif lease.work_inventory is not None:
+                cleanup_reason_codes.add("work_tree_remove_failed")
     if not publisher_consumed_lease:
         try:
-            if not lease.removed:
+            # A failed-closed owned tree is intentionally retained as one
+            # namespace.  Its created parent chain therefore cannot be
+            # removed and is not itself an additional cleanup failure.
+            if not lease.removed and work_removed:
                 lease.release()
         except BaseException as exc:
             cleanup_error = cleanup_error or exc
+            cleanup_reason_codes.add("unclassified_cleanup_failure")
         finally:
             lease.close()
     try:
         repository_lease.close()
     except BaseException as exc:
         cleanup_error = cleanup_error or exc
+        cleanup_reason_codes.add("unclassified_cleanup_failure")
     if cleanup_error is not None:
         if active_error is not None:
             raise _execution_cleanup_composite_error(
                 active_error,
                 namespace_preserved=not work_removed,
+                reason_codes=tuple(sorted(cleanup_reason_codes)),
             ) from None
         raise _error(
             "final certification temporary cleanup failed closed; namespace preserved"
