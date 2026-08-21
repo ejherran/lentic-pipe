@@ -1,8 +1,8 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT6 publication candidate; suite locked`
+Status: `H-CERT7 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v6`
+Contract: `closure_v1_phase4_final_certification_v7`
 
 Authorities:
 
@@ -18,7 +18,9 @@ Authorities:
 - historical H-CERT4: `44f96a7e2b204d80d8e336e90b4a0f4a3456c13f`;
 - superseded P-CERT4: `21551c7e53b776b693f4f76b88682180093a0f31`.
 - historical H-CERT5: `d18201462be9f6cc057d0187dec2b8b731b62e48`;
-- superseded P-CERT5: `da7b673aa8a7cbdc428ca829e5b9f0a5ac79a3ef`.
+- superseded P-CERT5: `da7b673aa8a7cbdc428ca829e5b9f0a5ac79a3ef`;
+- historical H-CERT6: `a67d58458c1eeb6b38e752dea4eb3bf91ec44ca9`;
+- superseded P-CERT6: `6aea7e7d7908ea0b23dcee41b316759f299114f5`.
 
 ## Purpose and boundary
 
@@ -42,8 +44,9 @@ not authorize work after Phase 4.
 
 The chain is single-parent and exact. H-CERT1/P-CERT1 and H-CERT2/P-CERT2
 and H-CERT3/P-CERT3, H-CERT4/P-CERT4 and H-CERT5/P-CERT5 remain immutable
-historical evidence; H-CERT6/P-CERT6 are the only future effective authority.
-The compatibility names `H-CERT` and `P-CERT` refer to H-CERT6 and P-CERT6:
+historical evidence; H-CERT6/P-CERT6 now join that immutable history.
+H-CERT7/P-CERT7 are the only future effective authority. The compatibility
+names `H-CERT` and `P-CERT` refer to H-CERT7 and P-CERT7:
 
 ```text
 ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
@@ -64,7 +67,10 @@ ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
                                                                     H-CERT5 -> P-CERT5 (superseded failure)
                                                                                  |
                                                                                  v
-                                                                    H-CERT6 -> P-CERT6 -> R-CERT6
+                                                                    H-CERT6 -> P-CERT6 (superseded failure)
+                                                                                 |
+                                                                                 v
+                                                                    H-CERT7 -> P-CERT7 -> R-CERT7
                                                                                               |
                                                                                               v
                                                                                      thesis-closure-v1
@@ -101,18 +107,27 @@ The gates have distinct roles:
    superseded P-CERT4 through P-CERT1. Its consumed R-CERT5 launch restored all
    eight exact targets but failed closed at the following DVC-status boundary;
    it produced no certification output and authorizes no retry.
-8. **H-CERT6** publishes only the partial-clone DVC-status scope correction,
+8. **H-CERT6** published only the partial-clone DVC-status scope correction,
    the conservative R-CERT5 forensic record, schema, freeze and tests.
-9. **P-CERT6** publishes a new two-file, data-only authority. It explicitly
-   supersedes P-CERT5 through P-CERT1. An unpublished P-CERT6 is ineffective.
-10. **R-CERT6** executes only from a clean, published P-CERT6 and publishes eight
-   evidence files, manifest last.
-11. The repository owner manually publishes the final R commit and the
+9. **P-CERT6** preserved its two-file, data-only authority. Its consumed
+   R-CERT6 launch restored all eight exact targets and completed the exact
+   ordered post-restore status sweep, then failed closed while serializing the
+   portable in-process PostgreSQL start command. Cleanup succeeded exactly,
+   removed the namespace, produced no certification output and authorizes no
+   retry.
+10. **H-CERT7** publishes only the PostgreSQL portable-path projection
+    correction, the factual R-CERT6 record, schema, freeze and tests.
+11. **P-CERT7** publishes a new two-file, data-only authority. It explicitly
+    supersedes P-CERT6 through P-CERT1. An unpublished P-CERT7 is ineffective.
+12. **R-CERT7** executes only from a clean, published P-CERT7 and publishes
+    eight evidence files, manifest last.
+13. The repository owner manually publishes the final R commit and the
    `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT6 commit. Executing from
-P-CERT1, P-CERT2, P-CERT3, P-CERT4 or P-CERT5, adopting any failed temporary namespace, or treating a
-superseded authority as effective is forbidden. This avoids a circular
+The executable target is the published P-CERT7 commit. Executing from
+P-CERT1, P-CERT2, P-CERT3, P-CERT4, P-CERT5 or P-CERT6, adopting any failed
+temporary namespace, or treating a superseded authority as effective is
+forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
 R-CERT may add only the exact eight regular evidence files, so its executable
 tree must equal P-CERT's executable tree. The final tag points to published R.
@@ -121,7 +136,7 @@ itself.
 
 At every gate, `HEAD`, `main`, `origin/main`, `origin/HEAD`, live remote HEAD
 and live remote main must agree. The worktree and index must have only the
-gate's exact unstaged or staged scope. H-CERT6, P-CERT6 and R-CERT6 must never
+gate's exact unstaged or staged scope. H-CERT7, P-CERT7 and R-CERT7 must never
 execute `dvc status` or any other DVC command in the main worktree. Main DVC
 state is reconstructed only from the exact Git tree, the Git-bound tracked
 `.dvc/config`, and the eight versioned pointer blobs; the authority records
@@ -213,7 +228,22 @@ configs/closure_v1/phase4_final_certification_authority_v6.json
 configs/closure_v1/phase4_final_certification_authority_manifest_v6.json
 ```
 
-R-CERT6 is exactly eight additions below a new namespace:
+Its immutable canonical identities are authority `55835` bytes / SHA-256
+`aae4dba7483ac5cceb4076e4eaf74ebd75b6ffe8e766de5db77bf10f246c0720`
+and companion `2255` bytes / SHA-256
+`609ba901e766bd62816a42da3761d078f226b4270e240e954669361afb637657`.
+
+H-CERT7 is exactly `11M` over P-CERT6, with the same eleven paths and modes.
+Every path is modified; none is added or deleted.
+
+P-CERT7 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v7.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v7.json
+```
+
+R-CERT7 is exactly eight additions below a new namespace:
 
 ```text
 reports/closure_v1/12_certification/public_tests.xml
@@ -226,7 +256,7 @@ reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
 reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
-All P1/P2/P3/P4/P5/P6/R files are single-link regular `100644` files. The
+All P1/P2/P3/P4/P5/P6/P7/R files are single-link regular `100644` files. The
 final manifest is created and linked last. An existing path is never adopted,
 replaced, or truncated.
 
@@ -252,10 +282,10 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT6 creates a fresh clone of live `origin/main` at the exact published P-CERT6
+R-CERT7 creates a fresh clone of live `origin/main` at the exact published P-CERT7
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets, and no DVC executable is invoked there. Real DVC
-execution is confined to the owned isolated R-CERT6 clone. The builder runs
+execution is confined to the owned isolated R-CERT7 clone. The builder runs
 exactly eight directed pull commands, one pointer per directed pull command,
 in the YAML order:
 
@@ -316,6 +346,23 @@ post_verification_status_pointer_paths: exact_ordered_eight_published_pointer_pa
 partial_clone_global_status_authorized: false
 ```
 
+The PostgreSQL container start keeps two distinct representations. The real
+execution command retains the owned host and container paths required by
+Docker, but the portable evidence projection replaces the four
+container/namespace-dependent arguments before any command serialization:
+
+```yaml
+volume: <OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>
+data_tmpfs: <CONTAINER_POSTGRES_DATA>:rw,size=512m
+runtime_tmpfs: <CONTAINER_TMP>:rw,size=64m
+unix_socket_directories: unix_socket_directories=<CONTAINER_POSTGRES_SOCKET>
+absolute_paths_serialized: false
+```
+
+The projection is exact and closed: no other placeholder spelling, argument
+order, absolute path, host path, credential or database URL may enter public
+evidence. Redaction never modifies the command actually passed to Docker.
+
 The final manifest's `clone.dvc_site_caches` block seals the same count,
 ordered roles, mode, separation, path omission, version-seal ordering and
 retained-runtime identity fields, plus exactly:
@@ -371,7 +418,7 @@ not repeated as a CLI selector. Consequently the exact non-duplicating command
 selector count is 39: 33 file selectors plus six supplemental node selectors.
 The skip ledger count is seven. Any other skip is critical and fails closed.
 
-The H-CERT6 suite lock remains exactly the published 944-node lock. Two
+The H-CERT7 suite lock remains exactly the published 944-node lock. Two
 independent outcome-free collections over
 the frozen bytes produced the same exact identity:
 
@@ -386,14 +433,14 @@ suite_lock:
 
 The 39 selectors, 944 collected nodes, ordered-node digest and seven allowed
 skips matched in both runs with the outcome-free guard active. The schema's
-pending branch remains available only for integration fixtures; P-CERT6
-generation and R-CERT6 reject it. Closure outcomes, raw targets and restored
+pending branch remains available only for integration fixtures; P-CERT7
+generation and R-CERT7 reject it. Closure outcomes, raw targets and restored
 Parquet payloads remained forbidden during both collections.
 
 P-CERT3 remains byte-reconstructed with its historical 920-node suite lock;
-H-CERT4/P-CERT4 and H-CERT5/P-CERT5 remain byte-reconstructed with their
-944-node suite lock; H-CERT6/P-CERT6 supersede only the operational authority
-without rewriting history.
+H-CERT4/P-CERT4, H-CERT5/P-CERT5 and H-CERT6/P-CERT6 remain
+byte-reconstructed with their 944-node suite lock; H-CERT7/P-CERT7 supersede
+only the operational authority without rewriting history.
 
 The public suite requires zero failures/errors, exactly the seven registered
 skips, a full `ty check`, and `poetry check --lock`. E2E is exactly the three
@@ -408,7 +455,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P-CERT6 clone with its tracked tree read-only, the
+Verification runs from the exact P-CERT7 clone with its tracked tree read-only, the
 host virtual environment read-only, and an owned writable temporary namespace.
 OS masks plus the Python audit hook deny:
 
@@ -431,16 +478,16 @@ those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P-CERT6 authority is canonical JSON. It reconstructs every historical
+The P-CERT7 authority is canonical JSON. It reconstructs every historical
 H-CERT1/P-CERT1/H-CERT2/P-CERT2/H-CERT3/P-CERT3/H-CERT4/P-CERT4 and
-H-CERT5/P-CERT5 component from Git, every active H-CERT6 component, all ten
-anchors, all eight pointer records, the exact suite lock, output order,
-isolation, diagnostic and authorization policies. It records P-CERT1,
-P-CERT2, P-CERT3, P-CERT4 and P-CERT5 as superseded failed launches with no
-retry authorization.
+H-CERT5/P-CERT5/H-CERT6/P-CERT6 component from Git, every active H-CERT7
+component, all ten anchors, all eight pointer records, the exact suite lock,
+output order, isolation, diagnostic and authorization policies. It records
+P-CERT1 through P-CERT6 as superseded failed launches with no retry
+authorization.
 Its companion is written last. Execution becomes effective only after the
-exact two-file P-CERT6 commit is observed as the single-parent child of
-H-CERT6 in local refs and live origin.
+exact two-file P-CERT7 commit is observed as the single-parent child of
+H-CERT7 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -519,6 +566,24 @@ decodes. The namespace is archived under ignored `tmp/`; neither its path nor
 run identifier is serialized, and the archive is forensic evidence rather
 than authority. P-CERT5 is immutable and `retry_authorized=false`.
 
+P-CERT7 additionally seals the factual record of the consumed R-CERT6 launch.
+The surfaced in-process error occurred while projecting the portable
+PostgreSQL start command: `absolute command paths may not be serialized`.
+Its public diagnostic has stage
+`postgres_start_portable_command_serialization`, command `[]`, return code
+`null`, safe stderr category `unavailable_not_persisted`, and preserves no raw
+stdout, raw stderr, credential or absolute path. Read-only metadata establishes
+one clone, one DVC version command, two local DVC configuration commands,
+eight successful directed pulls, eight cache objects, eight restored
+checkouts, eight directed unit-status checks and one completed post-restore
+exact-eight status sweep. It establishes zero post-verification status sweeps,
+global DVC status commands, PostgreSQL fixture starts, Docker container runs,
+public-test runs, OpenAPI generations, synthetic E2E runs, R-CERT payload
+builds or outputs, raw target/outcome reads, and Python Parquet payload opens
+or decodes. Exact owned cleanup succeeded, removed the namespace and did not
+mask the active error. No failed namespace was archived as authority.
+P-CERT6 is immutable and `retry_authorized=false`.
+
 The builder retains its owned isolated-clone cleanup snapshot while auxiliary
 configuration, the eight directed pulls and directed status verification run
 there. A partial tree left by a failed DVC command is never adopted into
@@ -529,9 +594,9 @@ must identify both the sanitized active verification error and the cleanup
 failure; the cleanup failure cannot mask the active stage. No raw stream,
 secret or absolute path may appear in that composite.
 
-The final manifest binds the seven preceding outputs, P-CERT6 authority and
-companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5 and active H6 components, public anchors,
-eight pointer/restoration records,
+The final manifest binds the seven preceding outputs, P-CERT7 authority and
+companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6 and active H7
+components, public anchors, eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
 human report must retain this claim boundary:
 
@@ -540,7 +605,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT6, P-CERT6, H-CERT6, then earlier Phase 4
+The precommit selector order is R-CERT7, P-CERT7, H-CERT7, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -556,11 +621,11 @@ pointer blobs, the recorded isolated-clone DVC evidence, targeted staging and
 rollback that preserves foreign index entries. It does not infer or claim a
 clean main-worktree DVC status. The legacy guard path remains absent.
 
-H-CERT6 and P-CERT6 precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT7 and P-CERT7 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P-CERT6 parent,
+After the owner publishes R, the final audit must prove direct P-CERT7 parent,
 exact8 scope, local/remote refs, clean Git, the static main-worktree DVC
 boundary from Git plus the eight versioned pointer blobs, the isolated-clone
 DVC evidence, effective manifest, and no owned temporary state. It must not
@@ -574,8 +639,8 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
-- any attempt to execute R-CERT6 from superseded P-CERT1, P-CERT2, P-CERT3,
-  P-CERT4 or P-CERT5,
+- any attempt to execute R-CERT7 from superseded P-CERT1, P-CERT2, P-CERT3,
+  P-CERT4, P-CERT5 or P-CERT6,
   or reuse/adopt any retained failed-run namespace;
 - a post-clone directory-link delta other than exactly `+1` at
   `after_git_clone`, or failure to register the clone after that exact
@@ -590,6 +655,9 @@ Stop without widening scope or automatic retry on any of the following:
   boundary drift;
 - a global DVC status in the intentionally partial clone, or any change to the
   exact ordered eight-pointer scope of either directed status sweep;
+- any drift in the four exact PostgreSQL portable-path placeholders, any
+  serialization of their real absolute paths, or any mutation of the real
+  Docker execution command by the evidence projection;
 - any forbidden/private/raw/Parquet read or unexpected network access;
 - a test failure/error, unregistered skip, OpenAPI mismatch, or E2E mismatch;
 - an existing, partial, symlinked, hardlinked, or extra result path;

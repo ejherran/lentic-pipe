@@ -67,11 +67,17 @@ H5_AUTHORITY_PATH = Path(
 H5_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v5.json"
 )
-AUTHORITY_PATH = Path(
+H6_AUTHORITY_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_v6.json"
 )
-AUTHORITY_MANIFEST_PATH = Path(
+H6_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v6.json"
+)
+AUTHORITY_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_v7.json"
+)
+AUTHORITY_MANIFEST_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v7.json"
 )
 CERTIFICATION_ROOT = Path("reports/closure_v1/12_certification")
 GUARD_PATH = Path(
@@ -79,7 +85,7 @@ GUARD_PATH = Path(
 )
 LOCAL_DVC_CONFIG_PATH = Path(".dvc/config.local")
 
-CONTRACT_VERSION = "closure_v1_phase4_final_certification_v6"
+CONTRACT_VERSION = "closure_v1_phase4_final_certification_v7"
 CLOSURE_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
 R_SYN_COMMIT = "528dcb74a7c08b65f262901e4562a67b784db8c9"
 EDITORIAL_COMMIT = "d1daa3059462854d6ddf5199fbc05515cec76982"
@@ -93,9 +99,15 @@ H4_CERT_COMMIT = "44f96a7e2b204d80d8e336e90b4a0f4a3456c13f"
 P4_CERT_COMMIT = "21551c7e53b776b693f4f76b88682180093a0f31"
 H5_CERT_COMMIT = "d18201462be9f6cc057d0187dec2b8b731b62e48"
 P5_CERT_COMMIT = "da7b673aa8a7cbdc428ca829e5b9f0a5ac79a3ef"
+H6_CERT_COMMIT = "a67d58458c1eeb6b38e752dea4eb3bf91ec44ca9"
+P6_CERT_COMMIT = "6aea7e7d7908ea0b23dcee41b316759f299114f5"
 FINAL_TAG = "thesis-closure-v1"
-AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v6"
+AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v7"
 AUTHORITY_MANIFEST_VERSION = (
+    "closure_v1_phase4_final_certification_authority_manifest_v7"
+)
+H6_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v6"
+H6_AUTHORITY_MANIFEST_VERSION = (
     "closure_v1_phase4_final_certification_authority_manifest_v6"
 )
 H5_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v5"
@@ -150,6 +162,14 @@ H5_AUTHORITY_MANIFEST_BYTES = 2114
 H5_AUTHORITY_MANIFEST_SHA256 = (
     "f895eee5f6df76b4229f719fba2be398f11209b2ebf8893a886dea3d42947aba"
 )
+H6_AUTHORITY_BYTES = 55835
+H6_AUTHORITY_SHA256 = (
+    "aae4dba7483ac5cceb4076e4eaf74ebd75b6ffe8e766de5db77bf10f246c0720"
+)
+H6_AUTHORITY_MANIFEST_BYTES = 2255
+H6_AUTHORITY_MANIFEST_SHA256 = (
+    "609ba901e766bd62816a42da3761d078f226b4270e240e954669361afb637657"
+)
 HASH_CHUNK_SIZE = 1024 * 1024
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -174,6 +194,15 @@ EXPECTED_RUNTIME_VERSIONS: Mapping[str, str] = {
     "bubblewrap": "bubblewrap 0.11.2",
     "docker_client": "29.7.2",
     "docker_server": "29.7.2",
+}
+POSTGRES_PORTABLE_PATH_POLICY: Mapping[str, Any] = {
+    "volume": "<OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>",
+    "data_tmpfs": "<CONTAINER_POSTGRES_DATA>:rw,size=512m",
+    "runtime_tmpfs": "<CONTAINER_TMP>:rw,size=64m",
+    "unix_socket_directories": (
+        "unix_socket_directories=<CONTAINER_POSTGRES_SOCKET>"
+    ),
+    "absolute_paths_serialized": False,
 }
 OWNED_SITE_CACHE_ROLES = ("runtime_version", "restore_status")
 OWNED_SITE_CACHE_FILESYSTEM_MODE = "0700"
@@ -262,6 +291,8 @@ class FinalCertificationContract:
     p4_cert_commit: str
     h5_cert_commit: str
     p5_cert_commit: str
+    h6_cert_commit: str
+    p6_cert_commit: str
     final_tag: str
     h1_scope: tuple[PublicationPathSpec, ...]
     p1_scope: tuple[PublicationPathSpec, ...]
@@ -273,6 +304,8 @@ class FinalCertificationContract:
     p4_scope: tuple[PublicationPathSpec, ...]
     h5_scope: tuple[PublicationPathSpec, ...]
     p5_scope: tuple[PublicationPathSpec, ...]
+    h6_scope: tuple[PublicationPathSpec, ...]
+    p6_scope: tuple[PublicationPathSpec, ...]
     h_scope: tuple[PublicationPathSpec, ...]
     p_scope: tuple[PublicationPathSpec, ...]
     r_scope: tuple[PublicationPathSpec, ...]
@@ -282,6 +315,7 @@ class FinalCertificationContract:
     post_restore_status_pointer_paths: tuple[str, ...]
     post_verification_status_pointer_paths: tuple[str, ...]
     partial_clone_global_status_authorized: bool
+    postgres_portable_path_policy: Mapping[str, Any]
     test_suite: TestSuiteSpec
     expected_openapi_path_count: int
     expected_openapi_operation_count: int
@@ -394,6 +428,13 @@ H5_SCOPE = tuple(
 P5_SCOPE = (
     PublicationPathSpec(H5_AUTHORITY_PATH.as_posix(), "A", "100644"),
     PublicationPathSpec(H5_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
+)
+H6_SCOPE = tuple(
+    PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
+)
+P6_SCOPE = (
+    PublicationPathSpec(H6_AUTHORITY_PATH.as_posix(), "A", "100644"),
+    PublicationPathSpec(H6_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
 )
 H_SCOPE = tuple(
     PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
@@ -586,6 +627,7 @@ STOP_RULES = (
     "attempt_to_execute_from_superseded_p3",
     "attempt_to_execute_from_superseded_p4",
     "attempt_to_execute_from_superseded_p5",
+    "attempt_to_execute_from_superseded_p6",
     "unexpected_clone_directory_nlink_delta",
     "primary_error_loss_after_safe_cleanup_or_unowned_cleanup",
     "unsanitized_active_error_or_cleanup_failure_masking",
@@ -597,6 +639,7 @@ STOP_RULES = (
     "openapi_or_e2e_contract_drift",
     "existing_partial_or_extra_output",
     "credential_remote_url_database_url_or_absolute_path_leak",
+    "postgres_portable_path_projection_drift",
     "credential_fd_bridge_or_owned_site_cache_drift",
     "private_dvc_operational_cache_equivalence_drift",
     "credential_fd_exposure_before_first_directed_pull",
@@ -798,6 +841,65 @@ def expected_p5_failure_record() -> dict[str, Any]:
         "retry_authorized": False,
     }
 
+
+def expected_p6_failure_record() -> dict[str, Any]:
+    """Return the factual record of the consumed R-CERT6 launch."""
+
+    return {
+        "status": "execution_failed_closed_cleanup_succeeded",
+        "attempt": "R-CERT6",
+        "active_error": {
+            "stage": "postgres_start_portable_command_serialization",
+            "safe_error": "absolute command paths may not be serialized",
+            "failure_kind": "in_process_portable_command_serialization",
+            "sanitized_command": [],
+            "returncode": None,
+            "safe_stderr_category": "unavailable_not_persisted",
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        },
+        "cleanup": {
+            "status": "succeeded_exact",
+            "namespace_preserved": False,
+            "active_error_was_masked": False,
+        },
+        "evidence_counts": {
+            "live_remote_and_refs_validated": True,
+            "isolated_git_clones": 1,
+            "dvc_version_commands": 1,
+            "dvc_local_config_commands": 2,
+            "dvc_config_commands_receiving_credential_fd_set": 0,
+            "successful_directed_dvc_pulls": 8,
+            "dvc_cache_objects": 8,
+            "restored_checkouts": 8,
+            "directed_dvc_unit_status_checks": 8,
+            "post_restore_exact_eight_status_checks": 1,
+            "post_verification_exact_eight_status_checks": 0,
+            "global_dvc_status_commands": 0,
+            "parquet_payloads_opened_or_decoded_by_python": 0,
+            "raw_target_or_outcome_reads": 0,
+            "postgresql_fixture_starts": 0,
+            "docker_version_commands": 2,
+            "docker_container_runs": 0,
+            "public_test_runs": 0,
+            "openapi_generations": 0,
+            "synthetic_e2e_runs": 0,
+            "r_cert_payload_builds": 0,
+            "r_cert_outputs": 0,
+        },
+        "archived_under_ignored_tmp": False,
+        "archive_is_authority": False,
+        "retry_authorized": False,
+    }
+
+
+def expected_postgres_portable_path_policy() -> dict[str, Any]:
+    """Return the exact path-redaction projection for PostgreSQL evidence."""
+
+    return dict(POSTGRES_PORTABLE_PATH_POLICY)
+
 AUTHORIZATION_POLICY: Mapping[str, bool] = {
     "certification_execution_authorized_after_publication": True,
     "isolated_clone_authorized": True,
@@ -830,6 +932,7 @@ PROHIBITIONS: Mapping[str, bool] = {
     "credential_fd_exposure_before_first_directed_pull": True,
     "partial_clone_global_dvc_status": True,
     "dvc_status_sweep_scope_or_order_drift": True,
+    "postgres_portable_path_projection_drift": True,
     "raw_or_outcome_access": True,
     "parquet_open_or_decode": True,
     "dvc_add_or_push": True,
@@ -872,13 +975,13 @@ def digest_records(records: Sequence[Mapping[str, Any]]) -> str:
 
 
 def expected_h_scope() -> dict[str, str]:
-    """Return the operational H-CERT6 scope (legacy adapter alias)."""
+    """Return the operational H-CERT7 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in H_SCOPE}
 
 
 def expected_p_scope() -> dict[str, str]:
-    """Return the operational P-CERT6 scope (legacy adapter alias)."""
+    """Return the operational P-CERT7 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in P_SCOPE}
 
@@ -925,6 +1028,14 @@ def expected_h5_scope() -> dict[str, str]:
 
 def expected_p5_scope() -> dict[str, str]:
     return {item.path: item.status for item in P5_SCOPE}
+
+
+def expected_h6_scope() -> dict[str, str]:
+    return {item.path: item.status for item in H6_SCOPE}
+
+
+def expected_p6_scope() -> dict[str, str]:
+    return {item.path: item.status for item in P6_SCOPE}
 
 
 def expected_h_modes() -> dict[str, str]:
@@ -977,6 +1088,14 @@ def expected_h5_modes() -> dict[str, str]:
 
 def expected_p5_modes() -> dict[str, str]:
     return {item.path: item.git_mode for item in P5_SCOPE}
+
+
+def expected_h6_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in H6_SCOPE}
+
+
+def expected_p6_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in P6_SCOPE}
 
 
 def _require_mapping(value: Any, *, context: str) -> Mapping[str, Any]:
@@ -1378,7 +1497,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "P-CERT5",
             "H-CERT6",
             "P-CERT6",
-            "R-CERT6",
+            "H-CERT7",
+            "P-CERT7",
+            "R-CERT7",
         ],
         "H-CERT1": {
             "role": "historical_initial_implementation_schema_tests_and_freeze",
@@ -1507,6 +1628,7 @@ def _expected_topology() -> Mapping[str, Any]:
         },
         "H-CERT6": {
             "role": "corrective_partial_clone_dvc_status_scope_contract_tests_and_freeze",
+            "commit": "h6_cert_commit",
             "direct_parent": "p5_cert_commit",
             "certification_execution_authorized": False,
             "corrections": [
@@ -1518,7 +1640,45 @@ def _expected_topology() -> Mapping[str, Any]:
         },
         "P-CERT6": {
             "role": "data_only_final_certification_authority_v6",
+            "commit": "p6_cert_commit",
             "requires_published_H_CERT6": True,
+            "supersedes_P_CERT5": True,
+            "supersedes_P_CERT4": True,
+            "supersedes_P_CERT3": True,
+            "supersedes_P_CERT2": True,
+            "supersedes_P_CERT1": True,
+            "certification_execution_authorized": False,
+            "failure_stage": "postgres_start_portable_command_serialization",
+            "successful_directed_dvc_pulls": 8,
+            "restored_checkout_count": 8,
+            "directed_dvc_unit_status_checks": 8,
+            "post_restore_exact_eight_status_checks": 1,
+            "post_verification_exact_eight_status_checks": 0,
+            "global_dvc_status_commands": 0,
+            "docker_container_runs": 0,
+            "public_test_runs": 0,
+            "openapi_generations": 0,
+            "synthetic_e2e_runs": 0,
+            "r_cert_output_count": 0,
+            "retry_authorized": False,
+            "cleanup_status": "succeeded_exact_namespace_removed",
+            "manifest_written_last": True,
+        },
+        "H-CERT7": {
+            "role": "corrective_postgres_portable_path_serialization_contract_tests_and_freeze",
+            "direct_parent": "p6_cert_commit",
+            "certification_execution_authorized": False,
+            "corrections": [
+                "redact_four_postgres_container_internal_paths_in_portable_command",
+                "preserve_real_postgres_execution_command",
+                "reject_every_absolute_path_in_serialized_command_evidence",
+                "record_r_cert6_failure_and_forbid_p_cert6_retry",
+            ],
+        },
+        "P-CERT7": {
+            "role": "data_only_final_certification_authority_v7",
+            "requires_published_H_CERT7": True,
+            "supersedes_P_CERT6": True,
             "supersedes_P_CERT5": True,
             "supersedes_P_CERT4": True,
             "supersedes_P_CERT3": True,
@@ -1527,9 +1687,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "certification_execution_authorized_while_unpublished": False,
             "manifest_written_last": True,
         },
-        "R-CERT6": {
+        "R-CERT7": {
             "role": "final_doctoral_software_and_restorability_evidence",
-            "requires_published_P_CERT6": True,
+            "requires_published_P_CERT7": True,
             "output_count": 8,
             "manifest_written_last": True,
         },
@@ -1661,6 +1821,8 @@ def _expected_isolation() -> Mapping[str, Any]:
         "superseded_p3_retry_authorized": False,
         "superseded_p4_retry_authorized": False,
         "superseded_p5_retry_authorized": False,
+        "superseded_p6_retry_authorized": False,
+        "postgres_portable_path_policy": expected_postgres_portable_path_policy(),
         "post_restore_status_pointer_paths": [
             item.path for item in DVC_POINTERS
         ],
@@ -1731,8 +1893,10 @@ def validate_contract_payload(
         "p4_cert_commit": P4_CERT_COMMIT,
         "h5_cert_commit": H5_CERT_COMMIT,
         "p5_cert_commit": P5_CERT_COMMIT,
+        "h6_cert_commit": H6_CERT_COMMIT,
+        "p6_cert_commit": P6_CERT_COMMIT,
         "final_tag": FINAL_TAG,
-        "certification_target": "published_P_CERT_v6_commit",
+        "certification_target": "published_P_CERT_v7_commit",
         "r_cert_executable_tree_must_equal_p_cert": True,
     }
     if dict(authorities) != expected_authorities:
@@ -1753,6 +1917,8 @@ def validate_contract_payload(
             "p4_cert_commit",
             "h5_cert_commit",
             "p5_cert_commit",
+            "h6_cert_commit",
+            "p6_cert_commit",
         )
     ):
         raise _error("Final-certification commit syntax drifted")
@@ -1779,7 +1945,9 @@ def validate_contract_payload(
             "P-CERT5",
             "H-CERT6",
             "P-CERT6",
-            "R-CERT6",
+            "H-CERT7",
+            "P-CERT7",
+            "R-CERT7",
         },
         context="publication_scopes",
     )
@@ -1813,9 +1981,15 @@ def validate_contract_payload(
     p5_scope = _parse_scope(
         scopes["P-CERT5"], stage="P-CERT5", expected=P5_SCOPE
     )
-    h_scope = _parse_scope(scopes["H-CERT6"], stage="H-CERT6", expected=H_SCOPE)
-    p_scope = _parse_scope(scopes["P-CERT6"], stage="P-CERT6", expected=P_SCOPE)
-    r_scope = _parse_scope(scopes["R-CERT6"], stage="R-CERT6", expected=R_SCOPE)
+    h6_scope = _parse_scope(
+        scopes["H-CERT6"], stage="H-CERT6", expected=H6_SCOPE
+    )
+    p6_scope = _parse_scope(
+        scopes["P-CERT6"], stage="P-CERT6", expected=P6_SCOPE
+    )
+    h_scope = _parse_scope(scopes["H-CERT7"], stage="H-CERT7", expected=H_SCOPE)
+    p_scope = _parse_scope(scopes["P-CERT7"], stage="P-CERT7", expected=P_SCOPE)
+    r_scope = _parse_scope(scopes["R-CERT7"], stage="R-CERT7", expected=R_SCOPE)
 
     anchors = _parse_anchor_inputs(mapping["anchor_inputs"])
 
@@ -1895,6 +2069,8 @@ def validate_contract_payload(
         p4_cert_commit=P4_CERT_COMMIT,
         h5_cert_commit=H5_CERT_COMMIT,
         p5_cert_commit=P5_CERT_COMMIT,
+        h6_cert_commit=H6_CERT_COMMIT,
+        p6_cert_commit=P6_CERT_COMMIT,
         final_tag=FINAL_TAG,
         h1_scope=h1_scope,
         p1_scope=p1_scope,
@@ -1906,6 +2082,8 @@ def validate_contract_payload(
         p4_scope=p4_scope,
         h5_scope=h5_scope,
         p5_scope=p5_scope,
+        h6_scope=h6_scope,
+        p6_scope=p6_scope,
         h_scope=h_scope,
         p_scope=p_scope,
         r_scope=r_scope,
@@ -1921,6 +2099,7 @@ def validate_contract_payload(
         partial_clone_global_status_authorized=cast(
             bool, dvc["partial_clone_global_status_authorized"]
         ),
+        postgres_portable_path_policy=dict(POSTGRES_PORTABLE_PATH_POLICY),
         test_suite=test_suite,
         expected_openapi_path_count=69,
         expected_openapi_operation_count=83,
@@ -2845,10 +3024,19 @@ def _historical_h4_isolation() -> Mapping[str, Any]:
     return current
 
 
+def _historical_h6_isolation() -> Mapping[str, Any]:
+    """Return the exact isolation projection sealed in immutable P-CERT6."""
+
+    current = dict(_expected_isolation())
+    current.pop("superseded_p6_retry_authorized")
+    current.pop("postgres_portable_path_policy")
+    return current
+
+
 def _historical_h5_isolation() -> Mapping[str, Any]:
     """Return the exact isolation projection sealed in immutable P-CERT5."""
 
-    current = dict(_expected_isolation())
+    current = dict(_historical_h6_isolation())
     for key in (
         "superseded_p5_retry_authorized",
         "post_restore_status_pointer_paths",
@@ -2859,10 +3047,18 @@ def _historical_h5_isolation() -> Mapping[str, Any]:
     return current
 
 
+def _historical_h6_prohibitions() -> Mapping[str, bool]:
+    """Return the exact prohibition projection sealed in immutable P-CERT6."""
+
+    historical = dict(PROHIBITIONS)
+    historical.pop("postgres_portable_path_projection_drift")
+    return historical
+
+
 def _historical_h5_prohibitions() -> Mapping[str, bool]:
     """Return the exact prohibition projection sealed in immutable P-CERT5."""
 
-    historical = dict(PROHIBITIONS)
+    historical = dict(_historical_h6_prohibitions())
     historical.pop("partial_clone_global_dvc_status")
     historical.pop("dvc_status_sweep_scope_or_order_drift")
     return historical
@@ -3743,6 +3939,133 @@ def _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_records(
     return (*predecessor, h5_records, p5_records)
 
 
+def _historical_h6_p6_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reconstruct and byte-bind immutable H-CERT6/P-CERT6."""
+
+    if (
+        _commit_parents(root, contract.h6_cert_commit)
+        != (contract.p5_cert_commit,)
+        or _commit_scope(root, contract.h6_cert_commit) != expected_h6_scope()
+        or _commit_parents(root, contract.p6_cert_commit)
+        != (contract.h6_cert_commit,)
+        or _commit_scope(root, contract.p6_cert_commit) != expected_p6_scope()
+    ):
+        raise _error("Historical H6/P6 topology or scope drifted")
+    h6_records: list[dict[str, Any]] = []
+    for spec in contract.h6_scope:
+        record, _payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.h6_cert_commit,
+            spec=spec,
+            context="Historical H-CERT6 component",
+        )
+        h6_records.append(
+            {**record, "filesystem_mode": int(spec.git_mode[-3:], 8)}
+        )
+
+    authority, authority_bytes = _decode_canonical_public_json(
+        root, H6_AUTHORITY_PATH, commit=contract.p6_cert_commit
+    )
+    manifest, manifest_bytes = _decode_canonical_public_json(
+        root, H6_AUTHORITY_MANIFEST_PATH, commit=contract.p6_cert_commit
+    )
+    if (
+        len(authority_bytes) != H6_AUTHORITY_BYTES
+        or sha256_bytes(authority_bytes) != H6_AUTHORITY_SHA256
+        or len(manifest_bytes) != H6_AUTHORITY_MANIFEST_BYTES
+        or sha256_bytes(manifest_bytes) != H6_AUTHORITY_MANIFEST_SHA256
+        or authority.get("authority_version") != H6_AUTHORITY_VERSION
+        or authority.get("isolation") != _historical_h6_isolation()
+        or authority.get("prohibitions") != _historical_h6_prohibitions()
+        or authority.get("p5_failure") != expected_p5_failure_record()
+    ):
+        raise _error("Historical P-CERT6 canonical byte identity drifted")
+    authority_record = {
+        "path": H6_AUTHORITY_PATH.as_posix(),
+        "bytes": len(authority_bytes),
+        "sha256": sha256_bytes(authority_bytes),
+    }
+    expected_manifest = {
+        "manifest_version": H6_AUTHORITY_MANIFEST_VERSION,
+        "gate": "P-CERT",
+        "status": "locked_unpublished",
+        "h1_cert_commit": contract.h1_cert_commit,
+        "p1_cert_commit": contract.p1_cert_commit,
+        "h2_cert_commit": contract.h2_cert_commit,
+        "p2_cert_commit": contract.p2_cert_commit,
+        "h3_cert_commit": contract.h3_cert_commit,
+        "p3_cert_commit": contract.p3_cert_commit,
+        "h4_cert_commit": contract.h4_cert_commit,
+        "p4_cert_commit": contract.p4_cert_commit,
+        "h5_cert_commit": contract.h5_cert_commit,
+        "p5_cert_commit": contract.p5_cert_commit,
+        "h6_cert_commit": contract.h6_cert_commit,
+        "p6_cert_commit": None,
+        "h_cert_commit": contract.h6_cert_commit,
+        "p_cert_commit": None,
+        "supersedes_p5": True,
+        "supersedes_p4": True,
+        "supersedes_p3": True,
+        "supersedes_p2": True,
+        "supersedes_p1": True,
+        "manifest_last": True,
+        "ordered_paths": [
+            H6_AUTHORITY_PATH.as_posix(),
+            H6_AUTHORITY_MANIFEST_PATH.as_posix(),
+        ],
+        "outputs": [authority_record],
+        "authority": authority_record,
+        "authorizations": dict(AUTHORIZATION_POLICY),
+    }
+    if manifest != expected_manifest or manifest_bytes != canonical_json_bytes(
+        expected_manifest
+    ):
+        raise _error("Historical P-CERT6 companion identity drifted")
+    p6_records: list[dict[str, Any]] = []
+    for spec, payload in zip(
+        contract.p6_scope, (authority_bytes, manifest_bytes), strict=True
+    ):
+        record, git_payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.p6_cert_commit,
+            spec=spec,
+            context="Historical P-CERT6 component",
+        )
+        if git_payload != payload:
+            raise _error("Historical P-CERT6 physical/Git bytes drifted")
+        p6_records.append(record)
+    return h6_records, p6_records
+
+
+def _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+    list[dict[str, Any]],
+]:
+    predecessor = _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_records(
+        contract, root=root
+    )
+    h6_records, p6_records = _historical_h6_p6_records(contract, root=root)
+    return (*predecessor, h6_records, p6_records)
+
+
 def _expected_effective_authority(
     contract: FinalCertificationContract,
     *,
@@ -3763,7 +4086,9 @@ def _expected_effective_authority(
         p4_records,
         h5_records,
         p5_records,
-    ) = _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_records(
+        h6_records,
+        p6_records,
+    ) = _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records(
         contract, root=root
     )
     anchors = collect_anchor_input_records(contract, root=root)
@@ -3788,8 +4113,10 @@ def _expected_effective_authority(
             "p4_cert_commit": contract.p4_cert_commit,
             "h5_cert_commit": contract.h5_cert_commit,
             "p5_cert_commit": contract.p5_cert_commit,
-            "h6_cert_commit": h_cert_commit,
-            "p6_cert_commit": None,
+            "h6_cert_commit": contract.h6_cert_commit,
+            "p6_cert_commit": contract.p6_cert_commit,
+            "h7_cert_commit": h_cert_commit,
+            "p7_cert_commit": None,
             "h_cert_commit": h_cert_commit,
             "p_cert_commit": None,
             "r_cert_executable_tree_must_equal_p_cert": True,
@@ -3805,6 +4132,7 @@ def _expected_effective_authority(
         "p3_failure": expected_p3_failure_record(),
         "p4_failure": expected_p4_failure_record(),
         "p5_failure": expected_p5_failure_record(),
+        "p6_failure": expected_p6_failure_record(),
         "h1_scope": expected_h1_scope(),
         "h1_component_records": h1_records,
         "h1_component_records_digest": digest_records(h1_records),
@@ -3835,14 +4163,20 @@ def _expected_effective_authority(
         "p5_scope": expected_p5_scope(),
         "p5_component_records": p5_records,
         "p5_component_records_digest": digest_records(p5_records),
+        "h6_scope": expected_h6_scope(),
+        "h6_component_records": h6_records,
+        "h6_component_records_digest": digest_records(h6_records),
+        "p6_scope": expected_p6_scope(),
+        "p6_component_records": p6_records,
+        "p6_component_records_digest": digest_records(p6_records),
         "h_scope": expected_h_scope(),
         "h_component_records": components,
         "h_component_records_digest": digest_records(components),
-        "h6_scope": expected_h_scope(),
-        "h6_component_records": components,
-        "h6_component_records_digest": digest_records(components),
+        "h7_scope": expected_h_scope(),
+        "h7_component_records": components,
+        "h7_component_records_digest": digest_records(components),
         "p_scope": expected_p_scope(),
-        "p6_scope": expected_p_scope(),
+        "p7_scope": expected_p_scope(),
         "anchor_input_records": anchors,
         "anchor_input_records_digest": digest_records(anchors),
         "dvc_pointer_records": pointers,
@@ -3871,7 +4205,7 @@ def load_effective_authority(
     verify_remote: bool = True,
     require_clean: bool = True,
 ) -> dict[str, Any]:
-    """Load and independently reconstruct one published effective P-CERT6.
+    """Load and independently reconstruct one published effective P-CERT7.
 
     The stored authority deliberately has ``p_cert_commit=null`` because it is
     generated before its publication commit exists.  Effectiveness is derived
@@ -3887,15 +4221,15 @@ def load_effective_authority(
     p_cert_commit = _one_commit(root, "HEAD")
     parents = _commit_parents(root, p_cert_commit)
     if len(parents) != 1:
-        raise _error("P-CERT6 must have exactly one H-CERT6 parent")
+        raise _error("P-CERT7 must have exactly one H-CERT7 parent")
     h_cert_commit = parents[0]
     if (
-        _commit_parents(root, h_cert_commit) != (active_contract.p5_cert_commit,)
+        _commit_parents(root, h_cert_commit) != (active_contract.p6_cert_commit,)
         or _commit_scope(root, h_cert_commit) != expected_h_scope()
         or _commit_scope(root, p_cert_commit) != expected_p_scope()
     ):
-        raise _error("Effective P-CERT6 H6/P6 topology or scope drifted")
-    _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_records(
+        raise _error("Effective P-CERT7 H7/P7 topology or scope drifted")
+    _historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records(
         active_contract, root=root
     )
     ancestor = subprocess.run(
@@ -3946,10 +4280,13 @@ def load_effective_authority(
         "p4_cert_commit": active_contract.p4_cert_commit,
         "h5_cert_commit": active_contract.h5_cert_commit,
         "p5_cert_commit": active_contract.p5_cert_commit,
-        "h6_cert_commit": h_cert_commit,
-        "p6_cert_commit": None,
+        "h6_cert_commit": active_contract.h6_cert_commit,
+        "p6_cert_commit": active_contract.p6_cert_commit,
+        "h7_cert_commit": h_cert_commit,
+        "p7_cert_commit": None,
         "h_cert_commit": h_cert_commit,
         "p_cert_commit": None,
+        "supersedes_p6": True,
         "supersedes_p5": True,
         "supersedes_p4": True,
         "supersedes_p3": True,
@@ -3970,8 +4307,10 @@ def load_effective_authority(
         "gate": "P-CERT",
         "p_cert_commit": p_cert_commit,
         "h_cert_commit": h_cert_commit,
-        "p6_cert_commit": p_cert_commit,
-        "h6_cert_commit": h_cert_commit,
+        "p7_cert_commit": p_cert_commit,
+        "h7_cert_commit": h_cert_commit,
+        "p6_cert_commit": active_contract.p6_cert_commit,
+        "h6_cert_commit": active_contract.h6_cert_commit,
         "p5_cert_commit": active_contract.p5_cert_commit,
         "h5_cert_commit": active_contract.h5_cert_commit,
         "p4_cert_commit": active_contract.p4_cert_commit,

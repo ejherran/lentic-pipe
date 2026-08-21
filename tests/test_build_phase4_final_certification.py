@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p6_cert_commit": P_COMMIT,
-        "h6_cert_commit": H_COMMIT,
+        "p7_cert_commit": P_COMMIT,
+        "h7_cert_commit": H_COMMIT,
+        "p6_cert_commit": active_contract.p6_cert_commit,
+        "h6_cert_commit": active_contract.h6_cert_commit,
         "p5_cert_commit": active_contract.p5_cert_commit,
         "h5_cert_commit": active_contract.h5_cert_commit,
         "p4_cert_commit": contract_module.P4_CERT_COMMIT,
@@ -628,6 +630,52 @@ def test_serialization_guard_rejects_urls_credentials_and_absolute_paths() -> No
         with pytest.raises(builder.FinalCertificationBuildError):
             builder._assert_serialization_safe(payload)
 
+    for argv in (
+        ("/var/lib/postgresql/data:rw,size=512m",),
+        ("<OWNED_DB_SOCKET>:/var/run/postgresql",),
+        ("unix_socket_directories=/var/run/postgresql",),
+        ("prefix,/tmp/x",),
+        ("query COPY /tmp/x",),
+        ("prefix;/tmp/x",),
+        ("x[/var/lib]",),
+        ("x]/var/lib",),
+        ("x(/tmp/x)",),
+        ("x)/tmp/x",),
+        ("x{/tmp/x}",),
+        ("x}/tmp/x",),
+        ("quote'/tmp/x'",),
+        ('quote"/tmp/x"',),
+        ("x>/tmp/x",),
+    ):
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="absolute command paths",
+        ):
+            builder._portable_argv(argv)
+    assert builder._portable_argv(
+        (
+            ".venv/bin/dvc",
+            "src/reporting/build_phase4_final_certification.py",
+            "--junitxml=tmp/public-tests.xml",
+            "status",
+            "--json",
+            "<OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>",
+            "<CONTAINER_POSTGRES_DATA>:rw,size=512m",
+            "<CONTAINER_TMP>:rw,size=64m",
+            "unix_socket_directories=<CONTAINER_POSTGRES_SOCKET>",
+        )
+    ) == [
+        ".venv/bin/dvc",
+        "src/reporting/build_phase4_final_certification.py",
+        "--junitxml=tmp/public-tests.xml",
+        "status",
+        "--json",
+        "<OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>",
+        "<CONTAINER_POSTGRES_DATA>:rw,size=512m",
+        "<CONTAINER_TMP>:rw,size=64m",
+        "unix_socket_directories=<CONTAINER_POSTGRES_SOCKET>",
+    ]
+
 
 def test_forbidden_path_guard_covers_private_targets_outcomes_and_payloads(
     tmp_path: Path,
@@ -693,8 +741,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p6_cert_commit": P_COMMIT,
-        "h6_cert_commit": H_COMMIT,
+        "p7_cert_commit": P_COMMIT,
+        "h7_cert_commit": H_COMMIT,
+        "p6_cert_commit": contract.p6_cert_commit,
+        "h6_cert_commit": contract.h6_cert_commit,
         "p5_cert_commit": contract.p5_cert_commit,
         "h5_cert_commit": contract.h5_cert_commit,
         "p4_cert_commit": contract_module.P4_CERT_COMMIT,
@@ -712,8 +762,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p6_cert_commit": P_COMMIT,
-        "h6_cert_commit": H_COMMIT,
+        "p7_cert_commit": P_COMMIT,
+        "h7_cert_commit": H_COMMIT,
+        "p6_cert_commit": contract.p6_cert_commit,
+        "h6_cert_commit": contract.h6_cert_commit,
         "p5_cert_commit": contract.p5_cert_commit,
         "h5_cert_commit": contract.h5_cert_commit,
         "p4_cert_commit": contract_module.P4_CERT_COMMIT,
@@ -788,6 +840,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p7_cert_commit",
+        "h7_cert_commit",
         "p6_cert_commit",
         "h6_cert_commit",
         "p5_cert_commit",
@@ -842,6 +896,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p7_cert_commit",
+        "h7_cert_commit",
         "p6_cert_commit",
         "h6_cert_commit",
         "p5_cert_commit",
@@ -2531,7 +2587,7 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         nonlocal active
         actual = list(argv)
-        portable = list(kwargs["portable_argv"])
+        portable = builder._portable_argv(kwargs["portable_argv"])
         portable_calls.append(portable)
         if actual[1] == "run":
             active = True
@@ -2557,6 +2613,52 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
     assert ["docker", "run", "--detach"] in prefixes
     assert ["docker", "exec", "<OWNED_CONTAINER>"] in prefixes
     assert ["docker", "rm", "--force"] in prefixes
+    run_call = next(call for call in portable_calls if call[:2] == ["docker", "run"])
+    portable_path_policy = contract_module.expected_postgres_portable_path_policy()
+    assert portable_path_policy == {
+        "volume": "<OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>",
+        "data_tmpfs": "<CONTAINER_POSTGRES_DATA>:rw,size=512m",
+        "runtime_tmpfs": "<CONTAINER_TMP>:rw,size=64m",
+        "unix_socket_directories": (
+            "unix_socket_directories=<CONTAINER_POSTGRES_SOCKET>"
+        ),
+        "absolute_paths_serialized": False,
+    }
+    assert run_call == [
+        "docker",
+        "run",
+        "--detach",
+        "--rm",
+        "--pull=never",
+        "--network",
+        "none",
+        "--name",
+        "<OWNED_CONTAINER>",
+        "--env",
+        "POSTGRES_HOST_AUTH_METHOD=trust",
+        "--env",
+        f"POSTGRES_DB={builder.DB_NAME}",
+        "--volume",
+        portable_path_policy["volume"],
+        "--tmpfs",
+        portable_path_policy["data_tmpfs"],
+        "--tmpfs",
+        portable_path_policy["runtime_tmpfs"],
+        builder.POSTGRES_IMAGE,
+        "-c",
+        portable_path_policy["unix_socket_directories"],
+        "-c",
+        "listen_addresses=",
+    ]
+    assert not any(
+        absolute in token
+        for token in run_call
+        for absolute in (
+            "/var/run/postgresql",
+            "/var/lib/postgresql/data",
+            "/tmp",
+        )
+    )
     assert active is False
 
 
@@ -2570,7 +2672,7 @@ def test_postgres_callback_failure_after_run_cleans_exact_container_id(
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         nonlocal active
         actual = list(argv)
-        portable = list(kwargs["portable_argv"])
+        portable = builder._portable_argv(kwargs["portable_argv"])
         if actual[1] == "run":
             active = True
             return builder.CommandResult(
@@ -2612,7 +2714,7 @@ def test_postgres_run_timeout_recovers_and_removes_only_bound_id(
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         nonlocal active
         actual = list(argv)
-        portable = list(kwargs["portable_argv"])
+        portable = builder._portable_argv(kwargs["portable_argv"])
         if actual[1] == "run":
             active = True
             raise builder.FinalCertificationBuildError("synthetic Docker timeout")
@@ -2647,7 +2749,7 @@ def test_postgres_run_timeout_preserves_ambiguous_name_reuse(
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         nonlocal active, inspect_after_run
         actual = list(argv)
-        portable = list(kwargs["portable_argv"])
+        portable = builder._portable_argv(kwargs["portable_argv"])
         if actual[1] == "run":
             active = True
             raise builder.FinalCertificationBuildError("synthetic Docker timeout")
@@ -2687,7 +2789,7 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         nonlocal state
         actual = list(argv)
-        portable = list(kwargs["portable_argv"])
+        portable = builder._portable_argv(kwargs["portable_argv"])
         if actual[1] == "inspect":
             target = actual[-1]
             if state == "owned":
@@ -4106,6 +4208,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p7_cert_commit",
+            "h7_cert_commit",
             "p6_cert_commit",
             "h6_cert_commit",
             "p5_cert_commit",
@@ -4124,6 +4228,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p7_cert_commit",
+            "h7_cert_commit",
             "p6_cert_commit",
             "h6_cert_commit",
             "p5_cert_commit",
@@ -4143,6 +4249,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p7_cert_commit",
+        "h7_cert_commit",
         "p6_cert_commit",
         "h6_cert_commit",
         "p5_cert_commit",

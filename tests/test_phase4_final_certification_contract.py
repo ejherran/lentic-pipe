@@ -72,6 +72,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.p4_cert_commit == certification.P4_CERT_COMMIT
     assert contract.h5_cert_commit == certification.H5_CERT_COMMIT
     assert contract.p5_cert_commit == certification.P5_CERT_COMMIT
+    assert contract.h6_cert_commit == certification.H6_CERT_COMMIT
+    assert contract.p6_cert_commit == certification.P6_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
@@ -83,6 +85,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert len(contract.p4_scope) == 2
     assert len(contract.h5_scope) == 11
     assert len(contract.p5_scope) == 2
+    assert len(contract.h6_scope) == 11
+    assert len(contract.p6_scope) == 2
     assert len(contract.r_scope) == 8
     assert len(contract.anchor_inputs) == 10
     assert len(contract.dvc_pointers) == 8
@@ -149,6 +153,13 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["isolation"]["superseded_p3_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p4_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p5_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p6_retry_authorized"] is False
+    assert contract.raw["isolation"]["postgres_portable_path_policy"] == (
+        certification.expected_postgres_portable_path_policy()
+    )
+    assert dict(contract.postgres_portable_path_policy) == (
+        certification.expected_postgres_portable_path_policy()
+    )
     assert contract.raw["isolation"]["credential_path_rebased_to_retained_fd"] is True
     site_cache = contract.raw["isolation"]
     assert site_cache["owned_site_cache_count"] == 2
@@ -580,7 +591,13 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert scopes["P-CERT6"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 2
-    assert scopes["R-CERT6"]["allOf"][1]["properties"]["additions"][
+    assert scopes["H-CERT7"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
+    assert scopes["P-CERT7"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["R-CERT7"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 8
     assert pending["properties"]["selector_count"] == {"type": "null"}
@@ -718,6 +735,13 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert boundary["superseded_p2_retry_authorized"] == {"const": False}
     assert boundary["superseded_p4_retry_authorized"] == {"const": False}
     assert boundary["superseded_p5_retry_authorized"] == {"const": False}
+    assert boundary["superseded_p6_retry_authorized"] == {"const": False}
+    portable = boundary["postgres_portable_path_policy"]
+    assert portable["additionalProperties"] is False
+    assert portable["properties"] == {
+        key: {"const": value}
+        for key, value in certification.expected_postgres_portable_path_policy().items()
+    }
     assert boundary["post_restore_status_pointer_paths"] == {
         "const": ordered_pointer_paths
     }
@@ -1073,10 +1097,13 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p4_cert_commit": contract.p4_cert_commit,
         "h5_cert_commit": contract.h5_cert_commit,
         "p5_cert_commit": contract.p5_cert_commit,
-        "h6_cert_commit": h_commit,
-        "p6_cert_commit": None,
+        "h6_cert_commit": contract.h6_cert_commit,
+        "p6_cert_commit": contract.p6_cert_commit,
+        "h7_cert_commit": h_commit,
+        "p7_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
+        "supersedes_p6": True,
         "supersedes_p5": True,
         "supersedes_p4": True,
         "supersedes_p3": True,
@@ -1096,7 +1123,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p5_cert_commit,),
+            h_commit: (contract.p6_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -1134,8 +1161,21 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_records",
-        lambda *_args, **_kwargs: ([], [], [], [], [], [], [], [], [], []),
+        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records",
+        lambda *_args, **_kwargs: (
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+        ),
     )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
@@ -1159,8 +1199,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p6_cert_commit"] == p_commit
-    assert result["h6_cert_commit"] == h_commit
+    assert result["p7_cert_commit"] == p_commit
+    assert result["h7_cert_commit"] == h_commit
+    assert result["p6_cert_commit"] == contract.p6_cert_commit
+    assert result["h6_cert_commit"] == contract.h6_cert_commit
     assert result["p5_cert_commit"] == contract.p5_cert_commit
     assert result["h5_cert_commit"] == contract.h5_cert_commit
     assert result["p4_cert_commit"] == contract.p4_cert_commit
@@ -1232,8 +1274,21 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_records",
-        lambda *_args, **_kwargs: ([], [], [], [], [], [], [], [], [], []),
+        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records",
+        lambda *_args, **_kwargs: (
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+            [],
+        ),
     )
     monkeypatch.setattr(
         certification,
@@ -1283,15 +1338,18 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["p3_failure"] == certification.expected_p3_failure_record()
     assert authority["p4_failure"] == certification.expected_p4_failure_record()
     assert authority["p5_failure"] == certification.expected_p5_failure_record()
+    assert authority["p6_failure"] == certification.expected_p6_failure_record()
     assert authority["dvc_status_policy"] == (
         certification.expected_dvc_status_policy(contract)
     )
     assert authority["main_dvc_static_boundary"] == static_boundary
     assert authority["h5_component_records"] == []
     assert authority["p5_component_records"] == []
-    assert authority["h6_component_records"] == authority["h_component_records"]
-    assert authority["h6_scope"] == authority["h_scope"]
-    assert authority["p6_scope"] == authority["p_scope"]
+    assert authority["h6_component_records"] == []
+    assert authority["p6_component_records"] == []
+    assert authority["h7_component_records"] == authority["h_component_records"]
+    assert authority["h7_scope"] == authority["h_scope"]
+    assert authority["p7_scope"] == authority["p_scope"]
     assert "guard_path" not in authority["isolation"]
     assert "rollback_owned_inodes_only" not in authority["isolation"]
 
@@ -1510,3 +1568,85 @@ def test_historical_p3_is_byte_exact_and_failure_is_sanitized() -> None:
     assert p5_failure["namespace_path_or_run_id_serialized"] is False
     assert p5_failure["archive_is_authority"] is False
     assert p5_failure["retry_authorized"] is False
+
+    complete_v6 = (
+        certification._historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_records(  # noqa: SLF001
+            contract,
+            root=ROOT,
+        )
+    )
+    assert [len(group) for group in complete_v6] == [
+        11,
+        2,
+        11,
+        2,
+        11,
+        2,
+        11,
+        2,
+        11,
+        2,
+        11,
+        2,
+    ]
+    assert complete_v6[-1] == [
+        {
+            "path": certification.H6_AUTHORITY_PATH.as_posix(),
+            "bytes": certification.H6_AUTHORITY_BYTES,
+            "sha256": certification.H6_AUTHORITY_SHA256,
+            "git_blob_oid": complete_v6[-1][0]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+        {
+            "path": certification.H6_AUTHORITY_MANIFEST_PATH.as_posix(),
+            "bytes": certification.H6_AUTHORITY_MANIFEST_BYTES,
+            "sha256": certification.H6_AUTHORITY_MANIFEST_SHA256,
+            "git_blob_oid": complete_v6[-1][1]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+    ]
+    p6_failure = certification.expected_p6_failure_record()
+    assert p6_failure["status"] == "execution_failed_closed_cleanup_succeeded"
+    assert p6_failure["attempt"] == "R-CERT6"
+    assert p6_failure["active_error"] == {
+        "stage": "postgres_start_portable_command_serialization",
+        "safe_error": "absolute command paths may not be serialized",
+        "failure_kind": "in_process_portable_command_serialization",
+        "sanitized_command": [],
+        "returncode": None,
+        "safe_stderr_category": "unavailable_not_persisted",
+        "raw_stdout_preserved": False,
+        "raw_stderr_preserved": False,
+        "credentials_preserved": False,
+        "absolute_paths_preserved": False,
+    }
+    assert p6_failure["cleanup"] == {
+        "status": "succeeded_exact",
+        "namespace_preserved": False,
+        "active_error_was_masked": False,
+    }
+    p6_counts = p6_failure["evidence_counts"]
+    assert p6_counts["successful_directed_dvc_pulls"] == 8
+    assert p6_counts["dvc_cache_objects"] == 8
+    assert p6_counts["restored_checkouts"] == 8
+    assert p6_counts["directed_dvc_unit_status_checks"] == 8
+    assert p6_counts["post_restore_exact_eight_status_checks"] == 1
+    assert all(
+        p6_counts[key] == 0
+        for key in (
+            "post_verification_exact_eight_status_checks",
+            "global_dvc_status_commands",
+            "parquet_payloads_opened_or_decoded_by_python",
+            "raw_target_or_outcome_reads",
+            "postgresql_fixture_starts",
+            "docker_container_runs",
+            "public_test_runs",
+            "openapi_generations",
+            "synthetic_e2e_runs",
+            "r_cert_payload_builds",
+            "r_cert_outputs",
+        )
+    )
+    assert p6_failure["archived_under_ignored_tmp"] is False
+    assert p6_failure["archive_is_authority"] is False
+    assert p6_failure["retry_authorized"] is False

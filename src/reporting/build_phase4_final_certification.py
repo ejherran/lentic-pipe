@@ -61,6 +61,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_dvc_status_policy,
     expected_environment_dvc_record,
     expected_manifest_clone_dvc_site_caches_record,
+    expected_postgres_portable_path_policy,
     load_contract,
     load_effective_authority,
     main_dvc_static_boundary_record,
@@ -1004,7 +1005,7 @@ def _portable_argv(argv: Sequence[str]) -> list[str]:
     for token in argv:
         if not isinstance(token, str) or not token or "\x00" in token:
             raise _error("command argv contains an invalid token")
-        if token.startswith("/"):
+        if re.search(r"(?<![A-Za-z0-9._~+@%-])/", token):
             raise _error("absolute command paths may not be serialized")
         lowered = token.lower()
         if any(marker in lowered for marker in ("password=", "token=", "secret=")):
@@ -3475,7 +3476,7 @@ def _authority_loader(
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p6_cert_commit"),
+        execution_commit=result.get("p7_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3505,11 +3506,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P6/H6 aliases and the complete historical lineage."""
+    """Validate active P7/H7 aliases and the complete historical lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p7_cert_commit",
+        "h7_cert_commit",
         "p6_cert_commit",
         "h6_cert_commit",
         "p5_cert_commit",
@@ -3532,12 +3535,14 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p6_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h6_cert_commit"]
+        or commits["p7_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h7_cert_commit"]
+        or commits["p6_cert_commit"] != contract.p6_cert_commit
+        or commits["h6_cert_commit"] != contract.h6_cert_commit
+        or commits["p7_cert_commit"] == commits["p6_cert_commit"]
+        or commits["h7_cert_commit"] == commits["h6_cert_commit"]
         or commits["p5_cert_commit"] != contract.p5_cert_commit
         or commits["h5_cert_commit"] != contract.h5_cert_commit
-        or commits["p6_cert_commit"] == commits["p5_cert_commit"]
-        or commits["h6_cert_commit"] == commits["h5_cert_commit"]
         or commits["p4_cert_commit"] != contract.p4_cert_commit
         or commits["h4_cert_commit"] != contract.h4_cert_commit
         or commits["p3_cert_commit"] != contract.p3_cert_commit
@@ -3556,7 +3561,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P6 authority's exact partial-clone status policy."""
+    """Require the effective P7 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -3610,10 +3615,10 @@ def check_phase4_final_certification(
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p6_cert_commit"),
+        execution_commit=authority.get("p7_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p6_cert_commit"]
+    effective_commit = authority_commits["p7_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -5258,6 +5263,7 @@ def _start_owned_postgres(
     namespace_validator: Callable[[str], None] | None = None,
 ) -> tuple[OwnedPostgres, Mapping[str, Any]]:
     container_name = f"closure-phase4-cert-{secrets.token_hex(12)}"
+    portable_paths = expected_postgres_portable_path_policy()
     if namespace_validator is not None:
         namespace_validator("before_postgres_start")
     preexisting_returncode, preexisting_identity = _inspect_container_identity(
@@ -5309,14 +5315,14 @@ def _start_owned_postgres(
                 "--env",
                 f"POSTGRES_DB={DB_NAME}",
                 "--volume",
-                "<OWNED_DB_SOCKET>:/var/run/postgresql",
+                portable_paths["volume"],
                 "--tmpfs",
-                "/var/lib/postgresql/data:rw,size=512m",
+                portable_paths["data_tmpfs"],
                 "--tmpfs",
-                "/tmp:rw,size=64m",
+                portable_paths["runtime_tmpfs"],
                 POSTGRES_IMAGE,
                 "-c",
-                "unix_socket_directories=/var/run/postgresql",
+                portable_paths["unix_socket_directories"],
                 "-c",
                 "listen_addresses=",
             ),
