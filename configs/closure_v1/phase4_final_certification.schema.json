@@ -64,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v4"
+      "const": "closure_v1_phase4_final_certification_v5"
     },
     "authorities": {
       "type": "object",
@@ -79,6 +79,8 @@
         "p2_cert_commit",
         "h3_cert_commit",
         "p3_cert_commit",
+        "h4_cert_commit",
+        "p4_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -111,8 +113,14 @@
         "p3_cert_commit": {
           "const": "bcd306a9e8dd5162466124d8854b9d1d99a8517c"
         },
+        "h4_cert_commit": {
+          "const": "44f96a7e2b204d80d8e336e90b4a0f4a3456c13f"
+        },
+        "p4_cert_commit": {
+          "const": "21551c7e53b776b693f4f76b88682180093a0f31"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v4_commit"},
+        "certification_target": {"const": "published_P_CERT_v5_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -129,7 +137,9 @@
         "P-CERT3",
         "H-CERT4",
         "P-CERT4",
-        "R-CERT",
+        "H-CERT5",
+        "P-CERT5",
+        "R-CERT5",
         "single_parent_commits_required",
         "closure_source_commit_must_remain_ancestor",
         "aligned_refs_and_live_remote_required",
@@ -140,7 +150,7 @@
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "R-CERT"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "R-CERT5"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -244,9 +254,10 @@
         "H-CERT4": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_credential_fd_and_dvc_site_cache_contract_tests_and_freeze"},
+            "commit": {"const": "h4_cert_commit"},
             "direct_parent": {"const": "p3_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["credential_path_rebased_to_retained_fd", "two_separated_owned_dvc_site_caches_for_all_isolated_dvc_commands", "main_dvc_site_cache_metadata_inode_inventory_unchanged", "forbid_main_worktree_dvc_status_and_verify_static_git_pointer_boundary"]}
@@ -255,10 +266,42 @@
         "P-CERT4": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_H_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "required": ["role", "commit", "requires_published_H_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized", "failure_stage", "dvc_pull_success_count", "r_cert_output_count", "retry_authorized", "cleanup_status", "manifest_written_last"],
           "properties": {
             "role": {"const": "data_only_final_certification_authority_v4"},
+            "commit": {"const": "p4_cert_commit"},
             "requires_published_H_CERT4": {"const": true},
+            "supersedes_P_CERT3": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "private_dvc_configuration_after_owned_cache_settings"},
+            "dvc_pull_success_count": {"const": 0},
+            "r_cert_output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "cleanup_status": {"const": "succeeded_exact_namespace_removed"},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "H-CERT5": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_private_dvc_cache_equivalence_and_capability_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p4_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["normalize_owned_cache_dir_and_type_before_section_set_equivalence", "reject_every_non_operational_private_section_or_setting_drift", "withhold_credential_fds_until_first_directed_pull", "record_r_cert4_failure_and_forbid_p_cert4_retry"]}
+          }
+        },
+        "P-CERT5": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v5"},
+            "requires_published_H_CERT5": {"const": true},
+            "supersedes_P_CERT4": {"const": true},
             "supersedes_P_CERT3": {"const": true},
             "supersedes_P_CERT2": {"const": true},
             "supersedes_P_CERT1": {"const": true},
@@ -266,13 +309,13 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "R-CERT": {
+        "R-CERT5": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_P_CERT", "output_count", "manifest_written_last"],
+          "required": ["role", "requires_published_P_CERT5", "output_count", "manifest_written_last"],
           "properties": {
             "role": {"const": "final_doctoral_software_and_restorability_evidence"},
-            "requires_published_P_CERT": {"const": true},
+            "requires_published_P_CERT5": {"const": true},
             "output_count": {"const": 8},
             "manifest_written_last": {"const": true}
           }
@@ -290,7 +333,7 @@
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "R-CERT"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "R-CERT5"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -388,7 +431,31 @@
             }
           ]
         },
-        "R-CERT": {
+        "H-CERT5": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT5": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "R-CERT5": {
           "allOf": [
             {"$ref": "#/$defs/stageScope"},
             {
@@ -437,6 +504,10 @@
         "version_seal_before_private_config_or_pull",
         "single_dvc_runtime_retained_through_final_status_and_version_probe",
         "dvc_runtime_cross_call_identity_revalidated",
+        "operational_cache_fields_normalized_before_section_set_equivalence",
+        "only_owned_cache_dir_and_type_may_differ",
+        "credential_fds_passed_to_dvc_config_commands",
+        "first_credential_fd_subprocess_exposure",
         "used_by_all_isolated_dvc_commands",
         "copied_core_site_cache_dir_used",
         "main_dvc_site_cache_metadata_inode_inventory_unchanged",
@@ -478,6 +549,10 @@
         "version_seal_before_private_config_or_pull": {"const": true},
         "single_dvc_runtime_retained_through_final_status_and_version_probe": {"const": true},
         "dvc_runtime_cross_call_identity_revalidated": {"const": true},
+        "operational_cache_fields_normalized_before_section_set_equivalence": {"const": true},
+        "only_owned_cache_dir_and_type_may_differ": {"const": true},
+        "credential_fds_passed_to_dvc_config_commands": {"const": false},
+        "first_credential_fd_subprocess_exposure": {"const": "first_directed_dvc_pull"},
         "used_by_all_isolated_dvc_commands": {"const": true},
         "copied_core_site_cache_dir_used": {"const": false},
         "main_dvc_site_cache_metadata_inode_inventory_unchanged": {"const": true},
@@ -677,6 +752,10 @@
         "version_seal_before_private_config_or_pull",
         "single_dvc_runtime_retained_through_final_status_and_version_probe",
         "dvc_runtime_cross_call_identity_revalidated",
+        "operational_cache_fields_normalized_before_section_set_equivalence",
+        "only_owned_cache_dir_and_type_may_differ",
+        "credential_fds_passed_to_dvc_config_commands",
+        "first_credential_fd_subprocess_exposure",
         "used_by_all_isolated_dvc_commands",
         "copied_core_site_cache_dir_used",
         "main_dvc_site_cache_metadata_inode_inventory_unchanged",
@@ -686,6 +765,7 @@
         "main_worktree_dvc_state_source",
         "real_dvc_execution_scope",
         "superseded_p3_retry_authorized",
+        "superseded_p4_retry_authorized",
         "no_clobber",
         "cleanup_before_precommit"
       ],
@@ -723,8 +803,9 @@
         "network_policy": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["git_clone_from_origin", "eight_directed_dvc_pulls", "loopback_postgresql", "scientific_or_general_network"],
+          "required": ["git_live_remote_ref_validation", "git_clone_from_origin", "eight_directed_dvc_pulls", "loopback_postgresql", "scientific_or_general_network"],
           "properties": {
+            "git_live_remote_ref_validation": {"const": "allowed"},
             "git_clone_from_origin": {"const": "allowed"},
             "eight_directed_dvc_pulls": {"const": "allowed"},
             "loopback_postgresql": {"const": "allowed"},
@@ -779,6 +860,10 @@
         "version_seal_before_private_config_or_pull": {"const": true},
         "single_dvc_runtime_retained_through_final_status_and_version_probe": {"const": true},
         "dvc_runtime_cross_call_identity_revalidated": {"const": true},
+        "operational_cache_fields_normalized_before_section_set_equivalence": {"const": true},
+        "only_owned_cache_dir_and_type_may_differ": {"const": true},
+        "credential_fds_passed_to_dvc_config_commands": {"const": false},
+        "first_credential_fd_subprocess_exposure": {"const": "first_directed_dvc_pull"},
         "used_by_all_isolated_dvc_commands": {"const": true},
         "copied_core_site_cache_dir_used": {"const": false},
         "main_dvc_site_cache_metadata_inode_inventory_unchanged": {"const": true},
@@ -788,6 +873,7 @@
         "main_worktree_dvc_state_source": {"const": "git_and_versioned_dvc_pointers"},
         "real_dvc_execution_scope": {"const": "isolated_r_cert_clone_only"},
         "superseded_p3_retry_authorized": {"const": false},
+        "superseded_p4_retry_authorized": {"const": false},
         "no_clobber": {"const": true},
         "cleanup_before_precommit": {"const": true}
       }
@@ -853,8 +939,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 21,
-      "maxItems": 21,
+      "minItems": 24,
+      "maxItems": 24,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }

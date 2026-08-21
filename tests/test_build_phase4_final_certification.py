@@ -82,8 +82,10 @@ def _authority() -> dict[str, Any]:
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p4_cert_commit": P_COMMIT,
-        "h4_cert_commit": H_COMMIT,
+        "p5_cert_commit": P_COMMIT,
+        "h5_cert_commit": H_COMMIT,
+        "p4_cert_commit": contract_module.P4_CERT_COMMIT,
+        "h4_cert_commit": contract_module.H4_CERT_COMMIT,
         "p3_cert_commit": contract_module.P3_CERT_COMMIT,
         "h3_cert_commit": contract_module.H3_CERT_COMMIT,
         "p2_cert_commit": contract_module.P2_CERT_COMMIT,
@@ -683,8 +685,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p4_cert_commit": P_COMMIT,
-        "h4_cert_commit": H_COMMIT,
+        "p5_cert_commit": P_COMMIT,
+        "h5_cert_commit": H_COMMIT,
+        "p4_cert_commit": contract_module.P4_CERT_COMMIT,
+        "h4_cert_commit": contract_module.H4_CERT_COMMIT,
         "p3_cert_commit": contract_module.P3_CERT_COMMIT,
         "h3_cert_commit": contract_module.H3_CERT_COMMIT,
         "p2_cert_commit": contract_module.P2_CERT_COMMIT,
@@ -698,8 +702,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p4_cert_commit": P_COMMIT,
-        "h4_cert_commit": H_COMMIT,
+        "p5_cert_commit": P_COMMIT,
+        "h5_cert_commit": H_COMMIT,
+        "p4_cert_commit": contract_module.P4_CERT_COMMIT,
+        "h4_cert_commit": contract_module.H4_CERT_COMMIT,
         "p3_cert_commit": contract_module.P3_CERT_COMMIT,
         "h3_cert_commit": contract_module.H3_CERT_COMMIT,
         "p2_cert_commit": contract_module.P2_CERT_COMMIT,
@@ -750,6 +756,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p5_cert_commit",
+        "h5_cert_commit",
         "p4_cert_commit",
         "h4_cert_commit",
         "p3_cert_commit",
@@ -782,6 +790,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p5_cert_commit",
+        "h5_cert_commit",
         "p4_cert_commit",
         "h4_cert_commit",
         "p3_cert_commit",
@@ -1965,6 +1975,25 @@ def test_private_credential_fd_bridge_rejects_unsafe_path_or_inode(
 
 
 def test_private_dvc_effective_equivalence_allows_only_owned_cache_overrides() -> None:
+    credential_sections = ('\'remote "private"\'',)
+    credential_proc_paths = ("/proc/self/fd/41",)
+
+    def require_equivalent(
+        source_payload: bytes,
+        clone_payload: bytes,
+        *,
+        allow_operational_cache: bool,
+        owned_cache_dir: str | None = None,
+    ) -> None:
+        builder._require_private_dvc_config_equivalence(
+            source_payload,
+            clone_payload,
+            credential_sections=credential_sections,
+            credential_proc_paths=credential_proc_paths,
+            allow_operational_cache=allow_operational_cache,
+            owned_cache_dir=owned_cache_dir,
+        )
+
     source = (
         b"[core]\nremote = private\nsite_cache_dir = /opaque/main-site-cache\n"
         b"[cache]\nshared = group\ndir = /opaque/source-cache\ntype = reflink\n"
@@ -1977,24 +2006,112 @@ def test_private_dvc_effective_equivalence_allows_only_owned_cache_overrides() -
         b"['remote \"private\"']\nurl = opaque-remote\n"
         b"credentialpath = /proc/self/fd/41\n"
     )
-    builder._require_private_dvc_config_equivalence(
+    require_equivalent(
         source,
         clone,
-        credential_sections=('\'remote "private"\'',),
-        credential_proc_paths=("/proc/self/fd/41",),
         allow_operational_cache=True,
         owned_cache_dir="/owned/cache",
     )
+
+    source_without_cache = (
+        b"[core]\nremote = private\nsite_cache_dir = /opaque/main-site-cache\n"
+        b"['remote \"private\"']\nurl = opaque-remote\n"
+        b"credentialpath = ../private/credential.json\n"
+    )
+    clone_with_new_cache = (
+        b"[core]\nremote = private\nsite_cache_dir = /opaque/main-site-cache\n"
+        b"['remote \"private\"']\nurl = opaque-remote\n"
+        b"credentialpath = /proc/self/fd/41\n"
+        b"[cache]\ndir = /owned/cache\ntype = copy\n"
+    )
+    require_equivalent(
+        source_without_cache,
+        clone_with_new_cache,
+        allow_operational_cache=True,
+        owned_cache_dir="/owned/cache",
+    )
+
+    safely_rebased_without_cache = clone_with_new_cache.split(b"[cache]\n", 1)[0]
+    require_equivalent(
+        source_without_cache,
+        safely_rebased_without_cache,
+        allow_operational_cache=False,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="section set drifted",
+    ):
+        require_equivalent(
+            source_without_cache,
+            clone_with_new_cache,
+            allow_operational_cache=False,
+        )
+
+    for section_drift in (
+        clone_with_new_cache + b"[foreign]\nvalue = injected\n",
+        clone_with_new_cache.replace(
+            b"['remote \"private\"']\nurl = opaque-remote\n"
+            b"credentialpath = /proc/self/fd/41\n",
+            b"",
+        ),
+    ):
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="section set drifted",
+        ):
+            require_equivalent(
+                source_without_cache,
+                section_drift,
+                allow_operational_cache=True,
+                owned_cache_dir="/owned/cache",
+            )
+
+    clone_with_extra_cache_key = clone_with_new_cache.replace(
+        b"type = copy\n",
+        b"type = copy\nshared = injected\n",
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="section set drifted",
+    ):
+        require_equivalent(
+            source_without_cache,
+            clone_with_extra_cache_key,
+            allow_operational_cache=True,
+            owned_cache_dir="/owned/cache",
+        )
+
+    invalid_owned_cache_settings = (
+        safely_rebased_without_cache,
+        clone_with_new_cache.replace(b"dir = /owned/cache\n", b""),
+        clone_with_new_cache.replace(b"type = copy\n", b""),
+        clone_with_new_cache.replace(
+            b"dir = /owned/cache\n", b"dir = /foreign/cache\n"
+        ),
+        clone_with_new_cache.replace(b"type = copy\n", b"type = hardlink\n"),
+    )
+    for invalid_clone in invalid_owned_cache_settings:
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="owned cache settings drifted",
+        ) as raised:
+            require_equivalent(
+                source_without_cache,
+                invalid_clone,
+                allow_operational_cache=True,
+                owned_cache_dir="/owned/cache",
+            )
+        assert "/owned" not in str(raised.value)
+        assert "/foreign" not in str(raised.value)
+
     drifted = clone.replace(b"url = opaque-remote", b"url = different-remote")
     with pytest.raises(
         builder.FinalCertificationBuildError,
         match="effective configuration drifted",
     ) as raised:
-        builder._require_private_dvc_config_equivalence(
+        require_equivalent(
             source,
             drifted,
-            credential_sections=('\'remote "private"\'',),
-            credential_proc_paths=("/proc/self/fd/41",),
             allow_operational_cache=True,
             owned_cache_dir="/owned/cache",
         )
@@ -2006,11 +2123,9 @@ def test_private_dvc_effective_equivalence_allows_only_owned_cache_overrides() -
         builder.FinalCertificationBuildError,
         match="owned cache settings drifted",
     ) as raised:
-        builder._require_private_dvc_config_equivalence(
+        require_equivalent(
             source,
             wrong_cache,
-            credential_sections=('\'remote "private"\'',),
-            credential_proc_paths=("/proc/self/fd/41",),
             allow_operational_cache=True,
             owned_cache_dir="/owned/cache",
         )
@@ -2514,6 +2629,7 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
     (clone / ".dvc/config.local").write_text("[remote \"private\"]\n")
     (clone / ".dvc/config.local").chmod(0o600)
     commands: list[tuple[str, ...]] = []
+    portable_commands: list[tuple[str, ...]] = []
     command_environments: list[Mapping[str, str]] = []
     command_pass_fds: list[tuple[int, ...]] = []
     credential = tmp_path / "credential.json"
@@ -2522,6 +2638,7 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
 
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         portable = tuple(kwargs.get("portable_argv", argv))
+        portable_commands.append(portable)
         command_environments.append(kwargs["environment"])
         command_pass_fds.append(tuple(kwargs["pass_fds"]))
         if "pull" in portable:
@@ -2567,8 +2684,28 @@ def test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache(
         env["__PYVENV_LAUNCHER__"].startswith("/proc/self/fd/")
         for env in command_environments
     )
-    assert all(credential_fd in descriptors for descriptors in command_pass_fds)
-    assert all(len(descriptors) == 4 for descriptors in command_pass_fds)
+    assert portable_commands[:2] == [
+        (".venv/bin/dvc", "config", "--local", "cache.dir", "<PRIVATE>"),
+        (".venv/bin/dvc", "config", "--local", "cache.type", "<PRIVATE>"),
+    ]
+    assert all(
+        credential_fd not in descriptors for descriptors in command_pass_fds[:2]
+    )
+    assert all(len(descriptors) == 3 for descriptors in command_pass_fds[:2])
+    credential_exposure_indexes = [
+        index
+        for index, descriptors in enumerate(command_pass_fds)
+        if credential_fd in descriptors
+    ]
+    assert credential_exposure_indexes == list(range(2, len(command_pass_fds)))
+    assert portable_commands[credential_exposure_indexes[0]][1:6] == (
+        "pull",
+        "--no-run-cache",
+        "-j",
+        "1",
+        contract.dvc_pointers[0].path,
+    )
+    assert all(len(descriptors) == 4 for descriptors in command_pass_fds[2:])
     assert all(record["pull_command"]["argv"][0] == ".venv/bin/dvc" for record in records)
     assert [command[1:6] for command in commands] == [
         ("pull", "--no-run-cache", "-j", "1", spec.path)
@@ -2630,6 +2767,7 @@ def test_global_dvc_status_always_disables_analytics(
 
 def test_isolated_dvc_site_cache_requires_empty_private_0700_directory(
     tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract, _ = _dvc_contract(tmp_path)
     source = tmp_path / "source"
@@ -2659,6 +2797,53 @@ def test_isolated_dvc_site_cache_requires_empty_private_0700_directory(
             contract=contract,
             executable=runtime,
         )
+
+    site_cache.chmod(0o700)
+    portable_commands: list[tuple[str, ...]] = []
+    credential_fd_sets: list[tuple[int, ...]] = []
+
+    def run_runtime(
+        _executable: Any,
+        _argv: Any,
+        **kwargs: Any,
+    ) -> builder.CommandResult:
+        portable_commands.append(tuple(kwargs["portable_argv"]))
+        credential_fd_sets.append(tuple(kwargs.get("private_pass_fds", ())))
+        return builder.CommandResult(
+            {"argv": list(kwargs["portable_argv"]), "returncode": 0},
+            "",
+            "",
+        )
+
+    def reject_operational_drift(**kwargs: Any) -> None:
+        if kwargs.get("allow_operational_cache") is True:
+            raise builder.FinalCertificationBuildError(
+                "private DVC effective configuration drifted after safe rebasing"
+            )
+
+    monkeypatch.setattr(builder, "_run_python_script_runtime", run_runtime)
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="effective configuration drifted",
+    ):
+        builder._restore_dvc_objects_with_anchored_executable(
+            source_root=source,
+            clone_root=clone,
+            cache_root=cache,
+            site_cache_root=site_cache,
+            installed_configuration=cast(
+                builder.InstalledDvcConfiguration,
+                SimpleNamespace(
+                    pass_fds=(99,),
+                    bind_owned_cache=lambda _path: None,
+                    revalidate=reject_operational_drift,
+                ),
+            ),
+            contract=contract,
+            executable=runtime,
+        )
+    assert [command[1] for command in portable_commands] == ["config", "config"]
+    assert credential_fd_sets == [(), ()]
 
 
 def test_dvc_executable_swap_is_detected_after_fd_anchored_invocation(
@@ -3710,6 +3895,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p5_cert_commit",
+            "h5_cert_commit",
             "p4_cert_commit",
             "h4_cert_commit",
             "p3_cert_commit",
@@ -3724,6 +3911,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p5_cert_commit",
+            "h5_cert_commit",
             "p4_cert_commit",
             "h4_cert_commit",
             "p3_cert_commit",
@@ -3739,6 +3928,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p5_cert_commit",
+        "h5_cert_commit",
         "p4_cert_commit",
         "h4_cert_commit",
         "p3_cert_commit",

@@ -3437,11 +3437,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate the complete P4/H4/P3/H3/P2/H2/P1/H1 lineage projection."""
+    """Validate the complete P5/H5/P4/H4/P3/H3/P2/H2/P1/H1 lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p5_cert_commit",
+        "h5_cert_commit",
         "p4_cert_commit",
         "h4_cert_commit",
         "p3_cert_commit",
@@ -3460,8 +3462,10 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p4_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h4_cert_commit"]
+        or commits["p5_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h5_cert_commit"]
+        or commits["p4_cert_commit"] != contract.p4_cert_commit
+        or commits["h4_cert_commit"] != contract.h4_cert_commit
         or commits["p3_cert_commit"] != contract.p3_cert_commit
         or commits["h3_cert_commit"] != contract.h3_cert_commit
         or commits["p2_cert_commit"] != contract.p2_cert_commit
@@ -4041,20 +4045,6 @@ def _require_private_dvc_config_equivalence(
         raise _error("private DVC equivalence bridge cardinality drifted")
     source = _private_dvc_config_mapping(_parse_private_dvc_config(source_payload))
     clone = _private_dvc_config_mapping(_parse_private_dvc_config(clone_payload))
-    if set(source) != set(clone):
-        raise _error("private DVC configuration section set drifted")
-    for index, (section, proc_path) in enumerate(
-        zip(credential_sections, credential_proc_paths, strict=True)
-    ):
-        if section not in source or section not in clone:
-            raise _error("private DVC credential section drifted")
-        if source[section].get("credentialpath") is None:
-            raise _error("source DVC credential path disappeared")
-        if clone[section].get("credentialpath") != proc_path:
-            raise _error("clone DVC credential descriptor bridge drifted")
-        marker = f"<retained-private-credential-{index}>"
-        source[section]["credentialpath"] = marker
-        clone[section]["credentialpath"] = marker
     if allow_operational_cache:
         if (
             owned_cache_dir is None
@@ -4074,6 +4064,20 @@ def _require_private_dvc_config_equivalence(
             clone.pop("cache", None)
     elif owned_cache_dir is not None:
         raise _error("private DVC owned cache binding appeared before configuration")
+    if set(source) != set(clone):
+        raise _error("private DVC configuration section set drifted")
+    for index, (section, proc_path) in enumerate(
+        zip(credential_sections, credential_proc_paths, strict=True)
+    ):
+        if section not in source or section not in clone:
+            raise _error("private DVC credential section drifted")
+        if source[section].get("credentialpath") is None:
+            raise _error("source DVC credential path disappeared")
+        if clone[section].get("credentialpath") != proc_path:
+            raise _error("clone DVC credential descriptor bridge drifted")
+        marker = f"<retained-private-credential-{index}>"
+        source[section]["credentialpath"] = marker
+        clone[section]["credentialpath"] = marker
     if source != clone:
         raise _error("private DVC effective configuration drifted after safe rebasing")
 
@@ -4399,7 +4403,7 @@ def _restore_dvc_objects_with_anchored_executable(
             environment=isolated_environment,
             timeout_seconds=120,
             context=f"DVC config {key}",
-            private_pass_fds=installed_configuration.pass_fds,
+            private_pass_fds=(),
         )
         if namespace_validator is not None:
             namespace_validator(f"after_dvc_config_{key}")

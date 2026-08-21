@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v4
+contract_version: closure_v1_phase4_final_certification_v5
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -10,8 +10,10 @@ authorities:
   p2_cert_commit: 72273b52d47df83acc7618fe98a887b74d690a13
   h3_cert_commit: 2372d0f9cc36aa916b79f34641b2b01134057890
   p3_cert_commit: bcd306a9e8dd5162466124d8854b9d1d99a8517c
+  h4_cert_commit: 44f96a7e2b204d80d8e336e90b4a0f4a3456c13f
+  p4_cert_commit: 21551c7e53b776b693f4f76b88682180093a0f31
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v4_commit
+  certification_target: published_P_CERT_v5_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -24,7 +26,9 @@ topology:
     - P-CERT3
     - H-CERT4
     - P-CERT4
-    - R-CERT
+    - H-CERT5
+    - P-CERT5
+    - R-CERT5
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -85,6 +89,7 @@ topology:
     manifest_written_last: true
   H-CERT4:
     role: corrective_credential_fd_and_dvc_site_cache_contract_tests_and_freeze
+    commit: h4_cert_commit
     direct_parent: p3_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -94,15 +99,39 @@ topology:
       - forbid_main_worktree_dvc_status_and_verify_static_git_pointer_boundary
   P-CERT4:
     role: data_only_final_certification_authority_v4
+    commit: p4_cert_commit
     requires_published_H_CERT4: true
+    supersedes_P_CERT3: true
+    supersedes_P_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: private_dvc_configuration_after_owned_cache_settings
+    dvc_pull_success_count: 0
+    r_cert_output_count: 0
+    retry_authorized: false
+    cleanup_status: succeeded_exact_namespace_removed
+    manifest_written_last: true
+  H-CERT5:
+    role: corrective_private_dvc_cache_equivalence_and_capability_contract_tests_and_freeze
+    direct_parent: p4_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - normalize_owned_cache_dir_and_type_before_section_set_equivalence
+      - reject_every_non_operational_private_section_or_setting_drift
+      - withhold_credential_fds_until_first_directed_pull
+      - record_r_cert4_failure_and_forbid_p_cert4_retry
+  P-CERT5:
+    role: data_only_final_certification_authority_v5
+    requires_published_H_CERT5: true
+    supersedes_P_CERT4: true
     supersedes_P_CERT3: true
     supersedes_P_CERT2: true
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT:
+  R-CERT5:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT: true
+    requires_published_P_CERT5: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -303,7 +332,54 @@ publication_scopes:
       - path: configs/closure_v1/phase4_final_certification_authority_manifest_v4.json
         status: A
         git_mode: "100644"
-  R-CERT:
+  H-CERT5:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT5:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v5.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v5.json
+        status: A
+        git_mode: "100644"
+  R-CERT5:
     additions: 8
     modifications: 0
     ordered_paths:
@@ -379,6 +455,10 @@ dvc_restoration:
   version_seal_before_private_config_or_pull: true
   single_dvc_runtime_retained_through_final_status_and_version_probe: true
   dvc_runtime_cross_call_identity_revalidated: true
+  operational_cache_fields_normalized_before_section_set_equivalence: true
+  only_owned_cache_dir_and_type_may_differ: true
+  credential_fds_passed_to_dvc_config_commands: false
+  first_credential_fd_subprocess_exposure: first_directed_dvc_pull
   used_by_all_isolated_dvc_commands: true
   copied_core_site_cache_dir_used: false
   main_dvc_site_cache_metadata_inode_inventory_unchanged: true
@@ -536,6 +616,7 @@ isolation:
     docker_client: "29.7.2"
     docker_server: "29.7.2"
   network_policy:
+    git_live_remote_ref_validation: allowed
     git_clone_from_origin: allowed
     eight_directed_dvc_pulls: allowed
     loopback_postgresql: allowed
@@ -588,6 +669,10 @@ isolation:
   version_seal_before_private_config_or_pull: true
   single_dvc_runtime_retained_through_final_status_and_version_probe: true
   dvc_runtime_cross_call_identity_revalidated: true
+  operational_cache_fields_normalized_before_section_set_equivalence: true
+  only_owned_cache_dir_and_type_may_differ: true
+  credential_fds_passed_to_dvc_config_commands: false
+  first_credential_fd_subprocess_exposure: first_directed_dvc_pull
   used_by_all_isolated_dvc_commands: true
   copied_core_site_cache_dir_used: false
   main_dvc_site_cache_metadata_inode_inventory_unchanged: true
@@ -597,6 +682,7 @@ isolation:
   main_worktree_dvc_state_source: git_and_versioned_dvc_pointers
   real_dvc_execution_scope: isolated_r_cert_clone_only
   superseded_p3_retry_authorized: false
+  superseded_p4_retry_authorized: false
 
 failure_diagnostics:
   sanitized_command_preservation_authorized: true
@@ -633,6 +719,7 @@ stop_rules:
   - attempt_to_execute_from_superseded_p1
   - attempt_to_execute_from_superseded_p2
   - attempt_to_execute_from_superseded_p3
+  - attempt_to_execute_from_superseded_p4
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
   - unsanitized_active_error_or_cleanup_failure_masking
@@ -644,6 +731,8 @@ stop_rules:
   - existing_partial_or_extra_output
   - credential_remote_url_database_url_or_absolute_path_leak
   - credential_fd_bridge_or_owned_site_cache_drift
+  - private_dvc_operational_cache_equivalence_drift
+  - credential_fd_exposure_before_first_directed_pull
   - attempt_to_execute_dvc_in_main_worktree
   - source_git_or_dvc_mutation
   - attempt_to_run_e0_u_e1_e10_fit_score_or_calibration
