@@ -65,10 +65,13 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_p9_failure_record,
     expected_p10_failure_record,
     expected_p11_failure_record,
+    expected_p12_failure_record,
+    expected_h13_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
     expected_postgres_portable_path_policy,
+    expected_postgres_startup_stability_policy,
     expected_sandbox_mountpoint_policy,
     expected_sandbox_smoke_policy,
     expected_test_access_guard_policy,
@@ -89,6 +92,9 @@ PLUGIN_ROOT_ENV = "CLOSURE_PHASE4_CERTIFICATION_REPO_ROOT"
 PLUGIN_RETAINED_PYTHON_ENV = "CLOSURE_PHASE4_CERTIFICATION_RETAINED_PYTHON"
 DB_SOCKET_ROOT = "/cert-db"
 DB_NAME = "closure_phase4_cert"
+CONTAINER_POSTGRES_SOCKET_ROOT = "/var/run/postgresql"
+POSTGRES_PID1_COMM_PATH = "/proc/1/comm"
+POSTGRES_FINAL_PID1_COMM = "postgres"
 POSTGRES_IMAGE = (
     "postgres:16-alpine@sha256:"
     "16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229"
@@ -96,6 +102,8 @@ POSTGRES_IMAGE = (
 POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS = 30
 POSTGRES_DESTROY_POLL_MAX_ATTEMPTS = 120
 POSTGRES_DESTROY_POLL_INTERVAL_SECONDS = 0.1
+POSTGRES_STABILITY_MAX_ATTEMPTS = 120
+POSTGRES_STABILITY_INTERVAL_SECONDS = 0.25
 POSTGRES_SOCKET_ENTRY_SPECS = (
     (".s.PGSQL.5432", "socket"),
     (".s.PGSQL.5432.lock", "regular_file"),
@@ -3831,11 +3839,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h12_authority_boundary(result, contract=contract)
+    _require_h14_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p12_cert_commit"),
+        execution_commit=result.get("p14_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3865,11 +3873,20 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P12/H12 aliases and the complete historical lineage."""
+    """Validate active P14/H14 aliases and the complete historical lineage."""
 
+    if (
+        "p13_cert_commit" not in value
+        or "h13_cert_commit" not in value
+        or value.get("p13_cert_commit") is not None
+        or value.get("h13_cert_commit") is not None
+    ):
+        raise _error("effective authority did not prove unpublished H13/P13 commits")
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p14_cert_commit",
+        "h14_cert_commit",
         "p12_cert_commit",
         "h12_cert_commit",
         "p11_cert_commit",
@@ -3904,8 +3921,11 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p12_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h12_cert_commit"]
+        or commits["p14_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h14_cert_commit"]
+        or commits["p14_cert_commit"] == commits["h14_cert_commit"]
+        or commits["p12_cert_commit"] != contract.p12_cert_commit
+        or commits["h12_cert_commit"] != contract.h12_cert_commit
         or commits["p11_cert_commit"] != contract.p11_cert_commit
         or commits["h11_cert_commit"] != contract.h11_cert_commit
         or commits["p10_cert_commit"] != contract.p10_cert_commit
@@ -3916,6 +3936,8 @@ def _require_effective_authority_commit_binding(
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p14_cert_commit"] == commits["p12_cert_commit"]
+        or commits["h14_cert_commit"] == commits["h12_cert_commit"]
         or commits["p12_cert_commit"] == commits["p11_cert_commit"]
         or commits["h12_cert_commit"] == commits["h11_cert_commit"]
         or commits["p11_cert_commit"] == commits["p10_cert_commit"]
@@ -3945,17 +3967,21 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h12_authority_boundary(
+def _require_h14_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R12 to the factual R11 failure and all H12 isolation policies."""
+    """Bind R14 to the invalid H13 candidate and preserved failure history."""
 
+    if value.get("status") != "effective" or value.get("gate") != "P-CERT":
+        raise _error("R14 requires effective published P14 authority")
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H12 authority payload is absent")
+        raise _error("effective H14 authority payload is absent")
     isolation = authority.get("isolation")
     if (
-        authority.get("p11_failure") != expected_p11_failure_record()
+        authority.get("h13_failure") != expected_h13_failure_record()
+        or authority.get("p12_failure") != expected_p12_failure_record()
+        or authority.get("p11_failure") != expected_p11_failure_record()
         or authority.get("p10_failure") != expected_p10_failure_record()
         or authority.get("p9_failure") != expected_p9_failure_record()
         or not isinstance(isolation, Mapping)
@@ -3975,6 +4001,10 @@ def _require_h12_authority_boundary(
         != expected_postgres_connection_policy()
         or isolation.get("postgres_connection_policy")
         != dict(contract.postgres_connection_policy)
+        or isolation.get("postgres_startup_stability_policy")
+        != expected_postgres_startup_stability_policy()
+        or isolation.get("postgres_startup_stability_policy")
+        != dict(contract.postgres_startup_stability_policy)
         or isolation.get("postgres_destroy_poll_policy")
         != expected_postgres_destroy_poll_policy()
         or isolation.get("postgres_destroy_poll_policy")
@@ -3984,7 +4014,7 @@ def _require_h12_authority_boundary(
         or isolation.get("test_access_guard_policy")
         != dict(contract.test_access_guard_policy)
     ):
-        raise _error("effective H12 failure/isolation authority drifted")
+        raise _error("effective H14 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -3992,7 +4022,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P12 authority's exact partial-clone status policy."""
+    """Require the effective P14 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4026,7 +4056,7 @@ def _require_dvc_status_policy_projection(
         raise _error(f"{context} DVC status policy projection drifted")
 
 
-def _require_h12_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h14_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -4057,6 +4087,7 @@ def _require_h12_runtime_policy(contract: FinalCertificationContract) -> None:
     helper_url = SAFE_DB_URL.replace("postgresql+asyncpg://", "postgresql://", 1)
     helper_database_name = helper_url.rsplit("/", 1)[-1]
     helper_admin_url = helper_url.rsplit("/", 1)[0] + "/postgres"
+    startup_stability = expected_postgres_startup_stability_policy()
     destroy_poll = expected_postgres_destroy_poll_policy()
     access_guard = expected_test_access_guard_policy()
     if (
@@ -4072,6 +4103,48 @@ def _require_h12_runtime_policy(contract: FinalCertificationContract) -> None:
         or DB_SOCKET_ROOT != "/cert-db"
         or helper_database_name != DB_NAME
         or helper_admin_url != "postgresql://postgres@/postgres"
+        or dict(contract.postgres_startup_stability_policy) != startup_stability
+        or len(startup_stability) != 22
+        or startup_stability.get("pid1_expected_executable")
+        != POSTGRES_FINAL_PID1_COMM
+        or startup_stability.get("pid1_checked_before_readiness") is not True
+        or startup_stability.get("pid1_revalidated_after_socket_claim") is not True
+        or startup_stability.get("readiness_uses_explicit_socket_directory")
+        is not True
+        or startup_stability.get("exact_socket_claim_count")
+        != len(POSTGRES_SOCKET_ENTRY_SPECS)
+        or startup_stability.get("same_claims_revalidated_before_return")
+        is not True
+        or startup_stability.get("max_stability_attempts")
+        != POSTGRES_STABILITY_MAX_ATTEMPTS
+        or startup_stability.get("stability_interval_seconds")
+        != POSTGRES_STABILITY_INTERVAL_SECONDS
+        or startup_stability.get("retryable_inventory_states")
+        != ["empty", "expected_subset"]
+        or startup_stability.get("unexpected_names_fail_closed") is not True
+        or startup_stability.get("unexpected_inode_types_fail_closed") is not True
+        or startup_stability.get("unexpected_link_counts_fail_closed") is not True
+        or startup_stability.get("claim_replacement_fails_closed") is not True
+        or startup_stability.get("recapture_after_stop_authorized") is not False
+        or startup_stability.get("arbitrary_residual_adoption_authorized")
+        is not False
+        or startup_stability.get("observed_inventory_serialized") is not False
+        or startup_stability.get("container_identity_serialized") is not False
+        or startup_stability.get("absolute_paths_serialized") is not False
+        or startup_stability.get(
+            "container_binding_checked_before_and_after_probes"
+        )
+        is not True
+        or startup_stability.get("readiness_revalidated_after_socket_claim")
+        is not True
+        or startup_stability.get(
+            "pid1_probe_requires_exact_stdout_and_empty_stderr"
+        )
+        is not True
+        or startup_stability.get(
+            "handoff_updated_with_same_container_identity_and_claims"
+        )
+        is not True
         or dict(contract.postgres_cleanup_policy) != cleanup
         or cleanup.get("graceful_stop_required") is not True
         or cleanup.get("graceful_stop_timeout_seconds")
@@ -4113,7 +4186,7 @@ def _require_h12_runtime_policy(contract: FinalCertificationContract) -> None:
         or dict(contract.cleanup_diagnostic_policy)
         != expected_cleanup_diagnostic_policy()
     ):
-        raise _error("H12 runtime isolation policy drifted")
+        raise _error("H14 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -4125,7 +4198,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h12_runtime_policy(contract)
+    _require_h14_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -4134,14 +4207,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h12_authority_boundary(authority, contract=contract)
+    _require_h14_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p12_cert_commit"),
+        execution_commit=authority.get("p14_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p12_cert_commit"]
+    effective_commit = authority_commits["p14_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -5967,31 +6040,41 @@ def _postgres_socket_entry_kind(metadata: os.stat_result) -> str:
     raise _error("PostgreSQL socket inventory contains an unsupported inode type")
 
 
-def _capture_owned_postgres_socket_inventory(
+def _observe_owned_postgres_socket_inventory(
     socket_handle: DirectoryHandle,
-) -> tuple[OwnedPostgresSocketEntry, ...]:
-    """Claim only the exact server socket and lock by retained-dirfd identity."""
+    *,
+    retry_expected_subset: bool,
+) -> tuple[OwnedPostgresSocketEntry, ...] | None:
+    """Claim exact2, allowing only a metadata-safe expected subset to retry."""
 
     _require_postgres_socket_directory(
         socket_handle,
         context="PostgreSQL socket inventory capture",
     )
     expected = dict(POSTGRES_SOCKET_ENTRY_SPECS)
-    if set(os.listdir(socket_handle.fd)) != set(expected):
-        raise _error("PostgreSQL socket inventory is not exact two")
+    expected_names = set(expected)
+    observed_names = set(os.listdir(socket_handle.fd))
+    if not observed_names.issubset(expected_names):
+        raise _error("PostgreSQL socket inventory contains an unexpected name")
+
     claims: list[OwnedPostgresSocketEntry] = []
     for name, expected_kind in POSTGRES_SOCKET_ENTRY_SPECS:
-        first = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
-        second = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+        if name not in observed_names:
+            continue
+        try:
+            first = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+            second = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+        except FileNotFoundError as exc:
+            raise _error(
+                "PostgreSQL socket inventory changed while being inspected"
+            ) from exc
         first_kind = _postgres_socket_entry_kind(first)
         second_kind = _postgres_socket_entry_kind(second)
-        if (
-            first_kind != expected_kind
-            or second_kind != expected_kind
-            or first.st_nlink != 1
-            or second.st_nlink != 1
-            or (first.st_dev, first.st_ino) != (second.st_dev, second.st_ino)
-        ):
+        if first_kind != expected_kind or second_kind != expected_kind:
+            raise _error("PostgreSQL socket inventory inode type drifted")
+        if first.st_nlink != 1 or second.st_nlink != 1:
+            raise _error("PostgreSQL socket inventory link count drifted")
+        if (first.st_dev, first.st_ino) != (second.st_dev, second.st_ino):
             raise _error("PostgreSQL socket inventory identity drifted")
         claims.append(
             OwnedPostgresSocketEntry(
@@ -6002,9 +6085,75 @@ def _capture_owned_postgres_socket_inventory(
                 link_count=first.st_nlink,
             )
         )
-    if set(os.listdir(socket_handle.fd)) != set(expected):
-        raise _error("PostgreSQL socket inventory changed while being claimed")
+
+    repeated_names = set(os.listdir(socket_handle.fd))
+    if not repeated_names.issubset(expected_names):
+        raise _error("PostgreSQL socket inventory contains an unexpected name")
+    if repeated_names != observed_names:
+        raise _error("PostgreSQL socket inventory changed while being inspected")
+    if observed_names != expected_names:
+        if not retry_expected_subset:
+            raise _error("PostgreSQL socket inventory is not exact two")
+        # Only a stable, fully inspected subset is retryable.  A changed set
+        # was rejected above rather than silently adopting its new entries.
+        return None
     return tuple(claims)
+
+
+def _capture_owned_postgres_socket_inventory(
+    socket_handle: DirectoryHandle,
+) -> tuple[OwnedPostgresSocketEntry, ...]:
+    """Claim only the exact server socket and lock by retained-dirfd identity."""
+
+    claims = _observe_owned_postgres_socket_inventory(
+        socket_handle,
+        retry_expected_subset=False,
+    )
+    if claims is None:  # pragma: no cover - closed by retry_expected_subset=False
+        raise _error("PostgreSQL socket inventory is not exact two")
+    return claims
+
+
+def _revalidate_owned_postgres_socket_inventory(
+    socket_handle: DirectoryHandle,
+    claims: Sequence[OwnedPostgresSocketEntry],
+) -> None:
+    """Revalidate the same exact2 claims without adopting current names."""
+
+    _require_postgres_socket_directory(
+        socket_handle,
+        context="PostgreSQL socket inventory revalidation",
+    )
+    expected = dict(POSTGRES_SOCKET_ENTRY_SPECS)
+    claim_by_name = {claim.name: claim for claim in claims}
+    if (
+        len(claim_by_name) != len(claims)
+        or set(claim_by_name) != set(expected)
+        or any(
+            claim.kind != expected.get(claim.name) or claim.link_count != 1
+            for claim in claims
+        )
+    ):
+        raise _error("PostgreSQL socket revalidation claim set is invalid")
+    if set(os.listdir(socket_handle.fd)) != set(expected):
+        raise _error("PostgreSQL socket claims changed before revalidation")
+    for name, expected_kind in POSTGRES_SOCKET_ENTRY_SPECS:
+        claim = claim_by_name[name]
+        try:
+            first = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+            second = os.stat(name, dir_fd=socket_handle.fd, follow_symlinks=False)
+        except FileNotFoundError as exc:
+            raise _error("PostgreSQL socket claim disappeared") from exc
+        for metadata in (first, second):
+            if (
+                _postgres_socket_entry_kind(metadata) != expected_kind
+                or metadata.st_nlink != claim.link_count
+                or (metadata.st_dev, metadata.st_ino)
+                != (claim.device, claim.inode)
+            ):
+                raise _error("PostgreSQL socket claim replacement detected")
+    if set(os.listdir(socket_handle.fd)) != set(expected):
+        raise _error("PostgreSQL socket claims changed during revalidation")
 
 
 def _unlink_owned_postgres_socket_entry(
@@ -6161,6 +6310,91 @@ def _cleanup_owned_postgres_socket_inventory(
     return removed
 
 
+def _probe_owned_postgres_pid1(
+    owner: OwnedPostgres,
+    *,
+    context: str,
+) -> tuple[bool, Mapping[str, Any]]:
+    """Distinguish entrypoint initialization from the final PID1 postgres."""
+
+    _require_owned_postgres_binding(owner, context=f"{context} before PID1 probe")
+    probe = _run(
+        (
+            "/usr/bin/docker",
+            "exec",
+            owner.container_id,
+            "cat",
+            POSTGRES_PID1_COMM_PATH,
+        ),
+        cwd=PROJECT_ROOT,
+        portable_argv=(
+            "docker",
+            "exec",
+            "<OWNED_CONTAINER>",
+            "<POSTGRES_PID1_COMM_PROBE>",
+        ),
+        timeout_seconds=10,
+        require_success=False,
+        failure_stage="postgres final PID1 probe",
+    )
+    _require_owned_postgres_binding(owner, context=f"{context} after PID1 probe")
+    if probe.record.get("returncode") != 0 or probe.stderr:
+        raise _error("PostgreSQL final PID1 probe failed closed")
+    if re.fullmatch(r"[A-Za-z0-9_.-]{1,64}\n", probe.stdout) is None:
+        raise _error("PostgreSQL PID1 probe output is malformed")
+    return probe.stdout == f"{POSTGRES_FINAL_PID1_COMM}\n", dict(probe.record)
+
+
+def _probe_owned_postgres_readiness(
+    owner: OwnedPostgres,
+    *,
+    context: str,
+) -> CommandResult:
+    """Probe the exact owned Unix socket without serializing its absolute path."""
+
+    _require_owned_postgres_binding(owner, context=f"{context} before readiness")
+    probe = _run(
+        (
+            "/usr/bin/docker",
+            "exec",
+            owner.container_id,
+            "pg_isready",
+            "-q",
+            "-h",
+            CONTAINER_POSTGRES_SOCKET_ROOT,
+            "-p",
+            "5432",
+            "-U",
+            "postgres",
+            "-d",
+            DB_NAME,
+        ),
+        cwd=PROJECT_ROOT,
+        portable_argv=(
+            "docker",
+            "exec",
+            "<OWNED_CONTAINER>",
+            "pg_isready",
+            "-q",
+            "-h",
+            "<CONTAINER_POSTGRES_SOCKET>",
+            "-p",
+            "5432",
+            "-U",
+            "postgres",
+            "-d",
+            DB_NAME,
+        ),
+        timeout_seconds=10,
+        require_success=False,
+        failure_stage="postgres final readiness probe",
+    )
+    _require_owned_postgres_binding(owner, context=f"{context} after readiness")
+    if probe.stdout or probe.stderr:
+        raise _error("PostgreSQL quiet readiness probe emitted output")
+    return probe
+
+
 def _start_owned_postgres(
     socket_handle: DirectoryHandle,
     *,
@@ -6200,14 +6434,14 @@ def _start_owned_postgres(
                 "--env",
                 f"POSTGRES_DB={DB_NAME}",
                 "--volume",
-                f"{socket_root}:/var/run/postgresql",
+                f"{socket_root}:{CONTAINER_POSTGRES_SOCKET_ROOT}",
                 "--tmpfs",
                 "/var/lib/postgresql/data:rw,size=512m",
                 "--tmpfs",
                 "/tmp:rw,size=64m",
                 POSTGRES_IMAGE,
                 "-c",
-                "unix_socket_directories=/var/run/postgresql",
+                f"unix_socket_directories={CONTAINER_POSTGRES_SOCKET_ROOT}",
                 "-c",
                 "listen_addresses=",
             ),
@@ -6289,65 +6523,107 @@ def _start_owned_postgres(
             raise _error("Docker did not return one exact owned container ID")
         if namespace_validator is not None:
             namespace_validator("after_postgres_start")
-        for attempt in range(120):
+        for attempt in range(POSTGRES_STABILITY_MAX_ATTEMPTS):
             if namespace_validator is not None:
                 namespace_validator(f"before_postgres_probe_{attempt}")
+            # Do not observe or claim the socket inventory until the final
+            # PID1 and explicit readiness probes both pass.  The image's
+            # entrypoint can own an exact-two temporary postmaster inventory;
+            # the retryable-inventory policy applies only once a capture is
+            # eligible below, so that transient inventory is never adopted.
+            final_pid1, pid1_record = _probe_owned_postgres_pid1(
+                owner,
+                context=f"PostgreSQL stability attempt {attempt}",
+            )
+            if not final_pid1:
+                if namespace_validator is not None:
+                    namespace_validator(f"after_postgres_probe_{attempt}")
+                if attempt + 1 < POSTGRES_STABILITY_MAX_ATTEMPTS:
+                    time.sleep(POSTGRES_STABILITY_INTERVAL_SECONDS)
+                continue
+            probe = _probe_owned_postgres_readiness(
+                owner,
+                context=f"PostgreSQL stability attempt {attempt}",
+            )
+            if probe.record.get("returncode") != 0:
+                if namespace_validator is not None:
+                    namespace_validator(f"after_postgres_probe_{attempt}")
+                if attempt + 1 < POSTGRES_STABILITY_MAX_ATTEMPTS:
+                    time.sleep(POSTGRES_STABILITY_INTERVAL_SECONDS)
+                continue
             _require_owned_postgres_binding(
                 owner,
-                context=f"PostgreSQL readiness probe {attempt}",
+                context=f"PostgreSQL socket capture {attempt} before",
             )
-            probe = _run(
-                (
-                    "/usr/bin/docker",
-                    "exec",
-                    container_id,
-                    "pg_isready",
-                    "-U",
-                    "postgres",
-                    "-d",
-                    DB_NAME,
-                ),
-                cwd=PROJECT_ROOT,
-                portable_argv=(
-                    "docker",
-                    "exec",
-                    "<OWNED_CONTAINER>",
-                    "pg_isready",
-                    "-U",
-                    "postgres",
-                    "-d",
-                    DB_NAME,
-                ),
-                timeout_seconds=10,
-                require_success=False,
-                failure_stage="postgres readiness probe",
+            socket_inventory = _observe_owned_postgres_socket_inventory(
+                socket_handle,
+                retry_expected_subset=True,
+            )
+            _require_owned_postgres_binding(
+                owner,
+                context=f"PostgreSQL socket capture {attempt} after",
+            )
+            if socket_inventory is None:
+                if namespace_validator is not None:
+                    namespace_validator(f"after_postgres_probe_{attempt}")
+                if attempt + 1 < POSTGRES_STABILITY_MAX_ATTEMPTS:
+                    time.sleep(POSTGRES_STABILITY_INTERVAL_SECONDS)
+                continue
+            owner = OwnedPostgres(
+                name=owner.name,
+                container_id=owner.container_id,
+                socket_inventory=socket_inventory,
+            )
+            if owner_handoff is not None:
+                owner_handoff(owner)
+            final_pid1_after_claim, pid1_revalidation_record = (
+                _probe_owned_postgres_pid1(
+                    owner,
+                    context=f"PostgreSQL post-claim stability {attempt}",
+                )
+            )
+            if not final_pid1_after_claim:
+                raise _error("PostgreSQL final PID1 changed after socket claim")
+            readiness_revalidation = _probe_owned_postgres_readiness(
+                owner,
+                context=f"PostgreSQL post-claim stability {attempt}",
+            )
+            if readiness_revalidation.record.get("returncode") != 0:
+                raise _error("PostgreSQL readiness changed after socket claim")
+            if namespace_validator is not None:
+                namespace_validator(f"before_postgres_claim_revalidation_{attempt}")
+            _require_owned_postgres_binding(
+                owner,
+                context=f"PostgreSQL socket revalidation {attempt} before",
+            )
+            _revalidate_owned_postgres_socket_inventory(
+                socket_handle,
+                owner.socket_inventory,
+            )
+            _require_owned_postgres_binding(
+                owner,
+                context=f"PostgreSQL socket revalidation {attempt} after",
             )
             if namespace_validator is not None:
                 namespace_validator(f"after_postgres_probe_{attempt}")
-            _require_owned_postgres_binding(
-                owner,
-                context=f"PostgreSQL readiness result {attempt}",
-            )
-            if probe.record["returncode"] == 0:
-                socket_inventory = _capture_owned_postgres_socket_inventory(
-                    socket_handle
-                )
-                owner = OwnedPostgres(
-                    name=owner.name,
-                    container_id=owner.container_id,
-                    socket_inventory=socket_inventory,
-                )
-                return owner, {
-                    "image": POSTGRES_IMAGE,
-                    "network": "none",
-                    "transport": "owned_unix_socket",
-                    "database": DB_NAME,
-                    "credentials_serialized": False,
-                    "run_command": dict(run.record),
-                    "readiness_command": dict(probe.record),
-                }
-            time.sleep(0.25)
-        raise _error("owned PostgreSQL container did not become ready")
+            return owner, {
+                "image": POSTGRES_IMAGE,
+                "network": "none",
+                "transport": "owned_unix_socket",
+                "database": DB_NAME,
+                "credentials_serialized": False,
+                "run_command": dict(run.record),
+                "pid1_command": dict(pid1_record),
+                "readiness_command": dict(probe.record),
+                "pid1_revalidation_command": dict(pid1_revalidation_record),
+                "readiness_revalidation_command": dict(
+                    readiness_revalidation.record
+                ),
+                "startup_stability_policy": (
+                    expected_postgres_startup_stability_policy()
+                ),
+            }
+        raise _error("owned PostgreSQL container did not become stably ready")
     except BaseException:
         if owner_handoff is not None:
             raise
@@ -6934,6 +7210,9 @@ def _run_verification_with_runtime(
             "postgres_connection_policy": dict(
                 contract.postgres_connection_policy
             ),
+            "postgres_startup_stability_policy": dict(
+                contract.postgres_startup_stability_policy
+            ),
             "postgres_destroy_poll_policy": dict(
                 contract.postgres_destroy_poll_policy
             ),
@@ -7417,7 +7696,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h12_authority_boundary(authority, contract=contract)
+    _require_h14_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
@@ -7940,11 +8219,13 @@ def _validate_verification_record(
         "sandbox_smoke_policy",
         "cleanup_diagnostic_policy",
         "postgres_connection_policy",
+        "postgres_startup_stability_policy",
         "postgres_destroy_poll_policy",
         "test_access_guard_policy",
     }:
         raise _error("verification sandbox record is not exact")
     template = sandbox.get("argv_template_prefix")
+    startup_stability = sandbox.get("postgres_startup_stability_policy")
     if (
         sandbox.get("backend") != "bubblewrap"
         or sandbox.get("network") != "unshared"
@@ -7964,6 +8245,10 @@ def _validate_verification_record(
         != expected_postgres_connection_policy()
         or sandbox.get("postgres_connection_policy")
         != dict(contract.postgres_connection_policy)
+        or not isinstance(startup_stability, Mapping)
+        or len(startup_stability) != 22
+        or startup_stability != expected_postgres_startup_stability_policy()
+        or startup_stability != dict(contract.postgres_startup_stability_policy)
         or sandbox.get("postgres_destroy_poll_policy")
         != expected_postgres_destroy_poll_policy()
         or sandbox.get("postgres_destroy_poll_policy")

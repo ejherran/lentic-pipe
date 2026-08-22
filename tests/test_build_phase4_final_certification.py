@@ -85,8 +85,12 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p12_cert_commit": P_COMMIT,
-        "h12_cert_commit": H_COMMIT,
+        "p14_cert_commit": P_COMMIT,
+        "h14_cert_commit": H_COMMIT,
+        "p13_cert_commit": None,
+        "h13_cert_commit": None,
+        "p12_cert_commit": active_contract.p12_cert_commit,
+        "h12_cert_commit": active_contract.h12_cert_commit,
         "p11_cert_commit": active_contract.p11_cert_commit,
         "h11_cert_commit": active_contract.h11_cert_commit,
         "p10_cert_commit": active_contract.p10_cert_commit,
@@ -115,6 +119,8 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": "synthetic",
+            "h13_failure": contract_module.expected_h13_failure_record(),
+            "p12_failure": contract_module.expected_p12_failure_record(),
             "p11_failure": contract_module.expected_p11_failure_record(),
             "p10_failure": contract_module.expected_p10_failure_record(),
             "p9_failure": contract_module.expected_p9_failure_record(),
@@ -130,6 +136,9 @@ def _authority(
                 ),
                 "postgres_connection_policy": (
                     contract_module.expected_postgres_connection_policy()
+                ),
+                "postgres_startup_stability_policy": (
+                    contract_module.expected_postgres_startup_stability_policy()
                 ),
                 "postgres_destroy_poll_policy": (
                     contract_module.expected_postgres_destroy_poll_policy()
@@ -332,6 +341,9 @@ def _products(
         ),
         "postgres_connection_policy": (
             contract_module.expected_postgres_connection_policy()
+        ),
+        "postgres_startup_stability_policy": (
+            contract_module.expected_postgres_startup_stability_policy()
         ),
         "postgres_destroy_poll_policy": (
             contract_module.expected_postgres_destroy_poll_policy()
@@ -803,20 +815,33 @@ def test_openapi_validator_rejects_operation_id_and_path_count_drift(
 
 def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     contract = _locked_contract()
+    assert len(contract.h13_scope) == len(contract.h_scope) == 11
+    assert all(spec.status == "M" for spec in (*contract.h13_scope, *contract.h_scope))
+    assert len(contract.p13_scope) == len(contract.p_scope) == 2
+    assert all(spec.status == "A" for spec in (*contract.p13_scope, *contract.p_scope))
+    assert len(contract.r_scope) == 8
+    assert all(spec.status == "A" for spec in contract.r_scope)
+    assert tuple(spec.path for spec in contract.r_scope) == contract.output_paths
+    assert contract_module.CERTIFICATION_ROOT == Path(
+        "reports/closure_v1/12_certification"
+    )
     products = _products(contract)
     assert list(products.artifacts) == [Path(path).name for path in contract.output_paths[:-1]]
     assert products.manifest["status"] == "completed"
     assert products.manifest["execution_commit"] == P_COMMIT
     assert products.manifest["paths_outside_exact8_equal_p_cert"] is True
     assert products.manifest["scientific_boundary"]["scientific_efficacy_claimed"] is False
+    assert products.manifest["scientific_boundary"]["phase5_started"] is False
     assert products.manifest["p_cert_authority"] == {
         "path": contract_module.AUTHORITY_PATH.as_posix(),
         "bytes": 123,
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p12_cert_commit": P_COMMIT,
-        "h12_cert_commit": H_COMMIT,
+        "p14_cert_commit": P_COMMIT,
+        "h14_cert_commit": H_COMMIT,
+        "p12_cert_commit": contract.p12_cert_commit,
+        "h12_cert_commit": contract.h12_cert_commit,
         "p11_cert_commit": contract.p11_cert_commit,
         "h11_cert_commit": contract.h11_cert_commit,
         "p10_cert_commit": contract.p10_cert_commit,
@@ -846,8 +871,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p12_cert_commit": P_COMMIT,
-        "h12_cert_commit": H_COMMIT,
+        "p14_cert_commit": P_COMMIT,
+        "h14_cert_commit": H_COMMIT,
+        "p12_cert_commit": contract.p12_cert_commit,
+        "h12_cert_commit": contract.h12_cert_commit,
         "p11_cert_commit": contract.p11_cert_commit,
         "h11_cert_commit": contract.h11_cert_commit,
         "p10_cert_commit": contract.p10_cert_commit,
@@ -873,6 +900,13 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     }
     assert "authority" not in products.manifest
     environment = json.loads(products.artifacts["environment.json"])
+    startup_stability = environment["isolation"][
+        "postgres_startup_stability_policy"
+    ]
+    assert len(startup_stability) == 22
+    assert startup_stability == (
+        contract_module.expected_postgres_startup_stability_policy()
+    )
     assert environment["dvc"]["main_dvc_command_run"] is False
     assert environment["dvc"]["main_dvc_status_command_run"] is False
     assert (
@@ -931,9 +965,33 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
 
 def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     contract = _locked_contract()
+    ineffective = _authority(contract)
+    ineffective["status"] = "locked_unpublished"
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="effective published P14",
+    ):
+        _products(contract, authority=ineffective)
+    unpublished_candidate_alias = _authority(contract)
+    unpublished_candidate_alias["p13_cert_commit"] = "7" * 40
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="unpublished H13/P13",
+    ):
+        _products(contract, authority=unpublished_candidate_alias)
+    collapsed_active_topology = _authority(contract)
+    collapsed_active_topology["h14_cert_commit"] = P_COMMIT
+    collapsed_active_topology["h_cert_commit"] = P_COMMIT
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="commit binding drifted",
+    ):
+        _products(contract, authority=collapsed_active_topology)
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p14_cert_commit",
+        "h14_cert_commit",
         "p12_cert_commit",
         "h12_cert_commit",
         "p11_cert_commit",
@@ -1000,6 +1058,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p14_cert_commit",
+        "h14_cert_commit",
         "p12_cert_commit",
         "h12_cert_commit",
         "p11_cert_commit",
@@ -2804,6 +2864,30 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
             "/tmp",
         )
     )
+    assert contract_module.expected_postgres_startup_stability_policy() == {
+        "pid1_expected_executable": "postgres",
+        "pid1_checked_before_readiness": True,
+        "pid1_revalidated_after_socket_claim": True,
+        "readiness_uses_explicit_socket_directory": True,
+        "exact_socket_claim_count": 2,
+        "same_claims_revalidated_before_return": True,
+        "max_stability_attempts": 120,
+        "stability_interval_seconds": 0.25,
+        "retryable_inventory_states": ["empty", "expected_subset"],
+        "unexpected_names_fail_closed": True,
+        "unexpected_inode_types_fail_closed": True,
+        "unexpected_link_counts_fail_closed": True,
+        "claim_replacement_fails_closed": True,
+        "recapture_after_stop_authorized": False,
+        "arbitrary_residual_adoption_authorized": False,
+        "observed_inventory_serialized": False,
+        "container_identity_serialized": False,
+        "absolute_paths_serialized": False,
+        "container_binding_checked_before_and_after_probes": True,
+        "readiness_revalidated_after_socket_claim": True,
+        "pid1_probe_requires_exact_stdout_and_empty_stderr": True,
+        "handoff_updated_with_same_container_identity_and_claims": True,
+    }
     assert contract_module.expected_postgres_cleanup_policy() == {
         "graceful_stop_required": True,
         "graceful_stop_timeout_seconds": 30,
@@ -2837,6 +2921,120 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
         "timeout_preserves_owner": True,
     }
     assert active is False
+
+    # The image entrypoint can expose a ready temporary postmaster while PID1
+    # is still the entrypoint. H13 must defer inventory capture during that
+    # phase, then retry only a safe eligible subset and seal/revalidate the
+    # final postgres claims.
+    portable_calls.clear()
+    actual_calls: list[list[str]] = []
+    pid1_probes = 0
+    handed_off: list[builder.OwnedPostgres] = []
+    stages: list[str] = []
+    stable_socket_inodes: set[int] = set()
+    production_socket_kind = builder._postgres_socket_entry_kind
+
+    def stable_socket_kind(metadata: os.stat_result) -> str:
+        if metadata.st_ino in stable_socket_inodes:
+            return "socket"
+        return production_socket_kind(metadata)
+
+    def stable_run(argv: Any, **kwargs: Any) -> builder.CommandResult:
+        nonlocal active, pid1_probes
+        actual = list(argv)
+        portable = builder._portable_argv(kwargs["portable_argv"])
+        actual_calls.append(actual)
+        portable_calls.append(portable)
+        if actual[1] == "run":
+            active = True
+            return builder.CommandResult(
+                {"argv": portable, "returncode": 0}, container_id, ""
+            )
+        if actual[1] == "inspect":
+            return builder.CommandResult(
+                {"argv": portable, "returncode": 0 if active else 1},
+                container_id if active else "",
+                "" if active else f"Error: No such object: {actual[-1]}",
+            )
+        if actual[1] == "exec" and actual[3] == "cat":
+            pid1_probes += 1
+            if pid1_probes == 3:
+                socket_path = (
+                    tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[0][0]
+                )
+                socket_path.write_text(
+                    "synthetic owned final postmaster socket\n",
+                    encoding="utf-8",
+                )
+                stable_socket_inodes.add(socket_path.stat().st_ino)
+                (tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[1][0]).write_text(
+                    "owned final postmaster lock\n",
+                    encoding="utf-8",
+                )
+            comm = "docker-entrypoi\n" if pid1_probes == 1 else "postgres\n"
+            return builder.CommandResult(
+                {"argv": portable, "returncode": 0}, comm, ""
+            )
+        if actual[1] == "exec" and actual[3] == "pg_isready":
+            return builder.CommandResult(
+                {"argv": portable, "returncode": 0}, "", ""
+            )
+        if actual[1] == "stop":
+            active = False
+            return builder.CommandResult(
+                {"argv": portable, "returncode": 0}, "", ""
+            )
+        raise AssertionError(actual)
+
+    monkeypatch.setattr(builder, "_run", stable_run)
+    monkeypatch.setattr(builder, "_postgres_socket_entry_kind", stable_socket_kind)
+    monkeypatch.setattr(builder.time, "sleep", lambda seconds: None)
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        owner, database = builder._start_owned_postgres(
+            socket_handle,
+            namespace_validator=stages.append,
+            owner_handoff=handed_off.append,
+        )
+        assert len(handed_off) == 2
+        assert handed_off[0].container_id == handed_off[1].container_id == container_id
+        assert handed_off[0].socket_inventory == ()
+        assert handed_off[1] == owner
+        assert len(owner.socket_inventory) == 2
+        assert [claim.name for claim in owner.socket_inventory] == [
+            name for name, _kind in builder.POSTGRES_SOCKET_ENTRY_SPECS
+        ]
+        assert pid1_probes == 4
+        assert database["startup_stability_policy"] == (
+            contract_module.expected_postgres_startup_stability_policy()
+        )
+        assert stages.index("before_postgres_probe_0") < stages.index(
+            "before_postgres_probe_1"
+        ) < stages.index("before_postgres_probe_2")
+        assert "before_postgres_claim_revalidation_2" in stages
+        pid1_actual = [
+            call for call in actual_calls if len(call) > 3 and call[3] == "cat"
+        ]
+        readiness_actual = [
+            call
+            for call in actual_calls
+            if len(call) > 3 and call[3] == "pg_isready"
+        ]
+        assert all(call[-1] == builder.POSTGRES_PID1_COMM_PATH for call in pid1_actual)
+        assert all(
+            call[call.index("-h") + 1] == builder.CONTAINER_POSTGRES_SOCKET_ROOT
+            for call in readiness_actual
+        )
+        serialized_database = json.dumps(database, sort_keys=True)
+        assert builder.POSTGRES_PID1_COMM_PATH not in serialized_database
+        assert builder.CONTAINER_POSTGRES_SOCKET_ROOT not in serialized_database
+        assert container_id not in serialized_database
+        cleanup = builder._stop_owned_postgres(owner, socket_handle=socket_handle)
+        assert cleanup["socket_inventory_claimed"] == 2
+        assert cleanup["socket_entries_removed_after_stop"] == 2
+        assert os.listdir(socket_handle.fd) == []
+    finally:
+        socket_handle.close()
 
 
 def test_postgres_callback_failure_after_run_cleans_exact_container_id(
@@ -3084,13 +3282,20 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
         assert removed_targets == [owned_id]
         assert foreign_id not in removed_targets
 
-        socket_path = tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[0][0]
-        socket_path.write_text("synthetic socket inode\n", encoding="utf-8")
         lock_path = tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[1][0]
         lock_path.write_text("safe synthetic lock\n", encoding="utf-8")
+        assert (
+            builder._observe_owned_postgres_socket_inventory(
+                socket_handle,
+                retry_expected_subset=True,
+            )
+            is None
+        )
+        socket_path = tmp_path / builder.POSTGRES_SOCKET_ENTRY_SPECS[0][0]
+        socket_path.write_text("synthetic socket inode\n", encoding="utf-8")
         with pytest.raises(
             builder.FinalCertificationBuildError,
-            match="identity drifted",
+            match="inode type drifted",
         ):
             builder._capture_owned_postgres_socket_inventory(socket_handle)
 
@@ -3107,10 +3312,44 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
             "_postgres_socket_entry_kind",
             synthetic_socket_kind,
         )
+        production_listdir = builder.os.listdir
+        observed_name_sets = iter(
+            (
+                [lock_path.name],
+                [socket_path.name, lock_path.name],
+            )
+        )
+        monkeypatch.setattr(
+            builder.os,
+            "listdir",
+            lambda directory_fd: next(observed_name_sets),
+        )
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="changed while being inspected",
+        ):
+            builder._observe_owned_postgres_socket_inventory(
+                socket_handle,
+                retry_expected_subset=True,
+            )
+        monkeypatch.setattr(builder.os, "listdir", production_listdir)
         claims = builder._capture_owned_postgres_socket_inventory(socket_handle)
         assert [(claim.name, claim.kind) for claim in claims] == list(
             builder.POSTGRES_SOCKET_ENTRY_SPECS
         )
+        lock_hardlink = tmp_path.parent / f"{tmp_path.name}-postgres-lock-hardlink"
+        os.link(lock_path, lock_hardlink)
+        try:
+            with pytest.raises(
+                builder.FinalCertificationBuildError,
+                match="claim replacement",
+            ):
+                builder._revalidate_owned_postgres_socket_inventory(
+                    socket_handle,
+                    claims,
+                )
+        finally:
+            lock_hardlink.unlink()
 
         original_rename = builder._rename_noreplace_at
         replacement_injected = False
@@ -3151,6 +3390,14 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
             "foreign concurrent replacement\n"
         )
         assert lock_path.exists()
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="claim replacement",
+        ):
+            builder._revalidate_owned_postgres_socket_inventory(
+                socket_handle,
+                claims,
+            )
         monkeypatch.setattr(builder, "_rename_noreplace_at", original_rename)
         socket_path.unlink()
         socket_path.write_text("replacement owned socket\n", encoding="utf-8")
@@ -3159,6 +3406,14 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
 
         arbitrary_path = tmp_path / ".s.PGSQL.6543"
         arbitrary_path.write_text("arbitrary inode\n", encoding="utf-8")
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="unexpected name",
+        ):
+            builder._observe_owned_postgres_socket_inventory(
+                socket_handle,
+                retry_expected_subset=True,
+            )
         with pytest.raises(
             builder.FinalCertificationBuildError,
             match="unclaimed",
@@ -4008,11 +4263,46 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     validator_source = inspect.getsource(builder._validate_verification_record)
     for policy_name in (
         "postgres_connection_policy",
+        "postgres_startup_stability_policy",
         "postgres_destroy_poll_policy",
         "test_access_guard_policy",
     ):
         assert policy_name in verification_source
         assert policy_name in validator_source
+    startup_source = inspect.getsource(builder._start_owned_postgres)
+    first_pid1 = startup_source.index("_probe_owned_postgres_pid1(")
+    first_readiness = startup_source.index(
+        "_probe_owned_postgres_readiness(",
+        first_pid1,
+    )
+    first_claim = startup_source.index(
+        "_observe_owned_postgres_socket_inventory(",
+        first_readiness,
+    )
+    handoff_with_claims = startup_source.index("owner_handoff(owner)", first_claim)
+    second_pid1 = startup_source.index("_probe_owned_postgres_pid1(", first_claim)
+    second_readiness = startup_source.index(
+        "_probe_owned_postgres_readiness(",
+        second_pid1,
+    )
+    same_claims = startup_source.index(
+        "_revalidate_owned_postgres_socket_inventory(",
+        second_readiness,
+    )
+    assert (
+        first_pid1
+        < first_readiness
+        < first_claim
+        < handoff_with_claims
+        < second_pid1
+        < second_readiness
+        < same_claims
+    )
+    cleanup_source = inspect.getsource(
+        builder._cleanup_owned_postgres_socket_inventory
+    )
+    assert "_capture_owned_postgres_socket_inventory" not in cleanup_source
+    assert "_observe_owned_postgres_socket_inventory" not in cleanup_source
     assert source.count("dvc_clone_handle=clone_handle") == 2
     assert source.count(
         "dvc_site_cache_handle=version_site_cache_handle"
@@ -4687,15 +4977,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
-    builder._require_h12_runtime_policy(contract)
+    builder._require_h14_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H12 runtime isolation policy drifted",
+        match="H14 runtime isolation policy drifted",
     ):
-        builder._require_h12_runtime_policy(
+        builder._require_h14_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -4705,10 +4995,22 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_connection["test_database_url_query_present"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H12 runtime isolation policy drifted",
+        match="H14 runtime isolation policy drifted",
     ):
-        builder._require_h12_runtime_policy(
+        builder._require_h14_runtime_policy(
             replace(contract, postgres_connection_policy=drifted_connection)
+        )
+    drifted_stability = dict(contract.postgres_startup_stability_policy)
+    drifted_stability["pid1_checked_before_readiness"] = False
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H14 runtime isolation policy drifted",
+    ):
+        builder._require_h14_runtime_policy(
+            replace(
+                contract,
+                postgres_startup_stability_policy=drifted_stability,
+            )
         )
     clone_path = tmp_path / "clone"
     sandbox_path = tmp_path / "sandbox"
@@ -5145,6 +5447,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p14_cert_commit",
+            "h14_cert_commit",
             "p12_cert_commit",
             "h12_cert_commit",
             "p11_cert_commit",
@@ -5175,6 +5479,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p14_cert_commit",
+            "h14_cert_commit",
             "p12_cert_commit",
             "h12_cert_commit",
             "p11_cert_commit",
@@ -5202,6 +5508,95 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         )
     }
     assert not any(isinstance(value, bytes) for value in result.values())
+
+    h13_failure = contract_module.expected_h13_failure_record()
+    assert h13_failure == {
+        "status": "publication_candidate_invalidated_failed_closed",
+        "attempt": "H-CERT13",
+        "active_error": {
+            "stage": "main_worktree_dvc_command_boundary",
+            "safe_error": "manual_main_dvc_status_violated_absolute_boundary",
+            "failure_kind": "prohibited_main_worktree_dvc_command",
+            "sanitized_command": [".venv/bin/dvc", "status", "--json"],
+            "returncode": 0,
+            "safe_stdout_category": "empty_json_object",
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        },
+        "observed_cause": {
+            "main_dvc_command_run": True,
+            "main_dvc_status_command_run": True,
+            "command_was_read_only": True,
+            "stdout_semantic": {},
+            "absolute_main_dvc_boundary_violated": True,
+            "public_git_worktree_index_change_attributable": False,
+            "ignored_dvc_metadata_mutation_assessed": False,
+            "report_paths_serialized": False,
+            "report_hashes_serialized": False,
+            "temporary_reports_are_authority": False,
+        },
+        "evidence_counts": {
+            "h13_check_only_runs": 3,
+            "h13_check_only_passes": 3,
+            "h13_precommit_invocations": 3,
+            "h13_precommit_passes": 2,
+            "h13_precommit_rejections": 1,
+            "h13_precommit_rejection_returncode": 2,
+            "ignored_tmp_precommit_reports": 2,
+            "git_restore_staged_invocations": 2,
+            "git_restore_staged_paths_per_invocation": 11,
+            "manual_main_dvc_status_commands": 1,
+            "dvc_add_commands": 0,
+            "dvc_push_commands": 0,
+            "h13_commits": 0,
+            "h13_pushes": 0,
+            "p13_files_generated": 0,
+            "r13_execution_runs": 0,
+            "r13_outputs_generated": 0,
+            "certification_execution_runs": 0,
+            "postgresql_fixture_starts": 0,
+            "docker_commands": 0,
+            "raw_target_or_outcome_reads": 0,
+            "scientific_payload_reads": 0,
+            "parquet_payloads_opened_or_decoded": 0,
+        },
+        "h13_commit_published": False,
+        "p13_commit_published": False,
+        "retry_authorized": False,
+    }
+    serialized_h13_failure = json.dumps(h13_failure, sort_keys=True)
+    assert "tmp/" not in serialized_h13_failure
+    assert "sha256" not in serialized_h13_failure
+    assert "/home/" not in serialized_h13_failure
+
+    p12_failure = contract_module.expected_p12_failure_record()
+    assert p12_failure["status"] == "execution_failed_closed_cleanup_succeeded"
+    assert p12_failure["attempt"] == "R-CERT12"
+    assert p12_failure["active_error"]["stage"] == (
+        "postgres_startup_socket_inventory"
+    )
+    assert p12_failure["observed_cause"]["readiness_success_observed"] is True
+    assert p12_failure["observed_cause"]["socket_claims_captured"] == 0
+    assert p12_failure["cleanup"] == {
+        "status": "succeeded_exact",
+        "namespace_preserved": False,
+        "active_error_was_masked": False,
+        "reason_codes": [],
+        "exact_owned_container_absent": True,
+        "socket_directory_empty": True,
+        "relevant_processes_absent": True,
+        "postgres_listener_absent": True,
+    }
+    assert p12_failure["evidence_counts"]["successful_directed_dvc_pulls"] == 8
+    assert p12_failure["evidence_counts"]["public_test_runs"] == 0
+    assert p12_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p12_failure["retry_authorized"] is False
+    serialized_p12_failure = json.dumps(p12_failure, sort_keys=True)
+    assert "/proc/1/comm" not in serialized_p12_failure
+    assert "/var/run/postgresql" not in serialized_p12_failure
+    assert "/home/" not in serialized_p12_failure
 
     p11_failure = contract_module.expected_p11_failure_record()
     assert p11_failure["status"] == "execution_failed_closed_cleanup_succeeded"
@@ -5353,6 +5748,59 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     assert "run-3cee2ea03f47bb208f243135105f39ab" not in serialized_p9_failure
     assert "postgresql://" not in serialized_p9_failure
 
+    drifted_h13 = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_h13["authority"])
+    drifted_h13_failure = cast(dict[str, Any], drifted_authority["h13_failure"])
+    drifted_counts = cast(
+        dict[str, Any], drifted_h13_failure["evidence_counts"]
+    )
+    drifted_counts["manual_main_dvc_status_commands"] = 0
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_h13,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H14 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    drifted_p12 = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_p12["authority"])
+    drifted_p12_failure = cast(dict[str, Any], drifted_authority["p12_failure"])
+    drifted_p12_failure["retry_authorized"] = True
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_p12,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H14 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    drifted_startup_policy = copy.deepcopy(fake)
+    drifted_authority = cast(
+        dict[str, Any], drifted_startup_policy["authority"]
+    )
+    drifted_isolation = cast(dict[str, Any], drifted_authority["isolation"])
+    drifted_stability = cast(
+        dict[str, Any], drifted_isolation["postgres_startup_stability_policy"]
+    )
+    drifted_stability["recapture_after_stop_authorized"] = True
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_startup_policy,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H14 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
     drifted_failure = copy.deepcopy(fake)
     drifted_authority = cast(dict[str, Any], drifted_failure["authority"])
     drifted_p11_failure = cast(dict[str, Any], drifted_authority["p11_failure"])
@@ -5365,7 +5813,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H12 failure/isolation",
+        match="H14 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5381,7 +5829,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H12 failure/isolation",
+        match="H14 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5397,13 +5845,15 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H12 failure/isolation",
+        match="H14 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p14_cert_commit",
+        "h14_cert_commit",
         "p12_cert_commit",
         "h12_cert_commit",
         "p11_cert_commit",

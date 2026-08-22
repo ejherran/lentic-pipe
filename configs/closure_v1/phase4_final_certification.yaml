@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v12
+contract_version: closure_v1_phase4_final_certification_v14
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -26,8 +26,10 @@ authorities:
   p10_cert_commit: 9ca3126667eaa8c4fd754a3499a7a9eacdd2d2b0
   h11_cert_commit: b83bc2cbccdae5f81bb8ee4b6547054b543260fd
   p11_cert_commit: af9e23ec1c21968b0d5bb52821619e21f8de5673
+  h12_cert_commit: bc5595bfca0e39cd3912f6b786442580d5c1a9fe
+  p12_cert_commit: f97e0a5cf21aa9b65623cee0a8a656ab0537e2ad
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v12_commit
+  certification_target: published_P_CERT_v14_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -62,6 +64,12 @@ topology:
     - H-CERT12
     - P-CERT12
     - R-CERT12
+    - H-CERT13
+    - P-CERT13
+    - R-CERT13
+    - H-CERT14
+    - P-CERT14
+    - R-CERT14
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -437,6 +445,7 @@ topology:
     manifest_written_last: false
   H-CERT12:
     role: corrective_query_free_postgres_test_dsn_contract_tests_and_freeze
+    commit: h12_cert_commit
     direct_parent: p11_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -446,7 +455,82 @@ topology:
       - record_r_cert11_failure_and_forbid_p_cert11_retry
   P-CERT12:
     role: data_only_final_certification_authority_v12
+    commit: p12_cert_commit
     requires_published_H_CERT12: true
+    supersedes_P_CERT11: true
+    supersedes_P_CERT10: true
+    supersedes_P_CERT9: true
+    supersedes_P_CERT8: true
+    supersedes_P_CERT7: true
+    supersedes_P_CERT6: true
+    supersedes_P_CERT5: true
+    supersedes_P_CERT4: true
+    supersedes_P_CERT3: true
+    supersedes_P_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: postgres_startup_socket_inventory
+    failure_kind: socket_inventory_not_exact_two
+    readiness_success_observed: true
+    observed_socket_inventory_serialized: false
+    public_test_runs: 0
+    openapi_generations: 0
+    synthetic_e2e_runs: 0
+    static_command_runs: 0
+    r_cert_output_count: 0
+    retry_authorized: false
+    cleanup_status: succeeded_exact_namespace_removed
+    manifest_written_last: true
+  R-CERT12:
+    role: superseded_failed_final_doctoral_software_and_restorability_evidence
+    requires_published_P_CERT12: true
+    failure_stage: postgres_startup_socket_inventory
+    failure_kind: socket_inventory_not_exact_two
+    output_count: 0
+    manifest_written_last: false
+  H-CERT13:
+    role: invalidated_unpublished_postgres_startup_stability_candidate
+    direct_parent: p12_cert_commit
+    certification_execution_authorized: false
+    commit_published: false
+    failure_stage: main_worktree_dvc_command_boundary
+    failure_kind: manual_main_dvc_status_violated_absolute_boundary
+    retry_authorized: false
+    corrections:
+      - require_postgres_pid1_before_and_after_readiness
+      - use_explicit_socket_readiness_and_revalidate_exact_same_claims
+      - retry_only_empty_or_expected_subset_inventories_within_bound
+      - fail_closed_on_unexpected_name_type_link_or_replacement
+      - forbid_post_stop_recapture_or_arbitrary_residual_adoption
+      - record_r_cert12_failure_and_forbid_p_cert12_retry
+  P-CERT13:
+    role: not_generated_due_to_invalidated_unpublished_h_cert13
+    requires_published_H_CERT13: true
+    authority_file_count: 0
+    commit_published: false
+    certification_execution_authorized: false
+    manifest_written_last: false
+  R-CERT13:
+    role: not_executed_due_to_absent_p_cert13
+    requires_published_P_CERT13: true
+    execution_runs: 0
+    output_count: 0
+    manifest_written_last: false
+  H-CERT14:
+    role: corrective_absolute_main_dvc_boundary_postgres_stability_contract_tests_and_freeze
+    direct_parent: p12_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - preserve_postgres_pid1_readiness_and_socket_stability_hardening
+      - record_unpublished_h_cert13_candidate_invalidation
+      - restore_absolute_main_worktree_dvc_command_boundary
+      - reject_temporary_precommit_reports_as_authority
+      - forbid_h_cert13_retry_or_p_cert13_r_cert13_generation
+  P-CERT14:
+    role: data_only_final_certification_authority_v14
+    requires_published_H_CERT14: true
+    supersedes_unpublished_H_CERT13_candidate: true
+    supersedes_P_CERT12: true
     supersedes_P_CERT11: true
     supersedes_P_CERT10: true
     supersedes_P_CERT9: true
@@ -460,9 +544,9 @@ topology:
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT12:
+  R-CERT14:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT12: true
+    requires_published_P_CERT14: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -1057,6 +1141,156 @@ publication_scopes:
       - path: reports/closure_v1/12_certification/final_certification_manifest.json
         status: A
         git_mode: "100644"
+  H-CERT13:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT13:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v13.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v13.json
+        status: A
+        git_mode: "100644"
+  R-CERT13:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
+  H-CERT14:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT14:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v14.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v14.json
+        status: A
+        git_mode: "100644"
+  R-CERT14:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
   H-CERT8:
     additions: 0
     modifications: 11
@@ -1551,6 +1785,7 @@ isolation:
   superseded_p9_retry_authorized: false
   superseded_p10_retry_authorized: false
   superseded_p11_retry_authorized: false
+  superseded_p12_retry_authorized: false
   postgres_portable_path_policy:
     volume: <OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>
     data_tmpfs: <CONTAINER_POSTGRES_DATA>:rw,size=512m
@@ -1574,6 +1809,31 @@ isolation:
     pg_host_value_serialized: false
     credentials_serialized: false
     absolute_paths_serialized: false
+  postgres_startup_stability_policy:
+    pid1_expected_executable: postgres
+    pid1_checked_before_readiness: true
+    pid1_revalidated_after_socket_claim: true
+    readiness_uses_explicit_socket_directory: true
+    exact_socket_claim_count: 2
+    same_claims_revalidated_before_return: true
+    max_stability_attempts: 120
+    stability_interval_seconds: 0.25
+    retryable_inventory_states:
+      - empty
+      - expected_subset
+    unexpected_names_fail_closed: true
+    unexpected_inode_types_fail_closed: true
+    unexpected_link_counts_fail_closed: true
+    claim_replacement_fails_closed: true
+    recapture_after_stop_authorized: false
+    arbitrary_residual_adoption_authorized: false
+    observed_inventory_serialized: false
+    container_identity_serialized: false
+    absolute_paths_serialized: false
+    container_binding_checked_before_and_after_probes: true
+    readiness_revalidated_after_socket_claim: true
+    pid1_probe_requires_exact_stdout_and_empty_stderr: true
+    handoff_updated_with_same_container_identity_and_claims: true
   postgres_cleanup_policy:
     graceful_stop_required: true
     graceful_stop_timeout_seconds: 30
@@ -1725,6 +1985,7 @@ stop_rules:
   - attempt_to_execute_from_superseded_p9
   - attempt_to_execute_from_superseded_p10
   - attempt_to_execute_from_superseded_p11
+  - attempt_to_execute_from_superseded_p12
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
   - unsanitized_active_error_or_cleanup_failure_masking
@@ -1738,6 +1999,7 @@ stop_rules:
   - credential_remote_url_database_url_or_absolute_path_leak
   - postgres_portable_path_projection_drift
   - postgres_connection_policy_drift
+  - postgres_startup_stability_policy_drift
   - forbidden_read_path_kind_disposition_drift
   - postgres_cleanup_ownership_or_identity_drift
   - unsafe_internal_cleanup_diagnostics

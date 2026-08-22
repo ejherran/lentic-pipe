@@ -1589,6 +1589,12 @@ CLOSURE_PHASE4_H_CERT_V11_COMMIT = (
 CLOSURE_PHASE4_P_CERT_V11_COMMIT = (
     "af9e23ec1c21968b0d5bb52821619e21f8de5673"
 )
+CLOSURE_PHASE4_H_CERT_V12_COMMIT = (
+    "bc5595bfca0e39cd3912f6b786442580d5c1a9fe"
+)
+CLOSURE_PHASE4_P_CERT_V12_COMMIT = (
+    "f97e0a5cf21aa9b65623cee0a8a656ab0537e2ad"
+)
 CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE = {
     "configs/closure_v1/phase4_final_certification.schema.json": "A",
     "configs/closure_v1/phase4_final_certification.yaml": "A",
@@ -1837,8 +1843,41 @@ CLOSURE_PHASE4_P_CERT_V11_BYTES_SHA256 = MappingProxyType(
         ),
     }
 )
-CLOSURE_PHASE4_H_CERT_STAGED_SCOPE = {
+CLOSURE_PHASE4_H_CERT_V12_STAGED_SCOPE = {
     path: "M" for path in CLOSURE_PHASE4_H_CERT_V11_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_V12_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE4_H_CERT_V12_STAGED_SCOPE
+}
+CLOSURE_PHASE4_P_CERT_V12_STAGED_SCOPE = {
+    "configs/closure_v1/phase4_final_certification_authority_v12.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v12.json": "A",
+}
+CLOSURE_PHASE4_P_CERT_V12_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_P_CERT_V12_STAGED_SCOPE
+}
+CLOSURE_PHASE4_P_CERT_V12_BYTES_SHA256 = MappingProxyType(
+    {
+        "configs/closure_v1/phase4_final_certification_authority_v12.json": (
+            111_368,
+            "62373f7c4d425d010925deb283750a1f3a65a0e62dcd98f817c9f9de6ffe792b",
+        ),
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v12.json": (
+            3_116,
+            "ee791c92b62d31c5366954656e40926f4afdc556ef4e6436019c12a2fa76868c",
+        ),
+    }
+)
+CLOSURE_PHASE4_H_CERT_V13_STAGED_SCOPE = {
+    path: "M" for path in CLOSURE_PHASE4_H_CERT_V12_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_V13_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE4_H_CERT_V13_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_STAGED_SCOPE = {
+    path: "M" for path in CLOSURE_PHASE4_H_CERT_V13_STAGED_SCOPE
 }
 CLOSURE_PHASE4_H_CERT_GIT_MODES = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
@@ -1847,9 +1886,16 @@ CLOSURE_PHASE4_H_CERT_GIT_MODES = {
 CLOSURE_PHASE4_H_CERT_MARKER_PATHS = frozenset(
     CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
 )
+CLOSURE_PHASE4_P_CERT_V13_STAGED_SCOPE = {
+    "configs/closure_v1/phase4_final_certification_authority_v13.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v13.json": "A",
+}
+CLOSURE_PHASE4_P_CERT_V13_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_P_CERT_V13_STAGED_SCOPE
+}
 CLOSURE_PHASE4_P_CERT_STAGED_SCOPE = {
-    "configs/closure_v1/phase4_final_certification_authority_v12.json": "A",
-    "configs/closure_v1/phase4_final_certification_authority_manifest_v12.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_v14.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v14.json": "A",
 }
 CLOSURE_PHASE4_P_CERT_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_P_CERT_STAGED_SCOPE
@@ -1866,6 +1912,12 @@ CLOSURE_PHASE4_R_CERT_STAGED_SCOPE = {
     "reports/closure_v1/12_certification/environment.json": "A",
     "reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md": "A",
     "reports/closure_v1/12_certification/final_certification_manifest.json": "A",
+}
+CLOSURE_PHASE4_R_CERT_V13_STAGED_SCOPE = dict(
+    CLOSURE_PHASE4_R_CERT_STAGED_SCOPE
+)
+CLOSURE_PHASE4_R_CERT_V13_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_R_CERT_V13_STAGED_SCOPE
 }
 CLOSURE_PHASE4_R_CERT_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_R_CERT_STAGED_SCOPE
@@ -21402,6 +21454,8 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             or contract.p10_cert_commit != CLOSURE_PHASE4_P_CERT_V10_COMMIT
             or contract.h11_cert_commit != CLOSURE_PHASE4_H_CERT_V11_COMMIT
             or contract.p11_cert_commit != CLOSURE_PHASE4_P_CERT_V11_COMMIT
+            or contract.h12_cert_commit != CLOSURE_PHASE4_H_CERT_V12_COMMIT
+            or contract.p12_cert_commit != CLOSURE_PHASE4_P_CERT_V12_COMMIT
             or contract.test_suite.status != "locked"
             or contract.test_suite.collected_test_count != 944
             or contract.test_suite.nodeids_sha256
@@ -21453,6 +21507,14 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             != CLOSURE_PHASE4_H_CERT_V11_STAGED_SCOPE
             or contract_module.expected_p11_scope()
             != CLOSURE_PHASE4_P_CERT_V11_STAGED_SCOPE
+            or contract_module.expected_h12_scope()
+            != CLOSURE_PHASE4_H_CERT_V12_STAGED_SCOPE
+            or contract_module.expected_p12_scope()
+            != CLOSURE_PHASE4_P_CERT_V12_STAGED_SCOPE
+            or contract_module.expected_h13_scope()
+            != CLOSURE_PHASE4_H_CERT_V13_STAGED_SCOPE
+            or contract_module.expected_p13_scope()
+            != CLOSURE_PHASE4_P_CERT_V13_STAGED_SCOPE
             or contract_module.expected_h_scope()
             != CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
             or contract_module.expected_p_scope()
@@ -21507,6 +21569,14 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             != CLOSURE_PHASE4_H_CERT_V11_GIT_MODES
             or contract_module.expected_p11_modes()
             != CLOSURE_PHASE4_P_CERT_V11_GIT_MODES
+            or contract_module.expected_h12_modes()
+            != CLOSURE_PHASE4_H_CERT_V12_GIT_MODES
+            or contract_module.expected_p12_modes()
+            != CLOSURE_PHASE4_P_CERT_V12_GIT_MODES
+            or contract_module.expected_h13_modes()
+            != CLOSURE_PHASE4_H_CERT_V13_GIT_MODES
+            or contract_module.expected_p13_modes()
+            != CLOSURE_PHASE4_P_CERT_V13_GIT_MODES
             or contract_module.expected_r_modes()
             != CLOSURE_PHASE4_R_CERT_GIT_MODES
             or tuple(contract.output_paths)
@@ -21582,6 +21652,42 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                 "Closure Phase 4 final certification PostgreSQL connection "
                 "policy drifted"
+            )
+        postgres_startup_stability_policy = (
+            contract_module.expected_postgres_startup_stability_policy()
+        )
+        if (
+            postgres_startup_stability_policy
+            != {
+                "pid1_expected_executable": "postgres",
+                "pid1_checked_before_readiness": True,
+                "pid1_revalidated_after_socket_claim": True,
+                "readiness_uses_explicit_socket_directory": True,
+                "exact_socket_claim_count": 2,
+                "same_claims_revalidated_before_return": True,
+                "max_stability_attempts": 120,
+                "stability_interval_seconds": 0.25,
+                "retryable_inventory_states": ["empty", "expected_subset"],
+                "unexpected_names_fail_closed": True,
+                "unexpected_inode_types_fail_closed": True,
+                "unexpected_link_counts_fail_closed": True,
+                "claim_replacement_fails_closed": True,
+                "recapture_after_stop_authorized": False,
+                "arbitrary_residual_adoption_authorized": False,
+                "observed_inventory_serialized": False,
+                "container_identity_serialized": False,
+                "absolute_paths_serialized": False,
+                "container_binding_checked_before_and_after_probes": True,
+                "readiness_revalidated_after_socket_claim": True,
+                "pid1_probe_requires_exact_stdout_and_empty_stderr": True,
+                "handoff_updated_with_same_container_identity_and_claims": True,
+            }
+            or dict(contract.postgres_startup_stability_policy)
+            != postgres_startup_stability_policy
+        ):
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 final certification PostgreSQL startup "
+                "stability policy drifted"
             )
         sandbox_mountpoint_policy = (
             contract_module.expected_sandbox_mountpoint_policy()
@@ -21794,6 +21900,102 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
         ):
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                 "Closure Phase 4 superseded P-CERT11 failure/retry policy drifted"
+            )
+        p12_failure = contract_module.expected_p12_failure_record()
+        cleanup = p12_failure.get("cleanup")
+        observed_cause = p12_failure.get("observed_cause")
+        active_error = p12_failure.get("active_error")
+        evidence_counts = p12_failure.get("evidence_counts")
+        if (
+            p12_failure.get("attempt") != "R-CERT12"
+            or p12_failure.get("status")
+            != "execution_failed_closed_cleanup_succeeded"
+            or p12_failure.get("retry_authorized") is not False
+            or not isinstance(active_error, Mapping)
+            or active_error.get("stage") != "postgres_startup_socket_inventory"
+            or active_error.get("safe_error") != "socket_inventory_not_exact_two"
+            or active_error.get("launcher_returncode") != 1
+            or not isinstance(cleanup, Mapping)
+            or cleanup.get("status") != "succeeded_exact"
+            or cleanup.get("namespace_preserved") is not False
+            or cleanup.get("relevant_processes_absent") is not True
+            or cleanup.get("postgres_listener_absent") is not True
+            or not isinstance(observed_cause, Mapping)
+            or observed_cause.get("readiness_success_observed") is not True
+            or observed_cause.get("successful_readiness_probes") != 1
+            or observed_cause.get("socket_inventory_capture_attempts") != 1
+            or observed_cause.get("expected_socket_inventory_cardinality") != 2
+            or observed_cause.get("observed_socket_inventory_entries_serialized")
+            is not False
+            or observed_cause.get("socket_claims_captured") != 0
+            or not isinstance(evidence_counts, Mapping)
+            or evidence_counts.get("public_test_runs") != 0
+            or evidence_counts.get("r_cert_outputs") != 0
+        ):
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 superseded P-CERT12 failure/retry policy drifted"
+            )
+        h13_failure = contract_module.expected_h13_failure_record()
+        if h13_failure != {
+            "status": "publication_candidate_invalidated_failed_closed",
+            "attempt": "H-CERT13",
+            "active_error": {
+                "stage": "main_worktree_dvc_command_boundary",
+                "safe_error": (
+                    "manual_main_dvc_status_violated_absolute_boundary"
+                ),
+                "failure_kind": "prohibited_main_worktree_dvc_command",
+                "sanitized_command": [".venv/bin/dvc", "status", "--json"],
+                "returncode": 0,
+                "safe_stdout_category": "empty_json_object",
+                "raw_stdout_preserved": False,
+                "raw_stderr_preserved": False,
+                "credentials_preserved": False,
+                "absolute_paths_preserved": False,
+            },
+            "observed_cause": {
+                "main_dvc_command_run": True,
+                "main_dvc_status_command_run": True,
+                "command_was_read_only": True,
+                "stdout_semantic": {},
+                "absolute_main_dvc_boundary_violated": True,
+                "public_git_worktree_index_change_attributable": False,
+                "ignored_dvc_metadata_mutation_assessed": False,
+                "report_paths_serialized": False,
+                "report_hashes_serialized": False,
+                "temporary_reports_are_authority": False,
+            },
+            "evidence_counts": {
+                "h13_check_only_runs": 3,
+                "h13_check_only_passes": 3,
+                "h13_precommit_invocations": 3,
+                "h13_precommit_passes": 2,
+                "h13_precommit_rejections": 1,
+                "h13_precommit_rejection_returncode": 2,
+                "ignored_tmp_precommit_reports": 2,
+                "git_restore_staged_invocations": 2,
+                "git_restore_staged_paths_per_invocation": 11,
+                "manual_main_dvc_status_commands": 1,
+                "dvc_add_commands": 0,
+                "dvc_push_commands": 0,
+                "h13_commits": 0,
+                "h13_pushes": 0,
+                "p13_files_generated": 0,
+                "r13_execution_runs": 0,
+                "r13_outputs_generated": 0,
+                "certification_execution_runs": 0,
+                "postgresql_fixture_starts": 0,
+                "docker_commands": 0,
+                "raw_target_or_outcome_reads": 0,
+                "scientific_payload_reads": 0,
+                "parquet_payloads_opened_or_decoded": 0,
+            },
+            "h13_commit_published": False,
+            "p13_commit_published": False,
+            "retry_authorized": False,
+        }:
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 failed H-CERT13 factual/no-retry policy drifted"
             )
         return contract
     except ClosurePhase4FinalCertificationPrecommitAdapterError:
@@ -22394,6 +22596,31 @@ def _require_closure_phase4_p11_files_intact(*, repo_root: Path) -> None:
             )
 
 
+def _require_closure_phase4_p12_files_intact(*, repo_root: Path) -> None:
+    _require_closure_phase4_historical_authority_files_intact(
+        CLOSURE_PHASE4_P_CERT_V12_COMMIT,
+        expected_scope=CLOSURE_PHASE4_P_CERT_V12_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_P_CERT_V12_GIT_MODES,
+        label="P-CERT12",
+        repo_root=repo_root,
+    )
+    for raw_path, (expected_bytes, expected_sha256) in (
+        CLOSURE_PHASE4_P_CERT_V12_BYTES_SHA256.items()
+    ):
+        payload, _identity = _capture_closure_phase4_cert_file(
+            raw_path,
+            repo_root=repo_root,
+            expected_mode=0o644,
+        )
+        if (
+            len(payload) != expected_bytes
+            or hashlib.sha256(payload).hexdigest() != expected_sha256
+        ):
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                f"Historical P-CERT12 canonical byte identity drifted: {raw_path}"
+            )
+
+
 def _require_closure_phase4_cert_v1_history(*, repo_root: Path) -> None:
     """Bind the immutable editorial -> H1 -> P1 certification prefix."""
 
@@ -22801,16 +23028,53 @@ def _require_closure_phase4_cert_v11_history(*, repo_root: Path) -> None:
     _require_closure_phase4_p11_files_intact(repo_root=repo_root)
 
 
+def _require_closure_phase4_cert_v12_history(*, repo_root: Path) -> None:
+    """Bind immutable H1/P1 through H12/P12 history for H-CERT14."""
+
+    _require_closure_phase4_cert_v11_history(repo_root=repo_root)
+    if (
+        _closure_phase4_commit_parents(
+            CLOSURE_PHASE4_H_CERT_V12_COMMIT,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_P_CERT_V11_COMMIT,)
+        or _closure_phase4_commit_parents(
+            CLOSURE_PHASE4_P_CERT_V12_COMMIT,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_H_CERT_V12_COMMIT,)
+    ):
+        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+            "Closure Phase 4 certification requires exact H11 -> P11 -> H12 -> "
+            "P12 single-parent history"
+        )
+    _require_closure_phase4_cert_historical_commit(
+        CLOSURE_PHASE4_H_CERT_V12_COMMIT,
+        expected_scope=CLOSURE_PHASE4_H_CERT_V12_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_H_CERT_V12_GIT_MODES,
+        label="H-CERT12",
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_cert_historical_commit(
+        CLOSURE_PHASE4_P_CERT_V12_COMMIT,
+        expected_scope=CLOSURE_PHASE4_P_CERT_V12_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_P_CERT_V12_GIT_MODES,
+        label="P-CERT12",
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_p12_files_intact(repo_root=repo_root)
+
+
 def _require_closure_phase4_published_h_cert(
     commit: str, *, repo_root: Path
 ) -> None:
-    _require_closure_phase4_cert_v11_history(repo_root=repo_root)
+    _require_closure_phase4_cert_v12_history(repo_root=repo_root)
     if (
         _closure_phase4_commit_parents(commit, repo_root=repo_root)
-        != (CLOSURE_PHASE4_P_CERT_V11_COMMIT,)
+        != (CLOSURE_PHASE4_P_CERT_V12_COMMIT,)
     ):
         raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Published H-CERT12 must be the direct single-parent child of P-CERT11"
+            "Published H-CERT14 must be the direct single-parent child of P-CERT12"
         )
     _require_closure_phase4_cert_committed_bindings(
         commit,
@@ -22825,7 +23089,7 @@ def _require_closure_phase4_published_p_cert(
     parents = _closure_phase4_commit_parents(commit, repo_root=repo_root)
     if len(parents) != 1:
         raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Published P-CERT12 must have exactly one H-CERT12 parent"
+            "Published P-CERT14 must have exactly one H-CERT14 parent"
         )
     h_commit = parents[0]
     _require_closure_phase4_published_h_cert(h_commit, repo_root=repo_root)
@@ -22905,6 +23169,15 @@ def _require_closure_phase4_cert_runtime_namespaces(
                     "Closure Phase 4 certification authority temp remains: "
                     f"configs/closure_v1/{name}"
                 )
+        for raw_path in CLOSURE_PHASE4_P_CERT_V13_STAGED_SCOPE:
+            name = PurePosixPath(raw_path).name
+            try:
+                os.stat(name, dir_fd=config_fd, follow_symlinks=False)
+            except FileNotFoundError:
+                continue
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 forbids ungenerated P-CERT13 candidate files"
+            )
         if gate == "H-CERT":
             for raw_path in CLOSURE_PHASE4_P_CERT_STAGED_SCOPE:
                 name = PurePosixPath(raw_path).name
@@ -23049,8 +23322,15 @@ def _closure_phase4_cert_semantic_digest(
                 != CLOSURE_PHASE4_H_CERT_V11_COMMIT
                 or result.get("p11_cert_commit")
                 != CLOSURE_PHASE4_P_CERT_V11_COMMIT
+                or result.get("h12_cert_commit")
+                != CLOSURE_PHASE4_H_CERT_V12_COMMIT
+                or result.get("p12_cert_commit")
+                != CLOSURE_PHASE4_P_CERT_V12_COMMIT
                 or result.get("h_cert_commit") is not None
-                or result.get("h12_cert_commit") is not None
+                or result.get("h13_cert_commit") is not None
+                or result.get("p13_cert_commit") is not None
+                or result.get("h14_cert_commit") is not None
+                or result.get("p14_cert_commit") is not None
                 or result.get("writes_performed") is not False
                 or result.get("dvc_status_checked") is not False
                 or result.get("dvc_pull_commands_run") is not False
@@ -23087,7 +23367,9 @@ def _closure_phase4_cert_semantic_digest(
                 "p10_cert_commit": CLOSURE_PHASE4_P_CERT_V10_COMMIT,
                 "h11_cert_commit": CLOSURE_PHASE4_H_CERT_V11_COMMIT,
                 "p11_cert_commit": CLOSURE_PHASE4_P_CERT_V11_COMMIT,
-                "h12_base_commit": head,
+                "h12_cert_commit": CLOSURE_PHASE4_H_CERT_V12_COMMIT,
+                "p12_cert_commit": CLOSURE_PHASE4_P_CERT_V12_COMMIT,
+                "h14_base_commit": head,
                 "suite": {
                     "status": contract.test_suite.status,
                     "selector_count": contract.test_suite.selector_count,
@@ -23151,7 +23433,12 @@ def _closure_phase4_cert_semantic_digest(
                 "authority_sha256": hashlib.sha256(authority_bytes).hexdigest(),
                 "manifest_sha256": hashlib.sha256(manifest_bytes).hexdigest(),
                 "h_cert_commit": head,
-                "h12_cert_commit": head,
+                "h13_cert_commit": None,
+                "p13_cert_commit": None,
+                "h14_cert_commit": head,
+                "p14_cert_commit": None,
+                "h12_cert_commit": CLOSURE_PHASE4_H_CERT_V12_COMMIT,
+                "p12_cert_commit": CLOSURE_PHASE4_P_CERT_V12_COMMIT,
                 "h11_cert_commit": CLOSURE_PHASE4_H_CERT_V11_COMMIT,
                 "p11_cert_commit": CLOSURE_PHASE4_P_CERT_V11_COMMIT,
                 "h10_cert_commit": CLOSURE_PHASE4_H_CERT_V10_COMMIT,
@@ -23178,7 +23465,7 @@ def _closure_phase4_cert_semantic_digest(
         elif gate == "R-CERT":
             from src.reporting import build_phase4_final_certification as builder
 
-            h12_commit = _require_closure_phase4_published_p_cert(
+            h14_commit = _require_closure_phase4_published_p_cert(
                 head,
                 repo_root=repo_root,
             )
@@ -23190,9 +23477,15 @@ def _closure_phase4_cert_semantic_digest(
             )
             if (
                 effective.get("p_cert_commit") != head
-                or effective.get("p12_cert_commit") != head
-                or effective.get("h_cert_commit") != h12_commit
-                or effective.get("h12_cert_commit") != h12_commit
+                or effective.get("p14_cert_commit") != head
+                or effective.get("h_cert_commit") != h14_commit
+                or effective.get("h14_cert_commit") != h14_commit
+                or effective.get("p13_cert_commit") is not None
+                or effective.get("h13_cert_commit") is not None
+                or effective.get("p12_cert_commit")
+                != CLOSURE_PHASE4_P_CERT_V12_COMMIT
+                or effective.get("h12_cert_commit")
+                != CLOSURE_PHASE4_H_CERT_V12_COMMIT
                 or effective.get("p11_cert_commit")
                 != CLOSURE_PHASE4_P_CERT_V11_COMMIT
                 or effective.get("h11_cert_commit")
@@ -23242,7 +23535,8 @@ def _closure_phase4_cert_semantic_digest(
                 raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                     "R-CERT is not based on the effective published "
                     "H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7/H8/P8/H9/P9 "
-                    "H10/P10/H11/P11/H12/P12 authority chain"
+                    "H10/P10/H11/P11/H12/P12/H14/P14 authority chain with "
+                    "failed unpublished H13 and absent P13/R13"
                 )
             _require_closure_phase4_r_cert_namespace_exact(repo_root=repo_root)
             artifacts = {
@@ -23288,6 +23582,10 @@ def _closure_phase4_cert_semantic_digest(
                 "sha256": effective.get("authority_sha256"),
                 "p_cert_commit": effective.get("p_cert_commit"),
                 "h_cert_commit": effective.get("h_cert_commit"),
+                "p14_cert_commit": effective.get("p14_cert_commit"),
+                "h14_cert_commit": effective.get("h14_cert_commit"),
+                "p13_cert_commit": effective.get("p13_cert_commit"),
+                "h13_cert_commit": effective.get("h13_cert_commit"),
                 "p12_cert_commit": effective.get("p12_cert_commit"),
                 "h12_cert_commit": effective.get("h12_cert_commit"),
                 "p11_cert_commit": effective.get("p11_cert_commit"),
@@ -23319,6 +23617,10 @@ def _closure_phase4_cert_semantic_digest(
                 "sha256": effective.get("manifest_sha256"),
                 "p_cert_commit": effective.get("p_cert_commit"),
                 "h_cert_commit": effective.get("h_cert_commit"),
+                "p14_cert_commit": effective.get("p14_cert_commit"),
+                "h14_cert_commit": effective.get("h14_cert_commit"),
+                "p13_cert_commit": effective.get("p13_cert_commit"),
+                "h13_cert_commit": effective.get("h13_cert_commit"),
                 "p12_cert_commit": effective.get("p12_cert_commit"),
                 "h12_cert_commit": effective.get("h12_cert_commit"),
                 "p11_cert_commit": effective.get("p11_cert_commit"),
@@ -23504,6 +23806,8 @@ def _closure_phase4_cert_semantic_digest(
                 != contract_module.expected_test_access_guard_policy()
                 or sandbox.get("postgres_connection_policy")
                 != contract_module.expected_postgres_connection_policy()
+                or sandbox.get("postgres_startup_stability_policy")
+                != contract_module.expected_postgres_startup_stability_policy()
             ):
                 raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                     "R-CERT authority/anchor/pointer sandbox "
@@ -23512,9 +23816,13 @@ def _closure_phase4_cert_semantic_digest(
             semantic = {
                 "gate": gate,
                 "p_cert_commit": head,
-                "p12_cert_commit": head,
-                "h_cert_commit": h12_commit,
-                "h12_cert_commit": h12_commit,
+                "p14_cert_commit": head,
+                "h_cert_commit": h14_commit,
+                "h14_cert_commit": h14_commit,
+                "p13_cert_commit": None,
+                "h13_cert_commit": None,
+                "p12_cert_commit": CLOSURE_PHASE4_P_CERT_V12_COMMIT,
+                "h12_cert_commit": CLOSURE_PHASE4_H_CERT_V12_COMMIT,
                 "p11_cert_commit": CLOSURE_PHASE4_P_CERT_V11_COMMIT,
                 "h11_cert_commit": CLOSURE_PHASE4_H_CERT_V11_COMMIT,
                 "p10_cert_commit": CLOSURE_PHASE4_P_CERT_V10_COMMIT,
@@ -23608,11 +23916,11 @@ def closure_phase4_cert_pre_stage_scope(
         )
     head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
     if gate == "H-CERT":
-        if head != CLOSURE_PHASE4_P_CERT_V11_COMMIT:
+        if head != CLOSURE_PHASE4_P_CERT_V12_COMMIT:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "H-CERT12 must be based on exact published P-CERT11 af9e23e"
+                "H-CERT14 must be based on exact published P-CERT12 f97e0a5"
             )
-        _require_closure_phase4_cert_v11_history(repo_root=repo_root)
+        _require_closure_phase4_cert_v12_history(repo_root=repo_root)
     elif gate == "P-CERT":
         _require_closure_phase4_published_h_cert(head, repo_root=repo_root)
     else:
@@ -23743,11 +24051,11 @@ def validate_closure_phase4_cert_staged_transaction(
     )
     head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
     if gate == "H-CERT":
-        if head != CLOSURE_PHASE4_P_CERT_V11_COMMIT:
+        if head != CLOSURE_PHASE4_P_CERT_V12_COMMIT:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Staged H-CERT12 base drifted"
+                "Staged H-CERT14 base drifted"
             )
-        _require_closure_phase4_cert_v11_history(repo_root=repo_root)
+        _require_closure_phase4_cert_v12_history(repo_root=repo_root)
     elif gate == "P-CERT":
         _require_closure_phase4_published_h_cert(head, repo_root=repo_root)
     elif gate == "R-CERT":
