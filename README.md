@@ -181,12 +181,83 @@ exports, or credential JSON files.
 - `docs/closure_v1/PROTOCOL_AMENDMENT_V1_1.md`
 - `docs/closure_v1/E0_D_DEVELOPMENT_GUARD.md`
 - `docs/closure_v1/E0_D_RUNTIME_CONTRACT.md`
+- `docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md`
+- `reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md`
+- `reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv`
+- `reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv`
+- `reports/thesis/phase4_manuscript_build_receipt.json`
+- `docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md`
+- `reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md`
+- `reports/closure_v1/12_certification/final_certification_manifest.json`
 - `docs/THESIS_EXPERIMENT_TRACEABILITY.md`
 - `docs/API_PROTOCOL.md`
 - `docs/API_DATASET_CONTRACT.md`
 - `docs/API_LOCAL_USAGE.md`
 
 ## Current State
+
+### Closure V1 Thesis Closure
+
+Phase 4 is closed at the annotated tag `thesis-closure-v1`, which resolves to
+R-CERT21 commit `eb07598aa54a0944d1a87fe46d62415d0a4454aa`. Certification ran
+against its direct parent, P-CERT21
+`3f58cfda567f6885085a360c08194322ee551aaf`; R-CERT21 adds only the exact
+eight-file public certification bundle.
+The scientific results remain frozen at
+`ea8ddce7f8edb9a61db97e29178e52603fa371b1`; R-SYN
+`528dcb74a7c08b65f262901e4562a67b784db8c9` and editorial commit
+`d1daa3059462854d6ddf5199fbc05515cec76982` synthesize and bind that evidence
+without rerunning it.
+
+- The Phase 4 synthesis transformed 83 closed structured inputs into 24
+  manifest-last artifacts: two evidence matrices, one final report, 12 tables,
+  eight figures, and the bundle manifest. It did not read Parquet payloads,
+  raw targets, outcomes, or private narrative sources, and it did not refit,
+  rescore, recalibrate, or rerun E0-U/E1-E10.
+- The editorial gate bound the synthesis to the thesis evidence matrix and a
+  reproducible manuscript receipt. Two isolated three-pass LaTeX builds
+  produced the same 80-page PDF bytes, with no LaTeX errors, undefined
+  references/citations, or overfull boxes.
+- The locked public certification suite completed 944 tests: 902 passed, 42
+  exact justified skips, and zero failures or errors. The synthetic API
+  workflow passed 3/3; OpenAPI validation covered 69 paths and 83 operations,
+  with 38 documented operations and none missing. `ty check` and
+  `poetry check --lock` passed.
+- Eight declared DVC objects were restored in an isolated clone with an empty
+  cache. No DVC command ran in the main worktree, and certification did not
+  open or decode the restored Parquet payloads in Python.
+- Claim boundary: software restorability and reproducibility were certified;
+  scientific efficacy was not re-evaluated or established. Phase 5 has not
+  started and is not authorized by the Phase 4 closure.
+
+The canonical public sources are the
+[synthesis report](reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md),
+[certification protocol](docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md),
+[final certification report](reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md),
+and [canonical manifest](reports/closure_v1/12_certification/final_certification_manifest.json).
+The protocol records the gate and failure history; the completed manifest and
+the annotated tag are the terminal state authorities.
+
+### Scientific Reading Of The Closure
+
+- Closure V1 is an internal pseudoprospective evaluation over 88 held-out WQP
+  monitoring locations, 4,488 origins, and 13,464 origin-horizon attempts.
+  This is an internal WQP surface, not external validation.
+- P0, P1, and A2 remain `model_unavailable` without substitution. The complete
+  Holm universes remain A=3, B=78, C=1, D=9, and E=1; non-estimability is not
+  encoded as zero, equivalence, or negative evidence.
+- Available branches provide bounded descriptive evidence: B2 has the lowest
+  observation-weighted Brier score at all three horizons; A1 leads PR-AUC at
+  h1 and B2 at h2/h3; B2 is descriptively better than B1 in the evaluated
+  ordinal/trophic summaries; and uncertainty diagnostics do not support a
+  claim that locked conformal intervals always improve on raw Gaussian ones.
+- E5 preserves all 92 Holm contrasts; non-estimable cells remain explicit and
+  are not imputed. E2 transfer gaps, E6 M0-versus-P1 degradation, and all nine
+  E9 planning actions remain non-estimable under the sealed availability
+  policy. The global verdict is no conclusive predictive corroboration, with
+  a reproducible engineering and methodological contribution.
+
+### Repository Scope And Supporting Evidence
 
 - The four raw sources are documented in `configs/sources.yaml`: LakeBeD-US-CSE,
   WQP, AquaMatch Chl-a, and EPA NLA.
@@ -196,38 +267,13 @@ exports, or credential JSON files.
   `configs/dvc_artifacts.yaml` and, for post-lock Closure V1 additions, in
   anchored overlays such as
   `configs/closure_v1/dvc_artifacts_post_lock.yaml`.
-- The thesis-wide `closure_v1` benchmark has not been evaluated. E0-P was
-  published in `ead7d13`, its external protocol lock in `31230a2`, and the
-  cutoff-safe E0-C assignment in `0c283af`. The immutable assignment contains
-  441 WQP monitoring locations: 88 internal holdout locations and 353
-  development locations, with 8,903 pre-cutoff eligible origins. E0-D's
-  assignment/runtime guard and common-origin builder were published in
-  `502c955`. A derived ANFIS/PIPE runtime-contract candidate has status
-  `ready_to_lock`; it fixes the no-current autoregressive lineage,
-  deterministic ANFIS sampling, five paired seeds, and the P0/P1 fit profile.
-  The guarded common-origin artifact is now materialized and strictly
-  validated: 29,196 horizon rows over 9,732 origins and 353 development
-  locations. Commit `c0554bd` publishes its completion manifest and explicit
-  DVC pointer, binds the frozen sources and implementation dependencies, and
-  has a matching remotely pushed object. The current pre-fit source slice
-  implements the strict expert/ANFIS, sequence, temporal-fit, rollout, and
-  E0-DL lock adapters, and predeclares the 23 planned Closure Parquets without
-  creating data or pointers. It separates the training-only ANFIS join and
-  quality gate from full-development state materialization, fixes Torch to a
-  single-thread CPU policy, and rejects reuse of completed or partial Closure
-  bundles. This implementation must be published as the clean `H0` gate; the
-  deterministic expert-state bundle and external lock remain separate gated
-  publications. The later lock semantically audits only the outcome-free
-  expert state, binds a credential-free canonical Git-origin identity, and
-  requires two already-up-to-date targeted DVC pushes. Fitting is not
-  authorized.
-  Fit-generated heavy artifacts can be registered only after materialization
-  and must be registered before E0-M. E0-U remains sealed, and no post-2021
-  holdout outcome has been opened for Closure V1.
-  Existing model results remain iteration-specific evidence.
-  The primary closure surface excludes observed Chl-a and all of its lineage at
-  every input lag, and the transfer claim is limited to held-out WQP monitoring
-  locations within the frozen cohort.
+- The cutoff-safe cohort contains 441 WQP monitoring locations: 353 for
+  development and 88 for internal holdout. The common-origin development
+  surface contains 9,732 origins and 29,196 horizon rows. The primary closure
+  surface excludes observed Chl-a and its lineage at every input lag.
+- Existing pre-Closure and branch-specific model results remain historical,
+  iteration-specific evidence. They must not be pooled with Closure V1 or used
+  to replace an unavailable final model.
 - Historical files use the `PIPE/GRU-D` and `pipe_grud` labels. The current
   trainer implements a residual probabilistic GRU over engineered/imputed
   state vectors, without the explicit mask and temporal-decay mechanism of a
