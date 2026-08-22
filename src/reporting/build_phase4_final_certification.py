@@ -67,6 +67,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_p11_failure_record,
     expected_p12_failure_record,
     expected_h13_failure_record,
+    expected_p14_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
@@ -3839,11 +3840,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h14_authority_boundary(result, contract=contract)
+    _require_h15_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p14_cert_commit"),
+        execution_commit=result.get("p15_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3856,6 +3857,11 @@ def _authority_loader(
         "status": result["status"],
         "gate": result["gate"],
         **commit_binding,
+        # These are historical non-commit sentinels, so the string-only
+        # commit projection above intentionally cannot carry them.  Preserve
+        # them explicitly to make projection revalidation idempotent.
+        "p13_cert_commit": result["p13_cert_commit"],
+        "h13_cert_commit": result["h13_cert_commit"],
         "dvc_status_policy": dvc_status_policy,
         "repository": result["repository"],
         "authority": result["authority"],
@@ -3873,7 +3879,7 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P14/H14 aliases and the complete historical lineage."""
+    """Validate active P15/H15 aliases and the complete historical lineage."""
 
     if (
         "p13_cert_commit" not in value
@@ -3885,6 +3891,8 @@ def _require_effective_authority_commit_binding(
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p15_cert_commit",
+        "h15_cert_commit",
         "p14_cert_commit",
         "h14_cert_commit",
         "p12_cert_commit",
@@ -3921,9 +3929,11 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p14_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h14_cert_commit"]
-        or commits["p14_cert_commit"] == commits["h14_cert_commit"]
+        or commits["p15_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h15_cert_commit"]
+        or commits["p15_cert_commit"] == commits["h15_cert_commit"]
+        or commits["p14_cert_commit"] != contract.p14_cert_commit
+        or commits["h14_cert_commit"] != contract.h14_cert_commit
         or commits["p12_cert_commit"] != contract.p12_cert_commit
         or commits["h12_cert_commit"] != contract.h12_cert_commit
         or commits["p11_cert_commit"] != contract.p11_cert_commit
@@ -3936,6 +3946,8 @@ def _require_effective_authority_commit_binding(
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p15_cert_commit"] == commits["p14_cert_commit"]
+        or commits["h15_cert_commit"] == commits["h14_cert_commit"]
         or commits["p14_cert_commit"] == commits["p12_cert_commit"]
         or commits["h14_cert_commit"] == commits["h12_cert_commit"]
         or commits["p12_cert_commit"] == commits["p11_cert_commit"]
@@ -3967,19 +3979,20 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h14_authority_boundary(
+def _require_h15_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R14 to the invalid H13 candidate and preserved failure history."""
+    """Bind R15 to the P14 preflight failure and preserved lineage."""
 
     if value.get("status") != "effective" or value.get("gate") != "P-CERT":
-        raise _error("R14 requires effective published P14 authority")
+        raise _error("R15 requires effective published P15 authority")
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H14 authority payload is absent")
+        raise _error("effective H15 authority payload is absent")
     isolation = authority.get("isolation")
     if (
         authority.get("h13_failure") != expected_h13_failure_record()
+        or authority.get("p14_failure") != expected_p14_failure_record()
         or authority.get("p12_failure") != expected_p12_failure_record()
         or authority.get("p11_failure") != expected_p11_failure_record()
         or authority.get("p10_failure") != expected_p10_failure_record()
@@ -4014,7 +4027,7 @@ def _require_h14_authority_boundary(
         or isolation.get("test_access_guard_policy")
         != dict(contract.test_access_guard_policy)
     ):
-        raise _error("effective H14 failure/isolation authority drifted")
+        raise _error("effective H15 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -4022,7 +4035,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P14 authority's exact partial-clone status policy."""
+    """Require the effective P15 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4056,7 +4069,7 @@ def _require_dvc_status_policy_projection(
         raise _error(f"{context} DVC status policy projection drifted")
 
 
-def _require_h14_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h15_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -4186,7 +4199,7 @@ def _require_h14_runtime_policy(contract: FinalCertificationContract) -> None:
         or dict(contract.cleanup_diagnostic_policy)
         != expected_cleanup_diagnostic_policy()
     ):
-        raise _error("H14 runtime isolation policy drifted")
+        raise _error("H15 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -4198,7 +4211,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h14_runtime_policy(contract)
+    _require_h15_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -4207,14 +4220,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h14_authority_boundary(authority, contract=contract)
+    _require_h15_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p14_cert_commit"),
+        execution_commit=authority.get("p15_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p14_cert_commit"]
+    effective_commit = authority_commits["p15_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -7696,7 +7709,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h14_authority_boundary(authority, contract=contract)
+    _require_h15_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,

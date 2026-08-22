@@ -346,6 +346,36 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["topology"]["P-CERT14"][
         "supersedes_unpublished_H_CERT13_candidate"
     ] is True
+    assert contract.raw["authorities"]["h14_cert_commit"] == (
+        certification.H14_CERT_COMMIT
+    )
+    assert contract.raw["authorities"]["p14_cert_commit"] == (
+        certification.P14_CERT_COMMIT
+    )
+    assert contract.raw["topology"]["R-CERT14"] == {
+        "role": (
+            "superseded_preflight_failed_final_doctoral_software_and_restorability_evidence"
+        ),
+        "requires_published_P_CERT14": True,
+        "failure_stage": "effective_authority_alias_projection_preflight",
+        "failure_kind": "projected_effective_authority_omitted_h13_p13_aliases",
+        "execution_runs": 0,
+        "output_count": 0,
+        "retry_authorized": False,
+        "manifest_written_last": False,
+    }
+    assert contract.raw["topology"]["H-CERT15"]["direct_parent"] == (
+        "p14_cert_commit"
+    )
+    assert contract.raw["topology"]["P-CERT15"]["supersedes_P_CERT14"] is True
+    assert contract.raw["topology"]["R-CERT15"] == {
+        "role": "final_doctoral_software_and_restorability_evidence",
+        "requires_published_P_CERT15": True,
+        "output_count": 8,
+        "manifest_written_last": True,
+    }
+    assert "attempt_to_execute_from_superseded_p14" in contract.stop_rules
+    assert "effective_authority_alias_projection_drift" in contract.stop_rules
     assert contract.raw["topology"][
         "main_worktree_dvc_static_boundary_verified"
     ] is True
@@ -862,6 +892,15 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
         "const"
     ] == 2
     assert scopes["R-CERT14"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 8
+    assert scopes["H-CERT15"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
+    assert scopes["P-CERT15"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["R-CERT15"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 8
     assert pending["properties"]["selector_count"] == {"type": "null"}
@@ -1445,11 +1484,14 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p12_cert_commit": contract.p12_cert_commit,
         "h13_cert_commit": None,
         "p13_cert_commit": None,
-        "h14_cert_commit": h_commit,
-        "p14_cert_commit": None,
+        "h14_cert_commit": contract.h14_cert_commit,
+        "p14_cert_commit": contract.p14_cert_commit,
+        "h15_cert_commit": h_commit,
+        "p15_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
         "supersedes_unpublished_h13_candidate": True,
+        "supersedes_p14": True,
         "supersedes_p12": True,
         "supersedes_p11": True,
         "supersedes_p10": True,
@@ -1476,7 +1518,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p12_cert_commit,),
+            h_commit: (contract.p14_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -1514,33 +1556,8 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p12_records",
-        lambda *_args, **_kwargs: (
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-        ),
+        "_historical_through_p14_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(26)),
     )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
@@ -1564,8 +1581,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p14_cert_commit"] == p_commit
-    assert result["h14_cert_commit"] == h_commit
+    assert result["p15_cert_commit"] == p_commit
+    assert result["h15_cert_commit"] == h_commit
+    assert result["p14_cert_commit"] == contract.p14_cert_commit
+    assert result["h14_cert_commit"] == contract.h14_cert_commit
     assert result["p13_cert_commit"] is None
     assert result["h13_cert_commit"] is None
     assert result["p12_cert_commit"] == contract.p12_cert_commit
@@ -1653,33 +1672,8 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p12_records",
-        lambda *_args, **_kwargs: (
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-            [],
-        ),
+        "_historical_through_p14_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(26)),
     )
     monkeypatch.setattr(
         certification,
@@ -1737,6 +1731,23 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["p11_failure"] == certification.expected_p11_failure_record()
     assert authority["p12_failure"] == certification.expected_p12_failure_record()
     assert authority["h13_failure"] == certification.expected_h13_failure_record()
+    p14_failure = certification.expected_p14_failure_record()
+    assert authority["p14_failure"] == p14_failure
+    assert p14_failure["status"] == "preflight_failed_closed_execution_not_started"
+    assert p14_failure["attempt"] == "R-CERT14"
+    assert p14_failure["active_error"]["stage"] == (
+        "effective_authority_alias_projection_preflight"
+    )
+    assert p14_failure["active_error"]["failure_kind"] == (
+        "non_idempotent_effective_authority_projection"
+    )
+    assert p14_failure["evidence_counts"]["builder_check_only_invocations"] == 1
+    assert p14_failure["evidence_counts"]["builder_check_only_failures"] == 1
+    assert p14_failure["evidence_counts"]["r14_execution_runs"] == 0
+    assert p14_failure["evidence_counts"]["r_cert_payload_builds"] == 0
+    assert p14_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p14_failure["p14_authority_remains_immutable"] is True
+    assert p14_failure["retry_authorized"] is False
     assert authority["topology"]["h8_cert_commit"] == contract.h8_cert_commit
     assert authority["topology"]["p8_cert_commit"] == contract.p8_cert_commit
     assert authority["topology"]["h9_cert_commit"] == contract.h9_cert_commit
@@ -1749,8 +1760,10 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["topology"]["p12_cert_commit"] == contract.p12_cert_commit
     assert authority["topology"]["h13_cert_commit"] is None
     assert authority["topology"]["p13_cert_commit"] is None
-    assert authority["topology"]["h14_cert_commit"] == "e" * 40
-    assert authority["topology"]["p14_cert_commit"] is None
+    assert authority["topology"]["h14_cert_commit"] == contract.h14_cert_commit
+    assert authority["topology"]["p14_cert_commit"] == contract.p14_cert_commit
+    assert authority["topology"]["h15_cert_commit"] == "e" * 40
+    assert authority["topology"]["p15_cert_commit"] is None
     assert authority["topology"][
         "supersedes_unpublished_H_CERT13_candidate"
     ] is True
@@ -1780,10 +1793,15 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["h13_scope"] == certification.expected_h13_scope()
     assert authority["p13_scope"] == certification.expected_p13_scope()
     assert authority["r13_scope"] == certification.expected_r_scope()
-    assert authority["h14_component_records"] == authority["h_component_records"]
-    assert authority["h14_scope"] == authority["h_scope"]
-    assert authority["p14_scope"] == authority["p_scope"]
+    assert authority["h14_component_records"] == []
+    assert authority["p14_component_records"] == []
+    assert authority["h14_scope"] == certification.expected_h14_scope()
+    assert authority["p14_scope"] == certification.expected_p14_scope()
     assert authority["r14_scope"] == authority["r_scope"]
+    assert authority["h15_component_records"] == authority["h_component_records"]
+    assert authority["h15_scope"] == authority["h_scope"]
+    assert authority["p15_scope"] == authority["p_scope"]
+    assert authority["r15_scope"] == authority["r_scope"]
     assert authority["isolation"]["postgres_connection_policy"] == (
         certification.expected_postgres_connection_policy()
     )

@@ -64,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v14"
+      "const": "closure_v1_phase4_final_certification_v15"
     },
     "authorities": {
       "type": "object",
@@ -97,6 +97,8 @@
         "p11_cert_commit",
         "h12_cert_commit",
         "p12_cert_commit",
+        "h14_cert_commit",
+        "p14_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -183,8 +185,14 @@
         "p12_cert_commit": {
           "const": "f97e0a5cf21aa9b65623cee0a8a656ab0537e2ad"
         },
+        "h14_cert_commit": {
+          "const": "b6c22c3bdc9e3209f621ee1c4d79ae0ca7770dec"
+        },
+        "p14_cert_commit": {
+          "const": "c0458d7294b0d088169b1f3471200ec1a7342f8b"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v14_commit"},
+        "certification_target": {"const": "published_P_CERT_v15_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -229,6 +237,9 @@
         "H-CERT14",
         "P-CERT14",
         "R-CERT14",
+        "H-CERT15",
+        "P-CERT15",
+        "R-CERT15",
         "single_parent_commits_required",
         "closure_source_commit_must_remain_ancestor",
         "aligned_refs_and_live_remote_required",
@@ -239,7 +250,7 @@
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14", "H-CERT15", "P-CERT15", "R-CERT15"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -850,9 +861,10 @@
         "H-CERT14": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_absolute_main_dvc_boundary_postgres_stability_contract_tests_and_freeze"},
+            "commit": {"const": "h14_cert_commit"},
             "direct_parent": {"const": "p12_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["preserve_postgres_pid1_readiness_and_socket_stability_hardening", "record_unpublished_h_cert13_candidate_invalidation", "restore_absolute_main_worktree_dvc_command_boundary", "reject_temporary_precommit_reports_as_authority", "forbid_h_cert13_retry_or_p_cert13_r_cert13_generation"]}
@@ -861,10 +873,66 @@
         "P-CERT14": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_H_CERT14", "supersedes_unpublished_H_CERT13_candidate", "supersedes_P_CERT12", "supersedes_P_CERT11", "supersedes_P_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "required": ["role", "commit", "requires_published_H_CERT14", "supersedes_unpublished_H_CERT13_candidate", "supersedes_P_CERT12", "supersedes_P_CERT11", "supersedes_P_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized", "failure_stage", "failure_kind", "r_cert_execution_runs", "retry_authorized", "manifest_written_last"],
           "properties": {
-            "role": {"const": "data_only_final_certification_authority_v14"},
+            "role": {"const": "superseded_preflight_blocked_final_certification_authority_v14"},
+            "commit": {"const": "p14_cert_commit"},
             "requires_published_H_CERT14": {"const": true},
+            "supersedes_unpublished_H_CERT13_candidate": {"const": true},
+            "supersedes_P_CERT12": {"const": true},
+            "supersedes_P_CERT11": {"const": true},
+            "supersedes_P_CERT10": {"const": true},
+            "supersedes_P_CERT9": {"const": true},
+            "supersedes_P_CERT8": {"const": true},
+            "supersedes_P_CERT7": {"const": true},
+            "supersedes_P_CERT6": {"const": true},
+            "supersedes_P_CERT5": {"const": true},
+            "supersedes_P_CERT4": {"const": true},
+            "supersedes_P_CERT3": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "effective_authority_alias_projection_preflight"},
+            "failure_kind": {"const": "projected_effective_authority_omitted_h13_p13_aliases"},
+            "r_cert_execution_runs": {"const": 0},
+            "retry_authorized": {"const": false},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "R-CERT14": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_P_CERT14", "failure_stage", "failure_kind", "execution_runs", "output_count", "retry_authorized", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "superseded_preflight_failed_final_doctoral_software_and_restorability_evidence"},
+            "requires_published_P_CERT14": {"const": true},
+            "failure_stage": {"const": "effective_authority_alias_projection_preflight"},
+            "failure_kind": {"const": "projected_effective_authority_omitted_h13_p13_aliases"},
+            "execution_runs": {"const": 0},
+            "output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "manifest_written_last": {"const": false}
+          }
+        },
+        "H-CERT15": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_effective_authority_projection_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p14_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["preserve_present_null_h13_p13_aliases_in_builder_projection", "make_effective_authority_projection_revalidation_idempotent", "cover_strict_loader_to_check_only_composition", "record_r_cert14_preflight_failure_without_execution", "forbid_p_cert14_r_cert14_retry"]}
+          }
+        },
+        "P-CERT15": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT15", "supersedes_P_CERT14", "supersedes_unpublished_H_CERT13_candidate", "supersedes_P_CERT12", "supersedes_P_CERT11", "supersedes_P_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v15"},
+            "requires_published_H_CERT15": {"const": true},
+            "supersedes_P_CERT14": {"const": true},
             "supersedes_unpublished_H_CERT13_candidate": {"const": true},
             "supersedes_P_CERT12": {"const": true},
             "supersedes_P_CERT11": {"const": true},
@@ -882,13 +950,13 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "R-CERT14": {
+        "R-CERT15": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_P_CERT14", "output_count", "manifest_written_last"],
+          "required": ["role", "requires_published_P_CERT15", "output_count", "manifest_written_last"],
           "properties": {
             "role": {"const": "final_doctoral_software_and_restorability_evidence"},
-            "requires_published_P_CERT14": {"const": true},
+            "requires_published_P_CERT15": {"const": true},
             "output_count": {"const": 8},
             "manifest_written_last": {"const": true}
           }
@@ -906,7 +974,7 @@
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14", "H-CERT15", "P-CERT15", "R-CERT15"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -1339,6 +1407,42 @@
               }
             }
           ]
+        },
+        "H-CERT15": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT15": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "R-CERT15": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 8},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 8, "maxItems": 8}
+              }
+            }
+          ]
         }
       }
     },
@@ -1677,6 +1781,7 @@
         "superseded_p10_retry_authorized",
         "superseded_p11_retry_authorized",
         "superseded_p12_retry_authorized",
+        "superseded_p14_retry_authorized",
         "postgres_portable_path_policy",
         "postgres_connection_policy",
         "postgres_startup_stability_policy",
@@ -1818,6 +1923,7 @@
         "superseded_p10_retry_authorized": {"const": false},
         "superseded_p11_retry_authorized": {"const": false},
         "superseded_p12_retry_authorized": {"const": false},
+        "superseded_p14_retry_authorized": {"const": false},
         "postgres_portable_path_policy": {
           "type": "object",
           "additionalProperties": false,
@@ -2079,8 +2185,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 42,
-      "maxItems": 42,
+      "minItems": 44,
+      "maxItems": 44,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }
