@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p10_cert_commit": P_COMMIT,
-        "h10_cert_commit": H_COMMIT,
+        "p11_cert_commit": P_COMMIT,
+        "h11_cert_commit": H_COMMIT,
+        "p10_cert_commit": active_contract.p10_cert_commit,
+        "h10_cert_commit": active_contract.h10_cert_commit,
         "p9_cert_commit": active_contract.p9_cert_commit,
         "h9_cert_commit": active_contract.h9_cert_commit,
         "p8_cert_commit": active_contract.p8_cert_commit,
@@ -111,6 +113,7 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": "synthetic",
+            "p10_failure": contract_module.expected_p10_failure_record(),
             "p9_failure": contract_module.expected_p9_failure_record(),
             "isolation": {
                 "sandbox_mountpoint_policy": (
@@ -320,6 +323,12 @@ def _products(
         "sandbox_smoke_policy": contract_module.expected_sandbox_smoke_policy(),
         "cleanup_diagnostic_policy": (
             contract_module.expected_cleanup_diagnostic_policy()
+        ),
+        "postgres_destroy_poll_policy": (
+            contract_module.expected_postgres_destroy_poll_policy()
+        ),
+        "test_access_guard_policy": (
+            contract_module.expected_test_access_guard_policy()
         ),
     }
     verification_artifacts = {
@@ -797,8 +806,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p10_cert_commit": P_COMMIT,
-        "h10_cert_commit": H_COMMIT,
+        "p11_cert_commit": P_COMMIT,
+        "h11_cert_commit": H_COMMIT,
+        "p10_cert_commit": contract.p10_cert_commit,
+        "h10_cert_commit": contract.h10_cert_commit,
         "p9_cert_commit": contract.p9_cert_commit,
         "h9_cert_commit": contract.h9_cert_commit,
         "p8_cert_commit": contract.p8_cert_commit,
@@ -824,8 +835,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p10_cert_commit": P_COMMIT,
-        "h10_cert_commit": H_COMMIT,
+        "p11_cert_commit": P_COMMIT,
+        "h11_cert_commit": H_COMMIT,
+        "p10_cert_commit": contract.p10_cert_commit,
+        "h10_cert_commit": contract.h10_cert_commit,
         "p9_cert_commit": contract.p9_cert_commit,
         "h9_cert_commit": contract.h9_cert_commit,
         "p8_cert_commit": contract.p8_cert_commit,
@@ -908,6 +921,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p11_cert_commit",
+        "h11_cert_commit",
         "p10_cert_commit",
         "h10_cert_commit",
         "p9_cert_commit",
@@ -970,6 +985,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p11_cert_commit",
+        "h11_cert_commit",
         "p10_cert_commit",
         "h10_cert_commit",
         "p9_cert_commit",
@@ -3970,6 +3987,14 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     assert "contract.partial_clone_global_status_authorized" in inspect.getsource(
         builder._contract_dvc_status_targets
     )
+    verification_source = inspect.getsource(builder._run_verification_with_runtime)
+    validator_source = inspect.getsource(builder._validate_verification_record)
+    for policy_name in (
+        "postgres_destroy_poll_policy",
+        "test_access_guard_policy",
+    ):
+        assert policy_name in verification_source
+        assert policy_name in validator_source
     assert source.count("dvc_clone_handle=clone_handle") == 2
     assert source.count(
         "dvc_site_cache_handle=version_site_cache_handle"
@@ -4644,15 +4669,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
-    builder._require_h10_runtime_policy(contract)
+    builder._require_h11_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H10 runtime isolation policy drifted",
+        match="H11 runtime isolation policy drifted",
     ):
-        builder._require_h10_runtime_policy(
+        builder._require_h11_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -5093,6 +5118,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p11_cert_commit",
+            "h11_cert_commit",
             "p10_cert_commit",
             "h10_cert_commit",
             "p9_cert_commit",
@@ -5119,6 +5146,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p11_cert_commit",
+            "h11_cert_commit",
             "p10_cert_commit",
             "h10_cert_commit",
             "p9_cert_commit",
@@ -5142,6 +5171,78 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         )
     }
     assert not any(isinstance(value, bytes) for value in result.values())
+
+    p10_failure = contract_module.expected_p10_failure_record()
+    assert p10_failure["status"] == "execution_failed_closed_cleanup_succeeded"
+    assert p10_failure["attempt"] == "R-CERT10"
+    p10_supplemental = [
+        node
+        for node in contract_module.HISTORICAL_EXACT_SKIPPED_NODES
+        if node.split("::", 1)[0] not in set(contract_module.POSITIVE_TEST_PATHS)
+    ]
+    assert p10_failure["active_error"] == {
+        "stage": "public_tests",
+        "sanitized_command": [".venv/bin/python", "-m", "pytest"]
+        + list(contract_module.POSITIVE_TEST_PATHS)
+        + p10_supplemental
+        + [
+            "-ra",
+            "-q",
+            "-p",
+            "src.reporting.build_phase4_final_certification",
+            "-p",
+            "no:cacheprovider",
+            "--junitxml=tmp/public-tests-raw.xml",
+        ],
+        "returncode": 3,
+        "safe_stderr_category": "nonzero_exit",
+        "pytest_exit_category": "INTERNAL_ERROR",
+        "raw_stdout_preserved": False,
+        "raw_stderr_preserved": False,
+        "credentials_preserved": False,
+        "absolute_paths_preserved": False,
+    }
+    assert p10_failure["observed_cause"] == {
+        "stage": "public_tests_collection",
+        "safe_error": "sealed_suite_collection_count_and_digest_drift",
+        "sealed_collected_test_count": 944,
+        "sealed_nodeids_sha256": (
+            "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
+        ),
+        "observed_collected_test_count": 946,
+        "observed_nodeids_sha256": (
+            "644bc8548b730c98a62773dcc01622a6d5322ffabbcc31aa0e63b12275df9295"
+        ),
+        "unexpected_nodeids": [
+            "tests/test_phase4_final_certification_contract.py::"
+            "test_every_contract_boundary_fails_closed[<lambda>25]",
+            "tests/test_phase4_final_certification_contract.py::"
+            "test_every_contract_boundary_fails_closed[<lambda>26]",
+        ],
+        "deterministic_postmortem": True,
+        "final_junit_preserved": False,
+        "raw_diagnostic_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    assert p10_failure["cleanup"] == {
+        "status": "succeeded_exact",
+        "namespace_preserved": False,
+        "active_error_was_masked": False,
+        "reason_codes": [],
+        "exact_owned_container_absent": True,
+        "socket_directory_empty": True,
+    }
+    assert p10_failure["evidence_counts"]["public_tests_collected"] == 946
+    assert p10_failure["evidence_counts"]["public_tests_executed"] == 0
+    assert p10_failure["evidence_counts"]["openapi_generations"] == 0
+    assert p10_failure["evidence_counts"]["synthetic_e2e_runs"] == 0
+    assert p10_failure["evidence_counts"]["static_command_runs"] == 0
+    assert p10_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p10_failure["namespace_archived_under_ignored_tmp"] is False
+    assert p10_failure["retry_authorized"] is False
+    serialized_p10_failure = json.dumps(p10_failure, sort_keys=True)
+    assert "postgresql://" not in serialized_p10_failure
+    assert "/home/" not in serialized_p10_failure
 
     p9_failure = contract_module.expected_p9_failure_record()
     assert p9_failure["attempt"] == "R-CERT9"
@@ -5171,9 +5272,9 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
 
     drifted_failure = copy.deepcopy(fake)
     drifted_authority = cast(dict[str, Any], drifted_failure["authority"])
-    drifted_p9_failure = cast(dict[str, Any], drifted_authority["p9_failure"])
-    drifted_cause = cast(dict[str, Any], drifted_p9_failure["observed_cause"])
-    drifted_cause["passed"] = 856
+    drifted_p10_failure = cast(dict[str, Any], drifted_authority["p10_failure"])
+    drifted_cause = cast(dict[str, Any], drifted_p10_failure["observed_cause"])
+    drifted_cause["observed_collected_test_count"] = 945
     monkeypatch.setattr(
         builder,
         "load_effective_authority",
@@ -5181,13 +5282,31 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H10 failure/isolation",
+        match="H11 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    drifted_history = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_history["authority"])
+    drifted_p9_failure = cast(dict[str, Any], drifted_authority["p9_failure"])
+    drifted_cause = cast(dict[str, Any], drifted_p9_failure["observed_cause"])
+    drifted_cause["passed"] = 856
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_history,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H11 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p11_cert_commit",
+        "h11_cert_commit",
         "p10_cert_commit",
         "h10_cert_commit",
         "p9_cert_commit",
@@ -5403,8 +5522,18 @@ def test_public_environment_activates_safe_historical_e10_compatibility() -> Non
         )
 
     sealed = contract_module.load_contract(root=ROOT)
+    assert sealed.test_suite.selector_count == 39
+    assert sealed.test_suite.collected_test_count == 944
+    assert sealed.test_suite.nodeids_sha256 == (
+        "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
+    )
     assert sealed.test_suite.allowed_skip_count == 42
     assert len(sealed.test_suite.exact_skipped_nodes) == 42
+    assert (
+        sealed.test_suite.collected_test_count
+        - sealed.test_suite.allowed_skip_count
+        == 902
+    )
 
 
 def test_process_guard_allows_safe_git_status_and_owned_local_fixtures_only() -> None:

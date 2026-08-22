@@ -1,8 +1,8 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT10 publication candidate; suite locked`
+Status: `H-CERT11 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v10`
+Contract: `closure_v1_phase4_final_certification_v11`
 
 Authorities:
 
@@ -26,7 +26,9 @@ Authorities:
 - historical H-CERT8: `6a339cb7fcec125e379d9829c76e90f5ded55d3a`;
 - superseded P-CERT8: `095b55b208f69936a562eaf09c76fab3389df199`;
 - historical H-CERT9: `f296236fa7cdc89ad6b85ce1642b478276b92553`;
-- superseded P-CERT9: `73d12c7386b9e4a34d8f15b5330cecf357e05ac1`.
+- superseded P-CERT9: `73d12c7386b9e4a34d8f15b5330cecf357e05ac1`;
+- historical H-CERT10: `825b3382f8d501cbc550bf7738a48d4d489dd5e8`;
+- superseded P-CERT10: `9ca3126667eaa8c4fd754a3499a7a9eacdd2d2b0`.
 
 ## Purpose and boundary
 
@@ -51,9 +53,9 @@ not authorize work after Phase 4.
 The chain is single-parent and exact. H-CERT1/P-CERT1 and H-CERT2/P-CERT2
 and H-CERT3/P-CERT3, H-CERT4/P-CERT4 and H-CERT5/P-CERT5 remain immutable
 historical evidence; H-CERT6/P-CERT6, H-CERT7/P-CERT7, H-CERT8/P-CERT8 and
-H-CERT9/P-CERT9 now join that immutable history. H-CERT10/P-CERT10 are the
+H-CERT9/P-CERT9 and H-CERT10/P-CERT10 now join that immutable history. H-CERT11/P-CERT11 are the
 only future effective authority. The compatibility names `H-CERT` and
-`P-CERT` refer to H-CERT10 and P-CERT10:
+`P-CERT` refer to H-CERT11 and P-CERT11:
 
 ```text
 ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
@@ -86,7 +88,10 @@ ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
                                                                     H-CERT9 -> P-CERT9 (superseded failure)
                                                                                  |
                                                                                  v
-                                                                    H-CERT10 -> P-CERT10 -> R-CERT10
+                                                                    H-CERT10 -> P-CERT10 (superseded failure)
+                                                                                  |
+                                                                                  v
+                                                                    H-CERT11 -> P-CERT11 -> R-CERT11
                                                                                                   |
                                                                                                   v
                                                                                          thesis-closure-v1
@@ -155,19 +160,29 @@ The gates have distinct roles:
     and 21 skipped. It produced no OpenAPI, E2E, static-command or R output;
     cleanup failed closed with `database_owner_retained`, and no retry is
     authorized.
-16. **H-CERT10** publishes only the exact 42-node sandbox/state skip ledger,
+16. **H-CERT10** published only the exact 42-node sandbox/state skip ledger,
     the split public-test hard boundary versus OpenAPI/E2E audit hooks, the
     bounded PostgreSQL destroy poll, factual R-CERT9 record, schema, freeze
     and tests.
-17. **P-CERT10** publishes a new two-file, data-only authority. It explicitly
-    supersedes P-CERT9 through P-CERT1. An unpublished P-CERT10 is ineffective.
-18. **R-CERT10** executes only from a clean, published P-CERT10 and publishes
+17. **P-CERT10** preserved its two-file, data-only authority. Its unique
+    R-CERT10 launch failed at public-test collection with pytest return code
+    3 (`INTERNAL_ERROR`): the sealed 944-node identity was compared with an
+    observed 946-node collection containing two accidental parametrized
+    policy checks. Exact cleanup removed the namespace; no final JUnit,
+    OpenAPI, E2E, static check, payload or R output survived, and no retry is
+    authorized.
+18. **H-CERT11** restores the exact historical 944-node suite identity while
+    retaining both policy validations inside an already existing test node;
+    it also seals the factual R-CERT10 record, schema, freeze and tests.
+19. **P-CERT11** publishes a new two-file, data-only authority. It explicitly
+    supersedes P-CERT10 through P-CERT1. An unpublished P-CERT11 is ineffective.
+20. **R-CERT11** executes only from a clean, published P-CERT11 and publishes
     eight evidence files, manifest last.
-19. The repository owner manually publishes the final R commit and the
+21. The repository owner manually publishes the final R commit and the
     `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT10 commit. Executing from
-P-CERT1 through P-CERT9, adopting any failed temporary namespace, or treating
+The executable target is the published P-CERT11 commit. Executing from
+P-CERT1 through P-CERT10, adopting any failed temporary namespace, or treating
 a superseded authority as effective is
 forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
@@ -178,7 +193,7 @@ itself.
 
 At every gate, `HEAD`, `main`, `origin/main`, `origin/HEAD`, live remote HEAD
 and live remote main must agree. The worktree and index must have only the
-gate's exact unstaged or staged scope. H-CERT10, P-CERT10 and R-CERT10 must never
+gate's exact unstaged or staged scope. H-CERT11, P-CERT11 and R-CERT11 must never
 execute `dvc status` or any other DVC command in the main worktree. Main DVC
 state is reconstructed only from the exact Git tree, the Git-bound tracked
 `.dvc/config`, and the eight versioned pointer blobs; the authority records
@@ -336,7 +351,25 @@ configs/closure_v1/phase4_final_certification_authority_v10.json
 configs/closure_v1/phase4_final_certification_authority_manifest_v10.json
 ```
 
-R-CERT10 is exactly eight additions below a new namespace:
+Its immutable canonical identities are authority `92421` bytes / SHA-256
+`1e8822415f71d35d40db0f7b384184f1759ce1e899f068510605e3d25f9976d0`
+and companion `2826` bytes / SHA-256
+`6a283c675bf5a61222df495f2374554d8d96caf1d2890305e2aea327a9e63932`.
+
+R-CERT10 had the same prescribed eight-addition scope, but its consumed launch
+failed before publication and produced zero outputs.
+
+H-CERT11 is exactly `11M` over P-CERT10, with the same eleven paths and modes.
+Every path is modified; none is added or deleted.
+
+P-CERT11 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v11.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v11.json
+```
+
+R-CERT11 is exactly eight additions below a new namespace:
 
 ```text
 reports/closure_v1/12_certification/public_tests.xml
@@ -349,7 +382,7 @@ reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
 reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
-All P1/P2/P3/P4/P5/P6/P7/P8/P9/P10/R files are single-link regular `100644`
+All P1/P2/P3/P4/P5/P6/P7/P8/P9/P10/P11/R files are single-link regular `100644`
 files. The final manifest is created and linked last. An existing path is
 never adopted, replaced, or truncated.
 
@@ -375,10 +408,10 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT10 creates a fresh clone of live `origin/main` at the exact published P-CERT10
+R-CERT11 creates a fresh clone of live `origin/main` at the exact published P-CERT11
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets, and no DVC executable is invoked there. Real DVC
-execution is confined to the owned isolated R-CERT10 clone. The builder runs
+execution is confined to the owned isolated R-CERT11 clone. The builder runs
 exactly eight directed pull commands, one pointer per directed pull command,
 in the YAML order:
 
@@ -525,7 +558,7 @@ suite_lock:
 
 The 39 selectors, 944 collected nodes, ordered-node digest and 42 allowed
 skips remain locked. The schema's pending branch is available only for
-integration fixtures; P-CERT10 generation and R-CERT10 reject it. Closure
+integration fixtures; P-CERT11 generation and R-CERT11 reject it. Closure
 outcomes, raw targets and restored
 Parquet payloads remained forbidden during both collections.
 
@@ -534,8 +567,10 @@ H-CERT4/P-CERT4, H-CERT5/P-CERT5 and H-CERT6/P-CERT6 remain
 byte-reconstructed with their 944-node suite lock; H-CERT7/P-CERT7 remain
 byte-reconstructed with that same lock; H-CERT8/P-CERT8 remain
 byte-reconstructed too; H-CERT9/P-CERT9 are also reconstructed byte-exactly.
-H-CERT10/P-CERT10 supersede only the operational authority without rewriting
-history.
+H-CERT10/P-CERT10 remain byte-reconstructed as failed historical authority;
+H-CERT11/P-CERT11 supersede only the operational authority without rewriting
+history. The 946-node diagnostic identity belongs only to the factual
+R-CERT10 postmortem and is never an active suite lock.
 
 The public suite requires zero failures/errors, exactly the 42 registered
 skips, a full `ty check`, and `poetry check --lock`. E2E is exactly the three
@@ -550,7 +585,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P-CERT10 clone with its tracked tree
+Verification runs from the exact P-CERT11 clone with its tracked tree
 read-only, the host virtual environment read-only, and an owned writable
 temporary namespace. Public pytest uses the bubblewrap masks, read-only binds
 and namespace isolation as its hard boundary; it deliberately installs no
@@ -625,16 +660,16 @@ those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P-CERT10 authority is canonical JSON. It reconstructs every historical
+The P-CERT11 authority is canonical JSON. It reconstructs every historical
 H-CERT1/P-CERT1/H-CERT2/P-CERT2/H-CERT3/P-CERT3/H-CERT4/P-CERT4 and
 H-CERT5/P-CERT5/H-CERT6/P-CERT6/H-CERT7/P-CERT7/H-CERT8/P-CERT8 and
-H-CERT9/P-CERT9 component from Git, every active H-CERT10 component, all ten anchors, all eight
+H-CERT9/P-CERT9/H-CERT10/P-CERT10 component from Git, every active H-CERT11 component, all ten anchors, all eight
 pointer records, the exact suite lock, output order, isolation, diagnostic and
-authorization policies. It records P-CERT1 through P-CERT9 as superseded
+authorization policies. It records P-CERT1 through P-CERT10 as superseded
 failed launches with no retry authorization.
 Its companion is written last. Execution becomes effective only after the
-exact two-file P-CERT10 commit is observed as the single-parent child of
-H-CERT10 in local refs and live origin.
+exact two-file P-CERT11 commit is observed as the single-parent child of
+H-CERT11 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -776,6 +811,19 @@ active public-test error. The ignored archive is forensic evidence rather
 than authority and neither its path nor run ID is serialized. P-CERT9 is
 immutable and `retry_authorized=false`.
 
+P-CERT11 additionally seals the factual record of the unique consumed
+R-CERT10 launch. Public pytest returned 3 (`INTERNAL_ERROR`) at the
+`public_tests` stage. Deterministic outcome-free postmortem collection found
+that the authority sealed 944 nodes and digest
+`8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349`,
+while the executed H-CERT10 tree collected 946 nodes with digest
+`644bc8548b730c98a62773dcc01622a6d5322ffabbcc31aa0e63b12275df9295`.
+The two extras were the `<lambda>25` and `<lambda>26` instances of
+`test_every_contract_boundary_fails_closed`. Exact cleanup succeeded and
+removed the run namespace; the final eight outputs and final JUnit are absent.
+The failed control flow did not proceed to OpenAPI, E2E, `ty`, Poetry or
+payload construction. P-CERT10 is immutable and `retry_authorized=false`.
+
 The builder retains its owned isolated-clone cleanup snapshot while auxiliary
 configuration, the eight directed pulls and directed status verification run
 there. A partial tree left by a failed DVC command is never adopted into
@@ -786,8 +834,8 @@ must identify both the sanitized active verification error and the cleanup
 failure; the cleanup failure cannot mask the active stage. No raw stream,
 secret or absolute path may appear in that composite.
 
-The final manifest binds the seven preceding outputs, P-CERT10 authority and
-companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7/H8/P8/H9/P9 and active H10
+The final manifest binds the seven preceding outputs, P-CERT11 authority and
+companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7/H8/P8/H9/P9/H10/P10 and active H11
 components, public anchors, eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
 human report must retain this claim boundary:
@@ -797,7 +845,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT10, P-CERT10, H-CERT10, then earlier Phase 4
+The precommit selector order is R-CERT11, P-CERT11, H-CERT11, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -813,11 +861,11 @@ pointer blobs, the recorded isolated-clone DVC evidence, targeted staging and
 rollback that preserves foreign index entries. It does not infer or claim a
 clean main-worktree DVC status. The legacy guard path remains absent.
 
-H-CERT10 and P-CERT10 precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT11 and P-CERT11 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P-CERT10 parent,
+After the owner publishes R, the final audit must prove direct P-CERT11 parent,
 exact8 scope, local/remote refs, clean Git, the static main-worktree DVC
 boundary from Git plus the eight versioned pointer blobs, the isolated-clone
 DVC evidence, effective manifest, and no owned temporary state. It must not
@@ -831,7 +879,7 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
-- any attempt to execute R-CERT10 from superseded P-CERT1 through P-CERT9,
+- any attempt to execute R-CERT11 from superseded P-CERT1 through P-CERT10,
   or reuse/adopt any retained failed-run namespace;
 - a post-clone directory-link delta other than exactly `+1` at
   `after_git_clone`, or failure to register the clone after that exact
