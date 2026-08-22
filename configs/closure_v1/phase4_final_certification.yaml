@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v15
+contract_version: closure_v1_phase4_final_certification_v16
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -30,8 +30,10 @@ authorities:
   p12_cert_commit: f97e0a5cf21aa9b65623cee0a8a656ab0537e2ad
   h14_cert_commit: b6c22c3bdc9e3209f621ee1c4d79ae0ca7770dec
   p14_cert_commit: c0458d7294b0d088169b1f3471200ec1a7342f8b
+  h15_cert_commit: 13640203e1c95d5ae9f8861fec3e6c842d90c545
+  p15_cert_commit: fa00bbd07d47ff504f2323e418934824efab386a
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v15_commit
+  certification_target: published_P_CERT_v16_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -75,6 +77,9 @@ topology:
     - H-CERT15
     - P-CERT15
     - R-CERT15
+    - H-CERT16
+    - P-CERT16
+    - R-CERT16
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -566,6 +571,7 @@ topology:
     manifest_written_last: false
   H-CERT15:
     role: corrective_effective_authority_projection_contract_tests_and_freeze
+    commit: h15_cert_commit
     direct_parent: p14_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -575,8 +581,53 @@ topology:
       - record_r_cert14_preflight_failure_without_execution
       - forbid_p_cert14_r_cert14_retry
   P-CERT15:
-    role: data_only_final_certification_authority_v15
+    role: superseded_failed_final_certification_authority_v15
+    commit: p15_cert_commit
     requires_published_H_CERT15: true
+    supersedes_P_CERT14: true
+    supersedes_unpublished_H_CERT13_candidate: true
+    supersedes_P_CERT12: true
+    supersedes_P_CERT11: true
+    supersedes_P_CERT10: true
+    supersedes_P_CERT9: true
+    supersedes_P_CERT8: true
+    supersedes_P_CERT7: true
+    supersedes_P_CERT6: true
+    supersedes_P_CERT5: true
+    supersedes_P_CERT4: true
+    supersedes_P_CERT3: true
+    supersedes_P_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: public_tests
+    failure_kind: public_test_failure_identity_not_persisted
+    r_cert_execution_runs: 1
+    retry_authorized: false
+    manifest_written_last: true
+  R-CERT15:
+    role: superseded_failed_final_doctoral_software_and_restorability_evidence
+    requires_published_P_CERT15: true
+    failure_stage: public_tests
+    failure_kind: public_test_failure_identity_not_persisted
+    execution_runs: 1
+    output_count: 0
+    retry_authorized: false
+    manifest_written_last: false
+  H-CERT16:
+    role: corrective_safe_public_test_junit_failure_diagnostics_contract_tests_and_freeze
+    direct_parent: p15_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - record_consumed_r_cert15_failure_without_inventing_cause_nodeids_or_totals
+      - read_failed_public_test_junit_through_bounded_fd_safe_revalidated_path
+      - seal_only_totals_failure_error_nodeids_and_digests
+      - reject_hostile_oversized_duplicate_unknown_or_outside_suite_junit
+      - propagate_safe_junit_identity_through_composite_cleanup_errors
+      - forbid_p_cert15_r_cert15_retry
+  P-CERT16:
+    role: data_only_final_certification_authority_v16
+    requires_published_H_CERT16: true
+    supersedes_P_CERT15: true
     supersedes_P_CERT14: true
     supersedes_unpublished_H_CERT13_candidate: true
     supersedes_P_CERT12: true
@@ -593,9 +644,9 @@ topology:
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT15:
+  R-CERT16:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT15: true
+    requires_published_P_CERT16: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -938,6 +989,81 @@ publication_scopes:
         status: A
         git_mode: "100644"
   R-CERT7:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
+  H-CERT16:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT16:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v16.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v16.json
+        status: A
+        git_mode: "100644"
+  R-CERT16:
     additions: 8
     modifications: 0
     ordered_paths:
@@ -1911,6 +2037,7 @@ isolation:
   superseded_p11_retry_authorized: false
   superseded_p12_retry_authorized: false
   superseded_p14_retry_authorized: false
+  superseded_p15_retry_authorized: false
   postgres_portable_path_policy:
     volume: <OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>
     data_tmpfs: <CONTAINER_POSTGRES_DATA>:rw,size=512m
@@ -2033,6 +2160,60 @@ isolation:
     absolute_paths_serialized: false
     container_ids_serialized: false
     namespace_path_or_run_id_serialized: false
+  public_tests_junit_diagnostic_policy:
+    enabled_on_nonzero_exit: true
+    require_success: false
+    source_filename: public-tests-raw.xml
+    max_junit_bytes: 16777216
+    retained_sandbox_directory_fd_required: true
+    fd_relative_no_follow_open_required: true
+    regular_single_link_required: true
+    identity_revalidated_before_and_after_read: true
+    xml_doctype_forbidden: true
+    xml_entity_declaration_forbidden: true
+    duplicate_nodeids_forbidden: true
+    outside_sealed_suite_nodeids_forbidden: true
+    unknown_elements_or_attributes_forbidden: true
+    exact_collection_count_required: true
+    exact_collection_digest_required: true
+    exact_skip_ledger_required: true
+    serialized_fields:
+      - status
+      - returncode
+      - totals
+      - failed_nodeids
+      - failed_nodeids_sha256
+      - error_nodeids
+      - error_nodeids_sha256
+      - collected_test_count
+      - collected_nodeids_sha256
+      - unavailable_reason
+      - messages_preserved
+      - tracebacks_preserved
+      - raw_junit_preserved
+      - raw_stdout_preserved
+      - raw_stderr_preserved
+      - credentials_preserved
+      - absolute_paths_preserved
+    failure_or_error_nodeids_sorted: true
+    nodeid_digest_algorithm: sha256_canonical_json
+    available_status: failure_identity_available
+    unavailable_status: failure_identity_unavailable
+    unavailable_reasons:
+      - junit_absent
+      - junit_unsafe_identity
+      - junit_oversized
+      - junit_malformed_or_hostile
+      - junit_sealed_suite_drift
+    messages_serialized: false
+    tracebacks_serialized: false
+    raw_junit_serialized: false
+    raw_stdout_serialized: false
+    raw_stderr_serialized: false
+    absolute_paths_serialized: false
+    credentials_serialized: false
+    unavailable_does_not_mask_active_error: true
+    composite_error_propagates_public_tests_failure: true
   postgres_destroy_poll_policy:
     max_attempts: 120
     interval_seconds: 0.1
@@ -2112,6 +2293,7 @@ stop_rules:
   - attempt_to_execute_from_superseded_p11
   - attempt_to_execute_from_superseded_p12
   - attempt_to_execute_from_superseded_p14
+  - attempt_to_execute_from_superseded_p15
   - effective_authority_alias_projection_drift
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
@@ -2133,6 +2315,7 @@ stop_rules:
   - sandbox_mountpoint_policy_drift
   - sandbox_smoke_or_marker_cleanup_drift
   - cleanup_diagnostic_reason_code_drift
+  - public_tests_junit_failure_diagnostic_policy_drift
   - credential_fd_bridge_or_owned_site_cache_drift
   - private_dvc_operational_cache_equivalence_drift
   - credential_fd_exposure_before_first_directed_pull

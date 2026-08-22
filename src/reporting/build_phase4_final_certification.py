@@ -68,6 +68,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_p12_failure_record,
     expected_h13_failure_record,
     expected_p14_failure_record,
+    expected_p15_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
@@ -76,6 +77,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_sandbox_mountpoint_policy,
     expected_sandbox_smoke_policy,
     expected_test_access_guard_policy,
+    expected_public_tests_junit_diagnostic_policy,
     load_contract,
     load_effective_authority,
     main_dvc_static_boundary_record,
@@ -185,6 +187,18 @@ SAFE_INTERNAL_FAILURE_POLICIES: Mapping[str, tuple[str, str]] = {
         "in_process_verification_runtime_acquisition",
     ),
 }
+PUBLIC_TESTS_FAILURE_STATUSES = frozenset(
+    {"failure_identity_available", "failure_identity_unavailable"}
+)
+PUBLIC_TESTS_JUNIT_UNAVAILABLE_REASONS = frozenset(
+    {
+        "junit_absent",
+        "junit_unsafe_identity",
+        "junit_oversized",
+        "junit_malformed_or_hostile",
+        "junit_sealed_suite_drift",
+    }
+)
 
 
 @dataclass(frozen=True)
@@ -239,6 +253,116 @@ class InternalFailureEvidence:
         }
 
 
+@dataclass(frozen=True)
+class PublicTestsFailureEvidence:
+    """Strict, path-free projection of one non-passing public pytest run."""
+
+    status: str
+    returncode: int
+    totals: Mapping[str, int]
+    failed_nodeids: tuple[str, ...]
+    failed_nodeids_sha256: str
+    error_nodeids: tuple[str, ...]
+    error_nodeids_sha256: str
+    collected_test_count: int | None
+    collected_nodeids_sha256: str | None
+    unavailable_reason: str | None
+
+    def __post_init__(self) -> None:
+        if (
+            self.status not in PUBLIC_TESTS_FAILURE_STATUSES
+            or type(self.returncode) is not int
+            or tuple(sorted(self.failed_nodeids)) != self.failed_nodeids
+            or tuple(sorted(self.error_nodeids)) != self.error_nodeids
+            or len(set(self.failed_nodeids)) != len(self.failed_nodeids)
+            or len(set(self.error_nodeids)) != len(self.error_nodeids)
+            or set(self.failed_nodeids).intersection(self.error_nodeids)
+            or self.failed_nodeids_sha256 != digest_strings(self.failed_nodeids)
+            or self.error_nodeids_sha256 != digest_strings(self.error_nodeids)
+        ):
+            raise ValueError("public-tests failure evidence is malformed")
+        for nodeid in (*self.failed_nodeids, *self.error_nodeids):
+            path_text, separator, suffix = nodeid.partition("::")
+            path = PurePosixPath(path_text)
+            if (
+                not separator
+                or not suffix
+                or not path_text.endswith(".py")
+                or path.is_absolute()
+                or path.as_posix() != path_text
+                or any(part in {"", ".", ".."} for part in path.parts)
+            ):
+                raise ValueError("public-tests failure node-id is not repository-relative")
+        if self.status == "failure_identity_available":
+            expected_total_keys = {
+                "tests",
+                "passed",
+                "failures",
+                "errors",
+                "skipped",
+            }
+            if (
+                set(self.totals) != expected_total_keys
+                or any(type(value) is not int or value < 0 for value in self.totals.values())
+                or self.totals["tests"]
+                != self.totals["passed"]
+                + self.totals["failures"]
+                + self.totals["errors"]
+                + self.totals["skipped"]
+                or self.totals["failures"] != len(self.failed_nodeids)
+                or self.totals["errors"] != len(self.error_nodeids)
+                or not self.failed_nodeids
+                and not self.error_nodeids
+                or self.returncode == 0
+                or type(self.collected_test_count) is not int
+                or self.collected_test_count != self.totals["tests"]
+                or not isinstance(self.collected_nodeids_sha256, str)
+                or SHA256_RE.fullmatch(self.collected_nodeids_sha256) is None
+                or self.unavailable_reason is not None
+            ):
+                raise ValueError("available public-tests failure evidence is malformed")
+        elif (
+            dict(self.totals)
+            or self.failed_nodeids
+            or self.error_nodeids
+            or self.collected_test_count is not None
+            or self.collected_nodeids_sha256 is not None
+            or self.unavailable_reason not in PUBLIC_TESTS_JUNIT_UNAVAILABLE_REASONS
+        ):
+            raise ValueError("unavailable public-tests failure evidence is malformed")
+
+    def as_record(self) -> dict[str, Any]:
+        return {
+            "status": self.status,
+            "returncode": self.returncode,
+            "totals": dict(self.totals),
+            "failed_nodeids": list(self.failed_nodeids),
+            "failed_nodeids_sha256": self.failed_nodeids_sha256,
+            "error_nodeids": list(self.error_nodeids),
+            "error_nodeids_sha256": self.error_nodeids_sha256,
+            "collected_test_count": self.collected_test_count,
+            "collected_nodeids_sha256": self.collected_nodeids_sha256,
+            "unavailable_reason": self.unavailable_reason,
+            "messages_preserved": False,
+            "tracebacks_preserved": False,
+            "raw_junit_preserved": False,
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        }
+
+
+class _PublicTestsJunitUnavailable(Exception):
+    """Internal path-free classification; never serialized with its cause."""
+
+    def __init__(self, reason: str) -> None:
+        if reason not in PUBLIC_TESTS_JUNIT_UNAVAILABLE_REASONS:
+            raise ValueError("public-tests JUnit unavailable reason is not allowlisted")
+        super().__init__(reason)
+        self.reason = reason
+
+
 class FinalCertificationBuildError(FinalCertificationContractError):
     """Raised when certification cannot proceed without weakening P-CERT."""
 
@@ -248,12 +372,21 @@ class FinalCertificationBuildError(FinalCertificationContractError):
         *,
         command_failure: CommandFailureEvidence | None = None,
         internal_failure: InternalFailureEvidence | None = None,
+        public_tests_failure: PublicTestsFailureEvidence | None = None,
     ) -> None:
         super().__init__(message)
-        if command_failure is not None and internal_failure is not None:
+        if sum(
+            evidence is not None
+            for evidence in (
+                command_failure,
+                internal_failure,
+                public_tests_failure,
+            )
+        ) > 1:
             raise ValueError("failure evidence kinds are mutually exclusive")
         self.command_failure = command_failure
         self.internal_failure = internal_failure
+        self.public_tests_failure = public_tests_failure
 
 
 def _error(
@@ -261,11 +394,13 @@ def _error(
     *,
     command_failure: CommandFailureEvidence | None = None,
     internal_failure: InternalFailureEvidence | None = None,
+    public_tests_failure: PublicTestsFailureEvidence | None = None,
 ) -> FinalCertificationBuildError:
     return FinalCertificationBuildError(
         message,
         command_failure=command_failure,
         internal_failure=internal_failure,
+        public_tests_failure=public_tests_failure,
     )
 
 
@@ -1352,6 +1487,37 @@ def _command_failure_error(
     )
 
 
+def _public_tests_failure_error(
+    evidence: PublicTestsFailureEvidence,
+) -> FinalCertificationBuildError:
+    """Raiseable public-test failure with no raw pytest/JUnit diagnostics."""
+
+    record = evidence.as_record()
+    policy = expected_public_tests_junit_diagnostic_policy()
+    if list(record) != policy.get("serialized_fields") or any(
+        record[field]
+        for field in (
+            "messages_preserved",
+            "tracebacks_preserved",
+            "raw_junit_preserved",
+            "raw_stdout_preserved",
+            "raw_stderr_preserved",
+            "credentials_preserved",
+            "absolute_paths_preserved",
+        )
+    ):
+        raise ValueError("public-tests failure evidence projection drifted")
+    diagnostic = json.dumps(
+        record,
+        sort_keys=True,
+        separators=(",", ":"),
+    )
+    return _error(
+        f"public tests failed closed: {diagnostic}",
+        public_tests_failure=evidence,
+    )
+
+
 def _execution_cleanup_composite_error(
     active_error: BaseException,
     *,
@@ -1370,11 +1536,18 @@ def _execution_cleanup_composite_error(
         if isinstance(active_error, FinalCertificationBuildError)
         else None
     )
+    public_tests_evidence = (
+        active_error.public_tests_failure
+        if isinstance(active_error, FinalCertificationBuildError)
+        else None
+    )
     primary = (
         command_evidence.as_record()
         if command_evidence is not None
         else internal_evidence.as_record()
         if internal_evidence is not None
+        else public_tests_evidence.as_record()
+        if public_tests_evidence is not None
         else {
             "stage": "execution",
             "sanitized_command": [],
@@ -1409,6 +1582,7 @@ def _execution_cleanup_composite_error(
         f"{diagnostic}",
         command_failure=command_evidence,
         internal_failure=internal_evidence,
+        public_tests_failure=public_tests_evidence,
     )
 
 
@@ -3684,6 +3858,315 @@ def normalize_junit_xml(
     )
 
 
+def _unavailable_public_tests_failure(
+    *, returncode: int, reason: str
+) -> PublicTestsFailureEvidence:
+    empty_digest = digest_strings(())
+    return PublicTestsFailureEvidence(
+        status="failure_identity_unavailable",
+        returncode=returncode,
+        totals={},
+        failed_nodeids=(),
+        failed_nodeids_sha256=empty_digest,
+        error_nodeids=(),
+        error_nodeids_sha256=empty_digest,
+        collected_test_count=None,
+        collected_nodeids_sha256=None,
+        unavailable_reason=reason,
+    )
+
+
+def _require_public_junit_directory_binding(
+    sandbox_tmp: Path,
+    sandbox: DirectoryHandle,
+) -> None:
+    """Prove the caller's path still names the retained sandbox directory."""
+
+    descriptor = -1
+    try:
+        named = sandbox_tmp.lstat()
+        if not stat.S_ISDIR(named.st_mode) or stat.S_ISLNK(named.st_mode):
+            raise _PublicTestsJunitUnavailable("junit_unsafe_identity")
+        descriptor = os.open(
+            sandbox_tmp,
+            os.O_RDONLY
+            | os.O_DIRECTORY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
+        )
+        opened = os.fstat(descriptor)
+        retained = os.fstat(sandbox.fd)
+        identities = {
+            (named.st_dev, named.st_ino),
+            (opened.st_dev, opened.st_ino),
+            (retained.st_dev, retained.st_ino),
+        }
+        if len(identities) != 1:
+            raise _PublicTestsJunitUnavailable("junit_unsafe_identity")
+    except _PublicTestsJunitUnavailable:
+        raise
+    except OSError:
+        raise _PublicTestsJunitUnavailable("junit_unsafe_identity") from None
+    finally:
+        if descriptor >= 0:
+            os.close(descriptor)
+
+
+def _read_public_tests_junit_fd_safe(
+    *,
+    sandbox_tmp: Path,
+    sandbox: DirectoryHandle,
+    source_filename: str,
+    max_junit_bytes: int,
+) -> bytes:
+    """Read raw pytest JUnit through a retained directory FD and hard bound."""
+
+    if (
+        not source_filename
+        or PurePosixPath(source_filename).name != source_filename
+        or "/" in source_filename
+        or type(max_junit_bytes) is not int
+        or max_junit_bytes <= 0
+    ):
+        raise _PublicTestsJunitUnavailable("junit_unsafe_identity")
+    _require_public_junit_directory_binding(sandbox_tmp, sandbox)
+    descriptor = -1
+    try:
+        descriptor = os.open(
+            source_filename,
+            os.O_RDONLY
+            | getattr(os, "O_NOFOLLOW", 0)
+            | getattr(os, "O_CLOEXEC", 0),
+            dir_fd=sandbox.fd,
+        )
+    except FileNotFoundError:
+        raise _PublicTestsJunitUnavailable("junit_absent") from None
+    except OSError:
+        raise _PublicTestsJunitUnavailable("junit_unsafe_identity") from None
+    try:
+        before = os.fstat(descriptor)
+        try:
+            named_before = os.stat(
+                source_filename,
+                dir_fd=sandbox.fd,
+                follow_symlinks=False,
+            )
+        except OSError:
+            raise _PublicTestsJunitUnavailable("junit_unsafe_identity") from None
+        if (
+            not stat.S_ISREG(before.st_mode)
+            or not stat.S_ISREG(named_before.st_mode)
+            or before.st_nlink != 1
+            or named_before.st_nlink != 1
+            or (before.st_dev, before.st_ino)
+            != (named_before.st_dev, named_before.st_ino)
+        ):
+            raise _PublicTestsJunitUnavailable("junit_unsafe_identity")
+        if before.st_size > max_junit_bytes:
+            raise _PublicTestsJunitUnavailable("junit_oversized")
+        chunks: list[bytes] = []
+        remaining = max_junit_bytes + 1
+        while remaining:
+            chunk = os.read(descriptor, min(1024 * 1024, remaining))
+            if not chunk:
+                break
+            chunks.append(chunk)
+            remaining -= len(chunk)
+        payload = b"".join(chunks)
+        if len(payload) > max_junit_bytes:
+            raise _PublicTestsJunitUnavailable("junit_oversized")
+        after = os.fstat(descriptor)
+        try:
+            named_after = os.stat(
+                source_filename,
+                dir_fd=sandbox.fd,
+                follow_symlinks=False,
+            )
+        except OSError:
+            raise _PublicTestsJunitUnavailable("junit_unsafe_identity") from None
+        identity_fields = (
+            "st_dev",
+            "st_ino",
+            "st_mode",
+            "st_nlink",
+            "st_size",
+            "st_mtime_ns",
+            "st_ctime_ns",
+        )
+        before_identity = tuple(getattr(before, field) for field in identity_fields)
+        after_identity = tuple(getattr(after, field) for field in identity_fields)
+        named_after_identity = tuple(
+            getattr(named_after, field) for field in identity_fields
+        )
+        if (
+            before_identity != after_identity
+            or after_identity != named_after_identity
+            or (named_before.st_dev, named_before.st_ino)
+            != (named_after.st_dev, named_after.st_ino)
+        ):
+            raise _PublicTestsJunitUnavailable("junit_unsafe_identity")
+        return payload
+    finally:
+        os.close(descriptor)
+
+
+def _strict_public_tests_failure_projection(
+    payload: bytes,
+    *,
+    suite: Any,
+    returncode: int,
+) -> PublicTestsFailureEvidence:
+    """Parse only sealed identities/totals; discard all raw failure content."""
+
+    try:
+        decoded = payload.decode("utf-8", errors="strict")
+    except UnicodeDecodeError:
+        raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile") from None
+    stripped = decoded.lstrip()
+    if stripped.startswith("<?xml"):
+        declaration_end = stripped.find("?>")
+        if declaration_end < 0:
+            raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+        xml_body = stripped[declaration_end + 2 :]
+    else:
+        xml_body = stripped
+    if "<!" in decoded or "<?" in xml_body:
+        raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+    try:
+        root, suite_node, cases = _junit_tree(payload)
+    except FinalCertificationBuildError:
+        raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile") from None
+    allowed_suite_attributes = {
+        "name",
+        "tests",
+        "failures",
+        "errors",
+        "skipped",
+        "disabled",
+        "time",
+        "timestamp",
+        "hostname",
+    }
+    if (
+        set(root.attrib).difference(allowed_suite_attributes)
+        or set(suite_node.attrib).difference(allowed_suite_attributes)
+        or any(node.tag == "properties" for node in suite_node)
+    ):
+        raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+    outcomes: list[tuple[JunitCaseRecord, str]] = []
+    skip_ledger: list[dict[str, str]] = []
+    for case in cases:
+        if set(case.attrib).difference(
+            {"classname", "name", "time", "timestamp", "hostname"}
+        ):
+            raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+        classname = case.attrib.get("classname")
+        name = case.attrib.get("name")
+        if not isinstance(classname, str) or not isinstance(name, str):
+            raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+        try:
+            nodeid = _junit_nodeid(classname, name)
+            canonical_identity = _canonical_junit_identity(nodeid, name=name)
+        except FinalCertificationBuildError:
+            raise _PublicTestsJunitUnavailable(
+                "junit_malformed_or_hostile"
+            ) from None
+        if (classname, name) != canonical_identity:
+            raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+        children = list(case)
+        if not children:
+            outcome = "passed"
+            skipped = False
+        elif len(children) == 1 and children[0].tag == "skipped":
+            child = children[0]
+            if (
+                set(child.attrib) != {"type", "message"}
+                or child.attrib.get("type") != JUNIT_SKIP_TYPE
+                or child.attrib.get("message") != suite.exact_skip_reason
+                or list(child)
+            ):
+                raise _PublicTestsJunitUnavailable(
+                    "junit_malformed_or_hostile"
+                )
+            outcome = "skipped"
+            skipped = True
+            skip_ledger.append(
+                {"nodeid": nodeid, "reason": suite.exact_skip_reason}
+            )
+        elif len(children) == 1 and children[0].tag in {"failure", "error"}:
+            child = children[0]
+            if set(child.attrib).difference({"message", "type"}) or list(child):
+                raise _PublicTestsJunitUnavailable(
+                    "junit_malformed_or_hostile"
+                )
+            outcome = child.tag
+            skipped = False
+        else:
+            raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+        outcomes.append(
+            (
+                JunitCaseRecord(
+                    nodeid=nodeid,
+                    classname=classname,
+                    name=name,
+                    skipped=skipped,
+                ),
+                outcome,
+            )
+        )
+    records = [record for record, _ in outcomes]
+    nodeids = [record.nodeid for record in records]
+    if (
+        len(nodeids) != suite.collected_test_count
+        or len(nodeids) != len(set(nodeids))
+        or digest_strings(sorted(nodeids)) != suite.nodeids_sha256
+        or len(skip_ledger) != suite.allowed_skip_count
+    ):
+        raise _PublicTestsJunitUnavailable("junit_sealed_suite_drift")
+    try:
+        _validate_skip_ledger(sorted(skip_ledger, key=lambda item: item["nodeid"]), suite)
+    except FinalCertificationBuildError:
+        raise _PublicTestsJunitUnavailable("junit_sealed_suite_drift") from None
+    failed_nodeids = tuple(
+        sorted(record.nodeid for record, outcome in outcomes if outcome == "failure")
+    )
+    error_nodeids = tuple(
+        sorted(record.nodeid for record, outcome in outcomes if outcome == "error")
+    )
+    skipped_count = len(skip_ledger)
+    totals = {
+        "tests": len(records),
+        "passed": len(records)
+        - len(failed_nodeids)
+        - len(error_nodeids)
+        - skipped_count,
+        "failures": len(failed_nodeids),
+        "errors": len(error_nodeids),
+        "skipped": skipped_count,
+    }
+    if not failed_nodeids and not error_nodeids:
+        raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+    for node, expected in ((root, totals), (suite_node, totals)):
+        for key in ("tests", "failures", "errors", "skipped"):
+            declared = node.attrib.get(key)
+            if declared is not None and declared != str(expected[key]):
+                raise _PublicTestsJunitUnavailable(
+                    "junit_malformed_or_hostile"
+                )
+    return PublicTestsFailureEvidence(
+        status="failure_identity_available",
+        returncode=returncode,
+        totals=totals,
+        failed_nodeids=failed_nodeids,
+        failed_nodeids_sha256=digest_strings(failed_nodeids),
+        error_nodeids=error_nodeids,
+        error_nodeids_sha256=digest_strings(error_nodeids),
+        collected_test_count=len(nodeids),
+        collected_nodeids_sha256=digest_strings(sorted(nodeids)),
+        unavailable_reason=None,
+    )
+
+
 def _read_documented_operations(root: Path) -> tuple[set[tuple[str, str]], list[dict[str, Any]]]:
     operations: set[tuple[str, str]] = set()
     records: list[dict[str, Any]] = []
@@ -3840,11 +4323,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h15_authority_boundary(result, contract=contract)
+    _require_h16_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p15_cert_commit"),
+        execution_commit=result.get("p16_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3879,7 +4362,7 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P15/H15 aliases and the complete historical lineage."""
+    """Validate active P16/H16 aliases and the complete historical lineage."""
 
     if (
         "p13_cert_commit" not in value
@@ -3891,6 +4374,8 @@ def _require_effective_authority_commit_binding(
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p16_cert_commit",
+        "h16_cert_commit",
         "p15_cert_commit",
         "h15_cert_commit",
         "p14_cert_commit",
@@ -3929,9 +4414,11 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p15_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h15_cert_commit"]
-        or commits["p15_cert_commit"] == commits["h15_cert_commit"]
+        or commits["p16_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h16_cert_commit"]
+        or commits["p16_cert_commit"] == commits["h16_cert_commit"]
+        or commits["p15_cert_commit"] != contract.p15_cert_commit
+        or commits["h15_cert_commit"] != contract.h15_cert_commit
         or commits["p14_cert_commit"] != contract.p14_cert_commit
         or commits["h14_cert_commit"] != contract.h14_cert_commit
         or commits["p12_cert_commit"] != contract.p12_cert_commit
@@ -3946,6 +4433,8 @@ def _require_effective_authority_commit_binding(
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p16_cert_commit"] == commits["p15_cert_commit"]
+        or commits["h16_cert_commit"] == commits["h15_cert_commit"]
         or commits["p15_cert_commit"] == commits["p14_cert_commit"]
         or commits["h15_cert_commit"] == commits["h14_cert_commit"]
         or commits["p14_cert_commit"] == commits["p12_cert_commit"]
@@ -3979,19 +4468,20 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h15_authority_boundary(
+def _require_h16_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R15 to the P14 preflight failure and preserved lineage."""
+    """Bind R16 to the factual non-retry R15 failure and preserved lineage."""
 
     if value.get("status") != "effective" or value.get("gate") != "P-CERT":
-        raise _error("R15 requires effective published P15 authority")
+        raise _error("R16 requires effective published P16 authority")
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H15 authority payload is absent")
+        raise _error("effective H16 authority payload is absent")
     isolation = authority.get("isolation")
     if (
-        authority.get("h13_failure") != expected_h13_failure_record()
+        authority.get("p15_failure") != expected_p15_failure_record()
+        or authority.get("h13_failure") != expected_h13_failure_record()
         or authority.get("p14_failure") != expected_p14_failure_record()
         or authority.get("p12_failure") != expected_p12_failure_record()
         or authority.get("p11_failure") != expected_p11_failure_record()
@@ -4026,8 +4516,12 @@ def _require_h15_authority_boundary(
         != expected_test_access_guard_policy()
         or isolation.get("test_access_guard_policy")
         != dict(contract.test_access_guard_policy)
+        or isolation.get("public_tests_junit_diagnostic_policy")
+        != expected_public_tests_junit_diagnostic_policy()
+        or isolation.get("public_tests_junit_diagnostic_policy")
+        != dict(contract.public_tests_junit_diagnostic_policy)
     ):
-        raise _error("effective H15 failure/isolation authority drifted")
+        raise _error("effective H16 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -4035,7 +4529,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P15 authority's exact partial-clone status policy."""
+    """Require the effective P16 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4069,7 +4563,71 @@ def _require_dvc_status_policy_projection(
         raise _error(f"{context} DVC status policy projection drifted")
 
 
-def _require_h15_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_public_tests_junit_diagnostic_policy(
+    contract: FinalCertificationContract,
+) -> dict[str, Any]:
+    expected = expected_public_tests_junit_diagnostic_policy()
+    observed = dict(contract.public_tests_junit_diagnostic_policy)
+    serialized_fields = [
+        "status",
+        "returncode",
+        "totals",
+        "failed_nodeids",
+        "failed_nodeids_sha256",
+        "error_nodeids",
+        "error_nodeids_sha256",
+        "collected_test_count",
+        "collected_nodeids_sha256",
+        "unavailable_reason",
+        "messages_preserved",
+        "tracebacks_preserved",
+        "raw_junit_preserved",
+        "raw_stdout_preserved",
+        "raw_stderr_preserved",
+        "credentials_preserved",
+        "absolute_paths_preserved",
+    ]
+    if (
+        observed != expected
+        or expected.get("enabled_on_nonzero_exit") is not True
+        or expected.get("require_success") is not False
+        or expected.get("source_filename") != "public-tests-raw.xml"
+        or expected.get("max_junit_bytes") != 16_777_216
+        or expected.get("retained_sandbox_directory_fd_required") is not True
+        or expected.get("fd_relative_no_follow_open_required") is not True
+        or expected.get("regular_single_link_required") is not True
+        or expected.get("identity_revalidated_before_and_after_read") is not True
+        or expected.get("xml_doctype_forbidden") is not True
+        or expected.get("xml_entity_declaration_forbidden") is not True
+        or expected.get("duplicate_nodeids_forbidden") is not True
+        or expected.get("outside_sealed_suite_nodeids_forbidden") is not True
+        or expected.get("unknown_elements_or_attributes_forbidden") is not True
+        or expected.get("exact_collection_count_required") is not True
+        or expected.get("exact_collection_digest_required") is not True
+        or expected.get("exact_skip_ledger_required") is not True
+        or expected.get("serialized_fields") != serialized_fields
+        or expected.get("failure_or_error_nodeids_sorted") is not True
+        or expected.get("nodeid_digest_algorithm") != "sha256_canonical_json"
+        or expected.get("available_status") != "failure_identity_available"
+        or expected.get("messages_serialized") is not False
+        or expected.get("tracebacks_serialized") is not False
+        or expected.get("raw_junit_serialized") is not False
+        or expected.get("raw_stdout_serialized") is not False
+        or expected.get("raw_stderr_serialized") is not False
+        or expected.get("absolute_paths_serialized") is not False
+        or expected.get("credentials_serialized") is not False
+        or expected.get("unavailable_status") != "failure_identity_unavailable"
+        or set(cast(Sequence[str], expected.get("unavailable_reasons", ())))
+        != PUBLIC_TESTS_JUNIT_UNAVAILABLE_REASONS
+        or expected.get("unavailable_does_not_mask_active_error") is not True
+        or expected.get("composite_error_propagates_public_tests_failure")
+        is not True
+    ):
+        raise _error("H16 public-tests JUnit diagnostic policy drifted")
+    return expected
+
+
+def _require_h16_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -4103,6 +4661,7 @@ def _require_h15_runtime_policy(contract: FinalCertificationContract) -> None:
     startup_stability = expected_postgres_startup_stability_policy()
     destroy_poll = expected_postgres_destroy_poll_policy()
     access_guard = expected_test_access_guard_policy()
+    junit_diagnostic = _require_public_tests_junit_diagnostic_policy(contract)
     if (
         contract.forbidden_read_prefixes != SANDBOX_ABSENT_FORBIDDEN_PREFIXES
         or contract.forbidden_read_paths != SANDBOX_MASKED_FORBIDDEN_PATHS
@@ -4198,8 +4757,10 @@ def _require_h15_runtime_policy(contract: FinalCertificationContract) -> None:
         or dict(contract.sandbox_smoke_policy) != expected_sandbox_smoke_policy()
         or dict(contract.cleanup_diagnostic_policy)
         != expected_cleanup_diagnostic_policy()
+        or dict(contract.public_tests_junit_diagnostic_policy)
+        != junit_diagnostic
     ):
-        raise _error("H15 runtime isolation policy drifted")
+        raise _error("H16 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -4211,7 +4772,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h15_runtime_policy(contract)
+    _require_h16_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -4220,14 +4781,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h15_authority_boundary(authority, contract=contract)
+    _require_h16_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p15_cert_commit"),
+        execution_commit=authority.get("p16_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p15_cert_commit"]
+    effective_commit = authority_commits["p16_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -6989,28 +7550,85 @@ def _run_verification_with_runtime(
     if namespace_validator is not None:
         namespace_validator("before_public_tests")
     runtime.revalidate(context="before public test execution")
-    public = _run(
-        public_command,
-        cwd=source_root,
-        execution_argv=(*bwrap, "/cert-python", *public_command[1:]),
-        environment={
-            **_suite_environment(
-                PUBLIC_SUITE_KIND,
-                retained_python_target=runtime.python.target,
-            ),
-            "__PYVENV_LAUNCHER__": "/workspace/.venv/bin/python",
-        },
-        inherit_environment=False,
-        timeout_seconds=3600,
-        pass_fds=runtime.pass_fds,
-        failure_stage="public tests",
-    )
-    runtime.revalidate(context="after public test execution")
+    public: CommandResult | None = None
+    public_invocation_error: BaseException | None = None
+    try:
+        public = _run(
+            public_command,
+            cwd=source_root,
+            execution_argv=(*bwrap, "/cert-python", *public_command[1:]),
+            environment={
+                **_suite_environment(
+                    PUBLIC_SUITE_KIND,
+                    retained_python_target=runtime.python.target,
+                ),
+                "__PYVENV_LAUNCHER__": "/workspace/.venv/bin/python",
+            },
+            inherit_environment=False,
+            timeout_seconds=3600,
+            require_success=False,
+            pass_fds=runtime.pass_fds,
+            failure_stage="public tests",
+        )
+    except BaseException as exc:
+        public_invocation_error = exc
+    if public is not None:
+        # Pytest console streams are intentionally non-evidence.  Discard them
+        # before any post-run validation can raise and retain this frame.
+        public = CommandResult(record=dict(public.record), stdout="", stderr="")
+    post_public_error: BaseException | None = None
+    try:
+        runtime.revalidate(context="after public test execution")
+    except BaseException as exc:
+        post_public_error = exc
     if namespace_validator is not None:
-        namespace_validator("after_public_tests")
-    raw_junit = _read_regular(
-        sandbox_tmp / "public-tests-raw.xml", context="raw public JUnit"
-    )
+        try:
+            namespace_validator("after_public_tests")
+        except BaseException as exc:
+            post_public_error = post_public_error or exc
+    if post_public_error is not None:
+        raise post_public_error
+    if public_invocation_error is not None:
+        raise public_invocation_error
+    if public is None:
+        raise _error("public test invocation returned no result")
+    returncode = public.record.get("returncode")
+    if type(returncode) is not int:
+        raise _public_tests_failure_error(
+            _unavailable_public_tests_failure(
+                returncode=0,
+                reason="junit_malformed_or_hostile",
+            )
+        )
+    junit_policy = dict(contract.public_tests_junit_diagnostic_policy)
+    try:
+        raw_junit = _read_public_tests_junit_fd_safe(
+            sandbox_tmp=sandbox_tmp,
+            sandbox=runtime.sandbox,
+            source_filename=cast(str, junit_policy.get("source_filename")),
+            max_junit_bytes=cast(int, junit_policy.get("max_junit_bytes")),
+        )
+    except _PublicTestsJunitUnavailable as exc:
+        raise _public_tests_failure_error(
+            _unavailable_public_tests_failure(
+                returncode=returncode,
+                reason=exc.reason,
+            )
+        ) from None
+    if returncode != 0:
+        try:
+            failure_evidence = _strict_public_tests_failure_projection(
+                raw_junit,
+                suite=contract.test_suite,
+                returncode=returncode,
+            )
+        except _PublicTestsJunitUnavailable as exc:
+            failure_evidence = _unavailable_public_tests_failure(
+                returncode=returncode,
+                reason=exc.reason,
+            )
+        raw_junit = b""
+        raise _public_tests_failure_error(failure_evidence)
     raw_totals, _ = _parse_junit(raw_junit)
     if (
         raw_totals["tests"] != contract.test_suite.collected_test_count
@@ -7219,6 +7837,9 @@ def _run_verification_with_runtime(
             "sandbox_smoke_policy": dict(contract.sandbox_smoke_policy),
             "cleanup_diagnostic_policy": dict(
                 contract.cleanup_diagnostic_policy
+            ),
+            "public_tests_junit_diagnostic_policy": dict(
+                contract.public_tests_junit_diagnostic_policy
             ),
             "postgres_connection_policy": dict(
                 contract.postgres_connection_policy
@@ -7709,7 +8330,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h15_authority_boundary(authority, contract=contract)
+    _require_h16_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
@@ -8231,6 +8852,7 @@ def _validate_verification_record(
         "sandbox_mountpoint_policy",
         "sandbox_smoke_policy",
         "cleanup_diagnostic_policy",
+        "public_tests_junit_diagnostic_policy",
         "postgres_connection_policy",
         "postgres_startup_stability_policy",
         "postgres_destroy_poll_policy",
@@ -8282,6 +8904,10 @@ def _validate_verification_record(
         != expected_cleanup_diagnostic_policy()
         or sandbox.get("cleanup_diagnostic_policy")
         != dict(contract.cleanup_diagnostic_policy)
+        or sandbox.get("public_tests_junit_diagnostic_policy")
+        != expected_public_tests_junit_diagnostic_policy()
+        or sandbox.get("public_tests_junit_diagnostic_policy")
+        != dict(contract.public_tests_junit_diagnostic_policy)
         or template != _expected_bwrap_template(contract)
     ):
         raise _error("verification sandbox controls drifted")

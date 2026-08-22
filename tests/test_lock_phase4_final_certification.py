@@ -65,6 +65,8 @@ def _contract(
     p12_cert_commit: str | None = None,
     h14_cert_commit: str | None = None,
     p14_cert_commit: str | None = None,
+    h15_cert_commit: str | None = None,
+    p15_cert_commit: str | None = None,
     suite_status: str = "locked",
 ) -> SimpleNamespace:
     positive = certification.POSITIVE_TEST_PATHS
@@ -132,6 +134,8 @@ def _contract(
         p12_cert_commit=p12_cert_commit or locker.P12_CERT_COMMIT,
         h14_cert_commit=h14_cert_commit or locker.H14_CERT_COMMIT,
         p14_cert_commit=p14_cert_commit or locker.P14_CERT_COMMIT,
+        h15_cert_commit=h15_cert_commit or locker.H15_CERT_COMMIT,
+        p15_cert_commit=p15_cert_commit or locker.P15_CERT_COMMIT,
         final_tag="thesis-closure-v1",
         h1_scope=tuple(),
         p1_scope=tuple(),
@@ -161,6 +165,8 @@ def _contract(
         p13_scope=tuple(),
         h14_scope=tuple(),
         p14_scope=tuple(),
+        h15_scope=tuple(),
+        p15_scope=tuple(),
         h_scope=tuple(),
         p_scope=tuple(),
         r_scope=tuple(),
@@ -178,6 +184,9 @@ def _contract(
         sandbox_mountpoint_policy=certification.expected_sandbox_mountpoint_policy(),
         sandbox_smoke_policy=certification.expected_sandbox_smoke_policy(),
         cleanup_diagnostic_policy=certification.expected_cleanup_diagnostic_policy(),
+        public_tests_junit_diagnostic_policy=(
+            certification.expected_public_tests_junit_diagnostic_policy()
+        ),
         postgres_destroy_poll_policy=(
             certification.expected_postgres_destroy_poll_policy()
         ),
@@ -319,6 +328,14 @@ def _historical_records() -> tuple[list[dict[str, Any]], ...]:
         else:
             record["bytes"] = locker.H14_MANIFEST_BYTES
             record["sha256"] = locker.H14_MANIFEST_SHA256
+    p15_records = records(locker.P15_SCOPE, 3401)
+    for record in p15_records:
+        if record["path"] == locker.H15_AUTHORITY_PATH.as_posix():
+            record["bytes"] = locker.H15_AUTHORITY_BYTES
+            record["sha256"] = locker.H15_AUTHORITY_SHA256
+        else:
+            record["bytes"] = locker.H15_MANIFEST_BYTES
+            record["sha256"] = locker.H15_MANIFEST_SHA256
     return (
         records(locker.H1_SCOPE, 501),
         records(locker.P1_SCOPE, 601),
@@ -346,6 +363,8 @@ def _historical_records() -> tuple[list[dict[str, Any]], ...]:
         p12_records,
         records(locker.H14_SCOPE, 3001, physical_mode=True),
         p14_records,
+        records(locker.H15_SCOPE, 3301, physical_mode=True),
+        p15_records,
     )
 
 
@@ -511,6 +530,21 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
+        "expected_h15_scope",
+        lambda: dict(locker.H15_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p15_scope",
+        lambda: dict(locker.P15_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_r15_scope",
+        lambda: dict(locker.R15_SCOPE),
+    )
+    monkeypatch.setattr(
+        certification,
         "expected_p_scope",
         lambda: dict(locker.P_SCOPE),
     )
@@ -647,6 +681,21 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
+        "expected_h15_modes",
+        lambda: dict(locker.H_GIT_MODES),
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_p15_modes",
+        lambda: {path: "100644" for path in locker.P15_SCOPE},
+    )
+    monkeypatch.setattr(
+        certification,
+        "expected_r15_modes",
+        lambda: {path: "100644" for path in locker.R15_SCOPE},
+    )
+    monkeypatch.setattr(
+        certification,
         "expected_h13_modes",
         lambda: dict(locker.H_GIT_MODES),
         raising=False,
@@ -686,7 +735,7 @@ def _install_contract_stubs(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p14_records",
+        "_historical_through_p15_records",
         lambda _contract, **_kwargs: _historical_records(),
     )
 
@@ -971,6 +1020,26 @@ def _make_repository(tmp_path: Path) -> tuple[Path, Path, *tuple[str, ...]]:
     _run(root, "git", "commit", "-m", "P-CERT14")
     p14_cert_commit = _run(root, "git", "rev-parse", "HEAD")
 
+    for path_text in locker.H15_SCOPE:
+        path = root / path_text
+        path.write_text(
+            path.read_text(encoding="utf-8") + "H-CERT15\n",
+            encoding="utf-8",
+        )
+        path.chmod(int(locker.H_GIT_MODES[path_text][-3:], 8))
+    _run(root, "git", "add", *locker.H15_SCOPE)
+    _run(root, "git", "commit", "-m", "H-CERT15")
+    h15_cert_commit = _run(root, "git", "rev-parse", "HEAD")
+
+    for relative in (locker.H15_AUTHORITY_PATH, locker.H15_MANIFEST_PATH):
+        target = root / relative
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes((locker.PROJECT_ROOT / relative).read_bytes())
+        target.chmod(0o644)
+    _run(root, "git", "add", *locker.P15_SCOPE)
+    _run(root, "git", "commit", "-m", "P-CERT15")
+    p15_cert_commit = _run(root, "git", "rev-parse", "HEAD")
+
     _run(tmp_path, "git", "init", "--bare", "--initial-branch=main", str(remote))
     _run(root, "git", "remote", "add", "origin", str(remote))
     _run(root, "git", "push", "-u", "origin", "main")
@@ -1007,6 +1076,8 @@ def _make_repository(tmp_path: Path) -> tuple[Path, Path, *tuple[str, ...]]:
         p12_cert_commit,
         h14_cert_commit,
         p14_cert_commit,
+        h15_cert_commit,
+        p15_cert_commit,
     )
 
 
@@ -1042,6 +1113,8 @@ def _patch_topology(
     p12_cert_commit: str,
     h14_cert_commit: str,
     p14_cert_commit: str,
+    h15_cert_commit: str,
+    p15_cert_commit: str,
 ) -> SimpleNamespace:
     monkeypatch.setattr(locker, "CLOSURE_SOURCE_COMMIT", closure_source)
     monkeypatch.setattr(locker, "R_SYN_COMMIT", r_syn)
@@ -1072,6 +1145,8 @@ def _patch_topology(
     monkeypatch.setattr(locker, "P12_CERT_COMMIT", p12_cert_commit)
     monkeypatch.setattr(locker, "H14_CERT_COMMIT", h14_cert_commit)
     monkeypatch.setattr(locker, "P14_CERT_COMMIT", p14_cert_commit)
+    monkeypatch.setattr(locker, "H15_CERT_COMMIT", h15_cert_commit)
+    monkeypatch.setattr(locker, "P15_CERT_COMMIT", p15_cert_commit)
     contract = _contract(
         closure_source=closure_source,
         r_syn=r_syn,
@@ -1102,6 +1177,8 @@ def _patch_topology(
         p12_cert_commit=p12_cert_commit,
         h14_cert_commit=h14_cert_commit,
         p14_cert_commit=p14_cert_commit,
+        h15_cert_commit=h15_cert_commit,
+        p15_cert_commit=p15_cert_commit,
     )
     _install_contract_stubs(monkeypatch, contract)
     return contract
@@ -1157,6 +1234,8 @@ def _fake_state() -> dict[str, Any]:
         p12_components,
         h14_components,
         p14_components,
+        h15_components,
+        p15_components,
     ) = _historical_records()
     components = [
         {
@@ -1208,6 +1287,8 @@ def _fake_state() -> dict[str, Any]:
         "p12_component_records": p12_components,
         "h14_component_records": h14_components,
         "p14_component_records": p14_components,
+        "h15_component_records": h15_components,
+        "p15_component_records": p15_components,
         "h_component_records": components,
         "anchor_input_records": anchors,
         "dvc_pointer_records": pointers,
@@ -1242,6 +1323,7 @@ def test_scopes_modes_and_stop_boundary_are_exact() -> None:
     assert locker.H12_SCOPE == locker.H_SCOPE
     assert locker.H13_SCOPE == locker.H_SCOPE
     assert locker.H14_SCOPE == locker.H_SCOPE
+    assert locker.H15_SCOPE == locker.H_SCOPE
     assert locker.H_GIT_MODES["src/data/prepare_commit_artifacts.py"] == "100755"
     assert {
         mode
@@ -1249,6 +1331,10 @@ def test_scopes_modes_and_stop_boundary_are_exact() -> None:
         if path != "src/data/prepare_commit_artifacts.py"
     } == {"100644"}
     assert locker.P_SCOPE == {
+        "configs/closure_v1/phase4_final_certification_authority_v16.json": "A",
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v16.json": "A",
+    }
+    assert locker.P15_SCOPE == {
         "configs/closure_v1/phase4_final_certification_authority_v15.json": "A",
         "configs/closure_v1/phase4_final_certification_authority_manifest_v15.json": "A",
     }
@@ -1310,6 +1396,11 @@ def test_scopes_modes_and_stop_boundary_are_exact() -> None:
     }
     assert len(locker.R_SCOPE) == 8
     assert locker.R14_SCOPE == locker.R_SCOPE
+    assert locker.R15_SCOPE == locker.R_SCOPE
+    assert certification.expected_r15_scope() == dict(locker.R15_SCOPE)
+    assert certification.expected_r15_modes() == {
+        path: "100644" for path in locker.R15_SCOPE
+    }
     assert list(locker.R_SCOPE)[-1].endswith("final_certification_manifest.json")
     assert locker.ANCHOR_PATHS == (
         ".dvc/config",
@@ -1440,12 +1531,15 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         "p13_cert_commit": None,
         "h14_cert_commit": locker.H14_CERT_COMMIT,
         "p14_cert_commit": locker.P14_CERT_COMMIT,
-        "h15_cert_commit": "a" * 40,
-        "p15_cert_commit": None,
+        "h15_cert_commit": locker.H15_CERT_COMMIT,
+        "p15_cert_commit": locker.P15_CERT_COMMIT,
+        "h16_cert_commit": "a" * 40,
+        "p16_cert_commit": None,
         "h_cert_commit": "a" * 40,
         "p_cert_commit": None,
         "supersedes_unpublished_H_CERT13_candidate": True,
         "supersedes_P_CERT14": True,
+        "supersedes_P_CERT15": True,
         "r_cert_executable_tree_must_equal_p_cert": True,
     }
     assert [record["path"] for record in authority["anchor_input_records"]] == list(
@@ -1564,6 +1658,8 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     ] is False
     assert authority["p14_failure"] == certification.expected_p14_failure_record()
     assert authority["p14_failure"]["evidence_counts"]["r14_execution_runs"] == 0
+    assert authority["p15_failure"] == certification.expected_p15_failure_record()
+    assert authority["p15_failure"]["evidence_counts"]["r15_execution_runs"] == 1
     assert [record["path"] for record in authority["h1_component_records"]] == list(
         locker.H1_SCOPE
     )
@@ -1641,11 +1737,14 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     assert authority["r13_scope"] == dict(locker.R13_SCOPE)
     assert authority["h14_scope"] == dict(locker.H14_SCOPE)
     assert authority["p14_scope"] == dict(locker.P14_SCOPE)
-    assert authority["h15_component_records"] == authority["h_component_records"]
-    assert authority["p15_scope"] == dict(locker.P_SCOPE)
+    assert authority["h15_scope"] == dict(locker.H15_SCOPE)
+    assert authority["p15_scope"] == dict(locker.P15_SCOPE)
+    assert authority["h16_component_records"] == authority["h_component_records"]
+    assert authority["p16_scope"] == dict(locker.P_SCOPE)
     assert authority["r_scope"] == dict(locker.R_SCOPE)
     assert authority["r14_scope"] == dict(locker.R14_SCOPE)
-    assert authority["r15_scope"] == dict(locker.R_SCOPE)
+    assert authority["r15_scope"] == dict(locker.R15_SCOPE)
+    assert authority["r16_scope"] == dict(locker.R_SCOPE)
     assert authority["dvc_status_policy"] == certification.expected_dvc_status_policy(
         cast(
             certification.FinalCertificationContract,
@@ -1676,6 +1775,9 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
     )
     assert authority["isolation"]["cleanup_diagnostic_policy"] == (
         certification.expected_cleanup_diagnostic_policy()
+    )
+    assert authority["isolation"]["public_tests_junit_diagnostic_policy"] == (
+        certification.expected_public_tests_junit_diagnostic_policy()
     )
     assert authority["isolation"]["postgres_destroy_poll_policy"] == (
         certification.expected_postgres_destroy_poll_policy()
@@ -1758,6 +1860,7 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         ("p11_failure", {**authority["p11_failure"], "retry_authorized": True}),
         ("p12_failure", {**authority["p12_failure"], "retry_authorized": True}),
         ("h13_failure", {**authority["h13_failure"], "retry_authorized": True}),
+        ("p15_failure", {**authority["p15_failure"], "retry_authorized": True}),
         ("h1_component_records_digest", "0" * 64),
         ("p1_component_records_digest", "0" * 64),
         ("h2_component_records_digest", "0" * 64),
@@ -1785,6 +1888,9 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
         ("h_scope", {}),
         ("h_component_records_digest", "0" * 64),
         ("h14_component_records_digest", "0" * 64),
+        ("h15_component_records_digest", "0" * 64),
+        ("p15_component_records_digest", "0" * 64),
+        ("h16_component_records_digest", "0" * 64),
         ("anchor_input_records_digest", "0" * 64),
         ("dvc_pointer_records", authority["dvc_pointer_records"][:-1]),
         (
@@ -1889,6 +1995,18 @@ def test_authority_binds_every_frozen_surface_and_rejects_tampering() -> None:
                 },
             },
         ),
+        (
+            "isolation",
+            {
+                **authority["isolation"],
+                "public_tests_junit_diagnostic_policy": {
+                    **authority["isolation"][
+                        "public_tests_junit_diagnostic_policy"
+                    ],
+                    "messages_serialized": True,
+                },
+            },
+        ),
         ("test_suite_digest", "0" * 64),
         ("ordered_r_cert_output_paths", list(reversed(list(locker.R_SCOPE)))),
         ("isolation", {}),
@@ -1986,9 +2104,12 @@ def test_manifest_is_canonical_and_binds_only_the_authority_output() -> None:
     assert manifest["p13_cert_commit"] is None
     assert manifest["h14_cert_commit"] == locker.H14_CERT_COMMIT
     assert manifest["p14_cert_commit"] == locker.P14_CERT_COMMIT
-    assert manifest["h15_cert_commit"] == "a" * 40
-    assert manifest["p15_cert_commit"] is None
+    assert manifest["h15_cert_commit"] == locker.H15_CERT_COMMIT
+    assert manifest["p15_cert_commit"] == locker.P15_CERT_COMMIT
+    assert manifest["h16_cert_commit"] == "a" * 40
+    assert manifest["p16_cert_commit"] is None
     assert manifest["supersedes_unpublished_h13_candidate"] is True
+    assert manifest["supersedes_p15"] is True
     assert manifest["supersedes_p14"] is True
     assert manifest["supersedes_p12"] is True
     assert manifest["supersedes_p11"] is True
@@ -2020,7 +2141,7 @@ def test_check_only_accepts_exact_local_h_without_writing(
     (
         root, _remote, closure_source, r_syn, editorial,
         h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8,
-        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14,
+        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14, h15, p15,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
@@ -2054,6 +2175,8 @@ def test_check_only_accepts_exact_local_h_without_writing(
         p12_cert_commit=p12,
         h14_cert_commit=h14,
         p14_cert_commit=p14,
+        h15_cert_commit=h15,
+        p15_cert_commit=p15,
     )
     before = _run(root, "git", "status", "--porcelain=v1", "--untracked-files=all")
     result = locker.check_only(root=root)
@@ -2077,7 +2200,7 @@ def test_check_only_accepts_pending_suite_only_for_local_h4(
     (
         root, _remote, closure_source, r_syn, editorial,
         h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8,
-        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14,
+        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14, h15, p15,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     contract = _patch_topology(
@@ -2111,6 +2234,8 @@ def test_check_only_accepts_pending_suite_only_for_local_h4(
         p12_cert_commit=p12,
         h14_cert_commit=h14,
         p14_cert_commit=p14,
+        h15_cert_commit=h15,
+        p15_cert_commit=p15,
     )
     contract.test_suite.status = "pending_integration"
     contract.test_suite.selector_count = None
@@ -2142,8 +2267,10 @@ def test_check_only_accepts_pending_suite_only_for_local_h4(
     assert result["p13_cert_commit"] is None
     assert result["h14_cert_commit"] == h14
     assert result["p14_cert_commit"] == p14
-    assert result["h15_cert_commit"] is None
-    assert result["p15_cert_commit"] is None
+    assert result["h15_cert_commit"] == h15
+    assert result["p15_cert_commit"] == p15
+    assert result["h16_cert_commit"] is None
+    assert result["p16_cert_commit"] is None
     assert result["h2_cert_commit"] == h2
     assert result["p2_cert_commit"] == p2
 
@@ -2160,7 +2287,7 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
     (
         root, _remote, closure_source, r_syn, editorial,
         h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8,
-        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14,
+        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14, h15, p15,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
@@ -2194,6 +2321,8 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
         p12_cert_commit=p12,
         h14_cert_commit=h14,
         p14_cert_commit=p14,
+        h15_cert_commit=h15,
+        p15_cert_commit=p15,
     )
     if drift == "extra":
         _write(root, "foreign.txt", "foreign\n")
@@ -2204,7 +2333,7 @@ def test_local_h_rejects_scope_content_mode_and_symlink_drifts(
                     root,
                     "git",
                     "show",
-                    f"{p14}:tests/test_prepare_commit_artifacts.py",
+                    f"{p15}:tests/test_prepare_commit_artifacts.py",
                 )
             + "\n",
             encoding="utf-8",
@@ -2227,7 +2356,7 @@ def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
     (
         root, _remote, closure_source, r_syn, editorial,
         h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8,
-        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14,
+        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14, h15, p15,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     contract = _patch_topology(
@@ -2261,6 +2390,8 @@ def test_check_only_accepts_only_clean_published_h_and_empty_dvc(
         p12_cert_commit=p12,
         h14_cert_commit=h14,
         p14_cert_commit=p14,
+        h15_cert_commit=h15,
+        p15_cert_commit=p15,
     )
     head = _publish_h(root)
     original_run = locker.subprocess.run
@@ -2310,7 +2441,7 @@ def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
     (
         root, _remote, closure_source, r_syn, editorial,
         h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8,
-        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14,
+        h9, p9, h10, p10, h11, p11, h12, p12, h14, p14, h15, p15,
     ) = _make_repository(tmp_path)
     _materialize_h(root)
     _patch_topology(
@@ -2344,6 +2475,8 @@ def test_generation_revalidates_state_and_publishes_exact2_manifest_last(
         p12_cert_commit=p12,
         h14_cert_commit=h14,
         p14_cert_commit=p14,
+        h15_cert_commit=h15,
+        p15_cert_commit=p15,
     )
     head = _publish_h(root)
     original_run = locker.subprocess.run
@@ -3244,7 +3377,7 @@ def test_dvc_status_executes_retained_fd_not_foreign_path_replacement(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     # Historical nodeid retained: no DVC descriptor is executed at all now.
-    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8, h9, p9, h10, p10, h11, p11, h12, p12, h14, p14 = (
+    root, _remote, closure_source, r_syn, editorial, h1, p1, h2, p2, h3, p3, h4, p4, h5, p5, h6, p6, h7, p7, h8, p8, h9, p9, h10, p10, h11, p11, h12, p12, h14, p14, h15, p15 = (
         _make_repository(tmp_path)
     )
     _materialize_h(root)
@@ -3279,6 +3412,8 @@ def test_dvc_status_executes_retained_fd_not_foreign_path_replacement(
         p12_cert_commit=p12,
         h14_cert_commit=h14,
         p14_cert_commit=p14,
+        h15_cert_commit=h15,
+        p15_cert_commit=p15,
     )
     original_run = locker.subprocess.run
     observed: list[list[str]] = []

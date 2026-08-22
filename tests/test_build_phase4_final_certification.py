@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p15_cert_commit": P_COMMIT,
-        "h15_cert_commit": H_COMMIT,
+        "p16_cert_commit": P_COMMIT,
+        "h16_cert_commit": H_COMMIT,
+        "p15_cert_commit": active_contract.p15_cert_commit,
+        "h15_cert_commit": active_contract.h15_cert_commit,
         "p14_cert_commit": active_contract.p14_cert_commit,
         "h14_cert_commit": active_contract.h14_cert_commit,
         "p13_cert_commit": None,
@@ -121,6 +123,7 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": "synthetic",
+            "p15_failure": contract_module.expected_p15_failure_record(),
             "p14_failure": contract_module.expected_p14_failure_record(),
             "h13_failure": contract_module.expected_h13_failure_record(),
             "p12_failure": contract_module.expected_p12_failure_record(),
@@ -136,6 +139,9 @@ def _authority(
                 ),
                 "cleanup_diagnostic_policy": (
                     contract_module.expected_cleanup_diagnostic_policy()
+                ),
+                "public_tests_junit_diagnostic_policy": (
+                    contract_module.expected_public_tests_junit_diagnostic_policy()
                 ),
                 "postgres_connection_policy": (
                     contract_module.expected_postgres_connection_policy()
@@ -341,6 +347,9 @@ def _products(
         "sandbox_smoke_policy": contract_module.expected_sandbox_smoke_policy(),
         "cleanup_diagnostic_policy": (
             contract_module.expected_cleanup_diagnostic_policy()
+        ),
+        "public_tests_junit_diagnostic_policy": (
+            contract_module.expected_public_tests_junit_diagnostic_policy()
         ),
         "postgres_connection_policy": (
             contract_module.expected_postgres_connection_policy()
@@ -841,8 +850,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p15_cert_commit": P_COMMIT,
-        "h15_cert_commit": H_COMMIT,
+        "p16_cert_commit": P_COMMIT,
+        "h16_cert_commit": H_COMMIT,
+        "p15_cert_commit": contract.p15_cert_commit,
+        "h15_cert_commit": contract.h15_cert_commit,
         "p14_cert_commit": contract.p14_cert_commit,
         "h14_cert_commit": contract.h14_cert_commit,
         "p12_cert_commit": contract.p12_cert_commit,
@@ -876,8 +887,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p15_cert_commit": P_COMMIT,
-        "h15_cert_commit": H_COMMIT,
+        "p16_cert_commit": P_COMMIT,
+        "h16_cert_commit": H_COMMIT,
+        "p15_cert_commit": contract.p15_cert_commit,
+        "h15_cert_commit": contract.h15_cert_commit,
         "p14_cert_commit": contract.p14_cert_commit,
         "h14_cert_commit": contract.h14_cert_commit,
         "p12_cert_commit": contract.p12_cert_commit,
@@ -976,7 +989,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ineffective["status"] = "locked_unpublished"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="effective published P15",
+        match="effective published P16",
     ):
         _products(contract, authority=ineffective)
     unpublished_candidate_alias = _authority(contract)
@@ -987,7 +1000,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ):
         _products(contract, authority=unpublished_candidate_alias)
     collapsed_active_topology = _authority(contract)
-    collapsed_active_topology["h15_cert_commit"] = P_COMMIT
+    collapsed_active_topology["h16_cert_commit"] = P_COMMIT
     collapsed_active_topology["h_cert_commit"] = P_COMMIT
     with pytest.raises(
         builder.FinalCertificationBuildError,
@@ -997,6 +1010,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p16_cert_commit",
+        "h16_cert_commit",
         "p15_cert_commit",
         "h15_cert_commit",
         "p14_cert_commit",
@@ -1067,6 +1082,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p16_cert_commit",
+        "h16_cert_commit",
         "p15_cert_commit",
         "h15_cert_commit",
         "p14_cert_commit",
@@ -4272,6 +4289,36 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     )
     verification_source = inspect.getsource(builder._run_verification_with_runtime)
     validator_source = inspect.getsource(builder._validate_verification_record)
+    public_run = verification_source.index("public = _run(")
+    public_nonzero_capture = verification_source.index(
+        "require_success=False", public_run
+    )
+    public_runtime_after = verification_source.index(
+        'runtime.revalidate(context="after public test execution")',
+        public_nonzero_capture,
+    )
+    public_namespace_after = verification_source.index(
+        'namespace_validator("after_public_tests")',
+        public_runtime_after,
+    )
+    public_junit_read = verification_source.index(
+        "_read_public_tests_junit_fd_safe(",
+        public_namespace_after,
+    )
+    public_failure_raise = verification_source.index(
+        "raise _public_tests_failure_error(failure_evidence)",
+        public_junit_read,
+    )
+    openapi_stage = verification_source.index("openapi_command = (")
+    assert (
+        public_run
+        < public_nonzero_capture
+        < public_runtime_after
+        < public_namespace_after
+        < public_junit_read
+        < public_failure_raise
+        < openapi_stage
+    )
     for policy_name in (
         "postgres_connection_policy",
         "postgres_startup_stability_policy",
@@ -4514,6 +4561,69 @@ def test_cleanup_composite_reports_removed_worktree_truthfully() -> None:
             "allowed_reason_codes"
         ]
     ) == builder.CLEANUP_REASON_CODES
+
+    public_evidence = builder.PublicTestsFailureEvidence(
+        status="failure_identity_available",
+        returncode=1,
+        totals={
+            "tests": 2,
+            "passed": 0,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 1,
+        },
+        failed_nodeids=("tests/test_alpha.py::test_pass",),
+        failed_nodeids_sha256=contract_module.digest_strings(
+            ("tests/test_alpha.py::test_pass",)
+        ),
+        error_nodeids=(),
+        error_nodeids_sha256=contract_module.digest_strings(()),
+        collected_test_count=2,
+        collected_nodeids_sha256=contract_module.digest_strings(
+            (
+                "tests/test_alpha.py::test_pass",
+                "tests/test_beta.py::test_skip",
+            )
+        ),
+        unavailable_reason=None,
+    )
+    public_active = builder._public_tests_failure_error(public_evidence)
+    public_composite = builder._execution_cleanup_composite_error(
+        public_active,
+        namespace_preserved=False,
+        reason_codes=("work_tree_remove_failed",),
+    )
+    public_diagnostic = json.loads(
+        str(public_composite).split(": ", 1)[1]
+    )
+    assert public_composite.public_tests_failure is public_evidence
+    assert public_composite.command_failure is None
+    assert public_composite.internal_failure is None
+    assert public_diagnostic["active_error"] == public_evidence.as_record()
+    assert public_diagnostic["cleanup"]["namespace_preserved"] is False
+
+    unavailable = builder._unavailable_public_tests_failure(
+        returncode=1,
+        reason="junit_malformed_or_hostile",
+    )
+    unavailable_active = builder._public_tests_failure_error(unavailable)
+    unavailable_composite = builder._execution_cleanup_composite_error(
+        unavailable_active,
+        namespace_preserved=True,
+        reason_codes=("sandbox_inventory_drift",),
+    )
+    unavailable_diagnostic = json.loads(
+        str(unavailable_composite).split(": ", 1)[1]
+    )
+    assert unavailable_diagnostic["active_error"] == unavailable.as_record()
+    assert unavailable_diagnostic["active_error"]["status"] == (
+        "failure_identity_unavailable"
+    )
+    assert unavailable_diagnostic["active_error"]["unavailable_reason"] == (
+        "junit_malformed_or_hostile"
+    )
+    for forbidden in ("RAW_", "TOP_SECRET", "/home/", "https://"):
+        assert forbidden not in str(unavailable_composite)
 
 
 def test_clone_work_transition_requires_exact_single_directory_link_delta() -> None:
@@ -4988,15 +5098,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
-    builder._require_h15_runtime_policy(contract)
+    builder._require_h16_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 runtime isolation policy drifted",
+        match="H16 runtime isolation policy drifted",
     ):
-        builder._require_h15_runtime_policy(
+        builder._require_h16_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -5006,21 +5116,33 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_connection["test_database_url_query_present"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 runtime isolation policy drifted",
+        match="H16 runtime isolation policy drifted",
     ):
-        builder._require_h15_runtime_policy(
+        builder._require_h16_runtime_policy(
             replace(contract, postgres_connection_policy=drifted_connection)
         )
     drifted_stability = dict(contract.postgres_startup_stability_policy)
     drifted_stability["pid1_checked_before_readiness"] = False
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 runtime isolation policy drifted",
+        match="H16 runtime isolation policy drifted",
     ):
-        builder._require_h15_runtime_policy(
+        builder._require_h16_runtime_policy(
             replace(
                 contract,
                 postgres_startup_stability_policy=drifted_stability,
+            )
+        )
+    drifted_junit_policy = dict(contract.public_tests_junit_diagnostic_policy)
+    drifted_junit_policy["max_junit_bytes"] = 1
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H16 public-tests JUnit diagnostic policy drifted",
+    ):
+        builder._require_h16_runtime_policy(
+            replace(
+                contract,
+                public_tests_junit_diagnostic_policy=drifted_junit_policy,
             )
         )
     clone_path = tmp_path / "clone"
@@ -5188,6 +5310,238 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
         assert "RAW_INTERNAL" not in str(raised.value)
         assert "private/" not in str(raised.value)
         monkeypatch.setattr(builder, "_make_bwrap_prefix", original_make_bwrap)
+
+        failure_payload = (
+            "<?xml version='1.0' encoding='utf-8'?>"
+            '<testsuites tests="2" failures="1" errors="0" skipped="1">'
+            '<testsuite tests="2" failures="1" errors="0" skipped="1">'
+            '<testcase classname="tests.test_alpha" name="test_pass">'
+            '<failure type="AssertionError" '
+            'message="RAW_MESSAGE token=TOP_SECRET">'
+            "RAW_TRACEBACK /home/operator/private.py https://invalid.example"
+            "</failure></testcase>"
+            '<testcase classname="tests.test_beta" name="test_skip">'
+            f'<skipped type="pytest.skip" message="{contract.test_suite.exact_skip_reason}" />'
+            "</testcase></testsuite></testsuites>\n"
+        ).encode()
+        verification_commands: list[tuple[str, ...]] = []
+        verification_checkpoints: list[str] = []
+
+        def fail_public_tests(argv: Any, **kwargs: Any) -> builder.CommandResult:
+            verification_commands.append(tuple(argv))
+            assert kwargs["require_success"] is False
+            assert kwargs["failure_stage"] == "public tests"
+            (sandbox_path / "public-tests-raw.xml").write_bytes(failure_payload)
+            return builder.CommandResult(
+                {"argv": list(argv), "returncode": 1},
+                "STDOUT_SECRET_VALUE token=TOP_SECRET",
+                "STDERR_SECRET_VALUE /home/operator https://invalid.example",
+            )
+
+        monkeypatch.setattr(builder, "_run", fail_public_tests)
+        with pytest.raises(builder.FinalCertificationBuildError) as public_failure:
+            builder._run_verification_with_runtime(
+                source_root=ROOT,
+                clone_root=clone_path,
+                sandbox_tmp=sandbox_path,
+                contract=contract,
+                execution_commit=P_COMMIT,
+                runtime=runtime,
+                sandbox_smoke={
+                    "status": "passed",
+                    **contract_module.expected_sandbox_smoke_policy(),
+                },
+                namespace_validator=verification_checkpoints.append,
+            )
+        public_evidence = public_failure.value.public_tests_failure
+        assert public_evidence is not None
+        assert public_evidence.status == "failure_identity_available"
+        assert public_evidence.returncode == 1
+        assert public_evidence.totals == {
+            "tests": 2,
+            "passed": 0,
+            "failures": 1,
+            "errors": 0,
+            "skipped": 1,
+        }
+        assert public_evidence.failed_nodeids == (
+            "tests/test_alpha.py::test_pass",
+        )
+        assert public_evidence.error_nodeids == ()
+        assert public_evidence.collected_test_count == 2
+        assert public_evidence.collected_nodeids_sha256 == (
+            contract.test_suite.nodeids_sha256
+        )
+        assert verification_checkpoints == [
+            "before_public_tests",
+            "after_public_tests",
+        ]
+        assert len(verification_commands) == 1
+        serialized_public_failure = str(public_failure.value)
+        for forbidden in (
+            "RAW_MESSAGE",
+            "RAW_TRACEBACK",
+            "STDOUT_SECRET_VALUE",
+            "STDERR_SECRET_VALUE",
+            "TOP_SECRET",
+            "AssertionError",
+            "/home/",
+            "https://",
+            "private.py",
+        ):
+            assert forbidden.lower() not in serialized_public_failure.lower()
+
+        error_payload = failure_payload.replace(
+            b'<failure type="AssertionError"',
+            b'<error type="RuntimeError"',
+        ).replace(b"</failure>", b"</error>").replace(
+            b'failures="1" errors="0"',
+            b'failures="0" errors="1"',
+        )
+        error_evidence = builder._strict_public_tests_failure_projection(
+            error_payload,
+            suite=contract.test_suite,
+            returncode=1,
+        )
+        assert error_evidence.failed_nodeids == ()
+        assert error_evidence.error_nodeids == (
+            "tests/test_alpha.py::test_pass",
+        )
+        serialized_error = json.dumps(error_evidence.as_record(), sort_keys=True)
+        assert "RuntimeError" not in serialized_error
+        assert "TOP_SECRET" not in serialized_error
+
+        raw_path = sandbox_path / "public-tests-raw.xml"
+        raw_path.unlink()
+        with pytest.raises(builder._PublicTestsJunitUnavailable) as missing:
+            builder._read_public_tests_junit_fd_safe(
+                sandbox_tmp=sandbox_path,
+                sandbox=sandbox,
+                source_filename="public-tests-raw.xml",
+                max_junit_bytes=1024,
+            )
+        assert missing.value.reason == "junit_absent"
+
+        unavailable_commands: list[tuple[str, ...]] = []
+        unavailable_checkpoints: list[str] = []
+
+        def fail_without_junit(argv: Any, **kwargs: Any) -> builder.CommandResult:
+            unavailable_commands.append(tuple(argv))
+            assert kwargs["require_success"] is False
+            return builder.CommandResult(
+                {"argv": list(argv), "returncode": 1},
+                "UNAVAILABLE_STDOUT_SECRET",
+                "UNAVAILABLE_STDERR_SECRET /home/operator",
+            )
+
+        monkeypatch.setattr(builder, "_run", fail_without_junit)
+        with pytest.raises(builder.FinalCertificationBuildError) as unavailable_run:
+            builder._run_verification_with_runtime(
+                source_root=ROOT,
+                clone_root=clone_path,
+                sandbox_tmp=sandbox_path,
+                contract=contract,
+                execution_commit=P_COMMIT,
+                runtime=runtime,
+                sandbox_smoke={
+                    "status": "passed",
+                    **contract_module.expected_sandbox_smoke_policy(),
+                },
+                namespace_validator=unavailable_checkpoints.append,
+            )
+        unavailable_evidence = unavailable_run.value.public_tests_failure
+        assert unavailable_evidence is not None
+        assert unavailable_evidence.status == "failure_identity_unavailable"
+        assert unavailable_evidence.unavailable_reason == "junit_absent"
+        assert unavailable_evidence.totals == {}
+        assert unavailable_evidence.failed_nodeids == ()
+        assert unavailable_evidence.error_nodeids == ()
+        assert unavailable_evidence.collected_test_count is None
+        assert unavailable_evidence.collected_nodeids_sha256 is None
+        assert unavailable_checkpoints == [
+            "before_public_tests",
+            "after_public_tests",
+        ]
+        assert len(unavailable_commands) == 1
+        assert "UNAVAILABLE_STDOUT_SECRET" not in str(unavailable_run.value)
+        assert "UNAVAILABLE_STDERR_SECRET" not in str(unavailable_run.value)
+        assert "/home/" not in str(unavailable_run.value)
+
+        outside = tmp_path / "outside"
+        outside.mkdir()
+        (outside / "public-tests-raw.xml").write_bytes(failure_payload)
+        with pytest.raises(builder._PublicTestsJunitUnavailable) as escaped:
+            builder._read_public_tests_junit_fd_safe(
+                sandbox_tmp=outside,
+                sandbox=sandbox,
+                source_filename="public-tests-raw.xml",
+                max_junit_bytes=1024 * 1024,
+            )
+        assert escaped.value.reason == "junit_unsafe_identity"
+
+        raw_path.symlink_to(outside / "public-tests-raw.xml")
+        with pytest.raises(builder._PublicTestsJunitUnavailable) as symlinked:
+            builder._read_public_tests_junit_fd_safe(
+                sandbox_tmp=sandbox_path,
+                sandbox=sandbox,
+                source_filename="public-tests-raw.xml",
+                max_junit_bytes=1024 * 1024,
+            )
+        assert symlinked.value.reason == "junit_unsafe_identity"
+        raw_path.unlink()
+
+        raw_path.write_bytes(b"012345678")
+        with pytest.raises(builder._PublicTestsJunitUnavailable) as oversized:
+            builder._read_public_tests_junit_fd_safe(
+                sandbox_tmp=sandbox_path,
+                sandbox=sandbox,
+                source_filename="public-tests-raw.xml",
+                max_junit_bytes=8,
+            )
+        assert oversized.value.reason == "junit_oversized"
+        raw_path.unlink()
+
+        hostile_payloads = (
+            b"<not-xml",
+            b'<!DOCTYPE x [<!ENTITY secret SYSTEM "file:///private/secret">]>'
+            + failure_payload,
+            failure_payload.replace(
+                b"</testsuite>", b"<system-out>RAW</system-out></testsuite>"
+            ),
+        )
+        for hostile in hostile_payloads:
+            with pytest.raises(builder._PublicTestsJunitUnavailable) as rejected:
+                builder._strict_public_tests_failure_projection(
+                    hostile,
+                    suite=contract.test_suite,
+                    returncode=1,
+                )
+            assert rejected.value.reason == "junit_malformed_or_hostile"
+
+        duplicate_payload = failure_payload.replace(
+            b'<testcase classname="tests.test_beta"',
+            b'<testcase classname="tests.test_alpha" name="test_pass"><failure />'
+            b'</testcase><testcase classname="tests.test_beta"',
+        ).replace(b'tests="2"', b'tests="3"')
+        with pytest.raises(builder._PublicTestsJunitUnavailable) as duplicate:
+            builder._strict_public_tests_failure_projection(
+                duplicate_payload,
+                suite=contract.test_suite,
+                returncode=1,
+            )
+        assert duplicate.value.reason == "junit_sealed_suite_drift"
+
+        outside_node_payload = failure_payload.replace(
+            b"tests.test_alpha",
+            b"tests.test_outside",
+        )
+        with pytest.raises(builder._PublicTestsJunitUnavailable) as outside_node:
+            builder._strict_public_tests_failure_projection(
+                outside_node_payload,
+                suite=contract.test_suite,
+                returncode=1,
+            )
+        assert outside_node.value.reason == "junit_sealed_suite_drift"
 
         smoke_calls: list[tuple[str, ...]] = []
 
@@ -5463,6 +5817,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p16_cert_commit",
+            "h16_cert_commit",
             "p15_cert_commit",
             "h15_cert_commit",
             "p14_cert_commit",
@@ -5497,6 +5853,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p16_cert_commit",
+            "h16_cert_commit",
             "p15_cert_commit",
             "h15_cert_commit",
             "p14_cert_commit",
@@ -5768,6 +6126,40 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     assert "run-3cee2ea03f47bb208f243135105f39ab" not in serialized_p9_failure
     assert "postgresql://" not in serialized_p9_failure
 
+    p15_failure = contract_module.expected_p15_failure_record()
+    assert p15_failure["attempt"] == "R-CERT15"
+    assert p15_failure["status"] == (
+        "execution_failed_closed_cleanup_succeeded"
+    )
+    assert p15_failure["evidence_counts"]["r15_execution_runs"] == 1
+    assert p15_failure["evidence_counts"]["public_test_runs"] == 1
+    assert p15_failure["evidence_counts"]["openapi_generations"] == 0
+    assert p15_failure["evidence_counts"]["synthetic_e2e_runs"] == 0
+    assert p15_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p15_failure["retry_authorized"] is False
+    assert p15_failure["namespace_archived_under_ignored_tmp"] is False
+    assert p15_failure["namespace_path_or_run_id_serialized"] is False
+    serialized_p15_failure = json.dumps(p15_failure, sort_keys=True)
+    for forbidden in ("/home/", "https://", "postgresql://", "run-"):
+        assert forbidden not in serialized_p15_failure
+
+    drifted_p15 = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_p15["authority"])
+    drifted_p15_failure = cast(
+        dict[str, Any], drifted_authority["p15_failure"]
+    )
+    drifted_p15_failure["retry_authorized"] = True
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_p15,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H16 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
     drifted_h13 = copy.deepcopy(fake)
     drifted_authority = cast(dict[str, Any], drifted_h13["authority"])
     drifted_h13_failure = cast(dict[str, Any], drifted_authority["h13_failure"])
@@ -5782,7 +6174,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 failure/isolation",
+        match="H16 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5797,7 +6189,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 failure/isolation",
+        match="H16 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5817,7 +6209,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 failure/isolation",
+        match="H16 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5833,7 +6225,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 failure/isolation",
+        match="H16 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5849,7 +6241,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 failure/isolation",
+        match="H16 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5865,13 +6257,15 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H15 failure/isolation",
+        match="H16 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p16_cert_commit",
+        "h16_cert_commit",
         "p15_cert_commit",
         "h15_cert_commit",
         "p14_cert_commit",
