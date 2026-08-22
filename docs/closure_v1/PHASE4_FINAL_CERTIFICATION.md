@@ -1,8 +1,8 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT17 publication candidate; suite locked`
+Status: `H-CERT18 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v17`
+Contract: `closure_v1_phase4_final_certification_v18`
 
 Authorities:
 
@@ -38,7 +38,9 @@ Authorities:
 - historical H-CERT15: `13640203e1c95d5ae9f8861fec3e6c842d90c545`;
 - superseded P-CERT15: `fa00bbd07d47ff504f2323e418934824efab386a`;
 - historical H-CERT16: `4f78e7d1a8f93eedda169c5499c331b8da15de1e`;
-- superseded P-CERT16: `6c5fbaac2bf48393b3e7ef3e24d95006ecc016b9`.
+- superseded P-CERT16: `6c5fbaac2bf48393b3e7ef3e24d95006ecc016b9`;
+- historical H-CERT17: `a7e4f10321c8ea8321d0c4917969ecc9ab39f59b`;
+- superseded P-CERT17: `1677778862786d28b9f60e80b7e718432e0b0947`.
 
 ## Purpose and boundary
 
@@ -65,13 +67,14 @@ and H-CERT3/P-CERT3, H-CERT4/P-CERT4 and H-CERT5/P-CERT5 remain immutable
 historical evidence; H-CERT6/P-CERT6, H-CERT7/P-CERT7, H-CERT8/P-CERT8 and
 H-CERT9/P-CERT9, H-CERT10/P-CERT10, H-CERT11/P-CERT11 and
 H-CERT12/P-CERT12, H-CERT14/P-CERT14, H-CERT15/P-CERT15 and
-H-CERT16/P-CERT16 now join that immutable history. H-CERT13 remained an
+H-CERT16/P-CERT16 and H-CERT17/P-CERT17 now join that immutable history. H-CERT13 remained an
 unpublished candidate and was invalidated before any commit; P-CERT13 and
 R-CERT13 never existed. R-CERT14 failed closed during a read-only preflight
 before any certification execution. The unique R-CERT15 and R-CERT16 launches
-then failed closed during public tests. H-CERT17/P-CERT17 are the only future
-effective authority. The compatibility names `H-CERT` and `P-CERT` refer to
-H-CERT17 and P-CERT17:
+then failed closed during public tests. The unique R-CERT17 launch also failed
+closed during public tests with a complete safe failure identity and exact
+cleanup. H-CERT18/P-CERT18 are the only future effective authority. The
+compatibility names `H-CERT` and `P-CERT` refer to H-CERT18 and P-CERT18:
 
 ```text
 ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
@@ -123,7 +126,10 @@ ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
                                                                     H-CERT16 -> P-CERT16 -X R-CERT16 public tests
                                                                                  |
                                                                                  v
-                                                                    H-CERT17 -> P-CERT17 -> R-CERT17
+                                                                    H-CERT17 -> P-CERT17 -X R-CERT17 public tests
+                                                                                 |
+                                                                                 v
+                                                                    H-CERT18 -> P-CERT18 -> R-CERT18
                                                                                                   |
                                                                                                   v
                                                                                          thesis-closure-v1
@@ -278,21 +284,38 @@ The gates have distinct roles:
     underlying test cause and executed-case identity remain unknown. Exact
     cleanup removed the owned container, socket and namespace; no later stage
     or output ran, and P-CERT16 authorizes no retry.
-33. **H-CERT17** preserves that factual record. It canonicalizes exactly five
+33. **H-CERT17** preserves that factual record. It canonicalized exactly five
     pre-existing P0 skip-reason aliases to the sealed reason, prepends an
     unconditional `skipif(True, reason=...)` marker, and accepts only the exact
     failure/error nodeid pair and bounded pytest teardown declared-counter
     accounting described below.
-34. **P-CERT17** will publish a new two-file, data-only authority. It
-    supersedes P-CERT16 operationally without rewriting it. An unpublished
-    P-CERT17 is ineffective. **R-CERT17** may execute once only from the clean,
-    published P-CERT17 and may publish exactly eight evidence files, manifest
+34. **P-CERT17** published its two-file, data-only authority as
+    `1677778862786d28b9f60e80b7e718432e0b0947`, preserving the complete
+    historical reconstruction. Its unique **R-CERT17** launch was consumed:
+    the sealed public suite collected all 944 cases, with 895 passed, seven
+    failed, zero errors and 42 registered skips. All seven failures shared the
+    pre-run cause `retained_sandbox_python_alias_rejected`; no DVC runtime or
+    payload failure was observed. The bounded JUnit projection preserved the
+    exact seven failed nodeids and their digest, while raw diagnostics remained
+    absent. Exact cleanup removed the container, socket and namespace; no
+    OpenAPI, E2E, static command, payload or final output ran. P-CERT17
+    authorizes no retry.
+35. **H-CERT18** preserves that factual R-CERT17 record and corrects only the
+    retained runtime identity policy: `/cert-python` is accepted exclusively
+    for the sealed public suite when it matches both `/proc/self/exe` and the
+    injected `/usr` interpreter by full file identity. `/cert-poetry` is
+    resolved only under that same proven context; the normal `/usr` policy is
+    unchanged and arbitrary aliases remain forbidden.
+36. **P-CERT18** will publish a new two-file, data-only authority. It
+    supersedes P-CERT17 operationally without rewriting it. An unpublished
+    P-CERT18 is ineffective. **R-CERT18** may execute once only from the clean,
+    published P-CERT18 and may publish exactly eight evidence files, manifest
     last.
-35. The repository owner manually publishes the final R commit and the
+37. The repository owner manually publishes the final R commit and the
     `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT17 commit. Executing from
-P-CERT1 through P-CERT16, adopting any failed temporary namespace, or treating
+The executable target is the published P-CERT18 commit. Executing from
+P-CERT1 through P-CERT17, adopting any failed temporary namespace, or treating
 a superseded authority as effective is
 forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
@@ -303,7 +326,7 @@ itself.
 
 At every gate, `HEAD`, `main`, `origin/main`, `origin/HEAD`, live remote HEAD
 and live remote main must agree. The worktree and index must have only the
-gate's exact unstaged or staged scope. H-CERT17, P-CERT17 and R-CERT17 must never
+gate's exact unstaged or staged scope. H-CERT18, P-CERT18 and R-CERT18 must never
 execute `dvc status` or any other DVC command in the main worktree. Main DVC
 state is reconstructed only from the exact Git tree, the Git-bound tracked
 `.dvc/config`, and the eight versioned pointer blobs; the authority records
@@ -573,7 +596,25 @@ configs/closure_v1/phase4_final_certification_authority_v17.json
 configs/closure_v1/phase4_final_certification_authority_manifest_v17.json
 ```
 
-R-CERT17 is exactly eight additions below the certification namespace:
+Its immutable canonical identities are authority `154137` bytes / SHA-256
+`d095c49c1038f4f4d11f1f5011b26152d666c67b8b7da4151a6fee70cbcaaacd`
+and companion `3782` bytes / SHA-256
+`baa72773861fd9b24d55a106059690ead7089d7f3ccfeaf458f6b322b5481240`.
+
+R-CERT17 retained the prescribed eight-addition scope, but its public-test
+failure and exact cleanup produced zero final outputs.
+
+H-CERT18 is exactly `11M` over P-CERT17, with the same eleven paths and modes.
+Every path is modified; none is added or deleted.
+
+P-CERT18 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v18.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v18.json
+```
+
+R-CERT18 is exactly eight additions below the certification namespace:
 
 ```text
 reports/closure_v1/12_certification/public_tests.xml
@@ -586,7 +627,8 @@ reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
 reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
-All published P1/P2/P3/P4/P5/P6/P7/P8/P9/P10/P11/P12/P14/P15/P16 and future P17/R17 files are single-link regular `100644`
+All published P1/P2/P3/P4/P5/P6/P7/P8/P9/P10/P11/P12/P14/P15/P16/P17 and
+future P18/R18 files are single-link regular `100644`
 files. The final manifest is created and linked last. An existing path is
 never adopted, replaced, or truncated.
 
@@ -612,10 +654,10 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT17 creates a fresh clone of live `origin/main` at the exact published P-CERT17
+R-CERT18 creates a fresh clone of live `origin/main` at the exact published P-CERT18
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets, and no DVC executable is invoked there. Real DVC
-execution is confined to the owned isolated R-CERT17 clone. The builder runs
+execution is confined to the owned isolated R-CERT18 clone. The builder runs
 exactly eight directed pull commands, one pointer per directed pull command,
 in the YAML order:
 
@@ -788,7 +830,7 @@ suite_lock:
 
 The 39 selectors, 944 collected nodes, ordered-node digest and 42 allowed
 skips remain locked. The schema's pending branch is available only for
-integration fixtures; P-CERT17 generation and R-CERT17 reject it. Closure
+integration fixtures; P-CERT18 generation and R-CERT18 reject it. Closure
 outcomes, raw targets and restored
 Parquet payloads remained forbidden during both collections.
 
@@ -806,8 +848,10 @@ H-CERT15/P-CERT15 remain byte-reconstructed historical authority, and
 R-CERT15 remains a consumed, failed public-test execution with no retry.
 H-CERT16/P-CERT16 remain byte-reconstructed historical authority, and
 R-CERT16 remains a consumed, failed public-test execution with no retry.
-H-CERT17/P-CERT17 supersede only the operational authority without rewriting
-history. The
+H-CERT17/P-CERT17 remain byte-reconstructed historical authority, and
+R-CERT17 remains a consumed, failed public-test execution with exact safe
+failure identity and no retry. H-CERT18/P-CERT18 supersede only the
+operational authority without rewriting history. The
 946-node diagnostic identity belongs only to the factual
 R-CERT10 postmortem and is never an active suite lock.
 
@@ -824,7 +868,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P-CERT17 clone with its tracked tree
+Verification runs from the exact P-CERT18 clone with its tracked tree
 read-only, the host virtual environment read-only, and an owned writable
 temporary namespace. Public pytest uses the bubblewrap masks, read-only binds
 and namespace isolation as its hard boundary; it deliberately installs no
@@ -877,6 +921,16 @@ retains the clone descriptor, revalidates identity, freezes them with the
 clone inventory and rolls them back only by owned inode. A symlink or existing
 inode is never adopted, and neither absolute paths nor the run namespace are
 serialized.
+
+Inside the sealed public-suite bubblewrap process, the retained interpreter
+has the single exact alias `/cert-python`. That alias is accepted only when
+the process root is `/workspace`, the injected host target is below `/usr`,
+and full device/inode/mode/link-count identity agrees among the alias,
+`/proc/self/exe` and the injected target. The retained Poetry tree has the
+single exact root `/cert-poetry` and is resolved only after that same Python
+context is proven. Outside this narrow context the established `/usr` Python
+origin rule remains in force. Similar names, symlinks, mutable aliases and
+arbitrary retained runtime roots fail closed.
 
 After DVC restoration and clone-inventory freeze, but before PostgreSQL, the
 builder runs one exact bubblewrap smoke using the portable command
@@ -949,20 +1003,20 @@ those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P-CERT17 authority is canonical JSON. It reconstructs every historical
+The P-CERT18 authority is canonical JSON. It reconstructs every historical
 H-CERT1/P-CERT1/H-CERT2/P-CERT2/H-CERT3/P-CERT3/H-CERT4/P-CERT4 and
 H-CERT5/P-CERT5/H-CERT6/P-CERT6/H-CERT7/P-CERT7/H-CERT8/P-CERT8 and
 H-CERT9/P-CERT9/H-CERT10/P-CERT10/H-CERT11/P-CERT11/H-CERT12/P-CERT12 and
-H-CERT14/P-CERT14/H-CERT15/P-CERT15/H-CERT16/P-CERT16 component from Git,
-every active H-CERT17 component, all ten anchors, all eight
+H-CERT14/P-CERT14/H-CERT15/P-CERT15/H-CERT16/P-CERT16/H-CERT17/P-CERT17
+component from Git, every active H-CERT18 component, all ten anchors, all eight
 pointer records, the exact suite lock, output order, isolation, diagnostic and
 authorization policies. It records P-CERT1 through P-CERT12 as superseded
 failed launches, the H-CERT13 invalidation, the R-CERT14 preflight failure and
-the consumed R-CERT15 and R-CERT16 public-test failures, all with no retry
-authorization.
+the consumed R-CERT15, R-CERT16 and R-CERT17 public-test failures, all with no
+retry authorization.
 Its companion is written last. Execution becomes effective only after the
-exact two-file P-CERT17 commit is observed as the single-parent child of
-H-CERT17 in local refs and live origin.
+exact two-file P-CERT18 commit is observed as the single-parent child of
+H-CERT18 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -1210,6 +1264,33 @@ cleanup succeeded without masking the active error; later verification stages,
 payload construction and all outputs remained at zero. The record does not
 invent an underlying failed node or total, and `retry_authorized=false`.
 
+P-CERT18 additionally seals the consumed R-CERT17 launch. The exact 944-node
+suite retained collection digest
+`8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349`;
+pytest returned 1 with 895 passes, seven failures, zero errors and 42 skips.
+The safe failed-node digest is
+`e328bbeea535afadf98704170520cc4c38d660b7b89dee32fdbf9ba5ab776eb6`
+and the canonical empty error-node digest is
+`37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570`.
+The exact failed identities are:
+
+- `tests/test_build_phase4_final_certification.py::test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names`;
+- `tests/test_build_phase4_final_certification.py::test_dvc_executable_swap_is_detected_after_fd_anchored_invocation`;
+- `tests/test_build_phase4_final_certification.py::test_dvc_launcher_swap_never_executes_foreign_launcher`;
+- `tests/test_build_phase4_final_certification.py::test_dvc_restore_never_opens_or_reads_parquet_or_cache_payloads_in_python`;
+- `tests/test_build_phase4_final_certification.py::test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache`;
+- `tests/test_build_phase4_final_certification.py::test_global_dvc_status_always_disables_analytics`;
+- `tests/test_build_phase4_final_certification.py::test_runtime_dvc_version_probe_disables_analytics`.
+
+All seven failures occurred before their DVC subprocess calls because the
+lexical system-interpreter guard rejected the exact outer-sandbox
+`/cert-python` alias. This is not evidence of a DVC runtime, network or payload
+failure. The deterministic postmortem and bounded JUnit projection preserve
+only the safe identities and totals; messages, tracebacks, raw JUnit, streams,
+credentials and absolute paths remain absent. Exact cleanup removed the owned
+container, socket and namespace, all eight final paths remained absent, and
+`retry_authorized=false`.
+
 The builder retains its owned isolated-clone cleanup snapshot while auxiliary
 configuration, the eight directed pulls and directed status verification run
 there. A partial tree left by a failed DVC command is never adopted into
@@ -1220,10 +1301,11 @@ must identify both the sanitized active verification error and the cleanup
 failure; the cleanup failure cannot mask the active stage. No raw stream,
 secret or absolute path may appear in that composite.
 
-The final manifest binds the seven preceding outputs, P-CERT17 authority and
+The final manifest binds the seven preceding outputs, P-CERT18 authority and
 companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7/H8/P8/H9/P9/H10/P10/H11/P11/H12/P12, the factual invalidated H13 candidate,
-historical H14/P14/H15/P15/H16/P16, the zero-execution R14 preflight failure,
-the consumed R15/R16 public-test failures and active H17 components, public anchors,
+historical H14/P14/H15/P15/H16/P16/H17/P17, the zero-execution R14 preflight
+failure, the consumed R15/R16/R17 public-test failures and active H18
+components, public anchors,
 eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
 human report must retain this claim boundary:
@@ -1233,7 +1315,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT17, P-CERT17, H-CERT17, then earlier Phase 4
+The precommit selector order is R-CERT18, P-CERT18, H-CERT18, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -1249,11 +1331,11 @@ pointer blobs, the recorded isolated-clone DVC evidence, targeted staging and
 rollback that preserves foreign index entries. It does not infer or claim a
 clean main-worktree DVC status. The legacy guard path remains absent.
 
-H-CERT17 and P-CERT17 precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT18 and P-CERT18 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P-CERT17 parent,
+After the owner publishes R, the final audit must prove direct P-CERT18 parent,
 exact8 scope, local/remote refs, clean Git, the static main-worktree DVC
 boundary from Git plus the eight versioned pointer blobs, the isolated-clone
 DVC evidence, effective manifest, and no owned temporary state. It must not
@@ -1267,8 +1349,8 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
-- any attempt to execute R-CERT17 from superseded P-CERT1 through P-CERT12,
-  nonexistent P-CERT13, or superseded P-CERT14/P-CERT15/P-CERT16,
+- any attempt to execute R-CERT18 from superseded P-CERT1 through P-CERT12,
+  nonexistent P-CERT13, or superseded P-CERT14/P-CERT15/P-CERT16/P-CERT17,
   or reuse/adopt any retained failed-run namespace;
 - a post-clone directory-link delta other than exactly `+1` at
   `after_git_clone`, or failure to register the clone after that exact
@@ -1306,6 +1388,9 @@ Stop without widening scope or automatic retry on any of the following:
   and `0700`, any mountpoint inventory/rollback drift, any failure of the exact
   bubblewrap touch smoke or owned marker cleanup, or any cleanup reason outside
   the closed path-free allowlist;
+- any retained-runtime alias other than exact `/cert-python` and
+  `/cert-poetry`, any use outside the proven sealed-suite context, or any
+  mismatch against `/proc/self/exe` and the injected `/usr` interpreter;
 - any forbidden/private/raw/Parquet read or unexpected network access;
 - a test failure/error, unregistered skip, OpenAPI mismatch, or E2E mismatch;
 - an existing, partial, symlinked, hardlinked, or extra result path;

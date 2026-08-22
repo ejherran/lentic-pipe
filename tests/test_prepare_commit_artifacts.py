@@ -11205,6 +11205,10 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
     ) == {"M"}
     assert (
         precommit_artifacts.CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
+        == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_STAGED_SCOPE
+    )
+    assert (
+        precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_STAGED_SCOPE
         == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V16_STAGED_SCOPE
     )
     assert list(
@@ -11218,6 +11222,10 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
         precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE.values()
     ) == {"A"}
     assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_STAGED_SCOPE) == {
+        "configs/closure_v1/phase4_final_certification_authority_v18.json",
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v18.json",
+    }
+    assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_STAGED_SCOPE) == {
         "configs/closure_v1/phase4_final_certification_authority_v17.json",
         "configs/closure_v1/phase4_final_certification_authority_manifest_v17.json",
     }
@@ -11260,6 +11268,34 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
     assert (
         contract_module.expected_r16_modes()
         == precommit_artifacts.CLOSURE_PHASE4_R_CERT_V16_GIT_MODES
+    )
+    assert (
+        precommit_artifacts.CLOSURE_PHASE4_R_CERT_V17_STAGED_SCOPE
+        == precommit_artifacts.CLOSURE_PHASE4_R_CERT_STAGED_SCOPE
+    )
+    assert (
+        contract_module.expected_h17_scope()
+        == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_STAGED_SCOPE
+    )
+    assert (
+        contract_module.expected_p17_scope()
+        == precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_STAGED_SCOPE
+    )
+    assert (
+        contract_module.expected_r17_scope()
+        == precommit_artifacts.CLOSURE_PHASE4_R_CERT_V17_STAGED_SCOPE
+    )
+    assert (
+        contract_module.expected_h17_modes()
+        == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_GIT_MODES
+    )
+    assert (
+        contract_module.expected_p17_modes()
+        == precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_GIT_MODES
+    )
+    assert (
+        contract_module.expected_r17_modes()
+        == precommit_artifacts.CLOSURE_PHASE4_R_CERT_V17_GIT_MODES
     )
     assert set(precommit_artifacts.CLOSURE_PHASE4_P_CERT_V13_STAGED_SCOPE) == {
         "configs/closure_v1/phase4_final_certification_authority_v13.json",
@@ -11521,6 +11557,27 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
             "e78e86590722c8eccd9f0936553750a8530e07232237cf57cf867f7b5e3f6fd3",
         ),
     }
+    assert (
+        precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT
+        == "a7e4f10321c8ea8321d0c4917969ecc9ab39f59b"
+    )
+    assert (
+        precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT
+        == "1677778862786d28b9f60e80b7e718432e0b0947"
+    )
+    assert precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_BYTES_SHA256 == {
+        "configs/closure_v1/phase4_final_certification_authority_v17.json": (
+            154_137,
+            "d095c49c1038f4f4d11f1f5011b26152d666c67b8b7da4151a6fee70cbcaaacd",
+        ),
+        (
+            "configs/closure_v1/"
+            "phase4_final_certification_authority_manifest_v17.json"
+        ): (
+            3_782,
+            "baa72773861fd9b24d55a106059690ead7089d7f3ccfeaf458f6b322b5481240",
+        ),
+    }
     h13_failure = contract_module.expected_h13_failure_record()
     assert h13_failure["attempt"] == "H-CERT13"
     assert h13_failure["retry_authorized"] is False
@@ -11598,6 +11655,52 @@ def test_closure_phase4_certification_scopes_modes_and_precedence_are_exact(
         with pytest.raises(
             precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
             match="P-CERT16 execution/no-retry policy drifted",
+        ):
+            precommit_artifacts._require_closure_phase4_cert_contract(
+                repo_root=Path(".")
+            )
+    p17_failure = contract_module.expected_p17_failure_record()
+    p17_public_failure = p17_failure["active_error"]["public_tests_failure"]
+    assert p17_failure["attempt"] == "R-CERT17"
+    assert p17_failure["status"] == "execution_failed_closed_cleanup_succeeded"
+    assert p17_failure["retry_authorized"] is False
+    assert p17_public_failure["status"] == "failure_identity_available"
+    assert p17_public_failure["totals"] == {
+        "tests": 944,
+        "passed": 895,
+        "failures": 7,
+        "errors": 0,
+        "skipped": 42,
+    }
+    assert len(p17_public_failure["failed_nodeids"]) == 7
+    assert p17_public_failure["failed_nodeids_sha256"] == (
+        "e328bbeea535afadf98704170520cc4c38d660b7b89dee32fdbf9ba5ab776eb6"
+    )
+    assert p17_public_failure["error_nodeids"] == []
+    assert p17_public_failure["error_nodeids_sha256"] == (
+        "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+    )
+    assert p17_public_failure["collected_test_count"] == 944
+    assert p17_public_failure["collected_nodeids_sha256"] == (
+        "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
+    )
+    assert p17_failure["observed_cause"]["safe_error"] == (
+        "retained_sandbox_python_alias_rejected"
+    )
+    assert p17_failure["cleanup"]["status"] == "succeeded_exact"
+    assert p17_failure["cleanup"]["namespace_preserved"] is False
+    assert p17_failure["evidence_counts"]["r_cert_outputs"] == 0
+    drifted_p17_failure = deepcopy(p17_failure)
+    drifted_p17_failure["retry_authorized"] = True
+    with monkeypatch.context() as patch:
+        patch.setattr(
+            contract_module,
+            "expected_p17_failure_record",
+            lambda: drifted_p17_failure,
+        )
+        with pytest.raises(
+            precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
+            match="P-CERT17 execution/no-retry policy drifted",
         ):
             precommit_artifacts._require_closure_phase4_cert_contract(
                 repo_root=Path(".")
@@ -12051,14 +12154,14 @@ def test_closure_phase4_h_cert_selector_is_exact_and_rejects_guard_extra_pending
         precommit_artifacts,
         "_git_output",
         lambda _root, *args: (
-            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT
             if args[:2] == ("rev-parse", "HEAD^{commit}")
             else ""
         ),
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v16_history",
+        "_require_closure_phase4_cert_v17_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -12137,7 +12240,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
 ) -> None:
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v16_history",
+        "_require_closure_phase4_cert_v17_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -12158,7 +12261,7 @@ def test_closure_phase4_cert_published_h_rejects_wrong_parent_and_scope(
         precommit_artifacts,
         "_closure_phase4_commit_parents",
         lambda *_args, **_kwargs: (
-            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
         ),
     )
     monkeypatch.setattr(
@@ -12188,7 +12291,7 @@ def test_closure_phase4_h_cert4_selector_rejects_superseded_base(
     )
     with pytest.raises(
         precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
-        match="H-CERT17.*P-CERT16",
+        match="H-CERT18.*P-CERT17",
     ):
         precommit_artifacts.closure_phase4_h_cert_pre_stage_scope(
             status,
@@ -12202,8 +12305,8 @@ def test_closure_phase4_p_cert4_selector_accepts_git_lexical_status_order(
 ) -> None:
     (tmp_path / "tmp").mkdir()
     lines = _phase4_cert_short_status("P-CERT", staged=False).splitlines()
-    assert lines[0].endswith("authority_manifest_v17.json")
-    assert lines[1].endswith("authority_v17.json")
+    assert lines[0].endswith("authority_manifest_v18.json")
+    assert lines[1].endswith("authority_v18.json")
     reversed_status = "\n".join(reversed(lines)) + "\n"
     h3_commit = "a" * 40
     observed: list[str] = []
@@ -12657,6 +12760,47 @@ def test_closure_phase4_cert_v2_history_binds_exact_topology_and_scopes(
     ]
     assert p12_intact == [True]
 
+    parents.update(
+        {
+            precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT: (
+                precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+            ),
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT: (
+                precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT,
+            ),
+        }
+    )
+    observed.clear()
+    p17_intact: list[bool] = []
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_cert_v16_history",
+        lambda **_kwargs: None,
+    )
+    monkeypatch.setattr(
+        precommit_artifacts,
+        "_require_closure_phase4_p17_files_intact",
+        lambda **_kwargs: p17_intact.append(True),
+    )
+    precommit_artifacts._require_closure_phase4_cert_v17_history(
+        repo_root=Path(".")
+    )
+    assert observed == [
+        (
+            precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_STAGED_SCOPE,
+            precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_GIT_MODES,
+            "H-CERT17",
+        ),
+        (
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_STAGED_SCOPE,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_GIT_MODES,
+            "P-CERT17",
+        ),
+    ]
+    assert p17_intact == [True]
+
 
 @pytest.mark.parametrize(
     "p_commit",
@@ -12671,7 +12815,7 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
 ) -> None:
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v16_history",
+        "_require_closure_phase4_cert_v17_history",
         lambda **_kwargs: None,
     )
 
@@ -12736,6 +12880,10 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
             return (precommit_artifacts.CLOSURE_PHASE4_H_CERT_V16_COMMIT,)
         if commit == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V16_COMMIT:
             return (precommit_artifacts.CLOSURE_PHASE4_P_CERT_V15_COMMIT,)
+        if commit == precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT:
+            return (precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT,)
+        if commit == precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT:
+            return (precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,)
         raise AssertionError(f"unexpected commit: {commit}")
 
     monkeypatch.setattr(
@@ -12745,7 +12893,7 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
     )
     with pytest.raises(
         precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
-        match="H-CERT17.*P-CERT16",
+        match="H-CERT18.*P-CERT17",
     ):
         precommit_artifacts._require_closure_phase4_published_p_cert(
             p_commit,
@@ -12765,10 +12913,11 @@ def test_closure_phase4_cert_historical_p_cannot_authorize_r_cert(
             precommit_artifacts.CLOSURE_PHASE4_P_CERT_V14_COMMIT,
             precommit_artifacts.CLOSURE_PHASE4_P_CERT_V15_COMMIT,
             precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+            precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
         ):
             with pytest.raises(
                 precommit_artifacts.ClosurePhase4FinalCertificationPrecommitAdapterError,
-                match="H-CERT17.*P-CERT16",
+                match="H-CERT18.*P-CERT17",
             ):
                 precommit_artifacts._require_closure_phase4_published_p_cert(
                     later_historical_p,
@@ -13411,11 +13560,11 @@ def test_closure_phase4_cert_staged_double_recapture_rejects_semantic_drift(
     monkeypatch.setattr(
         precommit_artifacts,
         "_git_output",
-        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
     )
     monkeypatch.setattr(
         precommit_artifacts,
-        "_require_closure_phase4_cert_v16_history",
+        "_require_closure_phase4_cert_v17_history",
         lambda **_kwargs: None,
     )
     monkeypatch.setattr(
@@ -13581,8 +13730,10 @@ def test_closure_phase4_h_cert_semantic_digest_requires_read_only_h3_preflight(
         "p15_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V15_COMMIT,
         "h16_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V16_COMMIT,
         "p16_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
-        "h17_cert_commit": None,
-        "p17_cert_commit": None,
+        "h17_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT,
+        "p17_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
+        "h18_cert_commit": None,
+        "p18_cert_commit": None,
         "writes_performed": False,
         "dvc_status_checked": False,
         "dvc_pull_commands_run": False,
@@ -13600,7 +13751,7 @@ def test_closure_phase4_h_cert_semantic_digest_requires_read_only_h3_preflight(
     monkeypatch.setattr(
         precommit_artifacts,
         "_git_output",
-        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+        lambda *_args: precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
     )
     monkeypatch.setattr(locker, "check_only", lambda **_kwargs: result)
     monkeypatch.setattr(
@@ -14540,8 +14691,10 @@ def test_closure_phase4_r_cert_delegates_mutated_report_to_custom_validator(
         lambda *_args, **_kwargs: {
             "p_cert_commit": head,
             "h_cert_commit": "b" * 40,
-            "p17_cert_commit": head,
-            "h17_cert_commit": "b" * 40,
+            "p18_cert_commit": head,
+            "h18_cert_commit": "b" * 40,
+            "p17_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
+            "h17_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT,
             "p16_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
             "h16_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V16_COMMIT,
             "p15_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V15_COMMIT,
@@ -14668,8 +14821,10 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
     effective = {
         "p_cert_commit": head,
         "h_cert_commit": "b" * 40,
-        "p17_cert_commit": head,
-        "h17_cert_commit": "b" * 40,
+        "p18_cert_commit": head,
+        "h18_cert_commit": "b" * 40,
+        "p17_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V17_COMMIT,
+        "h17_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V17_COMMIT,
         "p16_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V16_COMMIT,
         "h16_cert_commit": precommit_artifacts.CLOSURE_PHASE4_H_CERT_V16_COMMIT,
         "p15_cert_commit": precommit_artifacts.CLOSURE_PHASE4_P_CERT_V15_COMMIT,
@@ -14751,7 +14906,9 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
             "sha256": effective["authority_sha256"],
             "p_cert_commit": head,
             "h_cert_commit": effective["h_cert_commit"],
-            "p17_cert_commit": head,
+            "p18_cert_commit": head,
+            "h18_cert_commit": effective["h18_cert_commit"],
+            "p17_cert_commit": effective["p17_cert_commit"],
             "h17_cert_commit": effective["h17_cert_commit"],
             "p16_cert_commit": effective["p16_cert_commit"],
             "h16_cert_commit": effective["h16_cert_commit"],
@@ -14790,7 +14947,9 @@ def _phase4_r_cert_adapter_payloads() -> tuple[Any, dict[str, Any], list[Any], l
             "sha256": effective["manifest_sha256"],
             "p_cert_commit": head,
             "h_cert_commit": effective["h_cert_commit"],
-            "p17_cert_commit": head,
+            "p18_cert_commit": head,
+            "h18_cert_commit": effective["h18_cert_commit"],
+            "p17_cert_commit": effective["p17_cert_commit"],
             "h17_cert_commit": effective["h17_cert_commit"],
             "p16_cert_commit": effective["p16_cert_commit"],
             "h16_cert_commit": effective["h16_cert_commit"],

@@ -70,6 +70,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_p14_failure_record,
     expected_p15_failure_record,
     expected_p16_failure_record,
+    expected_p17_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
@@ -94,6 +95,10 @@ E2E_SUITE_KIND = "closure_phase4_final_synthetic_e2e"
 PLUGIN_MODE_ENV = "CLOSURE_PHASE4_CERTIFICATION_SUITE_KIND"
 PLUGIN_ROOT_ENV = "CLOSURE_PHASE4_CERTIFICATION_REPO_ROOT"
 PLUGIN_RETAINED_PYTHON_ENV = "CLOSURE_PHASE4_CERTIFICATION_RETAINED_PYTHON"
+TRUSTED_SYSTEM_PYTHON_ROOT = Path("/usr")
+SANDBOX_RETAINED_PYTHON_ALIAS = Path("/cert-python")
+SANDBOX_RETAINED_POETRY_ROOT = Path("/cert-poetry")
+PROC_SELF_EXE_PATH = Path("/proc/self/exe")
 DB_SOCKET_ROOT = "/cert-db"
 DB_NAME = "closure_phase4_cert"
 CONTAINER_POSTGRES_SOCKET_ROOT = "/var/run/postgresql"
@@ -2094,6 +2099,122 @@ def _open_anchored_executable(
         raise
 
 
+def _trusted_python_origin_policy_allows(
+    *,
+    base_path: Path,
+    trusted_path: Path,
+    trusted_identity: tuple[int, ...],
+    process_identity: tuple[int, ...],
+    suite_kind: str | None,
+    suite_root: str | None,
+    injected_target: Path | None,
+    injected_canonical: Path | None,
+    injected_identity: tuple[int, ...] | None,
+) -> bool:
+    """Accept only the system path or the exact retained sandbox alias.
+
+    The alias branch is deliberately pure so the public regression suite can
+    exercise its complete decision table without creating a privileged mount.
+    Filesystem identities are captured separately by the caller.
+    """
+
+    if trusted_identity != process_identity:
+        return False
+    if base_path == SANDBOX_RETAINED_PYTHON_ALIAS:
+        return (
+            trusted_path == SANDBOX_RETAINED_PYTHON_ALIAS
+            and suite_kind == PUBLIC_SUITE_KIND
+            and suite_root == "/workspace"
+            and injected_target is not None
+            and injected_target.is_absolute()
+            and ".." not in injected_target.parts
+            and injected_target.is_relative_to(TRUSTED_SYSTEM_PYTHON_ROOT)
+            and injected_canonical is not None
+            and injected_canonical.is_relative_to(TRUSTED_SYSTEM_PYTHON_ROOT)
+            and injected_identity == trusted_identity
+        )
+    return (
+        base_path.is_absolute()
+        and ".." not in base_path.parts
+        and base_path.is_relative_to(TRUSTED_SYSTEM_PYTHON_ROOT)
+        and trusted_path.is_relative_to(TRUSTED_SYSTEM_PYTHON_ROOT)
+    )
+
+
+def _trusted_python_origin_is_safe(
+    *,
+    base_path: Path,
+    trusted_path: Path,
+    trusted: os.stat_result,
+) -> bool:
+    """Capture and validate the current interpreter's fail-closed provenance."""
+
+    try:
+        process = PROC_SELF_EXE_PATH.stat()
+    except OSError:
+        return False
+    if (
+        not stat.S_ISREG(process.st_mode)
+        or stat.S_IMODE(process.st_mode) != 0o755
+    ):
+        return False
+
+    injected_target: Path | None = None
+    injected_canonical: Path | None = None
+    injected_identity: tuple[int, ...] | None = None
+    if trusted_path == SANDBOX_RETAINED_PYTHON_ALIAS:
+        raw_target = os.environ.get(PLUGIN_RETAINED_PYTHON_ENV, "")
+        try:
+            injected_target = Path(raw_target)
+            if (
+                not injected_target.is_absolute()
+                or ".." in injected_target.parts
+                or not injected_target.is_relative_to(TRUSTED_SYSTEM_PYTHON_ROOT)
+            ):
+                return False
+            injected_canonical = injected_target.resolve(strict=True)
+            injected = injected_canonical.stat()
+        except (OSError, RuntimeError):
+            return False
+        if (
+            not injected_canonical.is_relative_to(TRUSTED_SYSTEM_PYTHON_ROOT)
+            or not stat.S_ISREG(injected.st_mode)
+            or stat.S_IMODE(injected.st_mode) != 0o755
+        ):
+            return False
+        injected_identity = _stat_identity(injected)
+
+    return _trusted_python_origin_policy_allows(
+        base_path=base_path,
+        trusted_path=trusted_path,
+        trusted_identity=_stat_identity(trusted),
+        process_identity=_stat_identity(process),
+        suite_kind=os.environ.get(PLUGIN_MODE_ENV),
+        suite_root=os.environ.get(PLUGIN_ROOT_ENV),
+        injected_target=injected_target,
+        injected_canonical=injected_canonical,
+        injected_identity=injected_identity,
+    )
+
+
+def _running_from_retained_sandbox_python() -> bool:
+    """Prove this process is the exact sealed ``/cert-python`` bind mount."""
+
+    base_path = Path(cast(str, getattr(sys, "_base_executable", sys.executable)))
+    if base_path != SANDBOX_RETAINED_PYTHON_ALIAS:
+        return False
+    try:
+        trusted_path = base_path.resolve(strict=True)
+        trusted = trusted_path.stat()
+    except (OSError, RuntimeError):
+        return False
+    return _trusted_python_origin_is_safe(
+        base_path=base_path,
+        trusted_path=trusted_path,
+        trusted=trusted,
+    )
+
+
 def _open_anchored_python_interpreter(
     root: Path,
     relative: Path,
@@ -2140,7 +2261,11 @@ def _open_anchored_python_interpreter(
         trusted_path = base_path.resolve(strict=True)
         trusted = trusted_path.stat()
         if (
-            not trusted_path.is_relative_to(Path("/usr"))
+            not _trusted_python_origin_is_safe(
+                base_path=base_path,
+                trusted_path=trusted_path,
+                trusted=trusted,
+            )
             or not stat.S_ISLNK(link_before.st_mode)
             or link_before.st_nlink != 1
             or _stat_identity(link_before) != _stat_identity(link_after)
@@ -4374,11 +4499,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h17_authority_boundary(result, contract=contract)
+    _require_h18_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p17_cert_commit"),
+        execution_commit=result.get("p18_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -4413,7 +4538,7 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P17/H17 aliases and the complete historical lineage."""
+    """Validate active P18/H18 aliases and the complete historical lineage."""
 
     if (
         "p13_cert_commit" not in value
@@ -4425,6 +4550,8 @@ def _require_effective_authority_commit_binding(
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p18_cert_commit",
+        "h18_cert_commit",
         "p17_cert_commit",
         "h17_cert_commit",
         "p16_cert_commit",
@@ -4467,9 +4594,11 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p17_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h17_cert_commit"]
-        or commits["p17_cert_commit"] == commits["h17_cert_commit"]
+        or commits["p18_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h18_cert_commit"]
+        or commits["p18_cert_commit"] == commits["h18_cert_commit"]
+        or commits["p17_cert_commit"] != contract.p17_cert_commit
+        or commits["h17_cert_commit"] != contract.h17_cert_commit
         or commits["p16_cert_commit"] != contract.p16_cert_commit
         or commits["h16_cert_commit"] != contract.h16_cert_commit
         or commits["p15_cert_commit"] != contract.p15_cert_commit
@@ -4488,6 +4617,8 @@ def _require_effective_authority_commit_binding(
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p18_cert_commit"] == commits["p17_cert_commit"]
+        or commits["h18_cert_commit"] == commits["h17_cert_commit"]
         or commits["p17_cert_commit"] == commits["p16_cert_commit"]
         or commits["h17_cert_commit"] == commits["h16_cert_commit"]
         or commits["p16_cert_commit"] == commits["p15_cert_commit"]
@@ -4525,19 +4656,20 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h17_authority_boundary(
+def _require_h18_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R17 to factual non-retry R15/R16 failures and preserved lineage."""
+    """Bind R18 to factual non-retry R15/R16/R17 failures and lineage."""
 
     if value.get("status") != "effective" or value.get("gate") != "P-CERT":
-        raise _error("R17 requires effective published P17 authority")
+        raise _error("R18 requires effective published P18 authority")
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H17 authority payload is absent")
+        raise _error("effective H18 authority payload is absent")
     isolation = authority.get("isolation")
     if (
-        authority.get("p16_failure") != expected_p16_failure_record()
+        authority.get("p17_failure") != expected_p17_failure_record()
+        or authority.get("p16_failure") != expected_p16_failure_record()
         or authority.get("p15_failure") != expected_p15_failure_record()
         or authority.get("h13_failure") != expected_h13_failure_record()
         or authority.get("p14_failure") != expected_p14_failure_record()
@@ -4579,7 +4711,7 @@ def _require_h17_authority_boundary(
         or isolation.get("public_tests_junit_diagnostic_policy")
         != dict(contract.public_tests_junit_diagnostic_policy)
     ):
-        raise _error("effective H17 failure/isolation authority drifted")
+        raise _error("effective H18 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -4587,7 +4719,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P17 authority's exact partial-clone status policy."""
+    """Require the effective P18 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4710,11 +4842,11 @@ def _require_public_tests_junit_diagnostic_policy(
         or expected.get("composite_error_propagates_public_tests_failure")
         is not True
     ):
-        raise _error("H17 public-tests JUnit diagnostic policy drifted")
+        raise _error("H18 public-tests JUnit diagnostic policy drifted")
     return expected
 
 
-def _require_h17_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h18_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -4749,6 +4881,7 @@ def _require_h17_runtime_policy(contract: FinalCertificationContract) -> None:
     destroy_poll = expected_postgres_destroy_poll_policy()
     access_guard = expected_test_access_guard_policy()
     junit_diagnostic = _require_public_tests_junit_diagnostic_policy(contract)
+    mountpoint_policy = expected_sandbox_mountpoint_policy()
     if (
         contract.forbidden_read_prefixes != SANDBOX_ABSENT_FORBIDDEN_PREFIXES
         or contract.forbidden_read_paths != SANDBOX_MASKED_FORBIDDEN_PATHS
@@ -4839,15 +4972,36 @@ def _require_h17_runtime_policy(contract: FinalCertificationContract) -> None:
         or access_guard.get("public_tests_python_audit_hook") is not False
         or access_guard.get("openapi_python_audit_hook") is not True
         or access_guard.get("e2e_python_audit_hook") is not True
-        or dict(contract.sandbox_mountpoint_policy)
-        != expected_sandbox_mountpoint_policy()
+        or dict(contract.sandbox_mountpoint_policy) != mountpoint_policy
+        or mountpoint_policy.get("retained_python_exact_alias")
+        != SANDBOX_RETAINED_PYTHON_ALIAS.as_posix()
+        or mountpoint_policy.get("retained_poetry_exact_root_alias")
+        != SANDBOX_RETAINED_POETRY_ROOT.as_posix()
+        or mountpoint_policy.get("retained_alias_public_suite_only") is not True
+        or mountpoint_policy.get("retained_alias_workspace_root") != "/workspace"
+        or mountpoint_policy.get("retained_python_host_target_environment")
+        != PLUGIN_RETAINED_PYTHON_ENV
+        or mountpoint_policy.get("retained_python_host_target_required_under_usr")
+        is not True
+        or mountpoint_policy.get(
+            "retained_python_alias_matches_proc_self_exe_full_identity"
+        )
+        is not True
+        or mountpoint_policy.get(
+            "retained_python_alias_matches_injected_host_target_full_identity"
+        )
+        is not True
+        or mountpoint_policy.get("retained_poetry_alias_requires_same_python_context")
+        is not True
+        or mountpoint_policy.get("arbitrary_retained_runtime_alias_authorized")
+        is not False
         or dict(contract.sandbox_smoke_policy) != expected_sandbox_smoke_policy()
         or dict(contract.cleanup_diagnostic_policy)
         != expected_cleanup_diagnostic_policy()
         or dict(contract.public_tests_junit_diagnostic_policy)
         != junit_diagnostic
     ):
-        raise _error("H17 runtime isolation policy drifted")
+        raise _error("H18 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -4859,7 +5013,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h17_runtime_policy(contract)
+    _require_h18_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -4868,14 +5022,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h17_authority_boundary(authority, contract=contract)
+    _require_h18_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p17_cert_commit"),
+        execution_commit=authority.get("p18_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p17_cert_commit"]
+    effective_commit = authority_commits["p18_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -6029,7 +6183,16 @@ def _require_clean_clone_status(status_payload: str) -> None:
 
 
 def _poetry_runtime_root() -> Path:
-    """Resolve the invoking UID's pipx Poetry root without trusting ``HOME``."""
+    """Resolve the host pipx root or its exact retained sandbox bind alias."""
+
+    if _running_from_retained_sandbox_python():
+        try:
+            retained = SANDBOX_RETAINED_POETRY_ROOT.lstat()
+        except OSError as exc:
+            raise _error("retained sandbox Poetry root is unavailable") from exc
+        if not stat.S_ISDIR(retained.st_mode):
+            raise _error("retained sandbox Poetry root is unsafe")
+        return SANDBOX_RETAINED_POETRY_ROOT
 
     try:
         home = Path(pwd.getpwuid(os.getuid()).pw_dir)
@@ -8417,7 +8580,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h17_authority_boundary(authority, contract=contract)
+    _require_h18_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,

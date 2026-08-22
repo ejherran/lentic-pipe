@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v17
+contract_version: closure_v1_phase4_final_certification_v18
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -34,8 +34,10 @@ authorities:
   p15_cert_commit: fa00bbd07d47ff504f2323e418934824efab386a
   h16_cert_commit: 4f78e7d1a8f93eedda169c5499c331b8da15de1e
   p16_cert_commit: 6c5fbaac2bf48393b3e7ef3e24d95006ecc016b9
+  h17_cert_commit: a7e4f10321c8ea8321d0c4917969ecc9ab39f59b
+  p17_cert_commit: 1677778862786d28b9f60e80b7e718432e0b0947
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v17_commit
+  certification_target: published_P_CERT_v18_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -85,6 +87,9 @@ topology:
     - H-CERT17
     - P-CERT17
     - R-CERT17
+    - H-CERT18
+    - P-CERT18
+    - R-CERT18
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -670,6 +675,7 @@ topology:
     manifest_written_last: false
   H-CERT17:
     role: corrective_pytest_skip_precedence_and_junit_teardown_accounting_contract_tests_and_freeze
+    commit: h17_cert_commit
     direct_parent: p16_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -681,8 +687,62 @@ topology:
       - keep_failures_errors_and_skipped_counters_exact
       - forbid_p_cert16_r_cert16_retry
   P-CERT17:
-    role: data_only_final_certification_authority_v17
+    role: superseded_failed_final_certification_authority_v17
+    commit: p17_cert_commit
     requires_published_H_CERT17: true
+    supersedes_P_CERT16: true
+    supersedes_P_CERT15: true
+    supersedes_P_CERT14: true
+    supersedes_unpublished_H_CERT13_candidate: true
+    supersedes_P_CERT12: true
+    supersedes_P_CERT11: true
+    supersedes_P_CERT10: true
+    supersedes_P_CERT9: true
+    supersedes_P_CERT8: true
+    supersedes_P_CERT7: true
+    supersedes_P_CERT6: true
+    supersedes_P_CERT5: true
+    supersedes_P_CERT4: true
+    supersedes_P_CERT3: true
+    supersedes_P_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: public_tests
+    failure_kind: retained_sandbox_python_alias_rejected
+    failure_identity_status: failure_identity_available
+    public_tests_total: 944
+    public_tests_passed: 895
+    public_tests_failed: 7
+    public_tests_errors: 0
+    public_tests_skipped: 42
+    r_cert_execution_runs: 1
+    retry_authorized: false
+    manifest_written_last: true
+  R-CERT17:
+    role: superseded_failed_final_doctoral_software_and_restorability_evidence
+    requires_published_P_CERT17: true
+    failure_stage: public_tests
+    failure_kind: retained_sandbox_python_alias_rejected
+    failure_identity_status: failure_identity_available
+    execution_runs: 1
+    output_count: 0
+    retry_authorized: false
+    manifest_written_last: false
+  H-CERT18:
+    role: corrective_retained_python_and_poetry_sandbox_alias_identity_contract_tests_and_freeze
+    direct_parent: p17_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - record_consumed_r_cert17_safe_failure_identity_and_forbid_retry
+      - accept_only_exact_cert_python_alias_in_sealed_public_suite
+      - bind_cert_python_to_proc_self_exe_and_injected_usr_target_full_identity
+      - retain_normal_usr_python_origin_policy
+      - resolve_cert_poetry_only_under_same_proven_sandbox_python_context
+      - reject_arbitrary_similar_or_mutable_runtime_aliases
+  P-CERT18:
+    role: data_only_final_certification_authority_v18
+    requires_published_H_CERT18: true
+    supersedes_P_CERT17: true
     supersedes_P_CERT16: true
     supersedes_P_CERT15: true
     supersedes_P_CERT14: true
@@ -701,9 +761,9 @@ topology:
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT17:
+  R-CERT18:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT17: true
+    requires_published_P_CERT18: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -1196,6 +1256,81 @@ publication_scopes:
         status: A
         git_mode: "100644"
   R-CERT17:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
+  H-CERT18:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT18:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v18.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v18.json
+        status: A
+        git_mode: "100644"
+  R-CERT18:
     additions: 8
     modifications: 0
     ordered_paths:
@@ -2171,6 +2306,7 @@ isolation:
   superseded_p14_retry_authorized: false
   superseded_p15_retry_authorized: false
   superseded_p16_retry_authorized: false
+  superseded_p17_retry_authorized: false
   postgres_portable_path_policy:
     volume: <OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>
     data_tmpfs: <CONTAINER_POSTGRES_DATA>:rw,size=512m
@@ -2255,6 +2391,16 @@ isolation:
     rollback_by_owned_inode_required: true
     frozen_with_clone_inventory: true
     symlink_or_existing_inode_adoption_authorized: false
+    retained_python_exact_alias: /cert-python
+    retained_poetry_exact_root_alias: /cert-poetry
+    retained_alias_public_suite_only: true
+    retained_alias_workspace_root: /workspace
+    retained_python_host_target_environment: CLOSURE_PHASE4_CERTIFICATION_RETAINED_PYTHON
+    retained_python_host_target_required_under_usr: true
+    retained_python_alias_matches_proc_self_exe_full_identity: true
+    retained_python_alias_matches_injected_host_target_full_identity: true
+    retained_poetry_alias_requires_same_python_context: true
+    arbitrary_retained_runtime_alias_authorized: false
     absolute_paths_serialized: false
   sandbox_smoke_policy:
     required: true
@@ -2448,6 +2594,7 @@ stop_rules:
   - attempt_to_execute_from_superseded_p14
   - attempt_to_execute_from_superseded_p15
   - attempt_to_execute_from_superseded_p16
+  - attempt_to_execute_from_superseded_p17
   - effective_authority_alias_projection_drift
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
@@ -2467,6 +2614,7 @@ stop_rules:
   - postgres_cleanup_ownership_or_identity_drift
   - unsafe_internal_cleanup_diagnostics
   - sandbox_mountpoint_policy_drift
+  - retained_runtime_alias_identity_drift
   - sandbox_smoke_or_marker_cleanup_drift
   - cleanup_diagnostic_reason_code_drift
   - public_tests_junit_failure_diagnostic_policy_drift

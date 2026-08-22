@@ -133,11 +133,17 @@ H16_AUTHORITY_PATH = Path(
 H16_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v16.json"
 )
-AUTHORITY_PATH = Path(
+H17_AUTHORITY_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_v17.json"
 )
-AUTHORITY_MANIFEST_PATH = Path(
+H17_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v17.json"
+)
+AUTHORITY_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_v18.json"
+)
+AUTHORITY_MANIFEST_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v18.json"
 )
 CERTIFICATION_ROOT = Path("reports/closure_v1/12_certification")
 GUARD_PATH = Path(
@@ -145,7 +151,7 @@ GUARD_PATH = Path(
 )
 LOCAL_DVC_CONFIG_PATH = Path(".dvc/config.local")
 
-CONTRACT_VERSION = "closure_v1_phase4_final_certification_v17"
+CONTRACT_VERSION = "closure_v1_phase4_final_certification_v18"
 CLOSURE_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
 R_SYN_COMMIT = "528dcb74a7c08b65f262901e4562a67b784db8c9"
 EDITORIAL_COMMIT = "d1daa3059462854d6ddf5199fbc05515cec76982"
@@ -179,9 +185,15 @@ H15_CERT_COMMIT = "13640203e1c95d5ae9f8861fec3e6c842d90c545"
 P15_CERT_COMMIT = "fa00bbd07d47ff504f2323e418934824efab386a"
 H16_CERT_COMMIT = "4f78e7d1a8f93eedda169c5499c331b8da15de1e"
 P16_CERT_COMMIT = "6c5fbaac2bf48393b3e7ef3e24d95006ecc016b9"
+H17_CERT_COMMIT = "a7e4f10321c8ea8321d0c4917969ecc9ab39f59b"
+P17_CERT_COMMIT = "1677778862786d28b9f60e80b7e718432e0b0947"
 FINAL_TAG = "thesis-closure-v1"
-AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v17"
+AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v18"
 AUTHORITY_MANIFEST_VERSION = (
+    "closure_v1_phase4_final_certification_authority_manifest_v18"
+)
+H17_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v17"
+H17_AUTHORITY_MANIFEST_VERSION = (
     "closure_v1_phase4_final_certification_authority_manifest_v17"
 )
 H16_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v16"
@@ -360,6 +372,14 @@ H16_AUTHORITY_MANIFEST_BYTES = 3638
 H16_AUTHORITY_MANIFEST_SHA256 = (
     "e78e86590722c8eccd9f0936553750a8530e07232237cf57cf867f7b5e3f6fd3"
 )
+H17_AUTHORITY_BYTES = 154137
+H17_AUTHORITY_SHA256 = (
+    "d095c49c1038f4f4d11f1f5011b26152d666c67b8b7da4151a6fee70cbcaaacd"
+)
+H17_AUTHORITY_MANIFEST_BYTES = 3782
+H17_AUTHORITY_MANIFEST_SHA256 = (
+    "baa72773861fd9b24d55a106059690ead7089d7f3ccfeaf458f6b322b5481240"
+)
 HASH_CHUNK_SIZE = 1024 * 1024
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
@@ -465,6 +485,18 @@ SANDBOX_MOUNTPOINT_POLICY: Mapping[str, Any] = {
     "rollback_by_owned_inode_required": True,
     "frozen_with_clone_inventory": True,
     "symlink_or_existing_inode_adoption_authorized": False,
+    "retained_python_exact_alias": "/cert-python",
+    "retained_poetry_exact_root_alias": "/cert-poetry",
+    "retained_alias_public_suite_only": True,
+    "retained_alias_workspace_root": "/workspace",
+    "retained_python_host_target_environment": (
+        "CLOSURE_PHASE4_CERTIFICATION_RETAINED_PYTHON"
+    ),
+    "retained_python_host_target_required_under_usr": True,
+    "retained_python_alias_matches_proc_self_exe_full_identity": True,
+    "retained_python_alias_matches_injected_host_target_full_identity": True,
+    "retained_poetry_alias_requires_same_python_context": True,
+    "arbitrary_retained_runtime_alias_authorized": False,
     "absolute_paths_serialized": False,
 }
 SANDBOX_SMOKE_POLICY: Mapping[str, Any] = {
@@ -612,6 +644,18 @@ LOCKED_SUITE_NODEIDS_SHA256 = (
     "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
 )
 LOCKED_SUITE_ALLOWED_SKIP_COUNT = 42
+P17_FAILED_NODEIDS = (
+    "tests/test_build_phase4_final_certification.py::test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names",
+    "tests/test_build_phase4_final_certification.py::test_dvc_executable_swap_is_detected_after_fd_anchored_invocation",
+    "tests/test_build_phase4_final_certification.py::test_dvc_launcher_swap_never_executes_foreign_launcher",
+    "tests/test_build_phase4_final_certification.py::test_dvc_restore_never_opens_or_reads_parquet_or_cache_payloads_in_python",
+    "tests/test_build_phase4_final_certification.py::test_dvc_restore_uses_eight_exact_unit_commands_and_empty_private_cache",
+    "tests/test_build_phase4_final_certification.py::test_global_dvc_status_always_disables_analytics",
+    "tests/test_build_phase4_final_certification.py::test_runtime_dvc_version_probe_disables_analytics",
+)
+P17_FAILED_NODEIDS_SHA256 = (
+    "e328bbeea535afadf98704170520cc4c38d660b7b89dee32fdbf9ba5ab776eb6"
+)
 
 
 class FinalCertificationContractError(RuntimeError):
@@ -710,6 +754,8 @@ class FinalCertificationContract:
     p15_cert_commit: str
     h16_cert_commit: str
     p16_cert_commit: str
+    h17_cert_commit: str
+    p17_cert_commit: str
     final_tag: str
     h1_scope: tuple[PublicationPathSpec, ...]
     p1_scope: tuple[PublicationPathSpec, ...]
@@ -743,6 +789,8 @@ class FinalCertificationContract:
     p15_scope: tuple[PublicationPathSpec, ...]
     h16_scope: tuple[PublicationPathSpec, ...]
     p16_scope: tuple[PublicationPathSpec, ...]
+    h17_scope: tuple[PublicationPathSpec, ...]
+    p17_scope: tuple[PublicationPathSpec, ...]
     h_scope: tuple[PublicationPathSpec, ...]
     p_scope: tuple[PublicationPathSpec, ...]
     r_scope: tuple[PublicationPathSpec, ...]
@@ -954,6 +1002,13 @@ P16_SCOPE = (
     PublicationPathSpec(H16_AUTHORITY_PATH.as_posix(), "A", "100644"),
     PublicationPathSpec(H16_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
 )
+H17_SCOPE = tuple(
+    PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
+)
+P17_SCOPE = (
+    PublicationPathSpec(H17_AUTHORITY_PATH.as_posix(), "A", "100644"),
+    PublicationPathSpec(H17_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
+)
 H_SCOPE = tuple(
     PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
 )
@@ -1004,6 +1059,9 @@ R15_SCOPE = (
     ),
 )
 R16_SCOPE = tuple(
+    PublicationPathSpec(path, "A", "100644") for path in OUTPUT_PATHS
+)
+R17_SCOPE = tuple(
     PublicationPathSpec(path, "A", "100644") for path in OUTPUT_PATHS
 )
 R_SCOPE = tuple(
@@ -1245,6 +1303,7 @@ STOP_RULES = (
     "attempt_to_execute_from_superseded_p14",
     "attempt_to_execute_from_superseded_p15",
     "attempt_to_execute_from_superseded_p16",
+    "attempt_to_execute_from_superseded_p17",
     "effective_authority_alias_projection_drift",
     "unexpected_clone_directory_nlink_delta",
     "primary_error_loss_after_safe_cleanup_or_unowned_cleanup",
@@ -1264,6 +1323,7 @@ STOP_RULES = (
     "postgres_cleanup_ownership_or_identity_drift",
     "unsafe_internal_cleanup_diagnostics",
     "sandbox_mountpoint_policy_drift",
+    "retained_runtime_alias_identity_drift",
     "sandbox_smoke_or_marker_cleanup_drift",
     "cleanup_diagnostic_reason_code_drift",
     "public_tests_junit_failure_diagnostic_policy_drift",
@@ -2423,6 +2483,147 @@ def expected_p16_failure_record() -> dict[str, Any]:
     }
 
 
+def expected_p17_failure_record() -> dict[str, Any]:
+    """Return the factual, sanitized record of the consumed R-CERT17 launch."""
+
+    selected_files = set(POSITIVE_TEST_PATHS)
+    supplemental = tuple(
+        node
+        for node in HISTORICAL_EXACT_SKIPPED_NODES
+        if node.split("::", 1)[0] not in selected_files
+    )
+    public_command = [
+        ".venv/bin/python",
+        "-m",
+        "pytest",
+        *POSITIVE_TEST_PATHS,
+        *supplemental,
+        "-ra",
+        "-q",
+        "-p",
+        "src.reporting.build_phase4_final_certification",
+        "-p",
+        "no:cacheprovider",
+        "--junitxml=tmp/public-tests-raw.xml",
+    ]
+    totals = {
+        "tests": 944,
+        "passed": 895,
+        "failures": 7,
+        "errors": 0,
+        "skipped": 42,
+    }
+    return {
+        "status": "execution_failed_closed_cleanup_succeeded",
+        "attempt": "R-CERT17",
+        "active_error": {
+            "stage": "public_tests",
+            "sanitized_command": public_command,
+            "returncode": 1,
+            "safe_stderr_category": "nonzero_exit",
+            "pytest_exit_category": "TESTS_FAILED",
+            "public_tests_failure": {
+                "status": "failure_identity_available",
+                "returncode": 1,
+                "totals": totals,
+                "failed_nodeids": list(P17_FAILED_NODEIDS),
+                "failed_nodeids_sha256": P17_FAILED_NODEIDS_SHA256,
+                "error_nodeids": [],
+                "error_nodeids_sha256": digest_strings(()),
+                "collected_test_count": LOCKED_SUITE_COLLECTED_TEST_COUNT,
+                "collected_nodeids_sha256": LOCKED_SUITE_NODEIDS_SHA256,
+                "unavailable_reason": None,
+                "messages_preserved": False,
+                "tracebacks_preserved": False,
+                "raw_junit_preserved": False,
+                "raw_stdout_preserved": False,
+                "raw_stderr_preserved": False,
+                "credentials_preserved": False,
+                "absolute_paths_preserved": False,
+            },
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        },
+        "observed_cause": {
+            "stage": "public_tests",
+            "safe_error": "retained_sandbox_python_alias_rejected",
+            "failure_kind": "lexical_system_python_guard_rejected_exact_retained_alias",
+            "underlying_test_cause_known": True,
+            "failure_nodeids_known": True,
+            "error_nodeids_known": True,
+            "public_test_totals_known": True,
+            "common_pre_run_interpreter_guard_cause": True,
+            "dvc_runtime_or_payload_failure_observed": False,
+            "sealed_suite_collection_count": LOCKED_SUITE_COLLECTED_TEST_COUNT,
+            "sealed_suite_nodeids_sha256": LOCKED_SUITE_NODEIDS_SHA256,
+            "sealed_suite_identity_remains_defensible": True,
+            "executed_case_identity_inferred_from_sealed_suite": False,
+            "deterministic_runner_postmortem": True,
+            "junit_diagnostic_available_before_cleanup": True,
+            "final_junit_preserved": False,
+            "raw_junit_preserved": False,
+            "raw_diagnostic_serialized": False,
+            "absolute_paths_serialized": False,
+        },
+        "cleanup": {
+            "status": "succeeded_exact",
+            "namespace_preserved": False,
+            "active_error_was_masked": False,
+            "reason_codes": [],
+            "exact_owned_container_absent": True,
+            "socket_directory_empty": True,
+        },
+        "evidence_counts": {
+            "r17_execution_runs": 1,
+            "live_remote_and_refs_validated": True,
+            "isolated_git_clones": 1,
+            "dvc_version_commands": 1,
+            "dvc_local_config_commands": 2,
+            "dvc_config_commands_receiving_credential_fd_set": 0,
+            "successful_directed_dvc_pulls": 8,
+            "dvc_cache_objects": 8,
+            "restored_checkouts": 8,
+            "directed_dvc_unit_status_checks": 8,
+            "post_restore_exact_eight_status_checks": 1,
+            "post_verification_exact_eight_status_checks": 0,
+            "global_dvc_status_commands": 0,
+            "parquet_payloads_opened_or_decoded_by_python": 0,
+            "raw_target_or_outcome_reads": 0,
+            "postgresql_fixture_starts": 1,
+            "docker_version_commands": 2,
+            "docker_container_runs": 1,
+            "verification_runtime_acquisitions": 1,
+            "bubblewrap_process_runs": 2,
+            "sandbox_smoke_runs": 1,
+            "python_process_starts": 1,
+            "pytest_process_starts": 1,
+            "public_test_runs": 1,
+            "public_tests_collected_expected": LOCKED_SUITE_COLLECTED_TEST_COUNT,
+            "public_tests_collected_observed": LOCKED_SUITE_COLLECTED_TEST_COUNT,
+            "public_tests_executed_exact_count_known": True,
+            "public_tests_executed": LOCKED_SUITE_COLLECTED_TEST_COUNT,
+            "public_test_totals_preserved": True,
+            "public_test_failures_preserved": 7,
+            "public_test_errors_preserved": 0,
+            "raw_junit_read_attempts": 1,
+            "safe_junit_projections_available": 1,
+            "safe_junit_projections_unavailable": 0,
+            "final_junit_artifacts": 0,
+            "openapi_generations": 0,
+            "synthetic_e2e_runs": 0,
+            "static_command_runs": 0,
+            "r_cert_payload_builds": 0,
+            "r_cert_outputs": 0,
+        },
+        "namespace_archived_under_ignored_tmp": False,
+        "namespace_path_or_run_id_serialized": False,
+        "archive_is_authority": False,
+        "retry_authorized": False,
+    }
+
+
 def expected_postgres_connection_policy() -> dict[str, Any]:
     """Return query-free DSN semantics without serializing URL or socket paths."""
 
@@ -2638,13 +2839,13 @@ def digest_records(records: Sequence[Mapping[str, Any]]) -> str:
 
 
 def expected_h_scope() -> dict[str, str]:
-    """Return the operational H-CERT17 scope (legacy adapter alias)."""
+    """Return the operational H-CERT18 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in H_SCOPE}
 
 
 def expected_p_scope() -> dict[str, str]:
-    """Return the operational P-CERT17 scope (legacy adapter alias)."""
+    """Return the operational P-CERT18 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in P_SCOPE}
 
@@ -2789,6 +2990,18 @@ def expected_r16_scope() -> dict[str, str]:
     return {item.path: item.status for item in R16_SCOPE}
 
 
+def expected_h17_scope() -> dict[str, str]:
+    return {item.path: item.status for item in H17_SCOPE}
+
+
+def expected_p17_scope() -> dict[str, str]:
+    return {item.path: item.status for item in P17_SCOPE}
+
+
+def expected_r17_scope() -> dict[str, str]:
+    return {item.path: item.status for item in R17_SCOPE}
+
+
 def expected_h_modes() -> dict[str, str]:
     return {item.path: item.git_mode for item in H_SCOPE}
 
@@ -2867,6 +3080,18 @@ def expected_p16_modes() -> dict[str, str]:
 
 def expected_r16_modes() -> dict[str, str]:
     return {item.path: item.git_mode for item in R16_SCOPE}
+
+
+def expected_h17_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in H17_SCOPE}
+
+
+def expected_p17_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in P17_SCOPE}
+
+
+def expected_r17_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in R17_SCOPE}
 
 
 def expected_r_modes() -> dict[str, str]:
@@ -3369,6 +3594,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "H-CERT17",
             "P-CERT17",
             "R-CERT17",
+            "H-CERT18",
+            "P-CERT18",
+            "R-CERT18",
         ],
         "H-CERT1": {
             "role": "historical_initial_implementation_schema_tests_and_freeze",
@@ -4014,6 +4242,7 @@ def _expected_topology() -> Mapping[str, Any]:
         },
         "H-CERT17": {
             "role": "corrective_pytest_skip_precedence_and_junit_teardown_accounting_contract_tests_and_freeze",
+            "commit": "h17_cert_commit",
             "direct_parent": "p16_cert_commit",
             "certification_execution_authorized": False,
             "corrections": [
@@ -4027,8 +4256,66 @@ def _expected_topology() -> Mapping[str, Any]:
             ],
         },
         "P-CERT17": {
-            "role": "data_only_final_certification_authority_v17",
+            "role": "superseded_failed_final_certification_authority_v17",
+            "commit": "p17_cert_commit",
             "requires_published_H_CERT17": True,
+            "supersedes_P_CERT16": True,
+            "supersedes_P_CERT15": True,
+            "supersedes_P_CERT14": True,
+            "supersedes_unpublished_H_CERT13_candidate": True,
+            "supersedes_P_CERT12": True,
+            "supersedes_P_CERT11": True,
+            "supersedes_P_CERT10": True,
+            "supersedes_P_CERT9": True,
+            "supersedes_P_CERT8": True,
+            "supersedes_P_CERT7": True,
+            "supersedes_P_CERT6": True,
+            "supersedes_P_CERT5": True,
+            "supersedes_P_CERT4": True,
+            "supersedes_P_CERT3": True,
+            "supersedes_P_CERT2": True,
+            "supersedes_P_CERT1": True,
+            "certification_execution_authorized": False,
+            "failure_stage": "public_tests",
+            "failure_kind": "retained_sandbox_python_alias_rejected",
+            "failure_identity_status": "failure_identity_available",
+            "public_tests_total": 944,
+            "public_tests_passed": 895,
+            "public_tests_failed": 7,
+            "public_tests_errors": 0,
+            "public_tests_skipped": 42,
+            "r_cert_execution_runs": 1,
+            "retry_authorized": False,
+            "manifest_written_last": True,
+        },
+        "R-CERT17": {
+            "role": "superseded_failed_final_doctoral_software_and_restorability_evidence",
+            "requires_published_P_CERT17": True,
+            "failure_stage": "public_tests",
+            "failure_kind": "retained_sandbox_python_alias_rejected",
+            "failure_identity_status": "failure_identity_available",
+            "execution_runs": 1,
+            "output_count": 0,
+            "retry_authorized": False,
+            "manifest_written_last": False,
+        },
+        "H-CERT18": {
+            "role": "corrective_retained_python_and_poetry_sandbox_alias_identity_contract_tests_and_freeze",
+            "direct_parent": "p17_cert_commit",
+            "certification_execution_authorized": False,
+            "corrections": [
+                "record_consumed_r_cert17_safe_failure_identity_and_forbid_retry",
+                "accept_only_exact_cert_python_alias_in_sealed_public_suite",
+                "bind_cert_python_to_proc_self_exe_and_injected_usr_target_full_identity",
+                "retain_normal_usr_python_origin_policy",
+                "resolve_cert_poetry_only_under_same_proven_sandbox_python_context",
+                "reject_arbitrary_similar_or_mutable_runtime_aliases",
+            ],
+        },
+        "P-CERT18": {
+            "role": "data_only_final_certification_authority_v18",
+            "requires_published_H_CERT18": True,
+            "supersedes_P_CERT17": True,
             "supersedes_P_CERT16": True,
             "supersedes_P_CERT15": True,
             "supersedes_P_CERT14": True,
@@ -4048,9 +4335,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "certification_execution_authorized_while_unpublished": False,
             "manifest_written_last": True,
         },
-        "R-CERT17": {
+        "R-CERT18": {
             "role": "final_doctoral_software_and_restorability_evidence",
-            "requires_published_P_CERT17": True,
+            "requires_published_P_CERT18": True,
             "output_count": 8,
             "manifest_written_last": True,
         },
@@ -4198,6 +4485,7 @@ def _expected_isolation() -> Mapping[str, Any]:
         "superseded_p14_retry_authorized": False,
         "superseded_p15_retry_authorized": False,
         "superseded_p16_retry_authorized": False,
+        "superseded_p17_retry_authorized": False,
         "postgres_portable_path_policy": expected_postgres_portable_path_policy(),
         "postgres_connection_policy": expected_postgres_connection_policy(),
         "postgres_startup_stability_policy": (
@@ -4302,8 +4590,10 @@ def validate_contract_payload(
         "p15_cert_commit": P15_CERT_COMMIT,
         "h16_cert_commit": H16_CERT_COMMIT,
         "p16_cert_commit": P16_CERT_COMMIT,
+        "h17_cert_commit": H17_CERT_COMMIT,
+        "p17_cert_commit": P17_CERT_COMMIT,
         "final_tag": FINAL_TAG,
-        "certification_target": "published_P_CERT_v17_commit",
+        "certification_target": "published_P_CERT_v18_commit",
         "r_cert_executable_tree_must_equal_p_cert": True,
     }
     if dict(authorities) != expected_authorities:
@@ -4344,6 +4634,8 @@ def validate_contract_payload(
             "p15_cert_commit",
             "h16_cert_commit",
             "p16_cert_commit",
+            "h17_cert_commit",
+            "p17_cert_commit",
         )
     ):
         raise _error("Final-certification commit syntax drifted")
@@ -4403,6 +4695,9 @@ def validate_contract_payload(
             "H-CERT17",
             "P-CERT17",
             "R-CERT17",
+            "H-CERT18",
+            "P-CERT18",
+            "R-CERT18",
         },
         context="publication_scopes",
     )
@@ -4504,9 +4799,16 @@ def validate_contract_payload(
         scopes["P-CERT16"], stage="P-CERT16", expected=P16_SCOPE
     )
     _parse_scope(scopes["R-CERT16"], stage="R-CERT16", expected=R16_SCOPE)
-    h_scope = _parse_scope(scopes["H-CERT17"], stage="H-CERT17", expected=H_SCOPE)
-    p_scope = _parse_scope(scopes["P-CERT17"], stage="P-CERT17", expected=P_SCOPE)
-    r_scope = _parse_scope(scopes["R-CERT17"], stage="R-CERT17", expected=R_SCOPE)
+    h17_scope = _parse_scope(
+        scopes["H-CERT17"], stage="H-CERT17", expected=H17_SCOPE
+    )
+    p17_scope = _parse_scope(
+        scopes["P-CERT17"], stage="P-CERT17", expected=P17_SCOPE
+    )
+    _parse_scope(scopes["R-CERT17"], stage="R-CERT17", expected=R17_SCOPE)
+    h_scope = _parse_scope(scopes["H-CERT18"], stage="H-CERT18", expected=H_SCOPE)
+    p_scope = _parse_scope(scopes["P-CERT18"], stage="P-CERT18", expected=P_SCOPE)
+    r_scope = _parse_scope(scopes["R-CERT18"], stage="R-CERT18", expected=R_SCOPE)
 
     anchors = _parse_anchor_inputs(mapping["anchor_inputs"])
 
@@ -4606,6 +4908,8 @@ def validate_contract_payload(
         p15_cert_commit=P15_CERT_COMMIT,
         h16_cert_commit=H16_CERT_COMMIT,
         p16_cert_commit=P16_CERT_COMMIT,
+        h17_cert_commit=H17_CERT_COMMIT,
+        p17_cert_commit=P17_CERT_COMMIT,
         final_tag=FINAL_TAG,
         h1_scope=h1_scope,
         p1_scope=p1_scope,
@@ -4639,6 +4943,8 @@ def validate_contract_payload(
         p15_scope=p15_scope,
         h16_scope=h16_scope,
         p16_scope=p16_scope,
+        h17_scope=h17_scope,
+        p17_scope=p17_scope,
         h_scope=h_scope,
         p_scope=p_scope,
         r_scope=r_scope,
@@ -5615,6 +5921,7 @@ def _historical_h8_isolation() -> Mapping[str, Any]:
 
     current = dict(_expected_isolation())
     for key in (
+        "superseded_p17_retry_authorized",
         "superseded_p16_retry_authorized",
         "superseded_p15_retry_authorized",
         "superseded_p14_retry_authorized",
@@ -7744,6 +8051,92 @@ def _historical_through_p16_records(
     return (*predecessor, h16_records, p16_records)
 
 
+def _historical_h17_p17_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Reconstruct and byte-bind immutable H-CERT17/P-CERT17."""
+
+    if (
+        _commit_parents(root, contract.h17_cert_commit)
+        != (contract.p16_cert_commit,)
+        or _commit_scope(root, contract.h17_cert_commit) != expected_h17_scope()
+        or _commit_parents(root, contract.p17_cert_commit)
+        != (contract.h17_cert_commit,)
+        or _commit_scope(root, contract.p17_cert_commit) != expected_p17_scope()
+    ):
+        raise _error("Historical H17/P17 topology or scope drifted")
+    h17_records: list[dict[str, Any]] = []
+    for spec in contract.h17_scope:
+        record, _payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.h17_cert_commit,
+            spec=spec,
+            context="Historical H-CERT17 component",
+        )
+        h17_records.append(
+            {**record, "filesystem_mode": int(spec.git_mode[-3:], 8)}
+        )
+
+    authority, authority_bytes = _decode_canonical_public_json(
+        root, H17_AUTHORITY_PATH, commit=contract.p17_cert_commit
+    )
+    manifest, manifest_bytes = _decode_canonical_public_json(
+        root, H17_AUTHORITY_MANIFEST_PATH, commit=contract.p17_cert_commit
+    )
+    topology = authority.get("topology")
+    if (
+        len(authority_bytes) != H17_AUTHORITY_BYTES
+        or sha256_bytes(authority_bytes) != H17_AUTHORITY_SHA256
+        or len(manifest_bytes) != H17_AUTHORITY_MANIFEST_BYTES
+        or sha256_bytes(manifest_bytes) != H17_AUTHORITY_MANIFEST_SHA256
+        or authority.get("authority_version") != H17_AUTHORITY_VERSION
+        or authority.get("gate") != "P-CERT"
+        or authority.get("status") != "locked_unpublished"
+        or authority.get("p16_failure") != expected_p16_failure_record()
+        or not isinstance(topology, Mapping)
+        or topology.get("h13_cert_commit") is not None
+        or topology.get("p13_cert_commit") is not None
+        or topology.get("h16_cert_commit") != contract.h16_cert_commit
+        or topology.get("p16_cert_commit") != contract.p16_cert_commit
+        or topology.get("h17_cert_commit") != contract.h17_cert_commit
+        or topology.get("p17_cert_commit") is not None
+        or manifest.get("manifest_version") != H17_AUTHORITY_MANIFEST_VERSION
+        or manifest.get("h13_cert_commit") is not None
+        or manifest.get("p13_cert_commit") is not None
+        or manifest.get("h16_cert_commit") != contract.h16_cert_commit
+        or manifest.get("p16_cert_commit") != contract.p16_cert_commit
+        or manifest.get("h17_cert_commit") != contract.h17_cert_commit
+        or manifest.get("p17_cert_commit") is not None
+    ):
+        raise _error("Historical P-CERT17 canonical byte identity drifted")
+    p17_records: list[dict[str, Any]] = []
+    for spec, payload in zip(
+        contract.p17_scope, (authority_bytes, manifest_bytes), strict=True
+    ):
+        record, git_payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.p17_cert_commit,
+            spec=spec,
+            context="Historical P-CERT17 component",
+        )
+        if git_payload != payload:
+            raise _error("Historical P-CERT17 physical/Git bytes drifted")
+        p17_records.append(record)
+    return h17_records, p17_records
+
+
+def _historical_through_p17_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[list[dict[str, Any]], ...]:
+    predecessor = _historical_through_p16_records(contract, root=root)
+    h17_records, p17_records = _historical_h17_p17_records(contract, root=root)
+    return (*predecessor, h17_records, p17_records)
+
+
 def _expected_effective_authority(
     contract: FinalCertificationContract,
     *,
@@ -7784,7 +8177,9 @@ def _expected_effective_authority(
         p15_records,
         h16_records,
         p16_records,
-    ) = _historical_through_p16_records(contract, root=root)
+        h17_records,
+        p17_records,
+    ) = _historical_through_p17_records(contract, root=root)
     anchors = collect_anchor_input_records(contract, root=root)
     pointers = collect_dvc_pointer_records(contract, root=root)
     suite = test_suite_record(contract)
@@ -7829,14 +8224,17 @@ def _expected_effective_authority(
             "p15_cert_commit": contract.p15_cert_commit,
             "h16_cert_commit": contract.h16_cert_commit,
             "p16_cert_commit": contract.p16_cert_commit,
-            "h17_cert_commit": h_cert_commit,
-            "p17_cert_commit": None,
+            "h17_cert_commit": contract.h17_cert_commit,
+            "p17_cert_commit": contract.p17_cert_commit,
+            "h18_cert_commit": h_cert_commit,
+            "p18_cert_commit": None,
             "h_cert_commit": h_cert_commit,
             "p_cert_commit": None,
             "supersedes_unpublished_H_CERT13_candidate": True,
             "supersedes_P_CERT14": True,
             "supersedes_P_CERT15": True,
             "supersedes_P_CERT16": True,
+            "supersedes_P_CERT17": True,
             "r_cert_executable_tree_must_equal_p_cert": True,
         },
         "p1_failure": {
@@ -7861,6 +8259,7 @@ def _expected_effective_authority(
         "p14_failure": expected_p14_failure_record(),
         "p15_failure": expected_p15_failure_record(),
         "p16_failure": expected_p16_failure_record(),
+        "p17_failure": expected_p17_failure_record(),
         "h1_scope": expected_h1_scope(),
         "h1_component_records": h1_records,
         "h1_component_records_digest": digest_records(h1_records),
@@ -7957,16 +8356,23 @@ def _expected_effective_authority(
         "p16_component_records": p16_records,
         "p16_component_records_digest": digest_records(p16_records),
         "r16_scope": expected_r16_scope(),
+        "h17_scope": expected_h17_scope(),
+        "h17_component_records": h17_records,
+        "h17_component_records_digest": digest_records(h17_records),
+        "p17_scope": expected_p17_scope(),
+        "p17_component_records": p17_records,
+        "p17_component_records_digest": digest_records(p17_records),
+        "r17_scope": expected_r17_scope(),
         "h_scope": expected_h_scope(),
         "h_component_records": components,
         "h_component_records_digest": digest_records(components),
-        "h17_scope": expected_h_scope(),
-        "h17_component_records": components,
-        "h17_component_records_digest": digest_records(components),
+        "h18_scope": expected_h_scope(),
+        "h18_component_records": components,
+        "h18_component_records_digest": digest_records(components),
         "p_scope": expected_p_scope(),
-        "p17_scope": expected_p_scope(),
+        "p18_scope": expected_p_scope(),
         "r_scope": expected_r_scope(),
-        "r17_scope": expected_r_scope(),
+        "r18_scope": expected_r_scope(),
         "anchor_input_records": anchors,
         "anchor_input_records_digest": digest_records(anchors),
         "dvc_pointer_records": pointers,
@@ -7995,7 +8401,7 @@ def load_effective_authority(
     verify_remote: bool = True,
     require_clean: bool = True,
 ) -> dict[str, Any]:
-    """Load and independently reconstruct one published effective P-CERT17.
+    """Load and independently reconstruct one published effective P-CERT18.
 
     The stored authority deliberately has ``p_cert_commit=null`` because it is
     generated before its publication commit exists.  Effectiveness is derived
@@ -8011,15 +8417,15 @@ def load_effective_authority(
     p_cert_commit = _one_commit(root, "HEAD")
     parents = _commit_parents(root, p_cert_commit)
     if len(parents) != 1:
-        raise _error("P-CERT17 must have exactly one H-CERT17 parent")
+        raise _error("P-CERT18 must have exactly one H-CERT18 parent")
     h_cert_commit = parents[0]
     if (
-        _commit_parents(root, h_cert_commit) != (active_contract.p16_cert_commit,)
+        _commit_parents(root, h_cert_commit) != (active_contract.p17_cert_commit,)
         or _commit_scope(root, h_cert_commit) != expected_h_scope()
         or _commit_scope(root, p_cert_commit) != expected_p_scope()
     ):
-        raise _error("Effective P-CERT17 H17/P17 topology or scope drifted")
-    _historical_through_p16_records(active_contract, root=root)
+        raise _error("Effective P-CERT18 H18/P18 topology or scope drifted")
+    _historical_through_p17_records(active_contract, root=root)
     ancestor = subprocess.run(
         [
             "git",
@@ -8090,14 +8496,17 @@ def load_effective_authority(
         "p15_cert_commit": active_contract.p15_cert_commit,
         "h16_cert_commit": active_contract.h16_cert_commit,
         "p16_cert_commit": active_contract.p16_cert_commit,
-        "h17_cert_commit": h_cert_commit,
-        "p17_cert_commit": None,
+        "h17_cert_commit": active_contract.h17_cert_commit,
+        "p17_cert_commit": active_contract.p17_cert_commit,
+        "h18_cert_commit": h_cert_commit,
+        "p18_cert_commit": None,
         "h_cert_commit": h_cert_commit,
         "p_cert_commit": None,
         "supersedes_unpublished_h13_candidate": True,
         "supersedes_p14": True,
         "supersedes_p15": True,
         "supersedes_p16": True,
+        "supersedes_p17": True,
         "supersedes_p12": True,
         "supersedes_p11": True,
         "supersedes_p10": True,
@@ -8125,8 +8534,10 @@ def load_effective_authority(
         "gate": "P-CERT",
         "p_cert_commit": p_cert_commit,
         "h_cert_commit": h_cert_commit,
-        "p17_cert_commit": p_cert_commit,
-        "h17_cert_commit": h_cert_commit,
+        "p18_cert_commit": p_cert_commit,
+        "h18_cert_commit": h_cert_commit,
+        "p17_cert_commit": active_contract.p17_cert_commit,
+        "h17_cert_commit": active_contract.h17_cert_commit,
         "p16_cert_commit": active_contract.p16_cert_commit,
         "h16_cert_commit": active_contract.h16_cert_commit,
         "p15_cert_commit": active_contract.p15_cert_commit,
