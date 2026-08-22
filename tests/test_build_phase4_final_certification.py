@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p11_cert_commit": P_COMMIT,
-        "h11_cert_commit": H_COMMIT,
+        "p12_cert_commit": P_COMMIT,
+        "h12_cert_commit": H_COMMIT,
+        "p11_cert_commit": active_contract.p11_cert_commit,
+        "h11_cert_commit": active_contract.h11_cert_commit,
         "p10_cert_commit": active_contract.p10_cert_commit,
         "h10_cert_commit": active_contract.h10_cert_commit,
         "p9_cert_commit": active_contract.p9_cert_commit,
@@ -113,6 +115,7 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": "synthetic",
+            "p11_failure": contract_module.expected_p11_failure_record(),
             "p10_failure": contract_module.expected_p10_failure_record(),
             "p9_failure": contract_module.expected_p9_failure_record(),
             "isolation": {
@@ -124,6 +127,9 @@ def _authority(
                 ),
                 "cleanup_diagnostic_policy": (
                     contract_module.expected_cleanup_diagnostic_policy()
+                ),
+                "postgres_connection_policy": (
+                    contract_module.expected_postgres_connection_policy()
                 ),
                 "postgres_destroy_poll_policy": (
                     contract_module.expected_postgres_destroy_poll_policy()
@@ -323,6 +329,9 @@ def _products(
         "sandbox_smoke_policy": contract_module.expected_sandbox_smoke_policy(),
         "cleanup_diagnostic_policy": (
             contract_module.expected_cleanup_diagnostic_policy()
+        ),
+        "postgres_connection_policy": (
+            contract_module.expected_postgres_connection_policy()
         ),
         "postgres_destroy_poll_policy": (
             contract_module.expected_postgres_destroy_poll_policy()
@@ -806,8 +815,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p11_cert_commit": P_COMMIT,
-        "h11_cert_commit": H_COMMIT,
+        "p12_cert_commit": P_COMMIT,
+        "h12_cert_commit": H_COMMIT,
+        "p11_cert_commit": contract.p11_cert_commit,
+        "h11_cert_commit": contract.h11_cert_commit,
         "p10_cert_commit": contract.p10_cert_commit,
         "h10_cert_commit": contract.h10_cert_commit,
         "p9_cert_commit": contract.p9_cert_commit,
@@ -835,8 +846,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p11_cert_commit": P_COMMIT,
-        "h11_cert_commit": H_COMMIT,
+        "p12_cert_commit": P_COMMIT,
+        "h12_cert_commit": H_COMMIT,
+        "p11_cert_commit": contract.p11_cert_commit,
+        "h11_cert_commit": contract.h11_cert_commit,
         "p10_cert_commit": contract.p10_cert_commit,
         "h10_cert_commit": contract.h10_cert_commit,
         "p9_cert_commit": contract.p9_cert_commit,
@@ -921,6 +934,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p12_cert_commit",
+        "h12_cert_commit",
         "p11_cert_commit",
         "h11_cert_commit",
         "p10_cert_commit",
@@ -985,6 +1000,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p12_cert_commit",
+        "h12_cert_commit",
         "p11_cert_commit",
         "h11_cert_commit",
         "p10_cert_commit",
@@ -3990,6 +4007,7 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     verification_source = inspect.getsource(builder._run_verification_with_runtime)
     validator_source = inspect.getsource(builder._validate_verification_record)
     for policy_name in (
+        "postgres_connection_policy",
         "postgres_destroy_poll_policy",
         "test_access_guard_policy",
     ):
@@ -4669,19 +4687,28 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
-    builder._require_h11_runtime_policy(contract)
+    builder._require_h12_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H11 runtime isolation policy drifted",
+        match="H12 runtime isolation policy drifted",
     ):
-        builder._require_h11_runtime_policy(
+        builder._require_h12_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
             )
+        )
+    drifted_connection = dict(contract.postgres_connection_policy)
+    drifted_connection["test_database_url_query_present"] = True
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H12 runtime isolation policy drifted",
+    ):
+        builder._require_h12_runtime_policy(
+            replace(contract, postgres_connection_policy=drifted_connection)
         )
     clone_path = tmp_path / "clone"
     sandbox_path = tmp_path / "sandbox"
@@ -5118,6 +5145,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p12_cert_commit",
+            "h12_cert_commit",
             "p11_cert_commit",
             "h11_cert_commit",
             "p10_cert_commit",
@@ -5146,6 +5175,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p12_cert_commit",
+            "h12_cert_commit",
             "p11_cert_commit",
             "h11_cert_commit",
             "p10_cert_commit",
@@ -5171,6 +5202,58 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         )
     }
     assert not any(isinstance(value, bytes) for value in result.values())
+
+    p11_failure = contract_module.expected_p11_failure_record()
+    assert p11_failure["status"] == "execution_failed_closed_cleanup_succeeded"
+    assert p11_failure["attempt"] == "R-CERT11"
+    assert p11_failure["active_error"]["stage"] == "public_tests"
+    assert p11_failure["active_error"]["returncode"] == 1
+    assert p11_failure["active_error"]["safe_stderr_category"] == "nonzero_exit"
+    assert p11_failure["active_error"]["pytest_exit_category"] == "TESTS_FAILED"
+    assert p11_failure["active_error"]["raw_stdout_preserved"] is False
+    assert p11_failure["active_error"]["raw_stderr_preserved"] is False
+    assert p11_failure["active_error"]["credentials_preserved"] is False
+    assert p11_failure["active_error"]["absolute_paths_preserved"] is False
+    assert p11_failure["observed_cause"] == {
+        "stage": "public_tests_fixture_setup",
+        "safe_error": "naive_database_url_rsplit_misparsed_unix_socket_query",
+        "affected_test_nodeid": (
+            "tests/test_api_experiment_scientific_datasets.py::"
+            "test_register_experiment_scientific_dataset_creates_sql_and_science_links"
+        ),
+        "helper_operation": "string_rsplit_last_slash",
+        "configured_database_name": "closure_phase4_cert",
+        "derived_database_name": "cert-db",
+        "derived_admin_database_name": "closure_phase4_cert",
+        "derived_admin_host_basename": "postgres",
+        "derived_admin_host_was_root_absolute": True,
+        "deterministic_source_postmortem": True,
+        "final_junit_preserved": False,
+        "raw_diagnostic_serialized": False,
+        "database_url_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    assert p11_failure["cleanup"] == {
+        "status": "succeeded_exact",
+        "namespace_preserved": False,
+        "active_error_was_masked": False,
+        "reason_codes": [],
+        "exact_owned_container_absent": True,
+        "socket_directory_empty": True,
+    }
+    assert p11_failure["evidence_counts"]["public_tests_collected"] == 944
+    assert p11_failure["evidence_counts"]["public_test_totals_preserved"] is False
+    assert p11_failure["evidence_counts"]["openapi_generations"] == 0
+    assert p11_failure["evidence_counts"]["synthetic_e2e_runs"] == 0
+    assert p11_failure["evidence_counts"]["static_command_runs"] == 0
+    assert p11_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p11_failure["namespace_archived_under_ignored_tmp"] is False
+    assert p11_failure["retry_authorized"] is False
+    serialized_p11_failure = json.dumps(p11_failure, sort_keys=True)
+    assert "postgresql+asyncpg://" not in serialized_p11_failure
+    assert "postgresql://" not in serialized_p11_failure
+    assert "/cert-db" not in serialized_p11_failure
+    assert "/home/" not in serialized_p11_failure
 
     p10_failure = contract_module.expected_p10_failure_record()
     assert p10_failure["status"] == "execution_failed_closed_cleanup_succeeded"
@@ -5272,9 +5355,9 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
 
     drifted_failure = copy.deepcopy(fake)
     drifted_authority = cast(dict[str, Any], drifted_failure["authority"])
-    drifted_p10_failure = cast(dict[str, Any], drifted_authority["p10_failure"])
-    drifted_cause = cast(dict[str, Any], drifted_p10_failure["observed_cause"])
-    drifted_cause["observed_collected_test_count"] = 945
+    drifted_p11_failure = cast(dict[str, Any], drifted_authority["p11_failure"])
+    drifted_cause = cast(dict[str, Any], drifted_p11_failure["observed_cause"])
+    drifted_cause["derived_database_name"] = "closure_phase4_cert"
     monkeypatch.setattr(
         builder,
         "load_effective_authority",
@@ -5282,7 +5365,23 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H11 failure/isolation",
+        match="H12 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    drifted_p10_history = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_p10_history["authority"])
+    drifted_p10_failure = cast(dict[str, Any], drifted_authority["p10_failure"])
+    drifted_cause = cast(dict[str, Any], drifted_p10_failure["observed_cause"])
+    drifted_cause["observed_collected_test_count"] = 945
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_p10_history,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H12 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -5298,13 +5397,15 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H11 failure/isolation",
+        match="H12 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p12_cert_commit",
+        "h12_cert_commit",
         "p11_cert_commit",
         "h11_cert_commit",
         "p10_cert_commit",
@@ -5506,8 +5607,42 @@ def test_public_environment_activates_safe_historical_e10_compatibility() -> Non
     assert public["CLOSURE_E10_OUTCOME_GUARD"] == "1"
     assert public["CLOSURE_E10_REPO_ROOT"] == "/workspace"
     assert public["CLOSURE_E10_SUITE_KIND"] == "closure_phase3_public"
+    assert public["TEST_DATABASE_URL"] == builder.SAFE_DB_URL == (
+        "postgresql+asyncpg://postgres@/closure_phase4_cert"
+    )
+    assert "?" not in public["TEST_DATABASE_URL"]
     assert public["PGHOST"] == builder.DB_SOCKET_ROOT == "/cert-db"
+    helper_url = public["TEST_DATABASE_URL"].replace(
+        "postgresql+asyncpg://", "postgresql://"
+    )
+    assert helper_url.rsplit("/", 1)[-1] == builder.DB_NAME
+    assert helper_url.rsplit("/", 1)[0] + "/postgres" == (
+        "postgresql://postgres@/postgres"
+    )
+    connection_policy = contract_module.expected_postgres_connection_policy()
+    assert connection_policy == {
+        "test_database_url_scheme": "postgresql+asyncpg",
+        "test_database_url_database": "closure_phase4_cert",
+        "test_database_url_query_present": False,
+        "test_database_url_hostname_present": False,
+        "test_database_url_port_present": False,
+        "test_database_url_password_present": False,
+        "pg_host_source": "owned_unix_socket_environment",
+        "pg_host_required": True,
+        "helper_operation": "string_rsplit_last_slash",
+        "helper_database_name": "closure_phase4_cert",
+        "helper_admin_database_name": "postgres",
+        "helper_admin_database_rewrite_preserves_socket_routing": True,
+        "test_database_url_serialized": False,
+        "pg_host_value_serialized": False,
+        "credentials_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    serialized_connection_policy = json.dumps(connection_policy, sort_keys=True)
+    assert "postgresql+asyncpg://postgres@" not in serialized_connection_policy
+    assert "/cert-db" not in serialized_connection_policy
     e2e = builder._suite_environment(builder.E2E_SUITE_KIND)
+    assert e2e["TEST_DATABASE_URL"] == builder.SAFE_DB_URL
     assert e2e["PGHOST"] == "/cert-db"
     assert "CLOSURE_E10_SUITE_KIND" not in e2e
     retained = builder._suite_environment(

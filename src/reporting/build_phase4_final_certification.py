@@ -64,7 +64,9 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_manifest_clone_dvc_site_caches_record,
     expected_p9_failure_record,
     expected_p10_failure_record,
+    expected_p11_failure_record,
     expected_postgres_cleanup_policy,
+    expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
     expected_postgres_portable_path_policy,
     expected_sandbox_mountpoint_policy,
@@ -112,9 +114,7 @@ DOCUMENTED_OPERATION_RE = re.compile(
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 MD5_RE = re.compile(r"^[0-9a-f]{32}$")
 SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
-SAFE_DB_URL = (
-    "postgresql+asyncpg://postgres@/closure_phase4_cert?host=/cert-db"
-)
+SAFE_DB_URL = "postgresql+asyncpg://postgres@/closure_phase4_cert"
 GIT_EXECUTABLE = "/usr/bin/git"
 FORBIDDEN_COMMAND_TOKENS = (
     "--execute-sealed-batch",
@@ -3831,11 +3831,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h11_authority_boundary(result, contract=contract)
+    _require_h12_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p11_cert_commit"),
+        execution_commit=result.get("p12_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3865,11 +3865,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P11/H11 aliases and the complete historical lineage."""
+    """Validate active P12/H12 aliases and the complete historical lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p12_cert_commit",
+        "h12_cert_commit",
         "p11_cert_commit",
         "h11_cert_commit",
         "p10_cert_commit",
@@ -3902,8 +3904,10 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p11_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h11_cert_commit"]
+        or commits["p12_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h12_cert_commit"]
+        or commits["p11_cert_commit"] != contract.p11_cert_commit
+        or commits["h11_cert_commit"] != contract.h11_cert_commit
         or commits["p10_cert_commit"] != contract.p10_cert_commit
         or commits["h10_cert_commit"] != contract.h10_cert_commit
         or commits["p9_cert_commit"] != contract.p9_cert_commit
@@ -3912,6 +3916,8 @@ def _require_effective_authority_commit_binding(
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p12_cert_commit"] == commits["p11_cert_commit"]
+        or commits["h12_cert_commit"] == commits["h11_cert_commit"]
         or commits["p11_cert_commit"] == commits["p10_cert_commit"]
         or commits["h11_cert_commit"] == commits["h10_cert_commit"]
         or commits["p10_cert_commit"] == commits["p9_cert_commit"]
@@ -3939,17 +3945,18 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h11_authority_boundary(
+def _require_h12_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R11 to the factual R10 failure and all H11 isolation policies."""
+    """Bind R12 to the factual R11 failure and all H12 isolation policies."""
 
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H11 authority payload is absent")
+        raise _error("effective H12 authority payload is absent")
     isolation = authority.get("isolation")
     if (
-        authority.get("p10_failure") != expected_p10_failure_record()
+        authority.get("p11_failure") != expected_p11_failure_record()
+        or authority.get("p10_failure") != expected_p10_failure_record()
         or authority.get("p9_failure") != expected_p9_failure_record()
         or not isinstance(isolation, Mapping)
         or isolation.get("sandbox_mountpoint_policy")
@@ -3964,6 +3971,10 @@ def _require_h11_authority_boundary(
         != expected_cleanup_diagnostic_policy()
         or isolation.get("cleanup_diagnostic_policy")
         != dict(contract.cleanup_diagnostic_policy)
+        or isolation.get("postgres_connection_policy")
+        != expected_postgres_connection_policy()
+        or isolation.get("postgres_connection_policy")
+        != dict(contract.postgres_connection_policy)
         or isolation.get("postgres_destroy_poll_policy")
         != expected_postgres_destroy_poll_policy()
         or isolation.get("postgres_destroy_poll_policy")
@@ -3973,7 +3984,7 @@ def _require_h11_authority_boundary(
         or isolation.get("test_access_guard_policy")
         != dict(contract.test_access_guard_policy)
     ):
-        raise _error("effective H11 failure/isolation authority drifted")
+        raise _error("effective H12 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -3981,7 +3992,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P11 authority's exact partial-clone status policy."""
+    """Require the effective P12 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4015,7 +4026,7 @@ def _require_dvc_status_policy_projection(
         raise _error(f"{context} DVC status policy projection drifted")
 
 
-def _require_h11_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h12_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -4024,6 +4035,28 @@ def _require_h11_runtime_policy(contract: FinalCertificationContract) -> None:
         for path in SANDBOX_MASKED_FORBIDDEN_PATHS
     }
     cleanup = expected_postgres_cleanup_policy()
+    connection = expected_postgres_connection_policy()
+    expected_connection = {
+        "test_database_url_scheme": "postgresql+asyncpg",
+        "test_database_url_database": DB_NAME,
+        "test_database_url_query_present": False,
+        "test_database_url_hostname_present": False,
+        "test_database_url_port_present": False,
+        "test_database_url_password_present": False,
+        "pg_host_source": "owned_unix_socket_environment",
+        "pg_host_required": True,
+        "helper_operation": "string_rsplit_last_slash",
+        "helper_database_name": DB_NAME,
+        "helper_admin_database_name": "postgres",
+        "helper_admin_database_rewrite_preserves_socket_routing": True,
+        "test_database_url_serialized": False,
+        "pg_host_value_serialized": False,
+        "credentials_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    helper_url = SAFE_DB_URL.replace("postgresql+asyncpg://", "postgresql://", 1)
+    helper_database_name = helper_url.rsplit("/", 1)[-1]
+    helper_admin_url = helper_url.rsplit("/", 1)[0] + "/postgres"
     destroy_poll = expected_postgres_destroy_poll_policy()
     access_guard = expected_test_access_guard_policy()
     if (
@@ -4032,6 +4065,13 @@ def _require_h11_runtime_policy(contract: FinalCertificationContract) -> None:
         or dict(contract.forbidden_read_prefix_dispositions)
         != prefix_dispositions
         or dict(contract.forbidden_read_path_dispositions) != path_dispositions
+        or dict(contract.postgres_connection_policy) != connection
+        or connection != expected_connection
+        or SAFE_DB_URL != f"postgresql+asyncpg://postgres@/{DB_NAME}"
+        or "?" in SAFE_DB_URL
+        or DB_SOCKET_ROOT != "/cert-db"
+        or helper_database_name != DB_NAME
+        or helper_admin_url != "postgresql://postgres@/postgres"
         or dict(contract.postgres_cleanup_policy) != cleanup
         or cleanup.get("graceful_stop_required") is not True
         or cleanup.get("graceful_stop_timeout_seconds")
@@ -4073,7 +4113,7 @@ def _require_h11_runtime_policy(contract: FinalCertificationContract) -> None:
         or dict(contract.cleanup_diagnostic_policy)
         != expected_cleanup_diagnostic_policy()
     ):
-        raise _error("H11 runtime isolation policy drifted")
+        raise _error("H12 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -4085,7 +4125,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h11_runtime_policy(contract)
+    _require_h12_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -4094,14 +4134,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h11_authority_boundary(authority, contract=contract)
+    _require_h12_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p11_cert_commit"),
+        execution_commit=authority.get("p12_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p11_cert_commit"]
+    effective_commit = authority_commits["p12_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -6891,6 +6931,9 @@ def _run_verification_with_runtime(
             "cleanup_diagnostic_policy": dict(
                 contract.cleanup_diagnostic_policy
             ),
+            "postgres_connection_policy": dict(
+                contract.postgres_connection_policy
+            ),
             "postgres_destroy_poll_policy": dict(
                 contract.postgres_destroy_poll_policy
             ),
@@ -7374,7 +7417,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h11_authority_boundary(authority, contract=contract)
+    _require_h12_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
@@ -7896,6 +7939,7 @@ def _validate_verification_record(
         "sandbox_mountpoint_policy",
         "sandbox_smoke_policy",
         "cleanup_diagnostic_policy",
+        "postgres_connection_policy",
         "postgres_destroy_poll_policy",
         "test_access_guard_policy",
     }:
@@ -7916,6 +7960,10 @@ def _validate_verification_record(
         != list(contract.forbidden_read_paths)
         or sandbox.get("restored_payloads_masked")
         != [spec.output_path for spec in contract.dvc_pointers]
+        or sandbox.get("postgres_connection_policy")
+        != expected_postgres_connection_policy()
+        or sandbox.get("postgres_connection_policy")
+        != dict(contract.postgres_connection_policy)
         or sandbox.get("postgres_destroy_poll_policy")
         != expected_postgres_destroy_poll_policy()
         or sandbox.get("postgres_destroy_poll_policy")

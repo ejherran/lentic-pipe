@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v11
+contract_version: closure_v1_phase4_final_certification_v12
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -24,8 +24,10 @@ authorities:
   p9_cert_commit: 73d12c7386b9e4a34d8f15b5330cecf357e05ac1
   h10_cert_commit: 825b3382f8d501cbc550bf7738a48d4d489dd5e8
   p10_cert_commit: 9ca3126667eaa8c4fd754a3499a7a9eacdd2d2b0
+  h11_cert_commit: b83bc2cbccdae5f81bb8ee4b6547054b543260fd
+  p11_cert_commit: af9e23ec1c21968b0d5bb52821619e21f8de5673
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v11_commit
+  certification_target: published_P_CERT_v12_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -57,6 +59,9 @@ topology:
     - H-CERT11
     - P-CERT11
     - R-CERT11
+    - H-CERT12
+    - P-CERT12
+    - R-CERT12
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -389,6 +394,7 @@ topology:
     manifest_written_last: false
   H-CERT11:
     role: corrective_public_suite_lock_reconciliation_contract_tests_and_freeze
+    commit: h11_cert_commit
     direct_parent: p10_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -397,7 +403,51 @@ topology:
       - record_r_cert10_failure_and_forbid_p_cert10_retry
   P-CERT11:
     role: data_only_final_certification_authority_v11
+    commit: p11_cert_commit
     requires_published_H_CERT11: true
+    supersedes_P_CERT10: true
+    supersedes_P_CERT9: true
+    supersedes_P_CERT8: true
+    supersedes_P_CERT7: true
+    supersedes_P_CERT6: true
+    supersedes_P_CERT5: true
+    supersedes_P_CERT4: true
+    supersedes_P_CERT3: true
+    supersedes_P_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: public_tests
+    failure_kind: naive_database_url_rsplit_misparsed_unix_socket_query
+    public_tests_collected: 944
+    public_test_totals_preserved: false
+    final_junit_preserved: false
+    openapi_generations: 0
+    synthetic_e2e_runs: 0
+    static_command_runs: 0
+    r_cert_output_count: 0
+    retry_authorized: false
+    cleanup_status: succeeded_exact_namespace_removed
+    manifest_written_last: true
+  R-CERT11:
+    role: superseded_failed_final_doctoral_software_and_restorability_evidence
+    requires_published_P_CERT11: true
+    failure_stage: public_tests
+    failure_kind: naive_database_url_rsplit_misparsed_unix_socket_query
+    output_count: 0
+    manifest_written_last: false
+  H-CERT12:
+    role: corrective_query_free_postgres_test_dsn_contract_tests_and_freeze
+    direct_parent: p11_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - replace_query_bearing_test_database_url_with_query_free_dsn
+      - route_unix_socket_exclusively_through_pg_host_environment
+      - seal_redacted_postgres_connection_semantics
+      - record_r_cert11_failure_and_forbid_p_cert11_retry
+  P-CERT12:
+    role: data_only_final_certification_authority_v12
+    requires_published_H_CERT12: true
+    supersedes_P_CERT11: true
     supersedes_P_CERT10: true
     supersedes_P_CERT9: true
     supersedes_P_CERT8: true
@@ -410,9 +460,9 @@ topology:
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT11:
+  R-CERT12:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT11: true
+    requires_published_P_CERT12: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -905,6 +955,81 @@ publication_scopes:
         status: A
         git_mode: "100644"
   R-CERT11:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
+  H-CERT12:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT12:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v12.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v12.json
+        status: A
+        git_mode: "100644"
+  R-CERT12:
     additions: 8
     modifications: 0
     ordered_paths:
@@ -1425,11 +1550,29 @@ isolation:
   superseded_p8_retry_authorized: false
   superseded_p9_retry_authorized: false
   superseded_p10_retry_authorized: false
+  superseded_p11_retry_authorized: false
   postgres_portable_path_policy:
     volume: <OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>
     data_tmpfs: <CONTAINER_POSTGRES_DATA>:rw,size=512m
     runtime_tmpfs: <CONTAINER_TMP>:rw,size=64m
     unix_socket_directories: unix_socket_directories=<CONTAINER_POSTGRES_SOCKET>
+    absolute_paths_serialized: false
+  postgres_connection_policy:
+    test_database_url_scheme: postgresql+asyncpg
+    test_database_url_database: closure_phase4_cert
+    test_database_url_query_present: false
+    test_database_url_hostname_present: false
+    test_database_url_port_present: false
+    test_database_url_password_present: false
+    pg_host_source: owned_unix_socket_environment
+    pg_host_required: true
+    helper_operation: string_rsplit_last_slash
+    helper_database_name: closure_phase4_cert
+    helper_admin_database_name: postgres
+    helper_admin_database_rewrite_preserves_socket_routing: true
+    test_database_url_serialized: false
+    pg_host_value_serialized: false
+    credentials_serialized: false
     absolute_paths_serialized: false
   postgres_cleanup_policy:
     graceful_stop_required: true
@@ -1581,6 +1724,7 @@ stop_rules:
   - attempt_to_execute_from_superseded_p8
   - attempt_to_execute_from_superseded_p9
   - attempt_to_execute_from_superseded_p10
+  - attempt_to_execute_from_superseded_p11
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
   - unsanitized_active_error_or_cleanup_failure_masking
@@ -1593,6 +1737,7 @@ stop_rules:
   - existing_partial_or_extra_output
   - credential_remote_url_database_url_or_absolute_path_leak
   - postgres_portable_path_projection_drift
+  - postgres_connection_policy_drift
   - forbidden_read_path_kind_disposition_drift
   - postgres_cleanup_ownership_or_identity_drift
   - unsafe_internal_cleanup_diagnostics
