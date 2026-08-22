@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p9_cert_commit": P_COMMIT,
-        "h9_cert_commit": H_COMMIT,
+        "p10_cert_commit": P_COMMIT,
+        "h10_cert_commit": H_COMMIT,
+        "p9_cert_commit": active_contract.p9_cert_commit,
+        "h9_cert_commit": active_contract.h9_cert_commit,
         "p8_cert_commit": active_contract.p8_cert_commit,
         "h8_cert_commit": active_contract.h8_cert_commit,
         "p7_cert_commit": active_contract.p7_cert_commit,
@@ -109,7 +111,7 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": "synthetic",
-            "p8_failure": contract_module.expected_p8_failure_record(),
+            "p9_failure": contract_module.expected_p9_failure_record(),
             "isolation": {
                 "sandbox_mountpoint_policy": (
                     contract_module.expected_sandbox_mountpoint_policy()
@@ -119,6 +121,12 @@ def _authority(
                 ),
                 "cleanup_diagnostic_policy": (
                     contract_module.expected_cleanup_diagnostic_policy()
+                ),
+                "postgres_destroy_poll_policy": (
+                    contract_module.expected_postgres_destroy_poll_policy()
+                ),
+                "test_access_guard_policy": (
+                    contract_module.expected_test_access_guard_policy()
                 ),
             },
         },
@@ -738,7 +746,10 @@ def test_openapi_current_application_matches_public_documents() -> None:
     assert result["documented_operation_count"] == 38
 
 
-def test_openapi_validator_rejects_operation_id_and_path_count_drift() -> None:
+def test_openapi_validator_rejects_operation_id_and_path_count_drift(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from src.api.main import create_app
 
     contract = _locked_contract()
@@ -752,6 +763,19 @@ def test_openapi_validator_rejects_operation_id_and_path_count_drift() -> None:
     operations[1]["operationId"] = operations[0]["operationId"]
     with pytest.raises(builder.FinalCertificationBuildError, match="OpenAPI"):
         builder.validate_openapi_document(document, root=ROOT, contract=contract)
+
+    installed: list[Path] = []
+    monkeypatch.setattr(
+        builder,
+        "install_certification_access_guard",
+        lambda root, **kwargs: installed.append(root),
+    )
+    openapi_path = tmp_path / "openapi.json"
+    builder._emit_openapi(openapi_path, P_COMMIT)
+    assert installed == [ROOT]
+    assert json.loads(openapi_path.read_text(encoding="utf-8"))[
+        "x-closure-phase4-final-certification"
+    ]["execution_commit"] == P_COMMIT
 
     document = copy.deepcopy(create_app().openapi())
     document["paths"].pop(next(iter(document["paths"])))
@@ -773,8 +797,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p9_cert_commit": P_COMMIT,
-        "h9_cert_commit": H_COMMIT,
+        "p10_cert_commit": P_COMMIT,
+        "h10_cert_commit": H_COMMIT,
+        "p9_cert_commit": contract.p9_cert_commit,
+        "h9_cert_commit": contract.h9_cert_commit,
         "p8_cert_commit": contract.p8_cert_commit,
         "h8_cert_commit": contract.h8_cert_commit,
         "p7_cert_commit": contract.p7_cert_commit,
@@ -798,8 +824,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p9_cert_commit": P_COMMIT,
-        "h9_cert_commit": H_COMMIT,
+        "p10_cert_commit": P_COMMIT,
+        "h10_cert_commit": H_COMMIT,
+        "p9_cert_commit": contract.p9_cert_commit,
+        "h9_cert_commit": contract.h9_cert_commit,
         "p8_cert_commit": contract.p8_cert_commit,
         "h8_cert_commit": contract.h8_cert_commit,
         "p7_cert_commit": contract.p7_cert_commit,
@@ -880,6 +908,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p10_cert_commit",
+        "h10_cert_commit",
         "p9_cert_commit",
         "h9_cert_commit",
         "p8_cert_commit",
@@ -940,6 +970,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p10_cert_commit",
+        "h10_cert_commit",
         "p9_cert_commit",
         "h9_cert_commit",
         "p8_cert_commit",
@@ -2760,6 +2792,16 @@ def test_postgres_startup_failure_attempts_owned_container_cleanup(
         "safe_internal_diagnostics_authorized": True,
         "raw_internal_diagnostics_serialized": False,
     }
+    assert contract_module.expected_postgres_destroy_poll_policy() == {
+        "max_attempts": 120,
+        "interval_seconds": 0.1,
+        "single_stop_command": True,
+        "mixed_presence_same_owned_identity_allowed": True,
+        "double_absence_required": True,
+        "foreign_identity_fails_closed": True,
+        "socket_cleanup_after_double_absence": True,
+        "timeout_preserves_owner": True,
+    }
     assert active is False
 
 
@@ -2768,6 +2810,7 @@ def test_postgres_callback_failure_after_run_cleans_exact_container_id(
 ) -> None:
     container_id = "d" * 64
     active = False
+    stop_removes = True
     removed_targets: list[str] = []
 
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
@@ -2787,7 +2830,8 @@ def test_postgres_callback_failure_after_run_cleans_exact_container_id(
             )
         if actual[1] == "stop":
             removed_targets.append(actual[-1])
-            active = False
+            if stop_removes:
+                active = False
         return builder.CommandResult({"argv": portable, "returncode": 0}, "", "")
 
     monkeypatch.setattr(builder, "_run", run)
@@ -2810,6 +2854,51 @@ def test_postgres_callback_failure_after_run_cleans_exact_container_id(
         socket_handle.close()
     assert removed_targets == [container_id]
     assert active is False
+
+    removed_targets.clear()
+    stop_removes = False
+    handed_off: list[builder.OwnedPostgres] = []
+    database_stop_attempted = False
+
+    def mark_database_stop_attempted() -> None:
+        nonlocal database_stop_attempted
+        assert database_stop_attempted is False
+        database_stop_attempted = True
+
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="callback failure",
+        ):
+            builder._start_owned_postgres(
+                socket_handle,
+                namespace_validator=callback,
+                owner_handoff=handed_off.append,
+            )
+        assert len(handed_off) == 1
+        retained_owner = handed_off[0]
+        assert retained_owner.container_id == container_id
+        assert removed_targets == []
+        assert active is True
+
+        monkeypatch.setattr(builder, "POSTGRES_DESTROY_POLL_MAX_ATTEMPTS", 2)
+        monkeypatch.setattr(builder.time, "sleep", lambda seconds: None)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="destroy poll timed out",
+        ):
+            builder._stop_owned_postgres(
+                retained_owner,
+                socket_handle=socket_handle,
+                before_stop=mark_database_stop_attempted,
+            )
+        assert database_stop_attempted is True
+        assert removed_targets == [container_id]
+        assert retained_owner is handed_off[0]
+        assert tmp_path.is_dir()
+    finally:
+        socket_handle.close()
 
 
 def test_postgres_run_timeout_recovers_and_removes_only_bound_id(
@@ -2843,6 +2932,28 @@ def test_postgres_run_timeout_recovers_and_removes_only_bound_id(
     try:
         with pytest.raises(builder.FinalCertificationBuildError, match="Docker timeout"):
             builder._start_owned_postgres(socket_handle)
+    finally:
+        socket_handle.close()
+    assert removed_targets == [container_id]
+    assert active is False
+
+    removed_targets.clear()
+    handed_off: list[builder.OwnedPostgres] = []
+    socket_handle = _test_directory_handle(tmp_path)
+    try:
+        with pytest.raises(builder.FinalCertificationBuildError, match="Docker timeout"):
+            builder._start_owned_postgres(
+                socket_handle,
+                owner_handoff=handed_off.append,
+            )
+        assert len(handed_off) == 1
+        assert handed_off[0].container_id == container_id
+        assert removed_targets == []
+        assert active is True
+        builder._stop_owned_postgres(
+            handed_off[0],
+            socket_handle=socket_handle,
+        )
     finally:
         socket_handle.close()
     assert removed_targets == [container_id]
@@ -2904,6 +3015,8 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
     )
     state = "owned"
     removed_targets: list[str] = []
+    production_inspector = builder._inspect_container_identity
+    production_socket_cleanup = builder._cleanup_owned_postgres_socket_inventory
 
     def run(argv: Any, **kwargs: Any) -> builder.CommandResult:
         nonlocal state
@@ -3040,6 +3153,155 @@ def test_postgres_cleanup_preserves_reused_foreign_name(
             == 2
         )
         assert os.listdir(socket_handle.fd) == []
+
+        delayed_inspections = iter(
+            (
+                (0, owned_id),
+                (0, owned_id),
+                (0, owned_id),
+                (1, ""),
+                (1, ""),
+                (0, owned_id),
+                (1, ""),
+                (1, ""),
+            )
+        )
+        delayed_stops: list[str] = []
+
+        def delayed_inspect(target: str) -> tuple[int, str]:
+            del target
+            return next(delayed_inspections)
+
+        def delayed_stop_run(argv: Any, **kwargs: Any) -> builder.CommandResult:
+            actual = list(argv)
+            assert actual[1] == "stop"
+            delayed_stops.append(actual[-1])
+            return builder.CommandResult(
+                {
+                    "argv": builder._portable_argv(kwargs["portable_argv"]),
+                    "returncode": 0,
+                },
+                "",
+                "",
+            )
+
+        monkeypatch.setattr(builder, "_inspect_container_identity", delayed_inspect)
+        monkeypatch.setattr(builder, "_run", delayed_stop_run)
+        monkeypatch.setattr(builder.time, "sleep", lambda seconds: None)
+        delayed_cleanup = builder._stop_owned_postgres(
+            owner,
+            socket_handle=socket_handle,
+        )
+        assert delayed_stops == [owned_id]
+        assert delayed_cleanup["destroy_poll"] == {
+            "status": "confirmed_absent",
+            "attempts": 3,
+            "name_and_id_absent": True,
+            "transient_owned_presence_observed": True,
+            "foreign_or_ambiguous_identity_observed": False,
+            "container_name_or_id_serialized": False,
+        }
+        serialized_cleanup = json.dumps(delayed_cleanup, sort_keys=True)
+        assert owned_id not in serialized_cleanup
+        assert owner.name not in serialized_cleanup
+
+        timeout_stops: list[str] = []
+        socket_cleanup_attempted = False
+        transactional_stop_attempted = False
+
+        def always_owned(target: str) -> tuple[int, str]:
+            del target
+            return 0, owned_id
+
+        def timeout_stop_run(argv: Any, **kwargs: Any) -> builder.CommandResult:
+            timeout_stops.append(list(argv)[-1])
+            return builder.CommandResult(
+                {
+                    "argv": builder._portable_argv(kwargs["portable_argv"]),
+                    "returncode": 0,
+                },
+                "",
+                "",
+            )
+
+        def reject_socket_cleanup(*args: Any, **kwargs: Any) -> int:
+            nonlocal socket_cleanup_attempted
+            del args, kwargs
+            socket_cleanup_attempted = True
+            return 0
+
+        monkeypatch.setattr(builder, "_inspect_container_identity", always_owned)
+        monkeypatch.setattr(builder, "_run", timeout_stop_run)
+        monkeypatch.setattr(builder, "POSTGRES_DESTROY_POLL_MAX_ATTEMPTS", 3)
+        monkeypatch.setattr(
+            builder,
+            "_cleanup_owned_postgres_socket_inventory",
+            reject_socket_cleanup,
+        )
+
+        def mark_transactional_stop_attempted() -> None:
+            nonlocal transactional_stop_attempted
+            assert transactional_stop_attempted is False
+            transactional_stop_attempted = True
+
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="destroy poll timed out",
+        ):
+            builder._stop_owned_postgres(
+                owner,
+                socket_handle=socket_handle,
+                before_stop=mark_transactional_stop_attempted,
+            )
+        assert timeout_stops == [owned_id]
+        assert transactional_stop_attempted is True
+        assert socket_cleanup_attempted is False
+
+        monkeypatch.setattr(
+            builder,
+            "_inspect_container_identity",
+            lambda target: (1, ""),
+        )
+        monkeypatch.setattr(
+            builder,
+            "_cleanup_owned_postgres_socket_inventory",
+            production_socket_cleanup,
+        )
+        finished_after_failed_poll = builder._finish_owned_postgres_cleanup(
+            owner,
+            socket_handle=socket_handle,
+        )
+        assert finished_after_failed_poll["container_absent_after_stop"] is True
+        assert timeout_stops == [owned_id]
+
+        pre_stop_marked = False
+
+        def mark_pre_stop() -> None:
+            nonlocal pre_stop_marked
+            pre_stop_marked = True
+
+        monkeypatch.setattr(
+            builder,
+            "_inspect_container_identity",
+            lambda target: (0, foreign_id),
+        )
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="binding drifted",
+        ):
+            builder._stop_owned_postgres(
+                owner,
+                socket_handle=socket_handle,
+                before_stop=mark_pre_stop,
+            )
+        assert pre_stop_marked is False
+        assert timeout_stops == [owned_id]
+
+        monkeypatch.setattr(
+            builder,
+            "_inspect_container_identity",
+            production_inspector,
+        )
 
         ambiguous_state = "owned"
 
@@ -3685,6 +3947,11 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     smoke = source.index("_run_sandbox_smoke(")
     postgres = source.index("_start_owned_postgres(")
     assert restore < smoke < postgres
+    assert "owner_handoff=retain_database_owner" in source[postgres:]
+    assessment_source = inspect.getsource(
+        builder.build_phase4_final_certification
+    )
+    assert 'reason_codes.add("database_owner_retained")' in assessment_source
     for operation in (
         "_restore_dvc_objects_with_anchored_executable(",
         "_start_owned_postgres(",
@@ -3722,12 +3989,29 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
         "cleanup = _stop_owned_postgres(", verification
     )
     assert "finally:" not in source[verification:first_postgres_cleanup]
-    fallback_cleanup = source.index(
-        "_stop_owned_postgres(",
-        first_postgres_cleanup + len("cleanup = _stop_owned_postgres("),
-    )
     outer_capture = source.index("active_error = exc", first_postgres_cleanup)
-    assert first_postgres_cleanup < outer_capture < fallback_cleanup
+    finish_after_attempt = source.index(
+        "_finish_owned_postgres_cleanup(",
+        outer_capture,
+    )
+    fallback_cleanup_before_stop = source.index(
+        "_stop_owned_postgres(",
+        finish_after_attempt,
+    )
+    assert (
+        first_postgres_cleanup
+        < outer_capture
+        < finish_after_attempt
+        < fallback_cleanup_before_stop
+    )
+    assert "database_stop_attempted = False" in source
+    assert "if database_stop_attempted:" in source[
+        outer_capture:fallback_cleanup_before_stop
+    ]
+    assert "before_stop=mark_database_stop_attempted" in source[
+        first_postgres_cleanup:outer_capture
+    ]
+    assert "else:" in source[finish_after_attempt:fallback_cleanup_before_stop]
 
 
 def test_transaction_retains_original_main_site_cache_lease_through_publication() -> None:
@@ -4360,15 +4644,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     contract = _locked_contract()
-    builder._require_h8_runtime_policy(contract)
+    builder._require_h10_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H9 runtime isolation policy drifted",
+        match="H10 runtime isolation policy drifted",
     ):
-        builder._require_h8_runtime_policy(
+        builder._require_h10_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -4809,6 +5093,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p10_cert_commit",
+            "h10_cert_commit",
             "p9_cert_commit",
             "h9_cert_commit",
             "p8_cert_commit",
@@ -4833,6 +5119,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p10_cert_commit",
+            "h10_cert_commit",
             "p9_cert_commit",
             "h9_cert_commit",
             "p8_cert_commit",
@@ -4855,9 +5143,53 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     }
     assert not any(isinstance(value, bytes) for value in result.values())
 
+    p9_failure = contract_module.expected_p9_failure_record()
+    assert p9_failure["attempt"] == "R-CERT9"
+    assert p9_failure["observed_cause"] == {
+        "stage": "public_tests",
+        "safe_error": "registered_suite_failures_errors_and_state_skips",
+        "total": 944,
+        "passed": 857,
+        "failures": 65,
+        "errors": 1,
+        "skipped": 21,
+        "junit_written": True,
+        "raw_diagnostic_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    assert p9_failure["cleanup"] == {
+        "status": "failed_closed",
+        "namespace_preserved": True,
+        "active_error_was_masked": False,
+        "reason_codes": ["database_owner_retained"],
+        "exact_owned_container_absent": False,
+        "socket_directory_empty": False,
+    }
+    serialized_p9_failure = json.dumps(p9_failure, sort_keys=True)
+    assert "run-3cee2ea03f47bb208f243135105f39ab" not in serialized_p9_failure
+    assert "postgresql://" not in serialized_p9_failure
+
+    drifted_failure = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_failure["authority"])
+    drifted_p9_failure = cast(dict[str, Any], drifted_authority["p9_failure"])
+    drifted_cause = cast(dict[str, Any], drifted_p9_failure["observed_cause"])
+    drifted_cause["passed"] = 856
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_failure,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H10 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p10_cert_commit",
+        "h10_cert_commit",
         "p9_cert_commit",
         "h9_cert_commit",
         "p8_cert_commit",
@@ -4998,6 +5330,14 @@ def test_pytest_collection_hook_enforces_digest_and_exact_skip_registry(
     monkeypatch.setenv(builder.PLUGIN_MODE_ENV, builder.PUBLIC_SUITE_KIND)
     monkeypatch.setenv(builder.PLUGIN_ROOT_ENV, os.fspath(ROOT))
     monkeypatch.setattr(builder, "load_contract", lambda **kwargs: contract)
+    installed: list[str] = []
+    monkeypatch.setattr(
+        builder,
+        "install_certification_access_guard",
+        lambda *args, **kwargs: installed.append("audit_hook"),
+    )
+    builder.pytest_configure(None)
+    assert installed == []
     items = [_Item(node) for node in nodes]
     builder.pytest_collection_modifyitems(None, items)
     assert not items[0].markers
@@ -5014,6 +5354,14 @@ def test_e2e_collection_hook_is_exact_and_does_not_add_skips(
     monkeypatch.setenv(builder.PLUGIN_MODE_ENV, builder.E2E_SUITE_KIND)
     monkeypatch.setenv(builder.PLUGIN_ROOT_ENV, os.fspath(ROOT))
     monkeypatch.setattr(builder, "load_contract", lambda **kwargs: contract)
+    installed: list[str] = []
+    monkeypatch.setattr(
+        builder,
+        "install_certification_access_guard",
+        lambda *args, **kwargs: installed.append("audit_hook"),
+    )
+    builder.pytest_configure(None)
+    assert installed == ["audit_hook"]
     items = [_Item(node) for node in contract.test_suite.e2e_nodes]
     builder.pytest_collection_modifyitems(None, items)
     assert all(not item.markers for item in items)
@@ -5039,8 +5387,24 @@ def test_public_environment_activates_safe_historical_e10_compatibility() -> Non
     assert public["CLOSURE_E10_OUTCOME_GUARD"] == "1"
     assert public["CLOSURE_E10_REPO_ROOT"] == "/workspace"
     assert public["CLOSURE_E10_SUITE_KIND"] == "closure_phase3_public"
+    assert public["PGHOST"] == builder.DB_SOCKET_ROOT == "/cert-db"
     e2e = builder._suite_environment(builder.E2E_SUITE_KIND)
+    assert e2e["PGHOST"] == "/cert-db"
     assert "CLOSURE_E10_SUITE_KIND" not in e2e
+    retained = builder._suite_environment(
+        builder.E2E_SUITE_KIND,
+        retained_python_target="/usr/bin/python3.14",
+    )
+    assert retained[builder.PLUGIN_RETAINED_PYTHON_ENV] == "/usr/bin/python3.14"
+    with pytest.raises(builder.FinalCertificationBuildError, match="unsafe"):
+        builder._suite_environment(
+            builder.E2E_SUITE_KIND,
+            retained_python_target="/cert-python",
+        )
+
+    sealed = contract_module.load_contract(root=ROOT)
+    assert sealed.test_suite.allowed_skip_count == 42
+    assert len(sealed.test_suite.exact_skipped_nodes) == 42
 
 
 def test_process_guard_allows_safe_git_status_and_owned_local_fixtures_only() -> None:
@@ -5070,3 +5434,69 @@ def test_process_guard_allows_safe_git_status_and_owned_local_fixtures_only() ->
         builder._guard_process(
             ["/usr/bin/env", "-i", ".venv/bin/dvc", "status"], "/workspace"
         )
+
+    canonical_path = "/usr/bin/python3.14"
+    canonical = os.stat(ROOT / "pyproject.toml")
+    foreign_values = list(canonical)
+    foreign_values[1] += 1
+    foreign = os.stat_result(foreign_values)
+    original_readlink = builder.os.readlink
+    original_stat = builder.os.stat
+
+    def retained_readlink(path: Any, *args: Any, **kwargs: Any) -> str:
+        if path == "/proc/self/exe":
+            return "/cert-python"
+        return original_readlink(path, *args, **kwargs)
+
+    def retained_stat(path: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+        if os.fspath(path) == canonical_path or os.path.normpath(
+            os.fspath(path)
+        ) == "/cert-python":
+            return canonical
+        return original_stat(path, *args, **kwargs)
+
+    with pytest.MonkeyPatch.context() as monkeypatch:
+        monkeypatch.setattr(builder.os, "readlink", retained_readlink)
+        monkeypatch.setattr(builder.os, "stat", retained_stat)
+        monkeypatch.setattr(builder.sys, "executable", "/cert-python")
+        monkeypatch.setattr(builder.sys, "_base_executable", "/cert-python")
+        trusted_identity = builder._capture_injected_retained_python_identity(
+            canonical_path
+        )
+        assert builder.os.readlink("/proc/self/exe") == "/cert-python"
+        builder._guard_process(
+            ["/./cert-python", "-B", "-c", "pass"],
+            "/workspace",
+            retained_python_identity=trusted_identity,
+        )
+        builder._guard_process(
+            [b"/cert-python", b"-B", b"-c", b"pass"],
+            "/workspace",
+            retained_python_identity=trusted_identity,
+        )
+
+        def foreign_stat(path: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+            if os.fspath(path) == canonical_path:
+                return canonical
+            if os.path.normpath(os.fspath(path)) == "/cert-python":
+                return foreign
+            return original_stat(path, *args, **kwargs)
+
+        monkeypatch.setattr(builder.os, "stat", foreign_stat)
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="retained Python identity drifted",
+        ):
+            builder._guard_process(
+                ["/cert-python", "-B", "-c", "pass"],
+                "/workspace",
+                retained_python_identity=trusted_identity,
+            )
+        with pytest.raises(
+            builder.FinalCertificationBuildError,
+            match="was not captured",
+        ):
+            builder._guard_process(
+                ["/cert-python", "-B", "-c", "pass"],
+                "/workspace",
+            )

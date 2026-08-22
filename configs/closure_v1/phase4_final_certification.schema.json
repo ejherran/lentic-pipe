@@ -64,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v9"
+      "const": "closure_v1_phase4_final_certification_v10"
     },
     "authorities": {
       "type": "object",
@@ -89,6 +89,8 @@
         "p7_cert_commit",
         "h8_cert_commit",
         "p8_cert_commit",
+        "h9_cert_commit",
+        "p9_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -151,8 +153,14 @@
         "p8_cert_commit": {
           "const": "095b55b208f69936a562eaf09c76fab3389df199"
         },
+        "h9_cert_commit": {
+          "const": "f296236fa7cdc89ad6b85ce1642b478276b92553"
+        },
+        "p9_cert_commit": {
+          "const": "73d12c7386b9e4a34d8f15b5330cecf357e05ac1"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v9_commit"},
+        "certification_target": {"const": "published_P_CERT_v10_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -182,6 +190,9 @@
         "H-CERT9",
         "P-CERT9",
         "R-CERT9",
+        "H-CERT10",
+        "P-CERT10",
+        "R-CERT10",
         "single_parent_commits_required",
         "closure_source_commit_must_remain_ancestor",
         "aligned_refs_and_live_remote_required",
@@ -192,7 +203,7 @@
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -530,9 +541,10 @@
         "H-CERT9": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_sandbox_mountpoints_smoke_and_cleanup_diagnostics_contract_tests_and_freeze"},
+            "commit": {"const": "h9_cert_commit"},
             "direct_parent": {"const": "p8_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["prepare_exact_empty_clone_mountpoints_before_private_dvc_configuration", "run_exact_bwrap_touch_smoke_after_restore_freeze_before_postgres", "allowlist_path_free_cleanup_reason_codes", "record_r_cert8_failure_and_forbid_p_cert8_retry"]}
@@ -541,10 +553,68 @@
         "P-CERT9": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_H_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "required": ["role", "commit", "requires_published_H_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized", "failure_stage", "failure_kind", "public_tests_total", "public_tests_passed", "public_tests_failed", "public_tests_errors", "public_tests_skipped", "openapi_generations", "synthetic_e2e_runs", "static_command_runs", "r_cert_output_count", "retry_authorized", "cleanup_status", "manifest_written_last"],
           "properties": {
             "role": {"const": "data_only_final_certification_authority_v9"},
+            "commit": {"const": "p9_cert_commit"},
             "requires_published_H_CERT9": {"const": true},
+            "supersedes_P_CERT8": {"const": true},
+            "supersedes_P_CERT7": {"const": true},
+            "supersedes_P_CERT6": {"const": true},
+            "supersedes_P_CERT5": {"const": true},
+            "supersedes_P_CERT4": {"const": true},
+            "supersedes_P_CERT3": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "public_tests"},
+            "failure_kind": {"const": "registered_suite_failures_errors_and_state_skips"},
+            "public_tests_total": {"const": 944},
+            "public_tests_passed": {"const": 857},
+            "public_tests_failed": {"const": 65},
+            "public_tests_errors": {"const": 1},
+            "public_tests_skipped": {"const": 21},
+            "openapi_generations": {"const": 0},
+            "synthetic_e2e_runs": {"const": 0},
+            "static_command_runs": {"const": 0},
+            "r_cert_output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "cleanup_status": {"const": "failed_closed_namespace_preserved"},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "R-CERT9": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_P_CERT9", "failure_stage", "failure_kind", "output_count", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "superseded_failed_final_doctoral_software_and_restorability_evidence"},
+            "requires_published_P_CERT9": {"const": true},
+            "failure_stage": {"const": "public_tests"},
+            "failure_kind": {"const": "registered_suite_failures_errors_and_state_skips"},
+            "output_count": {"const": 0},
+            "manifest_written_last": {"const": false}
+          }
+        },
+        "H-CERT10": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_public_suite_boundary_skip_ledger_and_postgres_destroy_poll_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p9_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["replace_public_python_audit_hook_with_bubblewrap_hard_boundary", "preserve_openapi_and_e2e_python_audit_hooks", "seal_exact_42_honest_sandbox_or_state_skip_ledger", "bound_postgres_destroy_poll_and_require_double_absence", "record_r_cert9_failure_and_forbid_p_cert9_retry"]}
+          }
+        },
+        "P-CERT10": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v10"},
+            "requires_published_H_CERT10": {"const": true},
+            "supersedes_P_CERT9": {"const": true},
             "supersedes_P_CERT8": {"const": true},
             "supersedes_P_CERT7": {"const": true},
             "supersedes_P_CERT6": {"const": true},
@@ -557,13 +627,13 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "R-CERT9": {
+        "R-CERT10": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_P_CERT9", "output_count", "manifest_written_last"],
+          "required": ["role", "requires_published_P_CERT10", "output_count", "manifest_written_last"],
           "properties": {
             "role": {"const": "final_doctoral_software_and_restorability_evidence"},
-            "requires_published_P_CERT9": {"const": true},
+            "requires_published_P_CERT10": {"const": true},
             "output_count": {"const": 8},
             "manifest_written_last": {"const": true}
           }
@@ -581,7 +651,7 @@
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -834,6 +904,42 @@
               }
             }
           ]
+        },
+        "H-CERT10": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT10": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "R-CERT10": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 8},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 8, "maxItems": 8}
+              }
+            }
+          ]
         }
       }
     },
@@ -1009,12 +1115,12 @@
         },
         "exact_skipped_nodes": {
           "type": "array",
-          "minItems": 7,
-          "maxItems": 7,
+          "minItems": 42,
+          "maxItems": 42,
           "uniqueItems": true,
           "items": {"type": "string", "pattern": "^tests/test_.+::test_.+$"}
         },
-        "exact_skip_reason": {"const": "final_certification_raw_or_historical_state_prohibited"},
+        "exact_skip_reason": {"const": "final_certification_sandbox_or_state_incompatible"},
         "e2e_nodes": {
           "type": "array",
           "minItems": 3,
@@ -1056,7 +1162,7 @@
                 "selector_count": {"type": "null"},
                 "collected_test_count": {"type": "null"},
                 "nodeids_sha256": {"type": "null"},
-                "allowed_skip_count": {"const": 7}
+                "allowed_skip_count": {"const": 42}
               }
             },
             {
@@ -1068,7 +1174,7 @@
                 "selector_count": {"const": 39},
                 "collected_test_count": {"const": 944},
                 "nodeids_sha256": {"const": "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"},
-                "allowed_skip_count": {"const": 7}
+                "allowed_skip_count": {"const": 42}
               }
             }
           ]
@@ -1168,11 +1274,14 @@
         "superseded_p6_retry_authorized",
         "superseded_p7_retry_authorized",
         "superseded_p8_retry_authorized",
+        "superseded_p9_retry_authorized",
         "postgres_portable_path_policy",
         "postgres_cleanup_policy",
         "sandbox_mountpoint_policy",
         "sandbox_smoke_policy",
         "cleanup_diagnostic_policy",
+        "postgres_destroy_poll_policy",
+        "test_access_guard_policy",
         "post_restore_status_pointer_paths",
         "post_verification_status_pointer_paths",
         "partial_clone_global_status_authorized",
@@ -1301,6 +1410,7 @@
         "superseded_p6_retry_authorized": {"const": false},
         "superseded_p7_retry_authorized": {"const": false},
         "superseded_p8_retry_authorized": {"const": false},
+        "superseded_p9_retry_authorized": {"const": false},
         "postgres_portable_path_policy": {
           "type": "object",
           "additionalProperties": false,
@@ -1394,6 +1504,32 @@
             "namespace_path_or_run_id_serialized": {"const": false}
           }
         },
+        "postgres_destroy_poll_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["max_attempts", "interval_seconds", "single_stop_command", "mixed_presence_same_owned_identity_allowed", "double_absence_required", "foreign_identity_fails_closed", "socket_cleanup_after_double_absence", "timeout_preserves_owner"],
+          "properties": {
+            "max_attempts": {"const": 120},
+            "interval_seconds": {"const": 0.1},
+            "single_stop_command": {"const": true},
+            "mixed_presence_same_owned_identity_allowed": {"const": true},
+            "double_absence_required": {"const": true},
+            "foreign_identity_fails_closed": {"const": true},
+            "socket_cleanup_after_double_absence": {"const": true},
+            "timeout_preserves_owner": {"const": true}
+          }
+        },
+        "test_access_guard_policy": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["public_tests_boundary", "public_tests_python_audit_hook", "openapi_python_audit_hook", "e2e_python_audit_hook"],
+          "properties": {
+            "public_tests_boundary": {"const": "bubblewrap_hard_boundary"},
+            "public_tests_python_audit_hook": {"const": false},
+            "openapi_python_audit_hook": {"const": true},
+            "e2e_python_audit_hook": {"const": true}
+          }
+        },
         "post_restore_status_pointer_paths": {
           "const": [
             "data/closure_v1/locked_evaluation/input_history.parquet.dvc",
@@ -1484,8 +1620,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 36,
-      "maxItems": 36,
+      "minItems": 37,
+      "maxItems": 37,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }

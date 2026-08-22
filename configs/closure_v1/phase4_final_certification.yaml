@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v9
+contract_version: closure_v1_phase4_final_certification_v10
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -20,8 +20,10 @@ authorities:
   p7_cert_commit: 66505102124082e7926aac58215a0bd35a07ff4b
   h8_cert_commit: 6a339cb7fcec125e379d9829c76e90f5ded55d3a
   p8_cert_commit: 095b55b208f69936a562eaf09c76fab3389df199
+  h9_cert_commit: f296236fa7cdc89ad6b85ce1642b478276b92553
+  p9_cert_commit: 73d12c7386b9e4a34d8f15b5330cecf357e05ac1
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v9_commit
+  certification_target: published_P_CERT_v10_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -47,6 +49,9 @@ topology:
     - H-CERT9
     - P-CERT9
     - R-CERT9
+    - H-CERT10
+    - P-CERT10
+    - R-CERT10
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -290,6 +295,7 @@ topology:
     manifest_written_last: false
   H-CERT9:
     role: corrective_sandbox_mountpoints_smoke_and_cleanup_diagnostics_contract_tests_and_freeze
+    commit: h9_cert_commit
     direct_parent: p8_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -299,7 +305,52 @@ topology:
       - record_r_cert8_failure_and_forbid_p_cert8_retry
   P-CERT9:
     role: data_only_final_certification_authority_v9
+    commit: p9_cert_commit
     requires_published_H_CERT9: true
+    supersedes_P_CERT8: true
+    supersedes_P_CERT7: true
+    supersedes_P_CERT6: true
+    supersedes_P_CERT5: true
+    supersedes_P_CERT4: true
+    supersedes_P_CERT3: true
+    supersedes_P_CERT2: true
+    supersedes_P_CERT1: true
+    certification_execution_authorized: false
+    failure_stage: public_tests
+    failure_kind: registered_suite_failures_errors_and_state_skips
+    public_tests_total: 944
+    public_tests_passed: 857
+    public_tests_failed: 65
+    public_tests_errors: 1
+    public_tests_skipped: 21
+    openapi_generations: 0
+    synthetic_e2e_runs: 0
+    static_command_runs: 0
+    r_cert_output_count: 0
+    retry_authorized: false
+    cleanup_status: failed_closed_namespace_preserved
+    manifest_written_last: true
+  R-CERT9:
+    role: superseded_failed_final_doctoral_software_and_restorability_evidence
+    requires_published_P_CERT9: true
+    failure_stage: public_tests
+    failure_kind: registered_suite_failures_errors_and_state_skips
+    output_count: 0
+    manifest_written_last: false
+  H-CERT10:
+    role: corrective_public_suite_boundary_skip_ledger_and_postgres_destroy_poll_contract_tests_and_freeze
+    direct_parent: p9_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - replace_public_python_audit_hook_with_bubblewrap_hard_boundary
+      - preserve_openapi_and_e2e_python_audit_hooks
+      - seal_exact_42_honest_sandbox_or_state_skip_ledger
+      - bound_postgres_destroy_poll_and_require_double_absence
+      - record_r_cert9_failure_and_forbid_p_cert9_retry
+  P-CERT10:
+    role: data_only_final_certification_authority_v10
+    requires_published_H_CERT10: true
+    supersedes_P_CERT9: true
     supersedes_P_CERT8: true
     supersedes_P_CERT7: true
     supersedes_P_CERT6: true
@@ -310,9 +361,9 @@ topology:
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT9:
+  R-CERT10:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT9: true
+    requires_published_P_CERT10: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -682,6 +733,81 @@ publication_scopes:
       - path: reports/closure_v1/12_certification/final_certification_manifest.json
         status: A
         git_mode: "100644"
+  H-CERT10:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT10:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v10.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v10.json
+        status: A
+        git_mode: "100644"
+  R-CERT10:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
   H-CERT8:
     additions: 0
     modifications: 11
@@ -1002,7 +1128,42 @@ test_certification:
     - tests/test_build_closure_synthesis.py::test_check_only_before_p_syn_is_non_writing
     - tests/test_closure_final_calibration.py::test_lock_validation_rejects_authorization_and_boundary_drifts
     - tests/test_closure_final_calibration.py::test_output_contract_is_exact_manifest_last_and_zero_overlap
-  exact_skip_reason: final_certification_raw_or_historical_state_prohibited
+    - tests/test_api_predictions_alerts.py::test_api_exposes_pipe_grud_reference_predictions_and_alerts
+    - tests/test_api_predictions_alerts.py::test_api_exposes_neural_ode_reference_predictions_and_alerts
+    - tests/test_api_predictions_alerts.py::test_api_exposes_mifal_predictions_and_alerts
+    - tests/test_api_scientific_workflow_adapters.py::test_neural_ode_reference_profile_inference_adapter_writes_calibrated_rollouts
+    - tests/test_api_scientific_workflow_adapters.py::test_pipe_grud_adaptive_surface_adapter_writes_reference_ready_sequences
+    - tests/test_api_scientific_workflow_adapters.py::test_pipe_grud_expert_surface_inference_adapter_writes_diagnostic_rollouts
+    - tests/test_api_scientific_workflow_adapters.py::test_pipe_grud_reference_profile_inference_adapter_writes_calibrated_rollouts
+    - tests/test_api_scientific_workflow_adapters.py::test_counterfactual_planning_adapter_runs_v1_scenarios_from_upstream_temporal_run
+    - tests/test_api_scientific_workflow_adapters.py::test_pipe_grud_reference_adapter_writes_manifest_and_report
+    - tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_physical_schema_matches_closed_fields
+    - tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_audit_failure_is_read_only[early]
+    - tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_audit_failure_is_read_only[late]
+    - tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_audit_pass_is_read_only
+    - tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_cli_is_repeatable_and_read_only
+    - tests/test_audit_closure_p0_model_availability.py::test_public_policy_and_five_published_slots_pass_read_only_audit
+    - tests/test_audit_closure_p0_model_availability.py::test_p0_evidence_chain_and_git_blobs_are_exact
+    - tests/test_audit_closure_p0_model_availability.py::test_denominator_authority_reconstructs_role_and_fit_counts
+    - tests/test_audit_closure_p0_model_availability.py::test_p0_namespace_is_exact_and_records_all_absences
+    - tests/test_audit_closure_p0_model_availability.py::test_audit_rejects_any_preregistered_registry_entry
+    - tests/test_audit_closure_p0_model_availability.py::test_registry_payload_is_non_self_authorizing_and_has_no_placeholder_values
+    - tests/test_audit_closure_p0_model_availability.py::test_companion_uses_generic_completed_manifest_dialect
+    - tests/test_audit_closure_p0_model_availability.py::test_registry_bundle_validator_reconstructs_every_authoritative_section
+    - tests/test_audit_closure_p0_model_availability.py::test_registry_bundle_validator_accepts_exact_reconstruction
+    - tests/test_audit_closure_p0_model_availability.py::test_check_only_never_invokes_remote_or_dvc
+    - tests/test_audit_closure_p0_model_availability.py::test_published_loader_is_the_only_effective_authority
+    - tests/test_audit_closure_p0_model_availability.py::test_published_loader_rejects_live_remote_divergence
+    - "tests/test_audit_closure_p0_model_availability.py::test_published_loader_rechecks_all_post_registry_absence_gates[P1 materialization predates the P0 registry]"
+    - "tests/test_audit_closure_p0_model_availability.py::test_published_loader_rechecks_all_post_registry_absence_gates[E0-M outputs already exist]"
+    - "tests/test_audit_closure_p0_model_availability.py::test_published_loader_rechecks_all_post_registry_absence_gates[Outcome access log must remain absent]"
+    - "tests/test_audit_closure_p0_model_availability.py::test_published_loader_rechecks_all_post_registry_absence_gates[Registry bundle namespace is not pristine]"
+    - tests/test_closure_phase3_context.py::test_real_input_only_registries_are_exact
+    - tests/test_closure_phase3_context.py::test_real_b2_input_only_scoring_accepts_arrow_backed_origin_values
+    - tests/test_closure_phase3_context.py::test_real_r10_eligibility_token_reaches_temporal_slots
+    - tests/test_closure_e0_u_authority.py::test_runner_and_authority_share_exact_capability_and_commit_contracts
+    - tests/test_api_scientific_workflow_adapters.py::test_neural_ode_preflight_adapter_writes_dataset_diagnostic
+  exact_skip_reason: final_certification_sandbox_or_state_incompatible
   e2e_nodes:
     - tests/test_api_predictions_alerts.py::test_api_exposes_current_state_predictions_and_alerts
     - tests/test_api_counterfactual_simulation.py::test_api_runs_minimal_current_state_counterfactual
@@ -1032,7 +1193,7 @@ test_certification:
     selector_count: 39
     collected_test_count: 944
     nodeids_sha256: 8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349
-    allowed_skip_count: 7
+    allowed_skip_count: 42
 
 openapi_certification:
   version_prefix: "3."
@@ -1138,6 +1299,7 @@ isolation:
   superseded_p6_retry_authorized: false
   superseded_p7_retry_authorized: false
   superseded_p8_retry_authorized: false
+  superseded_p9_retry_authorized: false
   postgres_portable_path_policy:
     volume: <OWNED_DB_SOCKET>:<CONTAINER_POSTGRES_SOCKET>
     data_tmpfs: <CONTAINER_POSTGRES_DATA>:rw,size=512m
@@ -1218,6 +1380,20 @@ isolation:
     absolute_paths_serialized: false
     container_ids_serialized: false
     namespace_path_or_run_id_serialized: false
+  postgres_destroy_poll_policy:
+    max_attempts: 120
+    interval_seconds: 0.1
+    single_stop_command: true
+    mixed_presence_same_owned_identity_allowed: true
+    double_absence_required: true
+    foreign_identity_fails_closed: true
+    socket_cleanup_after_double_absence: true
+    timeout_preserves_owner: true
+  test_access_guard_policy:
+    public_tests_boundary: bubblewrap_hard_boundary
+    public_tests_python_audit_hook: false
+    openapi_python_audit_hook: true
+    e2e_python_audit_hook: true
   post_restore_status_pointer_paths:
     - data/closure_v1/locked_evaluation/input_history.parquet.dvc
     - data/closure_v1/locked_evaluation/intent_origins.parquet.dvc
@@ -1278,6 +1454,7 @@ stop_rules:
   - attempt_to_execute_from_superseded_p6
   - attempt_to_execute_from_superseded_p7
   - attempt_to_execute_from_superseded_p8
+  - attempt_to_execute_from_superseded_p9
   - unexpected_clone_directory_nlink_delta
   - primary_error_loss_after_safe_cleanup_or_unowned_cleanup
   - unsanitized_active_error_or_cleanup_failure_masking

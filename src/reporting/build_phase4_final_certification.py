@@ -62,11 +62,13 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_cleanup_diagnostic_policy,
     expected_environment_dvc_record,
     expected_manifest_clone_dvc_site_caches_record,
-    expected_p8_failure_record,
+    expected_p9_failure_record,
     expected_postgres_cleanup_policy,
+    expected_postgres_destroy_poll_policy,
     expected_postgres_portable_path_policy,
     expected_sandbox_mountpoint_policy,
     expected_sandbox_smoke_policy,
+    expected_test_access_guard_policy,
     load_contract,
     load_effective_authority,
     main_dvc_static_boundary_record,
@@ -81,6 +83,7 @@ PUBLIC_SUITE_KIND = "closure_phase4_final_public"
 E2E_SUITE_KIND = "closure_phase4_final_synthetic_e2e"
 PLUGIN_MODE_ENV = "CLOSURE_PHASE4_CERTIFICATION_SUITE_KIND"
 PLUGIN_ROOT_ENV = "CLOSURE_PHASE4_CERTIFICATION_REPO_ROOT"
+PLUGIN_RETAINED_PYTHON_ENV = "CLOSURE_PHASE4_CERTIFICATION_RETAINED_PYTHON"
 DB_SOCKET_ROOT = "/cert-db"
 DB_NAME = "closure_phase4_cert"
 POSTGRES_IMAGE = (
@@ -88,6 +91,8 @@ POSTGRES_IMAGE = (
     "16bc17c64a573ef34162af9298258d1aec548232985b33ed7b1eac33ba35c229"
 )
 POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS = 30
+POSTGRES_DESTROY_POLL_MAX_ATTEMPTS = 120
+POSTGRES_DESTROY_POLL_INTERVAL_SECONDS = 0.1
 POSTGRES_SOCKET_ENTRY_SPECS = (
     (".s.PGSQL.5432", "socket"),
     (".s.PGSQL.5432.lock", "regular_file"),
@@ -3076,12 +3081,24 @@ def _is_forbidden_path(
 def _guard_process(
     argv: Any,
     cwd: Any = None,
+    *,
+    retained_python_identity: tuple[int, int] | None = None,
 ) -> None:
     """Reject subprocesses that could escape the sealed verification surface."""
 
-    tokens = [str(item) for item in argv] if isinstance(argv, (list, tuple)) else []
+    tokens = (
+        [os.fsdecode(os.fspath(item)) for item in argv]
+        if isinstance(argv, (list, tuple))
+        and all(isinstance(item, (str, bytes, os.PathLike)) for item in argv)
+        else []
+    )
     if not tokens:
         raise _error("certification forbids opaque subprocess commands")
+    if Path(tokens[0]).name == "cert-python":
+        _require_retained_cert_python_identity(
+            retained_python_identity,
+            executable_path=tokens[0],
+        )
     executable = Path(tokens[0]).name.lower()
     if executable in {"sh", "bash", "dash", "zsh", "fish", "cmd", "powershell"}:
         raise _error("certification forbids shell command wrappers")
@@ -3101,7 +3118,11 @@ def _guard_process(
             index += 1
         if index >= len(tokens):
             raise _error("certification forbids an opaque env launcher")
-        _guard_process(tokens[index:], cwd)
+        _guard_process(
+            tokens[index:],
+            cwd,
+            retained_python_identity=retained_python_identity,
+        )
         return
 
     if executable in {"dvc", "docker", "podman", "curl", "wget", "ssh", "scp"}:
@@ -3212,18 +3233,61 @@ def _guard_process(
         raise _error("certification attempted a prohibited scientific/context process")
 
 
+def _capture_injected_retained_python_identity(path_text: str) -> tuple[int, int]:
+    """Capture the host-injected trusted /usr interpreter identity."""
+
+    try:
+        candidate = Path(path_text)
+        canonical = os.stat(candidate, follow_symlinks=False)
+    except OSError as exc:
+        raise _error("certification trusted Python identity is unavailable") from exc
+    if (
+        not candidate.is_absolute()
+        or not candidate.is_relative_to(Path("/usr"))
+        or ".." in candidate.parts
+        or not stat.S_ISREG(canonical.st_mode)
+    ):
+        raise _error("certification trusted Python identity is unsafe")
+    return canonical.st_dev, canonical.st_ino
+
+
+def _require_retained_cert_python_identity(
+    trusted_identity: tuple[int, int] | None,
+    *,
+    executable_path: str,
+) -> None:
+    """Bind the sandbox alias to the injected host-retained /usr inode."""
+
+    if trusted_identity is None:
+        raise _error("certification trusted Python identity was not captured")
+    try:
+        retained = os.stat(executable_path, follow_symlinks=False)
+    except OSError as exc:
+        raise _error("certification retained Python identity is unavailable") from exc
+    if (
+        not stat.S_ISREG(retained.st_mode)
+        or (retained.st_dev, retained.st_ino) != trusted_identity
+    ):
+        raise _error("certification retained Python identity drifted")
+
+
 def install_certification_access_guard(
     repo_root: Path | None = None,
     *,
     contract: FinalCertificationContract | None = None,
+    retained_python_target: str | None = None,
 ) -> None:
-    """Install a process-local audit guard for public and E2E verification."""
+    """Install the process-local audit guard for OpenAPI and E2E verification."""
 
     global _ACCESS_GUARD_INSTALLED
     if _ACCESS_GUARD_INSTALLED:
         return
     root = (repo_root or Path(os.environ.get(PLUGIN_ROOT_ENV, "."))).resolve(strict=True)
     sealed = contract or load_contract(root=root)
+    trusted_python_identity = _capture_injected_retained_python_identity(
+        retained_python_target
+        or os.environ.get(PLUGIN_RETAINED_PYTHON_ENV, "")
+    )
 
     def audit(event: str, args: tuple[Any, ...]) -> None:
         if event == "open" and args and isinstance(args[0], (str, os.PathLike)):
@@ -3232,9 +3296,15 @@ def install_certification_access_guard(
         elif event == "os.system":
             raise _error("certification forbids os.system")
         elif event in {"os.posix_spawn", "os.posix_spawnp"} and len(args) > 1:
-            _guard_process(args[1])
+            _guard_process(
+                args[1], retained_python_identity=trusted_python_identity
+            )
         elif event == "subprocess.Popen" and len(args) > 1:
-            _guard_process(args[1], args[2] if len(args) > 2 else None)
+            _guard_process(
+                args[1],
+                args[2] if len(args) > 2 else None,
+                retained_python_identity=trusted_python_identity,
+            )
         elif event == "socket.connect" and len(args) > 1:
             address = args[1]
             if isinstance(address, str):
@@ -3264,7 +3334,12 @@ def pytest_configure(config: Any) -> None:
     contract = load_contract(root=root)
     if contract.test_suite.status != "locked":
         raise _error("pytest plugin refuses a pending test suite")
-    install_certification_access_guard(root, contract=contract)
+    # The public suite is already enclosed by the retained bubblewrap hard
+    # boundary.  Its plugin role is deliberately limited to collection and
+    # the sealed skip ledger: a global Python audit hook would alter the
+    # behavior of tests that exercise their own process/filesystem guards.
+    if mode == E2E_SUITE_KIND:
+        install_certification_access_guard(root, contract=contract)
 
 
 def pytest_collection_modifyitems(config: Any, items: Sequence[Any]) -> None:
@@ -3755,11 +3830,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h9_authority_boundary(result, contract=contract)
+    _require_h10_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p9_cert_commit"),
+        execution_commit=result.get("p10_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -3789,11 +3864,13 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P9/H9 aliases and the complete historical lineage."""
+    """Validate active P10/H10 aliases and the complete historical lineage."""
 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p10_cert_commit",
+        "h10_cert_commit",
         "p9_cert_commit",
         "h9_cert_commit",
         "p8_cert_commit",
@@ -3822,12 +3899,16 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p9_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h9_cert_commit"]
+        or commits["p10_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h10_cert_commit"]
+        or commits["p9_cert_commit"] != contract.p9_cert_commit
+        or commits["h9_cert_commit"] != contract.h9_cert_commit
         or commits["p8_cert_commit"] != contract.p8_cert_commit
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p10_cert_commit"] == commits["p9_cert_commit"]
+        or commits["h10_cert_commit"] == commits["h9_cert_commit"]
         or commits["p9_cert_commit"] == commits["p8_cert_commit"]
         or commits["h9_cert_commit"] == commits["h8_cert_commit"]
         or commits["p8_cert_commit"] == commits["p7_cert_commit"]
@@ -3851,17 +3932,17 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h9_authority_boundary(
+def _require_h10_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R9 to the factual R8 failure and all H9 isolation policies."""
+    """Bind R10 to the factual R9 failure and all H10 isolation policies."""
 
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H9 authority payload is absent")
+        raise _error("effective H10 authority payload is absent")
     isolation = authority.get("isolation")
     if (
-        authority.get("p8_failure") != expected_p8_failure_record()
+        authority.get("p9_failure") != expected_p9_failure_record()
         or not isinstance(isolation, Mapping)
         or isolation.get("sandbox_mountpoint_policy")
         != expected_sandbox_mountpoint_policy()
@@ -3875,8 +3956,16 @@ def _require_h9_authority_boundary(
         != expected_cleanup_diagnostic_policy()
         or isolation.get("cleanup_diagnostic_policy")
         != dict(contract.cleanup_diagnostic_policy)
+        or isolation.get("postgres_destroy_poll_policy")
+        != expected_postgres_destroy_poll_policy()
+        or isolation.get("postgres_destroy_poll_policy")
+        != dict(contract.postgres_destroy_poll_policy)
+        or isolation.get("test_access_guard_policy")
+        != expected_test_access_guard_policy()
+        or isolation.get("test_access_guard_policy")
+        != dict(contract.test_access_guard_policy)
     ):
-        raise _error("effective H9 failure/isolation authority drifted")
+        raise _error("effective H10 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -3884,7 +3973,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P9 authority's exact partial-clone status policy."""
+    """Require the effective P10 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -3918,7 +4007,7 @@ def _require_dvc_status_policy_projection(
         raise _error(f"{context} DVC status policy projection drifted")
 
 
-def _require_h8_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h10_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -3927,6 +4016,8 @@ def _require_h8_runtime_policy(contract: FinalCertificationContract) -> None:
         for path in SANDBOX_MASKED_FORBIDDEN_PATHS
     }
     cleanup = expected_postgres_cleanup_policy()
+    destroy_poll = expected_postgres_destroy_poll_policy()
+    access_guard = expected_test_access_guard_policy()
     if (
         contract.forbidden_read_prefixes != SANDBOX_ABSENT_FORBIDDEN_PREFIXES
         or contract.forbidden_read_paths != SANDBOX_MASKED_FORBIDDEN_PATHS
@@ -3951,13 +4042,30 @@ def _require_h8_runtime_policy(contract: FinalCertificationContract) -> None:
         or cleanup.get("socket_directory_empty_after_cleanup_required") is not True
         or cleanup.get("safe_internal_diagnostics_authorized") is not True
         or cleanup.get("raw_internal_diagnostics_serialized") is not False
+        or dict(contract.postgres_destroy_poll_policy) != destroy_poll
+        or destroy_poll.get("max_attempts")
+        != POSTGRES_DESTROY_POLL_MAX_ATTEMPTS
+        or destroy_poll.get("interval_seconds")
+        != POSTGRES_DESTROY_POLL_INTERVAL_SECONDS
+        or destroy_poll.get("single_stop_command") is not True
+        or destroy_poll.get("mixed_presence_same_owned_identity_allowed") is not True
+        or destroy_poll.get("double_absence_required") is not True
+        or destroy_poll.get("foreign_identity_fails_closed") is not True
+        or destroy_poll.get("socket_cleanup_after_double_absence") is not True
+        or destroy_poll.get("timeout_preserves_owner") is not True
+        or dict(contract.test_access_guard_policy) != access_guard
+        or access_guard.get("public_tests_boundary")
+        != "bubblewrap_hard_boundary"
+        or access_guard.get("public_tests_python_audit_hook") is not False
+        or access_guard.get("openapi_python_audit_hook") is not True
+        or access_guard.get("e2e_python_audit_hook") is not True
         or dict(contract.sandbox_mountpoint_policy)
         != expected_sandbox_mountpoint_policy()
         or dict(contract.sandbox_smoke_policy) != expected_sandbox_smoke_policy()
         or dict(contract.cleanup_diagnostic_policy)
         != expected_cleanup_diagnostic_policy()
     ):
-        raise _error("H9 runtime isolation policy drifted")
+        raise _error("H10 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -3969,7 +4077,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h8_runtime_policy(contract)
+    _require_h10_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -3978,14 +4086,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h9_authority_boundary(authority, contract=contract)
+    _require_h10_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p9_cert_commit"),
+        execution_commit=authority.get("p10_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p9_cert_commit"]
+    effective_commit = authority_commits["p10_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -6009,6 +6117,7 @@ def _start_owned_postgres(
     socket_handle: DirectoryHandle,
     *,
     namespace_validator: Callable[[str], None] | None = None,
+    owner_handoff: Callable[[OwnedPostgres], None] | None = None,
 ) -> tuple[OwnedPostgres, Mapping[str, Any]]:
     _require_postgres_socket_directory(
         socket_handle,
@@ -6103,6 +6212,9 @@ def _start_owned_postgres(
                 recovered,
                 context="PostgreSQL failed-run recovery",
             )
+            if owner_handoff is not None:
+                owner_handoff(recovered)
+                raise primary
             _stop_owned_postgres(recovered, socket_handle=socket_handle)
         except BaseException as cleanup_exc:
             if cleanup_exc is primary:
@@ -6123,6 +6235,8 @@ def _start_owned_postgres(
     owner = OwnedPostgres(name=container_name, container_id=container_id)
     try:
         _require_owned_postgres_binding(owner, context="PostgreSQL startup")
+        if owner_handoff is not None:
+            owner_handoff(owner)
         if malformed_run_identity:
             raise _error("Docker did not return one exact owned container ID")
         if namespace_validator is not None:
@@ -6187,6 +6301,8 @@ def _start_owned_postgres(
             time.sleep(0.25)
         raise _error("owned PostgreSQL container did not become ready")
     except BaseException:
+        if owner_handoff is not None:
+            raise
         try:
             _stop_owned_postgres(owner, socket_handle=socket_handle)
         except BaseException as cleanup_exc:
@@ -6250,12 +6366,83 @@ def _require_owned_postgres_binding(owner: OwnedPostgres, *, context: str) -> No
         raise _error(f"{context} container name/ID binding drifted")
 
 
-def _stop_owned_postgres(
+def _poll_owned_postgres_destroyed(owner: OwnedPostgres) -> Mapping[str, Any]:
+    """Wait for Docker auto-remove to prove name-and-ID absence."""
+
+    transient_owned_presence = False
+    for attempt in range(1, POSTGRES_DESTROY_POLL_MAX_ATTEMPTS + 1):
+        name_returncode, name_identity = _inspect_container_identity(owner.name)
+        id_returncode, id_identity = _inspect_container_identity(owner.container_id)
+        present_identities = tuple(
+            identity
+            for returncode, identity in (
+                (name_returncode, name_identity),
+                (id_returncode, id_identity),
+            )
+            if returncode == 0
+        )
+        if any(identity != owner.container_id for identity in present_identities):
+            raise _error("foreign PostgreSQL container appeared during cleanup")
+        if name_returncode == 1 and id_returncode == 1:
+            return {
+                "status": "confirmed_absent",
+                "attempts": attempt,
+                "name_and_id_absent": True,
+                "transient_owned_presence_observed": transient_owned_presence,
+                "foreign_or_ambiguous_identity_observed": False,
+                "container_name_or_id_serialized": False,
+            }
+        transient_owned_presence = True
+        if attempt < POSTGRES_DESTROY_POLL_MAX_ATTEMPTS:
+            time.sleep(POSTGRES_DESTROY_POLL_INTERVAL_SECONDS)
+    raise _error("owned PostgreSQL container destroy poll timed out")
+
+
+def _finish_owned_postgres_cleanup(
     owner: OwnedPostgres,
     *,
     socket_handle: DirectoryHandle,
 ) -> Mapping[str, Any]:
+    """Finish destroy polling and socket cleanup without issuing a stop."""
+
+    destroy_poll = _poll_owned_postgres_destroyed(owner)
+    removed_socket_entries = _cleanup_owned_postgres_socket_inventory(
+        socket_handle,
+        owner.socket_inventory,
+    )
+    return {
+        "removed": True,
+        "owned_container_only": True,
+        "graceful_stop": True,
+        "stop_timeout_seconds": POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS,
+        "identity_verified_before_stop": True,
+        "container_absent_after_stop": True,
+        "stop_target_exact_owned_container_id": True,
+        "destroy_poll": dict(destroy_poll),
+        "socket_inventory_claimed": len(owner.socket_inventory),
+        "socket_entries_removed_after_stop": removed_socket_entries,
+        "socket_cleanup_by_retained_directory_fd": True,
+        "socket_cleanup_identity_fields": [
+            "name",
+            "kind",
+            "device",
+            "inode",
+            "link_count",
+        ],
+        "arbitrary_residual_adoption": False,
+        "socket_directory_empty": True,
+    }
+
+
+def _stop_owned_postgres(
+    owner: OwnedPostgres,
+    *,
+    socket_handle: DirectoryHandle,
+    before_stop: Callable[[], None] | None = None,
+) -> Mapping[str, Any]:
     _require_owned_postgres_binding(owner, context="PostgreSQL cleanup")
+    if before_stop is not None:
+        before_stop()
     result = _run(
         (
             "/usr/bin/docker",
@@ -6275,50 +6462,35 @@ def _stop_owned_postgres(
         timeout_seconds=120,
         failure_stage="postgres cleanup",
     )
-    name_returncode, name_identity = _inspect_container_identity(owner.name)
-    id_returncode, id_identity = _inspect_container_identity(owner.container_id)
-    if name_returncode == 0 or id_returncode == 0:
-        # Never adopt/delete a replacement that reused the random name.
-        if name_identity != owner.container_id or id_identity != owner.container_id:
-            raise _error("foreign PostgreSQL container appeared during cleanup")
-        raise _error("owned PostgreSQL container survived graceful cleanup")
-    removed_socket_entries = _cleanup_owned_postgres_socket_inventory(
-        socket_handle,
-        owner.socket_inventory,
-    )
     return {
         "command": dict(result.record),
-        "removed": True,
-        "owned_container_only": True,
-        "graceful_stop": True,
-        "stop_timeout_seconds": POSTGRES_GRACEFUL_STOP_TIMEOUT_SECONDS,
-        "identity_verified_before_stop": True,
-        "container_absent_after_stop": True,
-        "stop_target_exact_owned_container_id": True,
-        "socket_inventory_claimed": len(owner.socket_inventory),
-        "socket_entries_removed_after_stop": removed_socket_entries,
-        "socket_cleanup_by_retained_directory_fd": True,
-        "socket_cleanup_identity_fields": [
-            "name",
-            "kind",
-            "device",
-            "inode",
-            "link_count",
-        ],
-        "arbitrary_residual_adoption": False,
-        "socket_directory_empty": True,
+        **_finish_owned_postgres_cleanup(owner, socket_handle=socket_handle),
     }
 
 
-def _suite_environment(kind: str) -> dict[str, str]:
+def _suite_environment(
+    kind: str,
+    *,
+    retained_python_target: str | None = None,
+) -> dict[str, str]:
     environment = {
         PLUGIN_MODE_ENV: kind,
         PLUGIN_ROOT_ENV: "/workspace",
         "TEST_DATABASE_URL": SAFE_DB_URL,
+        "PGHOST": DB_SOCKET_ROOT,
         "HOME": "/tmp",
         "XDG_CACHE_HOME": "/tmp/cache",
         "PATH": "/usr/bin:/bin",
     }
+    if retained_python_target is not None:
+        candidate = Path(retained_python_target)
+        if (
+            not candidate.is_absolute()
+            or not candidate.is_relative_to(Path("/usr"))
+            or ".." in candidate.parts
+        ):
+            raise _error("retained Python target environment binding is unsafe")
+        environment[PLUGIN_RETAINED_PYTHON_ENV] = retained_python_target
     if kind == PUBLIC_SUITE_KIND:
         # The sealed suite contains historical E10 sandbox regressions.  They
         # recognize this closed compatibility marker and verify the already
@@ -6485,7 +6657,10 @@ def _run_verification_with_runtime(
         cwd=source_root,
         execution_argv=(*bwrap, "/cert-python", *public_command[1:]),
         environment={
-            **_suite_environment(PUBLIC_SUITE_KIND),
+            **_suite_environment(
+                PUBLIC_SUITE_KIND,
+                retained_python_target=runtime.python.target,
+            ),
             "__PYVENV_LAUNCHER__": "/workspace/.venv/bin/python",
         },
         inherit_environment=False,
@@ -6537,7 +6712,10 @@ def _run_verification_with_runtime(
         cwd=source_root,
         execution_argv=(*bwrap, "/cert-python", *openapi_command[1:]),
         environment={
-            **_suite_environment(E2E_SUITE_KIND),
+            **_suite_environment(
+                E2E_SUITE_KIND,
+                retained_python_target=runtime.python.target,
+            ),
             "__PYVENV_LAUNCHER__": "/workspace/.venv/bin/python",
         },
         inherit_environment=False,
@@ -6570,7 +6748,10 @@ def _run_verification_with_runtime(
         cwd=source_root,
         execution_argv=(*bwrap, "/cert-python", *e2e_command[1:]),
         environment={
-            **_suite_environment(E2E_SUITE_KIND),
+            **_suite_environment(
+                E2E_SUITE_KIND,
+                retained_python_target=runtime.python.target,
+            ),
             "__PYVENV_LAUNCHER__": "/workspace/.venv/bin/python",
         },
         inherit_environment=False,
@@ -6600,7 +6781,10 @@ def _run_verification_with_runtime(
         ty_command,
         cwd=source_root,
         execution_argv=(*bwrap, "/cert-ty", *ty_command[1:]),
-        environment=_suite_environment(E2E_SUITE_KIND),
+        environment=_suite_environment(
+            E2E_SUITE_KIND,
+            retained_python_target=runtime.python.target,
+        ),
         inherit_environment=False,
         timeout_seconds=1800,
         pass_fds=runtime.pass_fds,
@@ -6624,7 +6808,10 @@ def _run_verification_with_runtime(
         cwd=source_root,
         execution_argv=(*bwrap, *poetry_execution_command),
         environment={
-            **_suite_environment(E2E_SUITE_KIND),
+            **_suite_environment(
+                E2E_SUITE_KIND,
+                retained_python_target=runtime.python.target,
+            ),
             "__PYVENV_LAUNCHER__": "/cert-poetry/bin/python",
         },
         inherit_environment=False,
@@ -7173,7 +7360,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h9_authority_boundary(authority, contract=contract)
+    _require_h10_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
@@ -8890,6 +9077,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         )
 
     database_owner: OwnedPostgres | None = None
+    database_stop_attempted = False
     clone_mountpoints: CloneMountpointLease | None = None
     verification_runtime: VerificationRuntimeLease | None = None
     installed_configuration: InstalledDvcConfiguration | None = None
@@ -8898,6 +9086,22 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
     result: dict[str, Any] | None = None
     work_removed = False
     publisher_consumed_lease = False
+
+    def mark_database_stop_attempted() -> None:
+        nonlocal database_stop_attempted
+        if database_stop_attempted:
+            raise _error("owned PostgreSQL stop command was already attempted")
+        database_stop_attempted = True
+
+    def retain_database_owner(owner: OwnedPostgres) -> None:
+        nonlocal database_owner
+        if database_owner is not None and (
+            database_owner.name != owner.name
+            or database_owner.container_id != owner.container_id
+        ):
+            raise _error("owned PostgreSQL handoff identity drifted")
+        database_owner = owner
+
     try:
         main_site_cache_lease = _open_main_dvc_site_cache_lease(root)
         # Close the preflight-to-flock race before any clone or egress.
@@ -9107,6 +9311,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         database_owner, database_record = _start_owned_postgres(
             socket_handle,
             namespace_validator=validate_execution_namespace,
+            owner_handoff=retain_database_owner,
         )
         verification_artifacts, verification = _run_verification_with_runtime(
             source_root=root,
@@ -9123,6 +9328,7 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         cleanup = _stop_owned_postgres(
             database_owner,
             socket_handle=socket_handle,
+            before_stop=mark_database_stop_attempted,
         )
         database_owner = None
         database_record = {
@@ -9352,10 +9558,17 @@ def build_phase4_final_certification(*, repo_root: Path = PROJECT_ROOT) -> dict[
         main_site_cache_lease = None
     if database_owner is not None:
         try:
-            _stop_owned_postgres(
-                database_owner,
-                socket_handle=socket_handle,
-            )
+            if database_stop_attempted:
+                _finish_owned_postgres_cleanup(
+                    database_owner,
+                    socket_handle=socket_handle,
+                )
+            else:
+                _stop_owned_postgres(
+                    database_owner,
+                    socket_handle=socket_handle,
+                    before_stop=mark_database_stop_attempted,
+                )
             database_owner = None
         except BaseException as exc:
             cleanup_error = exc

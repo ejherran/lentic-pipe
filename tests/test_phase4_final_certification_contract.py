@@ -78,6 +78,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.p7_cert_commit == certification.P7_CERT_COMMIT
     assert contract.h8_cert_commit == certification.H8_CERT_COMMIT
     assert contract.p8_cert_commit == certification.P8_CERT_COMMIT
+    assert contract.h9_cert_commit == certification.H9_CERT_COMMIT
+    assert contract.p9_cert_commit == certification.P9_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
@@ -95,6 +97,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert len(contract.p7_scope) == 2
     assert len(contract.h8_scope) == 11
     assert len(contract.p8_scope) == 2
+    assert len(contract.h9_scope) == 11
+    assert len(contract.p9_scope) == 2
     assert len(contract.r_scope) == 8
     assert len(contract.anchor_inputs) == 10
     assert len(contract.dvc_pointers) == 8
@@ -164,6 +168,7 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["isolation"]["superseded_p6_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p7_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p8_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p9_retry_authorized"] is False
     assert contract.raw["isolation"]["postgres_portable_path_policy"] == (
         certification.expected_postgres_portable_path_policy()
     )
@@ -193,6 +198,18 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     )
     assert dict(contract.cleanup_diagnostic_policy) == (
         certification.expected_cleanup_diagnostic_policy()
+    )
+    assert contract.raw["isolation"]["postgres_destroy_poll_policy"] == (
+        certification.expected_postgres_destroy_poll_policy()
+    )
+    assert dict(contract.postgres_destroy_poll_policy) == (
+        certification.expected_postgres_destroy_poll_policy()
+    )
+    assert contract.raw["isolation"]["test_access_guard_policy"] == (
+        certification.expected_test_access_guard_policy()
+    )
+    assert dict(contract.test_access_guard_policy) == (
+        certification.expected_test_access_guard_policy()
     )
     assert dict(contract.forbidden_read_prefix_dispositions) == {
         path: "require_absent" for path in certification.FORBIDDEN_READ_PREFIXES
@@ -347,11 +364,34 @@ def test_locked_suite_identity_has_exact_nonduplicating_selectors() -> None:
     )
 
     assert len(contract.test_suite.positive_test_paths) == 33
-    assert len(contract.test_suite.exact_skipped_nodes) == 7
+    assert len(contract.test_suite.exact_skipped_nodes) == 42
     assert len(contract.test_suite.supplemental_skipped_nodes) == 6
     assert len(contract.suite_selectors) == 39
     assert len(set(contract.suite_selectors)) == 39
     assert state_bound_node in contract.test_suite.exact_skipped_nodes
+    assert contract.test_suite.exact_skip_reason == (
+        "final_certification_sandbox_or_state_incompatible"
+    )
+    assert sum(
+        node.startswith("tests/test_audit_closure_p0_model_availability.py::")
+        for node in contract.test_suite.exact_skipped_nodes
+    ) == 16
+    assert contract.test_suite.exact_skipped_nodes[:7] == (
+        certification.HISTORICAL_EXACT_SKIPPED_NODES
+    )
+    assert len(contract.test_suite.exact_skipped_nodes[7:21]) == 14
+    assert all(
+        node.startswith("tests/test_audit_closure_p0_model_availability.py::")
+        for node in contract.test_suite.exact_skipped_nodes[21:37]
+    )
+    assert all(
+        node.startswith("tests/test_closure_phase3_context.py::")
+        for node in contract.test_suite.exact_skipped_nodes[37:40]
+    )
+    assert contract.test_suite.exact_skipped_nodes[40:] == (
+        "tests/test_closure_e0_u_authority.py::test_runner_and_authority_share_exact_capability_and_commit_contracts",
+        "tests/test_api_scientific_workflow_adapters.py::test_neural_ode_preflight_adapter_writes_dataset_diagnostic",
+    )
     assert "tests/test_build_closure_synthesis.py" in contract.suite_selectors
     assert state_bound_node not in contract.suite_selectors
     assert contract.test_suite.command_template.count("-p") == 2
@@ -420,6 +460,12 @@ def test_locked_suite_identity_has_exact_nonduplicating_selectors() -> None:
         ),
         lambda value: value["isolation"].update(no_clobber=False),
         lambda value: value["isolation"].update(cleanup_before_precommit=False),
+        lambda value: value["isolation"]["postgres_destroy_poll_policy"].update(
+            max_attempts=121
+        ),
+        lambda value: value["isolation"]["test_access_guard_policy"].update(
+            public_tests_python_audit_hook=True
+        ),
         lambda value: value["failure_diagnostics"].update(
             raw_stderr_preservation_authorized=True
         ),
@@ -660,6 +706,15 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert scopes["R-CERT9"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 8
+    assert scopes["H-CERT10"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
+    assert scopes["P-CERT10"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["R-CERT10"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 8
     assert pending["properties"]["selector_count"] == {"type": "null"}
     assert locked["properties"]["status"] == {
         "const": certification.LOCKED_SUITE_STATUS
@@ -675,6 +730,12 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     }
     assert locked["properties"]["allowed_skip_count"] == {
         "const": certification.LOCKED_SUITE_ALLOWED_SKIP_COUNT
+    }
+    assert suite["exact_skipped_nodes"]["minItems"] == 42
+    assert suite["exact_skipped_nodes"]["maxItems"] == 42
+    assert suite["exact_skipped_nodes"]["uniqueItems"] is True
+    assert suite["exact_skip_reason"] == {
+        "const": certification.EXACT_SKIP_REASON
     }
     assert suite["static_commands"]["const"].count(
         ["poetry", "check", "--lock"]
@@ -798,6 +859,7 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert boundary["superseded_p6_retry_authorized"] == {"const": False}
     assert boundary["superseded_p7_retry_authorized"] == {"const": False}
     assert boundary["superseded_p8_retry_authorized"] == {"const": False}
+    assert boundary["superseded_p9_retry_authorized"] == {"const": False}
     portable = boundary["postgres_portable_path_policy"]
     assert portable["additionalProperties"] is False
     assert portable["properties"] == {
@@ -833,6 +895,18 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert cleanup_diagnostics["properties"] == {
         key: {"const": value}
         for key, value in certification.expected_cleanup_diagnostic_policy().items()
+    }
+    destroy_poll = boundary["postgres_destroy_poll_policy"]
+    assert destroy_poll["additionalProperties"] is False
+    assert destroy_poll["properties"] == {
+        key: {"const": value}
+        for key, value in certification.expected_postgres_destroy_poll_policy().items()
+    }
+    access_guard = boundary["test_access_guard_policy"]
+    assert access_guard["additionalProperties"] is False
+    assert access_guard["properties"] == {
+        key: {"const": value}
+        for key, value in certification.expected_test_access_guard_policy().items()
     }
     assert boundary["post_restore_status_pointer_paths"] == {
         "const": ordered_pointer_paths
@@ -1195,10 +1269,13 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p7_cert_commit": contract.p7_cert_commit,
         "h8_cert_commit": contract.h8_cert_commit,
         "p8_cert_commit": contract.p8_cert_commit,
-        "h9_cert_commit": h_commit,
-        "p9_cert_commit": None,
+        "h9_cert_commit": contract.h9_cert_commit,
+        "p9_cert_commit": contract.p9_cert_commit,
+        "h10_cert_commit": h_commit,
+        "p10_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
+        "supersedes_p9": True,
         "supersedes_p8": True,
         "supersedes_p7": True,
         "supersedes_p6": True,
@@ -1221,7 +1298,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p8_cert_commit,),
+            h_commit: (contract.p9_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -1259,8 +1336,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_h7_p7_h8_p8_records",
+        "_historical_through_p9_records",
         lambda *_args, **_kwargs: (
+            [],
+            [],
             [],
             [],
             [],
@@ -1301,8 +1380,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p9_cert_commit"] == p_commit
-    assert result["h9_cert_commit"] == h_commit
+    assert result["p10_cert_commit"] == p_commit
+    assert result["h10_cert_commit"] == h_commit
+    assert result["p9_cert_commit"] == contract.p9_cert_commit
+    assert result["h9_cert_commit"] == contract.h9_cert_commit
     assert result["p8_cert_commit"] == contract.p8_cert_commit
     assert result["h8_cert_commit"] == contract.h8_cert_commit
     assert result["p7_cert_commit"] == contract.p7_cert_commit
@@ -1380,8 +1461,10 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_h1_p1_h2_p2_h3_p3_h4_p4_h5_p5_h6_p6_h7_p7_h8_p8_records",
+        "_historical_through_p9_records",
         lambda *_args, **_kwargs: (
+            [],
+            [],
             [],
             [],
             [],
@@ -1451,10 +1534,13 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["p6_failure"] == certification.expected_p6_failure_record()
     assert authority["p7_failure"] == certification.expected_p7_failure_record()
     assert authority["p8_failure"] == certification.expected_p8_failure_record()
+    assert authority["p9_failure"] == certification.expected_p9_failure_record()
     assert authority["topology"]["h8_cert_commit"] == contract.h8_cert_commit
     assert authority["topology"]["p8_cert_commit"] == contract.p8_cert_commit
-    assert authority["topology"]["h9_cert_commit"] == "e" * 40
-    assert authority["topology"]["p9_cert_commit"] is None
+    assert authority["topology"]["h9_cert_commit"] == contract.h9_cert_commit
+    assert authority["topology"]["p9_cert_commit"] == contract.p9_cert_commit
+    assert authority["topology"]["h10_cert_commit"] == "e" * 40
+    assert authority["topology"]["p10_cert_commit"] is None
     assert authority["topology"]["h_cert_commit"] == "e" * 40
     assert authority["topology"]["p_cert_commit"] is None
     assert authority["dvc_status_policy"] == (
@@ -1469,9 +1555,11 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["p7_component_records"] == []
     assert authority["h8_component_records"] == []
     assert authority["p8_component_records"] == []
-    assert authority["h9_component_records"] == authority["h_component_records"]
-    assert authority["h9_scope"] == authority["h_scope"]
-    assert authority["p9_scope"] == authority["p_scope"]
+    assert authority["h9_component_records"] == []
+    assert authority["p9_component_records"] == []
+    assert authority["h10_component_records"] == authority["h_component_records"]
+    assert authority["h10_scope"] == authority["h_scope"]
+    assert authority["p10_scope"] == authority["p_scope"]
     assert authority["isolation"]["postgres_cleanup_policy"] == (
         certification.expected_postgres_cleanup_policy()
     )
@@ -1483,6 +1571,12 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     assert authority["isolation"]["cleanup_diagnostic_policy"] == (
         certification.expected_cleanup_diagnostic_policy()
+    )
+    assert authority["isolation"]["postgres_destroy_poll_policy"] == (
+        certification.expected_postgres_destroy_poll_policy()
+    )
+    assert authority["isolation"]["test_access_guard_policy"] == (
+        certification.expected_test_access_guard_policy()
     )
     assert authority["authorizations"]["post_phase4_work_authorized"] is False
     assert "guard_path" not in authority["isolation"]
@@ -1963,3 +2057,58 @@ def test_historical_p3_is_byte_exact_and_failure_is_sanitized() -> None:
     assert p8_failure["namespace_path_or_run_id_serialized"] is False
     assert p8_failure["archive_is_authority"] is False
     assert p8_failure["retry_authorized"] is False
+
+    complete_v9 = certification._historical_through_p9_records(  # noqa: SLF001
+        contract,
+        root=ROOT,
+    )
+    assert [len(group) for group in complete_v9] == [11, 2] * 9
+    assert complete_v9[-1] == [
+        {
+            "path": certification.H9_AUTHORITY_PATH.as_posix(),
+            "bytes": certification.H9_AUTHORITY_BYTES,
+            "sha256": certification.H9_AUTHORITY_SHA256,
+            "git_blob_oid": complete_v9[-1][0]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+        {
+            "path": certification.H9_AUTHORITY_MANIFEST_PATH.as_posix(),
+            "bytes": certification.H9_AUTHORITY_MANIFEST_BYTES,
+            "sha256": certification.H9_AUTHORITY_MANIFEST_SHA256,
+            "git_blob_oid": complete_v9[-1][1]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+    ]
+    p9_failure = certification.expected_p9_failure_record()
+    assert p9_failure["status"] == "execution_and_cleanup_failed_closed"
+    assert p9_failure["attempt"] == "R-CERT9"
+    assert p9_failure["active_error"]["stage"] == "public_tests"
+    assert p9_failure["active_error"]["returncode"] == 1
+    assert p9_failure["observed_cause"] == {
+        "stage": "public_tests",
+        "safe_error": "registered_suite_failures_errors_and_state_skips",
+        "total": 944,
+        "passed": 857,
+        "failures": 65,
+        "errors": 1,
+        "skipped": 21,
+        "junit_written": True,
+        "raw_diagnostic_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    assert p9_failure["cleanup"] == {
+        "status": "failed_closed",
+        "namespace_preserved": True,
+        "active_error_was_masked": False,
+        "reason_codes": ["database_owner_retained"],
+        "exact_owned_container_absent": False,
+        "socket_directory_empty": False,
+    }
+    assert p9_failure["evidence_counts"]["public_test_cases_reported"] == 944
+    assert p9_failure["evidence_counts"]["public_test_passes"] == 857
+    assert p9_failure["evidence_counts"]["public_test_failures"] == 65
+    assert p9_failure["evidence_counts"]["public_test_errors"] == 1
+    assert p9_failure["evidence_counts"]["public_test_skips"] == 21
+    assert p9_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p9_failure["archive_is_authority"] is False
+    assert p9_failure["retry_authorized"] is False
