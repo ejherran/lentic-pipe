@@ -1607,6 +1607,12 @@ CLOSURE_PHASE4_H_CERT_V15_COMMIT = (
 CLOSURE_PHASE4_P_CERT_V15_COMMIT = (
     "fa00bbd07d47ff504f2323e418934824efab386a"
 )
+CLOSURE_PHASE4_H_CERT_V16_COMMIT = (
+    "4f78e7d1a8f93eedda169c5499c331b8da15de1e"
+)
+CLOSURE_PHASE4_P_CERT_V16_COMMIT = (
+    "6c5fbaac2bf48393b3e7ef3e24d95006ecc016b9"
+)
 CLOSURE_PHASE4_H_CERT_V1_STAGED_SCOPE = {
     "configs/closure_v1/phase4_final_certification.schema.json": "A",
     "configs/closure_v1/phase4_final_certification.yaml": "A",
@@ -1902,8 +1908,15 @@ CLOSURE_PHASE4_H_CERT_V15_GIT_MODES = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
     for path in CLOSURE_PHASE4_H_CERT_V15_STAGED_SCOPE
 }
-CLOSURE_PHASE4_H_CERT_STAGED_SCOPE = {
+CLOSURE_PHASE4_H_CERT_V16_STAGED_SCOPE = {
     path: "M" for path in CLOSURE_PHASE4_H_CERT_V15_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_V16_GIT_MODES = {
+    path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
+    for path in CLOSURE_PHASE4_H_CERT_V16_STAGED_SCOPE
+}
+CLOSURE_PHASE4_H_CERT_STAGED_SCOPE = {
+    path: "M" for path in CLOSURE_PHASE4_H_CERT_V16_STAGED_SCOPE
 }
 CLOSURE_PHASE4_H_CERT_GIT_MODES = {
     path: "100755" if path == "src/data/prepare_commit_artifacts.py" else "100644"
@@ -1957,9 +1970,28 @@ CLOSURE_PHASE4_P_CERT_V15_BYTES_SHA256 = MappingProxyType(
         ),
     }
 )
-CLOSURE_PHASE4_P_CERT_STAGED_SCOPE = {
+CLOSURE_PHASE4_P_CERT_V16_STAGED_SCOPE = {
     "configs/closure_v1/phase4_final_certification_authority_v16.json": "A",
     "configs/closure_v1/phase4_final_certification_authority_manifest_v16.json": "A",
+}
+CLOSURE_PHASE4_P_CERT_V16_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_P_CERT_V16_STAGED_SCOPE
+}
+CLOSURE_PHASE4_P_CERT_V16_BYTES_SHA256 = MappingProxyType(
+    {
+        "configs/closure_v1/phase4_final_certification_authority_v16.json": (
+            142_014,
+            "aeff33d3ca0201fa86ded7759b6b3b7a12dad37b27c0a143f84a834fc9876797",
+        ),
+        "configs/closure_v1/phase4_final_certification_authority_manifest_v16.json": (
+            3_638,
+            "e78e86590722c8eccd9f0936553750a8530e07232237cf57cf867f7b5e3f6fd3",
+        ),
+    }
+)
+CLOSURE_PHASE4_P_CERT_STAGED_SCOPE = {
+    "configs/closure_v1/phase4_final_certification_authority_v17.json": "A",
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v17.json": "A",
 }
 CLOSURE_PHASE4_P_CERT_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_P_CERT_STAGED_SCOPE
@@ -2001,6 +2033,12 @@ CLOSURE_PHASE4_R_CERT_V15_STAGED_SCOPE = {
 }
 CLOSURE_PHASE4_R_CERT_V15_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_R_CERT_V15_STAGED_SCOPE
+}
+CLOSURE_PHASE4_R_CERT_V16_STAGED_SCOPE = dict(
+    CLOSURE_PHASE4_R_CERT_STAGED_SCOPE
+)
+CLOSURE_PHASE4_R_CERT_V16_GIT_MODES = {
+    path: "100644" for path in CLOSURE_PHASE4_R_CERT_V16_STAGED_SCOPE
 }
 CLOSURE_PHASE4_R_CERT_GIT_MODES = {
     path: "100644" for path in CLOSURE_PHASE4_R_CERT_STAGED_SCOPE
@@ -21543,6 +21581,8 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             or contract.p14_cert_commit != CLOSURE_PHASE4_P_CERT_V14_COMMIT
             or contract.h15_cert_commit != CLOSURE_PHASE4_H_CERT_V15_COMMIT
             or contract.p15_cert_commit != CLOSURE_PHASE4_P_CERT_V15_COMMIT
+            or contract.h16_cert_commit != CLOSURE_PHASE4_H_CERT_V16_COMMIT
+            or contract.p16_cert_commit != CLOSURE_PHASE4_P_CERT_V16_COMMIT
             or contract.test_suite.status != "locked"
             or contract.test_suite.collected_test_count != 944
             or contract.test_suite.nodeids_sha256
@@ -21612,6 +21652,12 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             != CLOSURE_PHASE4_P_CERT_V15_STAGED_SCOPE
             or contract_module.expected_r15_scope()
             != CLOSURE_PHASE4_R_CERT_V15_STAGED_SCOPE
+            or contract_module.expected_h16_scope()
+            != CLOSURE_PHASE4_H_CERT_V16_STAGED_SCOPE
+            or contract_module.expected_p16_scope()
+            != CLOSURE_PHASE4_P_CERT_V16_STAGED_SCOPE
+            or contract_module.expected_r16_scope()
+            != CLOSURE_PHASE4_R_CERT_V16_STAGED_SCOPE
             or contract_module.expected_h_scope()
             != CLOSURE_PHASE4_H_CERT_STAGED_SCOPE
             or contract_module.expected_p_scope()
@@ -21684,6 +21730,12 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
             != CLOSURE_PHASE4_P_CERT_V15_GIT_MODES
             or contract_module.expected_r15_modes()
             != CLOSURE_PHASE4_R_CERT_V15_GIT_MODES
+            or contract_module.expected_h16_modes()
+            != CLOSURE_PHASE4_H_CERT_V16_GIT_MODES
+            or contract_module.expected_p16_modes()
+            != CLOSURE_PHASE4_P_CERT_V16_GIT_MODES
+            or contract_module.expected_r16_modes()
+            != CLOSURE_PHASE4_R_CERT_V16_GIT_MODES
             or contract_module.expected_r_modes()
             != CLOSURE_PHASE4_R_CERT_GIT_MODES
             or tuple(contract.output_paths)
@@ -21941,12 +21993,67 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
                 "identity_revalidated_before_and_after_read": True,
                 "xml_doctype_forbidden": True,
                 "xml_entity_declaration_forbidden": True,
-                "duplicate_nodeids_forbidden": True,
+                "duplicate_testcase_nodeid_policy": (
+                    "single_record_or_exact_failure_error_pair"
+                ),
+                "duplicate_testcase_pair_max_records": 2,
+                "duplicate_testcase_pair_exact_outcomes": ["failure", "error"],
                 "outside_sealed_suite_nodeids_forbidden": True,
                 "unknown_elements_or_attributes_forbidden": True,
                 "exact_collection_count_required": True,
                 "exact_collection_digest_required": True,
                 "exact_skip_ledger_required": True,
+                "exact_skip_override_marker": "skipif_true",
+                "exact_skip_override_prepend": True,
+                "preexisting_skipif_precedence_neutralized": True,
+                "exact_skip_reason_emitted_required": True,
+                "raw_skip_reason_aliases": {
+                    (
+                        "tests/test_audit_closure_p0_sequence_bundle.py::"
+                        "test_real_p0_physical_schema_matches_closed_fields"
+                    ): (
+                        "The ignored P0 payload is restored only in an authorized "
+                        "data workspace"
+                    ),
+                    (
+                        "tests/test_audit_closure_p0_sequence_bundle.py::"
+                        "test_real_p0_audit_failure_is_read_only[early]"
+                    ): (
+                        "The ignored P0 payload is restored only in an authorized "
+                        "data workspace"
+                    ),
+                    (
+                        "tests/test_audit_closure_p0_sequence_bundle.py::"
+                        "test_real_p0_audit_failure_is_read_only[late]"
+                    ): (
+                        "The ignored P0 payload is restored only in an authorized "
+                        "data workspace"
+                    ),
+                    (
+                        "tests/test_audit_closure_p0_sequence_bundle.py::"
+                        "test_real_p0_audit_pass_is_read_only"
+                    ): (
+                        "The ignored P0 payload is restored only in an authorized "
+                        "data workspace"
+                    ),
+                    (
+                        "tests/test_audit_closure_p0_sequence_bundle.py::"
+                        "test_real_p0_cli_is_repeatable_and_read_only"
+                    ): (
+                        "The ignored P0 payload is restored only in an authorized "
+                        "data workspace"
+                    ),
+                },
+                "raw_skip_reason_alias_count": 5,
+                "raw_skip_reason_aliases_canonicalized_before_ledger_validation": (
+                    True
+                ),
+                "pytest_declared_tests_teardown_error_counter_accounting": True,
+                "declared_tests_minimum": "logical_testcase_identity_count",
+                "declared_tests_maximum": (
+                    "logical_testcase_identity_count_plus_error_identity_count"
+                ),
+                "declared_failures_errors_skipped_exact": True,
                 "serialized_fields": [
                     "status",
                     "returncode",
@@ -22401,6 +22508,52 @@ def _require_closure_phase4_cert_contract(*, repo_root: Path) -> Any:
         }:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                 "Closure Phase 4 superseded P-CERT15 execution/no-retry policy "
+                "drifted"
+            )
+        p16_failure = contract_module.expected_p16_failure_record()
+        p16_active_error = p16_failure.get("active_error")
+        p16_public_failure = (
+            p16_active_error.get("public_tests_failure")
+            if isinstance(p16_active_error, Mapping)
+            else None
+        )
+        if (
+            hashlib.sha256(
+                contract_module.canonical_json_bytes(p16_failure)
+            ).hexdigest()
+            != "3e49294cf27ec8bc1205c9a2c280fb741d13238aef320c611fec9b043c6b4213"
+            or p16_failure.get("attempt") != "R-CERT16"
+            or p16_failure.get("status")
+            != "execution_failed_closed_cleanup_succeeded"
+            or p16_failure.get("retry_authorized") is not False
+            or not isinstance(p16_public_failure, Mapping)
+            or dict(p16_public_failure)
+            != {
+                "status": "failure_identity_unavailable",
+                "returncode": 1,
+                "totals": {},
+                "failed_nodeids": [],
+                "failed_nodeids_sha256": (
+                    "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+                ),
+                "error_nodeids": [],
+                "error_nodeids_sha256": (
+                    "37517e5f3dc66819f61f5a7bb8ace1921282415f10551d2defa5c3eb0985b570"
+                ),
+                "collected_test_count": None,
+                "collected_nodeids_sha256": None,
+                "unavailable_reason": "junit_malformed_or_hostile",
+                "messages_preserved": False,
+                "tracebacks_preserved": False,
+                "raw_junit_preserved": False,
+                "raw_stdout_preserved": False,
+                "raw_stderr_preserved": False,
+                "credentials_preserved": False,
+                "absolute_paths_preserved": False,
+            }
+        ):
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                "Closure Phase 4 superseded P-CERT16 execution/no-retry policy "
                 "drifted"
             )
         return contract
@@ -23077,6 +23230,31 @@ def _require_closure_phase4_p15_files_intact(*, repo_root: Path) -> None:
             )
 
 
+def _require_closure_phase4_p16_files_intact(*, repo_root: Path) -> None:
+    _require_closure_phase4_historical_authority_files_intact(
+        CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+        expected_scope=CLOSURE_PHASE4_P_CERT_V16_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_P_CERT_V16_GIT_MODES,
+        label="P-CERT16",
+        repo_root=repo_root,
+    )
+    for raw_path, (expected_bytes, expected_sha256) in (
+        CLOSURE_PHASE4_P_CERT_V16_BYTES_SHA256.items()
+    ):
+        payload, _identity = _capture_closure_phase4_cert_file(
+            raw_path,
+            repo_root=repo_root,
+            expected_mode=0o644,
+        )
+        if (
+            len(payload) != expected_bytes
+            or hashlib.sha256(payload).hexdigest() != expected_sha256
+        ):
+            raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+                f"Historical P-CERT16 canonical byte identity drifted: {raw_path}"
+            )
+
+
 def _require_closure_phase4_cert_v1_history(*, repo_root: Path) -> None:
     """Bind the immutable editorial -> H1 -> P1 certification prefix."""
 
@@ -23593,16 +23771,52 @@ def _require_closure_phase4_cert_v15_history(*, repo_root: Path) -> None:
     _require_closure_phase4_p15_files_intact(repo_root=repo_root)
 
 
+def _require_closure_phase4_cert_v16_history(*, repo_root: Path) -> None:
+    """Bind immutable history through H16/P16 for H-CERT17."""
+
+    _require_closure_phase4_cert_v15_history(repo_root=repo_root)
+    if (
+        _closure_phase4_commit_parents(
+            CLOSURE_PHASE4_H_CERT_V16_COMMIT,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_P_CERT_V15_COMMIT,)
+        or _closure_phase4_commit_parents(
+            CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+            repo_root=repo_root,
+        )
+        != (CLOSURE_PHASE4_H_CERT_V16_COMMIT,)
+    ):
+        raise ClosurePhase4FinalCertificationPrecommitAdapterError(
+            "Closure Phase 4 certification requires exact P15 -> H16 -> P16 history"
+        )
+    _require_closure_phase4_cert_historical_commit(
+        CLOSURE_PHASE4_H_CERT_V16_COMMIT,
+        expected_scope=CLOSURE_PHASE4_H_CERT_V16_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_H_CERT_V16_GIT_MODES,
+        label="H-CERT16",
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_cert_historical_commit(
+        CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+        expected_scope=CLOSURE_PHASE4_P_CERT_V16_STAGED_SCOPE,
+        expected_modes=CLOSURE_PHASE4_P_CERT_V16_GIT_MODES,
+        label="P-CERT16",
+        repo_root=repo_root,
+    )
+    _require_closure_phase4_p16_files_intact(repo_root=repo_root)
+
+
 def _require_closure_phase4_published_h_cert(
     commit: str, *, repo_root: Path
 ) -> None:
-    _require_closure_phase4_cert_v15_history(repo_root=repo_root)
+    _require_closure_phase4_cert_v16_history(repo_root=repo_root)
     if (
         _closure_phase4_commit_parents(commit, repo_root=repo_root)
-        != (CLOSURE_PHASE4_P_CERT_V15_COMMIT,)
+        != (CLOSURE_PHASE4_P_CERT_V16_COMMIT,)
     ):
         raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Published H-CERT16 must be the direct single-parent child of P-CERT15"
+            "Published H-CERT17 must be the direct single-parent child of P-CERT16"
         )
     _require_closure_phase4_cert_committed_bindings(
         commit,
@@ -23617,7 +23831,7 @@ def _require_closure_phase4_published_p_cert(
     parents = _closure_phase4_commit_parents(commit, repo_root=repo_root)
     if len(parents) != 1:
         raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-            "Published P-CERT16 must have exactly one H-CERT16 parent"
+            "Published P-CERT17 must have exactly one H-CERT17 parent"
         )
     h_commit = parents[0]
     _require_closure_phase4_published_h_cert(h_commit, repo_root=repo_root)
@@ -23865,8 +24079,12 @@ def _closure_phase4_cert_semantic_digest(
                 != CLOSURE_PHASE4_H_CERT_V15_COMMIT
                 or result.get("p15_cert_commit")
                 != CLOSURE_PHASE4_P_CERT_V15_COMMIT
-                or result.get("h16_cert_commit") is not None
-                or result.get("p16_cert_commit") is not None
+                or result.get("h16_cert_commit")
+                != CLOSURE_PHASE4_H_CERT_V16_COMMIT
+                or result.get("p16_cert_commit")
+                != CLOSURE_PHASE4_P_CERT_V16_COMMIT
+                or result.get("h17_cert_commit") is not None
+                or result.get("p17_cert_commit") is not None
                 or result.get("writes_performed") is not False
                 or result.get("dvc_status_checked") is not False
                 or result.get("dvc_pull_commands_run") is not False
@@ -23909,7 +24127,9 @@ def _closure_phase4_cert_semantic_digest(
                 "p14_cert_commit": CLOSURE_PHASE4_P_CERT_V14_COMMIT,
                 "h15_cert_commit": CLOSURE_PHASE4_H_CERT_V15_COMMIT,
                 "p15_cert_commit": CLOSURE_PHASE4_P_CERT_V15_COMMIT,
-                "h16_base_commit": head,
+                "h16_cert_commit": CLOSURE_PHASE4_H_CERT_V16_COMMIT,
+                "p16_cert_commit": CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+                "h17_base_commit": head,
                 "suite": {
                     "status": contract.test_suite.status,
                     "selector_count": contract.test_suite.selector_count,
@@ -23979,8 +24199,10 @@ def _closure_phase4_cert_semantic_digest(
                 "p14_cert_commit": CLOSURE_PHASE4_P_CERT_V14_COMMIT,
                 "h15_cert_commit": CLOSURE_PHASE4_H_CERT_V15_COMMIT,
                 "p15_cert_commit": CLOSURE_PHASE4_P_CERT_V15_COMMIT,
-                "h16_cert_commit": head,
-                "p16_cert_commit": None,
+                "h16_cert_commit": CLOSURE_PHASE4_H_CERT_V16_COMMIT,
+                "p16_cert_commit": CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+                "h17_cert_commit": head,
+                "p17_cert_commit": None,
                 "h12_cert_commit": CLOSURE_PHASE4_H_CERT_V12_COMMIT,
                 "p12_cert_commit": CLOSURE_PHASE4_P_CERT_V12_COMMIT,
                 "h11_cert_commit": CLOSURE_PHASE4_H_CERT_V11_COMMIT,
@@ -24009,7 +24231,7 @@ def _closure_phase4_cert_semantic_digest(
         elif gate == "R-CERT":
             from src.reporting import build_phase4_final_certification as builder
 
-            h16_commit = _require_closure_phase4_published_p_cert(
+            h17_commit = _require_closure_phase4_published_p_cert(
                 head,
                 repo_root=repo_root,
             )
@@ -24021,9 +24243,13 @@ def _closure_phase4_cert_semantic_digest(
             )
             if (
                 effective.get("p_cert_commit") != head
-                or effective.get("p16_cert_commit") != head
-                or effective.get("h_cert_commit") != h16_commit
-                or effective.get("h16_cert_commit") != h16_commit
+                or effective.get("p17_cert_commit") != head
+                or effective.get("h_cert_commit") != h17_commit
+                or effective.get("h17_cert_commit") != h17_commit
+                or effective.get("p16_cert_commit")
+                != CLOSURE_PHASE4_P_CERT_V16_COMMIT
+                or effective.get("h16_cert_commit")
+                != CLOSURE_PHASE4_H_CERT_V16_COMMIT
                 or effective.get("p15_cert_commit")
                 != CLOSURE_PHASE4_P_CERT_V15_COMMIT
                 or effective.get("h15_cert_commit")
@@ -24087,7 +24313,8 @@ def _closure_phase4_cert_semantic_digest(
                 raise ClosurePhase4FinalCertificationPrecommitAdapterError(
                     "R-CERT is not based on the effective published "
                     "H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7/H8/P8/H9/P9 "
-                    "H10/P10/H11/P11/H12/P12/H14/P14/H15/P15/H16/P16 authority "
+                    "H10/P10/H11/P11/H12/P12/H14/P14/H15/P15/H16/P16/H17/P17 "
+                    "authority "
                     "chain with "
                     "failed unpublished H13 and absent P13/R13"
                 )
@@ -24135,6 +24362,8 @@ def _closure_phase4_cert_semantic_digest(
                 "sha256": effective.get("authority_sha256"),
                 "p_cert_commit": effective.get("p_cert_commit"),
                 "h_cert_commit": effective.get("h_cert_commit"),
+                "p17_cert_commit": effective.get("p17_cert_commit"),
+                "h17_cert_commit": effective.get("h17_cert_commit"),
                 "p16_cert_commit": effective.get("p16_cert_commit"),
                 "h16_cert_commit": effective.get("h16_cert_commit"),
                 "p15_cert_commit": effective.get("p15_cert_commit"),
@@ -24172,6 +24401,8 @@ def _closure_phase4_cert_semantic_digest(
                 "sha256": effective.get("manifest_sha256"),
                 "p_cert_commit": effective.get("p_cert_commit"),
                 "h_cert_commit": effective.get("h_cert_commit"),
+                "p17_cert_commit": effective.get("p17_cert_commit"),
+                "h17_cert_commit": effective.get("h17_cert_commit"),
                 "p16_cert_commit": effective.get("p16_cert_commit"),
                 "h16_cert_commit": effective.get("h16_cert_commit"),
                 "p15_cert_commit": effective.get("p15_cert_commit"),
@@ -24375,9 +24606,11 @@ def _closure_phase4_cert_semantic_digest(
             semantic = {
                 "gate": gate,
                 "p_cert_commit": head,
-                "p16_cert_commit": head,
-                "h_cert_commit": h16_commit,
-                "h16_cert_commit": h16_commit,
+                "p17_cert_commit": head,
+                "h_cert_commit": h17_commit,
+                "h17_cert_commit": h17_commit,
+                "p16_cert_commit": CLOSURE_PHASE4_P_CERT_V16_COMMIT,
+                "h16_cert_commit": CLOSURE_PHASE4_H_CERT_V16_COMMIT,
                 "p15_cert_commit": CLOSURE_PHASE4_P_CERT_V15_COMMIT,
                 "h15_cert_commit": CLOSURE_PHASE4_H_CERT_V15_COMMIT,
                 "p14_cert_commit": CLOSURE_PHASE4_P_CERT_V14_COMMIT,
@@ -24479,11 +24712,11 @@ def closure_phase4_cert_pre_stage_scope(
         )
     head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
     if gate == "H-CERT":
-        if head != CLOSURE_PHASE4_P_CERT_V15_COMMIT:
+        if head != CLOSURE_PHASE4_P_CERT_V16_COMMIT:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "H-CERT16 must be based on exact published P-CERT15 fa00bbd"
+                "H-CERT17 must be based on exact published P-CERT16 6c5fbaa"
             )
-        _require_closure_phase4_cert_v15_history(repo_root=repo_root)
+        _require_closure_phase4_cert_v16_history(repo_root=repo_root)
     elif gate == "P-CERT":
         _require_closure_phase4_published_h_cert(head, repo_root=repo_root)
     else:
@@ -24614,11 +24847,11 @@ def validate_closure_phase4_cert_staged_transaction(
     )
     head = _git_output(repo_root, "rev-parse", "HEAD^{commit}").strip()
     if gate == "H-CERT":
-        if head != CLOSURE_PHASE4_P_CERT_V15_COMMIT:
+        if head != CLOSURE_PHASE4_P_CERT_V16_COMMIT:
             raise ClosurePhase4FinalCertificationPrecommitAdapterError(
-                "Staged H-CERT16 base drifted"
+                "Staged H-CERT17 base drifted"
             )
-        _require_closure_phase4_cert_v15_history(repo_root=repo_root)
+        _require_closure_phase4_cert_v16_history(repo_root=repo_root)
     elif gate == "P-CERT":
         _require_closure_phase4_published_h_cert(head, repo_root=repo_root)
     elif gate == "R-CERT":

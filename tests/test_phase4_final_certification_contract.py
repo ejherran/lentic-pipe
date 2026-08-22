@@ -90,6 +90,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.p14_cert_commit == certification.P14_CERT_COMMIT
     assert contract.h15_cert_commit == certification.H15_CERT_COMMIT
     assert contract.p15_cert_commit == certification.P15_CERT_COMMIT
+    assert contract.h16_cert_commit == certification.H16_CERT_COMMIT
+    assert contract.p16_cert_commit == certification.P16_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
@@ -196,6 +198,7 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["isolation"]["superseded_p12_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p14_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p15_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p16_retry_authorized"] is False
     assert contract.raw["isolation"]["postgres_portable_path_policy"] == (
         certification.expected_postgres_portable_path_policy()
     )
@@ -399,13 +402,30 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     )
     assert contract.raw["topology"]["P-CERT16"]["supersedes_P_CERT15"] is True
     assert contract.raw["topology"]["R-CERT16"] == {
-        "role": "final_doctoral_software_and_restorability_evidence",
+        "role": "superseded_failed_final_doctoral_software_and_restorability_evidence",
         "requires_published_P_CERT16": True,
+        "failure_stage": "public_tests",
+        "failure_kind": "strict_junit_diagnostic_rejected",
+        "failure_identity_status": "failure_identity_unavailable",
+        "failure_identity_unavailable_reason": "junit_malformed_or_hostile",
+        "execution_runs": 1,
+        "output_count": 0,
+        "retry_authorized": False,
+        "manifest_written_last": False,
+    }
+    assert contract.raw["topology"]["H-CERT17"]["direct_parent"] == (
+        "p16_cert_commit"
+    )
+    assert contract.raw["topology"]["P-CERT17"]["supersedes_P_CERT16"] is True
+    assert contract.raw["topology"]["R-CERT17"] == {
+        "role": "final_doctoral_software_and_restorability_evidence",
+        "requires_published_P_CERT17": True,
         "output_count": 8,
         "manifest_written_last": True,
     }
     assert "attempt_to_execute_from_superseded_p14" in contract.stop_rules
     assert "attempt_to_execute_from_superseded_p15" in contract.stop_rules
+    assert "attempt_to_execute_from_superseded_p16" in contract.stop_rules
     assert "effective_authority_alias_projection_drift" in contract.stop_rules
     assert (
         "public_tests_junit_failure_diagnostic_policy_drift" in contract.stop_rules
@@ -1087,6 +1107,7 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert boundary["superseded_p12_retry_authorized"] == {"const": False}
     assert boundary["superseded_p14_retry_authorized"] == {"const": False}
     assert boundary["superseded_p15_retry_authorized"] == {"const": False}
+    assert boundary["superseded_p16_retry_authorized"] == {"const": False}
     portable = boundary["postgres_portable_path_policy"]
     assert portable["additionalProperties"] is False
     assert portable["properties"] == {
@@ -1148,6 +1169,25 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
             certification.expected_public_tests_junit_diagnostic_policy().items()
         )
     }
+    expected_junit_diagnostics = (
+        certification.expected_public_tests_junit_diagnostic_policy()
+    )
+    assert expected_junit_diagnostics["duplicate_testcase_nodeid_policy"] == (
+        "single_record_or_exact_failure_error_pair"
+    )
+    assert expected_junit_diagnostics["duplicate_testcase_pair_max_records"] == 2
+    assert expected_junit_diagnostics[
+        "duplicate_testcase_pair_exact_outcomes"
+    ] == ["failure", "error"]
+    assert expected_junit_diagnostics[
+        "pytest_declared_tests_teardown_error_counter_accounting"
+    ] is True
+    assert expected_junit_diagnostics["declared_tests_minimum"] == (
+        "logical_testcase_identity_count"
+    )
+    assert expected_junit_diagnostics["declared_tests_maximum"] == (
+        "logical_testcase_identity_count_plus_error_identity_count"
+    )
     destroy_poll = boundary["postgres_destroy_poll_policy"]
     assert destroy_poll["additionalProperties"] is False
     assert destroy_poll["properties"] == {
@@ -1535,13 +1575,16 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p14_cert_commit": contract.p14_cert_commit,
         "h15_cert_commit": contract.h15_cert_commit,
         "p15_cert_commit": contract.p15_cert_commit,
-        "h16_cert_commit": h_commit,
-        "p16_cert_commit": None,
+        "h16_cert_commit": contract.h16_cert_commit,
+        "p16_cert_commit": contract.p16_cert_commit,
+        "h17_cert_commit": h_commit,
+        "p17_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
         "supersedes_unpublished_h13_candidate": True,
         "supersedes_p14": True,
         "supersedes_p15": True,
+        "supersedes_p16": True,
         "supersedes_p12": True,
         "supersedes_p11": True,
         "supersedes_p10": True,
@@ -1568,7 +1611,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p15_cert_commit,),
+            h_commit: (contract.p16_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -1606,8 +1649,8 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p15_records",
-        lambda *_args, **_kwargs: tuple([] for _ in range(28)),
+        "_historical_through_p16_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(30)),
     )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
@@ -1631,8 +1674,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p16_cert_commit"] == p_commit
-    assert result["h16_cert_commit"] == h_commit
+    assert result["p17_cert_commit"] == p_commit
+    assert result["h17_cert_commit"] == h_commit
+    assert result["p16_cert_commit"] == contract.p16_cert_commit
+    assert result["h16_cert_commit"] == contract.h16_cert_commit
     assert result["p15_cert_commit"] == contract.p15_cert_commit
     assert result["h15_cert_commit"] == contract.h15_cert_commit
     assert result["p14_cert_commit"] == contract.p14_cert_commit
@@ -1724,8 +1769,8 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p15_records",
-        lambda *_args, **_kwargs: tuple([] for _ in range(28)),
+        "_historical_through_p16_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(30)),
     )
     monkeypatch.setattr(
         certification,
@@ -1812,6 +1857,17 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert p15_failure["evidence_counts"]["public_tests_collected"] == 944
     assert p15_failure["evidence_counts"]["r_cert_outputs"] == 0
     assert p15_failure["retry_authorized"] is False
+    p16_failure = certification.expected_p16_failure_record()
+    assert authority["p16_failure"] == p16_failure
+    assert p16_failure["attempt"] == "R-CERT16"
+    assert p16_failure["active_error"]["public_tests_failure"]["totals"] == {}
+    assert p16_failure["active_error"]["public_tests_failure"][
+        "unavailable_reason"
+    ] == "junit_malformed_or_hostile"
+    assert p16_failure["active_error"]["public_tests_failure"][
+        "collected_test_count"
+    ] is None
+    assert p16_failure["retry_authorized"] is False
     assert authority["topology"]["h8_cert_commit"] == contract.h8_cert_commit
     assert authority["topology"]["p8_cert_commit"] == contract.p8_cert_commit
     assert authority["topology"]["h9_cert_commit"] == contract.h9_cert_commit
@@ -1828,8 +1884,10 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["topology"]["p14_cert_commit"] == contract.p14_cert_commit
     assert authority["topology"]["h15_cert_commit"] == contract.h15_cert_commit
     assert authority["topology"]["p15_cert_commit"] == contract.p15_cert_commit
-    assert authority["topology"]["h16_cert_commit"] == "e" * 40
-    assert authority["topology"]["p16_cert_commit"] is None
+    assert authority["topology"]["h16_cert_commit"] == contract.h16_cert_commit
+    assert authority["topology"]["p16_cert_commit"] == contract.p16_cert_commit
+    assert authority["topology"]["h17_cert_commit"] == "e" * 40
+    assert authority["topology"]["p17_cert_commit"] is None
     assert authority["topology"][
         "supersedes_unpublished_H_CERT13_candidate"
     ] is True
@@ -1885,10 +1943,15 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
         )
         assert certification.expected_r_scope() != historical_r15_scope
         assert certification.expected_r15_scope() == historical_r15_scope
-    assert authority["h16_component_records"] == authority["h_component_records"]
-    assert authority["h16_scope"] == authority["h_scope"]
-    assert authority["p16_scope"] == authority["p_scope"]
-    assert authority["r16_scope"] == authority["r_scope"]
+    assert authority["h16_component_records"] == []
+    assert authority["p16_component_records"] == []
+    assert authority["h16_scope"] == certification.expected_h16_scope()
+    assert authority["p16_scope"] == certification.expected_p16_scope()
+    assert authority["r16_scope"] == certification.expected_r16_scope()
+    assert authority["h17_component_records"] == authority["h_component_records"]
+    assert authority["h17_scope"] == authority["h_scope"]
+    assert authority["p17_scope"] == authority["p_scope"]
+    assert authority["r17_scope"] == authority["r_scope"]
     assert authority["isolation"]["postgres_connection_policy"] == (
         certification.expected_postgres_connection_policy()
     )
@@ -2706,6 +2769,28 @@ def test_historical_p3_is_byte_exact_and_failure_is_sanitized() -> None:
             "bytes": certification.H15_AUTHORITY_MANIFEST_BYTES,
             "sha256": certification.H15_AUTHORITY_MANIFEST_SHA256,
             "git_blob_oid": complete_v15[-1][1]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+    ]
+
+    complete_v16 = certification._historical_through_p16_records(  # noqa: SLF001
+        contract,
+        root=ROOT,
+    )
+    assert [len(group) for group in complete_v16] == [11, 2] * 15
+    assert complete_v16[-1] == [
+        {
+            "path": certification.H16_AUTHORITY_PATH.as_posix(),
+            "bytes": certification.H16_AUTHORITY_BYTES,
+            "sha256": certification.H16_AUTHORITY_SHA256,
+            "git_blob_oid": complete_v16[-1][0]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+        {
+            "path": certification.H16_AUTHORITY_MANIFEST_PATH.as_posix(),
+            "bytes": certification.H16_AUTHORITY_MANIFEST_BYTES,
+            "sha256": certification.H16_AUTHORITY_MANIFEST_SHA256,
+            "git_blob_oid": complete_v16[-1][1]["git_blob_oid"],
             "git_mode": "100644",
         },
     ]

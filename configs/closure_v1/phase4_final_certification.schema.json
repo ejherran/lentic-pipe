@@ -64,7 +64,7 @@
   },
   "properties": {
     "contract_version": {
-      "const": "closure_v1_phase4_final_certification_v16"
+      "const": "closure_v1_phase4_final_certification_v17"
     },
     "authorities": {
       "type": "object",
@@ -101,6 +101,8 @@
         "p14_cert_commit",
         "h15_cert_commit",
         "p15_cert_commit",
+        "h16_cert_commit",
+        "p16_cert_commit",
         "final_tag",
         "certification_target",
         "r_cert_executable_tree_must_equal_p_cert"
@@ -199,8 +201,14 @@
         "p15_cert_commit": {
           "const": "fa00bbd07d47ff504f2323e418934824efab386a"
         },
+        "h16_cert_commit": {
+          "const": "4f78e7d1a8f93eedda169c5499c331b8da15de1e"
+        },
+        "p16_cert_commit": {
+          "const": "6c5fbaac2bf48393b3e7ef3e24d95006ecc016b9"
+        },
         "final_tag": {"const": "thesis-closure-v1"},
-        "certification_target": {"const": "published_P_CERT_v16_commit"},
+        "certification_target": {"const": "published_P_CERT_v17_commit"},
         "r_cert_executable_tree_must_equal_p_cert": {"const": true}
       }
     },
@@ -251,6 +259,9 @@
         "H-CERT16",
         "P-CERT16",
         "R-CERT16",
+        "H-CERT17",
+        "P-CERT17",
+        "R-CERT17",
         "single_parent_commits_required",
         "closure_source_commit_must_remain_ancestor",
         "aligned_refs_and_live_remote_required",
@@ -261,7 +272,7 @@
         "git_commit_push_and_tag_are_manual_user_actions"
       ],
       "properties": {
-        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14", "H-CERT15", "P-CERT15", "R-CERT15", "H-CERT16", "P-CERT16", "R-CERT16"]},
+        "ordered_stages": {"const": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14", "H-CERT15", "P-CERT15", "R-CERT15", "H-CERT16", "P-CERT16", "R-CERT16", "H-CERT17", "P-CERT17", "R-CERT17"]},
         "H-CERT1": {
           "type": "object",
           "additionalProperties": false,
@@ -985,9 +996,10 @@
         "H-CERT16": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "required": ["role", "commit", "direct_parent", "certification_execution_authorized", "corrections"],
           "properties": {
             "role": {"const": "corrective_safe_public_test_junit_failure_diagnostics_contract_tests_and_freeze"},
+            "commit": {"const": "h16_cert_commit"},
             "direct_parent": {"const": "p15_cert_commit"},
             "certification_execution_authorized": {"const": false},
             "corrections": {"const": ["record_consumed_r_cert15_failure_without_inventing_cause_nodeids_or_totals", "read_failed_public_test_junit_through_bounded_fd_safe_revalidated_path", "seal_only_totals_failure_error_nodeids_and_digests", "reject_hostile_oversized_duplicate_unknown_or_outside_suite_junit", "propagate_safe_junit_identity_through_composite_cleanup_errors", "forbid_p_cert15_r_cert15_retry"]}
@@ -996,10 +1008,72 @@
         "P-CERT16": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_H_CERT16", "supersedes_P_CERT15", "supersedes_P_CERT14", "supersedes_unpublished_H_CERT13_candidate", "supersedes_P_CERT12", "supersedes_P_CERT11", "supersedes_P_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "required": ["role", "commit", "requires_published_H_CERT16", "supersedes_P_CERT15", "supersedes_P_CERT14", "supersedes_unpublished_H_CERT13_candidate", "supersedes_P_CERT12", "supersedes_P_CERT11", "supersedes_P_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized", "failure_stage", "failure_kind", "failure_identity_status", "failure_identity_unavailable_reason", "r_cert_execution_runs", "retry_authorized", "manifest_written_last"],
           "properties": {
-            "role": {"const": "data_only_final_certification_authority_v16"},
+            "role": {"const": "superseded_failed_final_certification_authority_v16"},
+            "commit": {"const": "p16_cert_commit"},
             "requires_published_H_CERT16": {"const": true},
+            "supersedes_P_CERT15": {"const": true},
+            "supersedes_P_CERT14": {"const": true},
+            "supersedes_unpublished_H_CERT13_candidate": {"const": true},
+            "supersedes_P_CERT12": {"const": true},
+            "supersedes_P_CERT11": {"const": true},
+            "supersedes_P_CERT10": {"const": true},
+            "supersedes_P_CERT9": {"const": true},
+            "supersedes_P_CERT8": {"const": true},
+            "supersedes_P_CERT7": {"const": true},
+            "supersedes_P_CERT6": {"const": true},
+            "supersedes_P_CERT5": {"const": true},
+            "supersedes_P_CERT4": {"const": true},
+            "supersedes_P_CERT3": {"const": true},
+            "supersedes_P_CERT2": {"const": true},
+            "supersedes_P_CERT1": {"const": true},
+            "certification_execution_authorized": {"const": false},
+            "failure_stage": {"const": "public_tests"},
+            "failure_kind": {"const": "strict_junit_diagnostic_rejected"},
+            "failure_identity_status": {"const": "failure_identity_unavailable"},
+            "failure_identity_unavailable_reason": {"const": "junit_malformed_or_hostile"},
+            "r_cert_execution_runs": {"const": 1},
+            "retry_authorized": {"const": false},
+            "manifest_written_last": {"const": true}
+          }
+        },
+        "R-CERT16": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_P_CERT16", "failure_stage", "failure_kind", "failure_identity_status", "failure_identity_unavailable_reason", "execution_runs", "output_count", "retry_authorized", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "superseded_failed_final_doctoral_software_and_restorability_evidence"},
+            "requires_published_P_CERT16": {"const": true},
+            "failure_stage": {"const": "public_tests"},
+            "failure_kind": {"const": "strict_junit_diagnostic_rejected"},
+            "failure_identity_status": {"const": "failure_identity_unavailable"},
+            "failure_identity_unavailable_reason": {"const": "junit_malformed_or_hostile"},
+            "execution_runs": {"const": 1},
+            "output_count": {"const": 0},
+            "retry_authorized": {"const": false},
+            "manifest_written_last": {"const": false}
+          }
+        },
+        "H-CERT17": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "direct_parent", "certification_execution_authorized", "corrections"],
+          "properties": {
+            "role": {"const": "corrective_pytest_skip_precedence_and_junit_teardown_accounting_contract_tests_and_freeze"},
+            "direct_parent": {"const": "p16_cert_commit"},
+            "certification_execution_authorized": {"const": false},
+            "corrections": {"const": ["record_consumed_r_cert16_safe_unavailable_junit_diagnostic_without_inventing_cause_nodeids_or_totals", "prepend_exact_skipif_true_marker_with_sealed_reason", "neutralize_preexisting_skipif_precedence_for_exact_skip_ledger", "classify_structurally_valid_unsealed_skip_reason_as_junit_sealed_suite_drift", "admit_pytest_declared_tests_teardown_error_counter_only_within_logical_identity_count_plus_error_identity_count", "keep_failures_errors_and_skipped_counters_exact", "forbid_p_cert16_r_cert16_retry"]}
+          }
+        },
+        "P-CERT17": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["role", "requires_published_H_CERT17", "supersedes_P_CERT16", "supersedes_P_CERT15", "supersedes_P_CERT14", "supersedes_unpublished_H_CERT13_candidate", "supersedes_P_CERT12", "supersedes_P_CERT11", "supersedes_P_CERT10", "supersedes_P_CERT9", "supersedes_P_CERT8", "supersedes_P_CERT7", "supersedes_P_CERT6", "supersedes_P_CERT5", "supersedes_P_CERT4", "supersedes_P_CERT3", "supersedes_P_CERT2", "supersedes_P_CERT1", "certification_execution_authorized_while_unpublished", "manifest_written_last"],
+          "properties": {
+            "role": {"const": "data_only_final_certification_authority_v17"},
+            "requires_published_H_CERT17": {"const": true},
+            "supersedes_P_CERT16": {"const": true},
             "supersedes_P_CERT15": {"const": true},
             "supersedes_P_CERT14": {"const": true},
             "supersedes_unpublished_H_CERT13_candidate": {"const": true},
@@ -1019,13 +1093,13 @@
             "manifest_written_last": {"const": true}
           }
         },
-        "R-CERT16": {
+        "R-CERT17": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["role", "requires_published_P_CERT16", "output_count", "manifest_written_last"],
+          "required": ["role", "requires_published_P_CERT17", "output_count", "manifest_written_last"],
           "properties": {
             "role": {"const": "final_doctoral_software_and_restorability_evidence"},
-            "requires_published_P_CERT16": {"const": true},
+            "requires_published_P_CERT17": {"const": true},
             "output_count": {"const": 8},
             "manifest_written_last": {"const": true}
           }
@@ -1043,7 +1117,7 @@
     "publication_scopes": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14", "H-CERT15", "P-CERT15", "R-CERT15", "H-CERT16", "P-CERT16", "R-CERT16"],
+      "required": ["H-CERT1", "P-CERT1", "H-CERT2", "P-CERT2", "H-CERT3", "P-CERT3", "H-CERT4", "P-CERT4", "H-CERT5", "P-CERT5", "H-CERT6", "P-CERT6", "H-CERT7", "P-CERT7", "R-CERT7", "H-CERT8", "P-CERT8", "R-CERT8", "H-CERT9", "P-CERT9", "R-CERT9", "H-CERT10", "P-CERT10", "R-CERT10", "H-CERT11", "P-CERT11", "R-CERT11", "H-CERT12", "P-CERT12", "R-CERT12", "H-CERT13", "P-CERT13", "R-CERT13", "H-CERT14", "P-CERT14", "R-CERT14", "H-CERT15", "P-CERT15", "R-CERT15", "H-CERT16", "P-CERT16", "R-CERT16", "H-CERT17", "P-CERT17", "R-CERT17"],
       "properties": {
         "H-CERT1": {
           "allOf": [
@@ -1548,6 +1622,42 @@
               }
             }
           ]
+        },
+        "H-CERT17": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 0},
+                "modifications": {"const": 11},
+                "ordered_paths": {"minItems": 11, "maxItems": 11}
+              }
+            }
+          ]
+        },
+        "P-CERT17": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 2},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 2, "maxItems": 2}
+              }
+            }
+          ]
+        },
+        "R-CERT17": {
+          "allOf": [
+            {"$ref": "#/$defs/stageScope"},
+            {
+              "properties": {
+                "additions": {"const": 8},
+                "modifications": {"const": 0},
+                "ordered_paths": {"minItems": 8, "maxItems": 8}
+              }
+            }
+          ]
         }
       }
     },
@@ -1888,6 +1998,7 @@
         "superseded_p12_retry_authorized",
         "superseded_p14_retry_authorized",
         "superseded_p15_retry_authorized",
+        "superseded_p16_retry_authorized",
         "postgres_portable_path_policy",
         "postgres_connection_policy",
         "postgres_startup_stability_policy",
@@ -2032,6 +2143,7 @@
         "superseded_p12_retry_authorized": {"const": false},
         "superseded_p14_retry_authorized": {"const": false},
         "superseded_p15_retry_authorized": {"const": false},
+        "superseded_p16_retry_authorized": {"const": false},
         "postgres_portable_path_policy": {
           "type": "object",
           "additionalProperties": false,
@@ -2180,7 +2292,7 @@
         "public_tests_junit_diagnostic_policy": {
           "type": "object",
           "additionalProperties": false,
-          "required": ["enabled_on_nonzero_exit", "require_success", "source_filename", "max_junit_bytes", "retained_sandbox_directory_fd_required", "fd_relative_no_follow_open_required", "regular_single_link_required", "identity_revalidated_before_and_after_read", "xml_doctype_forbidden", "xml_entity_declaration_forbidden", "duplicate_nodeids_forbidden", "outside_sealed_suite_nodeids_forbidden", "unknown_elements_or_attributes_forbidden", "exact_collection_count_required", "exact_collection_digest_required", "exact_skip_ledger_required", "serialized_fields", "failure_or_error_nodeids_sorted", "nodeid_digest_algorithm", "available_status", "unavailable_status", "unavailable_reasons", "messages_serialized", "tracebacks_serialized", "raw_junit_serialized", "raw_stdout_serialized", "raw_stderr_serialized", "absolute_paths_serialized", "credentials_serialized", "unavailable_does_not_mask_active_error", "composite_error_propagates_public_tests_failure"],
+          "required": ["enabled_on_nonzero_exit", "require_success", "source_filename", "max_junit_bytes", "retained_sandbox_directory_fd_required", "fd_relative_no_follow_open_required", "regular_single_link_required", "identity_revalidated_before_and_after_read", "xml_doctype_forbidden", "xml_entity_declaration_forbidden", "duplicate_testcase_nodeid_policy", "duplicate_testcase_pair_max_records", "duplicate_testcase_pair_exact_outcomes", "outside_sealed_suite_nodeids_forbidden", "unknown_elements_or_attributes_forbidden", "exact_collection_count_required", "exact_collection_digest_required", "exact_skip_ledger_required", "exact_skip_override_marker", "exact_skip_override_prepend", "preexisting_skipif_precedence_neutralized", "exact_skip_reason_emitted_required", "raw_skip_reason_aliases", "raw_skip_reason_alias_count", "raw_skip_reason_aliases_canonicalized_before_ledger_validation", "pytest_declared_tests_teardown_error_counter_accounting", "declared_tests_minimum", "declared_tests_maximum", "declared_failures_errors_skipped_exact", "serialized_fields", "failure_or_error_nodeids_sorted", "nodeid_digest_algorithm", "available_status", "unavailable_status", "unavailable_reasons", "messages_serialized", "tracebacks_serialized", "raw_junit_serialized", "raw_stdout_serialized", "raw_stderr_serialized", "absolute_paths_serialized", "credentials_serialized", "unavailable_does_not_mask_active_error", "composite_error_propagates_public_tests_failure"],
           "properties": {
             "enabled_on_nonzero_exit": {"const": true},
             "require_success": {"const": false},
@@ -2192,12 +2304,33 @@
             "identity_revalidated_before_and_after_read": {"const": true},
             "xml_doctype_forbidden": {"const": true},
             "xml_entity_declaration_forbidden": {"const": true},
-            "duplicate_nodeids_forbidden": {"const": true},
+            "duplicate_testcase_nodeid_policy": {"const": "single_record_or_exact_failure_error_pair"},
+            "duplicate_testcase_pair_max_records": {"const": 2},
+            "duplicate_testcase_pair_exact_outcomes": {"const": ["failure", "error"]},
             "outside_sealed_suite_nodeids_forbidden": {"const": true},
             "unknown_elements_or_attributes_forbidden": {"const": true},
             "exact_collection_count_required": {"const": true},
             "exact_collection_digest_required": {"const": true},
             "exact_skip_ledger_required": {"const": true},
+            "exact_skip_override_marker": {"const": "skipif_true"},
+            "exact_skip_override_prepend": {"const": true},
+            "preexisting_skipif_precedence_neutralized": {"const": true},
+            "exact_skip_reason_emitted_required": {"const": true},
+            "raw_skip_reason_aliases": {
+              "const": {
+                "tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_physical_schema_matches_closed_fields": "The ignored P0 payload is restored only in an authorized data workspace",
+                "tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_audit_failure_is_read_only[early]": "The ignored P0 payload is restored only in an authorized data workspace",
+                "tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_audit_failure_is_read_only[late]": "The ignored P0 payload is restored only in an authorized data workspace",
+                "tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_audit_pass_is_read_only": "The ignored P0 payload is restored only in an authorized data workspace",
+                "tests/test_audit_closure_p0_sequence_bundle.py::test_real_p0_cli_is_repeatable_and_read_only": "The ignored P0 payload is restored only in an authorized data workspace"
+              }
+            },
+            "raw_skip_reason_alias_count": {"const": 5},
+            "raw_skip_reason_aliases_canonicalized_before_ledger_validation": {"const": true},
+            "pytest_declared_tests_teardown_error_counter_accounting": {"const": true},
+            "declared_tests_minimum": {"const": "logical_testcase_identity_count"},
+            "declared_tests_maximum": {"const": "logical_testcase_identity_count_plus_error_identity_count"},
+            "declared_failures_errors_skipped_exact": {"const": true},
             "serialized_fields": {"const": ["status", "returncode", "totals", "failed_nodeids", "failed_nodeids_sha256", "error_nodeids", "error_nodeids_sha256", "collected_test_count", "collected_nodeids_sha256", "unavailable_reason", "messages_preserved", "tracebacks_preserved", "raw_junit_preserved", "raw_stdout_preserved", "raw_stderr_preserved", "credentials_preserved", "absolute_paths_preserved"]},
             "failure_or_error_nodeids_sorted": {"const": true},
             "nodeid_digest_algorithm": {"const": "sha256_canonical_json"},
@@ -2331,8 +2464,8 @@
     },
     "stop_rules": {
       "type": "array",
-      "minItems": 46,
-      "maxItems": 46,
+      "minItems": 47,
+      "maxItems": 47,
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     }

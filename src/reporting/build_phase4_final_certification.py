@@ -69,6 +69,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_h13_failure_record,
     expected_p14_failure_record,
     expected_p15_failure_record,
+    expected_p16_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
@@ -276,7 +277,6 @@ class PublicTestsFailureEvidence:
             or tuple(sorted(self.error_nodeids)) != self.error_nodeids
             or len(set(self.failed_nodeids)) != len(self.failed_nodeids)
             or len(set(self.error_nodeids)) != len(self.error_nodeids)
-            or set(self.failed_nodeids).intersection(self.error_nodeids)
             or self.failed_nodeids_sha256 != digest_strings(self.failed_nodeids)
             or self.error_nodeids_sha256 != digest_strings(self.error_nodeids)
         ):
@@ -305,6 +305,7 @@ class PublicTestsFailureEvidence:
                 set(self.totals) != expected_total_keys
                 or any(type(value) is not int or value < 0 for value in self.totals.values())
                 or self.totals["tests"]
+                + len(set(self.failed_nodeids).intersection(self.error_nodeids))
                 != self.totals["passed"]
                 + self.totals["failures"]
                 + self.totals["errors"]
@@ -3550,10 +3551,10 @@ def pytest_collection_modifyitems(config: Any, items: Sequence[Any]) -> None:
     observed_skips: set[str] = set()
     import pytest
 
-    marker = pytest.mark.skip(reason=suite.exact_skip_reason)
+    marker = pytest.mark.skipif(True, reason=suite.exact_skip_reason)
     for item in items:
         if item.nodeid in expected_skips:
-            item.add_marker(marker)
+            item.add_marker(marker, append=False)
             observed_skips.add(item.nodeid)
     if observed_skips != expected_skips:
         raise _error(
@@ -3575,6 +3576,22 @@ class JunitCaseRecord:
     classname: str
     name: str
     skipped: bool
+
+
+def _canonical_public_tests_skip_reason(
+    *, nodeid: str, raw_reason: Any, suite: Any
+) -> str:
+    """Admit only the sealed reason or one exact per-node historical alias."""
+
+    if raw_reason == suite.exact_skip_reason:
+        return suite.exact_skip_reason
+    policy = expected_public_tests_junit_diagnostic_policy()
+    aliases = policy.get("raw_skip_reason_aliases")
+    if isinstance(raw_reason, str) and isinstance(aliases, Mapping):
+        alias = aliases.get(nodeid)
+        if isinstance(alias, str) and raw_reason == alias:
+            return suite.exact_skip_reason
+    raise _PublicTestsJunitUnavailable("junit_sealed_suite_drift")
 
 
 def _junit_tree(
@@ -3721,9 +3738,17 @@ def _extract_junit_case_records(
             if (
                 set(skipped_node.attrib) != {"type", "message"}
                 or skipped_node.attrib.get("type") != JUNIT_SKIP_TYPE
-                or skipped_node.attrib.get("message") != suite.exact_skip_reason
+                or list(skipped_node)
             ):
                 raise _error("JUnit skipped outcome type/reason is not exact")
+            try:
+                _canonical_public_tests_skip_reason(
+                    nodeid=nodeid,
+                    raw_reason=skipped_node.attrib.get("message"),
+                    suite=suite,
+                )
+            except _PublicTestsJunitUnavailable:
+                raise _error("JUnit skipped outcome type/reason is not exact") from None
             skipped = True
         else:
             raise _error("JUnit public suite contains failure, error, or unknown outcome")
@@ -4082,12 +4107,16 @@ def _strict_public_tests_failure_projection(
             if (
                 set(child.attrib) != {"type", "message"}
                 or child.attrib.get("type") != JUNIT_SKIP_TYPE
-                or child.attrib.get("message") != suite.exact_skip_reason
                 or list(child)
             ):
                 raise _PublicTestsJunitUnavailable(
                     "junit_malformed_or_hostile"
                 )
+            _canonical_public_tests_skip_reason(
+                nodeid=nodeid,
+                raw_reason=child.attrib.get("message"),
+                suite=suite,
+            )
             outcome = "skipped"
             skipped = True
             skip_ledger.append(
@@ -4115,11 +4144,18 @@ def _strict_public_tests_failure_projection(
             )
         )
     records = [record for record, _ in outcomes]
-    nodeids = [record.nodeid for record in records]
+    outcomes_by_nodeid: dict[str, list[str]] = {}
+    for record, outcome in outcomes:
+        outcomes_by_nodeid.setdefault(record.nodeid, []).append(outcome)
+    for node_outcomes in outcomes_by_nodeid.values():
+        if len(node_outcomes) == 1:
+            continue
+        if len(node_outcomes) != 2 or set(node_outcomes) != {"failure", "error"}:
+            raise _PublicTestsJunitUnavailable("junit_sealed_suite_drift")
+    nodeids = sorted(outcomes_by_nodeid)
     if (
         len(nodeids) != suite.collected_test_count
-        or len(nodeids) != len(set(nodeids))
-        or digest_strings(sorted(nodeids)) != suite.nodeids_sha256
+        or digest_strings(nodeids) != suite.nodeids_sha256
         or len(skip_ledger) != suite.allowed_skip_count
     ):
         raise _PublicTestsJunitUnavailable("junit_sealed_suite_drift")
@@ -4128,31 +4164,46 @@ def _strict_public_tests_failure_projection(
     except FinalCertificationBuildError:
         raise _PublicTestsJunitUnavailable("junit_sealed_suite_drift") from None
     failed_nodeids = tuple(
-        sorted(record.nodeid for record, outcome in outcomes if outcome == "failure")
+        sorted(
+            nodeid
+            for nodeid, node_outcomes in outcomes_by_nodeid.items()
+            if "failure" in node_outcomes
+        )
     )
     error_nodeids = tuple(
-        sorted(record.nodeid for record, outcome in outcomes if outcome == "error")
+        sorted(
+            nodeid
+            for nodeid, node_outcomes in outcomes_by_nodeid.items()
+            if "error" in node_outcomes
+        )
     )
     skipped_count = len(skip_ledger)
+    failed_or_error_count = len(set(failed_nodeids).union(error_nodeids))
     totals = {
-        "tests": len(records),
-        "passed": len(records)
-        - len(failed_nodeids)
-        - len(error_nodeids)
-        - skipped_count,
+        "tests": len(nodeids),
+        "passed": len(nodeids) - failed_or_error_count - skipped_count,
         "failures": len(failed_nodeids),
         "errors": len(error_nodeids),
         "skipped": skipped_count,
     }
     if not failed_nodeids and not error_nodeids:
         raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
-    for node, expected in ((root, totals), (suite_node, totals)):
-        for key in ("tests", "failures", "errors", "skipped"):
+    for node in (root, suite_node):
+        for key in ("failures", "errors", "skipped"):
             declared = node.attrib.get(key)
-            if declared is not None and declared != str(expected[key]):
-                raise _PublicTestsJunitUnavailable(
-                    "junit_malformed_or_hostile"
-                )
+            if declared is not None and declared != str(totals[key]):
+                raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+        declared_tests = node.attrib.get("tests")
+        if declared_tests is not None:
+            if re.fullmatch(r"0|[1-9][0-9]*", declared_tests) is None:
+                raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
+            declared_tests_count = int(declared_tests)
+            if not (
+                len(nodeids)
+                <= declared_tests_count
+                <= len(nodeids) + len(error_nodeids)
+            ):
+                raise _PublicTestsJunitUnavailable("junit_malformed_or_hostile")
     return PublicTestsFailureEvidence(
         status="failure_identity_available",
         returncode=returncode,
@@ -4162,7 +4213,7 @@ def _strict_public_tests_failure_projection(
         error_nodeids=error_nodeids,
         error_nodeids_sha256=digest_strings(error_nodeids),
         collected_test_count=len(nodeids),
-        collected_nodeids_sha256=digest_strings(sorted(nodeids)),
+        collected_nodeids_sha256=digest_strings(nodeids),
         unavailable_reason=None,
     )
 
@@ -4323,11 +4374,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h16_authority_boundary(result, contract=contract)
+    _require_h17_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p16_cert_commit"),
+        execution_commit=result.get("p17_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -4362,7 +4413,7 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str]:
-    """Validate active P16/H16 aliases and the complete historical lineage."""
+    """Validate active P17/H17 aliases and the complete historical lineage."""
 
     if (
         "p13_cert_commit" not in value
@@ -4374,6 +4425,8 @@ def _require_effective_authority_commit_binding(
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p17_cert_commit",
+        "h17_cert_commit",
         "p16_cert_commit",
         "h16_cert_commit",
         "p15_cert_commit",
@@ -4414,9 +4467,11 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p16_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h16_cert_commit"]
-        or commits["p16_cert_commit"] == commits["h16_cert_commit"]
+        or commits["p17_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h17_cert_commit"]
+        or commits["p17_cert_commit"] == commits["h17_cert_commit"]
+        or commits["p16_cert_commit"] != contract.p16_cert_commit
+        or commits["h16_cert_commit"] != contract.h16_cert_commit
         or commits["p15_cert_commit"] != contract.p15_cert_commit
         or commits["h15_cert_commit"] != contract.h15_cert_commit
         or commits["p14_cert_commit"] != contract.p14_cert_commit
@@ -4433,6 +4488,8 @@ def _require_effective_authority_commit_binding(
         or commits["h8_cert_commit"] != contract.h8_cert_commit
         or commits["p7_cert_commit"] != contract.p7_cert_commit
         or commits["h7_cert_commit"] != contract.h7_cert_commit
+        or commits["p17_cert_commit"] == commits["p16_cert_commit"]
+        or commits["h17_cert_commit"] == commits["h16_cert_commit"]
         or commits["p16_cert_commit"] == commits["p15_cert_commit"]
         or commits["h16_cert_commit"] == commits["h15_cert_commit"]
         or commits["p15_cert_commit"] == commits["p14_cert_commit"]
@@ -4468,19 +4525,20 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h16_authority_boundary(
+def _require_h17_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R16 to the factual non-retry R15 failure and preserved lineage."""
+    """Bind R17 to factual non-retry R15/R16 failures and preserved lineage."""
 
     if value.get("status") != "effective" or value.get("gate") != "P-CERT":
-        raise _error("R16 requires effective published P16 authority")
+        raise _error("R17 requires effective published P17 authority")
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H16 authority payload is absent")
+        raise _error("effective H17 authority payload is absent")
     isolation = authority.get("isolation")
     if (
-        authority.get("p15_failure") != expected_p15_failure_record()
+        authority.get("p16_failure") != expected_p16_failure_record()
+        or authority.get("p15_failure") != expected_p15_failure_record()
         or authority.get("h13_failure") != expected_h13_failure_record()
         or authority.get("p14_failure") != expected_p14_failure_record()
         or authority.get("p12_failure") != expected_p12_failure_record()
@@ -4521,7 +4579,7 @@ def _require_h16_authority_boundary(
         or isolation.get("public_tests_junit_diagnostic_policy")
         != dict(contract.public_tests_junit_diagnostic_policy)
     ):
-        raise _error("effective H16 failure/isolation authority drifted")
+        raise _error("effective H17 failure/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -4529,7 +4587,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P16 authority's exact partial-clone status policy."""
+    """Require the effective P17 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4568,6 +4626,7 @@ def _require_public_tests_junit_diagnostic_policy(
 ) -> dict[str, Any]:
     expected = expected_public_tests_junit_diagnostic_policy()
     observed = dict(contract.public_tests_junit_diagnostic_policy)
+    raw_skip_reason_aliases = expected.get("raw_skip_reason_aliases")
     serialized_fields = [
         "status",
         "returncode",
@@ -4599,12 +4658,40 @@ def _require_public_tests_junit_diagnostic_policy(
         or expected.get("identity_revalidated_before_and_after_read") is not True
         or expected.get("xml_doctype_forbidden") is not True
         or expected.get("xml_entity_declaration_forbidden") is not True
-        or expected.get("duplicate_nodeids_forbidden") is not True
+        or expected.get("duplicate_testcase_nodeid_policy")
+        != "single_record_or_exact_failure_error_pair"
+        or expected.get("duplicate_testcase_pair_max_records") != 2
+        or expected.get("duplicate_testcase_pair_exact_outcomes")
+        != ["failure", "error"]
         or expected.get("outside_sealed_suite_nodeids_forbidden") is not True
         or expected.get("unknown_elements_or_attributes_forbidden") is not True
         or expected.get("exact_collection_count_required") is not True
         or expected.get("exact_collection_digest_required") is not True
         or expected.get("exact_skip_ledger_required") is not True
+        or expected.get("exact_skip_override_marker") != "skipif_true"
+        or expected.get("exact_skip_override_prepend") is not True
+        or expected.get("preexisting_skipif_precedence_neutralized") is not True
+        or expected.get("exact_skip_reason_emitted_required") is not True
+        or not isinstance(raw_skip_reason_aliases, Mapping)
+        or len(raw_skip_reason_aliases) != 5
+        or any(
+            not isinstance(reason, str) or not reason
+            for reason in raw_skip_reason_aliases.values()
+        )
+        or expected.get("raw_skip_reason_alias_count") != 5
+        or expected.get(
+            "raw_skip_reason_aliases_canonicalized_before_ledger_validation"
+        )
+        is not True
+        or expected.get(
+            "pytest_declared_tests_teardown_error_counter_accounting"
+        )
+        is not True
+        or expected.get("declared_tests_minimum")
+        != "logical_testcase_identity_count"
+        or expected.get("declared_tests_maximum")
+        != "logical_testcase_identity_count_plus_error_identity_count"
+        or expected.get("declared_failures_errors_skipped_exact") is not True
         or expected.get("serialized_fields") != serialized_fields
         or expected.get("failure_or_error_nodeids_sorted") is not True
         or expected.get("nodeid_digest_algorithm") != "sha256_canonical_json"
@@ -4623,11 +4710,11 @@ def _require_public_tests_junit_diagnostic_policy(
         or expected.get("composite_error_propagates_public_tests_failure")
         is not True
     ):
-        raise _error("H16 public-tests JUnit diagnostic policy drifted")
+        raise _error("H17 public-tests JUnit diagnostic policy drifted")
     return expected
 
 
-def _require_h16_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h17_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -4760,7 +4847,7 @@ def _require_h16_runtime_policy(contract: FinalCertificationContract) -> None:
         or dict(contract.public_tests_junit_diagnostic_policy)
         != junit_diagnostic
     ):
-        raise _error("H16 runtime isolation policy drifted")
+        raise _error("H17 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -4772,7 +4859,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h16_runtime_policy(contract)
+    _require_h17_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -4781,14 +4868,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h16_authority_boundary(authority, contract=contract)
+    _require_h17_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p16_cert_commit"),
+        execution_commit=authority.get("p17_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p16_cert_commit"]
+    effective_commit = authority_commits["p17_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -8330,7 +8417,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h16_authority_boundary(authority, contract=contract)
+    _require_h17_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
