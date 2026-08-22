@@ -51,8 +51,10 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     CERTIFICATION_ROOT,
     GUARD_PATH,
     H19_CERT_COMMIT,
+    H20_CERT_COMMIT,
     LOCAL_DVC_CONFIG_PATH,
     OUTPUT_PATHS,
+    P20_CERT_COMMIT,
     PUBLIC_JUNIT_SAFE_PARAMETER_IDS,
     PROJECT_ROOT,
     FinalCertificationContract,
@@ -77,6 +79,7 @@ from src.reporting.phase4_final_certification_contract import (  # noqa: E402
     expected_p17_failure_record,
     expected_p18_failure_record,
     expected_p19_failure_record,
+    expected_r20_failure_record,
     expected_postgres_cleanup_policy,
     expected_postgres_connection_policy,
     expected_postgres_destroy_poll_policy,
@@ -4506,11 +4509,11 @@ def _authority_loader(
     result = load_effective_authority(
         contract, root=root, verify_remote=True, require_clean=require_clean
     )
-    _require_h20_authority_boundary(result, contract=contract)
+    _require_h21_authority_boundary(result, contract=contract)
     commit_binding = _require_effective_authority_commit_binding(
         result,
         contract=contract,
-        execution_commit=result.get("p20_cert_commit"),
+        execution_commit=result.get("p21_cert_commit"),
     )
     dvc_status_policy = _require_effective_authority_dvc_status_policy(
         result,
@@ -4545,7 +4548,7 @@ def _require_effective_authority_commit_binding(
     contract: FinalCertificationContract,
     execution_commit: Any,
 ) -> dict[str, str | None]:
-    """Validate active P20/H20 aliases and the complete historical lineage."""
+    """Validate active P21/H21 aliases and the complete historical lineage."""
 
     if (
         "p13_cert_commit" not in value
@@ -4562,6 +4565,8 @@ def _require_effective_authority_commit_binding(
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p21_cert_commit",
+        "h21_cert_commit",
         "p20_cert_commit",
         "h20_cert_commit",
         "h19_cert_commit",
@@ -4609,8 +4614,19 @@ def _require_effective_authority_commit_binding(
     if (
         not isinstance(execution_commit, str)
         or commits["p_cert_commit"] != execution_commit
-        or commits["p20_cert_commit"] != execution_commit
-        or commits["h_cert_commit"] != commits["h20_cert_commit"]
+        or commits["p21_cert_commit"] != execution_commit
+        or commits["h_cert_commit"] != commits["h21_cert_commit"]
+        or commits["p21_cert_commit"] == commits["h21_cert_commit"]
+        or commits["p21_cert_commit"] == commits["p20_cert_commit"]
+        or commits["p21_cert_commit"] == commits["h20_cert_commit"]
+        or commits["h21_cert_commit"] == commits["p20_cert_commit"]
+        or commits["h21_cert_commit"] == commits["h20_cert_commit"]
+        or commits["p20_cert_commit"] != contract.p20_cert_commit
+        or commits["p20_cert_commit"] != P20_CERT_COMMIT
+        or contract.p20_cert_commit != P20_CERT_COMMIT
+        or commits["h20_cert_commit"] != contract.h20_cert_commit
+        or commits["h20_cert_commit"] != H20_CERT_COMMIT
+        or contract.h20_cert_commit != H20_CERT_COMMIT
         or commits["p20_cert_commit"] == commits["h20_cert_commit"]
         or commits["p20_cert_commit"] == commits["h19_cert_commit"]
         or commits["h20_cert_commit"] == commits["h19_cert_commit"]
@@ -4682,35 +4698,41 @@ def _require_effective_authority_commit_binding(
     return commits
 
 
-def _require_h20_authority_boundary(
+def _require_h21_authority_boundary(
     value: Mapping[str, Any], *, contract: FinalCertificationContract
 ) -> None:
-    """Bind R20 to published P20 and the sealed P19 invalidation history."""
+    """Bind R21 to published P21 and the sealed R20 invalidation history."""
 
     if value.get("status") != "effective" or value.get("gate") != "P-CERT":
-        raise _error("R20 requires effective published P20 authority")
+        raise _error("R21 requires effective published P21 authority")
     authority = value.get("authority")
     if not isinstance(authority, Mapping):
-        raise _error("effective H20 authority payload is absent")
+        raise _error("effective H21 authority payload is absent")
     manifest = value.get("manifest")
     if (
         authority.get("authority_version") != AUTHORITY_VERSION
         or not isinstance(manifest, Mapping)
         or manifest.get("manifest_version") != AUTHORITY_MANIFEST_VERSION
     ):
-        raise _error("effective H20/P20 authority version drifted")
+        raise _error("effective H21/P21 authority version drifted")
     isolation = authority.get("isolation")
     redaction = expected_public_junit_redaction_policy()
     h19_scope = {spec.path: spec.status for spec in contract.h19_scope}
     p19_scope = {spec.path: spec.status for spec in contract.p19_scope}
     r19_scope = {path: "A" for path in contract.output_paths}
-    h20_scope = {spec.path: spec.status for spec in contract.h_scope}
-    p20_scope = {spec.path: spec.status for spec in contract.p_scope}
-    r20_scope = {spec.path: spec.status for spec in contract.r_scope}
+    h20_scope = {spec.path: spec.status for spec in contract.h20_scope}
+    p20_scope = {spec.path: spec.status for spec in contract.p20_scope}
+    r20_scope = {path: "A" for path in contract.output_paths}
+    h21_scope = {spec.path: spec.status for spec in contract.h_scope}
+    p21_scope = {spec.path: spec.status for spec in contract.p_scope}
+    r21_scope = {spec.path: spec.status for spec in contract.r_scope}
     h19_records = authority.get("h19_component_records")
     h20_records = authority.get("h20_component_records")
+    p20_records = authority.get("p20_component_records")
+    h21_records = authority.get("h21_component_records")
     if (
-        authority.get("p19_failure") != expected_p19_failure_record()
+        authority.get("r20_failure") != expected_r20_failure_record()
+        or authority.get("p19_failure") != expected_p19_failure_record()
         or authority.get("p18_failure") != expected_p18_failure_record()
         or authority.get("p17_failure") != expected_p17_failure_record()
         or authority.get("p16_failure") != expected_p16_failure_record()
@@ -4724,12 +4746,15 @@ def _require_h20_authority_boundary(
         or authority.get("h19_scope") != h19_scope
         or authority.get("p19_scope") != p19_scope
         or authority.get("r19_scope") != r19_scope
-        or authority.get("h_scope") != h20_scope
         or authority.get("h20_scope") != h20_scope
-        or authority.get("p_scope") != p20_scope
         or authority.get("p20_scope") != p20_scope
-        or authority.get("r_scope") != r20_scope
         or authority.get("r20_scope") != r20_scope
+        or authority.get("h_scope") != h21_scope
+        or authority.get("h21_scope") != h21_scope
+        or authority.get("p_scope") != p21_scope
+        or authority.get("p21_scope") != p21_scope
+        or authority.get("r_scope") != r21_scope
+        or authority.get("r21_scope") != r21_scope
         or len(h19_scope) != 11
         or set(h19_scope.values()) != {"M"}
         or len(p19_scope) != 2
@@ -4742,6 +4767,12 @@ def _require_h20_authority_boundary(
         or set(p20_scope.values()) != {"A"}
         or len(r20_scope) != 8
         or set(r20_scope.values()) != {"A"}
+        or len(h21_scope) != 11
+        or set(h21_scope.values()) != {"M"}
+        or len(p21_scope) != 2
+        or set(p21_scope.values()) != {"A"}
+        or len(r21_scope) != 8
+        or set(r21_scope.values()) != {"A"}
         or not isinstance(h19_records, list)
         or len(h19_records) != len(h19_scope)
         or authority.get("h19_component_records_digest")
@@ -4750,6 +4781,14 @@ def _require_h20_authority_boundary(
         or len(h20_records) != len(h20_scope)
         or authority.get("h20_component_records_digest")
         != digest_records(h20_records)
+        or not isinstance(p20_records, list)
+        or len(p20_records) != len(p20_scope)
+        or authority.get("p20_component_records_digest")
+        != digest_records(p20_records)
+        or not isinstance(h21_records, list)
+        or len(h21_records) != len(h21_scope)
+        or authority.get("h21_component_records_digest")
+        != digest_records(h21_records)
         or authority.get("public_junit_redaction_policy") != redaction
         or authority.get("public_junit_redaction_policy")
         != dict(contract.public_junit_redaction_policy)
@@ -4790,7 +4829,7 @@ def _require_h20_authority_boundary(
         or isolation.get("public_junit_redaction_policy")
         != authority.get("public_junit_redaction_policy")
     ):
-        raise _error("effective H20 history/scope/isolation authority drifted")
+        raise _error("effective H21 history/scope/isolation authority drifted")
 
 
 def _require_effective_authority_dvc_status_policy(
@@ -4798,7 +4837,7 @@ def _require_effective_authority_dvc_status_policy(
     *,
     contract: FinalCertificationContract,
 ) -> dict[str, Any]:
-    """Require the effective P20 authority's exact partial-clone status policy."""
+    """Require the effective P21 authority's exact partial-clone status policy."""
 
     expected = expected_dvc_status_policy(contract)
     observed = value.get("dvc_status_policy")
@@ -4921,11 +4960,11 @@ def _require_public_tests_junit_diagnostic_policy(
         or expected.get("composite_error_propagates_public_tests_failure")
         is not True
     ):
-        raise _error("H20 public-tests JUnit diagnostic policy drifted")
+        raise _error("H21 public-tests JUnit diagnostic policy drifted")
     return expected
 
 
-def _require_h20_runtime_policy(contract: FinalCertificationContract) -> None:
+def _require_h21_runtime_policy(contract: FinalCertificationContract) -> None:
     prefix_dispositions = {
         path: "require_absent" for path in SANDBOX_ABSENT_FORBIDDEN_PREFIXES
     }
@@ -5087,7 +5126,7 @@ def _require_h20_runtime_policy(contract: FinalCertificationContract) -> None:
         or junit_redaction.get("forbidden_marker_exception_authorized") is not False
         or junit_redaction.get("generic_artifact_guard_unchanged") is not True
     ):
-        raise _error("H20 runtime isolation policy drifted")
+        raise _error("H21 runtime isolation policy drifted")
 
 
 def check_phase4_final_certification(
@@ -5099,7 +5138,7 @@ def check_phase4_final_certification(
 
     root = repo_root.resolve(strict=True)
     contract = load_contract(root=root)
-    _require_h20_runtime_policy(contract)
+    _require_h21_runtime_policy(contract)
     if contract.test_suite.status != "locked":
         raise _error("final certification refuses a pending test-suite lock")
     state = _capture_main_state(root)
@@ -5108,14 +5147,14 @@ def check_phase4_final_certification(
     if len({state["head"], state["main"], state["origin_main"], state["origin_head"]}) != 1:
         raise _error("P-CERT local refs are not aligned")
     authority = (authority_validator or _authority_loader)(root, contract)
-    _require_h20_authority_boundary(authority, contract=contract)
+    _require_h21_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,
-        execution_commit=authority.get("p20_cert_commit"),
+        execution_commit=authority.get("p21_cert_commit"),
     )
     _require_effective_authority_dvc_status_policy(authority, contract=contract)
-    effective_commit = authority_commits["p20_cert_commit"]
+    effective_commit = authority_commits["p21_cert_commit"]
     if effective_commit != state["head"]:
         raise _error("P-CERT authority is not bound to current HEAD")
     live_remote = _git(root, "ls-remote", "--exit-code", "origin", "refs/heads/main")
@@ -8666,7 +8705,7 @@ def build_final_certification_payloads(
     """Create deterministic exact8 payloads from already-verified evidence."""
 
     commit = _require_commit(execution_commit, context="P-CERT execution commit")
-    _require_h20_authority_boundary(authority, contract=contract)
+    _require_h21_authority_boundary(authority, contract=contract)
     authority_commits = _require_effective_authority_commit_binding(
         authority,
         contract=contract,

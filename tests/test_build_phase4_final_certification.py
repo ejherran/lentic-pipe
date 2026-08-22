@@ -81,20 +81,27 @@ def _authority(
 ) -> dict[str, Any]:
     active_contract = contract or _locked_contract()
     h19_records = _records("h19", len(active_contract.h19_scope))
-    h20_records = _records("h20", len(active_contract.h_scope))
+    h20_records = _records("h20", len(active_contract.h20_scope))
+    p20_records = _records("p20", len(active_contract.p20_scope))
+    h21_records = _records("h21", len(active_contract.h_scope))
     h19_scope = {spec.path: spec.status for spec in active_contract.h19_scope}
     p19_scope = {spec.path: spec.status for spec in active_contract.p19_scope}
     r19_scope = {path: "A" for path in active_contract.output_paths}
-    h20_scope = {spec.path: spec.status for spec in active_contract.h_scope}
-    p20_scope = {spec.path: spec.status for spec in active_contract.p_scope}
-    r20_scope = {spec.path: spec.status for spec in active_contract.r_scope}
+    h20_scope = {spec.path: spec.status for spec in active_contract.h20_scope}
+    p20_scope = {spec.path: spec.status for spec in active_contract.p20_scope}
+    r20_scope = {path: "A" for path in active_contract.output_paths}
+    h21_scope = {spec.path: spec.status for spec in active_contract.h_scope}
+    p21_scope = {spec.path: spec.status for spec in active_contract.p_scope}
+    r21_scope = {spec.path: spec.status for spec in active_contract.r_scope}
     return {
         "status": "effective",
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p20_cert_commit": P_COMMIT,
-        "h20_cert_commit": H_COMMIT,
+        "p21_cert_commit": P_COMMIT,
+        "h21_cert_commit": H_COMMIT,
+        "p20_cert_commit": active_contract.p20_cert_commit,
+        "h20_cert_commit": active_contract.h20_cert_commit,
         "p19_cert_commit": None,
         "h19_cert_commit": active_contract.h19_cert_commit,
         "p18_cert_commit": active_contract.p18_cert_commit,
@@ -139,6 +146,7 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": contract_module.AUTHORITY_VERSION,
+            "r20_failure": contract_module.expected_r20_failure_record(),
             "p19_failure": contract_module.expected_p19_failure_record(),
             "p18_failure": contract_module.expected_p18_failure_record(),
             "p17_failure": contract_module.expected_p17_failure_record(),
@@ -157,16 +165,27 @@ def _authority(
             ),
             "p19_scope": p19_scope,
             "r19_scope": r19_scope,
-            "h_scope": h20_scope,
             "h20_scope": h20_scope,
             "h20_component_records": h20_records,
             "h20_component_records_digest": contract_module.digest_records(
                 h20_records
             ),
-            "p_scope": p20_scope,
             "p20_scope": p20_scope,
-            "r_scope": r20_scope,
+            "p20_component_records": p20_records,
+            "p20_component_records_digest": contract_module.digest_records(
+                p20_records
+            ),
             "r20_scope": r20_scope,
+            "h_scope": h21_scope,
+            "h21_scope": h21_scope,
+            "h21_component_records": h21_records,
+            "h21_component_records_digest": contract_module.digest_records(
+                h21_records
+            ),
+            "p_scope": p21_scope,
+            "p21_scope": p21_scope,
+            "r_scope": r21_scope,
+            "r21_scope": r21_scope,
             "public_junit_redaction_policy": (
                 contract_module.expected_public_junit_redaction_policy()
             ),
@@ -884,6 +903,12 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     assert {spec.path: spec.status for spec in contract.p19_scope} == (
         contract_module.expected_p19_scope()
     )
+    assert {spec.path: spec.status for spec in contract.h20_scope} == (
+        contract_module.expected_h20_scope()
+    )
+    assert {spec.path: spec.status for spec in contract.p20_scope} == (
+        contract_module.expected_p20_scope()
+    )
     assert {spec.path: spec.status for spec in contract.h_scope} == (
         contract_module.expected_h_scope()
     )
@@ -899,6 +924,8 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     assert contract.h18_cert_commit == contract_module.H18_CERT_COMMIT
     assert contract.p18_cert_commit == contract_module.P18_CERT_COMMIT
     assert contract.h19_cert_commit == contract_module.H19_CERT_COMMIT
+    assert contract.h20_cert_commit == contract_module.H20_CERT_COMMIT
+    assert contract.p20_cert_commit == contract_module.P20_CERT_COMMIT
     assert {spec.path: spec.status for spec in contract.h17_scope} == (
         contract_module.expected_h17_scope()
     )
@@ -930,8 +957,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p20_cert_commit": P_COMMIT,
-        "h20_cert_commit": H_COMMIT,
+        "p21_cert_commit": P_COMMIT,
+        "h21_cert_commit": H_COMMIT,
+        "p20_cert_commit": contract.p20_cert_commit,
+        "h20_cert_commit": contract.h20_cert_commit,
         "p19_cert_commit": None,
         "h19_cert_commit": contract.h19_cert_commit,
         "p18_cert_commit": contract.p18_cert_commit,
@@ -975,8 +1004,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p20_cert_commit": P_COMMIT,
-        "h20_cert_commit": H_COMMIT,
+        "p21_cert_commit": P_COMMIT,
+        "h21_cert_commit": H_COMMIT,
+        "p20_cert_commit": contract.p20_cert_commit,
+        "h20_cert_commit": contract.h20_cert_commit,
         "p19_cert_commit": None,
         "h19_cert_commit": contract.h19_cert_commit,
         "p18_cert_commit": contract.p18_cert_commit,
@@ -1085,25 +1116,25 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ineffective["status"] = "locked_unpublished"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="effective published P20",
+        match="effective published P21",
     ):
         _products(contract, authority=ineffective)
     historical_p19_authority = _authority(contract)
     cast(dict[str, Any], historical_p19_authority["authority"])[
         "authority_version"
-    ] = contract_module.H19_AUTHORITY_VERSION
+    ] = contract_module.H20_AUTHORITY_VERSION
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20/P20 authority version",
+        match="H21/P21 authority version",
     ):
         _products(contract, authority=historical_p19_authority)
     historical_p19_manifest = _authority(contract)
     cast(dict[str, Any], historical_p19_manifest["manifest"])[
         "manifest_version"
-    ] = contract_module.H19_AUTHORITY_MANIFEST_VERSION
+    ] = contract_module.H20_AUTHORITY_MANIFEST_VERSION
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20/P20 authority version",
+        match="H21/P21 authority version",
     ):
         _products(contract, authority=historical_p19_manifest)
     unpublished_candidate_alias = _authority(contract)
@@ -1114,7 +1145,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ):
         _products(contract, authority=unpublished_candidate_alias)
     collapsed_active_topology = _authority(contract)
-    collapsed_active_topology["h20_cert_commit"] = P_COMMIT
+    collapsed_active_topology["h21_cert_commit"] = P_COMMIT
     collapsed_active_topology["h_cert_commit"] = P_COMMIT
     with pytest.raises(
         builder.FinalCertificationBuildError,
@@ -1124,6 +1155,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p21_cert_commit",
+        "h21_cert_commit",
         "p20_cert_commit",
         "h20_cert_commit",
         "p19_cert_commit",
@@ -1204,6 +1237,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p21_cert_commit",
+        "h21_cert_commit",
         "p20_cert_commit",
         "h20_cert_commit",
         "p19_cert_commit",
@@ -5343,15 +5378,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
         ):
             builder._poetry_runtime_root()
         poetry_alias.unlink()
-    builder._require_h20_runtime_policy(contract)
+    builder._require_h21_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 runtime isolation policy drifted",
+        match="H21 runtime isolation policy drifted",
     ):
-        builder._require_h20_runtime_policy(
+        builder._require_h21_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -5361,18 +5396,18 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_connection["test_database_url_query_present"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 runtime isolation policy drifted",
+        match="H21 runtime isolation policy drifted",
     ):
-        builder._require_h20_runtime_policy(
+        builder._require_h21_runtime_policy(
             replace(contract, postgres_connection_policy=drifted_connection)
         )
     drifted_stability = dict(contract.postgres_startup_stability_policy)
     drifted_stability["pid1_checked_before_readiness"] = False
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 runtime isolation policy drifted",
+        match="H21 runtime isolation policy drifted",
     ):
-        builder._require_h20_runtime_policy(
+        builder._require_h21_runtime_policy(
             replace(
                 contract,
                 postgres_startup_stability_policy=drifted_stability,
@@ -5382,9 +5417,9 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_junit_policy["max_junit_bytes"] = 1
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 public-tests JUnit diagnostic policy drifted",
+        match="H21 public-tests JUnit diagnostic policy drifted",
     ):
-        builder._require_h20_runtime_policy(
+        builder._require_h21_runtime_policy(
             replace(
                 contract,
                 public_tests_junit_diagnostic_policy=drifted_junit_policy,
@@ -5394,9 +5429,9 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_redaction_policy["forbidden_marker_exception_authorized"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 runtime isolation policy drifted",
+        match="H21 runtime isolation policy drifted",
     ):
-        builder._require_h20_runtime_policy(
+        builder._require_h21_runtime_policy(
             replace(
                 contract,
                 public_junit_redaction_policy=drifted_redaction_policy,
@@ -6173,8 +6208,10 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     assert result["h13_cert_commit"] is None
     assert result["p19_cert_commit"] is None
     assert result["h19_cert_commit"] == contract_module.H19_CERT_COMMIT
-    assert result["p20_cert_commit"] == P_COMMIT
-    assert result["h20_cert_commit"] == H_COMMIT
+    assert result["p21_cert_commit"] == P_COMMIT
+    assert result["h21_cert_commit"] == H_COMMIT
+    assert result["p20_cert_commit"] == contract.p20_cert_commit
+    assert result["h20_cert_commit"] == contract.h20_cert_commit
     assert result["dvc_status_policy"] == (
         contract_module.expected_dvc_status_policy(contract)
     )
@@ -6183,6 +6220,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p21_cert_commit",
+            "h21_cert_commit",
             "p20_cert_commit",
             "h20_cert_commit",
             "p19_cert_commit",
@@ -6227,6 +6266,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p21_cert_commit",
+            "h21_cert_commit",
             "p20_cert_commit",
             "h20_cert_commit",
             "p19_cert_commit",
@@ -6669,7 +6710,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6684,7 +6725,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6697,7 +6738,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6714,7 +6755,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6734,7 +6775,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6751,7 +6792,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6768,7 +6809,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6786,7 +6827,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6801,7 +6842,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6821,7 +6862,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6837,7 +6878,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6853,7 +6894,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6869,13 +6910,15 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H20 history/scope/isolation",
+        match="H21 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p21_cert_commit",
+        "h21_cert_commit",
         "p20_cert_commit",
         "h20_cert_commit",
         "p19_cert_commit",
@@ -7020,8 +7063,10 @@ def test_check_only_is_non_writing_and_requires_effective_p_cert(
     assert result["authority"]["h13_cert_commit"] is None
     assert result["authority"]["p19_cert_commit"] is None
     assert result["authority"]["h19_cert_commit"] == contract_module.H19_CERT_COMMIT
-    assert result["authority"]["p20_cert_commit"] == P_COMMIT
-    assert result["authority"]["h20_cert_commit"] == H_COMMIT
+    assert result["authority"]["p21_cert_commit"] == P_COMMIT
+    assert result["authority"]["h21_cert_commit"] == H_COMMIT
+    assert result["authority"]["p20_cert_commit"] == contract.p20_cert_commit
+    assert result["authority"]["h20_cert_commit"] == contract.h20_cert_commit
     assert result["writes"] is False
     assert result["main_dvc_static_boundary"]["main_dvc_status_command_run"] is False
     assert (
