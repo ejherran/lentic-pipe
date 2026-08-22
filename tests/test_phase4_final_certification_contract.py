@@ -94,6 +94,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.p16_cert_commit == certification.P16_CERT_COMMIT
     assert contract.h17_cert_commit == certification.H17_CERT_COMMIT
     assert contract.p17_cert_commit == certification.P17_CERT_COMMIT
+    assert contract.h18_cert_commit == certification.H18_CERT_COMMIT
+    assert contract.p18_cert_commit == certification.P18_CERT_COMMIT
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
@@ -125,6 +127,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert len(contract.p14_scope) == 2
     assert len(contract.h15_scope) == 11
     assert len(contract.p15_scope) == 2
+    assert len(contract.h18_scope) == 11
+    assert len(contract.p18_scope) == 2
     assert len(contract.r_scope) == 8
     assert len(contract.anchor_inputs) == 10
     assert len(contract.dvc_pointers) == 8
@@ -201,6 +205,8 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["isolation"]["superseded_p14_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p15_retry_authorized"] is False
     assert contract.raw["isolation"]["superseded_p16_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p17_retry_authorized"] is False
+    assert contract.raw["isolation"]["superseded_p18_retry_authorized"] is False
     assert contract.raw["isolation"]["postgres_portable_path_policy"] == (
         certification.expected_postgres_portable_path_policy()
     )
@@ -248,6 +254,9 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     ] == certification.expected_public_tests_junit_diagnostic_policy()
     assert dict(contract.public_tests_junit_diagnostic_policy) == (
         certification.expected_public_tests_junit_diagnostic_policy()
+    )
+    assert contract.raw["isolation"]["public_junit_redaction_policy"] == (
+        certification.expected_public_junit_redaction_policy()
     )
     assert contract.raw["isolation"]["postgres_destroy_poll_policy"] == (
         certification.expected_postgres_destroy_poll_policy()
@@ -435,18 +444,36 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     )
     assert contract.raw["topology"]["P-CERT18"]["supersedes_P_CERT17"] is True
     assert contract.raw["topology"]["R-CERT18"] == {
-        "role": "final_doctoral_software_and_restorability_evidence",
+        "role": "superseded_failed_final_doctoral_software_and_restorability_evidence",
         "requires_published_P_CERT18": True,
+        "failure_stage": "canonical_junit_redaction",
+        "failure_kind": "synthetic_fixture_values_embedded_in_pytest_nodeids",
+        "representation_failure": True,
+        "operational_leak_observed": False,
+        "execution_runs": 1,
+        "output_count": 0,
+        "retry_authorized": False,
+        "manifest_written_last": False,
+    }
+    assert contract.raw["topology"]["H-CERT19"]["direct_parent"] == (
+        "p18_cert_commit"
+    )
+    assert contract.raw["topology"]["P-CERT19"]["supersedes_P_CERT18"] is True
+    assert contract.raw["topology"]["R-CERT19"] == {
+        "role": "final_doctoral_software_and_restorability_evidence",
+        "requires_published_P_CERT19": True,
         "output_count": 8,
         "manifest_written_last": True,
     }
     assert "attempt_to_execute_from_superseded_p14" in contract.stop_rules
     assert "attempt_to_execute_from_superseded_p15" in contract.stop_rules
     assert "attempt_to_execute_from_superseded_p16" in contract.stop_rules
+    assert "attempt_to_execute_from_superseded_p18" in contract.stop_rules
     assert "effective_authority_alias_projection_drift" in contract.stop_rules
     assert (
         "public_tests_junit_failure_diagnostic_policy_drift" in contract.stop_rules
     )
+    assert "public_junit_safe_parameter_id_policy_drift" in contract.stop_rules
     assert contract.raw["topology"][
         "main_worktree_dvc_static_boundary_verified"
     ] is True
@@ -467,7 +494,10 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.test_suite.selector_count == 39
     assert contract.test_suite.collected_test_count == 944
     assert contract.test_suite.nodeids_sha256 == (
-        "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
+        "255beb8438b402199251e435c4d450d9f4d5a9e30aac06216f5daf526327a296"
+    )
+    assert dict(contract.public_junit_redaction_policy) == (
+        certification.expected_public_junit_redaction_policy()
     )
     assert (
         contract.test_suite.allowed_skip_count
@@ -974,6 +1004,24 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert scopes["R-CERT15"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 8
+    assert scopes["H-CERT18"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
+    assert scopes["P-CERT18"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["R-CERT18"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 8
+    assert scopes["H-CERT19"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
+    assert scopes["P-CERT19"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["R-CERT19"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 8
     assert pending["properties"]["selector_count"] == {"type": "null"}
     assert locked["properties"]["status"] == {
         "const": certification.LOCKED_SUITE_STATUS
@@ -999,6 +1047,23 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     assert suite["static_commands"]["const"].count(
         ["poetry", "check", "--lock"]
     ) == 1
+    redaction = suite["public_junit_redaction_policy"]["properties"]
+    assert redaction["safe_parameter_ids"]["const"] == list(
+        certification.PUBLIC_JUNIT_SAFE_PARAMETER_IDS
+    )
+    assert redaction["forbidden_marker_exception_authorized"] == {
+        "const": False
+    }
+    assert redaction["generic_artifact_guard_unchanged"] == {"const": True}
+    assert redaction[
+        "historical_marker_bearing_nodeids_preserved_or_published"
+    ] == {"const": False}
+    isolation_redaction = properties["isolation"]["properties"][
+        "public_junit_redaction_policy"
+    ]["properties"]
+    assert isolation_redaction["active_nodeids_sha256"] == {
+        "const": certification.LOCKED_SUITE_NODEIDS_SHA256
+    }
     dvc = properties["dvc_restoration"]["properties"]
     assert dvc["tracked_config_contains_remote"] == {"const": False}
     assert dvc["ignored_local_remote_configuration_required"] == {
@@ -1596,8 +1661,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p16_cert_commit": contract.p16_cert_commit,
         "h17_cert_commit": contract.h17_cert_commit,
         "p17_cert_commit": contract.p17_cert_commit,
-        "h18_cert_commit": h_commit,
-        "p18_cert_commit": None,
+        "h18_cert_commit": contract.h18_cert_commit,
+        "p18_cert_commit": contract.p18_cert_commit,
+        "h19_cert_commit": h_commit,
+        "p19_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
         "supersedes_unpublished_h13_candidate": True,
@@ -1605,6 +1672,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "supersedes_p15": True,
         "supersedes_p16": True,
         "supersedes_p17": True,
+        "supersedes_p18": True,
         "supersedes_p12": True,
         "supersedes_p11": True,
         "supersedes_p10": True,
@@ -1631,7 +1699,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p17_cert_commit,),
+            h_commit: (contract.p18_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -1669,8 +1737,8 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p17_records",
-        lambda *_args, **_kwargs: tuple([] for _ in range(32)),
+        "_historical_through_p18_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(34)),
     )
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
@@ -1694,8 +1762,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p18_cert_commit"] == p_commit
-    assert result["h18_cert_commit"] == h_commit
+    assert result["p19_cert_commit"] == p_commit
+    assert result["h19_cert_commit"] == h_commit
+    assert result["p18_cert_commit"] == contract.p18_cert_commit
+    assert result["h18_cert_commit"] == contract.h18_cert_commit
     assert result["p17_cert_commit"] == contract.p17_cert_commit
     assert result["h17_cert_commit"] == contract.h17_cert_commit
     assert result["p16_cert_commit"] == contract.p16_cert_commit
@@ -1791,8 +1861,8 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p17_records",
-        lambda *_args, **_kwargs: tuple([] for _ in range(32)),
+        "_historical_through_p18_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(34)),
     )
     monkeypatch.setattr(
         certification,
@@ -1904,6 +1974,30 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
         p17_failure["active_error"]["public_tests_failure"]["failed_nodeids"]
     ) == 7
     assert p17_failure["retry_authorized"] is False
+    p18_failure = certification.expected_p18_failure_record()
+    assert authority["p18_failure"] == p18_failure
+    assert p18_failure["attempt"] == "R-CERT18"
+    assert p18_failure["execution_consumed"] is True
+    assert p18_failure["active_error"]["public_tests_returncode"] == 0
+    assert p18_failure["active_error"]["certification_cli_returncode"] == 1
+    assert p18_failure["active_error"]["messages_preserved"] is False
+    assert p18_failure["active_error"]["tracebacks_preserved"] is False
+    assert p18_failure["observed_cause"]["classification"] == (
+        "representation_guard_false_positive"
+    )
+    assert p18_failure["observed_cause"][
+        "raw_junit_transiently_contained_marker_bearing_nodeids"
+    ] is True
+    assert p18_failure["observed_cause"][
+        "canonical_junit_candidate_transiently_contained_marker_bearing_nodeids"
+    ] is True
+    assert p18_failure["observed_cause"][
+        "historical_marker_bearing_nodeids_preserved_or_published"
+    ] is False
+    assert p18_failure["observed_cause"][
+        "operational_url_or_credential_exposed"
+    ] is False
+    assert p18_failure["retry_authorized"] is False
     assert authority["topology"]["h8_cert_commit"] == contract.h8_cert_commit
     assert authority["topology"]["p8_cert_commit"] == contract.p8_cert_commit
     assert authority["topology"]["h9_cert_commit"] == contract.h9_cert_commit
@@ -1924,8 +2018,10 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["topology"]["p16_cert_commit"] == contract.p16_cert_commit
     assert authority["topology"]["h17_cert_commit"] == contract.h17_cert_commit
     assert authority["topology"]["p17_cert_commit"] == contract.p17_cert_commit
-    assert authority["topology"]["h18_cert_commit"] == "e" * 40
-    assert authority["topology"]["p18_cert_commit"] is None
+    assert authority["topology"]["h18_cert_commit"] == contract.h18_cert_commit
+    assert authority["topology"]["p18_cert_commit"] == contract.p18_cert_commit
+    assert authority["topology"]["h19_cert_commit"] == "e" * 40
+    assert authority["topology"]["p19_cert_commit"] is None
     assert authority["topology"][
         "supersedes_unpublished_H_CERT13_candidate"
     ] is True
@@ -1991,10 +2087,21 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["h17_scope"] == certification.expected_h17_scope()
     assert authority["p17_scope"] == certification.expected_p17_scope()
     assert authority["r17_scope"] == certification.expected_r17_scope()
-    assert authority["h18_component_records"] == authority["h_component_records"]
-    assert authority["h18_scope"] == authority["h_scope"]
-    assert authority["p18_scope"] == authority["p_scope"]
-    assert authority["r18_scope"] == authority["r_scope"]
+    assert authority["h18_component_records"] == []
+    assert authority["p18_component_records"] == []
+    assert authority["h18_scope"] == certification.expected_h18_scope()
+    assert authority["p18_scope"] == certification.expected_p18_scope()
+    assert authority["r18_scope"] == certification.expected_r18_scope()
+    assert authority["h19_component_records"] == authority["h_component_records"]
+    assert authority["h19_scope"] == authority["h_scope"]
+    assert authority["p19_scope"] == authority["p_scope"]
+    assert authority["r19_scope"] == authority["r_scope"]
+    assert authority["public_junit_redaction_policy"] == (
+        certification.expected_public_junit_redaction_policy()
+    )
+    assert authority["public_junit_redaction_policy"][
+        "historical_marker_bearing_nodeids_preserved_or_published"
+    ] is False
     assert authority["isolation"]["postgres_connection_policy"] == (
         certification.expected_postgres_connection_policy()
     )
@@ -2834,6 +2941,39 @@ def test_historical_p3_is_byte_exact_and_failure_is_sanitized() -> None:
             "bytes": certification.H16_AUTHORITY_MANIFEST_BYTES,
             "sha256": certification.H16_AUTHORITY_MANIFEST_SHA256,
             "git_blob_oid": complete_v16[-1][1]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+    ]
+
+    complete_v17 = certification._historical_through_p17_records(  # noqa: SLF001
+        contract,
+        root=ROOT,
+    )
+    assert [len(group) for group in complete_v17] == [11, 2] * 16
+    assert complete_v17[-1][0]["path"] == (
+        certification.H17_AUTHORITY_PATH.as_posix()
+    )
+    assert complete_v17[-1][0]["bytes"] == certification.H17_AUTHORITY_BYTES
+    assert complete_v17[-1][0]["sha256"] == certification.H17_AUTHORITY_SHA256
+
+    complete_v18 = certification._historical_through_p18_records(  # noqa: SLF001
+        contract,
+        root=ROOT,
+    )
+    assert [len(group) for group in complete_v18] == [11, 2] * 17
+    assert complete_v18[-1] == [
+        {
+            "path": certification.H18_AUTHORITY_PATH.as_posix(),
+            "bytes": certification.H18_AUTHORITY_BYTES,
+            "sha256": certification.H18_AUTHORITY_SHA256,
+            "git_blob_oid": complete_v18[-1][0]["git_blob_oid"],
+            "git_mode": "100644",
+        },
+        {
+            "path": certification.H18_AUTHORITY_MANIFEST_PATH.as_posix(),
+            "bytes": certification.H18_AUTHORITY_MANIFEST_BYTES,
+            "sha256": certification.H18_AUTHORITY_MANIFEST_SHA256,
+            "git_blob_oid": complete_v18[-1][1]["git_blob_oid"],
             "git_mode": "100644",
         },
     ]

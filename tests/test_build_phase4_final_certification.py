@@ -85,8 +85,10 @@ def _authority(
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p18_cert_commit": P_COMMIT,
-        "h18_cert_commit": H_COMMIT,
+        "p19_cert_commit": P_COMMIT,
+        "h19_cert_commit": H_COMMIT,
+        "p18_cert_commit": active_contract.p18_cert_commit,
+        "h18_cert_commit": active_contract.h18_cert_commit,
         "p17_cert_commit": active_contract.p17_cert_commit,
         "h17_cert_commit": active_contract.h17_cert_commit,
         "p16_cert_commit": active_contract.p16_cert_commit,
@@ -127,6 +129,7 @@ def _authority(
         "repository": {"HEAD": P_COMMIT},
         "authority": {
             "authority_version": "synthetic",
+            "p18_failure": contract_module.expected_p18_failure_record(),
             "p17_failure": contract_module.expected_p17_failure_record(),
             "p16_failure": contract_module.expected_p16_failure_record(),
             "p15_failure": contract_module.expected_p15_failure_record(),
@@ -148,6 +151,9 @@ def _authority(
                 ),
                 "public_tests_junit_diagnostic_policy": (
                     contract_module.expected_public_tests_junit_diagnostic_policy()
+                ),
+                "public_junit_redaction_policy": (
+                    contract_module.expected_public_junit_redaction_policy()
                 ),
                 "postgres_connection_policy": (
                     contract_module.expected_postgres_connection_policy()
@@ -833,14 +839,25 @@ def test_openapi_validator_rejects_operation_id_and_path_count_drift(
 
 def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     contract = _locked_contract()
+    assert {spec.path: spec.status for spec in contract.h18_scope} == (
+        contract_module.expected_h18_scope()
+    )
+    assert {spec.path: spec.status for spec in contract.p18_scope} == (
+        contract_module.expected_p18_scope()
+    )
+    assert {spec.path: spec.status for spec in contract.r_scope} == (
+        contract_module.expected_r18_scope()
+    )
+    assert contract_module.expected_r18_scope() == (
+        contract_module.expected_r17_scope()
+    )
+    assert contract.h18_cert_commit == contract_module.H18_CERT_COMMIT
+    assert contract.p18_cert_commit == contract_module.P18_CERT_COMMIT
     assert {spec.path: spec.status for spec in contract.h17_scope} == (
         contract_module.expected_h17_scope()
     )
     assert {spec.path: spec.status for spec in contract.p17_scope} == (
         contract_module.expected_p17_scope()
-    )
-    assert {spec.path: spec.status for spec in contract.r_scope} == (
-        contract_module.expected_r17_scope()
     )
     assert contract.h17_cert_commit == contract_module.H17_CERT_COMMIT
     assert contract.p17_cert_commit == contract_module.P17_CERT_COMMIT
@@ -867,8 +884,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p18_cert_commit": P_COMMIT,
-        "h18_cert_commit": H_COMMIT,
+        "p19_cert_commit": P_COMMIT,
+        "h19_cert_commit": H_COMMIT,
+        "p18_cert_commit": contract.p18_cert_commit,
+        "h18_cert_commit": contract.h18_cert_commit,
         "p17_cert_commit": contract.p17_cert_commit,
         "h17_cert_commit": contract.h17_cert_commit,
         "p16_cert_commit": contract.p16_cert_commit,
@@ -908,8 +927,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p18_cert_commit": P_COMMIT,
-        "h18_cert_commit": H_COMMIT,
+        "p19_cert_commit": P_COMMIT,
+        "h19_cert_commit": H_COMMIT,
+        "p18_cert_commit": contract.p18_cert_commit,
+        "h18_cert_commit": contract.h18_cert_commit,
         "p17_cert_commit": contract.p17_cert_commit,
         "h17_cert_commit": contract.h17_cert_commit,
         "p16_cert_commit": contract.p16_cert_commit,
@@ -1014,7 +1035,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ineffective["status"] = "locked_unpublished"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="effective published P18",
+        match="effective published P19",
     ):
         _products(contract, authority=ineffective)
     unpublished_candidate_alias = _authority(contract)
@@ -1025,7 +1046,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ):
         _products(contract, authority=unpublished_candidate_alias)
     collapsed_active_topology = _authority(contract)
-    collapsed_active_topology["h18_cert_commit"] = P_COMMIT
+    collapsed_active_topology["h19_cert_commit"] = P_COMMIT
     collapsed_active_topology["h_cert_commit"] = P_COMMIT
     with pytest.raises(
         builder.FinalCertificationBuildError,
@@ -1035,6 +1056,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p19_cert_commit",
+        "h19_cert_commit",
         "p18_cert_commit",
         "h18_cert_commit",
         "p17_cert_commit",
@@ -1111,6 +1134,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p19_cert_commit",
+        "h19_cert_commit",
         "p18_cert_commit",
         "h18_cert_commit",
         "p17_cert_commit",
@@ -4471,13 +4496,18 @@ def test_transaction_retains_original_main_site_cache_lease_through_publication(
             "nonzero_exit",
         ),
     ],
+    ids=("authn", "authz", "remote_object_missing", "network", "nonzero_exit"),
 )
 def test_nonzero_command_failure_retains_only_closed_safe_diagnostics(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
+    request: pytest.FixtureRequest,
     stderr: str,
     expected_category: str,
 ) -> None:
+    assert expected_category in contract_module.PUBLIC_JUNIT_SAFE_PARAMETER_IDS
+    assert request.node.name.endswith(f"[{expected_category}]")
+    builder._assert_serialization_safe(request.node.nodeid.encode("utf-8"))
     monkeypatch.setattr(
         builder.subprocess,
         "run",
@@ -5196,15 +5226,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
         ):
             builder._poetry_runtime_root()
         poetry_alias.unlink()
-    builder._require_h18_runtime_policy(contract)
+    builder._require_h19_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 runtime isolation policy drifted",
+        match="H19 runtime isolation policy drifted",
     ):
-        builder._require_h18_runtime_policy(
+        builder._require_h19_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -5214,18 +5244,18 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_connection["test_database_url_query_present"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 runtime isolation policy drifted",
+        match="H19 runtime isolation policy drifted",
     ):
-        builder._require_h18_runtime_policy(
+        builder._require_h19_runtime_policy(
             replace(contract, postgres_connection_policy=drifted_connection)
         )
     drifted_stability = dict(contract.postgres_startup_stability_policy)
     drifted_stability["pid1_checked_before_readiness"] = False
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 runtime isolation policy drifted",
+        match="H19 runtime isolation policy drifted",
     ):
-        builder._require_h18_runtime_policy(
+        builder._require_h19_runtime_policy(
             replace(
                 contract,
                 postgres_startup_stability_policy=drifted_stability,
@@ -5235,12 +5265,24 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_junit_policy["max_junit_bytes"] = 1
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 public-tests JUnit diagnostic policy drifted",
+        match="H19 public-tests JUnit diagnostic policy drifted",
     ):
-        builder._require_h18_runtime_policy(
+        builder._require_h19_runtime_policy(
             replace(
                 contract,
                 public_tests_junit_diagnostic_policy=drifted_junit_policy,
+            )
+        )
+    drifted_redaction_policy = dict(contract.public_junit_redaction_policy)
+    drifted_redaction_policy["forbidden_marker_exception_authorized"] = True
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H19 runtime isolation policy drifted",
+    ):
+        builder._require_h19_runtime_policy(
+            replace(
+                contract,
+                public_junit_redaction_policy=drifted_redaction_policy,
             )
         )
     clone_path = tmp_path / "clone"
@@ -6020,6 +6062,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p19_cert_commit",
+            "h19_cert_commit",
             "p18_cert_commit",
             "h18_cert_commit",
             "p17_cert_commit",
@@ -6060,6 +6104,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p19_cert_commit",
+            "h19_cert_commit",
             "p18_cert_commit",
             "h18_cert_commit",
             "p17_cert_commit",
@@ -6384,8 +6430,58 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for forbidden in ("/home/", "https://", "postgresql://", "run-"):
         assert forbidden not in serialized_p16_failure
 
-    p17_failure = contract_module.expected_p17_failure_record()
+    p18_failure = contract_module.expected_p18_failure_record()
     fake_authority = cast(Mapping[str, Any], fake["authority"])
+    assert fake_authority["p18_failure"] == p18_failure
+    assert p18_failure["attempt"] == "R-CERT18"
+    assert p18_failure["status"] == "execution_failed_closed_cleanup_succeeded"
+    assert p18_failure["active_error"]["stage"] == "canonical_junit_redaction"
+    assert p18_failure["active_error"]["public_tests_returncode"] == 0
+    assert p18_failure["observed_cause"] == {
+        "stage": "canonical_junit_redaction",
+        "failure_kind": "synthetic_fixture_values_embedded_in_pytest_nodeids",
+        "classification": "representation_guard_false_positive",
+        "trigger": "sealed_fixture_marker_in_canonical_junit_identity",
+        "representation_failure": True,
+        "operational_leak_observed": False,
+        "operational_url_or_credential_exposed": False,
+        "generic_artifact_guard_operated_as_designed": True,
+        "historical_marker_bearing_nodeid_count": 5,
+        "historical_marker_bearing_nodeids_sha256": (
+            contract_module.P18_MARKER_BEARING_NODEIDS_SHA256
+        ),
+        "raw_junit_transiently_contained_marker_bearing_nodeids": True,
+        "canonical_junit_candidate_transiently_contained_marker_bearing_nodeids": True,
+        "historical_marker_bearing_nodeids_preserved_or_published": False,
+        "safe_parameter_ids_present": False,
+        "sealed_suite_collection_count": 944,
+        "sealed_suite_nodeids_sha256": (
+            contract_module.HISTORICAL_LOCKED_SUITE_NODEIDS_SHA256
+        ),
+        "public_test_totals": {
+            "tests": 944,
+            "passed": 902,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 42,
+        },
+        "raw_junit_preserved": False,
+        "raw_diagnostic_serialized": False,
+        "absolute_paths_serialized": False,
+    }
+    assert (
+        p18_failure["observed_cause"]["sealed_suite_nodeids_sha256"]
+        != contract_module.LOCKED_SUITE_NODEIDS_SHA256
+    )
+    assert p18_failure["evidence_counts"]["r18_execution_runs"] == 1
+    assert p18_failure["evidence_counts"]["public_test_runs"] == 1
+    assert p18_failure["evidence_counts"]["r_cert_outputs"] == 0
+    assert p18_failure["retry_authorized"] is False
+    serialized_p18_failure = json.dumps(p18_failure, sort_keys=True)
+    for forbidden in ("/home/", "https://", "postgresql://", "run-"):
+        assert forbidden not in serialized_p18_failure
+
+    p17_failure = contract_module.expected_p17_failure_record()
     assert fake_authority["p17_failure"] == p17_failure
     assert p17_failure["attempt"] == "R-CERT17"
     assert p17_failure["status"] == "execution_failed_closed_cleanup_succeeded"
@@ -6419,6 +6515,43 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for forbidden in ("/home/", "https://", "postgresql://", "run-"):
         assert forbidden not in serialized_p17_failure
 
+    drifted_p18 = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_p18["authority"])
+    drifted_p18_failure = cast(
+        dict[str, Any], drifted_authority["p18_failure"]
+    )
+    drifted_p18_failure["retry_authorized"] = True
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_p18,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H19 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    drifted_junit_redaction = copy.deepcopy(fake)
+    drifted_authority = cast(
+        dict[str, Any], drifted_junit_redaction["authority"]
+    )
+    drifted_isolation = cast(dict[str, Any], drifted_authority["isolation"])
+    drifted_redaction = cast(
+        dict[str, Any], drifted_isolation["public_junit_redaction_policy"]
+    )
+    drifted_redaction["forbidden_marker_exception_authorized"] = True
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_junit_redaction,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H19 failure/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
     drifted_p17 = copy.deepcopy(fake)
     drifted_authority = cast(dict[str, Any], drifted_p17["authority"])
     drifted_p17_failure = cast(
@@ -6432,7 +6565,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6449,7 +6582,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6467,7 +6600,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6482,7 +6615,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6502,7 +6635,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6518,7 +6651,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6534,7 +6667,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6550,13 +6683,15 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H18 failure/isolation",
+        match="H19 failure/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p19_cert_commit",
+        "h19_cert_commit",
         "p18_cert_commit",
         "h18_cert_commit",
         "p17_cert_commit",
@@ -6845,10 +6980,27 @@ def test_public_environment_activates_safe_historical_e10_compatibility() -> Non
         )
 
     sealed = contract_module.load_contract(root=ROOT)
+    junit_redaction = contract_module.expected_public_junit_redaction_policy()
+    assert dict(sealed.public_junit_redaction_policy) == junit_redaction
+    assert junit_redaction["safe_parameter_ids"] == [
+        "authn",
+        "authz",
+        "remote_object_missing",
+        "network",
+        "nonzero_exit",
+    ]
+    assert junit_redaction["forbidden_marker_exception_authorized"] is False
+    assert junit_redaction["generic_artifact_guard_unchanged"] is True
+    assert junit_redaction["historical_nodeids_sha256"] == (
+        contract_module.HISTORICAL_LOCKED_SUITE_NODEIDS_SHA256
+    )
+    assert junit_redaction["active_nodeids_sha256"] == (
+        contract_module.LOCKED_SUITE_NODEIDS_SHA256
+    )
     assert sealed.test_suite.selector_count == 39
     assert sealed.test_suite.collected_test_count == 944
     assert sealed.test_suite.nodeids_sha256 == (
-        "8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349"
+        "255beb8438b402199251e435c4d450d9f4d5a9e30aac06216f5daf526327a296"
     )
     assert sealed.test_suite.allowed_skip_count == 42
     assert len(sealed.test_suite.exact_skipped_nodes) == 42
