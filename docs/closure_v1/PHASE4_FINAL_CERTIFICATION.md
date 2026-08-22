@@ -1,8 +1,8 @@
 # Closure V1 Phase 4 final doctoral certification
 
-Status: `H-CERT19 publication candidate; suite locked`
+Status: `H-CERT20 publication candidate; suite locked`
 
-Contract: `closure_v1_phase4_final_certification_v19`
+Contract: `closure_v1_phase4_final_certification_v20`
 
 Authorities:
 
@@ -42,7 +42,9 @@ Authorities:
 - historical H-CERT17: `a7e4f10321c8ea8321d0c4917969ecc9ab39f59b`;
 - superseded P-CERT17: `1677778862786d28b9f60e80b7e718432e0b0947`;
 - historical H-CERT18: `b5c6b837bedd3ec66eb4a431fe631e53f2d72ed2`;
-- superseded P-CERT18: `da0e1908c25811b3e0fca08145fc517591b495b3`.
+- superseded P-CERT18: `da0e1908c25811b3e0fca08145fc517591b495b3`;
+- historical H-CERT19: `f5184778a732fdb7677e3ab9b906b72328509ed1`;
+- invalid, unpublished P-CERT19 generation: no commit and no retry.
 
 ## Purpose and boundary
 
@@ -69,7 +71,8 @@ and H-CERT3/P-CERT3, H-CERT4/P-CERT4 and H-CERT5/P-CERT5 remain immutable
 historical evidence; H-CERT6/P-CERT6, H-CERT7/P-CERT7, H-CERT8/P-CERT8 and
 H-CERT9/P-CERT9, H-CERT10/P-CERT10, H-CERT11/P-CERT11 and
 H-CERT12/P-CERT12, H-CERT14/P-CERT14, H-CERT15/P-CERT15 and
-H-CERT16/P-CERT16, H-CERT17/P-CERT17 and H-CERT18/P-CERT18 now join that immutable history. H-CERT13 remained an
+H-CERT16/P-CERT16, H-CERT17/P-CERT17, H-CERT18/P-CERT18 and published
+H-CERT19 now join that immutable history. H-CERT13 remained an
 unpublished candidate and was invalidated before any commit; P-CERT13 and
 R-CERT13 never existed. R-CERT14 failed closed during a read-only preflight
 before any certification execution. The unique R-CERT15 and R-CERT16 launches
@@ -77,9 +80,12 @@ then failed closed during public tests. The unique R-CERT17 launch also failed
 closed during public tests with a complete safe failure identity and exact
 cleanup. The unique R-CERT18 launch passed public pytest but then failed closed
 at canonical JUnit redaction because synthetic fixture values were embedded in
-five node identities; no operational URL or credential was exposed.
-H-CERT19/P-CERT19 are the only future effective authority. The compatibility
-names `H-CERT` and `P-CERT` refer to H-CERT19 and P-CERT19:
+five node identities; no operational URL or credential was exposed. The sole
+P-CERT19 generation was consumed and archived as an ignored, invalid,
+unpublished candidate because its generated authority omitted the required
+top-level `public_junit_redaction_policy`; R-CERT19 never ran. H-CERT20/P-CERT20
+are the only future effective authority. The compatibility names `H-CERT` and
+`P-CERT` refer to H-CERT20 and P-CERT20:
 
 ```text
 ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
@@ -137,7 +143,10 @@ ea8ddce -> 528dcb7 R-SYN -> d1daa30 editorial
                                                                     H-CERT18 -> P-CERT18 -X R-CERT18 JUnit representation
                                                                                  |
                                                                                  v
-                                                                    H-CERT19 -> P-CERT19 -> R-CERT19
+                                                                    H-CERT19 -X P-CERT19 candidate (invalid; unpublished; no R19)
+                                                                                 |
+                                                                                 v
+                                                                    H-CERT20 -> P-CERT20 -> R-CERT20
                                                                                                   |
                                                                                                   v
                                                                                          thesis-closure-v1
@@ -323,20 +332,41 @@ The gates have distinct roles:
     not an operational URL or credential exposure. Exact cleanup succeeded;
     OpenAPI, E2E, `ty`, Poetry, payload construction and all outputs remained
     at zero. P-CERT18 authorizes no retry.
-37. **H-CERT19** preserves that factual record and assigns exactly the safe
+37. **H-CERT19**, published as
+    `f5184778a732fdb7677e3ab9b906b72328509ed1`, preserves that factual record
+    and assigns exactly the safe
     parameter IDs `authn`, `authz`, `remote_object_missing`, `network` and
     `nonzero_exit`. The global artifact-redaction guard is unchanged and no
     marker exception is authorized.
-38. **P-CERT19** will publish a new two-file, data-only authority. It
-    supersedes P-CERT18 operationally without rewriting it. An unpublished
-    P-CERT19 is ineffective. **R-CERT19** may execute once only from the clean,
-    published P-CERT19 and may publish exactly eight evidence files, manifest
-    last.
-39. The repository owner manually publishes the final R commit and the
+38. The unique **P-CERT19** generation was consumed but invalidated before
+    publication. Precommit returned zero, yet the independent effective
+    reconstruction found exactly one missing authority key:
+    `public_junit_redaction_policy`. Generated/effective authority parity was
+    therefore false. The archived candidate remains ignored and its archive
+    path is not serialized. Its canonical authority was `174475` bytes with
+    SHA-256
+    `5c11101d510486fde0418ec61f1424d0727c1b806391dd7af4b362e5e6134ff2`;
+    its companion was `4070` bytes with SHA-256
+    `41e78c79440c84af0932e8d5e1b090528239f78b66fda6faf45a75890608b70d`.
+    No P19 commit exists, no DVC or test command ran, no data payload or final
+    output was opened or written, and retry is forbidden. **R-CERT19** had zero
+    executions and zero outputs.
+39. **H-CERT20** seals that factual P19 record, projects the exact public-JUnit
+    redaction policy both at authority top level and inside isolation, and
+    requires the independently generated and expected authority and companion
+    manifest objects and canonical bytes to match before the first link.
+    Fresh v20 paths prevent reuse of the invalid v19 candidate.
+40. **P-CERT20** will publish a new two-file, data-only authority. It
+    supersedes P-CERT18 and the unpublished P-CERT19 candidate operationally
+    without rewriting either record. An unpublished P-CERT20 is ineffective.
+    **R-CERT20** may execute once only from the clean, published P-CERT20 and
+    may publish exactly eight evidence files, manifest last.
+41. The repository owner manually publishes the final R commit and the
     `thesis-closure-v1` tag.
 
-The executable target is the published P-CERT19 commit. Executing from
-P-CERT1 through P-CERT18, adopting any failed temporary namespace, or treating
+The executable target is the published P-CERT20 commit. Executing from
+P-CERT1 through P-CERT18 or the invalid unpublished P-CERT19 candidate,
+adopting any failed temporary namespace, or treating
 a superseded authority as effective is
 forbidden. This avoids a circular
 claim: a commit cannot contain evidence generated before that evidence exists.
@@ -347,7 +377,7 @@ itself.
 
 At every gate, `HEAD`, `main`, `origin/main`, `origin/HEAD`, live remote HEAD
 and live remote main must agree. The worktree and index must have only the
-gate's exact unstaged or staged scope. H-CERT19, P-CERT19 and R-CERT19 must never
+gate's exact unstaged or staged scope. H-CERT20, P-CERT20 and R-CERT20 must never
 execute `dvc status` or any other DVC command in the main worktree. Main DVC
 state is reconstructed only from the exact Git tree, the Git-bound tracked
 `.dvc/config`, and the eight versioned pointer blobs; the authority records
@@ -646,14 +676,35 @@ redaction failure and exact cleanup produced zero final outputs.
 H-CERT19 is exactly `11M` over P-CERT18, with the same eleven paths and modes.
 Every path is modified; none is added or deleted.
 
-P-CERT19 is exactly two new additions, authority first and companion last:
+P-CERT19 attempted exactly two new additions, authority first and companion
+last:
 
 ```text
 configs/closure_v1/phase4_final_certification_authority_v19.json
 configs/closure_v1/phase4_final_certification_authority_manifest_v19.json
 ```
 
-R-CERT19 is exactly eight additions below the certification namespace:
+The two candidates were never committed. They were archived under ignored
+temporary storage after the independent reconstruction rejected the missing
+top-level `public_junit_redaction_policy`; the archive path is not serialized.
+Their immutable diagnostic identities are authority `174475` bytes / SHA-256
+`5c11101d510486fde0418ec61f1424d0727c1b806391dd7af4b362e5e6134ff2`
+and companion `4070` bytes / SHA-256
+`41e78c79440c84af0932e8d5e1b090528239f78b66fda6faf45a75890608b70d`.
+R-CERT19 retained the prescribed eight-addition scope but never ran and
+produced zero outputs.
+
+H-CERT20 is exactly `11M` over H-CERT19, with the same eleven paths and modes.
+Every path is modified; none is added or deleted.
+
+P-CERT20 is exactly two new additions, authority first and companion last:
+
+```text
+configs/closure_v1/phase4_final_certification_authority_v20.json
+configs/closure_v1/phase4_final_certification_authority_manifest_v20.json
+```
+
+R-CERT20 is exactly eight additions below the certification namespace:
 
 ```text
 reports/closure_v1/12_certification/public_tests.xml
@@ -667,7 +718,7 @@ reports/closure_v1/12_certification/final_certification_manifest.json
 ```
 
 All published P1/P2/P3/P4/P5/P6/P7/P8/P9/P10/P11/P12/P14/P15/P16/P17/P18 and
-future P19/R19 files are single-link regular `100644`
+future P20/R20 files are single-link regular `100644`
 files. The final manifest is created and linked last. An existing path is
 never adopted, replaced, or truncated.
 
@@ -693,10 +744,10 @@ private PDF, TeX source, listings, or `private/FULL.md`.
 
 ## Exact DVC restorability inventory
 
-R-CERT19 creates a fresh clone of live `origin/main` at the exact published P-CERT19
+R-CERT20 creates a fresh clone of live `origin/main` at the exact published P-CERT20
 commit and an initially empty, private DVC cache. The main worktree and its
 cache are never targets, and no DVC executable is invoked there. Real DVC
-execution is confined to the owned isolated R-CERT19 clone. The builder runs
+execution is confined to the owned isolated R-CERT20 clone. The builder runs
 exactly eight directed pull commands, one pointer per directed pull command,
 in the YAML order:
 
@@ -854,10 +905,10 @@ as supplemental CLI selectors. Consequently the exact non-duplicating command
 selector count remains 39. Any skip outside the exact 42-node ledger is
 critical and fails closed.
 
-The selectors, count and skip ledger remain fixed, while H-CERT19 replaces
+The selectors, count and skip ledger remain fixed. H-CERT19 replaced
 only five unsafe synthetic-fixture parameter renderings with explicit safe
-IDs. Outcome-free collection over the H-CERT19 bytes seals this active
-identity:
+IDs; H-CERT20 changes only authority-generation parity and preserves that
+outcome-free active identity:
 
 ```yaml
 suite_lock:
@@ -876,7 +927,7 @@ JUnit and in the rejected canonical-JUnit candidate, but were never preserved
 or published. Their canonical-list digest is
 `c8cad3bb92c129d90db56f78ad475b1204bcda6a3073ae6992daffa71c5f8b27`.
 The schema's pending branch is available only for integration fixtures;
-P-CERT19 generation and R-CERT19 reject it. Closure
+P-CERT20 generation and R-CERT20 reject it. Closure
 outcomes, raw targets and restored
 Parquet payloads remained forbidden during both collections.
 
@@ -898,8 +949,11 @@ H-CERT17/P-CERT17 remain byte-reconstructed historical authority, and
 R-CERT17 remains a consumed, failed public-test execution with exact safe
 failure identity and no retry. H-CERT18/P-CERT18 remain byte-reconstructed
 historical authority, and R-CERT18 remains a consumed, representational
-redaction failure with no retry and no operational leak. H-CERT19/P-CERT19
-supersede only the operational authority without rewriting history. The
+redaction failure with no retry and no operational leak. Published H-CERT19
+remains byte-reconstructed historical evidence; the invalid, unpublished
+P-CERT19 generation is consumed with no retry and R-CERT19 remains at zero
+executions. H-CERT20/P-CERT20 supersede only the operational authority without
+rewriting history. The
 946-node diagnostic identity belongs only to the factual
 R-CERT10 postmortem and is never an active suite lock.
 
@@ -916,7 +970,7 @@ operations and 38 documented operations. Operation IDs must be unique, path
 parameters exact, and documented operations missing from OpenAPI must equal
 zero.
 
-Verification runs from the exact P-CERT19 clone with its tracked tree
+Verification runs from the exact P-CERT20 clone with its tracked tree
 read-only, the host virtual environment read-only, and an owned writable
 temporary namespace. Public pytest uses the bubblewrap masks, read-only binds
 and namespace isolation as its hard boundary; it deliberately installs no
@@ -1051,20 +1105,28 @@ those remain manual repository-owner actions.
 
 ## Authority and result publication
 
-The P-CERT19 authority is canonical JSON. It reconstructs every historical
+The P-CERT20 authority is canonical JSON. It reconstructs every historical
 H-CERT1/P-CERT1/H-CERT2/P-CERT2/H-CERT3/P-CERT3/H-CERT4/P-CERT4 and
 H-CERT5/P-CERT5/H-CERT6/P-CERT6/H-CERT7/P-CERT7/H-CERT8/P-CERT8 and
 H-CERT9/P-CERT9/H-CERT10/P-CERT10/H-CERT11/P-CERT11/H-CERT12/P-CERT12 and
 H-CERT14/P-CERT14/H-CERT15/P-CERT15/H-CERT16/P-CERT16/H-CERT17/P-CERT17 and
-H-CERT18/P-CERT18 component from Git, every active H-CERT19 component, all ten anchors, all eight
+H-CERT18/P-CERT18 component from Git, published H-CERT19 and every active
+H-CERT20 component, all ten anchors, all eight
 pointer records, the exact suite lock, output order, isolation, diagnostic and
-authorization policies. It records P-CERT1 through P-CERT12 as superseded
+authorization policies. The top-level `public_junit_redaction_policy` must be
+exactly equal to the contract policy and its copy under `isolation`. Before
+any temporary is linked, the locker compares its generated authority object
+and canonical bytes with the independent effective reconstruction, and makes
+the analogous object/byte comparison for the companion manifest. It records
+P-CERT1 through P-CERT12 as superseded
 failed launches, the H-CERT13 invalidation, the R-CERT14 preflight failure and
 the consumed R-CERT15, R-CERT16, R-CERT17 and R-CERT18 failures, all with no
-retry authorization.
+retry authorization. It also records the consumed, invalid and unpublished
+P-CERT19 generation, including exact candidate digests, the sole missing key,
+zero R19/DVC/test/data/output activity and no retry authorization.
 Its companion is written last. Execution becomes effective only after the
-exact two-file P-CERT19 commit is observed as the single-parent child of
-H-CERT19 in local refs and live origin.
+exact two-file P-CERT20 commit is observed as the single-parent child of
+H-CERT20 in local refs and live origin.
 
 Every cooperating H/P/R publisher and the R builder serializes its whole
 transaction with non-blocking exclusive `flock` on a retained descriptor for
@@ -1339,7 +1401,7 @@ credentials and absolute paths remain absent. Exact cleanup removed the owned
 container, socket and namespace, all eight final paths remained absent, and
 `retry_authorized=false`.
 
-P-CERT19 additionally seals the consumed R-CERT18 launch. Public pytest
+P-CERT20 additionally seals the consumed R-CERT18 launch. Public pytest
 returned zero with exactly 944 collected cases, 902 passes, zero failures,
 zero errors and 42 skips under the historical digest
 `8422082eca90068bf6d6fff4f1e4d9b9964535e12c8fd6b0844658bbdf683349`.
@@ -1356,6 +1418,19 @@ The record classifies this as `representation_guard_false_positive` with
 OpenAPI, E2E, `ty`, Poetry, payload construction or final output ran, and
 `execution_consumed=true` / `retry_authorized=false`.
 
+P-CERT20 also seals the distinct P-CERT19 generation failure. The one-shot
+generator wrote an authority of `174475` bytes with SHA-256
+`5c11101d510486fde0418ec61f1424d0727c1b806391dd7af4b362e5e6134ff2`
+and a companion of `4070` bytes with SHA-256
+`41e78c79440c84af0932e8d5e1b090528239f78b66fda6faf45a75890608b70d`.
+The candidate passed precommit with return code zero, but independent
+effective reconstruction found the generated authority unequal because its
+only missing key was the top-level `public_junit_redaction_policy`. The
+candidate was archived under ignored temporary storage without serializing
+that archive path; neither file was published. No R-CERT19, DVC command, test
+command, data payload access or final output occurred. Generation is consumed
+and `retry_authorized=false`.
+
 The builder retains its owned isolated-clone cleanup snapshot while auxiliary
 configuration, the eight directed pulls and directed status verification run
 there. A partial tree left by a failed DVC command is never adopted into
@@ -1366,10 +1441,11 @@ must identify both the sanitized active verification error and the cleanup
 failure; the cleanup failure cannot mask the active stage. No raw stream,
 secret or absolute path may appear in that composite.
 
-The final manifest binds the seven preceding outputs, P-CERT19 authority and
+The final manifest binds the seven preceding outputs, P-CERT20 authority and
 companion, historical H1/P1/H2/P2/H3/P3/H4/P4/H5/P5/H6/P6/H7/P7/H8/P8/H9/P9/H10/P10/H11/P11/H12/P12, the factual invalidated H13 candidate,
 historical H14/P14/H15/P15/H16/P16/H17/P17/H18/P18, the zero-execution R14 preflight
-failure, the consumed R15/R16/R17/R18 failures and active H19
+failure, the consumed R15/R16/R17/R18 failures, historical H19, the consumed
+invalid unpublished P19 generation, zero-execution R19 and active H20
 components, public anchors,
 eight pointer/restoration records,
 test and OpenAPI identities, environment and safety statements. The final
@@ -1380,7 +1456,7 @@ human report must retain this claim boundary:
 
 ## Precommit and manual publication
 
-The precommit selector order is R-CERT19, P-CERT19, H-CERT19, then earlier Phase 4
+The precommit selector order is R-CERT20, P-CERT20, H-CERT20, then earlier Phase 4
 and historical adapters. Every gate uses:
 
 ```text
@@ -1396,11 +1472,11 @@ pointer blobs, the recorded isolated-clone DVC evidence, targeted staging and
 rollback that preserves foreign index entries. It does not infer or claim a
 clean main-worktree DVC status. The legacy guard path remains absent.
 
-H-CERT19 and P-CERT19 precommit do not clone, pull, test, generate OpenAPI, or create R
+H-CERT20 and P-CERT20 precommit do not clone, pull, test, generate OpenAPI, or create R
 outputs. R precommit validates existing evidence and does not recertify or run
 DVC. No adapter commits, pushes, or tags.
 
-After the owner publishes R, the final audit must prove direct P-CERT19 parent,
+After the owner publishes R, the final audit must prove direct P-CERT20 parent,
 exact8 scope, local/remote refs, clean Git, the static main-worktree DVC
 boundary from Git plus the eight versioned pointer blobs, the isolated-clone
 DVC evidence, effective manifest, and no owned temporary state. It must not
@@ -1414,8 +1490,9 @@ R, Phase 4 is complete and work stops.
 Stop without widening scope or automatic retry on any of the following:
 
 - ref, remote, parent, scope, mode, blob, tag or suite-lock drift;
-- any attempt to execute R-CERT19 from superseded P-CERT1 through P-CERT12,
-  nonexistent P-CERT13, or superseded P-CERT14/P-CERT15/P-CERT16/P-CERT17/P-CERT18,
+- any attempt to execute R-CERT20 from superseded P-CERT1 through P-CERT12,
+  nonexistent P-CERT13, superseded P-CERT14/P-CERT15/P-CERT16/P-CERT17/P-CERT18,
+  or the invalid unpublished P-CERT19 candidate,
   or reuse/adopt any retained failed-run namespace;
 - a post-clone directory-link delta other than exactly `+1` at
   `after_git_clone`, or failure to register the clone after that exact

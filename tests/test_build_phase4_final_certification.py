@@ -80,13 +80,23 @@ def _authority(
     contract: contract_module.FinalCertificationContract | None = None,
 ) -> dict[str, Any]:
     active_contract = contract or _locked_contract()
+    h19_records = _records("h19", len(active_contract.h19_scope))
+    h20_records = _records("h20", len(active_contract.h_scope))
+    h19_scope = {spec.path: spec.status for spec in active_contract.h19_scope}
+    p19_scope = {spec.path: spec.status for spec in active_contract.p19_scope}
+    r19_scope = {path: "A" for path in active_contract.output_paths}
+    h20_scope = {spec.path: spec.status for spec in active_contract.h_scope}
+    p20_scope = {spec.path: spec.status for spec in active_contract.p_scope}
+    r20_scope = {spec.path: spec.status for spec in active_contract.r_scope}
     return {
         "status": "effective",
         "gate": "P-CERT",
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p19_cert_commit": P_COMMIT,
-        "h19_cert_commit": H_COMMIT,
+        "p20_cert_commit": P_COMMIT,
+        "h20_cert_commit": H_COMMIT,
+        "p19_cert_commit": None,
+        "h19_cert_commit": active_contract.h19_cert_commit,
         "p18_cert_commit": active_contract.p18_cert_commit,
         "h18_cert_commit": active_contract.h18_cert_commit,
         "p17_cert_commit": active_contract.p17_cert_commit,
@@ -128,7 +138,8 @@ def _authority(
         ),
         "repository": {"HEAD": P_COMMIT},
         "authority": {
-            "authority_version": "synthetic",
+            "authority_version": contract_module.AUTHORITY_VERSION,
+            "p19_failure": contract_module.expected_p19_failure_record(),
             "p18_failure": contract_module.expected_p18_failure_record(),
             "p17_failure": contract_module.expected_p17_failure_record(),
             "p16_failure": contract_module.expected_p16_failure_record(),
@@ -139,6 +150,26 @@ def _authority(
             "p11_failure": contract_module.expected_p11_failure_record(),
             "p10_failure": contract_module.expected_p10_failure_record(),
             "p9_failure": contract_module.expected_p9_failure_record(),
+            "h19_scope": h19_scope,
+            "h19_component_records": h19_records,
+            "h19_component_records_digest": contract_module.digest_records(
+                h19_records
+            ),
+            "p19_scope": p19_scope,
+            "r19_scope": r19_scope,
+            "h_scope": h20_scope,
+            "h20_scope": h20_scope,
+            "h20_component_records": h20_records,
+            "h20_component_records_digest": contract_module.digest_records(
+                h20_records
+            ),
+            "p_scope": p20_scope,
+            "p20_scope": p20_scope,
+            "r_scope": r20_scope,
+            "r20_scope": r20_scope,
+            "public_junit_redaction_policy": (
+                contract_module.expected_public_junit_redaction_policy()
+            ),
             "isolation": {
                 "sandbox_mountpoint_policy": (
                     contract_module.expected_sandbox_mountpoint_policy()
@@ -171,7 +202,9 @@ def _authority(
         },
         "authority_bytes": 123,
         "authority_sha256": "c" * 64,
-        "manifest": {"manifest_version": "synthetic"},
+        "manifest": {
+            "manifest_version": contract_module.AUTHORITY_MANIFEST_VERSION
+        },
         "manifest_bytes": 456,
         "manifest_sha256": "d" * 64,
     }
@@ -845,14 +878,27 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
     assert {spec.path: spec.status for spec in contract.p18_scope} == (
         contract_module.expected_p18_scope()
     )
-    assert {spec.path: spec.status for spec in contract.r_scope} == (
-        contract_module.expected_r18_scope()
+    assert {spec.path: spec.status for spec in contract.h19_scope} == (
+        contract_module.expected_h19_scope()
     )
-    assert contract_module.expected_r18_scope() == (
-        contract_module.expected_r17_scope()
+    assert {spec.path: spec.status for spec in contract.p19_scope} == (
+        contract_module.expected_p19_scope()
+    )
+    assert {spec.path: spec.status for spec in contract.h_scope} == (
+        contract_module.expected_h_scope()
+    )
+    assert {spec.path: spec.status for spec in contract.p_scope} == (
+        contract_module.expected_p_scope()
+    )
+    assert {spec.path: spec.status for spec in contract.r_scope} == (
+        contract_module.expected_r_scope()
+    )
+    assert contract_module.expected_r_scope() == (
+        contract_module.expected_r19_scope()
     )
     assert contract.h18_cert_commit == contract_module.H18_CERT_COMMIT
     assert contract.p18_cert_commit == contract_module.P18_CERT_COMMIT
+    assert contract.h19_cert_commit == contract_module.H19_CERT_COMMIT
     assert {spec.path: spec.status for spec in contract.h17_scope} == (
         contract_module.expected_h17_scope()
     )
@@ -884,8 +930,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "c" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p19_cert_commit": P_COMMIT,
-        "h19_cert_commit": H_COMMIT,
+        "p20_cert_commit": P_COMMIT,
+        "h20_cert_commit": H_COMMIT,
+        "p19_cert_commit": None,
+        "h19_cert_commit": contract.h19_cert_commit,
         "p18_cert_commit": contract.p18_cert_commit,
         "h18_cert_commit": contract.h18_cert_commit,
         "p17_cert_commit": contract.p17_cert_commit,
@@ -927,8 +975,10 @@ def test_payload_builder_and_validator_bind_exact8_and_claim_boundary() -> None:
         "sha256": "d" * 64,
         "p_cert_commit": P_COMMIT,
         "h_cert_commit": H_COMMIT,
-        "p19_cert_commit": P_COMMIT,
-        "h19_cert_commit": H_COMMIT,
+        "p20_cert_commit": P_COMMIT,
+        "h20_cert_commit": H_COMMIT,
+        "p19_cert_commit": None,
+        "h19_cert_commit": contract.h19_cert_commit,
         "p18_cert_commit": contract.p18_cert_commit,
         "h18_cert_commit": contract.h18_cert_commit,
         "p17_cert_commit": contract.p17_cert_commit,
@@ -1035,9 +1085,27 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ineffective["status"] = "locked_unpublished"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="effective published P19",
+        match="effective published P20",
     ):
         _products(contract, authority=ineffective)
+    historical_p19_authority = _authority(contract)
+    cast(dict[str, Any], historical_p19_authority["authority"])[
+        "authority_version"
+    ] = contract_module.H19_AUTHORITY_VERSION
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H20/P20 authority version",
+    ):
+        _products(contract, authority=historical_p19_authority)
+    historical_p19_manifest = _authority(contract)
+    cast(dict[str, Any], historical_p19_manifest["manifest"])[
+        "manifest_version"
+    ] = contract_module.H19_AUTHORITY_MANIFEST_VERSION
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H20/P20 authority version",
+    ):
+        _products(contract, authority=historical_p19_manifest)
     unpublished_candidate_alias = _authority(contract)
     unpublished_candidate_alias["p13_cert_commit"] = "7" * 40
     with pytest.raises(
@@ -1046,7 +1114,7 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     ):
         _products(contract, authority=unpublished_candidate_alias)
     collapsed_active_topology = _authority(contract)
-    collapsed_active_topology["h19_cert_commit"] = P_COMMIT
+    collapsed_active_topology["h20_cert_commit"] = P_COMMIT
     collapsed_active_topology["h_cert_commit"] = P_COMMIT
     with pytest.raises(
         builder.FinalCertificationBuildError,
@@ -1056,6 +1124,8 @@ def test_payload_builder_requires_complete_exact_cert4_commit_lineage() -> None:
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p20_cert_commit",
+        "h20_cert_commit",
         "p19_cert_commit",
         "h19_cert_commit",
         "p18_cert_commit",
@@ -1134,6 +1204,8 @@ def test_reconstructive_validator_rejects_cert4_lineage_omission_and_drift() -> 
     fields = (
         "p_cert_commit",
         "h_cert_commit",
+        "p20_cert_commit",
+        "h20_cert_commit",
         "p19_cert_commit",
         "h19_cert_commit",
         "p18_cert_commit",
@@ -4301,6 +4373,10 @@ def test_sealed_runtime_drift_stops_before_private_config_pull_and_verification(
 
 def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> None:
     source = inspect.getsource(builder.build_phase4_final_certification)
+    preflight = source.index("preflight = check_phase4_final_certification(")
+    repository_lease = source.index("repository_lease = _open_repository_root_lease(")
+    run_guard = source.index("lease = _acquire_run_guard(")
+    workspace = source.index("prepared = _prepare_owned_workspace(")
     clone = source.index("_clone_exact_p(")
     after_clone_registration = source.index('stage == "after_git_clone"')
     mountpoints = source.index("_create_clone_mountpoints(")
@@ -4312,6 +4388,7 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
     )
     restore = source.index("_restore_dvc_objects_with_anchored_executable(")
     after = source.index('"runtime_versions_after_verification"')
+    assert preflight < repository_lease < run_guard < workspace < clone
     assert after_clone_registration < mountpoints < clone < runtime_open
     assert runtime_open < before < version_cache_freeze < private_config
     clone_source = inspect.getsource(builder._clone_exact_p)
@@ -4319,6 +4396,46 @@ def test_transaction_orders_sealed_runtime_before_and_after_all_effects() -> Non
         'namespace_validator("after_git_clone")'
     )
     assert private_config < restore < after
+    preflight_source = inspect.getsource(builder.check_phase4_final_certification)
+    authority_load = preflight_source.index(
+        "authority = (authority_validator or _authority_loader)"
+    )
+    output_namespace = preflight_source.index("output_root = root / CERTIFICATION_ROOT")
+    assert authority_load < output_namespace
+    for effect in (
+        "_acquire_run_guard(",
+        "_prepare_owned_workspace(",
+        "_mkdir_owned_at(",
+        "os.link(",
+    ):
+        assert effect not in preflight_source
+    effective_loader_source = inspect.getsource(
+        contract_module.load_effective_authority
+    )
+    authority_object_parity = effective_loader_source.index(
+        "authority != expected_authority"
+    )
+    authority_byte_parity = effective_loader_source.index(
+        "authority_bytes != canonical_json_bytes("
+    )
+    manifest_implementation_parity = effective_loader_source.index(
+        "expected_manifest != reconstructed_manifest"
+    )
+    manifest_object_parity = effective_loader_source.index(
+        "manifest != expected_manifest"
+    )
+    manifest_byte_parity = effective_loader_source.index(
+        "manifest_bytes != canonical_json_bytes("
+    )
+    assert (
+        authority_object_parity
+        < authority_byte_parity
+        < manifest_implementation_parity
+        < manifest_object_parity
+        < manifest_byte_parity
+    )
+    for effect in ("_mkdir_owned_at(", "_create_owned_file_at(", "os.link("):
+        assert effect not in effective_loader_source
     smoke = source.index("_run_sandbox_smoke(")
     postgres = source.index("_start_owned_postgres(")
     assert restore < smoke < postgres
@@ -5226,15 +5343,15 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
         ):
             builder._poetry_runtime_root()
         poetry_alias.unlink()
-    builder._require_h19_runtime_policy(contract)
+    builder._require_h20_runtime_policy(contract)
     first_prefix_text = contract.forbidden_read_prefixes[0]
     drifted_dispositions = dict(contract.forbidden_read_prefix_dispositions)
     drifted_dispositions[first_prefix_text] = "require_directory_mask"
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 runtime isolation policy drifted",
+        match="H20 runtime isolation policy drifted",
     ):
-        builder._require_h19_runtime_policy(
+        builder._require_h20_runtime_policy(
             replace(
                 contract,
                 forbidden_read_prefix_dispositions=drifted_dispositions,
@@ -5244,18 +5361,18 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_connection["test_database_url_query_present"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 runtime isolation policy drifted",
+        match="H20 runtime isolation policy drifted",
     ):
-        builder._require_h19_runtime_policy(
+        builder._require_h20_runtime_policy(
             replace(contract, postgres_connection_policy=drifted_connection)
         )
     drifted_stability = dict(contract.postgres_startup_stability_policy)
     drifted_stability["pid1_checked_before_readiness"] = False
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 runtime isolation policy drifted",
+        match="H20 runtime isolation policy drifted",
     ):
-        builder._require_h19_runtime_policy(
+        builder._require_h20_runtime_policy(
             replace(
                 contract,
                 postgres_startup_stability_policy=drifted_stability,
@@ -5265,9 +5382,9 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_junit_policy["max_junit_bytes"] = 1
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 public-tests JUnit diagnostic policy drifted",
+        match="H20 public-tests JUnit diagnostic policy drifted",
     ):
-        builder._require_h19_runtime_policy(
+        builder._require_h20_runtime_policy(
             replace(
                 contract,
                 public_tests_junit_diagnostic_policy=drifted_junit_policy,
@@ -5277,9 +5394,9 @@ def test_bwrap_effect_sources_are_retained_fd_paths_not_mutable_names(
     drifted_redaction_policy["forbidden_marker_exception_authorized"] = True
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 runtime isolation policy drifted",
+        match="H20 runtime isolation policy drifted",
     ):
-        builder._require_h19_runtime_policy(
+        builder._require_h20_runtime_policy(
             replace(
                 contract,
                 public_junit_redaction_policy=drifted_redaction_policy,
@@ -6050,10 +6167,14 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     assert result["authority_bytes"] == len(b"authority")
     assert result["manifest_bytes"] == len(b"manifest")
     # Regression: the public loader projection is validated a second time by
-    # check-only.  Preserve the explicit unpublished H13/P13 sentinels instead
-    # of dropping them while retaining only string-valued commit bindings.
+    # check-only.  Preserve the explicit unpublished H13/P13 and invalid P19
+    # sentinels instead of treating the historical candidate as effective.
     assert result["p13_cert_commit"] is None
     assert result["h13_cert_commit"] is None
+    assert result["p19_cert_commit"] is None
+    assert result["h19_cert_commit"] == contract_module.H19_CERT_COMMIT
+    assert result["p20_cert_commit"] == P_COMMIT
+    assert result["h20_cert_commit"] == H_COMMIT
     assert result["dvc_status_policy"] == (
         contract_module.expected_dvc_status_policy(contract)
     )
@@ -6062,6 +6183,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p20_cert_commit",
+            "h20_cert_commit",
             "p19_cert_commit",
             "h19_cert_commit",
             "p18_cert_commit",
@@ -6104,6 +6227,8 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         for field in (
             "p_cert_commit",
             "h_cert_commit",
+            "p20_cert_commit",
+            "h20_cert_commit",
             "p19_cert_commit",
             "h19_cert_commit",
             "p18_cert_commit",
@@ -6143,6 +6268,22 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
         )
     }
     assert not any(isinstance(value, bytes) for value in result.values())
+
+    p19_failure = contract_module.expected_p19_failure_record()
+    fake_authority = cast(Mapping[str, Any], fake["authority"])
+    assert fake_authority["p19_failure"] == p19_failure
+    assert p19_failure["attempt"] == "P-CERT19"
+    assert p19_failure["generation_consumed"] is True
+    assert p19_failure["active_error"]["missing_keys"] == [
+        "public_junit_redaction_policy"
+    ]
+    assert p19_failure["active_error"]["effective_loader_would_accept"] is False
+    assert p19_failure["cleanup"]["status"] == "succeeded_exact"
+    assert p19_failure["evidence_counts"]["p19_publication_commits"] == 0
+    assert p19_failure["evidence_counts"]["r19_execution_runs"] == 0
+    assert p19_failure["evidence_counts"]["r19_outputs"] == 0
+    assert p19_failure["p19_effective"] is False
+    assert p19_failure["retry_authorized"] is False
 
     h13_failure = contract_module.expected_h13_failure_record()
     assert h13_failure == {
@@ -6515,6 +6656,51 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     for forbidden in ("/home/", "https://", "postgresql://", "run-"):
         assert forbidden not in serialized_p17_failure
 
+    drifted_p19 = copy.deepcopy(fake)
+    drifted_authority = cast(dict[str, Any], drifted_p19["authority"])
+    drifted_p19_failure = cast(
+        dict[str, Any], drifted_authority["p19_failure"]
+    )
+    drifted_p19_failure["retry_authorized"] = True
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_p19,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H20 history/scope/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    missing_top_level_redaction = copy.deepcopy(fake)
+    cast(dict[str, Any], missing_top_level_redaction["authority"]).pop(
+        "public_junit_redaction_policy"
+    )
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: missing_top_level_redaction,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H20 history/scope/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
+    drifted_h20_scope = copy.deepcopy(fake)
+    cast(dict[str, Any], drifted_h20_scope["authority"])["h20_scope"] = {}
+    monkeypatch.setattr(
+        builder,
+        "load_effective_authority",
+        lambda *args, **kwargs: drifted_h20_scope,
+    )
+    with pytest.raises(
+        builder.FinalCertificationBuildError,
+        match="H20 history/scope/isolation",
+    ):
+        builder._authority_loader(ROOT, contract)
+
     drifted_p18 = copy.deepcopy(fake)
     drifted_authority = cast(dict[str, Any], drifted_p18["authority"])
     drifted_p18_failure = cast(
@@ -6528,7 +6714,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6548,7 +6734,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6565,7 +6751,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6582,7 +6768,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6600,7 +6786,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6615,7 +6801,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6635,7 +6821,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6651,7 +6837,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6667,7 +6853,7 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
@@ -6683,13 +6869,15 @@ def test_authority_loader_projects_hashes_without_raw_bytes(
     )
     with pytest.raises(
         builder.FinalCertificationBuildError,
-        match="H19 failure/isolation",
+        match="H20 history/scope/isolation",
     ):
         builder._authority_loader(ROOT, contract)
 
     for field in (
         "p_cert_commit",
         "h_cert_commit",
+        "p20_cert_commit",
+        "h20_cert_commit",
         "p19_cert_commit",
         "h19_cert_commit",
         "p18_cert_commit",
@@ -6830,6 +7018,10 @@ def test_check_only_is_non_writing_and_requires_effective_p_cert(
     assert result["status"] == "ready_to_certify"
     assert result["authority"]["p13_cert_commit"] is None
     assert result["authority"]["h13_cert_commit"] is None
+    assert result["authority"]["p19_cert_commit"] is None
+    assert result["authority"]["h19_cert_commit"] == contract_module.H19_CERT_COMMIT
+    assert result["authority"]["p20_cert_commit"] == P_COMMIT
+    assert result["authority"]["h20_cert_commit"] == H_COMMIT
     assert result["writes"] is False
     assert result["main_dvc_static_boundary"]["main_dvc_status_command_run"] is False
     assert (

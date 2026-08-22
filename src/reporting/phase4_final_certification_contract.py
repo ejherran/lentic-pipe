@@ -145,11 +145,17 @@ H18_AUTHORITY_PATH = Path(
 H18_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v18.json"
 )
-AUTHORITY_PATH = Path(
+H19_AUTHORITY_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_v19.json"
 )
-AUTHORITY_MANIFEST_PATH = Path(
+H19_AUTHORITY_MANIFEST_PATH = Path(
     "configs/closure_v1/phase4_final_certification_authority_manifest_v19.json"
+)
+AUTHORITY_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_v20.json"
+)
+AUTHORITY_MANIFEST_PATH = Path(
+    "configs/closure_v1/phase4_final_certification_authority_manifest_v20.json"
 )
 CERTIFICATION_ROOT = Path("reports/closure_v1/12_certification")
 GUARD_PATH = Path(
@@ -157,7 +163,7 @@ GUARD_PATH = Path(
 )
 LOCAL_DVC_CONFIG_PATH = Path(".dvc/config.local")
 
-CONTRACT_VERSION = "closure_v1_phase4_final_certification_v19"
+CONTRACT_VERSION = "closure_v1_phase4_final_certification_v20"
 CLOSURE_SOURCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
 R_SYN_COMMIT = "528dcb74a7c08b65f262901e4562a67b784db8c9"
 EDITORIAL_COMMIT = "d1daa3059462854d6ddf5199fbc05515cec76982"
@@ -195,9 +201,14 @@ H17_CERT_COMMIT = "a7e4f10321c8ea8321d0c4917969ecc9ab39f59b"
 P17_CERT_COMMIT = "1677778862786d28b9f60e80b7e718432e0b0947"
 H18_CERT_COMMIT = "b5c6b837bedd3ec66eb4a431fe631e53f2d72ed2"
 P18_CERT_COMMIT = "da0e1908c25811b3e0fca08145fc517591b495b3"
+H19_CERT_COMMIT = "f5184778a732fdb7677e3ab9b906b72328509ed1"
 FINAL_TAG = "thesis-closure-v1"
-AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v19"
+AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v20"
 AUTHORITY_MANIFEST_VERSION = (
+    "closure_v1_phase4_final_certification_authority_manifest_v20"
+)
+H19_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v19"
+H19_AUTHORITY_MANIFEST_VERSION = (
     "closure_v1_phase4_final_certification_authority_manifest_v19"
 )
 H18_AUTHORITY_VERSION = "closure_v1_phase4_final_certification_authority_v18"
@@ -399,6 +410,20 @@ H18_AUTHORITY_SHA256 = (
 H18_AUTHORITY_MANIFEST_BYTES = 3926
 H18_AUTHORITY_MANIFEST_SHA256 = (
     "6d2d9905cf3c18cf8b7f6acd18ca64ed4b16adff6f74d18ad56e4c69a4ba0ea4"
+)
+P19_CANDIDATE_AUTHORITY_BYTES = 174475
+P19_CANDIDATE_AUTHORITY_SHA256 = (
+    "5c11101d510486fde0418ec61f1424d0727c1b806391dd7af4b362e5e6134ff2"
+)
+P19_CANDIDATE_AUTHORITY_KEY_COUNT = 156
+P19_EXPECTED_AUTHORITY_BYTES = 175335
+P19_EXPECTED_AUTHORITY_SHA256 = (
+    "6361ed6012381baeaaa72d07271800dc6fb781537d4f520b8afccbe2b9d857b4"
+)
+P19_EXPECTED_AUTHORITY_KEY_COUNT = 157
+P19_CANDIDATE_MANIFEST_BYTES = 4070
+P19_CANDIDATE_MANIFEST_SHA256 = (
+    "41e78c79440c84af0932e8d5e1b090528239f78b66fda6faf45a75890608b70d"
 )
 HASH_CHUNK_SIZE = 1024 * 1024
 COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
@@ -792,6 +817,7 @@ class FinalCertificationContract:
     p17_cert_commit: str
     h18_cert_commit: str
     p18_cert_commit: str
+    h19_cert_commit: str
     final_tag: str
     h1_scope: tuple[PublicationPathSpec, ...]
     p1_scope: tuple[PublicationPathSpec, ...]
@@ -829,6 +855,8 @@ class FinalCertificationContract:
     p17_scope: tuple[PublicationPathSpec, ...]
     h18_scope: tuple[PublicationPathSpec, ...]
     p18_scope: tuple[PublicationPathSpec, ...]
+    h19_scope: tuple[PublicationPathSpec, ...]
+    p19_scope: tuple[PublicationPathSpec, ...]
     h_scope: tuple[PublicationPathSpec, ...]
     p_scope: tuple[PublicationPathSpec, ...]
     r_scope: tuple[PublicationPathSpec, ...]
@@ -1055,6 +1083,13 @@ P18_SCOPE = (
     PublicationPathSpec(H18_AUTHORITY_PATH.as_posix(), "A", "100644"),
     PublicationPathSpec(H18_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
 )
+H19_SCOPE = tuple(
+    PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
+)
+P19_SCOPE = (
+    PublicationPathSpec(H19_AUTHORITY_PATH.as_posix(), "A", "100644"),
+    PublicationPathSpec(H19_AUTHORITY_MANIFEST_PATH.as_posix(), "A", "100644"),
+)
 H_SCOPE = tuple(
     PublicationPathSpec(item.path, "M", item.git_mode) for item in H1_SCOPE
 )
@@ -1111,6 +1146,9 @@ R17_SCOPE = tuple(
     PublicationPathSpec(path, "A", "100644") for path in OUTPUT_PATHS
 )
 R18_SCOPE = tuple(
+    PublicationPathSpec(path, "A", "100644") for path in OUTPUT_PATHS
+)
+R19_SCOPE = tuple(
     PublicationPathSpec(path, "A", "100644") for path in OUTPUT_PATHS
 )
 R_SCOPE = tuple(
@@ -2763,6 +2801,90 @@ def expected_p18_failure_record() -> dict[str, Any]:
     }
 
 
+def expected_p19_failure_record() -> dict[str, Any]:
+    """Return the factual record of the invalid unpublished P-CERT19 bundle."""
+
+    return {
+        "status": "authority_bundle_invalidated_before_publication_cleanup_succeeded",
+        "attempt": "P-CERT19",
+        "generation_consumed": True,
+        "active_error": {
+            "stage": "effective_authority_reconstruction_prepublication_audit",
+            "safe_error": "generated_authority_omitted_required_top_level_policy",
+            "failure_kind": "generator_effective_projection_key_drift",
+            "missing_keys": ["public_junit_redaction_policy"],
+            "extra_keys": [],
+            "shared_key_count": P19_CANDIDATE_AUTHORITY_KEY_COUNT,
+            "shared_values_equal": True,
+            "locker_validation_returncode": 0,
+            "precommit_returncode": 0,
+            "effective_loader_would_accept": False,
+            "raw_stdout_preserved": False,
+            "raw_stderr_preserved": False,
+            "credentials_preserved": False,
+            "absolute_paths_preserved": False,
+        },
+        "candidate_authority": {
+            "status": "locked_unpublished",
+            "canonical_json": True,
+            "bytes": P19_CANDIDATE_AUTHORITY_BYTES,
+            "sha256": P19_CANDIDATE_AUTHORITY_SHA256,
+            "top_level_key_count": P19_CANDIDATE_AUTHORITY_KEY_COUNT,
+            "expected_bytes": P19_EXPECTED_AUTHORITY_BYTES,
+            "expected_sha256": P19_EXPECTED_AUTHORITY_SHA256,
+            "expected_top_level_key_count": P19_EXPECTED_AUTHORITY_KEY_COUNT,
+            "public_junit_redaction_policy_top_level_present": False,
+            "public_junit_redaction_policy_isolation_copy_present": True,
+        },
+        "candidate_manifest": {
+            "status": "locked_unpublished",
+            "canonical_json": True,
+            "manifest_last": True,
+            "bytes": P19_CANDIDATE_MANIFEST_BYTES,
+            "sha256": P19_CANDIDATE_MANIFEST_SHA256,
+            "authority_binding_valid": True,
+            "independent_reconstruction_drift_observed": False,
+        },
+        "observed_cause": {
+            "locker_builder_omitted_top_level_policy": True,
+            "locker_validator_omitted_top_level_policy": True,
+            "precommit_reused_locker_projection": True,
+            "effective_loader_required_top_level_policy": True,
+            "policy_value_drift_observed": False,
+            "manifest_value_drift_observed": False,
+            "scientific_or_data_corruption_observed": False,
+            "deterministic_source_postmortem": True,
+        },
+        "cleanup": {
+            "status": "succeeded_exact",
+            "public_authority_paths_absent": True,
+            "r_cert_namespace_absent": True,
+            "runtime_namespace_absent": True,
+            "guards_absent": True,
+            "temporary_paths_absent": True,
+            "candidate_archived_under_ignored_tmp": True,
+            "archive_path_or_run_id_serialized": False,
+            "archive_is_authority": False,
+        },
+        "evidence_counts": {
+            "p19_generation_runs": 1,
+            "p19_precommit_runs": 1,
+            "independent_reconstruction_checks": 1,
+            "p19_publication_commits": 0,
+            "r19_execution_runs": 0,
+            "r19_outputs": 0,
+            "dvc_commands": 0,
+            "public_test_runs": 0,
+            "raw_target_or_outcome_reads": 0,
+            "scientific_payload_reads": 0,
+            "parquet_payloads_opened_or_decoded": 0,
+        },
+        "p19_commit_published": False,
+        "p19_effective": False,
+        "retry_authorized": False,
+    }
+
+
 def expected_public_junit_redaction_policy() -> dict[str, Any]:
     """Return the exact safe-ID policy without relaxing artifact redaction."""
 
@@ -3002,13 +3124,13 @@ def digest_records(records: Sequence[Mapping[str, Any]]) -> str:
 
 
 def expected_h_scope() -> dict[str, str]:
-    """Return the operational H-CERT19 scope (legacy adapter alias)."""
+    """Return the operational H-CERT20 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in H_SCOPE}
 
 
 def expected_p_scope() -> dict[str, str]:
-    """Return the operational P-CERT19 scope (legacy adapter alias)."""
+    """Return the operational P-CERT20 scope (legacy adapter alias)."""
 
     return {item.path: item.status for item in P_SCOPE}
 
@@ -3177,6 +3299,18 @@ def expected_r18_scope() -> dict[str, str]:
     return {item.path: item.status for item in R18_SCOPE}
 
 
+def expected_h19_scope() -> dict[str, str]:
+    return {item.path: item.status for item in H19_SCOPE}
+
+
+def expected_p19_scope() -> dict[str, str]:
+    return {item.path: item.status for item in P19_SCOPE}
+
+
+def expected_r19_scope() -> dict[str, str]:
+    return {item.path: item.status for item in R19_SCOPE}
+
+
 def expected_h_modes() -> dict[str, str]:
     return {item.path: item.git_mode for item in H_SCOPE}
 
@@ -3279,6 +3413,18 @@ def expected_p18_modes() -> dict[str, str]:
 
 def expected_r18_modes() -> dict[str, str]:
     return {item.path: item.git_mode for item in R18_SCOPE}
+
+
+def expected_h19_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in H19_SCOPE}
+
+
+def expected_p19_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in P19_SCOPE}
+
+
+def expected_r19_modes() -> dict[str, str]:
+    return {item.path: item.git_mode for item in R19_SCOPE}
 
 
 def expected_r_modes() -> dict[str, str]:
@@ -3794,6 +3940,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "H-CERT19",
             "P-CERT19",
             "R-CERT19",
+            "H-CERT20",
+            "P-CERT20",
+            "R-CERT20",
         ],
         "H-CERT1": {
             "role": "historical_initial_implementation_schema_tests_and_freeze",
@@ -4560,6 +4709,7 @@ def _expected_topology() -> Mapping[str, Any]:
         },
         "H-CERT19": {
             "role": "corrective_safe_pytest_parameter_ids_contract_tests_and_freeze",
+            "commit": "h19_cert_commit",
             "direct_parent": "p18_cert_commit",
             "certification_execution_authorized": False,
             "corrections": [
@@ -4571,8 +4721,59 @@ def _expected_topology() -> Mapping[str, Any]:
             ],
         },
         "P-CERT19": {
-            "role": "data_only_final_certification_authority_v19",
+            "role": "invalid_unpublished_final_certification_authority_candidate_v19",
             "requires_published_H_CERT19": True,
+            "generation_consumed": True,
+            "generation_status": "generated_invalid_unpublished_archived",
+            "failure_stage": "generator_effective_authority_parity",
+            "failure_kind": "missing_top_level_authority_policy_projection",
+            "missing_authority_keys": ["public_junit_redaction_policy"],
+            "generated_authority_matches_effective_reconstruction": False,
+            "generated_manifest_matches_effective_reconstruction": False,
+            "authority_bytes": P19_CANDIDATE_AUTHORITY_BYTES,
+            "authority_sha256": P19_CANDIDATE_AUTHORITY_SHA256,
+            "companion_manifest_bytes": P19_CANDIDATE_MANIFEST_BYTES,
+            "companion_manifest_sha256": P19_CANDIDATE_MANIFEST_SHA256,
+            "precommit_returncode": 0,
+            "r_cert_execution_runs": 0,
+            "dvc_commands_run": 0,
+            "test_commands_run": 0,
+            "data_payloads_opened": 0,
+            "r_cert_output_count": 0,
+            "archive_ignored": True,
+            "archive_path_serialized": False,
+            "commit_published": False,
+            "certification_execution_authorized": False,
+            "retry_authorized": False,
+            "manifest_written_last": True,
+        },
+        "R-CERT19": {
+            "role": "not_executed_due_to_invalid_unpublished_p_cert19",
+            "requires_published_P_CERT19": True,
+            "execution_runs": 0,
+            "dvc_commands_run": 0,
+            "test_commands_run": 0,
+            "data_payloads_opened": 0,
+            "output_count": 0,
+            "manifest_written_last": False,
+        },
+        "H-CERT20": {
+            "role": "corrective_authority_generator_effective_parity_contract_tests_and_freeze",
+            "direct_parent": "h19_cert_commit",
+            "certification_execution_authorized": False,
+            "corrections": [
+                "record_consumed_invalid_unpublished_p_cert19_generation_and_forbid_retry",
+                "project_public_junit_redaction_policy_at_authority_top_level",
+                "require_generator_effective_authority_object_and_canonical_byte_parity_before_first_link",
+                "require_generator_effective_manifest_object_and_canonical_byte_parity_before_first_link",
+                "preserve_manifest_last_no_clobber_and_inode_owned_rollback",
+                "use_fresh_v20_authority_paths_without_reusing_v19_candidate_paths",
+            ],
+        },
+        "P-CERT20": {
+            "role": "data_only_final_certification_authority_v20",
+            "requires_published_H_CERT20": True,
+            "supersedes_unpublished_P_CERT19_candidate": True,
             "supersedes_P_CERT18": True,
             "supersedes_P_CERT17": True,
             "supersedes_P_CERT16": True,
@@ -4594,9 +4795,9 @@ def _expected_topology() -> Mapping[str, Any]:
             "certification_execution_authorized_while_unpublished": False,
             "manifest_written_last": True,
         },
-        "R-CERT19": {
+        "R-CERT20": {
             "role": "final_doctoral_software_and_restorability_evidence",
-            "requires_published_P_CERT19": True,
+            "requires_published_P_CERT20": True,
             "output_count": 8,
             "manifest_written_last": True,
         },
@@ -4855,8 +5056,9 @@ def validate_contract_payload(
         "p17_cert_commit": P17_CERT_COMMIT,
         "h18_cert_commit": H18_CERT_COMMIT,
         "p18_cert_commit": P18_CERT_COMMIT,
+        "h19_cert_commit": H19_CERT_COMMIT,
         "final_tag": FINAL_TAG,
-        "certification_target": "published_P_CERT_v19_commit",
+        "certification_target": "published_P_CERT_v20_commit",
         "r_cert_executable_tree_must_equal_p_cert": True,
     }
     if dict(authorities) != expected_authorities:
@@ -4901,6 +5103,7 @@ def validate_contract_payload(
             "p17_cert_commit",
             "h18_cert_commit",
             "p18_cert_commit",
+            "h19_cert_commit",
         )
     ):
         raise _error("Final-certification commit syntax drifted")
@@ -4966,6 +5169,9 @@ def validate_contract_payload(
             "H-CERT19",
             "P-CERT19",
             "R-CERT19",
+            "H-CERT20",
+            "P-CERT20",
+            "R-CERT20",
         },
         context="publication_scopes",
     )
@@ -5081,9 +5287,16 @@ def validate_contract_payload(
         scopes["P-CERT18"], stage="P-CERT18", expected=P18_SCOPE
     )
     _parse_scope(scopes["R-CERT18"], stage="R-CERT18", expected=R18_SCOPE)
-    h_scope = _parse_scope(scopes["H-CERT19"], stage="H-CERT19", expected=H_SCOPE)
-    p_scope = _parse_scope(scopes["P-CERT19"], stage="P-CERT19", expected=P_SCOPE)
-    r_scope = _parse_scope(scopes["R-CERT19"], stage="R-CERT19", expected=R_SCOPE)
+    h19_scope = _parse_scope(
+        scopes["H-CERT19"], stage="H-CERT19", expected=H19_SCOPE
+    )
+    p19_scope = _parse_scope(
+        scopes["P-CERT19"], stage="P-CERT19", expected=P19_SCOPE
+    )
+    _parse_scope(scopes["R-CERT19"], stage="R-CERT19", expected=R19_SCOPE)
+    h_scope = _parse_scope(scopes["H-CERT20"], stage="H-CERT20", expected=H_SCOPE)
+    p_scope = _parse_scope(scopes["P-CERT20"], stage="P-CERT20", expected=P_SCOPE)
+    r_scope = _parse_scope(scopes["R-CERT20"], stage="R-CERT20", expected=R_SCOPE)
 
     anchors = _parse_anchor_inputs(mapping["anchor_inputs"])
 
@@ -5187,6 +5400,7 @@ def validate_contract_payload(
         p17_cert_commit=P17_CERT_COMMIT,
         h18_cert_commit=H18_CERT_COMMIT,
         p18_cert_commit=P18_CERT_COMMIT,
+        h19_cert_commit=H19_CERT_COMMIT,
         final_tag=FINAL_TAG,
         h1_scope=h1_scope,
         p1_scope=p1_scope,
@@ -5224,6 +5438,8 @@ def validate_contract_payload(
         p17_scope=p17_scope,
         h18_scope=h18_scope,
         p18_scope=p18_scope,
+        h19_scope=h19_scope,
+        p19_scope=p19_scope,
         h_scope=h_scope,
         p_scope=p_scope,
         r_scope=r_scope,
@@ -8508,6 +8724,53 @@ def _historical_through_p18_records(
     return (*predecessor, h18_records, p18_records)
 
 
+def _historical_h19_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> list[dict[str, Any]]:
+    """Reconstruct published H-CERT19 while requiring P-CERT19 to be absent."""
+
+    if (
+        _commit_parents(root, contract.h19_cert_commit)
+        != (contract.p18_cert_commit,)
+        or _commit_scope(root, contract.h19_cert_commit) != expected_h19_scope()
+    ):
+        raise _error("Historical H19 topology or scope drifted")
+    for spec in contract.p19_scope:
+        if cast(
+            str,
+            _run_git(
+                root,
+                "ls-tree",
+                contract.h19_cert_commit,
+                "--",
+                spec.path,
+                text=True,
+            ),
+        ).strip():
+            raise _error("Invalid unpublished P-CERT19 path entered H-CERT19")
+    records: list[dict[str, Any]] = []
+    for spec in contract.h19_scope:
+        record, _payload = _git_publication_file_record_and_payload(
+            root,
+            commit=contract.h19_cert_commit,
+            spec=spec,
+            context="Historical H-CERT19 component",
+        )
+        records.append({**record, "filesystem_mode": int(spec.git_mode[-3:], 8)})
+    return records
+
+
+def _historical_through_h19_records(
+    contract: FinalCertificationContract,
+    *,
+    root: Path,
+) -> tuple[list[dict[str, Any]], ...]:
+    predecessor = _historical_through_p18_records(contract, root=root)
+    return (*predecessor, _historical_h19_records(contract, root=root))
+
+
 def _expected_effective_authority(
     contract: FinalCertificationContract,
     *,
@@ -8552,7 +8815,8 @@ def _expected_effective_authority(
         p17_records,
         h18_records,
         p18_records,
-    ) = _historical_through_p18_records(contract, root=root)
+        h19_records,
+    ) = _historical_through_h19_records(contract, root=root)
     anchors = collect_anchor_input_records(contract, root=root)
     pointers = collect_dvc_pointer_records(contract, root=root)
     suite = test_suite_record(contract)
@@ -8601,8 +8865,10 @@ def _expected_effective_authority(
             "p17_cert_commit": contract.p17_cert_commit,
             "h18_cert_commit": contract.h18_cert_commit,
             "p18_cert_commit": contract.p18_cert_commit,
-            "h19_cert_commit": h_cert_commit,
+            "h19_cert_commit": contract.h19_cert_commit,
             "p19_cert_commit": None,
+            "h20_cert_commit": h_cert_commit,
+            "p20_cert_commit": None,
             "h_cert_commit": h_cert_commit,
             "p_cert_commit": None,
             "supersedes_unpublished_H_CERT13_candidate": True,
@@ -8611,6 +8877,7 @@ def _expected_effective_authority(
             "supersedes_P_CERT16": True,
             "supersedes_P_CERT17": True,
             "supersedes_P_CERT18": True,
+            "supersedes_unpublished_P_CERT19_candidate": True,
             "r_cert_executable_tree_must_equal_p_cert": True,
         },
         "p1_failure": {
@@ -8637,6 +8904,7 @@ def _expected_effective_authority(
         "p16_failure": expected_p16_failure_record(),
         "p17_failure": expected_p17_failure_record(),
         "p18_failure": expected_p18_failure_record(),
+        "p19_failure": expected_p19_failure_record(),
         "h1_scope": expected_h1_scope(),
         "h1_component_records": h1_records,
         "h1_component_records_digest": digest_records(h1_records),
@@ -8747,16 +9015,21 @@ def _expected_effective_authority(
         "p18_component_records": p18_records,
         "p18_component_records_digest": digest_records(p18_records),
         "r18_scope": expected_r18_scope(),
+        "h19_scope": expected_h19_scope(),
+        "h19_component_records": h19_records,
+        "h19_component_records_digest": digest_records(h19_records),
+        "p19_scope": expected_p19_scope(),
+        "r19_scope": expected_r19_scope(),
         "h_scope": expected_h_scope(),
         "h_component_records": components,
         "h_component_records_digest": digest_records(components),
-        "h19_scope": expected_h_scope(),
-        "h19_component_records": components,
-        "h19_component_records_digest": digest_records(components),
+        "h20_scope": expected_h_scope(),
+        "h20_component_records": components,
+        "h20_component_records_digest": digest_records(components),
         "p_scope": expected_p_scope(),
-        "p19_scope": expected_p_scope(),
+        "p20_scope": expected_p_scope(),
         "r_scope": expected_r_scope(),
-        "r19_scope": expected_r_scope(),
+        "r20_scope": expected_r_scope(),
         "anchor_input_records": anchors,
         "anchor_input_records_digest": digest_records(anchors),
         "dvc_pointer_records": pointers,
@@ -8779,6 +9052,95 @@ def _expected_effective_authority(
     }
 
 
+def _expected_effective_manifest(
+    contract: FinalCertificationContract,
+    *,
+    authority_bytes: bytes,
+    h_cert_commit: str,
+) -> dict[str, Any]:
+    """Independently reconstruct the exact P-CERT20 companion payload."""
+
+    authority_record = {
+        "path": AUTHORITY_PATH.as_posix(),
+        "bytes": len(authority_bytes),
+        "sha256": sha256_bytes(authority_bytes),
+    }
+    return {
+        "manifest_version": AUTHORITY_MANIFEST_VERSION,
+        "gate": "P-CERT",
+        "status": "locked_unpublished",
+        "h1_cert_commit": contract.h1_cert_commit,
+        "p1_cert_commit": contract.p1_cert_commit,
+        "h2_cert_commit": contract.h2_cert_commit,
+        "p2_cert_commit": contract.p2_cert_commit,
+        "h3_cert_commit": contract.h3_cert_commit,
+        "p3_cert_commit": contract.p3_cert_commit,
+        "h4_cert_commit": contract.h4_cert_commit,
+        "p4_cert_commit": contract.p4_cert_commit,
+        "h5_cert_commit": contract.h5_cert_commit,
+        "p5_cert_commit": contract.p5_cert_commit,
+        "h6_cert_commit": contract.h6_cert_commit,
+        "p6_cert_commit": contract.p6_cert_commit,
+        "h7_cert_commit": contract.h7_cert_commit,
+        "p7_cert_commit": contract.p7_cert_commit,
+        "h8_cert_commit": contract.h8_cert_commit,
+        "p8_cert_commit": contract.p8_cert_commit,
+        "h9_cert_commit": contract.h9_cert_commit,
+        "p9_cert_commit": contract.p9_cert_commit,
+        "h10_cert_commit": contract.h10_cert_commit,
+        "p10_cert_commit": contract.p10_cert_commit,
+        "h11_cert_commit": contract.h11_cert_commit,
+        "p11_cert_commit": contract.p11_cert_commit,
+        "h12_cert_commit": contract.h12_cert_commit,
+        "p12_cert_commit": contract.p12_cert_commit,
+        "h13_cert_commit": None,
+        "p13_cert_commit": None,
+        "h14_cert_commit": contract.h14_cert_commit,
+        "p14_cert_commit": contract.p14_cert_commit,
+        "h15_cert_commit": contract.h15_cert_commit,
+        "p15_cert_commit": contract.p15_cert_commit,
+        "h16_cert_commit": contract.h16_cert_commit,
+        "p16_cert_commit": contract.p16_cert_commit,
+        "h17_cert_commit": contract.h17_cert_commit,
+        "p17_cert_commit": contract.p17_cert_commit,
+        "h18_cert_commit": contract.h18_cert_commit,
+        "p18_cert_commit": contract.p18_cert_commit,
+        "h19_cert_commit": contract.h19_cert_commit,
+        "p19_cert_commit": None,
+        "h20_cert_commit": h_cert_commit,
+        "p20_cert_commit": None,
+        "h_cert_commit": h_cert_commit,
+        "p_cert_commit": None,
+        "supersedes_unpublished_h13_candidate": True,
+        "supersedes_p14": True,
+        "supersedes_p15": True,
+        "supersedes_p16": True,
+        "supersedes_p17": True,
+        "supersedes_p18": True,
+        "supersedes_unpublished_p19_candidate": True,
+        "supersedes_p12": True,
+        "supersedes_p11": True,
+        "supersedes_p10": True,
+        "supersedes_p9": True,
+        "supersedes_p8": True,
+        "supersedes_p7": True,
+        "supersedes_p6": True,
+        "supersedes_p5": True,
+        "supersedes_p4": True,
+        "supersedes_p3": True,
+        "supersedes_p2": True,
+        "supersedes_p1": True,
+        "manifest_last": True,
+        "ordered_paths": [
+            AUTHORITY_PATH.as_posix(),
+            AUTHORITY_MANIFEST_PATH.as_posix(),
+        ],
+        "outputs": [authority_record],
+        "authority": authority_record,
+        "authorizations": dict(AUTHORIZATION_POLICY),
+    }
+
+
 def load_effective_authority(
     contract: FinalCertificationContract | None = None,
     *,
@@ -8786,7 +9148,7 @@ def load_effective_authority(
     verify_remote: bool = True,
     require_clean: bool = True,
 ) -> dict[str, Any]:
-    """Load and independently reconstruct one published effective P-CERT19.
+    """Load and independently reconstruct one published effective P-CERT20.
 
     The stored authority deliberately has ``p_cert_commit=null`` because it is
     generated before its publication commit exists.  Effectiveness is derived
@@ -8802,15 +9164,21 @@ def load_effective_authority(
     p_cert_commit = _one_commit(root, "HEAD")
     parents = _commit_parents(root, p_cert_commit)
     if len(parents) != 1:
-        raise _error("P-CERT19 must have exactly one H-CERT19 parent")
+        raise _error("P-CERT20 must have exactly one H-CERT20 parent")
     h_cert_commit = parents[0]
     if (
-        _commit_parents(root, h_cert_commit) != (active_contract.p18_cert_commit,)
+        _commit_parents(root, h_cert_commit) != (active_contract.h19_cert_commit,)
         or _commit_scope(root, h_cert_commit) != expected_h_scope()
         or _commit_scope(root, p_cert_commit) != expected_p_scope()
     ):
-        raise _error("Effective P-CERT19 H19/P19 topology or scope drifted")
-    _historical_through_p18_records(active_contract, root=root)
+        raise _error("Effective P-CERT20 H20/P20 topology or scope drifted")
+    _historical_through_h19_records(active_contract, root=root)
+    for spec in active_contract.p19_scope:
+        if cast(
+            str,
+            _run_git(root, "ls-tree", p_cert_commit, "--", spec.path, text=True),
+        ).strip():
+            raise _error("Invalid unpublished P-CERT19 path entered P-CERT20")
     ancestor = subprocess.run(
         [
             "git",
@@ -8885,8 +9253,10 @@ def load_effective_authority(
         "p17_cert_commit": active_contract.p17_cert_commit,
         "h18_cert_commit": active_contract.h18_cert_commit,
         "p18_cert_commit": active_contract.p18_cert_commit,
-        "h19_cert_commit": h_cert_commit,
+        "h19_cert_commit": active_contract.h19_cert_commit,
         "p19_cert_commit": None,
+        "h20_cert_commit": h_cert_commit,
+        "p20_cert_commit": None,
         "h_cert_commit": h_cert_commit,
         "p_cert_commit": None,
         "supersedes_unpublished_h13_candidate": True,
@@ -8895,6 +9265,7 @@ def load_effective_authority(
         "supersedes_p16": True,
         "supersedes_p17": True,
         "supersedes_p18": True,
+        "supersedes_unpublished_p19_candidate": True,
         "supersedes_p12": True,
         "supersedes_p11": True,
         "supersedes_p10": True,
@@ -8913,6 +9284,14 @@ def load_effective_authority(
         "authority": authority_record,
         "authorizations": dict(AUTHORIZATION_POLICY),
     }
+    reconstructed_manifest = _expected_effective_manifest(
+        active_contract,
+        authority_bytes=authority_bytes,
+        h_cert_commit=h_cert_commit,
+    )
+    if expected_manifest != reconstructed_manifest:
+        raise _error("P-CERT companion reconstruction implementations diverged")
+    expected_manifest = reconstructed_manifest
     if manifest != expected_manifest or manifest_bytes != canonical_json_bytes(
         expected_manifest
     ):
@@ -8922,8 +9301,10 @@ def load_effective_authority(
         "gate": "P-CERT",
         "p_cert_commit": p_cert_commit,
         "h_cert_commit": h_cert_commit,
-        "p19_cert_commit": p_cert_commit,
-        "h19_cert_commit": h_cert_commit,
+        "p20_cert_commit": p_cert_commit,
+        "h20_cert_commit": h_cert_commit,
+        "p19_cert_commit": None,
+        "h19_cert_commit": active_contract.h19_cert_commit,
         "p18_cert_commit": active_contract.p18_cert_commit,
         "h18_cert_commit": active_contract.h18_cert_commit,
         "p17_cert_commit": active_contract.p17_cert_commit,

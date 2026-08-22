@@ -96,6 +96,11 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.p17_cert_commit == certification.P17_CERT_COMMIT
     assert contract.h18_cert_commit == certification.H18_CERT_COMMIT
     assert contract.p18_cert_commit == certification.P18_CERT_COMMIT
+    assert contract.h19_cert_commit == certification.H19_CERT_COMMIT
+    assert contract.raw["contract_version"] == certification.CONTRACT_VERSION
+    assert contract.raw["authorities"]["certification_target"] == (
+        "published_P_CERT_v20_commit"
+    )
     assert contract.final_tag == "thesis-closure-v1"
     assert len(contract.h_scope) == 11
     assert len(contract.p_scope) == 2
@@ -129,7 +134,17 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert len(contract.p15_scope) == 2
     assert len(contract.h18_scope) == 11
     assert len(contract.p18_scope) == 2
+    assert len(contract.h19_scope) == 11
+    assert len(contract.p19_scope) == 2
     assert len(contract.r_scope) == 8
+    assert [item.path for item in contract.p19_scope] == [
+        certification.H19_AUTHORITY_PATH.as_posix(),
+        certification.H19_AUTHORITY_MANIFEST_PATH.as_posix(),
+    ]
+    assert [item.path for item in contract.p_scope] == [
+        certification.AUTHORITY_PATH.as_posix(),
+        certification.AUTHORITY_MANIFEST_PATH.as_posix(),
+    ]
     assert len(contract.anchor_inputs) == 10
     assert len(contract.dvc_pointers) == 8
     ordered_pointer_paths = [item.path for item in certification.DVC_POINTERS]
@@ -258,6 +273,12 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["isolation"]["public_junit_redaction_policy"] == (
         certification.expected_public_junit_redaction_policy()
     )
+    assert contract.raw["test_certification"][
+        "public_junit_redaction_policy"
+    ] == contract.raw["isolation"]["public_junit_redaction_policy"]
+    assert dict(contract.public_junit_redaction_policy) == contract.raw[
+        "isolation"
+    ]["public_junit_redaction_policy"]
     assert contract.raw["isolation"]["postgres_destroy_poll_policy"] == (
         certification.expected_postgres_destroy_poll_policy()
     )
@@ -458,13 +479,81 @@ def test_real_pending_contract_loads_without_opening_payloads() -> None:
     assert contract.raw["topology"]["H-CERT19"]["direct_parent"] == (
         "p18_cert_commit"
     )
-    assert contract.raw["topology"]["P-CERT19"]["supersedes_P_CERT18"] is True
+    assert contract.raw["topology"]["H-CERT19"]["commit"] == "h19_cert_commit"
+    assert contract.raw["topology"]["P-CERT19"] == {
+        "role": "invalid_unpublished_final_certification_authority_candidate_v19",
+        "requires_published_H_CERT19": True,
+        "generation_consumed": True,
+        "generation_status": "generated_invalid_unpublished_archived",
+        "failure_stage": "generator_effective_authority_parity",
+        "failure_kind": "missing_top_level_authority_policy_projection",
+        "missing_authority_keys": ["public_junit_redaction_policy"],
+        "generated_authority_matches_effective_reconstruction": False,
+        "generated_manifest_matches_effective_reconstruction": False,
+        "authority_bytes": certification.P19_CANDIDATE_AUTHORITY_BYTES,
+        "authority_sha256": certification.P19_CANDIDATE_AUTHORITY_SHA256,
+        "companion_manifest_bytes": certification.P19_CANDIDATE_MANIFEST_BYTES,
+        "companion_manifest_sha256": (
+            certification.P19_CANDIDATE_MANIFEST_SHA256
+        ),
+        "precommit_returncode": 0,
+        "r_cert_execution_runs": 0,
+        "dvc_commands_run": 0,
+        "test_commands_run": 0,
+        "data_payloads_opened": 0,
+        "r_cert_output_count": 0,
+        "archive_ignored": True,
+        "archive_path_serialized": False,
+        "commit_published": False,
+        "certification_execution_authorized": False,
+        "retry_authorized": False,
+        "manifest_written_last": True,
+    }
     assert contract.raw["topology"]["R-CERT19"] == {
-        "role": "final_doctoral_software_and_restorability_evidence",
+        "role": "not_executed_due_to_invalid_unpublished_p_cert19",
         "requires_published_P_CERT19": True,
+        "execution_runs": 0,
+        "dvc_commands_run": 0,
+        "test_commands_run": 0,
+        "data_payloads_opened": 0,
+        "output_count": 0,
+        "manifest_written_last": False,
+    }
+    assert contract.raw["topology"]["H-CERT20"] == {
+        "role": (
+            "corrective_authority_generator_effective_parity_contract_tests_and_freeze"
+        ),
+        "direct_parent": "h19_cert_commit",
+        "certification_execution_authorized": False,
+        "corrections": [
+            "record_consumed_invalid_unpublished_p_cert19_generation_and_forbid_retry",
+            "project_public_junit_redaction_policy_at_authority_top_level",
+            "require_generator_effective_authority_object_and_canonical_byte_parity_before_first_link",
+            "require_generator_effective_manifest_object_and_canonical_byte_parity_before_first_link",
+            "preserve_manifest_last_no_clobber_and_inode_owned_rollback",
+            "use_fresh_v20_authority_paths_without_reusing_v19_candidate_paths",
+        ],
+    }
+    assert contract.raw["topology"]["P-CERT20"][
+        "supersedes_unpublished_P_CERT19_candidate"
+    ] is True
+    assert contract.raw["topology"]["P-CERT20"]["role"] == (
+        "data_only_final_certification_authority_v20"
+    )
+    assert contract.raw["topology"]["R-CERT20"] == {
+        "role": "final_doctoral_software_and_restorability_evidence",
+        "requires_published_P_CERT20": True,
         "output_count": 8,
         "manifest_written_last": True,
     }
+    assert contract.raw["topology"]["ordered_stages"][-6:] == [
+        "H-CERT19",
+        "P-CERT19",
+        "R-CERT19",
+        "H-CERT20",
+        "P-CERT20",
+        "R-CERT20",
+    ]
     assert "attempt_to_execute_from_superseded_p14" in contract.stop_rules
     assert "attempt_to_execute_from_superseded_p15" in contract.stop_rules
     assert "attempt_to_execute_from_superseded_p16" in contract.stop_rules
@@ -888,11 +977,38 @@ def test_dvc_pointer_parser_accepts_only_the_sealed_single_file_dialect() -> Non
 def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
     schema = json.loads(SCHEMA_PATH.read_bytes())
     properties = schema["properties"]
+    authorities = properties["authorities"]["properties"]
+    topology = properties["topology"]["properties"]
     scopes = properties["publication_scopes"]["properties"]
     suite = properties["test_certification"]["properties"]
     pending, locked = suite["suite_lock"]["oneOf"]
 
     assert schema["$schema"].endswith("2020-12/schema")
+    assert properties["contract_version"] == {
+        "const": certification.CONTRACT_VERSION
+    }
+    assert authorities["h19_cert_commit"] == {
+        "const": certification.H19_CERT_COMMIT
+    }
+    assert authorities["certification_target"] == {
+        "const": "published_P_CERT_v20_commit"
+    }
+    assert topology["P-CERT19"]["properties"]["missing_authority_keys"] == {
+        "const": ["public_junit_redaction_policy"]
+    }
+    assert topology["P-CERT19"]["properties"][
+        "generated_authority_matches_effective_reconstruction"
+    ] == {"const": False}
+    assert topology["P-CERT19"]["properties"][
+        "generated_manifest_matches_effective_reconstruction"
+    ] == {"const": False}
+    assert topology["H-CERT20"]["properties"]["direct_parent"] == {
+        "const": "h19_cert_commit"
+    }
+    assert topology["P-CERT20"]["properties"]["role"] == {
+        "const": "data_only_final_certification_authority_v20"
+    }
+    assert topology["R-CERT20"]["properties"]["output_count"] == {"const": 8}
     assert scopes["H-CERT1"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 9
@@ -1020,6 +1136,15 @@ def test_schema_seals_scopes_suite_dvc_and_manifest_last() -> None:
         "const"
     ] == 2
     assert scopes["R-CERT19"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 8
+    assert scopes["H-CERT20"]["allOf"][1]["properties"]["modifications"][
+        "const"
+    ] == 11
+    assert scopes["P-CERT20"]["allOf"][1]["properties"]["additions"][
+        "const"
+    ] == 2
+    assert scopes["R-CERT20"]["allOf"][1]["properties"]["additions"][
         "const"
     ] == 8
     assert pending["properties"]["selector_count"] == {"type": "null"}
@@ -1613,9 +1738,12 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     p_commit = "f" * 40
     h_commit = "e" * 40
+    redaction_policy = certification.expected_public_junit_redaction_policy()
     expected_authority = {
         "authority_version": certification.AUTHORITY_VERSION,
         "fixture": "independently_reconstructed",
+        "public_junit_redaction_policy": redaction_policy,
+        "isolation": {"public_junit_redaction_policy": redaction_policy},
     }
     authority_bytes = certification.canonical_json_bytes(expected_authority)
     authority_record = {
@@ -1663,8 +1791,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "p17_cert_commit": contract.p17_cert_commit,
         "h18_cert_commit": contract.h18_cert_commit,
         "p18_cert_commit": contract.p18_cert_commit,
-        "h19_cert_commit": h_commit,
+        "h19_cert_commit": contract.h19_cert_commit,
         "p19_cert_commit": None,
+        "h20_cert_commit": h_commit,
+        "p20_cert_commit": None,
         "h_cert_commit": h_commit,
         "p_cert_commit": None,
         "supersedes_unpublished_h13_candidate": True,
@@ -1673,6 +1803,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
         "supersedes_p16": True,
         "supersedes_p17": True,
         "supersedes_p18": True,
+        "supersedes_unpublished_p19_candidate": True,
         "supersedes_p12": True,
         "supersedes_p11": True,
         "supersedes_p10": True,
@@ -1699,7 +1830,7 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     def fake_parents(_root: Path, commit: str) -> tuple[str, ...]:
         return {
             p_commit: (h_commit,),
-            h_commit: (contract.p18_cert_commit,),
+            h_commit: (contract.h19_cert_commit,),
             contract.editorial_commit: (contract.r_syn_commit,),
         }[commit]
 
@@ -1737,9 +1868,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p18_records",
-        lambda *_args, **_kwargs: tuple([] for _ in range(34)),
+        "_historical_through_h19_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(35)),
     )
+    monkeypatch.setattr(certification, "_run_git", lambda *_args, **_kwargs: "")
     monkeypatch.setattr(certification, "_decode_canonical_public_json", fake_decode)
     monkeypatch.setattr(
         certification.subprocess,
@@ -1762,8 +1894,10 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["status"] == "effective"
     assert result["p_cert_commit"] == p_commit
     assert result["h_cert_commit"] == h_commit
-    assert result["p19_cert_commit"] == p_commit
-    assert result["h19_cert_commit"] == h_commit
+    assert result["p20_cert_commit"] == p_commit
+    assert result["h20_cert_commit"] == h_commit
+    assert result["p19_cert_commit"] is None
+    assert result["h19_cert_commit"] == contract.h19_cert_commit
     assert result["p18_cert_commit"] == contract.p18_cert_commit
     assert result["h18_cert_commit"] == contract.h18_cert_commit
     assert result["p17_cert_commit"] == contract.p17_cert_commit
@@ -1802,6 +1936,14 @@ def test_effective_authority_loader_checks_topology_and_exact_companion(
     assert result["h1_cert_commit"] == contract.h1_cert_commit
     assert result["authority"] == expected_authority
     assert result["manifest"] == expected_manifest
+    assert result["authority"]["public_junit_redaction_policy"] == (
+        result["authority"]["isolation"]["public_junit_redaction_policy"]
+    )
+    assert result["manifest"] == certification._expected_effective_manifest(  # noqa: SLF001
+        contract,
+        authority_bytes=authority_bytes,
+        h_cert_commit=h_commit,
+    )
     assert result["dvc_status_policy"] == (
         certification.expected_dvc_status_policy(contract)
     )
@@ -1861,8 +2003,8 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     )
     monkeypatch.setattr(
         certification,
-        "_historical_through_p18_records",
-        lambda *_args, **_kwargs: tuple([] for _ in range(34)),
+        "_historical_through_h19_records",
+        lambda *_args, **_kwargs: tuple([] for _ in range(35)),
     )
     monkeypatch.setattr(
         certification,
@@ -1998,6 +2140,45 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
         "operational_url_or_credential_exposed"
     ] is False
     assert p18_failure["retry_authorized"] is False
+    p19_failure = certification.expected_p19_failure_record()
+    assert authority["p19_failure"] == p19_failure
+    assert p19_failure["attempt"] == "P-CERT19"
+    assert p19_failure["generation_consumed"] is True
+    assert p19_failure["active_error"]["missing_keys"] == [
+        "public_junit_redaction_policy"
+    ]
+    assert p19_failure["active_error"]["extra_keys"] == []
+    assert p19_failure["active_error"]["shared_values_equal"] is True
+    assert p19_failure["active_error"]["precommit_returncode"] == 0
+    assert p19_failure["active_error"]["effective_loader_would_accept"] is False
+    assert p19_failure["candidate_authority"]["bytes"] == (
+        certification.P19_CANDIDATE_AUTHORITY_BYTES
+    )
+    assert p19_failure["candidate_authority"]["sha256"] == (
+        certification.P19_CANDIDATE_AUTHORITY_SHA256
+    )
+    assert p19_failure["candidate_authority"][
+        "public_junit_redaction_policy_top_level_present"
+    ] is False
+    assert p19_failure["candidate_authority"][
+        "public_junit_redaction_policy_isolation_copy_present"
+    ] is True
+    assert p19_failure["candidate_manifest"]["bytes"] == (
+        certification.P19_CANDIDATE_MANIFEST_BYTES
+    )
+    assert p19_failure["candidate_manifest"]["sha256"] == (
+        certification.P19_CANDIDATE_MANIFEST_SHA256
+    )
+    assert p19_failure["cleanup"]["candidate_archived_under_ignored_tmp"] is True
+    assert p19_failure["cleanup"]["archive_path_or_run_id_serialized"] is False
+    assert p19_failure["evidence_counts"]["r19_execution_runs"] == 0
+    assert p19_failure["evidence_counts"]["dvc_commands"] == 0
+    assert p19_failure["evidence_counts"]["public_test_runs"] == 0
+    assert p19_failure["evidence_counts"]["scientific_payload_reads"] == 0
+    assert p19_failure["evidence_counts"]["r19_outputs"] == 0
+    assert p19_failure["p19_commit_published"] is False
+    assert p19_failure["p19_effective"] is False
+    assert p19_failure["retry_authorized"] is False
     assert authority["topology"]["h8_cert_commit"] == contract.h8_cert_commit
     assert authority["topology"]["p8_cert_commit"] == contract.p8_cert_commit
     assert authority["topology"]["h9_cert_commit"] == contract.h9_cert_commit
@@ -2020,8 +2201,13 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["topology"]["p17_cert_commit"] == contract.p17_cert_commit
     assert authority["topology"]["h18_cert_commit"] == contract.h18_cert_commit
     assert authority["topology"]["p18_cert_commit"] == contract.p18_cert_commit
-    assert authority["topology"]["h19_cert_commit"] == "e" * 40
+    assert authority["topology"]["h19_cert_commit"] == contract.h19_cert_commit
     assert authority["topology"]["p19_cert_commit"] is None
+    assert authority["topology"]["h20_cert_commit"] == "e" * 40
+    assert authority["topology"]["p20_cert_commit"] is None
+    assert authority["topology"][
+        "supersedes_unpublished_P_CERT19_candidate"
+    ] is True
     assert authority["topology"][
         "supersedes_unpublished_H_CERT13_candidate"
     ] is True
@@ -2092,16 +2278,38 @@ def test_effective_authority_reconstruction_binds_exact_isolation(
     assert authority["h18_scope"] == certification.expected_h18_scope()
     assert authority["p18_scope"] == certification.expected_p18_scope()
     assert authority["r18_scope"] == certification.expected_r18_scope()
-    assert authority["h19_component_records"] == authority["h_component_records"]
-    assert authority["h19_scope"] == authority["h_scope"]
-    assert authority["p19_scope"] == authority["p_scope"]
+    assert authority["h19_component_records"] == []
+    assert authority["h19_scope"] == certification.expected_h19_scope()
+    assert authority["p19_scope"] == certification.expected_p19_scope()
     assert authority["r19_scope"] == authority["r_scope"]
+    assert authority["h20_component_records"] == authority["h_component_records"]
+    assert authority["h20_scope"] == authority["h_scope"]
+    assert authority["p20_scope"] == authority["p_scope"]
+    assert authority["r20_scope"] == authority["r_scope"]
     assert authority["public_junit_redaction_policy"] == (
         certification.expected_public_junit_redaction_policy()
     )
+    assert authority["public_junit_redaction_policy"] == authority["isolation"][
+        "public_junit_redaction_policy"
+    ]
     assert authority["public_junit_redaction_policy"][
         "historical_marker_bearing_nodeids_preserved_or_published"
     ] is False
+    authority_bytes = certification.canonical_json_bytes(authority)
+    manifest = certification._expected_effective_manifest(  # noqa: SLF001
+        contract,
+        authority_bytes=authority_bytes,
+        h_cert_commit="e" * 40,
+    )
+    assert manifest["h19_cert_commit"] == contract.h19_cert_commit
+    assert manifest["p19_cert_commit"] is None
+    assert manifest["h20_cert_commit"] == "e" * 40
+    assert manifest["p20_cert_commit"] is None
+    assert manifest["ordered_paths"] == [
+        certification.AUTHORITY_PATH.as_posix(),
+        certification.AUTHORITY_MANIFEST_PATH.as_posix(),
+    ]
+    assert manifest["authority"] == manifest["outputs"][0]
     assert authority["isolation"]["postgres_connection_policy"] == (
         certification.expected_postgres_connection_policy()
     )

@@ -1,4 +1,4 @@
-contract_version: closure_v1_phase4_final_certification_v19
+contract_version: closure_v1_phase4_final_certification_v20
 
 authorities:
   closure_source_commit: ea8ddce7f8edb9a61db97e29178e52603fa371b1
@@ -38,8 +38,9 @@ authorities:
   p17_cert_commit: 1677778862786d28b9f60e80b7e718432e0b0947
   h18_cert_commit: b5c6b837bedd3ec66eb4a431fe631e53f2d72ed2
   p18_cert_commit: da0e1908c25811b3e0fca08145fc517591b495b3
+  h19_cert_commit: f5184778a732fdb7677e3ab9b906b72328509ed1
   final_tag: thesis-closure-v1
-  certification_target: published_P_CERT_v19_commit
+  certification_target: published_P_CERT_v20_commit
   r_cert_executable_tree_must_equal_p_cert: true
 
 topology:
@@ -95,6 +96,9 @@ topology:
     - H-CERT19
     - P-CERT19
     - R-CERT19
+    - H-CERT20
+    - P-CERT20
+    - R-CERT20
   H-CERT1:
     role: historical_initial_implementation_schema_tests_and_freeze
     commit: h1_cert_commit
@@ -793,6 +797,7 @@ topology:
     manifest_written_last: false
   H-CERT19:
     role: corrective_safe_pytest_parameter_ids_contract_tests_and_freeze
+    commit: h19_cert_commit
     direct_parent: p18_cert_commit
     certification_execution_authorized: false
     corrections:
@@ -802,8 +807,56 @@ topology:
       - seal_recollected_944_node_public_suite_identity
       - forbid_marker_bearing_active_nodeids
   P-CERT19:
-    role: data_only_final_certification_authority_v19
+    role: invalid_unpublished_final_certification_authority_candidate_v19
     requires_published_H_CERT19: true
+    generation_consumed: true
+    generation_status: generated_invalid_unpublished_archived
+    failure_stage: generator_effective_authority_parity
+    failure_kind: missing_top_level_authority_policy_projection
+    missing_authority_keys:
+      - public_junit_redaction_policy
+    generated_authority_matches_effective_reconstruction: false
+    generated_manifest_matches_effective_reconstruction: false
+    authority_bytes: 174475
+    authority_sha256: 5c11101d510486fde0418ec61f1424d0727c1b806391dd7af4b362e5e6134ff2
+    companion_manifest_bytes: 4070
+    companion_manifest_sha256: 41e78c79440c84af0932e8d5e1b090528239f78b66fda6faf45a75890608b70d
+    precommit_returncode: 0
+    r_cert_execution_runs: 0
+    dvc_commands_run: 0
+    test_commands_run: 0
+    data_payloads_opened: 0
+    r_cert_output_count: 0
+    archive_ignored: true
+    archive_path_serialized: false
+    commit_published: false
+    certification_execution_authorized: false
+    retry_authorized: false
+    manifest_written_last: true
+  R-CERT19:
+    role: not_executed_due_to_invalid_unpublished_p_cert19
+    requires_published_P_CERT19: true
+    execution_runs: 0
+    dvc_commands_run: 0
+    test_commands_run: 0
+    data_payloads_opened: 0
+    output_count: 0
+    manifest_written_last: false
+  H-CERT20:
+    role: corrective_authority_generator_effective_parity_contract_tests_and_freeze
+    direct_parent: h19_cert_commit
+    certification_execution_authorized: false
+    corrections:
+      - record_consumed_invalid_unpublished_p_cert19_generation_and_forbid_retry
+      - project_public_junit_redaction_policy_at_authority_top_level
+      - require_generator_effective_authority_object_and_canonical_byte_parity_before_first_link
+      - require_generator_effective_manifest_object_and_canonical_byte_parity_before_first_link
+      - preserve_manifest_last_no_clobber_and_inode_owned_rollback
+      - use_fresh_v20_authority_paths_without_reusing_v19_candidate_paths
+  P-CERT20:
+    role: data_only_final_certification_authority_v20
+    requires_published_H_CERT20: true
+    supersedes_unpublished_P_CERT19_candidate: true
     supersedes_P_CERT18: true
     supersedes_P_CERT17: true
     supersedes_P_CERT16: true
@@ -824,9 +877,9 @@ topology:
     supersedes_P_CERT1: true
     certification_execution_authorized_while_unpublished: false
     manifest_written_last: true
-  R-CERT19:
+  R-CERT20:
     role: final_doctoral_software_and_restorability_evidence
-    requires_published_P_CERT19: true
+    requires_published_P_CERT20: true
     output_count: 8
     manifest_written_last: true
   single_parent_commits_required: true
@@ -1469,6 +1522,81 @@ publication_scopes:
         status: A
         git_mode: "100644"
   R-CERT19:
+    additions: 8
+    modifications: 0
+    ordered_paths:
+      - path: reports/closure_v1/12_certification/public_tests.xml
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/test_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/openapi_contract_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/end_to_end_report.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/environment.json
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md
+        status: A
+        git_mode: "100644"
+      - path: reports/closure_v1/12_certification/final_certification_manifest.json
+        status: A
+        git_mode: "100644"
+  H-CERT20:
+    additions: 0
+    modifications: 11
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification.schema.json
+        status: M
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification.yaml
+        status: M
+        git_mode: "100644"
+      - path: docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md
+        status: M
+        git_mode: "100644"
+      - path: src/data/prepare_commit_artifacts.py
+        status: M
+        git_mode: "100755"
+      - path: src/experiments/lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: src/reporting/phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_build_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_lock_phase4_final_certification.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_phase4_final_certification_contract.py
+        status: M
+        git_mode: "100644"
+      - path: tests/test_prepare_commit_artifacts.py
+        status: M
+        git_mode: "100644"
+  P-CERT20:
+    additions: 2
+    modifications: 0
+    ordered_paths:
+      - path: configs/closure_v1/phase4_final_certification_authority_v20.json
+        status: A
+        git_mode: "100644"
+      - path: configs/closure_v1/phase4_final_certification_authority_manifest_v20.json
+        status: A
+        git_mode: "100644"
+  R-CERT20:
     additions: 8
     modifications: 0
     ordered_paths:
