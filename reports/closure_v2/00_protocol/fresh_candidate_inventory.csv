@@ -1,0 +1,138 @@
+source_id,site_id,evaluation_cohort,cohort_route,v1_location_overlap,intent_origin_count_per_horizon,origin_start,origin_end,history_length_months,horizons,selection_uses_input_and_provenance_only
+wqp,wqp:21AWIC-129,fresh_primary,fresh_location,False,8,2022-12,2024-07,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-ALLEN-2,fresh_primary,fresh_location,False,7,2022-11,2023-05,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-ALLEN-3,fresh_primary,fresh_location,False,7,2022-11,2023-05,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-CAMPCREE-1,fresh_primary,fresh_location,False,13,2022-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-CAMPCREE-2,fresh_primary,fresh_location,False,14,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-CAMPCREE-3,fresh_primary,fresh_location,False,14,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-DRAPER-1,fresh_primary,fresh_location,False,23,2022-10,2024-08,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-DRAPER-2,fresh_primary,fresh_location,False,23,2022-10,2024-08,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-DRAPER-3,fresh_primary,fresh_location,False,23,2022-10,2024-08,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-EASTERN-1,fresh_primary,fresh_location,False,3,2023-12,2024-02,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-EASTERN-2,fresh_primary,fresh_location,False,3,2023-12,2024-02,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-EASTERN-3,fresh_primary,fresh_location,False,3,2023-12,2024-02,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-ERN NORTH-1,fresh_primary,fresh_location,False,24,2022-06,2024-05,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-ERN NORTH-2,fresh_primary,fresh_location,False,19,2022-11,2024-05,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-ERN NORTH-3,fresh_primary,fresh_location,False,14,2023-04,2024-05,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-GRAYTON-2,fresh_primary,fresh_location,False,6,2024-02,2024-07,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-GRAYTON-3,fresh_primary,fresh_location,False,6,2024-02,2024-07,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-LITTLERE-2,fresh_primary,fresh_location,False,5,2022-05,2024-08,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-LITTLERE-3,fresh_primary,fresh_location,False,6,2022-05,2024-06,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-OYSTER-1,fresh_primary,fresh_location,False,16,2022-04,2024-07,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-OYSTER-2,fresh_primary,fresh_location,False,16,2022-04,2024-07,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-OYSTER-3,fresh_primary,fresh_location,False,16,2022-04,2024-07,12,1|2|3,True
+wqp,wqp:21FLCBA_WQX-WAL-OYSTER-4,fresh_primary,fresh_location,False,2,2022-04,2022-05,12,1|2|3,True
+wqp,wqp:21FLCHCO_WQX-MC1991A01,fresh_primary,fresh_location,False,1,2023-05,2023-05,12,1|2|3,True
+wqp,wqp:21FLCHCO_WQX-MC2048A03,fresh_primary,fresh_location,False,11,2023-10,2024-08,12,1|2|3,True
+wqp,wqp:21FLCHCO_WQX-SC2093A01,fresh_primary,fresh_location,False,1,2024-08,2024-08,12,1|2|3,True
+wqp,wqp:21FLHESD_WQX-BEAUDETTE POND INLET,fresh_primary,fresh_location,False,29,2022-03,2024-07,12,1|2|3,True
+wqp,wqp:21FLHESD_WQX-BEAUDETTE POND MIDDLE,fresh_primary,fresh_location,False,29,2022-03,2024-07,12,1|2|3,True
+wqp,wqp:21FLHESD_WQX-BEAUDETTE POND OUTLET,fresh_primary,fresh_location,False,29,2022-03,2024-07,12,1|2|3,True
+wqp,wqp:21FLHESD_WQX-BEAUDETTE POND WEST,fresh_primary,fresh_location,False,29,2022-03,2024-07,12,1|2|3,True
+wqp,wqp:21FLLCPC_WQX-ECROOKEDNWSH,fresh_primary,fresh_location,False,5,2023-01,2023-05,12,1|2|3,True
+wqp,wqp:21FLLCPC_WQX-HARRISLKWSH,fresh_primary,fresh_location,False,18,2022-12,2024-05,12,1|2|3,True
+wqp,wqp:21FLLCPC_WQX-MINNEOLAWFP,fresh_primary,fresh_location,False,10,2023-09,2024-06,12,1|2|3,True
+wqp,wqp:21FLLCPC_WQX-WCROOKEDNSH,fresh_primary,fresh_location,False,5,2023-01,2023-05,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-HARVEST LAKE,fresh_primary,fresh_location,False,18,2023-01,2024-06,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-HUNGERFORD LAKE,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE CATHERINE,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE CHARITY,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE DESTINY,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE EULALIA,fresh_primary,fresh_location,False,19,2023-02,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE FAITH,fresh_primary,fresh_location,False,18,2023-01,2024-06,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE GEM,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE HOPE,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE JACKSON,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE LILY,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE LOCH LOMOND,fresh_primary,fresh_location,False,19,2023-02,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE LOVE,fresh_primary,fresh_location,False,3,2024-04,2024-06,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE LOVELY,fresh_primary,fresh_location,False,1,2023-01,2023-01,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE LUCIEN,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE MAITLAND,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE MINNEHAHA,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE NINA,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE SHADOW,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE SYBELIA,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-LAKE WAUMPI,fresh_primary,fresh_location,False,18,2023-01,2024-06,12,1|2|3,True
+wqp,wqp:21FLMAIT_WQX-PARK LAKE,fresh_primary,fresh_location,False,20,2023-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLMANA_WQX-ER2,fresh_primary,fresh_location,False,12,2022-08,2023-07,12,1|2|3,True
+wqp,wqp:21FLMANA_WQX-UM2,fresh_primary,fresh_location,False,18,2022-06,2023-11,12,1|2|3,True
+wqp,wqp:21FLORL_WQX-ORLANDO EAST,fresh_primary,fresh_location,False,2,2022-12,2023-01,12,1|2|3,True
+wqp,wqp:21FLORL_WQX-ORLANDO WEST,fresh_primary,fresh_location,False,2,2022-12,2023-01,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-DEER1,fresh_primary,fresh_location,False,13,2022-11,2023-11,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-DEESON1,fresh_primary,fresh_location,False,14,2022-11,2023-12,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-ELBERT1,fresh_primary,fresh_location,False,11,2023-01,2023-11,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-HAMILTON1,fresh_primary,fresh_location,False,1,2022-12,2022-12,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-LTL HAMILTON1,fresh_primary,fresh_location,False,1,2022-12,2022-12,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-MDL HAMILTON1,fresh_primary,fresh_location,False,1,2022-12,2022-12,12,1|2|3,True
+wqp,wqp:21FLPOLK_WQX-THOMAS1,fresh_primary,fresh_location,False,3,2022-11,2023-01,12,1|2|3,True
+wqp,wqp:21FLSARA_WQX-DB-BPIT3,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSARA_WQX-ML,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSARA_WQX-VG-1,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSARA_WQX-VG-4,fresh_primary,fresh_location,False,5,2022-01,2022-05,12,1|2|3,True
+wqp,wqp:21FLSARA_WQX-VG-5,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-10296,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-11562,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-11569,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-11570,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-11573,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-11574,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-11576,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-12865,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-12877,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-12888,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-15485,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-16185,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-16329,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-16332,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-16601,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-18928,fresh_primary,fresh_location,False,19,2022-05,2023-11,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-31067,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-4698,fresh_primary,fresh_location,False,30,2022-02,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49080,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49081,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49082,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49083,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49084,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49085,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49086,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49087,fresh_primary,fresh_location,False,31,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49088,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49089,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSFWM_WQX-49090,fresh_primary,fresh_location,False,33,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLSJWM_WQX-44177,fresh_primary,fresh_location,False,32,2022-01,2024-08,12,1|2|3,True
+wqp,wqp:21FLSJWM_WQX-44599,fresh_primary,fresh_location,False,6,2024-03,2024-08,12,1|2|3,True
+wqp,wqp:21FLSJWM_WQX-499784,fresh_primary,fresh_location,False,21,2022-01,2024-09,12,1|2|3,True
+wqp,wqp:21FLTPA_WQX-HAB-SW-0041,fresh_primary,fresh_location,False,1,2024-08,2024-08,12,1|2|3,True
+wqp,wqp:21NC03WQ-NEU013,fresh_primary,fresh_location,False,22,2022-02,2023-11,12,1|2|3,True
+wqp,wqp:21SC60WQ_WQX-CW-207B,fresh_primary,fresh_location,False,3,2023-10,2023-12,12,1|2|3,True
+wqp,wqp:21SC60WQ_WQX-CW-208,fresh_primary,fresh_location,False,4,2023-09,2023-12,12,1|2|3,True
+wqp,wqp:21SC60WQ_WQX-LCR-02,fresh_primary,fresh_location,False,1,2022-07,2022-07,12,1|2|3,True
+wqp,wqp:21SC60WQ_WQX-RL-19154,fresh_primary,fresh_location,False,12,2022-01,2022-12,12,1|2|3,True
+wqp,wqp:21SC60WQ_WQX-S-326,fresh_primary,fresh_location,False,19,2022-01,2024-07,12,1|2|3,True
+wqp,wqp:21SCSANT_WQX-SC-010,fresh_primary,fresh_location,False,5,2022-08,2022-12,12,1|2|3,True
+wqp,wqp:21VASWCB-6APNR011.92,fresh_primary,fresh_location,False,10,2022-12,2023-09,12,1|2|3,True
+wqp,wqp:21VASWCB-8-NAR048.61,fresh_primary,fresh_location,False,3,2024-05,2024-07,12,1|2|3,True
+wqp,wqp:21VASWCB-8-NAR058.66,fresh_primary,fresh_location,False,3,2024-05,2024-07,12,1|2|3,True
+wqp,wqp:21VASWCB-8-PMC007.15,fresh_primary,fresh_location,False,5,2024-05,2024-09,12,1|2|3,True
+wqp,wqp:CHOCNATWQX-SAR-002,fresh_primary,fresh_location,False,5,2022-10,2024-05,12,1|2|3,True
+wqp,wqp:CHOCNATWQX-SAR-003,fresh_primary,fresh_location,False,5,2022-10,2024-05,12,1|2|3,True
+wqp,wqp:CHOCNATWQX-TW2-001,fresh_primary,fresh_location,False,14,2022-02,2024-07,12,1|2|3,True
+wqp,wqp:CHOCNATWQX-TW2-002,fresh_primary,fresh_location,False,10,2022-02,2022-11,12,1|2|3,True
+wqp,wqp:CHOCNATWQX-TW2-003,fresh_primary,fresh_location,False,12,2022-02,2024-05,12,1|2|3,True
+wqp,wqp:INSTOR_WQX-1914,fresh_primary,fresh_location,False,1,2022-01,2022-01,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-BUL0002,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-CLV0002,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-LLA894583,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-MIE0039,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-MIE0041,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-MIE0046,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:MDE_FIELDSERVICES_WQX-MIE0048,fresh_primary,fresh_location,False,5,2022-03,2022-07,12,1|2|3,True
+wqp,wqp:USGS-01670144,fresh_primary,fresh_location,False,5,2024-05,2024-09,12,1|2|3,True
+wqp,wqp:USGS-01670209,fresh_primary,fresh_location,False,5,2024-05,2024-09,12,1|2|3,True
+wqp,wqp:USGS-016702576,fresh_primary,fresh_location,False,5,2024-05,2024-09,12,1|2|3,True
+wqp,wqp:USGS-383903118425301,fresh_primary,fresh_location,False,26,2022-04,2024-05,12,1|2|3,True
+wqp,wqp:USGS-384200118431901,fresh_primary,fresh_location,False,26,2022-04,2024-05,12,1|2|3,True
+wqp,wqp:USGS-384506118433001,fresh_primary,fresh_location,False,26,2022-04,2024-05,12,1|2|3,True
+wqp,wqp:WIDNR_WQX-10041501,fresh_primary,fresh_location,False,1,2023-07,2023-07,12,1|2|3,True
+wqp,wqp:WIDNR_WQX-643555,fresh_primary,fresh_location,False,2,2022-01,2022-02,12,1|2|3,True

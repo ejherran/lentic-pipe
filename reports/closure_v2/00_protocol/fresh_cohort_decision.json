@@ -1,0 +1,46 @@
+{
+  "candidate_key_digest_sha256": "347bb61867813327351cdc4c896cd50695ab02a84fa52d256a31e8a280323952",
+  "chla_columns_read": false,
+  "decision_order": [
+    "fresh_location",
+    "forward_temporal",
+    "external",
+    "insufficient_support"
+  ],
+  "evaluation_cohort": "fresh_primary",
+  "experiment_id": "closure_v2",
+  "origin_range": [
+    "2022-01",
+    "2024-09"
+  ],
+  "outcome_values_opened": false,
+  "replacement_used": false,
+  "routes": {
+    "external": {
+      "status": "not_reached"
+    },
+    "forward_temporal": {
+      "status": "not_reached"
+    },
+    "fresh_location": {
+      "candidate_location_count": 137,
+      "intent_origins_per_horizon": 2286,
+      "minimum_intent_origins_per_horizon": 500,
+      "minimum_new_locations": 40,
+      "status": "selected",
+      "v1_location_overlap_count": 0
+    },
+    "insufficient_support": {
+      "status": "not_reached"
+    }
+  },
+  "schema_version": "closure_v2_fresh_cohort_decision_v1",
+  "selection_uses_input_and_provenance_only": true,
+  "status": "selected_unpublished",
+  "target_availability_inspected": false,
+  "target_geometry_range": [
+    "2022-02",
+    "2024-12"
+  ],
+  "target_values_opened": false
+}

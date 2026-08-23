@@ -1,0 +1,158 @@
+{
+  "candidate_key_digest_sha256": "347bb61867813327351cdc4c896cd50695ab02a84fa52d256a31e8a280323952",
+  "candidate_location_count": 137,
+  "chla_columns_read": false,
+  "data_artifacts": [
+    {
+      "bytes": 458123,
+      "dvc_md5": "86dde3e1b0bdebd25c1d553da72620ec",
+      "dvc_pointer": "data/closure_v2/locked_evaluation/input_history.parquet.dvc",
+      "dvc_pointer_bytes": 103,
+      "dvc_pointer_sha256": "f7952b3d9fcea396a8d4af61cac9fbd2524e282975c47be8f7f68ad6da1741e9",
+      "dvc_size": 458123,
+      "path": "data/closure_v2/locked_evaluation/input_history.parquet",
+      "rows": 27432,
+      "sha256": "e7b59c6290cd6e75317e67e643388499298c129911cb1f2e8d2d87ffe6a7b3c1"
+    },
+    {
+      "bytes": 87516,
+      "dvc_md5": "8846ee73afa9e8db84d7e37f570a7a6f",
+      "dvc_pointer": "data/closure_v2/locked_evaluation/intent_origins.parquet.dvc",
+      "dvc_pointer_bytes": 103,
+      "dvc_pointer_sha256": "d86c8a1261998999bea13485038c2256aab4fb3c7de6cbee9a0c7ae124509be9",
+      "dvc_size": 87516,
+      "path": "data/closure_v2/locked_evaluation/intent_origins.parquet",
+      "rows": 2286,
+      "sha256": "67cf67963237b8405971a5c2a679e070bc507cecaaf78aeee219d974f3df0f44"
+    },
+    {
+      "bytes": 187604,
+      "dvc_md5": "018c6bd271043bddd9b97671d6bd5ec8",
+      "dvc_pointer": "data/closure_v2/locked_evaluation/origin_features.parquet.dvc",
+      "dvc_pointer_bytes": 105,
+      "dvc_pointer_sha256": "6ebec7ac6c069cd54d5dff855a669e09fa01e6dcaac540aa99b8ca063ce896fe",
+      "dvc_size": 187604,
+      "path": "data/closure_v2/locked_evaluation/origin_features.parquet",
+      "rows": 2286,
+      "sha256": "ab622f2dc25d7b36b30252642cfd6d447d5d9e98e5a9e2896ef955e371c86113"
+    },
+    {
+      "bytes": 417313,
+      "dvc_md5": "5ca0ea1c91e940cb7d847cf4a530af92",
+      "dvc_pointer": "data/closure_v2/locked_evaluation/sequence_features.parquet.dvc",
+      "dvc_pointer_bytes": 107,
+      "dvc_pointer_sha256": "d6661eb5a11e059044c0989a83df862c3df8ccaec4fe558b3643e6454c7f722f",
+      "dvc_size": 417313,
+      "path": "data/closure_v2/locked_evaluation/sequence_features.parquet",
+      "rows": 2286,
+      "sha256": "8e5bd77842b5e82849e2b9b7c3c9b0a1ba4d6de70972fdc24e7866fa253b6644"
+    }
+  ],
+  "evaluation_cohort": "fresh_primary",
+  "experiment_id": "closure_v2",
+  "inputs": [
+    {
+      "bytes": 2187,
+      "path": "configs/closure_v2/evaluation_cohorts.yaml",
+      "role": "evaluation_cohorts",
+      "sha256": "72003abc37388194401fa7d5f2dd099b0890b9cb065d48ba8a739c523839b26c"
+    },
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "effective_model_lock",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    }
+  ],
+  "intent_origins_per_horizon": 2286,
+  "manifest_written_last": true,
+  "model_lock": {
+    "activation_required": true,
+    "commit": "8388d29f9e962ae13e2f2510f3c57ae3bac0a944",
+    "evaluation_authorized": false,
+    "model_lock_sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e",
+    "status": "model_lock_effective",
+    "tag": "closure-v2-model-lock"
+  },
+  "outcome_values_opened": false,
+  "outputs": [
+    {
+      "bytes": 13664,
+      "path": "reports/closure_v2/00_protocol/fresh_candidate_inventory.csv",
+      "role": "fresh_candidate_inventory",
+      "sha256": "c28e2daca851a72dab6f53ee5d14688103496ccfddc42410517c022808437091"
+    },
+    {
+      "bytes": 1189,
+      "path": "reports/closure_v2/00_protocol/fresh_cohort_decision.json",
+      "role": "fresh_cohort_decision",
+      "sha256": "de3f8a0074bf19620a0010358143b0ae6237bd04870c9bdcf1a7dff912d83a9e"
+    },
+    {
+      "bytes": 103,
+      "path": "data/closure_v2/locked_evaluation/input_history.parquet.dvc",
+      "role": "locked_evaluation_input_dvc_pointer",
+      "sha256": "f7952b3d9fcea396a8d4af61cac9fbd2524e282975c47be8f7f68ad6da1741e9"
+    },
+    {
+      "bytes": 103,
+      "path": "data/closure_v2/locked_evaluation/intent_origins.parquet.dvc",
+      "role": "locked_evaluation_input_dvc_pointer",
+      "sha256": "d86c8a1261998999bea13485038c2256aab4fb3c7de6cbee9a0c7ae124509be9"
+    },
+    {
+      "bytes": 105,
+      "path": "data/closure_v2/locked_evaluation/origin_features.parquet.dvc",
+      "role": "locked_evaluation_input_dvc_pointer",
+      "sha256": "6ebec7ac6c069cd54d5dff855a669e09fa01e6dcaac540aa99b8ca063ce896fe"
+    },
+    {
+      "bytes": 107,
+      "path": "data/closure_v2/locked_evaluation/sequence_features.parquet.dvc",
+      "role": "locked_evaluation_input_dvc_pointer",
+      "sha256": "d6661eb5a11e059044c0989a83df862c3df8ccaec4fe558b3643e6454c7f722f"
+    }
+  ],
+  "replacement_used": false,
+  "schema_version": "closure_v2_fresh_cohort_manifest_v1",
+  "script": {
+    "bytes": 30302,
+    "path": "src/experiments/closure_v2/build_evaluation_inputs.py",
+    "role": "input_only_builder",
+    "sha256": "ac00b2d3ce5d1ee9f8dbb579a290f5cb8cb7470f7e185c45d8697303e8a3fc7a"
+  },
+  "selected_route": "fresh_location",
+  "source_hashes": {
+    "panel_sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62",
+    "v1_assignment_sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+  },
+  "source_inputs": [
+    {
+      "bytes": 2187,
+      "path": "configs/closure_v2/evaluation_cohorts.yaml",
+      "role": "evaluation_cohorts",
+      "sha256": "72003abc37388194401fa7d5f2dd099b0890b9cb065d48ba8a739c523839b26c"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "v1_location_universe",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "bytes": 103469973,
+      "path": "data/panel/panel_monthly_v0.parquet",
+      "role": "input_only_panel",
+      "sha256": "8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62"
+    },
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "effective_model_lock",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    }
+  ],
+  "status": "completed",
+  "target_availability_inspected": false,
+  "target_values_opened": false
+}

@@ -41,3 +41,12 @@ def test_sealed_commands_do_not_include_refit_or_recalibration(monkeypatch: pyte
         ]
     }
     assert all("refit" not in command and "recalibr" not in command for command in payload["sealed_commands"])
+
+
+def test_p11_is_separate_from_one_shot_activation() -> None:
+    from src.experiments.closure_v2 import build_evaluation_inputs
+
+    parser = build_evaluation_inputs.build_parser()
+    p11 = parser.parse_args(["--execute"])
+    assert p11.execute is True
+    assert not hasattr(p11, "activate")
