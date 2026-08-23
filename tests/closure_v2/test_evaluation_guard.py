@@ -5,6 +5,7 @@ from pathlib import Path
 import pytest
 
 from src.experiments.closure_v2 import lock_models
+from src.experiments.closure_v2 import activate_evaluation
 
 
 def test_model_lock_schema_keeps_evaluation_false() -> None:
@@ -50,3 +51,53 @@ def test_p11_is_separate_from_one_shot_activation() -> None:
     p11 = parser.parse_args(["--execute"])
     assert p11.execute is True
     assert not hasattr(p11, "activate")
+
+
+def test_activation_line_is_canonical_and_single_line() -> None:
+    payload = {"z": 1, "a": "fresh_primary"}
+    assert activate_evaluation._canonical_line(payload) == b'{"a":"fresh_primary","z":1}\n'
+
+
+def test_activation_log_rejects_duplicate_activation(tmp_path: Path) -> None:
+    path = tmp_path / "outcome_access_log.jsonl"
+    first = {"event_index": 0, "event_type": "evaluation_activation"}
+    second = {"event_index": 1, "event_type": "evaluation_activation"}
+    path.write_bytes(
+        activate_evaluation._canonical_line(first)
+        + activate_evaluation._canonical_line(second)
+    )
+    with pytest.raises(activate_evaluation.EvaluationActivationError, match="one activation"):
+        activate_evaluation._parse_log(path)
+
+
+def test_activation_log_rejects_second_execution(tmp_path: Path) -> None:
+    path = tmp_path / "outcome_access_log.jsonl"
+    events = [
+        {"event_index": 0, "event_type": "evaluation_activation"},
+        {"event_index": 1, "event_type": "evaluation_execution_started"},
+        {"event_index": 2, "event_type": "evaluation_execution_started"},
+    ]
+    path.write_bytes(b"".join(activate_evaluation._canonical_line(event) for event in events))
+    with pytest.raises(activate_evaluation.EvaluationActivationError, match="more than once"):
+        activate_evaluation._parse_log(path)
+
+
+def test_execute_activation_is_exclusive(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    event = {
+        "event_index": 0,
+        "event_type": "evaluation_activation",
+        "activation_id": "a" * 64,
+        "activation_base_commit": "b" * 40,
+        "contract_sha256": "c" * 64,
+    }
+    monkeypatch.setattr(
+        activate_evaluation,
+        "build_activation_event",
+        lambda *, root: event,
+    )
+    first = activate_evaluation.execute_activation(root=tmp_path)
+    assert first["executions_consumed"] == 0
+    with pytest.raises(activate_evaluation.EvaluationActivationError, match="already exists"):
+        activate_evaluation.execute_activation(root=tmp_path)
