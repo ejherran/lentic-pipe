@@ -20,6 +20,8 @@ from typing import Any
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 TAG_NAME = "thesis-closure-v1"
+V2_TERMINAL_TAG_NAME = "thesis-closure-v2"
+EXPECTED_V2_TERMINAL_COMMIT = "dafb115ce67aa7c9c910ef6f83a17123e5bf4e7e"
 EXPECTED_TAG_OBJECT = "d6c241f6b89d98d6206563739fab3b7b2f28020f"
 EXPECTED_CERTIFICATION_COMMIT = "eb07598aa54a0944d1a87fe46d62415d0a4454aa"
 EXPECTED_SCIENCE_COMMIT = "ea8ddce7f8edb9a61db97e29178e52603fa371b1"
@@ -159,6 +161,51 @@ def protected_v1_changes(repo_root: Path) -> list[str]:
     return [path for path in changed_paths(repo_root) if path.startswith(prefixes)]
 
 
+def validate_execution_branch(
+    repo_root: Path,
+    *,
+    branch: str,
+    head: str,
+    expected_terminal_commit: str = EXPECTED_V2_TERMINAL_COMMIT,
+) -> str:
+    """Accept the experiment branch or a certified post-merge ``main``.
+
+    Before terminal certification, Closure V2 remains restricted to its
+    dedicated branch.  After integration, ``main`` is accepted only when the
+    annotated terminal tag peels to the expected certification commit and is
+    an ancestor of the current HEAD.
+    """
+
+    if branch == "closure-v2":
+        return "experiment_branch"
+    if branch != "main":
+        raise V1AuditError(
+            "Closure V2 must run on branch 'closure-v2' or certified "
+            f"post-merge 'main', found {branch!r}"
+        )
+    try:
+        tag_type = _git_text(repo_root, ["cat-file", "-t", V2_TERMINAL_TAG_NAME])
+        terminal_commit = _git_text(
+            repo_root, ["rev-parse", f"{V2_TERMINAL_TAG_NAME}^{{}}"]
+        )
+    except subprocess.CalledProcessError as exc:
+        raise V1AuditError(
+            "main is authorized only after the annotated Closure V2 terminal tag exists"
+        ) from exc
+    if tag_type != "tag" or terminal_commit != expected_terminal_commit:
+        raise V1AuditError("Closure V2 terminal tag type or peeled commit drifted")
+    ancestry = subprocess.run(
+        ["git", "merge-base", "--is-ancestor", terminal_commit, head],
+        cwd=repo_root,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    if ancestry.returncode != 0:
+        raise V1AuditError("Closure V2 terminal commit is not an ancestor of main")
+    return "certified_post_merge_main"
+
+
 def audit_repository(repo_root: Path = PROJECT_ROOT) -> dict[str, Any]:
     repo_root = repo_root.resolve()
     authorities = resolve_v1_authorities(repo_root)
@@ -169,8 +216,7 @@ def audit_repository(repo_root: Path = PROJECT_ROOT) -> dict[str, Any]:
 
     head = _git_text(repo_root, ["rev-parse", "HEAD"])
     branch = _git_text(repo_root, ["branch", "--show-current"])
-    if branch != "closure-v2":
-        raise V1AuditError(f"Closure V2 must run on branch 'closure-v2', found {branch!r}")
+    branch_context = validate_execution_branch(repo_root, branch=branch, head=head)
     ancestry = subprocess.run(
         ["git", "merge-base", "--is-ancestor", authorities["peeled_commit"], head],
         cwd=repo_root,
@@ -188,6 +234,7 @@ def audit_repository(repo_root: Path = PROJECT_ROOT) -> dict[str, Any]:
         "schema_version": "closure_v2_v1_input_audit_v1",
         "status": "passed",
         "branch": branch,
+        "branch_context": branch_context,
         "head": head,
         "v1_is_ancestor": True,
         "v1_authorities": authorities,

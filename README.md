@@ -10,13 +10,22 @@ artifacts.
 
 ## Closure V2 Thesis Handoff
 
-The certified Closure V2 evidence is frozen at the annotated tag
-`thesis-closure-v2`. Anyone updating the thesis should begin with
+The `main` branch contains the completed Closure V2 evidence and its
+post-certification manuscript handoff. The certified evidence itself is frozen
+at the annotated tag `thesis-closure-v2`. Anyone updating the thesis should begin with
 [`docs/closure_v2/MANUSCRIPT_HANDOFF.md`](docs/closure_v2/MANUSCRIPT_HANDOFF.md),
 which provides the authority chain, required reading order, section-by-section
 change plan, complete table and figure inventory, wording boundaries, and
 acceptance checklist. The handoff is documentation only: it does not revise
 the certified scientific results.
+
+The ready-to-use manuscript assets are under
+`reports/closure_v2/08_synthesis/THESIS_TABLES/` and
+`reports/closure_v2/08_synthesis/THESIS_FIGURES/`. Claim-level traceability is
+provided by
+`reports/closure_v2/08_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv`, while the
+software boundary is recorded in
+`reports/closure_v2/09_certification/FINAL_CERTIFICATION_REPORT.md`.
 
 ## Requirements
 

@@ -74,6 +74,50 @@ def test_v2_change_is_not_reported_as_v1_drift(tmp_path: Path) -> None:
     assert audit.protected_v1_changes(repo) == []
 
 
+def test_execution_branch_accepts_experiment_branch_without_terminal_tag(
+    tmp_path: Path,
+) -> None:
+    repo, commit = _synthetic_repo(tmp_path)
+    assert (
+        audit.validate_execution_branch(
+            repo,
+            branch="closure-v2",
+            head=commit,
+            expected_terminal_commit=commit,
+        )
+        == "experiment_branch"
+    )
+
+
+def test_execution_branch_accepts_main_only_after_annotated_terminal_tag(
+    tmp_path: Path,
+) -> None:
+    repo, commit = _synthetic_repo(tmp_path)
+    _git(repo, "tag", "-a", audit.V2_TERMINAL_TAG_NAME, "-m", "terminal")
+    _git(repo, "switch", "-c", "main")
+    assert (
+        audit.validate_execution_branch(
+            repo,
+            branch="main",
+            head=commit,
+            expected_terminal_commit=commit,
+        )
+        == "certified_post_merge_main"
+    )
+
+
+def test_execution_branch_rejects_uncertified_main(tmp_path: Path) -> None:
+    repo, commit = _synthetic_repo(tmp_path)
+    _git(repo, "switch", "-c", "main")
+    with pytest.raises(audit.V1AuditError, match="only after"):
+        audit.validate_execution_branch(
+            repo,
+            branch="main",
+            head=commit,
+            expected_terminal_commit=commit,
+        )
+
+
 def test_receipt_path_guard_rejects_undeclared_path(tmp_path: Path) -> None:
     with pytest.raises(audit.V1AuditError, match="Undeclared"):
         audit._assert_receipt_path(tmp_path, Path("reports/closure_v2/not_allowed.json"))
