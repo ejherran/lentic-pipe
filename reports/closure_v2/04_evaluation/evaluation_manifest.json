@@ -1,0 +1,181 @@
+{
+  "activation_id": "54468331a622ddaa2cbd0450803f6cfe69ab29da51efe6ebbd9578b594c261c8",
+  "data_artifact": {
+    "bytes": 11201320,
+    "dvc_md5": "fea6e222936bf4eef063e84b9192791a",
+    "dvc_pointer": "data/closure_v2/predictions_long.parquet.dvc",
+    "dvc_size": 11201320,
+    "path": "data/closure_v2/predictions_long.parquet",
+    "role": "predictions_long",
+    "sha256": "2f9ebbf2ae7f3892f4739d334cae9f55f4e6e3838b71bad5679dd7afa5d4f405"
+  },
+  "estimands": [
+    "observation_weighted",
+    "site_weighted"
+  ],
+  "evaluation_cohorts": {
+    "fresh_primary": 2286,
+    "legacy_posthoc": 4488
+  },
+  "execution_id": "e5deae34723a0aa9feaef7c5e974735e240b17fec08f6605a1d19cf8c181a349",
+  "experiment_id": "closure_v2",
+  "failed_prediction_values_nulled": true,
+  "family_prediction": "mean_probability_over_available_registered_seeds",
+  "inference_performed": false,
+  "inputs": [
+    {
+      "bytes": 64648,
+      "path": "src/experiments/closure_v2/evaluate_models.py",
+      "role": "sealed_evaluation_input",
+      "sha256": "40a3b38a701650cd5b21a30793b1dafe1e7df152af9a7698ca7303b6862e52ee"
+    },
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "sealed_evaluation_input",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    },
+    {
+      "bytes": 11057,
+      "path": "reports/closure_v2/01_surface/locked_evaluation_input_manifest.json",
+      "role": "sealed_evaluation_input",
+      "sha256": "0e2a2340a8d6e595e46975069a5a53b5300d1746ef0653f16d745f7ffc8cb840"
+    },
+    {
+      "bytes": 48656,
+      "path": "reports/closure_v2/03_calibration/calibrator_specs.json",
+      "role": "sealed_evaluation_input",
+      "sha256": "e0caa7ce83535571d21ee85caaa1259020b1f95b6dc00f01c486e93e99ec2d9f"
+    },
+    {
+      "bytes": 3327,
+      "path": "reports/closure_v2/03_calibration/alert_thresholds.csv",
+      "role": "sealed_evaluation_input",
+      "sha256": "365a88a2791722278bb025739e9cdb33485a42bcf7738e6d9b303d7070c91a5b"
+    },
+    {
+      "bytes": 63688,
+      "path": "reports/closure_v2/03_calibration/conformal_quantiles.csv",
+      "role": "sealed_evaluation_input",
+      "sha256": "ebecd1199ac4e2c5bb53394a7b5832652a0412f4d27486477c10c0f4a7facb00"
+    },
+    {
+      "bytes": 4605,
+      "path": "reports/closure_v2/00_protocol/outcome_access_log.jsonl",
+      "role": "sealed_evaluation_input",
+      "sha256": "2263e16bad35ee930382a3391a8f22854768f969525ac9bd4b3f1411e9ebf3c6"
+    }
+  ],
+  "legacy_and_fresh_pooled": false,
+  "manifest_written_last": true,
+  "model_lock_sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e",
+  "model_lock_tag": "closure-v2-model-lock",
+  "models_reexecuted_for_correction": false,
+  "outcome_access_events": 4,
+  "outcomes_reopened_for_correction": false,
+  "outputs": [
+    {
+      "bytes": 108,
+      "path": "data/closure_v2/predictions_long.parquet.dvc",
+      "role": "evaluation_output",
+      "sha256": "647827222e8cbc807775aca67f5f003aac0b79b9d68c3394f583d3b3c24169ff"
+    },
+    {
+      "bytes": 529479,
+      "path": "reports/closure_v2/04_evaluation/model_metrics_long.csv",
+      "role": "evaluation_output",
+      "sha256": "dd972e401fdebfafaec0479bb5b8365bec9c8add60248e93ec0051ada850ce35"
+    },
+    {
+      "bytes": 21622,
+      "path": "reports/closure_v2/04_evaluation/model_availability.csv",
+      "role": "evaluation_output",
+      "sha256": "26d4c4efdb75d03591bdead3382b295f5bde3f67bbeae29cf0f3127719f1ef12"
+    },
+    {
+      "bytes": 11263,
+      "path": "reports/closure_v2/04_evaluation/intent_to_predict_funnel.csv",
+      "role": "evaluation_output",
+      "sha256": "a547d86e1f47052421da9914aa30697d79b53f5be584be219f82230d73687b3d"
+    },
+    {
+      "bytes": 2284,
+      "path": "reports/closure_v2/04_evaluation/pairwise_common_rows.csv",
+      "role": "evaluation_output",
+      "sha256": "a3cd20279425c813689e2bd47bbe903ff6644a4607dc8ecfda5498991f430b75"
+    },
+    {
+      "bytes": 96377,
+      "path": "reports/closure_v2/04_evaluation/threshold_sensitivity.csv",
+      "role": "evaluation_output",
+      "sha256": "db19f17f6cb60f8fee25028d9e0420898fb1f8ed5561c36e7a38e1a73c9dfc1f"
+    },
+    {
+      "bytes": 26172,
+      "path": "reports/closure_v2/04_evaluation/uncertainty_ledger.csv",
+      "role": "evaluation_output",
+      "sha256": "a002ba94242dfa1d9ee55c32574c9ef9b009f535909fce91ffcf0be7a74753ef"
+    },
+    {
+      "bytes": 62162,
+      "path": "reports/closure_v2/04_evaluation/BENCHMARK_REPORT.md",
+      "role": "evaluation_output",
+      "sha256": "60ac54fa4504036efff2c7df2123120039ed23c744b35cfbb41d7a38f965eb55"
+    }
+  ],
+  "phase": "P13",
+  "post_execution_correction": "null_failed_B2_prediction_values_only",
+  "prediction_columns": [
+    "evaluation_cohort",
+    "model_id",
+    "base_seed",
+    "aggregation_level",
+    "origin_id",
+    "source_id",
+    "site_id",
+    "origin_year_month",
+    "target_year_month",
+    "horizon_months",
+    "intent_to_predict",
+    "input_eligible",
+    "prediction_status",
+    "failure_reason",
+    "prediction_successful",
+    "target_month_exists",
+    "target_available",
+    "metric_evaluable",
+    "shared_success",
+    "bloom_probability",
+    "alert_threshold",
+    "predicted_alert",
+    "predicted_risk_chla",
+    "predicted_risk_sigma",
+    "risk_interval_lower_90",
+    "risk_interval_upper_90",
+    "future_chlorophyll_a_ugL",
+    "bloom_h",
+    "target_risk_chla_h",
+    "target_trophic_state_h",
+    "outcome_bloom_25",
+    "outcome_bloom_30",
+    "outcome_bloom_33",
+    "outcome_bloom_50",
+    "result_state"
+  ],
+  "prediction_rows": 650304,
+  "primary_endpoint_chlorophyll_cutoff_ugL": 30,
+  "recalibration_performed": false,
+  "refit_performed": false,
+  "replacement_used": false,
+  "reproducibility_check": "two_identical_in_memory_output_serializations_passed",
+  "schema_version": "closure_v2_evaluation_manifest_v1",
+  "seed_pseudoreplication": false,
+  "sensitivity_cutoffs_ugL": [
+    25,
+    30,
+    33,
+    50
+  ],
+  "status": "completed",
+  "threshold_changed": false
+}

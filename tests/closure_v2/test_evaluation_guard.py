@@ -6,6 +6,7 @@ import pytest
 
 from src.experiments.closure_v2 import lock_models
 from src.experiments.closure_v2 import activate_evaluation
+from src.experiments.closure_v2 import evaluate_models
 
 
 def test_model_lock_schema_keeps_evaluation_false() -> None:
@@ -42,6 +43,8 @@ def test_sealed_commands_do_not_include_refit_or_recalibration(monkeypatch: pyte
         ]
     }
     assert all("refit" not in command and "recalibr" not in command for command in payload["sealed_commands"])
+    parser = evaluate_models.build_parser()
+    assert parser.parse_args(["--execute"]).execute is True
 
 
 def test_p11_is_separate_from_one_shot_activation() -> None:
