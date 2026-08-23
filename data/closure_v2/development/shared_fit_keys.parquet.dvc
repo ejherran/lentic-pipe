@@ -1,0 +1,5 @@
+outs:
+- md5: 0f15523a885e91a4e65d19efd6466bf4
+  size: 53662
+  hash: md5
+  path: shared_fit_keys.parquet
