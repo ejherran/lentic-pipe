@@ -1,0 +1,190 @@
+{
+  "action_application": "origin_current_raw_proxy_then_frozen_p1_rollout",
+  "action_scenario_ids": [
+    "tp_reduction_10",
+    "tp_reduction_25",
+    "tn_reduction_10",
+    "tp_tn_reduction_10",
+    "clarity_mild",
+    "clarity_strong",
+    "oxygen_support_05",
+    "nutrient_clarity_mild",
+    "nutrient_clarity_strong"
+  ],
+  "alternative": "greater_than_zero",
+  "authority_commit": "0af1bff01cbb581886ce34c697fbd8b731e2553a",
+  "bootstrap_replicates_per_action": 2000,
+  "bootstrap_summary_rows": 18,
+  "cluster_unit": "source_id_plus_site_id",
+  "cohorts_pooled": false,
+  "data_artifact": {
+    "bytes": 2731289,
+    "dvc_md5": "e56e3e2d9ddd6bb2e2ae44d8432bda41",
+    "dvc_pointer": "reports/closure_v2/07_planning/planning_origin_deltas.parquet.dvc",
+    "dvc_size": 2731289,
+    "path": "reports/closure_v2/07_planning/planning_origin_deltas.parquet",
+    "role": "planning_origin_deltas_complete_intent_universe",
+    "rows": 182898,
+    "sha256": "b65520f61618f3812c4592706d252fdfbaa6101f1268c311f0c69f98f714fc22"
+  },
+  "ecological_coherence_rows": 18,
+  "evaluation_cohorts": [
+    "legacy_posthoc",
+    "fresh_primary"
+  ],
+  "experiment_id": "closure_v2",
+  "failed_values_nulled": true,
+  "field_causality_claimed": false,
+  "heldout_support_policy": "wqp_source_fallback_quantiles_0.01_0.99",
+  "holm_universe": "E",
+  "holm_universe_reduced": false,
+  "holm_universe_size": 9,
+  "inputs": [
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "locked_v2_analysis_plan",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 57059,
+      "path": "docs/closure_v2/EXECUTION_GUIDE.md",
+      "role": "public_execution_guide",
+      "sha256": "ca52e9bf083de93980999dbcdfb9f22c2cec7d3fa64d925ac07e6ffe88b9b81c"
+    },
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "locked_model_registry",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    },
+    {
+      "bytes": 5920,
+      "path": "reports/closure_v2/06_degradation/degradation_manifest.json",
+      "role": "p15_degradation_manifest",
+      "sha256": "6c5f3aa93900e256b6187fbfd15603befaa19acabc94a80f0e7094efe7789d03"
+    },
+    {
+      "bytes": 24374,
+      "path": "configs/closure_v1/experimental_matrix.yaml",
+      "role": "locked_v1_planning_matrix",
+      "sha256": "9291db8a53f3fd7b5c199d0496eb09b20cef62f9f10347aa29858349efa352e6"
+    },
+    {
+      "bytes": 5359,
+      "path": "configs/counterfactual_planning_v1.yaml",
+      "role": "locked_action_catalog",
+      "sha256": "ee594a4bece416a60e962437aadc826f019b8015433860d18a1b3cd8435d2648"
+    },
+    {
+      "bytes": 11088,
+      "path": "configs/variables.yaml",
+      "role": "plausible_ranges",
+      "sha256": "e945ae0fb7ccb4cd2cb9c742c7177e45a17bb8f96217b971259c0d61ef11cc57"
+    },
+    {
+      "bytes": 89635,
+      "path": "data/closure_v1/closure_holdout_assignment.csv",
+      "role": "development_holdout_assignment",
+      "sha256": "b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef"
+    },
+    {
+      "bytes": 109,
+      "path": "data/panel/panel_monthly_v0.parquet.dvc",
+      "role": "training_support_panel_pointer",
+      "sha256": "eb34b0b5578c40f1e7984ee0698786efd8eea116ec125d7c7f4507ddfacdad9c"
+    },
+    {
+      "bytes": 110,
+      "path": "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc",
+      "role": "v1_empty_planning_pointer",
+      "sha256": "5ee258a17b590c4b85ca2f804838cea2cf5388426ab075fbfb2e9b4c30d432d8"
+    }
+  ],
+  "intent_origins_preserved": true,
+  "manifest_written_last": true,
+  "objective": "0.60*delta_irc+0.40*delta_bloom-0.05*cost-0.10*max(0,delta_u)-0.05*support_violation",
+  "official_recommendation_claimed": false,
+  "origin_delta_rows": 182898,
+  "outcomes_opened": false,
+  "outputs": [
+    {
+      "bytes": 4376,
+      "path": "reports/closure_v2/07_planning/planning_bootstrap.csv",
+      "role": "planning_output",
+      "sha256": "261a41429e39e1c07883f7f4ddda0f306e6e768a395f603f8078c6c61c837b48"
+    },
+    {
+      "bytes": 20064,
+      "path": "reports/closure_v2/07_planning/planning_sensitivity.csv",
+      "role": "planning_output",
+      "sha256": "416e8312166b8756c38683956206d5207590c5071b9fc152216eb9ffb529df2a"
+    },
+    {
+      "bytes": 5907,
+      "path": "reports/closure_v2/07_planning/ecological_coherence.csv",
+      "role": "planning_output",
+      "sha256": "3efa4fd93a9c2317adad2e93d31c3c168af798c8b26ec65e5a929265300cebb8"
+    },
+    {
+      "bytes": 113,
+      "path": "reports/closure_v2/07_planning/planning_origin_deltas.parquet.dvc",
+      "role": "planning_output",
+      "sha256": "315118684dcf5d6136242953f073d037c5de677461420cd23f7d863a87ca442a"
+    },
+    {
+      "bytes": 17551,
+      "path": "reports/closure_v2/07_planning/PLANNING_REPORT.md",
+      "role": "planning_output",
+      "sha256": "3e2dcd05c6f686bec23ee236ffba7091fbf2a3c8004a7c3074b7ed8ea1f838a0"
+    }
+  ],
+  "phase": "P16",
+  "primary_endpoint": "delta_objective_vs_no_action",
+  "primary_estimand": "observation_weighted_mean_over_exact_common_origins_and_horizons_1_2_3",
+  "recalibration_performed": false,
+  "refit_performed": false,
+  "registered_seeds": [
+    1729,
+    20260612,
+    20260613,
+    20260614,
+    314159
+  ],
+  "scenario_ids": [
+    "no_action",
+    "tp_reduction_10",
+    "tp_reduction_25",
+    "tn_reduction_10",
+    "tp_tn_reduction_10",
+    "clarity_mild",
+    "clarity_strong",
+    "oxygen_support_05",
+    "nutrient_clarity_mild",
+    "nutrient_clarity_strong"
+  ],
+  "schema_version": "closure_v2_planning_manifest_v1",
+  "script": {
+    "bytes": 45601,
+    "path": "src/experiments/closure_v2/run_planning.py",
+    "role": "frozen_p1_planning_runner",
+    "sha256": "9a31b68da8bb7346c5a6b72715be0a38cd7f8af8366de819f0822866c1ff99d1"
+  },
+  "seed_aggregation": "paired_action_minus_no_action_then_equal_mean_over_all_five_registered_seeds",
+  "seeds_used_as_ecological_replicates": false,
+  "sensitivity_rows": 162,
+  "shared_success_rows": 67725,
+  "status": "completed",
+  "support_fit_role": "training_through_2018_12_non_holdout_wqp",
+  "universal_optimality_claimed": false,
+  "v1_planning_binding": {
+    "bytes": 7788,
+    "compatible": false,
+    "dvc_md5": "f67f23c22af0056b67852cc645703d19",
+    "dvc_pointer": "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc",
+    "path": "reports/closure_v1/09_planning/planning_origin_deltas.parquet",
+    "reuse_status": "bound_by_hash_but_not_reusable_empty_v1_p1_unavailable_artifact",
+    "rows": 0,
+    "sha256": "64fe67eaac3560da9fec04a1e696c98a1e0f10e0d85cdaa8549689a12493fcc6"
+  }
+}
