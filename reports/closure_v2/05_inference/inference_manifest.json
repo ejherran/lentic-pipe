@@ -1,0 +1,116 @@
+{
+  "authority_commit": "047c614944e66b2ba7e5229cc289ce317ba3602a",
+  "bootstrap_distribution_rows": 96000,
+  "bootstrap_p_value_predeclared": false,
+  "bootstrap_replicates_per_contrast": 2000,
+  "bootstrap_summary_rows": 48,
+  "cluster_unit": "source_id_plus_site_id",
+  "cohorts_pooled": false,
+  "data_artifact": {
+    "bytes": 993917,
+    "dvc_md5": "9f62032c6e50b309058be98584d23387",
+    "dvc_pointer": "reports/closure_v2/05_inference/bootstrap_distributions.parquet.dvc",
+    "dvc_size": 993917,
+    "path": "reports/closure_v2/05_inference/bootstrap_distributions.parquet",
+    "role": "bootstrap_distributions",
+    "sha256": "b546ce2519832b66339920a4f1f2445c57350af35973b9313456cb7b1e75f500"
+  },
+  "estimands": [
+    "observation_weighted",
+    "site_weighted"
+  ],
+  "estimands_pooled": false,
+  "evaluation_cohorts": [
+    "legacy_posthoc",
+    "fresh_primary"
+  ],
+  "experiment_id": "closure_v2",
+  "holm_p_values_computed": false,
+  "holm_universe_reduced": false,
+  "holm_universes": {
+    "A": 3,
+    "B": 3,
+    "C": 6
+  },
+  "inputs": [
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "locked_analysis_plan",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "locked_model_registry",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    },
+    {
+      "bytes": 6075,
+      "path": "reports/closure_v2/04_evaluation/evaluation_manifest.json",
+      "role": "p13_evaluation_manifest",
+      "sha256": "5d3fe8702c29ca27fa6c8565a6a81a013b41555964dd92e0a095476f5344bafb"
+    },
+    {
+      "bytes": 108,
+      "path": "data/closure_v2/predictions_long.parquet.dvc",
+      "role": "p13_prediction_pointer",
+      "sha256": "647827222e8cbc807775aca67f5f003aac0b79b9d68c3394f583d3b3c24169ff"
+    }
+  ],
+  "manifest_written_last": true,
+  "outputs": [
+    {
+      "bytes": 246781,
+      "path": "reports/closure_v2/05_inference/site_level_losses.csv",
+      "role": "inference_output",
+      "sha256": "2df113c777c384150bc5e0c10bcc9599c0b6889e38626622d87b320ce21fd47f"
+    },
+    {
+      "bytes": 15900,
+      "path": "reports/closure_v2/05_inference/pairwise_effects.csv",
+      "role": "inference_output",
+      "sha256": "b8ae46410d8b8de6eb4933d7905e6ab5ad71c45125191c0f5d32d52675515e92"
+    },
+    {
+      "bytes": 2819,
+      "path": "reports/closure_v2/05_inference/multiplicity_report.csv",
+      "role": "inference_output",
+      "sha256": "14b8e719a37cf636fb9194bb567a113df02d0bba85b2a2435c7d60b26c372523"
+    },
+    {
+      "bytes": 9219,
+      "path": "reports/closure_v2/05_inference/bootstrap_summary.csv",
+      "role": "inference_output",
+      "sha256": "273f8fe13c68df4f4fc41df459ead89e774dea0735b2662c8cc6d282a670d131"
+    },
+    {
+      "bytes": 113,
+      "path": "reports/closure_v2/05_inference/bootstrap_distributions.parquet.dvc",
+      "role": "inference_output",
+      "sha256": "b4a5e73d6ec01f1c41c780902602770511578ec976e87c4bd33ab8dcf88ab688"
+    },
+    {
+      "bytes": 9237,
+      "path": "reports/closure_v2/05_inference/STATISTICAL_INFERENCE_REPORT.md",
+      "role": "inference_output",
+      "sha256": "e16e0f5c38155b3135cbb365d057a139b5419a560ad74b77a7c5763c4903e54e"
+    }
+  ],
+  "p_value_absence_reason": "bootstrap_p_value_formula_and_directional_alternative_not_predeclared",
+  "pairwise_effect_rows": 48,
+  "phase": "P14",
+  "raw_p_values_computed": false,
+  "recalibration_performed": false,
+  "refit_performed": false,
+  "reproducibility_check": "two_full_deterministic_materializations_byte_identical",
+  "schema_version": "closure_v2_inference_manifest_v1",
+  "script": {
+    "bytes": 38544,
+    "path": "src/experiments/closure_v2/run_inference.py",
+    "role": "clustered_inference_runner",
+    "sha256": "eccc09d73bd6b9a1ea0e65c27f3b6d5b83350095edae9506b8459f5397903ab6"
+  },
+  "seeds_used_as_ecological_replicates": false,
+  "status": "completed"
+}
