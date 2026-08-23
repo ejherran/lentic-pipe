@@ -1,0 +1,24 @@
+schema_version: closure_v2_model_benchmark_v1
+experiment_id: closure_v2
+status: ready_to_lock
+primary_comparisons: [P1_vs_B2, P1_vs_P0]
+secondary_comparisons: [P1_vs_B1, P1_vs_A1, A1_vs_A0, M0_vs_P1]
+models:
+  P0: {role: expert_temporal_comparator, state: expert_fuzzy_no_current_chla}
+  P1: {role: primary_temporal_candidate, state: adaptive_anfis_no_current_chla}
+  B1: {role: persistence_baseline}
+  B2: {role: strong_non_temporal_baseline}
+  A0: {role: expert_fuzzy_state}
+  A1: {role: adaptive_anfis_state}
+  M0: {role: interval_type2_comparator}
+shared_contract:
+  architecture_identical_P0_P1: true
+  seeds_identical_P0_P1: true
+  optimization_budget_identical_P0_P1: true
+  eligibility_identical_P0_P1: true
+  calibration_identical_P0_P1: true
+  horizons: [1, 2, 3]
+  failure_policy_identical_P0_P1: true
+family_prediction: mean_probability_over_registered_available_seeds
+global_winner_required: false
+unavailable_model_replacement: forbidden

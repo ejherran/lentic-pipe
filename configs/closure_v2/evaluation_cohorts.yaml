@@ -1,0 +1,51 @@
+schema_version: closure_v2_evaluation_cohorts_v1
+experiment_id: closure_v2
+status: ready_to_lock
+decision_order: [fresh_location, forward_temporal, external, insufficient_support]
+legacy_posthoc:
+  source_assignment: data/closure_v1/closure_holdout_assignment.csv
+  location_count: 88
+  origin_count: 4488
+  claim_status: posthoc_available
+  maximum_claim: retrospective_complementary
+fresh_location:
+  group_key: [source_id, site_id]
+  absent_from_all_v1_locations: true
+  v1_location_universe_size: 441
+  minimum_new_locations: 40
+  minimum_intent_origins_per_horizon: 500
+  target_values_for_selection: forbidden
+  target_availability_for_selection: forbidden
+  replacement_for_missing_target: forbidden
+  deterministic_primary_subset:
+    source_id: wqp
+    origin_start: "2022-01"
+    history_length_months: 12
+    consecutive_input_eligible_months: true
+    all_h1_h2_h3_target_months_within_site_input_observation_window: true
+    retain_all_matching_sites_and_origins: true
+  prelock_input_only_feasibility_audit:
+    status: passed_non_authoritative_until_post_model_lock_reconstruction
+    panel_path: data/panel/panel_monthly_v0.parquet
+    panel_sha256: 8aedc531b9e024bd8f73e66f917932b8301f79309d4596618c5a839e3b70dc62
+    v1_assignment_path: data/closure_v1/closure_holdout_assignment.csv
+    v1_assignment_sha256: b090994b9ec9a3cd6af8e3261879872a12efe301e02fe1727ded519b46ebedef
+    candidate_location_count: 137
+    intent_origins_per_horizon: 2286
+    origin_range: ["2022-01", "2024-09"]
+    target_geometry_range: ["2022-02", "2024-12"]
+    candidate_key_digest_sha256: 347bb61867813327351cdc4c896cd50695ab02a84fa52d256a31e8a280323952
+    chla_columns_read: false
+    target_paths_opened: false
+    target_availability_inspected: false
+forward_temporal:
+  minimum_intent_origins_per_horizon: 500
+  target_months_after_v1_limit: true
+  outcomes_unopened_before_model_lock: true
+external:
+  comparable_target_and_contract_required: true
+  provenance_crosswalk_required: true
+selection:
+  selected_if_post_model_lock_reconstruction_matches: fresh_location
+  fallback_when_fresh_location_fails: stop_and_record_contradiction
+  outcome_values_may_not_change_selection: true

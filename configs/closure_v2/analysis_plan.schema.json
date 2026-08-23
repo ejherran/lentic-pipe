@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-v2-analysis-plan-v1.json",
+  "title": "Closure V2 analysis plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version", "experiment_id", "plan_version", "status", "authorities",
+    "surface", "time_roles", "eligibility", "models", "seeds", "seed_policy",
+    "training", "calibration", "endpoints", "metrics", "denominators",
+    "evaluation", "inference", "multiplicity", "result_states", "outcome_access",
+    "claim_boundaries", "locking"
+  ],
+  "properties": {
+    "schema_version": {"const": "closure_v2_analysis_plan_v1"},
+    "experiment_id": {"const": "closure_v2"},
+    "plan_version": {"const": "1.0"},
+    "status": {"enum": ["ready_to_lock", "locked"]},
+    "authorities": {"type": "object", "additionalProperties": true},
+    "surface": {"type": "object", "additionalProperties": true},
+    "time_roles": {"type": "object", "additionalProperties": true},
+    "eligibility": {"type": "object", "additionalProperties": true},
+    "models": {"type": "object", "additionalProperties": true},
+    "seeds": {"const": [1729, 20260612, 20260613, 20260614, 314159]},
+    "seed_policy": {"type": "object", "additionalProperties": true},
+    "training": {"type": "object", "additionalProperties": true},
+    "calibration": {"type": "object", "additionalProperties": true},
+    "endpoints": {"type": "object", "additionalProperties": true},
+    "metrics": {"type": "object", "additionalProperties": true},
+    "denominators": {"const": ["attempted", "input_eligible", "prediction_successful", "target_available", "metric_evaluable", "shared_success"]},
+    "evaluation": {"type": "object", "additionalProperties": true},
+    "inference": {"type": "object", "additionalProperties": true},
+    "multiplicity": {"type": "object", "additionalProperties": true},
+    "result_states": {"type": "array", "uniqueItems": true, "minItems": 7},
+    "outcome_access": {"type": "object", "additionalProperties": true},
+    "claim_boundaries": {"type": "object", "additionalProperties": true},
+    "locking": {"type": "object", "additionalProperties": true}
+  }
+}

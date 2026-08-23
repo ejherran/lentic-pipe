@@ -1,0 +1,117 @@
+{
+  "artifact_inventory": {
+    "bytes": 1338,
+    "path": "reports/closure_v2/00_protocol/artifact_inventory.csv",
+    "role": "artifact_inventory",
+    "sha256": "785988e7273a44e45966a1f497faf0d29c320f1e1a7ed4435cde525f5c419c4b"
+  },
+  "base_head": "e8f22ed733de56b6616b4ab9f651eb41bd095bb6",
+  "branch": "closure-v2",
+  "completion_manifest": "reports/closure_v2/00_protocol/v1_reference_manifest.json",
+  "component_digest_sha256": "fd66f5813a2941454f9e4ee594ee9547b9c629dc280c6fbe3686ff6e11796a19",
+  "components": [
+    {
+      "bytes": 57059,
+      "path": "docs/closure_v2/EXECUTION_GUIDE.md",
+      "role": "protocol_component",
+      "sha256": "ca52e9bf083de93980999dbcdfb9f22c2cec7d3fa64d925ac07e6ffe88b9b81c"
+    },
+    {
+      "bytes": 5821,
+      "path": "docs/closure_v2/ANALYSIS_PLAN.md",
+      "role": "protocol_component",
+      "sha256": "b83a981129ff1d724debcde0fd738cc5a9fc09330760f47b89aafbfe884141ab"
+    },
+    {
+      "bytes": 1093,
+      "path": "docs/closure_v2/PROTOCOL_AMENDMENT_V2.md",
+      "role": "protocol_component",
+      "sha256": "820df707c1f386d16d2998ca469f3dd13465af0b3841058c3bff7c37680f18fa"
+    },
+    {
+      "bytes": 1110,
+      "path": "docs/closure_v2/CLAIM_BOUNDARIES.md",
+      "role": "protocol_component",
+      "sha256": "c98215a40b4fc120543b62ab8deff8a0e784f994432d44bcacd96687b9c4adc7"
+    },
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "protocol_component",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 2204,
+      "path": "configs/closure_v2/analysis_plan.schema.json",
+      "role": "protocol_component",
+      "sha256": "f6deeeb2aa1aae3fed137d132b00b886111cbd3527606e5390f1089d789fc390"
+    },
+    {
+      "bytes": 2038,
+      "path": "configs/closure_v2/eligibility_policy.yaml",
+      "role": "protocol_component",
+      "sha256": "e044ba2d968dbe18ad2e3a514704e5482b7f264bcccb6dc10921dbc0d1787a5a"
+    },
+    {
+      "bytes": 2266,
+      "path": "configs/closure_v2/eligibility_policy.schema.json",
+      "role": "protocol_component",
+      "sha256": "cab3fac3fd6fcb3460880b7afcac60243d66dc84de89ab2ac12647fd91d72fac"
+    },
+    {
+      "bytes": 952,
+      "path": "configs/closure_v2/model_benchmark.yaml",
+      "role": "protocol_component",
+      "sha256": "3eeb3ff383b51e2865443e810dcb850e2bd57c4825df313730c199ef4730d0b4"
+    },
+    {
+      "bytes": 2187,
+      "path": "configs/closure_v2/evaluation_cohorts.yaml",
+      "role": "protocol_component",
+      "sha256": "72003abc37388194401fa7d5f2dd099b0890b9cb065d48ba8a739c523839b26c"
+    },
+    {
+      "bytes": 13924,
+      "path": "src/experiments/closure_v2/audit_v1_inputs.py",
+      "role": "protocol_component",
+      "sha256": "d2f5fe75e8596fb16ae2b69018aa171621e9375105a79018dd236de4ee9bf150"
+    },
+    {
+      "bytes": 15484,
+      "path": "src/experiments/closure_v2/contracts.py",
+      "role": "protocol_component",
+      "sha256": "868c946d3bcf4ad4b5a8415c5a43dac6c804e51c73eff091b3c8b4df481eef04"
+    },
+    {
+      "bytes": 3227,
+      "path": "tests/closure_v2/test_v1_input_audit.py",
+      "role": "protocol_component",
+      "sha256": "eed40c11e35dc3f56793c29d9f63dcdf98fde922d5d939b526f1dcbc7e45e23f"
+    },
+    {
+      "bytes": 3036,
+      "path": "tests/closure_v2/test_contracts.py",
+      "role": "protocol_component",
+      "sha256": "c4a69cee4b2e90cc03529ddd63f7ac0763763be24d9a0ad5ba81153f295b7c73"
+    }
+  ],
+  "dvc_commands_executed_by_protocol_locker": false,
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v2",
+  "fit_authorized": false,
+  "fresh_primary_prelock_feasibility": {
+    "authoritative_selection_deferred_until_after_model_lock": true,
+    "input_only": true,
+    "intent_origins_per_horizon": 2286,
+    "locations": 137,
+    "route": "fresh_location"
+  },
+  "manifest_written_last": true,
+  "outcome_access_authorized": false,
+  "parquet_files_opened_by_protocol_locker": false,
+  "schema_version": "closure_v2_protocol_lock_v1",
+  "status": "locked_unpublished",
+  "v1_inventory_digest_sha256": "608fafe1fe738138dcaf75cfe5e458f376a9bb3e5696feff20ea2e3b76276b37",
+  "v1_peeled_commit": "eb07598aa54a0944d1a87fe46d62415d0a4454aa",
+  "v1_tag_object": "d6c241f6b89d98d6206563739fab3b7b2f28020f"
+}

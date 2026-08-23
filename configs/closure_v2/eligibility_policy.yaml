@@ -1,0 +1,52 @@
+schema_version: closure_v2_eligibility_policy_v1
+experiment_id: closure_v2
+status: ready_to_lock
+surface_id: closure_v2_wqp_adaptive_no_current_chla
+key_columns: [source_id, site_id, origin_year_month, target_year_month, horizon_months, model_id, base_seed]
+fit_roles: [training, model_selection]
+calibration_role: calibration_threshold
+assignment_role_required: development
+complete_case_requirements:
+  sequence_status: success
+  finite_input_lists: 13
+  finite_targets: 9
+  origin_and_target_same_role: true
+  observed_chla_or_derived_lineage: forbidden
+  evaluation_cohort_overlap: forbidden
+ledger:
+  retain_all_intent_rows: true
+  retain_failure_reason: true
+  retain_exclusion_reason: true
+  incomplete_rows_in_loss: false
+  zero_fill_incomplete_rows: forbidden
+authorization_thresholds:
+  minimum_overall_fit_eligibility_fraction: 0.90
+  minimum_training_rows: 5000
+  minimum_model_selection_rows: 500
+  minimum_calibration_rows: 200
+  minimum_training_locations: 200
+  minimum_model_selection_locations: 50
+  minimum_calibration_locations: 30
+primary_shared_fit:
+  policy: exact_intersection
+  models: [P0, P1]
+  require_identical_keys_by_seed: true
+  train_primary_models_on_shared_keys_only: true
+secondary_sensitivities:
+  - P0_model_specific_complete_cases
+  - P1_model_specific_complete_cases
+  - masked_loss
+bias_audit:
+  compare_groups: [eligible, non_eligible]
+  dimensions: [time_role, year, month, location, climatic_season, variable_coverage, missing_channel_count, yN, yF, yT, state_uncertainty, state_deltas, quality_variables, development_bloom_frequency, site_noneligible_fraction]
+  standardized_mean_difference_alert: 0.20
+  cohort_change_after_bias_audit: forbidden
+  inference_when_imbalanced: eligible_subpopulation_with_sensitivity
+stop_conditions:
+  - aggregate_eligibility_below_threshold
+  - role_or_location_count_below_threshold
+  - holdout_or_unknown_assignment_detected
+  - post_2021_development_row_detected
+  - observed_chla_lineage_detected
+  - P0_P1_shared_keys_not_exact
+  - source_hash_mismatch

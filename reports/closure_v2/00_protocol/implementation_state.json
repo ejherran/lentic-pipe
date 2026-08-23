@@ -1,0 +1,21 @@
+{
+  "authority_head": "e8f22ed733de56b6616b4ab9f651eb41bd095bb6",
+  "completed_prompts": [
+    "P00",
+    "P01",
+    "P02",
+    "P03"
+  ],
+  "current_prompt": "P03",
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v2",
+  "git_commit_performed_by_codex": false,
+  "git_push_performed_by_codex": false,
+  "model_fit_authorized": false,
+  "next_prompt": "P04_after_manual_protocol_publication",
+  "outcome_access_authorized": false,
+  "outcome_accessed": false,
+  "schema_version": "closure_v2_implementation_state_v1",
+  "status": "protocol_locked_unpublished",
+  "v1_immutable": true
+}

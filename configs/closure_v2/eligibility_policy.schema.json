@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lentic-pipe.local/schemas/closure-v2-eligibility-policy-v1.json",
+  "title": "Closure V2 eligibility policy",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "experiment_id", "status", "surface_id", "key_columns", "fit_roles", "calibration_role", "assignment_role_required", "complete_case_requirements", "ledger", "authorization_thresholds", "primary_shared_fit", "secondary_sensitivities", "bias_audit", "stop_conditions"],
+  "properties": {
+    "schema_version": {"const": "closure_v2_eligibility_policy_v1"},
+    "experiment_id": {"const": "closure_v2"},
+    "status": {"enum": ["ready_to_lock", "locked"]},
+    "surface_id": {"const": "closure_v2_wqp_adaptive_no_current_chla"},
+    "key_columns": {"const": ["source_id", "site_id", "origin_year_month", "target_year_month", "horizon_months", "model_id", "base_seed"]},
+    "fit_roles": {"const": ["training", "model_selection"]},
+    "calibration_role": {"const": "calibration_threshold"},
+    "assignment_role_required": {"const": "development"},
+    "complete_case_requirements": {"type": "object", "additionalProperties": true},
+    "ledger": {"type": "object", "additionalProperties": true},
+    "authorization_thresholds": {"type": "object", "additionalProperties": false, "required": ["minimum_overall_fit_eligibility_fraction", "minimum_training_rows", "minimum_model_selection_rows", "minimum_calibration_rows", "minimum_training_locations", "minimum_model_selection_locations", "minimum_calibration_locations"], "properties": {"minimum_overall_fit_eligibility_fraction": {"const": 0.9}, "minimum_training_rows": {"const": 5000}, "minimum_model_selection_rows": {"const": 500}, "minimum_calibration_rows": {"const": 200}, "minimum_training_locations": {"const": 200}, "minimum_model_selection_locations": {"const": 50}, "minimum_calibration_locations": {"const": 30}}},
+    "primary_shared_fit": {"type": "object", "additionalProperties": true},
+    "secondary_sensitivities": {"type": "array", "minItems": 3, "uniqueItems": true},
+    "bias_audit": {"type": "object", "additionalProperties": true},
+    "stop_conditions": {"type": "array", "minItems": 7, "uniqueItems": true}
+  }
+}

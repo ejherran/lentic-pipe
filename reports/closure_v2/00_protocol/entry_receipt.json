@@ -1,0 +1,15 @@
+{
+  "base_commit": "e8f22ed733de56b6616b4ab9f651eb41bd095bb6",
+  "branch": "closure-v2",
+  "capture_time": "2026-08-22T17:07:34-05:00",
+  "capture_time_basis": "base_commit_committer_date",
+  "dvc_commands_executed": false,
+  "entry_worktree_status": "clean_before_phase_0_materialization",
+  "parquet_files_opened": false,
+  "protected_v1_changes": [],
+  "schema_version": "closure_v2_entry_receipt_v1",
+  "status": "initialized",
+  "v1_is_ancestor": true,
+  "v1_peeled_commit": "eb07598aa54a0944d1a87fe46d62415d0a4454aa",
+  "v1_tag_object": "d6c241f6b89d98d6206563739fab3b7b2f28020f"
+}

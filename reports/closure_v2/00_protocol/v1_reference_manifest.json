@@ -1,0 +1,3713 @@
+{
+  "base_commit_v2": "e8f22ed733de56b6616b4ab9f651eb41bd095bb6",
+  "capture_time_basis": "base_commit_committer_date",
+  "captured_at": "2026-08-22T17:07:34-05:00",
+  "execution_guide": {
+    "bytes": 57059,
+    "path": "docs/closure_v2/EXECUTION_GUIDE.md",
+    "sha256": "ca52e9bf083de93980999dbcdfb9f22c2cec7d3fa64d925ac07e6ffe88b9b81c"
+  },
+  "inputs": [
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 2038,
+      "path": "configs/closure_v2/eligibility_policy.yaml",
+      "role": "eligibility_policy",
+      "sha256": "e044ba2d968dbe18ad2e3a514704e5482b7f264bcccb6dc10921dbc0d1787a5a"
+    }
+  ],
+  "manifest_written_last": true,
+  "namespace_roots": [
+    "configs/closure_v1",
+    "data/closure_v1",
+    "docs/closure_v1",
+    "models/closure_v1",
+    "reports/closure_v1"
+  ],
+  "ordered_path_object_digest_sha256": "608fafe1fe738138dcaf75cfe5e458f376a9bb3e5696feff20ea2e3b76276b37",
+  "outputs": [
+    {
+      "bytes": 1493,
+      "path": "reports/closure_v2/00_protocol/EXECUTION_LOG.md",
+      "role": "phase_0_or_protocol_output",
+      "sha256": "4d90c234307d6c60870214dad65ef37bfb5644ced90c0398fe18e5488e1d95ac"
+    },
+    {
+      "bytes": 1338,
+      "path": "reports/closure_v2/00_protocol/artifact_inventory.csv",
+      "role": "phase_0_or_protocol_output",
+      "sha256": "785988e7273a44e45966a1f497faf0d29c320f1e1a7ed4435cde525f5c419c4b"
+    },
+    {
+      "bytes": 588,
+      "path": "reports/closure_v2/00_protocol/entry_receipt.json",
+      "role": "phase_0_or_protocol_output",
+      "sha256": "fad5442345ece846a4a77e60328970f699058fb2295d8e785361df4dc5061ac4"
+    },
+    {
+      "bytes": 599,
+      "path": "reports/closure_v2/00_protocol/implementation_state.json",
+      "role": "phase_0_or_protocol_output",
+      "sha256": "f2c35ff6b9fe8ee8cbbb977e3670b5c22a08a7c61f33f9358526d93f95f750c0"
+    },
+    {
+      "bytes": 4289,
+      "path": "reports/closure_v2/00_protocol/protocol_lock.json",
+      "role": "phase_0_or_protocol_output",
+      "sha256": "4ca761c0bf72a889bb5674133b7edced5b0144b6e5b444365cfe99460f185081"
+    }
+  ],
+  "path_record_count": 604,
+  "protocol_lock_path": "reports/closure_v2/00_protocol/protocol_lock.json",
+  "records": [
+    {
+      "mode": "100644",
+      "object_id": "5ff6a64d1e3c2030454571e0b808e26b34f7daf7",
+      "object_type": "blob",
+      "path": "configs/closure_v1/analysis_plan.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ed325686f4536549247675de176b3b43ab585174",
+      "object_type": "blob",
+      "path": "configs/closure_v1/analysis_plan.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "58ec9133927ce4309f68012dd436611ed5146509",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_adoption_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6c2669082f326c59a1f89e371b5f39f54d4bd3d3",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_gitignore_patch.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "afa876cd461e01a6fd336cf90e7072c1e8113580",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_namespace_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "876148cb74be1c79d60df5a70965f4186813e8e4",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_order_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "729dc19db354fbaa546b5cb79a2a1c2ba8955e67",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4071557734d72641bc6c5e6e0ead7d55d828968d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_reproducibility_patch.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "17639f3f79004dd06b7a1f102a139ad771841c91",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_dvc_registration_status_patch.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aa3922697d3d119b12f1f14ab59549cd497a55a5",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_model_manifest_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "82f1306b5508e4a6a946ac2d0245ad7145195abc",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_model_publication_adoption_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "33e38924562679f5d233a66ca7afbead5d469f1d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_model_publication_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4a7f92c65812a47dd70336704001072dabd87ea1",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_sequence_development_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f9956fb51a8b0a742831c3400cc9624f4369fe90",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_sequence_development_runtime.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c2dfc45e01932eaa7630ab2a0332ff468cd1ac95",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_training_cohort_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d53e986ade2431aba994415d8e6fbd979cebccad",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_training_development_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "94f84be4346fd4e01fd52d207b932e21022fc436",
+      "object_type": "blob",
+      "path": "configs/closure_v1/anfis_ablation_training_development_runtime.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "192c594ca68186d5ef7699b0d98122826b68ebcc",
+      "object_type": "blob",
+      "path": "configs/closure_v1/baseline_development_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c58b6d5ef1336ad77c7bfc164d75ddfa13af0b20",
+      "object_type": "blob",
+      "path": "configs/closure_v1/baseline_development_publication_guard_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "44294177a88381c214c07d6bd11a05471af3c24c",
+      "object_type": "blob",
+      "path": "configs/closure_v1/baseline_development_runtime.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "31fa774406387ef9e8cf2140c09506de331266c5",
+      "object_type": "blob",
+      "path": "configs/closure_v1/closure_e0_u_activation.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "743bfa1eefbea6c90eac50a86ea707095141ab11",
+      "object_type": "blob",
+      "path": "configs/closure_v1/closure_e0_u_recovery_2_activation.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8de7b6c92e88370065e48f1b58c25f41f5059b41",
+      "object_type": "blob",
+      "path": "configs/closure_v1/closure_e0_u_recovery_activation.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "206639d879e77a43d7b6ec49d1958ecef3428394",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5970ab73eedb20f464f804a185a3057daba93ab3",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3cd948636dbe99db7902ebbf187f6b5771f5a2a0",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "930bb71b002ed50cc8cbb02b00f1edae99277f93",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "39aa92eb26de53f4b3d6485d7fe969fe879ad721",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime_sequence_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7eed40e0dc29c8ba97affb9a085a1b1f56a68dd2",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime_temporal_consumer_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "46be9c039a5a4d7060ee4e6e6afefc3dc7fa60b8",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime_temporal_validation_manifest_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fbe28ebeac5b304ba067d772080a8f248934d208",
+      "object_type": "blob",
+      "path": "configs/closure_v1/development_runtime_temporal_validation_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3b7637d48835e795eb49a551109b42ef0a1c951b",
+      "object_type": "blob",
+      "path": "configs/closure_v1/dvc_artifacts_post_lock.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "df9af47f68e8854aabdf4d4cf502edbbc39ace1f",
+      "object_type": "blob",
+      "path": "configs/closure_v1/experimental_matrix.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fa941dfdc0c78982cbdf099f750a3c56057bcc57",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_candidate_semantics_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "00915b1719bc2520d7df0419ab93301f4568d663",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_inference_role_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d120852ccf7524e01fe5105089e3943424189d0f",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e48e1c02f62a80d58969540cf740aefab4c662f0",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_observed_risk_precision_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1bd7b8601dc5c19729f8ad2215ca5f6395e60cf6",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_ordinal_label_representation_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "30bbf2448fc76216f05ad1c3e2a22afa0bf3aae9",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_owned_run_guard_revalidation_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8cae3576f5c577f02686352aa9cda9b1daef0266",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_platt_parameter_dialect_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "81707d51251ad17e216b1930f68612baf5df6753",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_publication_guard_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ed1f9e7026947711736e550d68dfaad1b4832762",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_r8_coordination_namespace_revalidation_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "db62c70500fd69a647c9921d44c5d53020f8f66b",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_r8_manifest_reproducibility_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "73caf2ac9220442605c6784dacea1e86d9c9960c",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_r8_post_publication_authority_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "995b565e3c72d32d1f9ff9f1baf5d99a0ed662f2",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_raw_exclusion_evidence_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2ed617758d10205e0a77dc04f1e5a713b1d33300",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_runtime.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f8642e3cdfa4134b231e525c56d56ad42e986668",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_runtime.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "740bc38b5edd43c75dfcc4abd6a831faeb53f08e",
+      "object_type": "blob",
+      "path": "configs/closure_v1/final_calibration_target_filter_evidence_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fa6021074eb98d3819e0a14ed3e7f9032b9d2e74",
+      "object_type": "blob",
+      "path": "configs/closure_v1/formal_model_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "265c31ae633091bf7e419ed51f21b207f84eb840",
+      "object_type": "blob",
+      "path": "configs/closure_v1/formal_model_lock_authority.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "32c646f5b14424743229c381ebfc5981a7eb7c5e",
+      "object_type": "blob",
+      "path": "configs/closure_v1/formal_model_lock_authority_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "46afd52f8a9836bc7085b53f9c5c3027c889cc55",
+      "object_type": "blob",
+      "path": "configs/closure_v1/location_holdout.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5deaaae56b1585c557487ad250eae10b1dcca795",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_bundle_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b07fce3e6c9bb8f92db9b59e713fec04a3e7c24d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_bundle_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "555fd592a1f1cdfbe1079b8545f6dd031c1bdbc3",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_bundle_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cf58fc34cc1ef6f65b65633ec92a358b2402199b",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_manifest_dialect_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "33a9f24cd4d48e067659aa42f8f615299dc50a6f",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_manifest_dialect_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b5a6c54b736afaa8f233834a4ecdb62b5f7a93e6",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_manifest_dialect_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9bfa5de2c8f713b22a8e4afa0eeb7fd44ca77f9d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_panel_dvc_identity_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d7798ea230a0e3ea83a2e505fcdb45fd45c60d1c",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_panel_dvc_identity_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "557f22f0fcc3ec2baedf310692fd5e281e9a0498",
+      "object_type": "blob",
+      "path": "configs/closure_v1/locked_evaluation_input_panel_dvc_identity_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4bc01462c69272ee03ea4ce4528857c763aa8f08",
+      "object_type": "blob",
+      "path": "configs/closure_v1/mifal_development_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "dd651cde52fd31ed745de9e0d633a2c3ce881665",
+      "object_type": "blob",
+      "path": "configs/closure_v1/mifal_development_runtime.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aa2fd85c0f8cc8035d8de1fcfd475271ec724025",
+      "object_type": "blob",
+      "path": "configs/closure_v1/model_benchmark.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d16703d4b05e81ab41e1ab281c7262eeee790d53",
+      "object_type": "blob",
+      "path": "configs/closure_v1/model_lock_availability_policy.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cafd70777473795972892fe13a6bcba44de272ea",
+      "object_type": "blob",
+      "path": "configs/closure_v1/model_lock_availability_policy.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8e5f7fa5a53cf9b5f7dad81320e559b90c8294ca",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_sequence_builder_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b80730a687bcd5385c520e629a76cc1fa58c01ad",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_sequence_historical_anfis_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8501a712bd49d8e11837b1f7e3b53942270946d6",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_sequence_seed_20260612_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "040cbd196e9b5492e872f46b0d6fb98a91f5dc27",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_sequence_seed_20260613_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7191689e5108edcbcfbbaf84dabbe3f614f04c93",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_sequence_seed_20260614_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "56f66c51594f960b78738eebef506690ab3d9b03",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_sequence_seed_314159_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cc5173cc7616923e0e8daab3db78df32f0ce62ff",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b752e2d2b81b0c4e63f09166d23d44ec5a214470",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_pytest_summary_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "da70b20b6b325d56babb07b316d1596632aa77a5",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_schema_subset_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "552e4a0cad43ebd52171e536bd1f5da0ab0d92dc",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_seed_20260612_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "86186d9831eef6b7aea639ca749ff9a28bae529a",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_seed_20260613_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d95a2f13a650ba818730364005234a10caa0fb1a",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_seed_20260614_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9439930da0ed602db3fb2fd09483b678e08617b3",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_seed_314159_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0395f53c0a10734de3db0fa76f992becb1c56af5",
+      "object_type": "blob",
+      "path": "configs/closure_v1/p1_temporal_consumer_verification_patch_lock.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "efcb60aaf5bedfa9f222c4a14f15a89b0466ed53",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2be4c5774a6bea26896b140b2e65144ebb3e8901",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "475f7febc4b9c4fdea31820d35e1f322fe0ca76d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d10eda7877fcae38fc088a786d50282a705bc2a0",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a579d9277ed9941cb9c9be0892b6d975d0bb72c4",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v10.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4d0da8cd328e0079e9eb1cc735363aa57da0fc4d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v11.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "15a803caad5f45d0141b2a4431916fa5460cea52",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v12.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "41db0005b0848a3486fd2c8c39a8a00f6ad19a93",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v14.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a0eb34f36d7fb340ec47b515dbb1d4fd1fea92c8",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v15.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5616e773e28fc55e2d36438af14b92577784fec8",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v16.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c9006ced1062fc486069b62b03af17d3a46ded7c",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v17.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "725bb000ea4ab3a1895b0c85a4f3b5e4264f8536",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v18.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3eb45b3b8e2be2eb188b0151d21bf8bd2c181d54",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v2.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ac2adb2d0b720c83ba28586d31a3ec4ce3f84ecc",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v20.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c73858f451b88c5335206d9b320421a899f4dd88",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v21.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "54f56904e767906cedd42b231c0617c699f5cb7d",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v3.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8e469cc8c4b6cebd8f30192505d3200f315d5101",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v4.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "29c5d17306b16c44d92cf315059f36298f9dcbc4",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v5.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5351452917d7b690a38331f1a5ed79655c74f2c5",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v6.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1501840e0b028001612434f331a3b2d5afa18c6e",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v7.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "546604c70a4dda6b7ef65dcf24290d844cb87c5b",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v8.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1560dc8c9ad5268ad49c3176a26e9e48429197b8",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_manifest_v9.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a070068bf9048cd64a25f8a88d5843702efe4dca",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v10.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8c2e80bd42cc3a41f3a02a1e0eb6c9fa5dbda47e",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v11.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7d9a6a47ad05f20ce6890ee9ceebe9be4e3a92f6",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v12.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "90369d7a0e6a59ee7638f82c2615ff398868de8f",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v14.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b61316a7f8e3824ea0217fab77260fa4fb744969",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v15.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "28b6a2533836d02fe315707c2f8d9b554af915c3",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v16.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "75dcae49d5eaed741e54fccdd7ad82a62edbab08",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v17.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "36054f6e601f1fd9aafdf77144b1b0287209d88a",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v18.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "91916beb9b59bb216f8095825e3642725011a401",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v2.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9d9d428b3c8b28ea70fe6e6118bc441fdd55b04a",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v20.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ac4dbf5f70a91256e0690e37d201734a28745413",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v21.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2129558c2f64ef6ca8d25b0e9e8ca1f670c5ffde",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v3.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c1d7751b794294ab0fe835e2c00084704abaaf28",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v4.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4e7a6ec9dc744ab39ad15fc421d880f5b8715a9f",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v5.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "97c28496957a5e9ee544736d700d5e12e89e6dbb",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v6.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aa2fbe70153554477d77b0c250f195dc931415c8",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v7.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c53fea6c1efdf9cd23bc0b55e0421f72be2c2c6c",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v8.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cbe107fe16eca85f920b2dcee2cef8b9844ec06e",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_final_certification_authority_v9.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "09598293e880312b34c7df76e0f447b6a2d7f585",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_synthesis.schema.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "14b91dd6378f40c0a15bf4493a42ae818ca51553",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_synthesis.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "38bcf55ee9d3eb6aa2df6a0c28065760d84abe1f",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_synthesis_authority.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e69d39e1c084c7ea4461143bb7ec14abbc8437cb",
+      "object_type": "blob",
+      "path": "configs/closure_v1/phase4_synthesis_authority_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "320b30049cee33e82844d440f1203a5e3d42eeea",
+      "object_type": "blob",
+      "path": "configs/closure_v1/surface_primary.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ca7b6163ba62dc4bf96dce99f490205719871523",
+      "object_type": "blob",
+      "path": "configs/closure_v1/surface_secondary.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b70ac13e5d79d49d0bab123a4829cd82cf7ef241",
+      "object_type": "blob",
+      "path": "data/closure_v1/closure_holdout_assignment.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "12d78bc7ac26b3e38d9996a087195a1548ba7890",
+      "object_type": "blob",
+      "path": "data/closure_v1/common_origin_manifest.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "81c232934d8dd4c5875edd333cf8a359a8ee6b10",
+      "object_type": "blob",
+      "path": "data/closure_v1/degradation_masks.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "35ed579baf5604f90599fef503ddd853874b243d",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis/seed_1729/adaptive_no_current_state.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "76a57ca8e420021c9036b918d7c92c89aceb60e1",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis/seed_20260612/adaptive_no_current_state.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1aea2dfdffbf55271b5bf07f002fbafe630211cd",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis/seed_20260613/adaptive_no_current_state.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e13ac88144ab4bead380bc15c45f92afd545536c",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis/seed_20260614/adaptive_no_current_state.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "47194322782d0bb1265560f46dbd75cb9d44f6ec",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis/seed_314159/adaptive_no_current_state.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "174e3977ed5bc0f31dcda48398802e468373d12b",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A0/seed_1729_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a0ef119e73ef1261cbdffeddbf0de987251d909d",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A0/seed_20260612_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "be92c22083548c18e3cc1a34ff6de1e5419031b8",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A0/seed_20260613_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "31d4e6394c86400d37accbc3c0c1a5bd82a367c2",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A0/seed_20260614_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "25b28b41a0defbb71f70b744557305ea5835a3f5",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A0/seed_314159_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "399fcd3bf11a572991f5981ae9ca43494c7b20b9",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A1/seed_1729_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e90f9ee8f3f4ddee75cf2295f3bc7636d98ab045",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A1/seed_20260612_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9ab086b490737ee827f634c03b418ce2e1523b82",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A1/seed_20260613_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d8bc46b66e2cf4a9c0ebf077a664f8f34dfb2815",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A1/seed_20260614_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "10245208fd1c97ae5039f704db60120805995ea6",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/anfis_ablation/A1/seed_314159_selection_predictions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "15d219fe19623fb2d3d496b55be7ef37f0fd1e8a",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/baselines/B0/raw_scores.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3905a60a366a26ef01645a310e7b45f760569307",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/baselines/B1/raw_scores.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "97a0681955f003483fb9f015a312ebce6567b9d5",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/baselines/B2/raw_scores.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "035a7a580a7e021d67ebdb6fbdec40a9897770ae",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/expert/expert_no_current_state.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b4e658981b698db50f33774daa8caf476cc8773e",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/mifal/M0/raw_scores.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "dcd35d7875162fdf9d89d9e29a5fc99d1e10508c",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/A0/raw_no_current.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8fd3cbf59fbd36f805141293c986398c5be9f95a",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/A1/seed_1729.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7bfcd970860b96e203b3e51079d0067a33720227",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/A1/seed_20260612.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3ed28adf1a3a4307a45b0420b203fd202c790a05",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/A1/seed_20260613.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "34914440373d7f86bede115f0de66c9607df8ce1",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/A1/seed_20260614.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8f2e7857acccd43385d5f54e72e8b65321d313c2",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/A1/seed_314159.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c8d76a2e586cad31ea41082b423edefc09ff3c8f",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "00efff163a0b5e4fb594b045f6e31eab6101a291",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/P1/seed_1729.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aeff356613b44e90e6eb3ce1bfeb01d7354d2ebb",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/P1/seed_20260612.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "dc4794b2be661550f13db5329d77e6ecb220001c",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/P1/seed_20260613.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8a2dfad7ce538807f1e97e1a2deaf2fcbbe8c7ee",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/P1/seed_20260614.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4fee64fce6aea813adfd45a5348964c273e3fa53",
+      "object_type": "blob",
+      "path": "data/closure_v1/development/sequences/P1/seed_314159.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3adc103acd15fd91caa8e51feac964641fcf3172",
+      "object_type": "blob",
+      "path": "data/closure_v1/locked_evaluation/adaptive_state_warmup.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "866a0dd120306462042f94220df71cb2853eda20",
+      "object_type": "blob",
+      "path": "data/closure_v1/locked_evaluation/input_history.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5eebc50ceec600f1272ef14d342658c814418923",
+      "object_type": "blob",
+      "path": "data/closure_v1/locked_evaluation/intent_origins.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5bd9c495183e084fa6d8e49d8613ef4ba7b9c611",
+      "object_type": "blob",
+      "path": "data/closure_v1/locked_evaluation/origin_features.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2c244932c6d58e7712356bf25678335a1d85dd33",
+      "object_type": "blob",
+      "path": "data/closure_v1/locked_evaluation/phase3_runtime_weights.npz.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c43cfd343ca806f1a35aa4135739071c683972f8",
+      "object_type": "blob",
+      "path": "data/closure_v1/locked_evaluation/sequence_features.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "601b537d7d9cc82390efb4981fdd4ce193bc6fef",
+      "object_type": "blob",
+      "path": "data/closure_v1/predictions_long.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d73d916a665b2cd1bf2afb8a928cd601f9a9521d",
+      "object_type": "blob",
+      "path": "docs/closure_v1/ANALYSIS_PLAN.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ee602fbfc826625272ec8a00a608233af21ec516",
+      "object_type": "blob",
+      "path": "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_GITIGNORE_PATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0dea822d30b13cb4e8794d8a2d6211ff861ccf70",
+      "object_type": "blob",
+      "path": "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_REPRODUCIBILITY_PATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "28dbf6e12c0b2324d941fe05b758ee97fb9530b1",
+      "object_type": "blob",
+      "path": "docs/closure_v1/ANFIS_ABLATION_DVC_REGISTRATION_STATUS_PATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "79e71b4bac7ccdb7246793fc6ed0e8655b2b7950",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_DEVELOPMENT_GUARD.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "69dd34877e3ed0870099255940e226641e8c1bb1",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_RUNTIME_CONTRACT.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a65fdf9107dda6d2a69f5b4bac9c763a460e33aa",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_RUNTIME_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "56bdebbc07378ad975dea2aeffe686743fd4c179",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_RUNTIME_SEQUENCE_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0ff5f9ffccfa503528d22f57b92ba69dc4490be7",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_RUNTIME_TEMPORAL_CONSUMER_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d81d06d1f6c5a179dd77c262f6fdf369999916cc",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_RUNTIME_TEMPORAL_VALIDATION_MANIFEST_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3accb74494d23aaed04f5f6f039eb7add07a884c",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_D_RUNTIME_TEMPORAL_VALIDATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "afb7dd5770614df5081fa7dab37cf3cf5e55d836",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ADOPTION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1bbb6fae8bf287b017d493e79e08738d10bec86b",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_NAMESPACE_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cb1bf36f4a7ac857270bb74041e6bf9d0d849a27",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_ORDER_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2ec417ba5f62af4a3198a2a5fbb1b48f7581cc5b",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_DVC_REGISTRATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9ab26a5ec77eda57e66b3c7ba152bab321d34d50",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_MANIFEST_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c78e4b9f1c7c368e06c5629ac0a1550efe3c7cf8",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_PUBLICATION_ADOPTION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "86ea8f21603b45f1395478c7447e009426310f4a",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_MODEL_PUBLICATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c1976196ca3b775a9a9dfd33210b171a5932d526",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_SEQUENCE_DEVELOPMENT_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "dd65d6c25b2f1f0ac7b315317fb6056e66f3a9a9",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_TRAINING_COHORT_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4298b165c7f4550a37d171f7cc14201ee112643f",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_ANFIS_ABLATION_TRAINING_DEVELOPMENT_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b0a9ed3418d0da76b55806f62eda88fcc561dc50",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_BASELINE_DEVELOPMENT_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ff94feccfc6ad2e8f7056e474ab93b283f15b920",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_BASELINE_DEVELOPMENT_PUBLICATION_GUARD_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3298d585997278deb9fb1c824889cc5ac4cbe528",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c454b813f759615e9bc7cee3bcec897e38f47956",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_CANDIDATE_SEMANTICS_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3769dda3af7c30a518def85710f4420f04f3b438",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_INFERENCE_ROLE_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "abd1913b4ded3087a92b7f48ac2850a8b62a9ba8",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_OBSERVED_RISK_PRECISION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7d700e34d2aba1a8c61a4798e1787c469b8defda",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_ORDINAL_LABEL_REPRESENTATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8de275477bd8b9c9b714c73bb08e06a2d6b33bb7",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_OWNED_RUN_GUARD_REVALIDATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b2aab1119517b91cfcfdcfeae7906102da141123",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_PLATT_PARAMETER_DIALECT_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e02d3dd1b47fc8a9a2311e8c9115da4249815e61",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_PUBLICATION_GUARD_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c89f299cb28cfd86c259cb534faa084c16437e47",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_R8_COORDINATION_NAMESPACE_REVALIDATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "dc674ba34052e9f37e06395cb450f0f3b14ca32a",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_R8_MANIFEST_REPRODUCIBILITY_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "72083ac09d9006381836297bcac331fb4fe41b96",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_R8_POST_PUBLICATION_AUTHORITY_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "567f7965e2e302c38047fbbe6e09cbc309bda37a",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_RAW_EXCLUSION_EVIDENCE_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "26c5f047b01b728f7ed6b86554898d1f59130bd9",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FINAL_CALIBRATION_TARGET_FILTER_EVIDENCE_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "24611b2619294afdf4b82fa7aa036cfe5a3dee6b",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_FORMAL_MODEL_LOCK.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b5651e9d7734618062a74a7784193850c1f4b31f",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_BUNDLE.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fa07cef368d4363be8b3f3c6f924622aa5026598",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_MANIFEST_DIALECT_PATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "69c298139ae514d870d2dd97a537f804d0d62726",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_LOCKED_EVALUATION_INPUT_PANEL_DVC_IDENTITY_PATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "65aee94fe528c3b81e1dc53401f1e9ea5ed374e6",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_MIFAL_DEVELOPMENT_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8f4b40d1cb6f4b4b9e1ef81a2f4d5238d0cccabd",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_MODEL_AVAILABILITY_POLICY.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "df329a892cdfe985d4ee28ca9ba02634e085786e",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_SEQUENCE_BUILDER_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6d0a00311d2b714755091fdec5183cdcf7fac8f7",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_SEQUENCE_HISTORICAL_ANFIS_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5d505c0853add8ec41c07d66eb2eef4c33f0be65",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260612_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "15e54c34f5ec2d57ff934baaf26e03c6753a43ab",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260613_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ee6bf6ddb026d1af1c118de2de319251e4710fc9",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_20260614_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "86391fa61e93abfd38bd0b55e7bf81452d6f7b99",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_SEQUENCE_SEED_314159_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b8fc9413f351336374a1820260b16bf6a8e6eaf0",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9979d84f3adb31d1f6be9a5e585ead3c5eb10607",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_PYTEST_SUMMARY_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7ca8e371f599a65bf221038d4709256d04274f1e",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SCHEMA_SUBSET_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c509cd4e9193d3c87fe3b13edacf4bfebb7151bb",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260612_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "99ea31b7e95307d1a70f065d03892c2590e4a83d",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260613_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8c969481f0e70b9e55199660ce846e21f962f163",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_20260614_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b7d6807044acd45b489609101e9544197fc0b747",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_SEED_314159_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "62260395586ef86b9849f09ad2a8e998b058c459",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_M_P1_TEMPORAL_CONSUMER_VERIFICATION_PATCH_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "396fd94d600a27d872afe9e0e27334046140efec",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_U_PHASE3_RECOVERY_2_BATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "26ef7be88afb5ea7dacf893ed684c67b3d5a7bdf",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_U_PHASE3_RECOVERY_BATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e61f0751387665d472d7a261322cb6c8432b2beb",
+      "object_type": "blob",
+      "path": "docs/closure_v1/E0_U_PHASE3_SEALED_BATCH.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3490eeecb203a8fd5e3689695eeda9b6a896ef3a",
+      "object_type": "blob",
+      "path": "docs/closure_v1/PHASE4_FINAL_CERTIFICATION.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6d4aa64b918b78bd7bc88724fc88f6e6db79c906",
+      "object_type": "blob",
+      "path": "docs/closure_v1/PHASE4_SYNTHESIS_FREEZE.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fb84e07f7bfbfd4a0abda25190a73a0d5bb0b750",
+      "object_type": "blob",
+      "path": "docs/closure_v1/PROTOCOL_AMENDMENT_V1_1.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "434159a78f1de0d37720154548eb7f18c1c2661d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_adoption_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c949082bd7b3c826055ed3ed45dff8bdfeca3160",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_adoption_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "abb33a0f94aeea077f77f04796b2e414182b5aec",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_gitignore_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a8bd1f71a59cb2ca72be345fb7d6434b04e8a397",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_gitignore_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c57b9a59d1c5c5dabba3ff19f14ee5633b2bf80b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_namespace_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "72dda079cc34a41fef3fd08dcfe0e7e9863d2337",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_namespace_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "de5f05e75fc4904220d9d96771ef88ea26cdce9d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_order_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f047cfee6f358f5bac1bdc2951636362f4c2bc02",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_order_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a537fb969e4d36f5e3c2fc2ec1954c842fb81e72",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_reproducibility_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "34d9c2add11188927939e48c1b8fb507377f3368",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_reproducibility_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cf7b2d3fdbc1dd0077ff7214acc362db8c8d4013",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_status_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7db5baaa551f5d41fe49ce95c7894b4ad84b8a31",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_dvc_registration_status_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c33fd0bc26e4967d1cb5e0cff9108a2d9e95fc4e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_model_publication_adoption_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0d09a7b0dc7b834322cea98601b291a2d0e6e82e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_model_publication_adoption_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1dffd4fb906b1cffb7f712345987890fa26ab5c8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "22f8775a3616debc1d26c56bd21385ac5f5b7da6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_sequence_development_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "07745e007da92f09bdd9c5bd8ce90932c9f6d1cc",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_training_cohort_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3925caef44dce9b3541cc660baee11b3a65004f7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_training_cohort_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "af5694eea7e7abd47a5b616e2aef150cc4e341f4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_training_development_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "28cd5fcb99bf5f4dcdc92b3702aa201ed63a54b3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/anfis_ablation_training_development_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c3087b1cdcff0a600838b089b884d1086ef32155",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/artifact_hashes.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5dff5499ce8fa2af9ecb169253d4be43016ec6f1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c65bc571fabe2a71fb43061c10b908f2bba1adde",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/baseline_development_publication_guard_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5e2d69c59deb6e871112a112c35ccab6ba9b7627",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/calibration_lock.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "32d90942b8a683aebacf44ca5fe6c2b12d1a3c7c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/closure_e0_u_activation.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ecf04688f3cbf0496db098f3eec882e9ee3a82d0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/closure_e0_u_attempt_1_failure.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c05f020a60617fc899ece5d83616148da9f7c332",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/closure_e0_u_attempt_2_failure.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5ca3bf977827e8161e8654272887493a880a5b73",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/closure_e0_u_recovery_2_activation.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9f8c5199349935d804590b079bfd0588458ada4a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/closure_e0_u_recovery_activation.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bccb9952d1872d581829ec02c35736076eb6f3d7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/code_hashes.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fd4890c90dadf45d9d78b3e6cc41b687593e537f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/cohort_flow_preoutcome.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0100cb6ac1c1b6f8b0c64011a39b9699deaaeb2e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "baaa3fcc3caee157b22a47b74c5356ffd19faae9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5bdc69bd8b45070f8c9ba8ed9eec1eb465d27d67",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cbb79062449fdc634a5f5eeeafa20460e705c613",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1e31f95eef36706b64a1826650f0dc1718b1abf8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_sequence_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bd0e5cb00c543c78d8fd872363ee5d14d3182713",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3cf002588eaf882ef5b6300f84cead8553d0e3f3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_consumer_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0a8718e3526d81237c1dffa3b30b700b2ba56b32",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ffb62cc1ea0ac9ca10931dc1d937a89e4973016c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/development_runtime_temporal_validation_dialect_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "12216a6c1225e8169bc346c96a952cb924540477",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/dvc_inventory_snapshot.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "988ec2fae0744eb3f14fe3bc34618d08f025e682",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/environment.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d145752ae14404d9723fa430a0e547983252e267",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/environment.txt"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a1af5d15b20682089c2545d6048979be0291e72e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5ebedf28502ed9193accda83972ff27be9532dad",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_candidate_semantics_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cf0690c0648ba5316d553aec477fd36ba5a2e285",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ba622a09d4a07f156bdb4f9d98a3c314fc52144f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_inference_role_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c20be10ecbab19e41efb800122028eb88db71d36",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "04605385275dcb3283c1a4f646e74efe72aef7e3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_observed_risk_precision_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "20090b2f8928e5943d2041095db0d58e51b52e47",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ef9a2f27217a8ee3282f243f2a072714e40e7b8b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_ordinal_label_representation_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "73d787d6f32e7962d905c83cd43948bc37c5f869",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "50b7ce7c76236e486942a6d65cb8387320615fe8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_owned_run_guard_revalidation_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d8bd3c3d4b2c0804f3f88d7dc517fc0f559de38e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fa637bebda6de7ffcc1b4503ec2db4224859f418",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_platt_parameter_dialect_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e0020e76bf032670411396b59d4d75caa2bc8468",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e70f220e25c0d8c7b7f377d24d21fa99d977f7ef",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_publication_guard_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "17777de18d415fd8dbe63431ae0f8e76b5d3b636",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "73e4f17c604db135bc9453ec04098cf78e144580",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_r8_coordination_namespace_revalidation_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "85a6a8c54b9370b980c067a7ee3dffe229701e0a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1129efb765ba91958e7635646cf7cb6ba659820b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_r8_post_publication_authority_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "43b3d378dd4d0ea2d8a3b1690e191c645488e25f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "390a3eae31de5076b6fb6822bb85e7b91c13d051",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_raw_exclusion_evidence_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fe8fe7f14f44f4079b45e92c4e1417c0215aba1e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bac3d9db545ac6253293d9eea51e1bc14eb42e33",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/final_calibration_target_filter_evidence_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4b3bf124423fa274616a6c189bf45f79ffe991f1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/holdout_leakage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "58f09cc388b8bf632f0cac4b36715099af6a16e9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/holdout_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "325a752f70f8f1fe78018812a017671f08034521",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/holdout_summary_pre_cutoff.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b2fdd863051ef537bb948bd48028f0aa9b553ad9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/hypothesis_registry.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b55539edf705c19c534247b46faf68b4107f6c8b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/locked_batch_command.txt"
+    },
+    {
+      "mode": "100644",
+      "object_id": "58c6d8d7e1091f04d99798419d5aa1929446cb15",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/locked_recovery_2_batch_command.txt"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8fff876c3ea78d7084b9d57d0ad50dfeb0efc29a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/locked_recovery_batch_command.txt"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7bdf8030e5ef70e5de76094a82a57b4ba8aeb43b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/mifal_development_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c7e28fbc0fd4b5e0865fc8cc6d704f1e945778f8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/mifal_development_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bb9c1610d6d5f1813e9e4dd73f4dfa1884ed981f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/model_lock.yaml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "13d7c8104273f5854a6ddbe6b3233705387473e5",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/outcome_access_log.jsonl"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9dbeac46d73709483c55379f2d77dc05ef93e630",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e472842eea793740519c01fd73ca7ffdf6a9b166",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p0_model_availability_registry_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9e093ffc070917be40b75b33d7d2030c290494c4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b3243193cdf531e3e05973fb876d9af64791bc9c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_builder_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bdd7d74c55961dd5a4d735b0925c9135a1a630fa",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f30ae6174a7b31399b4c0123f717f6ba0dabb8c8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_historical_anfis_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aea63c8aab73f2985a20fa62b0188dae50a97e4e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260612_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8eeca7ca3c6464673b9ce4339afa9b5a2e7bbf9d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260612_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "eaa7d663c773cce49fa463d588b04a91311e54c6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260613_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "52f4158c85cf08c0eb9a7806af8d84d95914ba65",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260613_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3773002347e5a12d55796ff6ca74eb57e9bd0bf8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260614_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cc32f9c727768fc4e23f17f28c79a32487396b4c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_20260614_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c4a623bcbff1bb9232bf00286a3b3d0d6773fecd",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_314159_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b36462528a6af74cba7f5affa3112153c06b05f0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_sequence_seed_314159_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0a54f1e45207edeb30c4342cb467ec5850651bc1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_schema_subset_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c369307090afa0f7ab126c131d5762ab28a27322",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_schema_subset_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "40668f87777d6bf19b0169db731cca04444c6f7d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260612_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a2347244d14dc60cb8171497e8cb489149cce4e8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260612_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4d12f357e07e46d9108df885c79051fa746e7233",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260613_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7c2fbefebf15e3ad9593390c8b66581ee608a9f4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260613_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e421e48db03caeb8ffc43cea63f728ad5e17bd4d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260614_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7dae4dc9c8e19e54619932a5b0fef48f9ec04e82",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_20260614_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5aa26c8dff8f1facff7a8122d225e7337cb9e1b0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_314159_patch_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "06f7135e3413f3dd205dbb04b065776cbdd551fc",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/p1_temporal_consumer_seed_314159_patch_lock_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "436f601727fab6e1b673f410f72b41795f4c6481",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/protocol_lock.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ef673debe807eee3ae4766d09e82c6b83ac9c6a3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/repository_state.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3fef9ba13425479cb5d8be245fd78043f86ba325",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/end_to_end_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9f952de92e14324f5e9823d630c67811adc81575",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/environment.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d8b303b6fedb13c5520daf404857cef68cd38b92",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/openapi.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f4f8f4c1bf444072626fd3a4a6e9aba7e53dc304",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/openapi_contract_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c257574f2cf2da076741b396752057d9dce1c220",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/public_tests.xml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fc3a6cf3ff97f6afe24edceda4e44db728ad08a7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/software_evidence_source_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ff6b83c9b2c25eacf59e9458781a8cb51153a16c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source/test_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5d35fc273d225e2da4e0c092455395208873a976",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/end_to_end_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4e64eaab8f2bda04ff34572d9fbe420baf3ae323",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/environment.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "276fb6d354a77ee64827aa5c22ac0378e777a04a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/openapi.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4a3c486f69accc125beb9a3b988ae5a44abfda53",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/openapi_contract_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2d8e283959277e11235bac666d959541c39807ad",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/public_tests.xml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "24f0eaebe8c15891f4da35180a01c7febc7009c1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/software_evidence_source_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "eb4331d5d9b4f796f9fdc88d493c91a82891bd42",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_1/test_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3d507a7b36b9894106e029f51654199eec2995e6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/end_to_end_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f5437f3092a4fb64816b154e4ddf3954caefa225",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/environment.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ca365ffb1ced10c756cebe5eb1d67d409aa266e0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/openapi.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bdbb38b7d2719fa0a7d7c1ac594a5c6bf39579aa",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/openapi_contract_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "050c0b3f84f11de8e40ecfdc3e0ce0902c021369",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/public_tests.xml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e0231e861639ed69210c3576aeb9644fe5a86821",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/software_evidence_source_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "22cbb4832b2443e6123159e6f5ece0b8e8a44823",
+      "object_type": "blob",
+      "path": "reports/closure_v1/00_protocol/software_evidence_source_recovery_2/test_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "06b47116bece8b3256ac1245c969b30535532012",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_benchmark/benchmark_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0b5f8559462a05c2f57b9609722bcfc3f598bbb8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_benchmark/benchmark_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "42eae3816557d97e1dff05400e61613a5fa044d1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_benchmark/model_comparison_paired.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e938e950eb83238d0b83216b6c87492592cc401f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_benchmark/model_metrics_long.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f7b5db5b84458feb244122353c27d3f5296e527a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-F_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c33937091c2ae6391fe46e9eb71cf2820d969017",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-N_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fe45addbb6be157a5e3a614412c1e2e02efde63d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/ANFIS-T-no-current_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "81de9710a9dbf8887a39ddcdbd9fd126bbf355c5",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ec36de26235c318709e40d1057cb07211c8f897a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a02178e4e140515b61f46bc1ab2ce3a32083c581",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/memberships_final.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcd2e76e068c4051cc378c743b27e5f8445e64fb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/memberships_initial.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "31df6465c09d7ad199c713cd39586f31bebf92bd",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/module_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c1e8b03af4e3382ed289809c099a7d4578536e91",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2105233f6b10f0edcb1b409431a69d59d1cc0c46",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_1729/training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9a46938ca6410d3abb9fb742128e42f89e1ad81c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_f_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9b9109a70872b9375c5c612f619e5a8c7391c7d1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_n_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "922ff0688c4a84d61f3c396eefa76e30880e1cb6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/anfis_t_no_current_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "23425f1de9f2ea480a7efd21f320028e6b32ed9f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "69b600248e80d6b9d6aaaffe5c96858d2173a132",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "69ced6c13cbacacbca58211d3b45ca58fe994ffd",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/memberships_final.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcd2e76e068c4051cc378c743b27e5f8445e64fb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/memberships_initial.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f7e92bf363c4acd80b3d4c348a0df8f01953e39e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/module_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b2ec9e0c6ea420a94d5a38035df8e5dc4ddbe586",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "06fb54a3451ec97ea9982c0d647a8b5755e7770a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260612/training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4006007c43548740eb7e9b815377dae613f30b8f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/anfis_f_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "70377a78e60f1ee0f2960746502f2f554b47d92c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/anfis_n_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "06449a421536632bdc1221788c1d4e4f33fb3f13",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/anfis_t_no_current_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f4e6f79aed7f4ada61878770f8ee2f6b98c6e6d7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "00537134b8fcd5c3cd54e81d46d363ccf09fcd7c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "092071959bf3477ff7c90c851291bcf39ab795ec",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/memberships_final.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcd2e76e068c4051cc378c743b27e5f8445e64fb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/memberships_initial.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "187e9fd8e64556151ee33e807dc0ec86a48b04b9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/module_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b91253e88cd060a892d566ab698fcb761eeb773c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "329f78b41eeb6cb1744e6b7c3b5c715684649e5b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260613/training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "dfed0f635cd53f78e216cc55c19c78cea34a23a4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/anfis_f_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "84573f88e7528e5db3867cc17c78194244660e4e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/anfis_n_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "87e0657afb3d182108f1c25c22848a2503aedeb0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/anfis_t_no_current_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "69a621b59746a52681217992ea1fe430b254ee0c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b713102ed4bd2cfe42d25e8939fa0cbfe2310542",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0ee52a8e77460b048c657dcc784acd7ca36fc18a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/memberships_final.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcd2e76e068c4051cc378c743b27e5f8445e64fb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/memberships_initial.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "215a28576bc620758fa17427bc3fbddcf766323b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/module_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e93060af63d8236664846c8fde086d9e305dff34",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1aca39bc70b1332951def5cea5d39ea2c3789413",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_20260614/training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "79af3e8cd454e3dd491af0ed35727d05f2cab135",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/anfis_f_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "99e663904723c23b75443517a8a551cc556ac1fe",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/anfis_n_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9c9a6777464052fa7c8aae3718c2d953ac9642f7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/anfis_t_no_current_sample_keys.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "65cb867ba1c2b4a55785085d480b856a755a5e3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "607405c2e6e70f7d2e6fe9edc46ff7165d2cf31e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "69dec84a61fa64901781138c4e888bf261a21300",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/memberships_final.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcd2e76e068c4051cc378c743b27e5f8445e64fb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/memberships_initial.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7a7fe9abd6f376dde131e20a992dc56ee65dd3a1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/module_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b038fc197b9086222f45cf419af1472f498f4fbc",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "38729a0dc929b9914dde05d0df709bd576f3182b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/anfis/seed_314159/training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "071e3e5b0f8605d3be3615b1400f0eeec2d7f3e0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/common_origin_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5e2157acb87be8716f3bcedfb779220f74c6560f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c642a245890980fbb5f396f5768774a6b3b5b135",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/expert/expert_no_current_state_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "db31060ce0d90d56b615397cc4a2fab297dffcc9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/locked_evaluation_input_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4249aff0a0857c86b126003f122b06bd4385f5ae",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/locked_evaluation_input_summary.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c1f0067c776a7c94050f75b157f3ae7dfb05fe42",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/phase3_input_overlay_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "00964fd6fb52ff1c66a64f6a7f9f742a2990d76f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A0/raw_no_current_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57e696f4d7127748147ecfd265a27c99727d3f3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A0/raw_no_current_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e18b1c8def742fc6974bee31ed09234fce031c7f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_1729_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57e696f4d7127748147ecfd265a27c99727d3f3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_1729_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "76a4f4e363ed6b971f1d2449a2ef4af5fd32afd9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_20260612_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57e696f4d7127748147ecfd265a27c99727d3f3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_20260612_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "33016a64debdfc05e7a6e6e09587779839d5c3f8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_20260613_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57e696f4d7127748147ecfd265a27c99727d3f3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_20260613_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0bffc276812bb6f3056329fcfea8e36080b15852",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_20260614_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57e696f4d7127748147ecfd265a27c99727d3f3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_20260614_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1577bc9a54325301f54f6d47be311cb83bbbf8c3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_314159_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57e696f4d7127748147ecfd265a27c99727d3f3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/A1/seed_314159_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b2e54e7e87b2bfcc08546e8bda16b152d1c46df5",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P0/expert_no_current_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4d05ee786f86d37e27047f01a2a4a4af766b229b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_1729_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_1729_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0ea7ceb12847442239d95bc749f94db62e3d628d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260612_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260612_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e37c4bb3111d0b58c6018d440664dcd29910f728",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260613_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260613_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "74d42ebdba5d1b7e2cd8d820a032c6abb7edb762",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260614_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_20260614_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "54c9d2ab4a33cc3ae293ee72951016e34ad2d35e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_314159_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f85f38ab43b6310864db8af3b628c8f59b5bacce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/01_surface/sequences/P1/seed_314159_summary.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9d554bc0b560b2a4e817f2eb8d07ef48424dd51a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_1729_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b59088160da3c8d36efb984260f021959d52dddb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_1729_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "740ef989b27bcbb44c22b81d4d90f9722d8f55b3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_1729_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "90ee68a227fd02d5554b6a256f8bde6927ec36a6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_1729_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6b0a676116a34a41d36956696ba945c9632abecd",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_1729_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f101bd0f0b8b388799f545007fd6afcb8da313ec",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260612_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "14c8f9c9112a9bae2bef52ecef63eecd93c3c88b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260612_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7fa7794741810b380362bb67974ece0d5c5903f9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260612_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8c88ac03ccd961fd41dd2c4993c328d0b077c84a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260612_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "58b3a3af75a1ab40a5dea9f554d5e16e73d43fd5",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260612_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "05629271dc7f9bcf6d3a8dbfdc80287772b70ec0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260613_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9e5e5575f40ace6d06752750e127c968e34dd94f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260613_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "337f2ce65f4d70e3adffd60da27db00fa05e553a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260613_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b4b4e9dcb46e7c955a7db1b313a551d664be0b1c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260613_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9f361739975e96742d3590d94b2706f92e9bf531",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260613_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "45db26ef7b1ca214762409594aeff2035bb66946",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260614_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ebea34e70788ea6b61974ff55dd804173946dd7e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260614_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ac0117ba5fec8838549e5abeca4f9e6cfb91deb2",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260614_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcbd424f7609713627436f41795f5f400a2afe68",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260614_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "165b50f1b67ecfc9ba51ee5c9af72b02e872adce",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_20260614_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fbe038f0d4f102a86404f4d29920aca902a1ae0e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "eaff474ed26184f3786619988579419f58d30a18",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b636ed2b4b6c4bb23f0c38c5fd88c7e3c2755cec",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "41222314d18d61ddef328fe63865d5dd40454c29",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "84349127d858e1a8fc0d5cde6882792fafa2cd59",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A0/seed_314159_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e0dfb53ea4b88031189521c6c80b247a0a1bbe45",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_1729_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "25a05b07b4d9098f8f17aa365817d514156ed869",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_1729_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "958c70282905fd9992aac310f1283cc11b910e52",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_1729_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2865ba9031a3e45105520d47017e50038cb0e685",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_1729_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d9ee2253f3b5936d590239a054458aee58c8f4fc",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_1729_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "99743f40187d1669242161a4293c3faf25cda569",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260612_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "523067d2d1c1f5520e9bcaf6b03a4e05caf2ddf4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260612_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bb862490f016e21266930f30c9f8419510d81d7f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260612_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1161051fc31e24a8f84094230124bcf895ed9e71",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260612_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "934e5e171ab43f0b66c75f4f4eaee091b9f5a023",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260612_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "93e0400b6ec8f6be05eae949ee7a4b2d956fc542",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260613_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "446efa3150821ef7aed655a4488b058448eb7734",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260613_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e551d65ff960b8a137487320b958ca67958926a8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260613_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f2a4fa5a2b234f7df7c5d64a1ce7bfe6b61bf066",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260613_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2fcf22a3031c1a17525472422715e8fa60f987fe",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260613_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fb88d4b83029ca4392a43a3a75676afdf576a936",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260614_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "564f81b49624835bbe711727877e831d052229ac",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260614_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "477485f54048ae9dbee71d15efb20c2d77d5b959",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260614_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a3d277deb4c7a8129dbb3056d4e489d6a2c0349c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260614_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "457aba6ad4f7b3d37fa795fe814f7b7cce04f8ec",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_20260614_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1117db522d5e5ee32883a3cddca21a7b5c0390be",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_314159_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "067d973e36d1975f45adf430aa4421a0d8cf2d64",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_314159_preprocessor.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "87c6120ae4fdc3ea49e74b160b71e7484233b039",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_314159_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8876027e809f4364fdab98da385fc8001466266a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_314159_selection_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "704c58eb3e77a9e328ce906ce12b557aa6098b23",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/A1/seed_314159_training_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "937af99119443aa11193e1b30d65d0f9ab88f97e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/M0/availability.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8c9e24b58dd8d3078d925a8e3acfc89ffd90e196",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/M0/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1a8d6606d5d4e88403b52733d4731906b7a4024e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/M0/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c4e659101b07a9a637a6276ccad3a49baf4e8e05",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/M0/model_spec.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8089fcdf452166746da10ac54335231f7c005509",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/M0/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d86e9fd5605c6616738f5ab8986e21d7c928d01f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_1729_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9235925af5b789a4e18bc0ddd3e3cea09d8f1dec",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_1729_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c4a7ecf41a27aecf9b0351ff56d6e26cd3cc91d8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_20260612_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "98401635bb3075921cccc9ffdeea25da3293ee05",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_20260612_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9f1eb832c94f6e963a63fdc58ce1b895c1ade344",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_20260613_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8043a53510008cca3c3e55332775dd94bb8cabd5",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_20260613_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e30d7deb1855f994f9007dcae47ddb24f852b911",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_20260614_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "06c839cd474c68060414c0b3c7e660055645d37a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_20260614_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c26b6bb58c4d68ad00bb933c83c7e76b18c9bf33",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_314159_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "43aaa011abe1de378dd4732662709b656a439ac4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P0/seed_314159_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7e4a4e91ba7823315bf80999e94cdfff5ec3ce54",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_1729_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0967be41c623e58905dcc0324b4dbfe0a847c477",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_1729_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "81235a74dfa9c38b585fa4d9df95b0140b3e32fa",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_20260612_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "deec1c422c34b2785fcf294fe5b9cb7ca4b92da9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_20260612_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "39dff7ec07253c9a8d99a4082cdca1d7bd29d5fa",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_20260613_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "83b320b7f7b5a6157328ed0eeedf76e96ea01921",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_20260613_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "577e4e46a66998ba200f27c4258c1664a2c8783b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_20260614_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "847fca5290a7776e9b38321e55ae6de805607755",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_20260614_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aeab5c7cb2e2d064d88526f5c95fd1cd93eee728",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_314159_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "978ae8289583578627959bf2fa95f6d4a4c3546f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/P1/seed_314159_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3d0797ad4b94c30df7049e92c621b12c6ab02e77",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/baselines/lineage_audit.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9ba401b6b74773be4ca062c513fff2053071995d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/baselines/manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "68d6741b1db031b518bdf04ff4aeb980606e50b7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/baselines/metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "06e81668db5ceffd7158947cf6ceaa578d52acf6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/baselines/model_specs.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b73891be438b1c183ff0a61007f88fd2b1414dc5",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/baselines/report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "01bf35421766421bf55ba4b23569335986f6f1ae",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_models/baselines/selection.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "99944df03e9c2f4451e187f81cca1403d9138fb6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_site_transfer/fold_assignments.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b18b3576d335e9da56ce75f87e21f7baf8790671",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_site_transfer/generalization_gap.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a00519f8e5a21e5f45ceb21373a44e8847316398",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_site_transfer/location_holdout_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "21bb7d00adfb7cd8397a6d3f51464aa4ae0f2017",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_site_transfer/site_level_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1ddc8fb0e0568ae9e4538db99050afc96d3569eb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/02_site_transfer/site_transfer_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c018d91e73908b591aa86a55a5fdba180ce7a0ef",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_calibration/alert_thresholds.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "01d799ef871c51a6e6d3d6a8b777f63f4973eb15",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_calibration/calibration_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4a7e23a35eaa191347a3dbee95f70fa204c7ba84",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_calibration/calibrator_specs.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0b2ba0710837a366a4fb74d968b6e137aabdd721",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_calibration/final_calibration_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "60140d974223f3f1cf69732067a55d62ee5a45c9",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_calibration/model_availability.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "90acf4e319ae65f8c9da2ce305f5431688109bd6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_calibration/ordinal_cutpoints.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d4bba337a6b279d907c974c6b32f04b52e2c9354",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_thresholds/rank_stability.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "34bc8e0c39e6590feabddcb4cceb08a1e612af1e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_thresholds/threshold_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "728fb459f4d21410fb9c131413b855089462ddca",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_thresholds/threshold_pairwise_differences.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "e7cafead712bebce0d3554be4944ce6258f19471",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_thresholds/threshold_prevalence.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "77c8258dc514f1f8ccda3b9b679fb57fed3476bf",
+      "object_type": "blob",
+      "path": "reports/closure_v1/03_thresholds/threshold_sensitivity_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d87986e20febdaf1101bf92407a40dd2225f3611",
+      "object_type": "blob",
+      "path": "reports/closure_v1/04_trophic/carlson_reference_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8b137891791fe96927ad78e64b0aad7bded08bdc",
+      "object_type": "blob",
+      "path": "reports/closure_v1/04_trophic/nla_semantic_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8d72d5da54e474662a796a47651915ad0cd5a7a0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/04_trophic/trophic_confusion_matrices.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0c8a08aed0d36a768cecf0ac257a067f52aafa67",
+      "object_type": "blob",
+      "path": "reports/closure_v1/04_trophic/trophic_proxy_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "927f7666e77e3b275446ec5f6f78263e8b0b3e41",
+      "object_type": "blob",
+      "path": "reports/closure_v1/04_trophic/trophic_validation_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "50824cf294b15f84104953e7d8851a483290d4d1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/05_inference/bootstrap_distributions.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ceecebd8c401f6c48771da9ecf91685a2729f743",
+      "object_type": "blob",
+      "path": "reports/closure_v1/05_inference/multiplicity_report.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5c9a33041d00f0bbfbf67dde666904f713d51bb2",
+      "object_type": "blob",
+      "path": "reports/closure_v1/05_inference/pairwise_effects.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2f2308632153fbc4dc67ea7a9375aaf7c75123d6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/05_inference/site_level_losses.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "722b1b1cdcb4b3c08f0f0511e39987b31cfc7845",
+      "object_type": "blob",
+      "path": "reports/closure_v1/05_inference/statistical_inference_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "66858e110515a3d85ea16f1a0d588c736edb6f52",
+      "object_type": "blob",
+      "path": "reports/closure_v1/06_degradation/failure_registry.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "9e79d3a07c15a3ecec256ed398cc420e626e6504",
+      "object_type": "blob",
+      "path": "reports/closure_v1/06_degradation/matched_degradation_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c754e57d055a21ce6514651c99cfb9eda4164ad0",
+      "object_type": "blob",
+      "path": "reports/closure_v1/06_degradation/matched_degradation_pairwise.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "be026f674fd5d419a3645fa1c73fc3cf38801eb3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/06_degradation/matched_degradation_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f00759c1951733392297f73d72e0960d2383d995",
+      "object_type": "blob",
+      "path": "reports/closure_v1/06_degradation/robustness_auc.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7a2598cf9792fe4c064e676226aa42386426cecb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation/anfis_learning_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "60fa6371ae28a17d7a6b0f7a0548a25a199d3817",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation/anfis_learning_curve_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "aa64b206899334cc9713e22d2f5051fcbb1d0523",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation_evaluation/ablation_metrics.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "c896405b7d0cb8a65e184e894c48ae33abbaca5a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation_evaluation/ablation_pairwise.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a6835aa5cde7249d1b638506eb96ee1bd0d789a2",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation_evaluation/anfis_ablation_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "7637384b8c9cb17a5621ccd0f12add733b7a0c35",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation_evaluation/anfis_learning_curve.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "26ef5c41c87417884e5e081cc93b8cec03ce35fb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/07_anfis_ablation_evaluation/membership_stability.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "62e36016a07ee505f29661366260305f2f0d8acb",
+      "object_type": "blob",
+      "path": "reports/closure_v1/08_uncertainty/conditional_coverage.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8dfc4d4f02734f8d76da6a2175c1a99a9c0678d1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/08_uncertainty/recalibration_comparison.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a53f18eacfcd64dae1b48b3a78cd6e295c403e6f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/08_uncertainty/reliability_bins.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "485450ace091ccf549afbcac4736d40d109cf15f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/08_uncertainty/uncertainty_ledger.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2ab4f88ede3a425f8025350481f6a91660156fab",
+      "object_type": "blob",
+      "path": "reports/closure_v1/08_uncertainty/uncertainty_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0c59b2d299ea681aab271264a32817829e5f46e8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/09_planning/ecological_coherence.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f1ab7bdd8afc39cea048da77bca80ea6a71d0615",
+      "object_type": "blob",
+      "path": "reports/closure_v1/09_planning/planning_bootstrap.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "d61128ea596e7e0768262c5d01c67a762df88bea",
+      "object_type": "blob",
+      "path": "reports/closure_v1/09_planning/planning_inference_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "471a19796386a13463e0f08d6353409e4691396e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/09_planning/planning_origin_deltas.parquet.dvc"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ce448045f341fc43bb81d893b0c9beb50ac5b374",
+      "object_type": "blob",
+      "path": "reports/closure_v1/09_planning/planning_sensitivity.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "3d507a7b36b9894106e029f51654199eec2995e6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/10_api/end_to_end_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "fcd9a4e031fcd9baca89699e3093c716ef520d8f",
+      "object_type": "blob",
+      "path": "reports/closure_v1/10_api/environment.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "28d6e81fc7f4a0e63dfebd0374287e01e18ba887",
+      "object_type": "blob",
+      "path": "reports/closure_v1/10_api/openapi.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bdbb38b7d2719fa0a7d7c1ac594a5c6bf39579aa",
+      "object_type": "blob",
+      "path": "reports/closure_v1/10_api/openapi_contract_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "050c0b3f84f11de8e40ecfdc3e0ce0902c021369",
+      "object_type": "blob",
+      "path": "reports/closure_v1/10_api/public_tests.xml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "22cbb4832b2443e6123159e6f5ece0b8e8a44823",
+      "object_type": "blob",
+      "path": "reports/closure_v1/10_api/test_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cd504e520f62ebec4a4b911704ede47b88b32e39",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/FINAL_CLOSURE_MATRIX.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a81d5049a9ea334f96a37c312f9b13f0e31a4d38",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/FINAL_CLOSURE_REPORT.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "eb588ac39877d5fd7d0c51d2d1a9f6562b485dd1",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_CLAIM_EVIDENCE_MATRIX.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6e9ce8bab8107e6bc7f74aa17097fc1fa5369de6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F01_intent_to_predict_funnel.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "26379ca02081e125f42838267d5d9465fb64458d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F02_benchmark_metrics.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "18ffde5f5a5bf8de7819fd7598e3499b5656017b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F03_descriptive_deltas.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "8769cd52dbd7ea8ddd8dc534a29d49be3be9697c",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F04_threshold_sensitivity.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "57246e6fa6d2925316eb52c9881d9ab4d5e114b8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F05_trophic_heatmap.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a90f424140ba0f2ed3eaa554352585a3f9c6e8d6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F06_uncertainty_coverage.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "bd3d27ce0238999f7512fd556281aede1f47fff6",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F07_hypothesis_verdicts.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "2e6bae3067e9d9f453e668d9e4d8f4ffb3f2646d",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_FIGURES/F08_provenance.svg"
+    },
+    {
+      "mode": "100644",
+      "object_id": "18b619e15bed67e36938659f3ccad0cbd0acbe76",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T01_model_experiment_availability.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "0da68965dc89aa9558333b03bc38ea632311f7d3",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T02_intent_to_predict_funnel.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6fe0f88645eafaaa9dd1fe0c9e3df7a6b8029485",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T03_dual_benchmark.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "f61edee51dd6842ab0d91721ad0838914f06c499",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T04_descriptive_deltas.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "15b18e721486d265cb2a0318ad6956b6b3f2c9cc",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T05_site_transfer.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "eda1be25c492a6218c2d67f5b5a59897ec11c52b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T06_threshold_sensitivity.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "b78fe748a6a97aff7888c357f6d52726c807fa3b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T07_trophic_performance.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "6597ba57e2f25cf115df4b2699b91cb66b317720",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T08_multiplicity_ledger.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "888a7e3ab97ea1b691757f2466470439f99c216b",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T09_anfis_ablation.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "415e31868613e59d1b00fc0c846a049d1ef86335",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T10_uncertainty.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a194999001c2b14ef39d4231ea2e366584dd8b4e",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T11_e6_e9_unavailability.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1ce1e4f5cbecbdf078231b00fa7a5590b758aea8",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/THESIS_TABLES/T12_software_evidence.csv"
+    },
+    {
+      "mode": "100644",
+      "object_id": "4915ea9ce7bf75bc97e0e3046cd2191d59e3dc7a",
+      "object_type": "blob",
+      "path": "reports/closure_v1/11_synthesis/synthesis_bundle_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "93284d2078e712dda87de96680200a133d1a4ee7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/FINAL_DOCTORAL_CERTIFICATION_REPORT.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "854e2c2f7816d8cbfd261c2e2b2ea7aa803fa1fd",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/end_to_end_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "ecd1acc048272577c25e60b192447e031b1a6ae7",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/environment.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "48f231687de1f8d24b6bd75ad57933df9ef2e665",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/final_certification_manifest.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "a639a1c6b5befdf2168ae431b5d3d5807221ee88",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/openapi.json"
+    },
+    {
+      "mode": "100644",
+      "object_id": "1c98247883daebebf39d022e6fc47619266f1068",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/openapi_contract_report.md"
+    },
+    {
+      "mode": "100644",
+      "object_id": "cf1165fd23ace140d118439357054a9ecec07209",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/public_tests.xml"
+    },
+    {
+      "mode": "100644",
+      "object_id": "5f61c8b61abe059ce2916236f1eba84fd5effeb4",
+      "object_type": "blob",
+      "path": "reports/closure_v1/12_certification/test_report.md"
+    }
+  ],
+  "schema_version": "closure_v2_v1_reference_manifest_v1",
+  "script": {
+    "bytes": 15484,
+    "path": "src/experiments/closure_v2/contracts.py",
+    "role": "completion_manifest_writer",
+    "sha256": "868c946d3bcf4ad4b5a8415c5a43dac6c804e51c73eff091b3c8b4df481eef04"
+  },
+  "status": "completed",
+  "tag": {
+    "authority_commits": {
+      "certification": "eb07598aa54a0944d1a87fe46d62415d0a4454aa",
+      "editorial": "d1daa3059462854d6ddf5199fbc05515cec76982",
+      "science": "ea8ddce7f8edb9a61db97e29178e52603fa371b1",
+      "synthesis": "528dcb74a7c08b65f262901e4562a67b784db8c9"
+    },
+    "peeled_commit": "eb07598aa54a0944d1a87fe46d62415d0a4454aa",
+    "tag_name": "thesis-closure-v1",
+    "tag_object": "d6c241f6b89d98d6206563739fab3b7b2f28020f",
+    "tag_type": "tag"
+  }
+}
