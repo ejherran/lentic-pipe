@@ -1,0 +1,177 @@
+{
+  "aupd_rows": 576,
+  "authority_commit": "fc01314c36466ef678468dbad4c813e4758fa7d2",
+  "cohorts_pooled": false,
+  "crossover_rule": "joint_pr_auc_and_brier_direction_reversal_across_adjacent_registered_levels",
+  "data_artifact": {
+    "bytes": 617419,
+    "dvc_md5": "8c5cc6f7c92e7259fa820cd398e974d4",
+    "dvc_pointer": "data/closure_v2/degradation_masks.parquet.dvc",
+    "dvc_size": 617419,
+    "path": "data/closure_v2/degradation_masks.parquet",
+    "role": "common_m0_p1_degradation_masks",
+    "rows": 3658270,
+    "sha256": "21bc0e289205e94573cf23ae69ca3cd8a0505675016873434e8ea51508408c72"
+  },
+  "estimands": [
+    "observation_weighted",
+    "site_weighted"
+  ],
+  "estimands_pooled": false,
+  "evaluation_cohorts": [
+    "legacy_posthoc",
+    "fresh_primary"
+  ],
+  "experiment_id": "closure_v2",
+  "failure_registry_rows": 1845,
+  "holm_family_D_retained": true,
+  "holm_p_values_computed": false,
+  "inputs": [
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "locked_analysis_plan",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 57059,
+      "path": "docs/closure_v2/EXECUTION_GUIDE.md",
+      "role": "public_execution_guide",
+      "sha256": "ca52e9bf083de93980999dbcdfb9f22c2cec7d3fa64d925ac07e6ffe88b9b81c"
+    },
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "locked_model_registry",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    },
+    {
+      "bytes": 11057,
+      "path": "reports/closure_v2/01_surface/locked_evaluation_input_manifest.json",
+      "role": "locked_evaluation_inputs",
+      "sha256": "0e2a2340a8d6e595e46975069a5a53b5300d1746ef0653f16d745f7ffc8cb840"
+    },
+    {
+      "bytes": 6075,
+      "path": "reports/closure_v2/04_evaluation/evaluation_manifest.json",
+      "role": "p13_evaluation_manifest",
+      "sha256": "5d3fe8702c29ca27fa6c8565a6a81a013b41555964dd92e0a095476f5344bafb"
+    },
+    {
+      "bytes": 4040,
+      "path": "reports/closure_v2/05_inference/inference_manifest.json",
+      "role": "p14_inference_manifest",
+      "sha256": "f2f59a4fdb151e72dababf8da9220b6610a7a340324aed8fb0d0992bca06a401"
+    },
+    {
+      "bytes": 108,
+      "path": "data/closure_v2/predictions_long.parquet.dvc",
+      "role": "p13_prediction_pointer",
+      "sha256": "647827222e8cbc807775aca67f5f003aac0b79b9d68c3394f583d3b3c24169ff"
+    },
+    {
+      "bytes": 132088,
+      "path": "reports/closure_v2/00_protocol/v1_reference_manifest.json",
+      "role": "v1_reference_manifest",
+      "sha256": "3389e2a9646b0c23d4cd4de8a269ba7997ad465af06bcf0b7b31e49f6df0a39e"
+    },
+    {
+      "bytes": 105,
+      "path": "data/closure_v1/degradation_masks.parquet.dvc",
+      "role": "v1_empty_mask_pointer",
+      "sha256": "2a8529c0d277460d2c8316fc5a0ba19354013ea3013b1c6c1d994efdca89add9"
+    }
+  ],
+  "intent_origins_preserved": true,
+  "m0_p1_interval_semantics_equated": false,
+  "manifest_written_last": true,
+  "mask_rows": 3658270,
+  "mask_slot_count": 110,
+  "metric_rows": 10560,
+  "outcomes_reopened": false,
+  "outputs": [
+    {
+      "bytes": 2101231,
+      "path": "reports/closure_v2/06_degradation/degradation_metrics.csv",
+      "role": "degradation_output",
+      "sha256": "09c147cb27646de2100f34d3ea62b303566c486787250e8f672e32b9426c52a6"
+    },
+    {
+      "bytes": 630235,
+      "path": "reports/closure_v2/06_degradation/pairwise_effects.csv",
+      "role": "degradation_output",
+      "sha256": "275f022011afee866bf51c584b0d3d1a28042ff60ba8ee9c709d7a801cb7736c"
+    },
+    {
+      "bytes": 291615,
+      "path": "reports/closure_v2/06_degradation/failure_registry.csv",
+      "role": "degradation_output",
+      "sha256": "43b5209964914f696efb6cefcce1738bff25d9d10e8ac06722328766178fc1d7"
+    },
+    {
+      "bytes": 69217,
+      "path": "reports/closure_v2/06_degradation/aupd.csv",
+      "role": "degradation_output",
+      "sha256": "c66e08a6c27e90389d1be10b6c5ac50d6151069d61e497b82c2646aa14acdd20"
+    },
+    {
+      "bytes": 107,
+      "path": "data/closure_v2/degradation_masks.parquet.dvc",
+      "role": "degradation_output",
+      "sha256": "ce08de7fc9f42667c4c8c12418b3b6a6f0a6cf75582fb2b82c298b649442a737"
+    },
+    {
+      "bytes": 120614,
+      "path": "reports/closure_v2/06_degradation/DEGRADATION_REPORT.md",
+      "role": "degradation_output",
+      "sha256": "f928ef8ec776c8f159e51b6d5ead6b279ac75d1bb32f64f1bba228418fd9bb29"
+    }
+  ],
+  "p_value_absence_reason": "degradation_p_value_formula_and_directional_alternative_not_predeclared",
+  "pairwise_rows": 2376,
+  "phase": "P15",
+  "raw_p_values_computed": false,
+  "recalibration_performed": false,
+  "refit_performed": false,
+  "registered_seeds": [
+    1729,
+    20260612,
+    20260613,
+    20260614,
+    314159
+  ],
+  "same_masks_per_m0_p1_pair": true,
+  "scenarios": [
+    "control",
+    "mcar_10",
+    "mcar_25",
+    "mcar_50",
+    "block_1m_10",
+    "block_3m_10",
+    "block_6m_25",
+    "ablate_nutrients",
+    "ablate_clarity",
+    "ablate_oxygen",
+    "combined_severe"
+  ],
+  "schema_version": "closure_v2_degradation_manifest_v1",
+  "script": {
+    "bytes": 57549,
+    "path": "src/experiments/closure_v2/run_degradation.py",
+    "role": "paired_degradation_runner",
+    "sha256": "f0dcba55cdbbe2825cabcd0f470288038b32e6f0904cb9e9e89353bdcd0061e2"
+  },
+  "seed_pseudoreplication": false,
+  "status": "completed",
+  "threshold_changed": false,
+  "v1_mask_binding": {
+    "bytes": 6037,
+    "compatible": false,
+    "dvc_md5": "c483aab92229b79d5f77d4024c768be6",
+    "dvc_pointer": "data/closure_v1/degradation_masks.parquet.dvc",
+    "path": "data/closure_v1/degradation_masks.parquet",
+    "reuse_status": "bound_by_hash_but_not_reusable_empty_v1_artifact",
+    "rows": 0,
+    "sha256": "27cb48f7ac7fc63bc0aee2ce37412788d272c47aea1e2aa65a898cb32316f541"
+  }
+}
