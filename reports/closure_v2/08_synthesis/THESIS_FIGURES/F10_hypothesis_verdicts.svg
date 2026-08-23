@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="309" viewBox="0 0 1000 309">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30" y="32" font-family="sans-serif" font-size="20" font-weight="bold">F10 Hypothesis verdicts</text>
+<text x="30" y="54" font-family="sans-serif" font-size="12" fill="#444">-1 not supported/negative; 0 not estimable; +0.25 descriptive evidence.</text>
+<line x1="640" y1="68" x2="640" y2="289" stroke="#555" stroke-width="1"/>
+<text x="285" y="96" text-anchor="end" font-family="sans-serif" font-size="12">H1</text>
+<rect x="330.00" y="82" width="310.00" height="18" fill="#c44e52" opacity="0.85"/>
+<text x="324.00" y="96" text-anchor="end" font-family="monospace" font-size="11">-1</text>
+<text x="285" y="130" text-anchor="end" font-family="sans-serif" font-size="12">H2</text>
+<rect x="330.00" y="116" width="310.00" height="18" fill="#c44e52" opacity="0.85"/>
+<text x="324.00" y="130" text-anchor="end" font-family="monospace" font-size="11">-1</text>
+<text x="285" y="164" text-anchor="end" font-family="sans-serif" font-size="12">H3</text>
+<rect x="640.00" y="150" width="77.50" height="18" fill="#2a6fbb" opacity="0.85"/>
+<text x="723.50" y="164" text-anchor="start" font-family="monospace" font-size="11">0.25</text>
+<text x="285" y="198" text-anchor="end" font-family="sans-serif" font-size="12">H4</text>
+<rect x="640.00" y="184" width="77.50" height="18" fill="#2a6fbb" opacity="0.85"/>
+<text x="723.50" y="198" text-anchor="start" font-family="monospace" font-size="11">0.25</text>
+<text x="285" y="232" text-anchor="end" font-family="sans-serif" font-size="12">H5a</text>
+<rect x="330.00" y="218" width="310.00" height="18" fill="#c44e52" opacity="0.85"/>
+<text x="324.00" y="232" text-anchor="end" font-family="monospace" font-size="11">-1</text>
+<text x="285" y="266" text-anchor="end" font-family="sans-serif" font-size="12">H5b</text>
+<rect x="640.00" y="252" width="0.00" height="18" fill="#2a6fbb" opacity="0.85"/>
+<text x="646.00" y="266" text-anchor="start" font-family="monospace" font-size="11">0</text>
+</svg>

@@ -1,0 +1,5 @@
+evidence_version,layer,state,row_count,authority,allowed_wording,forbidden_wording
+V1,frozen,immutable_published_evidence,130,ea8ddce7f8edb9a61db97e29178e52603fa371b1,Closure V1 result at its published authority,retroactive V2 correction
+V2,legacy_posthoc,retrospective_complementary,4488,e85990193ce2c97cbf7b2f200e8320fa05bbe5ac,retrospective complementary analysis,new confirmation or prospective validation
+V2,fresh_primary,internal_unused_wqp_locations,2286,e85990193ce2c97cbf7b2f200e8320fa05bbe5ac,internal evaluation on WQP monitoring locations unused by V1,external validation or unseen waterbodies
+V2,software,reproducible_artifact_evidence,7,e85990193ce2c97cbf7b2f200e8320fa05bbe5ac,reproducible software evidence,scientific efficacy certification

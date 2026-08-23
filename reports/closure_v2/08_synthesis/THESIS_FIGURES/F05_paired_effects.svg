@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="309" viewBox="0 0 1000 309">
+<rect width="100%" height="100%" fill="#ffffff"/>
+<text x="30" y="32" font-family="sans-serif" font-size="20" font-weight="bold">F05 P1 versus B2 paired effects</text>
+<text x="30" y="54" font-family="sans-serif" font-size="12" fill="#444">Fresh-primary observation-weighted paired differences; direction defined in T06.</text>
+<line x1="640" y1="68" x2="640" y2="289" stroke="#555" stroke-width="1"/>
+<text x="285" y="96" text-anchor="end" font-family="sans-serif" font-size="12">h1 brier</text>
+<rect x="640.00" y="82" width="33.25" height="18" fill="#2a6fbb" opacity="0.85"/>
+<text x="679.25" y="96" text-anchor="start" font-family="monospace" font-size="11">0.03024</text>
+<text x="285" y="130" text-anchor="end" font-family="sans-serif" font-size="12">h1 pr_auc</text>
+<rect x="330.00" y="116" width="310.00" height="18" fill="#c44e52" opacity="0.85"/>
+<text x="324.00" y="130" text-anchor="end" font-family="monospace" font-size="11">-0.2819</text>
+<text x="285" y="164" text-anchor="end" font-family="sans-serif" font-size="12">h2 brier</text>
+<rect x="640.00" y="150" width="25.85" height="18" fill="#2a6fbb" opacity="0.85"/>
+<text x="671.85" y="164" text-anchor="start" font-family="monospace" font-size="11">0.02351</text>
+<text x="285" y="198" text-anchor="end" font-family="sans-serif" font-size="12">h2 pr_auc</text>
+<rect x="465.80" y="184" width="174.20" height="18" fill="#c44e52" opacity="0.85"/>
+<text x="459.80" y="198" text-anchor="end" font-family="monospace" font-size="11">-0.1584</text>
+<text x="285" y="232" text-anchor="end" font-family="sans-serif" font-size="12">h3 brier</text>
+<rect x="640.00" y="218" width="26.77" height="18" fill="#2a6fbb" opacity="0.85"/>
+<text x="672.77" y="232" text-anchor="start" font-family="monospace" font-size="11">0.02435</text>
+<text x="285" y="266" text-anchor="end" font-family="sans-serif" font-size="12">h3 pr_auc</text>
+<rect x="472.13" y="252" width="167.87" height="18" fill="#c44e52" opacity="0.85"/>
+<text x="466.13" y="266" text-anchor="end" font-family="monospace" font-size="11">-0.1527</text>
+</svg>
