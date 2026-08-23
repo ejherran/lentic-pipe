@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure_v2_model_lock.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "experiment_id", "status", "authority_head", "model_lock_effective_after_annotated_tag", "models", "shared_fit", "calibration", "cohorts", "hypotheses", "output_contract", "sealed_commands", "authorization", "manifest_written_last"],
+  "properties": {
+    "schema_version": {"const": "closure_v2_model_lock_v1"},
+    "experiment_id": {"const": "closure_v2"},
+    "status": {"const": "locked_unpublished"},
+    "authority_head": {"type": "string"},
+    "model_lock_effective_after_annotated_tag": {"const": "closure-v2-model-lock"},
+    "models": {"type": "array"},
+    "shared_fit": {"type": "object"},
+    "calibration": {"type": "object"},
+    "cohorts": {"type": "object"},
+    "hypotheses": {"type": "object"},
+    "output_contract": {"type": "object"},
+    "sealed_commands": {"type": "array"},
+    "authorization": {"type": "object"},
+    "manifest_written_last": {"const": true}
+  }
+}

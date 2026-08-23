@@ -1,0 +1,11 @@
+model_id,base_seed,status,selected_profile,calibrated_horizons,minimum_calibration_rows,minimum_calibration_locations,replacement_used
+P0,1729,available,v2_primary,1|2|3,177,42,False
+P0,20260612,available,v2_primary,1|2|3,177,42,False
+P0,20260613,available,v2_primary,1|2|3,177,42,False
+P0,20260614,available,v2_primary,1|2|3,177,42,False
+P0,314159,available,v2_primary,1|2|3,177,42,False
+P1,1729,available,v2_primary,1|2|3,177,42,False
+P1,20260612,available,v2_primary,1|2|3,177,42,False
+P1,20260613,available,v2_primary,1|2|3,177,42,False
+P1,20260614,available,v2_primary,1|2|3,177,42,False
+P1,314159,available,v2_primary,1|2|3,177,42,False

@@ -1,0 +1,41 @@
+schema_version: closure_v2_calibration_runtime_v1
+experiment_id: closure_v2
+status: ready_to_calibrate
+models: [P0, P1]
+seeds: [1729, 20260612, 20260613, 20260614, 314159]
+horizons: [1, 2, 3]
+data_role: calibration_threshold
+temporal_boundary:
+  origin_start: "2021-01"
+  origin_end: "2021-11"
+  target_start: "2021-02"
+  target_end: "2021-12"
+  assignment_role: development
+  source_id: wqp
+raw_bloom_score:
+  method: irc_from_predicted_state
+  alpha_yN: 0.5
+  beta_one_minus_yF: 0.5
+  gamma_yT: 2.0
+  clip: [0.0, 1.0]
+calibrator_selection:
+  candidates: [identity, platt_logistic, isotonic_regression]
+  primary_metric: brier
+  secondary_metric: ece10
+  brier_tolerance: 0.001
+  assessment: calibration_threshold_2021_in_sample_no_unregistered_subsplit
+alert_threshold:
+  metric: f2
+  beta: 2.0
+conformal:
+  score: absolute_state_residual
+  quantile_method: higher
+  coverages: [0.80, 0.90, 0.95]
+authorization_thresholds:
+  minimum_shared_calibration_rows_per_slot: 200
+  minimum_shared_calibration_locations_per_slot: 30
+  metric_evaluable_support_per_horizon: positive
+access:
+  evaluation: forbidden
+  post_2021_outcomes: forbidden
+  recalibration_after_evaluation: forbidden

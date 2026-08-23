@@ -1,0 +1,241 @@
+{
+  "authority": {
+    "development_commit": "23449e5b781dd15b46b4eed7ddd4e6f7d6d37ea8",
+    "evaluation_authorized": false,
+    "head": "1bf9b553dd1234b309fa6172a92d536d143499dc",
+    "post_2021_outcomes_authorized": false,
+    "status": "calibration_authorized",
+    "temporal_family_commit": "1bf9b553dd1234b309fa6172a92d536d143499dc"
+  },
+  "candidate_metric_rows": 90,
+  "conformal_rows": 810,
+  "evaluation_paths_opened": false,
+  "experiment_id": "closure_v2",
+  "group_count": 30,
+  "holdout_rows_materialized": 0,
+  "inputs": [
+    {
+      "bytes": 1182,
+      "path": "configs/closure_v2/calibration.yaml",
+      "role": "calibration_runtime",
+      "sha256": "b88957be61fb0b6d0e848b972f8ec02a8cf4c7b5f8acd6c7e1a735c0fc5247bb"
+    },
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 16705,
+      "path": "reports/closure_v2/00_protocol/development_lock.json",
+      "role": "development_lock",
+      "sha256": "781a666b576fe4aec6ebfb5434288f8ee13170be6a0ee0145b3866f81ce44c39"
+    },
+    {
+      "bytes": 19755,
+      "path": "reports/closure_v2/01_surface/eligibility_manifest.json",
+      "role": "eligibility_manifest",
+      "sha256": "fed653fe65d9ed562ea71867aeaede6fc259bf67af6829cc16525b98910760c0"
+    },
+    {
+      "bytes": 8568,
+      "path": "reports/closure_v2/02_models/family_manifest.json",
+      "role": "temporal_family_manifest",
+      "sha256": "bb941c305de501b50290bd29afcae0010719f0d227c0da82ba12b819bae76de8"
+    },
+    {
+      "bytes": 109,
+      "path": "models.dvc",
+      "role": "models_dvc_pointer",
+      "sha256": "ae009855d29523d3571aa9896c37ae9ff583461279dcb1498150c50c7fd94edf"
+    },
+    {
+      "bytes": 35541493,
+      "path": "data/targets/monthly_targets_model_v0.parquet",
+      "role": "development_target_store_predicate_scanned",
+      "sha256": "c93ee8dbf424828c8dc11bc5da236d5c505e5f6ba7478eb689cca12a88c7e799"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P0/seed_1729/model.pt",
+      "role": "temporal_model",
+      "sha256": "674e86ec9e1ee1d3d3c8a07411a649965b5831094f353ef48cb77c1742551a65"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P0/seed_1729/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "b1d9ab4c544c66d414def8c7a4097754c7414de4c9d2d916709fb6aaf9af161d"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P0/seed_20260612/model.pt",
+      "role": "temporal_model",
+      "sha256": "03586c86ce92287bd03014da46b601120401c486be31e0500854a914fadb3140"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P0/seed_20260612/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "86a2339cf49bb6d4d9fe16994a7c342240f02bdf7570ddb39b6cb3dd1865a70e"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P0/seed_20260613/model.pt",
+      "role": "temporal_model",
+      "sha256": "2ad61863eb12602c94945bba98a06b8e5f458422616599ef00429caed8340fba"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P0/seed_20260613/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "73bb518eca6a48acd0057e57ed94f3446f4cb1fc9a811f5658f0efa6a57714dd"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P0/seed_20260614/model.pt",
+      "role": "temporal_model",
+      "sha256": "fcce3a4e70db87dc57faae7377817c78a484837f6654d442d8e044ad35b11cc3"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P0/seed_20260614/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "526b54d000e60a9a4aaa4ceae62cfda9dd8126f248ba78de0f7fea488dad72f4"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P0/seed_314159/model.pt",
+      "role": "temporal_model",
+      "sha256": "38813dc98492042b69c3a520f910f10f5dd50e425075efbbfa58fd6e1fca00d4"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P0/seed_314159/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "9a79270954701c115a3902194b44d8e2309a02de049c32a923dcd5e62e521dc5"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P1/seed_1729/model.pt",
+      "role": "temporal_model",
+      "sha256": "ae8d1483d0f632461f6e4f1207ddf6c4a18695bca5ec31bd66a9a15aad627c64"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P1/seed_1729/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "5f3a5e860b8f9459b778923593ba17c72f9795e57529118c30b98100fb1ff3e2"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P1/seed_20260612/model.pt",
+      "role": "temporal_model",
+      "sha256": "e6c21fb5be2ec216ac8af53d258ff91f8b8e22cc5b0e0faf7d56de93e2c37806"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P1/seed_20260612/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "dcd863350a114344861e1d42cdfa6a6ee2fbb1a7cbfd895dffafb564284b4afe"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P1/seed_20260613/model.pt",
+      "role": "temporal_model",
+      "sha256": "8288b427adf3d81dfd259406c6fc80063355d78c7866b631a098d19f5976ac43"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P1/seed_20260613/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "7b45e9446388acb1ae49885e92ff47c8c67554990ec08b193bafd8cd83135fd8"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P1/seed_20260614/model.pt",
+      "role": "temporal_model",
+      "sha256": "d82c1a40dc94855742e58d1dfa2663bb230793dc452b1ace7b3a11c8c592f65d"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P1/seed_20260614/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "52c6146dcc4a996e7bbf91572da1d796ba6764832568deae8b70412c19140266"
+    },
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P1/seed_314159/model.pt",
+      "role": "temporal_model",
+      "sha256": "03211a9626bc8c4f2bf2b1da3aa6255b80f22505836724b107ccf72770d3c4a2"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P1/seed_314159/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "bcb7e3cacf7e2117275bf27802ccc886eedbfb1ae400cb7d93693a522fe2015f"
+    }
+  ],
+  "manifest_written_last": true,
+  "models": {
+    "P0": "5/5_available",
+    "P1": "5/5_available"
+  },
+  "outputs": [
+    {
+      "bytes": 48656,
+      "path": "reports/closure_v2/03_calibration/calibrator_specs.json",
+      "role": "calibrator_specs",
+      "sha256": "e0caa7ce83535571d21ee85caaa1259020b1f95b6dc00f01c486e93e99ec2d9f"
+    },
+    {
+      "bytes": 12821,
+      "path": "reports/closure_v2/03_calibration/calibration_metrics.csv",
+      "role": "calibration_metrics",
+      "sha256": "d815185c6f251f19a7855dd17b2ffbf075687423d43917a553461a6ff8835e41"
+    },
+    {
+      "bytes": 3327,
+      "path": "reports/closure_v2/03_calibration/alert_thresholds.csv",
+      "role": "alert_thresholds",
+      "sha256": "365a88a2791722278bb025739e9cdb33485a42bcf7738e6d9b303d7070c91a5b"
+    },
+    {
+      "bytes": 63688,
+      "path": "reports/closure_v2/03_calibration/conformal_quantiles.csv",
+      "role": "conformal_quantiles",
+      "sha256": "ebecd1199ac4e2c5bb53394a7b5832652a0412f4d27486477c10c0f4a7facb00"
+    },
+    {
+      "bytes": 643,
+      "path": "reports/closure_v2/03_calibration/model_availability.csv",
+      "role": "model_availability",
+      "sha256": "b5c84393a0fad879552e28bc5e6f4543a49850873e9b1d5f5b825711fe85b9d7"
+    }
+  ],
+  "post_2021_outcomes_opened": false,
+  "recalibration_after_evaluation": false,
+  "replacement_used": false,
+  "schema_version": "closure_v2_calibration_manifest_v1",
+  "script": {
+    "bytes": 26307,
+    "path": "src/experiments/closure_v2/calibrate_temporal.py",
+    "role": "calibration_writer",
+    "sha256": "4a6850f8db4daf27efaebc13ef68d527720ef66741deca6184e9610aadc90a19"
+  },
+  "status": "completed",
+  "target_scan": {
+    "holdout_rows_materialized": 0,
+    "locations_materialized": 192,
+    "origin_max": "2021-11",
+    "origin_min": "2021-01",
+    "post_2021_rows_materialized": 0,
+    "predicate": "source=wqp; assignment=development; origin=2021-01..2021-11; target=2021-02..2021-12; has_target=true",
+    "rows_materialized": 3161,
+    "scanner": "pyarrow_dataset_predicate_pushdown",
+    "target_max": "2021-12",
+    "target_min": "2021-02"
+  },
+  "threshold_rows": 30
+}

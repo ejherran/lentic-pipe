@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure_v2_calibration.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "experiment_id", "status", "models", "seeds", "horizons", "data_role", "temporal_boundary", "raw_bloom_score", "calibrator_selection", "alert_threshold", "conformal", "authorization_thresholds", "access"],
+  "properties": {
+    "schema_version": {"const": "closure_v2_calibration_runtime_v1"},
+    "experiment_id": {"const": "closure_v2"},
+    "status": {"const": "ready_to_calibrate"},
+    "models": {"const": ["P0", "P1"]},
+    "seeds": {"const": [1729, 20260612, 20260613, 20260614, 314159]},
+    "horizons": {"const": [1, 2, 3]},
+    "data_role": {"const": "calibration_threshold"},
+    "temporal_boundary": {"type": "object"},
+    "raw_bloom_score": {"type": "object"},
+    "calibrator_selection": {"type": "object"},
+    "alert_threshold": {"type": "object"},
+    "conformal": {"type": "object"},
+    "authorization_thresholds": {"type": "object"},
+    "access": {"type": "object"}
+  }
+}

@@ -1,0 +1,68 @@
+{
+  "authority_head": "1bf9b553dd1234b309fa6172a92d536d143499dc",
+  "evaluation_authorized": false,
+  "experiment_id": "closure_v2",
+  "inputs": [
+    {
+      "bytes": 1087,
+      "path": "configs/closure_v2/model_lock.schema.json",
+      "role": "model_lock_schema",
+      "sha256": "a7f9c342a2f10746206ac5cb4f15891dee238f87c0d7e9ab6b93ea11c6f89662"
+    },
+    {
+      "bytes": 8568,
+      "path": "reports/closure_v2/02_models/family_manifest.json",
+      "role": "temporal_family_manifest",
+      "sha256": "bb941c305de501b50290bd29afcae0010719f0d227c0da82ba12b819bae76de8"
+    },
+    {
+      "bytes": 8516,
+      "path": "reports/closure_v2/03_calibration/calibration_manifest.json",
+      "role": "calibration_manifest",
+      "sha256": "757c5932d2e899b5e83bb7d6d507bac458f247ce15987a77aad29d71e991f930"
+    },
+    {
+      "bytes": 6133,
+      "path": "configs/closure_v2/analysis_plan.yaml",
+      "role": "analysis_plan",
+      "sha256": "64b72e21567567d42324d372cec9c2c022155428585d953410406f2c72e647eb"
+    },
+    {
+      "bytes": 2187,
+      "path": "configs/closure_v2/evaluation_cohorts.yaml",
+      "role": "evaluation_cohorts",
+      "sha256": "72003abc37388194401fa7d5f2dd099b0890b9cb065d48ba8a739c523839b26c"
+    },
+    {
+      "bytes": 952,
+      "path": "configs/closure_v2/model_benchmark.yaml",
+      "role": "model_benchmark",
+      "sha256": "3eeb3ff383b51e2865443e810dcb850e2bd57c4825df313730c199ef4730d0b4"
+    },
+    {
+      "bytes": 109,
+      "path": "models.dvc",
+      "role": "models_dvc_pointer",
+      "sha256": "ae009855d29523d3571aa9896c37ae9ff583461279dcb1498150c50c7fd94edf"
+    }
+  ],
+  "manifest_written_last": true,
+  "model_lock_effective_after_annotated_tag": "closure-v2-model-lock",
+  "outputs": [
+    {
+      "bytes": 330287,
+      "path": "reports/closure_v2/00_protocol/model_lock.json",
+      "role": "model_lock",
+      "sha256": "737ea65db0913f9a4b0e259c50c7c4197e4fc8f5efa0ce818cc48a9832d5a90e"
+    }
+  ],
+  "post_2021_outcomes_authorized": false,
+  "schema_version": "closure_v2_model_lock_manifest_v1",
+  "script": {
+    "bytes": 16210,
+    "path": "src/experiments/closure_v2/lock_models.py",
+    "role": "model_locker",
+    "sha256": "42f2be567af23af8e7231d269486ff185794f13ff0d30bf0b41ea1ad98fb979e"
+  },
+  "status": "completed"
+}
