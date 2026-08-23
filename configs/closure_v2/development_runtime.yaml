@@ -1,0 +1,73 @@
+schema_version: closure_v2_development_runtime_v1
+experiment_id: closure_v2
+status: ready_to_fit
+authorities:
+  protocol_tag: closure-v2-protocol
+  development_tag: closure-v2-development
+  protocol_lock: reports/closure_v2/00_protocol/protocol_lock.json
+  development_lock: reports/closure_v2/00_protocol/development_lock.json
+  eligibility_manifest: reports/closure_v2/01_surface/eligibility_manifest.json
+inputs:
+  eligibility_ledger: data/closure_v2/development/fit_eligibility.parquet
+  shared_fit_keys: data/closure_v2/development/shared_fit_keys.parquet
+  p0_sequences: data/closure_v1/development/sequences/P0/expert_no_current.parquet
+  p1_sequence_pattern: data/closure_v1/development/sequences/P1/seed_{base_seed}.parquet
+models: [P0, P1]
+seeds: [1729, 20260612, 20260613, 20260614, 314159]
+roles:
+  fit: [training, model_selection]
+  profile_selection: model_selection
+  calibration_excluded_from_fit: calibration_threshold
+shared_fit:
+  required: true
+  rows_per_seed: 8925
+  training_rows_per_seed: 7909
+  model_selection_rows_per_seed: 1016
+  incomplete_rows_retained_outside_loss: true
+architecture:
+  history_length_months: 12
+  input_dimension: 13
+  target_dimension: 9
+  hidden_dimension: 96
+  recurrent_layers: 1
+  dropout: 0.0
+  residual_mode: add_last
+optimization:
+  optimizer: AdamW
+  learning_rate: 0.001
+  weight_decay: 0.00001
+  gradient_clip_norm: 1.0
+  mse_weight: 1.0
+  device: cpu
+  torch_num_threads: 1
+  torch_num_interop_threads: 1
+profiles:
+  v2_primary:
+    batch_size: 512
+    maximum_epochs: 60
+    early_stopping_patience: 10
+    early_stopping_minimum_delta: 0.0
+  legacy_diagnostic:
+    batch_size: 2048
+    maximum_epochs: 20
+    early_stopping_patience: 5
+    early_stopping_minimum_delta: 0.0
+profile_selection:
+  data_role: model_selection
+  metric: probabilistic_validation_loss
+  direction: lower_is_better
+  exact_tie_break: v2_primary
+output_blend:
+  stage: once_after_selected_raw_best_restore
+  selection_role: model_selection
+  selection_metric: balanced
+  grid: [0.0, 0.1, 0.2, 0.35, 0.5, 0.65, 0.8, 0.9, 1.0]
+failure_policy:
+  replacement: forbidden
+  resume: forbidden
+  hyperparameter_change_after_failure: forbidden
+  failure_manifest_required: true
+access:
+  evaluation: forbidden
+  post_2021_outcomes: forbidden
+  current_chla_input_lineage: forbidden

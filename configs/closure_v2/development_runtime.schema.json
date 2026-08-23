@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "closure_v2_development_runtime.schema.json",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "experiment_id", "status", "authorities", "inputs", "models", "seeds", "roles", "shared_fit", "architecture", "optimization", "profiles", "profile_selection", "output_blend", "failure_policy", "access"],
+  "properties": {
+    "schema_version": {"const": "closure_v2_development_runtime_v1"},
+    "experiment_id": {"const": "closure_v2"},
+    "status": {"const": "ready_to_fit"},
+    "authorities": {"type": "object"},
+    "inputs": {"type": "object"},
+    "models": {"const": ["P0", "P1"]},
+    "seeds": {"const": [1729, 20260612, 20260613, 20260614, 314159]},
+    "roles": {"type": "object"},
+    "shared_fit": {"type": "object"},
+    "architecture": {"type": "object"},
+    "optimization": {"type": "object"},
+    "profiles": {"type": "object"},
+    "profile_selection": {"type": "object"},
+    "output_blend": {"type": "object"},
+    "failure_policy": {"type": "object"},
+    "access": {"type": "object"}
+  }
+}

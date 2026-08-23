@@ -1,0 +1,134 @@
+{
+  "base_seed": 1729,
+  "best_epoch": 60,
+  "best_probabilistic_validation_loss": -1.8667358479161902,
+  "current_chla_input_lineage": false,
+  "denominators": {
+    "calibration_rows_excluded_from_fit": 319,
+    "fit_intent_rows": 9413,
+    "ledger_intent_rows": 9732,
+    "model_selection_rows": 1016,
+    "retained_fit_failures_outside_loss": 488,
+    "shared_fit_rows": 8925,
+    "training_rows": 7909
+  },
+  "environment": {
+    "device": "cpu",
+    "numpy": "2.4.5",
+    "pandas": "3.0.3",
+    "pyarrow": "24.0.0",
+    "python": "3.14.7",
+    "torch": "2.12.0+cu130",
+    "torch_num_interop_threads": 1,
+    "torch_num_threads": 1
+  },
+  "evaluation_paths_opened": false,
+  "experiment_id": "closure_v2",
+  "inputs": [
+    {
+      "bytes": 2311,
+      "path": "configs/closure_v2/development_runtime.yaml",
+      "role": "development_runtime",
+      "sha256": "f15f53a31fcfbda8958c742ea5b515cc7ed06ca867134d54d1f5595aac0b4f55"
+    },
+    {
+      "bytes": 16705,
+      "path": "reports/closure_v2/00_protocol/development_lock.json",
+      "role": "development_lock",
+      "sha256": "781a666b576fe4aec6ebfb5434288f8ee13170be6a0ee0145b3866f81ce44c39"
+    },
+    {
+      "bytes": 19755,
+      "path": "reports/closure_v2/01_surface/eligibility_manifest.json",
+      "role": "eligibility_manifest",
+      "sha256": "fed653fe65d9ed562ea71867aeaede6fc259bf67af6829cc16525b98910760c0"
+    },
+    {
+      "bytes": 1870207,
+      "path": "data/closure_v2/development/fit_eligibility.parquet",
+      "role": "eligibility_ledger",
+      "sha256": "827f0e0f77e6a4ab3c97d7a52666a3df243c7f978563ee7590e909ca1171f5a1"
+    },
+    {
+      "bytes": 53662,
+      "path": "data/closure_v2/development/shared_fit_keys.parquet",
+      "role": "shared_fit_keys",
+      "sha256": "be9e0b1dfd15a907cb79d23e9e400053b214b8ea5f5e9953d5f2c116449974c5"
+    },
+    {
+      "bytes": 1377124,
+      "path": "data/closure_v1/development/sequences/P0/expert_no_current.parquet",
+      "role": "source_sequences",
+      "sha256": "a10fbe5054d795b44dac1da2853a387b4dbead3e04dd7d9d942313b2aa5318fd"
+    }
+  ],
+  "manifest_written_last": true,
+  "model_id": "P0",
+  "output_blend_recalculations_after_selected_best_restore": 1,
+  "outputs": [
+    {
+      "bytes": 138445,
+      "path": "models/closure_v2/P0/seed_1729/model.pt",
+      "role": "final_temporal_model",
+      "sha256": "674e86ec9e1ee1d3d3c8a07411a649965b5831094f353ef48cb77c1742551a65"
+    },
+    {
+      "bytes": 138061,
+      "path": "models/closure_v2/P0/seed_1729/checkpoint.pt",
+      "role": "raw_best_checkpoint",
+      "sha256": "b1d9ab4c544c66d414def8c7a4097754c7414de4c9d2d916709fb6aaf9af161d"
+    },
+    {
+      "bytes": 11746,
+      "path": "reports/closure_v2/02_models/P0/seed_1729/training_curve.csv",
+      "role": "training_curve",
+      "sha256": "b423e860e2f520a201c08b5640f7944edd73e91006d288b886bca5c9ac2d73dc"
+    },
+    {
+      "bytes": 4103,
+      "path": "reports/closure_v2/02_models/P0/seed_1729/selection_metrics.csv",
+      "role": "selection_metrics",
+      "sha256": "f6b184aed93378d2e3107130ab84211d5bf494882fea87f55cf1e45c1eee9cb1"
+    },
+    {
+      "bytes": 812,
+      "path": "reports/closure_v2/02_models/P0/seed_1729/blend_weights.csv",
+      "role": "final_output_blend",
+      "sha256": "9b74870239ec38cdf6531c893b553b1d439d519ab08d49114b39437d61828fa8"
+    },
+    {
+      "bytes": 526,
+      "path": "reports/closure_v2/02_models/P0/seed_1729/report.md",
+      "role": "slot_report",
+      "sha256": "da1df34380e63a498739fd3ebc1b8e663a412d97a85e01eb9359b29c02264608"
+    }
+  ],
+  "post_2021_outcomes_opened": false,
+  "profile_results": [
+    {
+      "best_epoch": 60,
+      "best_probabilistic_validation_loss": -1.8667358479161902,
+      "epochs_ran": 60,
+      "profile": "v2_primary"
+    },
+    {
+      "best_epoch": 20,
+      "best_probabilistic_validation_loss": -1.3834238052368164,
+      "epochs_ran": 20,
+      "profile": "legacy_diagnostic"
+    }
+  ],
+  "profile_selection_data_role": "model_selection",
+  "replacement_used": false,
+  "resume_used": false,
+  "runtime_seconds": 27.215394679999918,
+  "schema_version": "closure_v2_temporal_slot_manifest_v1",
+  "script": {
+    "bytes": 49711,
+    "path": "src/experiments/closure_v2/train_temporal.py",
+    "role": "slot_trainer",
+    "sha256": "3a96e056d5994707dd3a4d702f0fd72102830106b0901e0d7a1e643cc194df45"
+  },
+  "selected_profile": "v2_primary",
+  "status": "completed"
+}
