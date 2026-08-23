@@ -8,6 +8,16 @@ leakage-safe temporal splits, baselines before complex models, expert
 ANFIS/fuzzy state scoring, PIPE/GRU-D, controlled degradation, and DVC-backed
 artifacts.
 
+## Closure V2 Thesis Handoff
+
+The certified Closure V2 evidence is frozen at the annotated tag
+`thesis-closure-v2`. Anyone updating the thesis should begin with
+[`docs/closure_v2/MANUSCRIPT_HANDOFF.md`](docs/closure_v2/MANUSCRIPT_HANDOFF.md),
+which provides the authority chain, required reading order, section-by-section
+change plan, complete table and figure inventory, wording boundaries, and
+acceptance checklist. The handoff is documentation only: it does not revise
+the certified scientific results.
+
 ## Requirements
 
 - Python `>=3.14,<3.15`
